@@ -10,7 +10,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+import zipfile
 from unittest.mock import call, patch
 
 
@@ -2279,61 +2281,411 @@ class MergebotTests(unittest.TestCase):
         cls.bot = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.bot)
 
-    def t(self, minute):
-        return self.bot.parse_time(f"2026-11-13T10:{minute:02d}:00Z")
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="mergebot-tests-")
+        self.addCleanup(temporary.cleanup)
+        self.directory = Path(temporary.name)
+        (self.directory / "locks").mkdir()
+        state_patch = patch.object(self.bot, "state_dir", return_value=self.directory)
+        state_patch.start()
+        self.addCleanup(state_patch.stop)
+        self.bot._cache.clear()
+        self.label = {"id": "L", "createdAt": "2026-11-13T10:30:00Z",
+                      "actor": {"login": "maintainer"},
+                      "label": {"name": "auto-merge"}, "__typename": "LabeledEvent"}
+        self.snapshot = {"number": 1, "action": "labeled", "head": "H", "before": None,
+                         "actor": "maintainer", "time": self.label["createdAt"]}
+        self.bot.save_pr_state(1, {"label_id": "L", "approved_head": "H", "method": "merge"})
 
-    def problem(self, head="H", label=30, force_pushes=(), runs=(5,),
-                bot_pushed=(), can_write=True):
-        return self.bot.approval_problem(
-            head, self.t(label), can_write,
-            [(self.t(m), sha) for m, sha in force_pushes],
-            [self.t(m) for m in runs], set(bot_pushed))
+    def info(self, **overrides):
+        info = {
+            "number": 1, "open": True, "labeled": True, "label_id": "L",
+            "approval_problem": None, "approval_pending": None, "approval_captured": True,
+            "head": "H", "approved_head": "H", "method": "merge", "rebase": None,
+            "head_repo": "contributor/lfortran", "head_branch": "feature",
+            "draft": False, "ci": "success", "conflicts": [], "mergeable": "MERGEABLE",
+            "lock": None, "head_bot_pushed": False,
+            "quick_run": {"id": 10, "attempt": 1, "status": "completed",
+                          "conclusion": "success"},
+        }
+        info.update(overrides)
+        return info
 
-    def test_head_pushed_before_the_label_is_approved(self):
-        self.assertIsNone(self.problem())
-        # Pushed away and back before the label: the approved head is still H.
-        self.assertIsNone(self.problem(force_pushes=[(10, "X"), (20, "H")]))
+    def args(self, **overrides):
+        args = dict(number=1, reason="validation evidence", reason_file=None,
+                    expect="H", owner="worker", worktree=str(self.directory), base="main",
+                    needs_review=False, verdict="same", allow_red_main=False,
+                    subject=None, body_file=None, draft=False, method="merge")
+        args.update(overrides)
+        return SimpleNamespace(**args)
 
-    def test_pushes_after_the_label_are_rejected(self):
-        self.assertIn("pushed after approval", self.problem(runs=(40,)))
-        self.assertIn("force-pushed", self.problem(force_pushes=[(40, "H")]))
-        self.assertIn("no CI run", self.problem(runs=()))
-        self.assertIn("write access", self.problem(can_write=False))
-        self.assertIn("labeled event", self.bot.approval_problem(
-            "H", None, True, [], [self.t(5)], set()))
+    def fetch_facts(self, head="H", events=None, comments=(), can_write=True):
+        pr = {
+            "title": "PR", "state": "OPEN", "baseRefName": "main", "headRefOid": head,
+            "headRefName": "feature", "headRepository": {"nameWithOwner": "contributor/lfortran"},
+            "author": {"login": "contributor"}, "isDraft": False,
+            "maintainerCanModify": True, "mergeable": "CONFLICTING",
+            "labels": {"nodes": [{"name": "auto-merge"}]},
+        }
+        with patch.object(self.bot, "load_pr", return_value=(pr, [self.label, *comments])), \
+                patch.object(self.bot, "login", return_value="maintainer"), \
+                patch.object(self.bot, "can_write", return_value=can_write), \
+                patch.object(self.bot, "label_events",
+                             return_value=[self.snapshot] if events is None else events), \
+                patch.object(self.bot, "gh_items", return_value=[]), \
+                patch.object(self.bot, "required_checks", return_value={"A"}):
+            return self.bot.facts(1, with_conflicts=False)
 
-    def test_an_older_head_cannot_return_after_review(self):
-        # M was pushed, replaced by C before the label, then M was pushed
-        # again (fast-forward) after the label: M's early CI run is not enough.
-        self.assertIn("head at approval time was C",
-                      self.problem(head="M", force_pushes=[(10, "C")]))
+    def test_conflicting_head_is_approved_without_any_ci_run(self):
+        self.bot.save_pr_state(1, {"label_id": "L"})
+        info = self.fetch_facts()
+        self.assertIsNone(info["approval_problem"])
+        self.assertIsNone(info["approval_pending"])
+        self.assertEqual(info["ci"], "pending")
+        with patch.object(self.bot, "facts", return_value=info), patch.object(self.bot, "comment"):
+            self.bot.cmd_pickup(self.args())
+        self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "H")
 
-    def test_mergebot_rebases_stay_approved(self):
-        self.assertIsNone(self.problem(head="B", runs=(45,), bot_pushed={"B"},
-                                       force_pushes=[(40, "B")]))
-        # Anyone else's push after the rebase is rejected.
-        self.assertIn("force-pushed to X", self.problem(
-            head="X", runs=(50,), bot_pushed={"B"},
-            force_pushes=[(40, "B"), (50, "X")]))
-        self.assertIn("pushed after approval", self.problem(
-            head="Y", runs=(50,), bot_pushed={"B"}, force_pushes=[(40, "B")]))
+    def test_missing_capture_waits_instead_of_rejecting(self):
+        info = self.fetch_facts(events=[])
+        self.assertIsNone(info["approval_problem"])
+        self.assertIn("waiting", info["approval_pending"])
+        with patch.object(self.bot, "facts", return_value=info), patch.object(self.bot, "gh") as gh:
+            with self.assertRaisesRegex(SystemExit, "waiting"):
+                self.bot.cmd_pickup(self.args())
+            gh.assert_not_called()
 
-    def test_markers_come_only_from_mergebot_comments(self):
-        body = "Picked up.\n<!-- mergebot:approved sha=abc method=merge -->"
-        comments = [
-            {"author": "maintainer", "body": body, "createdAt": "2026-11-13T10:40:00Z"},
-            {"author": "someone", "body": body.replace("merge -->", "squash -->"),
-             "createdAt": "2026-11-13T10:41:00Z"},
-        ]
-        found = self.bot.markers(comments, "maintainer")
-        self.assertEqual([(kind, fields) for kind, fields, _ in found],
-                         [("approved", {"sha": "abc", "method": "merge"})])
-        self.assertEqual(self.bot.merge_method(found, self.t(30)), "merge")
-        self.assertIsNone(self.bot.merge_method(found, self.t(50)))
-        found.append(("method", {"method": "squash"}, self.t(45)))
-        self.assertEqual(self.bot.merge_method(found, self.t(30)), "squash")
-        found.append(("method", {"method": "merge"}, self.t(46)))
-        self.assertEqual(self.bot.merge_method(found, self.t(30)), "squash")
+    def test_labeler_must_have_write_access(self):
+        self.assertIn("write access", self.fetch_facts(can_write=False)["approval_problem"])
+
+    def test_comment_markers_never_authorize_a_head_or_method(self):
+        comments = [{
+            "__typename": "IssueComment", "author": {"login": "maintainer"},
+            "createdAt": "2026-11-13T10:31:00Z", "url": "comment",
+            "body": "<!-- mergebot:pushed sha=X from=H -->\n"
+                    "<!-- mergebot:approved sha=X method=squash -->",
+        }]
+        info = self.fetch_facts(head="X", comments=comments)
+        self.assertIn("head changed", info["approval_problem"])
+        self.assertEqual(info["method"], "merge")
+
+    def test_relabel_does_not_reuse_old_approval_or_method(self):
+        self.label["id"] = "new-label"
+        self.snapshot["head"] = "X"
+        info = self.fetch_facts(head="X")
+        self.assertIsNone(info["approval_problem"])
+        self.assertEqual(info["approved_head"], "X")
+        self.assertIsNone(info["method"])
+
+    def test_ambiguous_same_second_relabel_is_rejected(self):
+        snapshot, problem = self.bot.approval_snapshot(
+            [self.label, dict(self.label, id="second-label")], [self.snapshot])
+        self.assertIsNone(snapshot)
+        self.assertIn("same second", problem)
+
+    def test_push_with_same_timestamp_is_not_approved_by_date(self):
+        self.assertIn("head changed", self.fetch_facts(head="X")["approval_problem"])
+
+    def test_external_push_and_return_to_approved_head_invalidates_label(self):
+        events = [self.snapshot, dict(self.snapshot, action="synchronize", before="H",
+                                     head="X", actor="contributor", time="2026-11-13T10:31:00Z"),
+                  dict(self.snapshot, action="synchronize", before="X", head="H",
+                       actor="contributor", time="2026-11-13T10:32:00Z")]
+        self.assertIn("pushed", self.fetch_facts(events=events)["approval_problem"])
+
+    def test_pending_rebase_is_not_approved_until_completed(self):
+        transition = dict(head="B", before=None, owner="worker", status="pushed")
+        self.bot.save_pr_state(1, {"label_id": "L", "approved_head": "H", "method": "merge",
+                                  "rebase": transition, "pushes": [{"from": "H", "head": "B"}]})
+        info = self.fetch_facts(head="B")
+        self.assertIsNone(info["approval_problem"])
+        self.assertIn("unfinished", info["approval_pending"])
+        with self.assertRaisesRegex(SystemExit, "unfinished"):
+            self.bot.require_approved(info)
+        self.bot.cmd_lock(self.args())
+        with patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "clean_head", return_value="B"), \
+                patch.object(self.bot, "comment"):
+            self.bot.cmd_complete(self.args(expect="B"))
+        self.assertIsNone(self.fetch_facts(head="B")["approval_pending"])
+        self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "B")
+
+    def test_completion_rejects_a_different_final_head(self):
+        self.bot.cmd_lock(self.args())
+        info = self.info(rebase={"head": "B", "owner": "worker"}, head="B",
+                         approval_pending="unfinished")
+        with patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "clean_head", return_value="C"):
+            with self.assertRaisesRegex(SystemExit, "worktree"):
+                self.bot.cmd_complete(self.args(expect="B"))
+        self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "H")
+
+    def test_failed_push_leaves_pending_not_approved(self):
+        self.bot.cmd_lock(self.args())
+
+        def run(command, **kwargs):
+            if command[:2] == ["git", "push"]:
+                raise SystemExit("push failed")
+            return SimpleNamespace(returncode=0)
+
+        with patch.object(self.bot, "facts", return_value=self.info()), \
+                patch.object(self.bot, "clean_head", return_value="B"), \
+                patch.object(self.bot, "fetch", return_value="main"), \
+                patch.object(self.bot, "check_commits"), \
+                patch.object(self.bot, "run", side_effect=run), \
+                patch.object(self.bot, "comment") as comment:
+            with self.assertRaisesRegex(SystemExit, "push failed"):
+                self.bot.cmd_push(self.args())
+            comment.assert_not_called()
+        state = self.bot.pr_state(1, "L")
+        self.assertEqual(state["approved_head"], "H")
+        self.assertEqual(state["rebase"]["status"], "prepared")
+        self.assertIn("unfinished", self.fetch_facts(head="B")["approval_pending"])
+
+    def test_changed_rebase_revokes_label_before_push(self):
+        self.bot.cmd_lock(self.args())
+        actions = []
+
+        def run(command, **kwargs):
+            if command[:2] == ["git", "push"]:
+                actions.append("push")
+            return SimpleNamespace(returncode=0)
+
+        with patch.object(self.bot, "facts", return_value=self.info()), \
+                patch.object(self.bot, "clean_head", return_value="B"), \
+                patch.object(self.bot, "fetch", return_value="main"), \
+                patch.object(self.bot, "check_commits"), \
+                patch.object(self.bot, "run", side_effect=run), \
+                patch.object(self.bot, "cmd_reject", side_effect=lambda args: actions.append("reject")), \
+                patch.object(self.bot, "comment"), patch("builtins.print"):
+            self.bot.cmd_push(self.args(needs_review=True))
+        self.assertEqual(actions, ["reject", "push"])
+        self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "H")
+
+    def test_pr_bug_verdict_is_rejected_as_draft(self):
+        self.bot.cmd_lock(self.args())
+        info = self.info(head="B", rebase={"head": "B", "owner": "worker"},
+                         approval_pending="unfinished")
+        with patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "clean_head", return_value="B"), \
+                patch.object(self.bot, "cmd_reject") as reject:
+            self.bot.cmd_complete(self.args(expect="B", verdict="pr-bug"))
+        self.assertTrue(reject.call_args.args[0].draft)
+
+    def test_merge_rejects_active_and_expired_locks(self):
+        for stale in (False, True):
+            with self.subTest(stale=stale), \
+                    patch.object(self.bot, "paused", return_value=False), \
+                    patch.object(self.bot, "facts", return_value=self.info(
+                        lock={"owner": "worker", "stale": stale})), \
+                    patch.object(self.bot, "main_state", return_value={"blocked": False}), \
+                    patch.object(self.bot, "gh") as gh:
+                with self.assertRaisesRegex(SystemExit, "rebase lock"):
+                    self.bot.cmd_merge(self.args())
+                gh.assert_not_called()
+
+    def test_merge_allows_pending_main_but_not_suspected_main_failure(self):
+        for blocked in (False, True):
+            with self.subTest(blocked=blocked), \
+                    patch.object(self.bot, "paused", return_value=False), \
+                    patch.object(self.bot, "facts", return_value=self.info()), \
+                    patch.object(self.bot, "main_state", return_value={"green": False, "blocked": blocked}), \
+                    patch.object(self.bot, "comment"), patch.object(self.bot, "gh") as gh:
+                if blocked:
+                    with self.assertRaisesRegex(SystemExit, "suspected"):
+                        self.bot.cmd_merge(self.args())
+                    gh.assert_not_called()
+                else:
+                    self.bot.cmd_merge(self.args())
+                    self.assertIn("--match-head-commit", gh.call_args.args)
+
+    def test_merge_waits_for_current_quick_attempt(self):
+        info = self.info(quick_run={"status": "in_progress", "conclusion": None})
+        with patch.object(self.bot, "paused", return_value=False), \
+                patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "main_state", return_value={"blocked": False}), \
+                patch.object(self.bot, "gh") as gh:
+            with self.assertRaisesRegex(SystemExit, "Quick run"):
+                self.bot.cmd_merge(self.args())
+            gh.assert_not_called()
+
+    def test_unfinished_rebase_cannot_be_unlocked(self):
+        self.bot.cmd_lock(self.args())
+        self.bot.save_pr_state(1, {"label_id": "L", "rebase": {"head": "B"}})
+        with patch.object(self.bot, "facts", return_value=self.info()):
+            with self.assertRaisesRegex(SystemExit, "unfinished rebase"):
+                self.bot.cmd_unlock(self.args())
+        self.assertIsNotNone(self.bot.lock_info(1))
+
+    def test_new_label_can_retire_an_old_interrupted_rebase(self):
+        self.bot.cmd_lock(self.args())
+        self.bot.save_pr_state(1, {"label_id": "old-label", "rebase": {"head": "B"}})
+        with patch.object(self.bot, "facts", return_value=self.info(label_id="new-label")):
+            self.bot.cmd_unlock(self.args())
+        self.assertIsNone(self.bot.lock_info(1))
+
+    def test_merge_method_cannot_race_with_rebase_worker(self):
+        with patch.object(self.bot, "facts", return_value=self.info(lock={"owner": "worker"})):
+            with self.assertRaisesRegex(SystemExit, "wait for the rebase worker"):
+                self.bot.cmd_squash(self.args())
+
+    def test_wrong_worker_cannot_push_or_unlock(self):
+        self.bot.cmd_lock(self.args())
+        with patch.object(self.bot, "facts", return_value=self.info()):
+            with self.assertRaisesRegex(SystemExit, "not locked"):
+                self.bot.cmd_push(self.args(owner="other"))
+        with self.assertRaisesRegex(SystemExit, "not locked"):
+            self.bot.cmd_unlock(self.args(owner="other"))
+
+    def test_partial_failure_still_counts_as_in_flight(self):
+        info = self.info(ci="failure", quick_run={"status": "in_progress"})
+        with patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "main_state", return_value={}), \
+                patch.object(self.bot, "paused", return_value=False), \
+                patch.object(self.bot, "login", return_value="maintainer"), \
+                patch("builtins.print") as output:
+            self.bot.cmd_status(SimpleNamespace(numbers=[1]))
+        self.assertEqual(json.loads(output.call_args.args[0])["in_flight"], 1)
+
+    def test_rerun_waits_for_the_whole_workflow(self):
+        info = self.info(quick_run={"status": "in_progress", "conclusion": None})
+        with patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "gh") as gh, patch("builtins.print") as output:
+            self.bot.cmd_rerun(self.args())
+        gh.assert_not_called()
+        self.assertIn("still running", output.call_args.args[0])
+
+    def main_run(self, id, sha, conclusion=None, attempt=1):
+        return {"id": id, "head_sha": sha, "conclusion": conclusion,
+                "status": "completed" if conclusion else "in_progress",
+                "run_attempt": attempt, "html_url": f"run/{id}"}
+
+    def main_status(self, runs, sha="new", jobs=(), previous="failure"):
+        def response(*args):
+            if "/attempts/" in args[1]:
+                return {"conclusion": previous}
+            return {"workflow_runs": runs}
+        with patch.object(self.bot, "gh_json", side_effect=response), \
+                patch.object(self.bot, "gh", return_value=sha), \
+                patch.object(self.bot, "gh_items", return_value=list(jobs)):
+            return self.bot.main_state()
+
+    def test_main_pending_does_not_wait_for_previous_success(self):
+        state = self.main_status([self.main_run(2, "new")])
+        self.assertFalse(state["green"])
+        self.assertFalse(state["blocked"])
+
+    def test_main_failed_job_blocks_before_workflow_finishes(self):
+        state = self.main_status([self.main_run(2, "new"), self.main_run(1, "old", "success")],
+                                 jobs=[{"conclusion": "failure"}])
+        self.assertTrue(state["blocked"])
+
+    def test_cancelled_main_run_does_not_hide_an_already_failed_job(self):
+        state = self.main_status([self.main_run(2, "new", "cancelled"),
+                                  self.main_run(1, "old", "success")],
+                                 jobs=[{"conclusion": "failure"}])
+        self.assertTrue(state["blocked"])
+
+    def test_main_failure_stays_blocked_through_rerun_and_clears_on_success(self):
+        self.assertTrue(self.main_status([self.main_run(2, "new", "failure")])["blocked"])
+        self.assertTrue(self.main_status([
+            self.main_run(2, "new", attempt=2), self.main_run(1, "old", "success")])["blocked"])
+        self.assertFalse(self.main_status([self.main_run(2, "new", "success", attempt=2)])["blocked"])
+
+    def test_fresh_session_recovers_failed_main_attempt(self):
+        state = self.main_status([self.main_run(2, "new", attempt=2),
+                                  self.main_run(1, "old", "success")])
+        self.assertTrue(state["blocked"])
+
+    def test_newer_green_main_clears_older_failure(self):
+        self.main_status([self.main_run(2, "bad", "failure")], sha="bad")
+        state = self.main_status([self.main_run(3, "new", "success"),
+                                  self.main_run(2, "bad", "failure")])
+        self.assertFalse(state["blocked"])
+
+    def test_main_suspicion_persists_until_qualifying_success(self):
+        with patch.object(self.bot, "facts", return_value=self.info()), \
+                patch.object(self.bot, "main_state", return_value={
+                    "green": False, "sha": "new", "run_floor": 2}), \
+                patch.object(self.bot, "comment"):
+            self.bot.cmd_suspect_main(self.args())
+        self.assertTrue(self.main_status([self.main_run(2, "new"),
+                                          self.main_run(1, "old", "success")])["blocked"])
+        self.assertFalse(self.main_status([self.main_run(2, "new", "success")])["blocked"])
+
+    def test_status_does_not_overwrite_concurrent_main_suspicion(self):
+        path = self.directory / "main-suspicions" / "2.json"
+        suspicion = {"head": "P", "main_sha": "new", "run_floor": 2, "reason": "shared failure"}
+
+        def jobs(*args):
+            self.bot.write_json(path, suspicion)
+            return []
+
+        with patch.object(self.bot, "gh_json", return_value={
+                "workflow_runs": [self.main_run(2, "new"), self.main_run(1, "old", "success")]}), \
+                patch.object(self.bot, "gh", return_value="new"), \
+                patch.object(self.bot, "gh_items", side_effect=jobs):
+            result = self.bot.main_state()
+        self.assertTrue(result["blocked"])
+        self.assertEqual(result["suspicions"]["2"], suspicion)
+        self.assertEqual(json.loads(path.read_text()), suspicion)
+
+    def test_recorder_uses_webhook_head_not_commit_or_workflow_dates(self):
+        spec = importlib.util.spec_from_file_location(
+            "mergebot_event", ROOT / ".agents/skills/mergebot/scripts/record_event.py")
+        recorder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(recorder)
+        event = {"number": 1, "action": "labeled",
+                 "repository": {"full_name": "lfortran/lfortran"},
+                 "pull_request": {"base": {"ref": "main"}, "head": {"sha": "H"},
+                                  "updated_at": self.label["createdAt"]},
+                 "sender": {"login": "maintainer"}, "label": {"name": "auto-merge"}}
+        self.assertEqual(recorder.snapshot(event), self.snapshot)
+        event["pull_request"]["base"]["ref"] = "untrusted-branch"
+        with self.assertRaisesRegex(ValueError, "unexpected"):
+            recorder.snapshot(event)
+
+    def test_only_trusted_label_workflow_runs_supply_events(self):
+        trusted = {"id": 10, "event": "pull_request_target", "conclusion": "success",
+                   "path": ".github/workflows/Mergebot-Events.yml",
+                   "display_title": "mergebot 1 labeled H"}
+        runs = [trusted, dict(trusted, id=11, event="pull_request"),
+                dict(trusted, id=12, path=".github/workflows/other.yml"),
+                dict(trusted, id=13, display_title="mergebot 2 labeled H")]
+        with patch.object(self.bot, "gh_items", return_value=runs), \
+                patch.object(self.bot, "event_artifact", return_value=self.snapshot) as artifact:
+            events = self.bot.label_events(1, self.label["createdAt"])
+        self.assertEqual(events, [self.snapshot])
+        artifact.assert_called_once_with(10)
+
+    def test_event_artifact_must_match_workflow_identity(self):
+        run = {"id": 10, "event": "pull_request_target", "conclusion": "success",
+               "path": ".github/workflows/Mergebot-Events.yml",
+               "display_title": "mergebot 1 labeled H"}
+        with patch.object(self.bot, "gh_items", return_value=[run]), \
+                patch.object(self.bot, "event_artifact", return_value=dict(self.snapshot, head="X")):
+            with self.assertRaisesRegex(SystemExit, "does not match"):
+                self.bot.label_events(1, self.label["createdAt"])
+
+    def test_event_artifact_download_and_cache(self):
+        path = self.directory / "download.zip"
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr("mergebot-event.json", json.dumps(self.snapshot))
+        result = SimpleNamespace(returncode=0, stdout=path.read_bytes(), stderr=b"")
+        with patch.object(self.bot, "gh_items", return_value=[
+                {"id": 20, "name": "mergebot-event", "expired": False}]) as listing, \
+                patch.object(self.bot.subprocess, "run", return_value=result) as download:
+            self.assertEqual(self.bot.event_artifact(10), self.snapshot)
+            self.assertEqual(self.bot.event_artifact(10), self.snapshot)
+        listing.assert_called_once()
+        download.assert_called_once()
+
+    def test_expired_uncached_artifact_does_not_authorize_anything(self):
+        with patch.object(self.bot, "gh_items", return_value=[
+                {"id": 20, "name": "mergebot-event", "expired": True}]), \
+                patch.object(self.bot.subprocess, "run") as download:
+            self.assertIsNone(self.bot.event_artifact(10))
+        download.assert_not_called()
 
     def test_ci_state_uses_the_latest_required_check_runs(self):
         def run(id, name, status="completed", conclusion="success"):

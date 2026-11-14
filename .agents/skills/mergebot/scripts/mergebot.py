@@ -3,36 +3,39 @@
 
 The agent makes the judgment calls (merge method, rebases, CI failure
 classification); this script enforces the rules that must never be broken.
-Every command that changes GitHub first re-checks that the PR's current head is
-the head a maintainer approved with the `auto-merge` label, or a mergebot
-rebase of it. A confused or manipulated agent therefore cannot merge or push
-unapproved code. See ../SKILL.md for the workflow.
+The label-event workflow records the exact approved head independently of CI.
+Rebases remain pending until the worker explicitly completes validation.
+Semantic equivalence is the worker's judgment, not something git can prove.
+See ../SKILL.md for the workflow.
 
-All state lives on GitHub (labels, the PR timeline, and marker comments that
-mergebot posts), except the pause flag and per-PR locks, which live in
-`.mergebot/` next to the main checkout.
+Approval snapshots live in immutable GitHub Actions artifacts. Local control
+state lives in `.mergebot/` next to the main checkout. Comments are never state.
 """
 
 import argparse
 from datetime import datetime, timedelta, timezone
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
+from urllib.parse import urlencode
+import zipfile
 
 REPO = "lfortran/lfortran"
 REPO_URL = f"https://github.com/{REPO}.git"
 LABEL = "auto-merge"
 QUICK_FILE = "Quick-Checks-CI.yml"
 QUICK_NAME = "Quick checks"
+EVENT_FILE = "Mergebot-Events.yml"
 MAX_IN_FLIGHT = 4
 LOCK_HOURS = 12
 MAX_RUN_ATTEMPTS = 2  # rerun a flaky Quick run at most once
 
-MARKER = re.compile(r"<!-- mergebot:(\w+)((?: [\w-]+=\S+)*) -->")
 SIGNATURE = "-- mergebot (automated; runs on {login}'s account)"
 CONVENTIONAL_PREFIX = re.compile(r"^[a-z]+(\([^)]*\))?!?:\s*")
 VAGUE_DESCRIPTION = re.compile(
@@ -55,67 +58,37 @@ def parse_time(text):
     return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
-def markers(comments, login):
-    """Return (kind, fields, time) for each marker in mergebot's own comments."""
-    found = []
-    for comment in comments:
-        if comment["author"] != login:
+def approval_snapshot(labeled, events):
+    """Bind the webhook snapshot to one unambiguous label application."""
+    current = labeled[-1]
+    same_time = [n for n in labeled if n["createdAt"] == current["createdAt"]]
+    if len(same_time) != 1:
+        return None, "ambiguous label events in the same second; remove and reapply the label"
+    matches = [e for e in events if e["action"] == "labeled"
+               and e["time"] == current["createdAt"]
+               and e["actor"] == (current["actor"] or {}).get("login")]
+    if len({e["head"] for e in matches}) > 1:
+        return None, "ambiguous approval snapshots; remove and reapply the label"
+    return (matches[0] if matches else None), None
+
+
+def approval_problem(head, snapshot, state, events, me):
+    approved = state.get("approved_head", snapshot["head"])
+    pending = state.get("rebase")
+    expected = {approved}
+    if pending:
+        expected.add(pending["head"])
+    if head not in expected:
+        return f"the head changed from approved {approved[:10]} to {head[:10]}"
+    pushes = {(p["from"], p["head"]) for p in state.get("pushes", [])}
+    for event in events:
+        if event["action"] != "synchronize" or event["time"] < snapshot["time"]:
             continue
-        for match in MARKER.finditer(comment["body"]):
-            fields = dict(f.split("=", 1) for f in match.group(2).split())
-            found.append((match.group(1), fields, parse_time(comment["createdAt"])))
-    return found
-
-
-def approval_problem(head, label_time, labeler_can_write, force_pushes,
-                     head_run_times, bot_pushed):
-    """Return None if `head` may be merged under the current label, else why not.
-
-    Approved means: `head` was the PR head when the label was applied, or it is
-    a mergebot rebase announced after that. Only server-side timestamps are
-    trusted; commit dates are chosen by the author and are ignored.
-
-    force_pushes: [(time, after_sha)] from the PR timeline.
-    head_run_times: creation times of pull_request workflow runs for `head` on
-        the PR's own branch; the earliest one is when `head` was pushed there.
-    bot_pushed: SHAs that mergebot announced after `label_time`.
-    """
-    if label_time is None:
-        return "the label has no labeled event"
-    if not labeler_can_write:
-        return "the label was applied by an account without write access"
-    for time, after in force_pushes:
-        if time > label_time and after not in bot_pushed:
-            return f"the branch was force-pushed to {after[:10]} after approval"
-    if head in bot_pushed:
-        return None
-    if not head_run_times:
-        return f"no CI run shows when {head[:10]} was pushed"
-    pushed = min(head_run_times)
-    if pushed > label_time:
-        return f"{head[:10]} was pushed after approval"
-    # A force-push between `pushed` and the label must have left `head` in place;
-    # otherwise the approved head was something else and `head` came back later.
-    between = [after for time, after in sorted(force_pushes)
-               if pushed < time <= label_time]
-    if between and between[-1] != head:
-        return (f"the head at approval time was {between[-1][:10]}, "
-                f"not {head[:10]}")
+        if event["time"] == snapshot["time"] and event["head"] == snapshot["head"]:
+            continue  # The label may have followed this push in the same second.
+        if event["actor"] != me or (event["before"], event["head"]) not in pushes:
+            return f"the branch was pushed to {event['head'][:10]} after approval"
     return None
-
-
-def merge_method(found, label_time):
-    """Return the recorded merge method, or None before pickup.
-
-    Only a switch to squash can follow the method chosen at pickup.
-    """
-    recorded = [(fields.get("method"), time) for kind, fields, time in found
-                if kind in ("approved", "method") and time > label_time]
-    if not recorded:
-        return None
-    if any(method == "squash" for method, _ in recorded):
-        return "squash"
-    return "merge"
 
 
 def ci_state(required, check_runs):
@@ -262,6 +235,73 @@ def state_dir():
     return path
 
 
+def read_json(path, default):
+    return json.loads(path.read_text()) if path.exists() else default
+
+
+def write_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        json.dump(data, stream)
+        stream.write("\n")
+    try:
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def pr_state(number, label_id):
+    state = read_json(state_dir() / "prs" / f"{number}.json", {})
+    return state if state.get("label_id") == label_id else {"label_id": label_id}
+
+
+def save_pr_state(number, state):
+    write_json(state_dir() / "prs" / f"{number}.json", state)
+
+
+def event_artifact(run_id):
+    path = state_dir() / "events" / f"{run_id}.json"
+    if path.exists():
+        return read_json(path, {})
+    artifacts = gh_items(f"repos/{REPO}/actions/runs/{run_id}/artifacts?per_page=100",
+                         "artifacts")
+    artifact = next((a for a in artifacts if a["name"] == "mergebot-event"
+                     and not a["expired"]), None)
+    if artifact is None:
+        return None
+    result = subprocess.run(["gh", "api",
+                             f"repos/{REPO}/actions/artifacts/{artifact['id']}/zip"],
+                            capture_output=True)
+    if result.returncode:
+        sys.exit(f"mergebot: cannot download event artifact: {result.stderr.decode()}")
+    with zipfile.ZipFile(io.BytesIO(result.stdout)) as archive:
+        event = json.loads(archive.read("mergebot-event.json"))
+    write_json(path, event)
+    return event
+
+
+def label_events(number, since):
+    query = urlencode({"event": "pull_request_target", "created": f">={since}",
+                       "per_page": 100})
+    runs = gh_items(f"repos/{REPO}/actions/workflows/{EVENT_FILE}/runs?{query}",
+                    "workflow_runs")
+    events = []
+    for run in runs:
+        if (run["event"] != "pull_request_target"
+                or run["path"] != f".github/workflows/{EVENT_FILE}"
+                or not run["display_title"].startswith(f"mergebot {number} ")
+                or run["conclusion"] != "success"):
+            continue
+        event = event_artifact(run["id"])
+        if event is not None:
+            expected = f"mergebot {number} {event['action']} {event['head']}"
+            if event["number"] != number or run["display_title"] != expected:
+                sys.exit("mergebot: event artifact does not match its trusted workflow run")
+            events.append(event)
+    return events
+
+
 PR_QUERY = """
 query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
   repository(owner: $owner, name: $name) {
@@ -269,13 +309,11 @@ query($owner: String!, $name: String!, $number: Int!, $cursor: String) {
       number title state isDraft baseRefName headRefName headRefOid mergeable
       maintainerCanModify author { login } headRepository { nameWithOwner }
       labels(first: 100) { nodes { name } }
-      timelineItems(first: 100, after: $cursor, itemTypes: [LABELED_EVENT,
-          HEAD_REF_FORCE_PUSHED_EVENT, ISSUE_COMMENT]) {
+      timelineItems(first: 100, after: $cursor, itemTypes: [LABELED_EVENT, ISSUE_COMMENT]) {
         pageInfo { hasNextPage endCursor }
         nodes {
           __typename
-          ... on LabeledEvent { createdAt actor { login } label { name } }
-          ... on HeadRefForcePushedEvent { createdAt afterCommit { oid } }
+          ... on LabeledEvent { id createdAt actor { login } label { name } }
           ... on IssueComment { createdAt author { login } body url }
         }
       }
@@ -343,40 +381,51 @@ def facts(number, with_conflicts=True):
     labeled = [n for n in nodes if n["__typename"] == "LabeledEvent"
                and n["label"]["name"] == LABEL]
     is_labeled = LABEL in {label["name"] for label in pr["labels"]["nodes"]}
-    label_time = parse_time(labeled[-1]["createdAt"]) if labeled and is_labeled else None
+    label_id = labeled[-1]["id"] if labeled and is_labeled else None
     labeler = (labeled[-1]["actor"] or {}).get("login") if labeled else None
-    force_pushes = [(parse_time(n["createdAt"]), (n["afterCommit"] or {}).get("oid", "?"))
-                    for n in nodes if n["__typename"] == "HeadRefForcePushedEvent"]
-    found = markers(comments, me)
-    bot_pushed = {fields["sha"] for kind, fields, time in found
-                  if kind == "pushed" and label_time and time > label_time}
+    state = pr_state(number, label_id)
     head = pr["headRefOid"]
     head_repo = (pr["headRepository"] or {}).get("nameWithOwner")
     runs = [r for r in gh_items(f"repos/{REPO}/actions/runs?head_sha={head}&per_page=100",
                                 "workflow_runs")
             if r["event"] == "pull_request" and r["head_branch"] == pr["headRefName"]
             and (r["head_repository"] or {}).get("full_name") == head_repo]
-    problem = None
+    problem, pending, snapshot = None, None, None
     if not is_labeled:
         problem = "not labeled"
     elif pr["state"] != "OPEN" or pr["baseRefName"] != "main":
         problem = "not an open PR against main"
+    elif not labeled:
+        problem = "the label has no labeled event"
+    elif not labeler or not can_write(labeler):
+        problem = "the label was applied by an account without write access"
     else:
-        problem = approval_problem(
-            head, label_time, bool(labeler) and can_write(labeler), force_pushes,
-            [parse_time(r["created_at"]) for r in runs], bot_pushed)
+        events = label_events(number, labeled[-1]["createdAt"])
+        snapshot, problem = approval_snapshot(labeled, events)
+        if not problem and snapshot is None:
+            pending = ("waiting for the label-event artifact; labels applied before "
+                       "Mergebot events was installed, or with expired artifacts, "
+                       "must be removed and reapplied")
+        elif not problem:
+            problem = approval_problem(head, snapshot, state, events, me)
+            if not problem and state.get("rebase"):
+                pending = "rebase validation is unfinished; complete or reject it"
     checks = gh_items(f"repos/{REPO}/commits/{head}/check-runs?per_page=100",
                       "check_runs")
-    state, failed = ci_state(required_checks(), checks)
+    ci, failed = ci_state(required_checks(), checks)
     quick = max((r for r in runs if r["name"] == QUICK_NAME),
                 key=lambda r: r["id"], default=None)
     result = {
         "number": number, "title": pr["title"], "open": pr["state"] == "OPEN", "author": (pr["author"] or {}).get("login"),
         "draft": pr["isDraft"], "head": head, "head_repo": head_repo,
         "head_branch": pr["headRefName"], "labeled": is_labeled, "labeler": labeler,
-        "approval_problem": problem, "method": merge_method(found, label_time)
-        if label_time else None, "head_bot_pushed": head in bot_pushed,
-        "ci": state, "failed_checks": failed,
+        "approval_problem": problem, "approval_pending": pending,
+        "approval_captured": snapshot is not None,
+        "label_id": label_id, "approved_head": state.get("approved_head",
+                                                       snapshot and snapshot["head"]),
+        "method": state.get("method"), "rebase": state.get("rebase"),
+        "head_bot_pushed": any(p["head"] == head for p in state.get("pushes", [])),
+        "ci": ci, "failed_checks": failed,
         "quick_run": quick and {"id": quick["id"], "attempt": quick["run_attempt"],
                                 "status": quick["status"],
                                 "conclusion": quick["conclusion"],
@@ -390,13 +439,66 @@ def facts(number, with_conflicts=True):
 
 
 def main_state():
-    runs = gh_json("api", f"repos/{REPO}/actions/workflows/{QUICK_FILE}/runs"
-                   "?branch=main&event=push&per_page=20")["workflow_runs"]
-    done = [r for r in runs if r["status"] == "completed" and r["conclusion"] != "cancelled"]
-    if not done:
-        return {"green": False, "sha": None, "url": None}
-    return {"green": done[0]["conclusion"] == "success", "sha": done[0]["head_sha"],
-            "url": done[0]["html_url"]}
+    runs, page = [], 1
+    while True:
+        batch = gh_json("api", f"repos/{REPO}/actions/workflows/{QUICK_FILE}/runs"
+                        f"?branch=main&event=push&per_page=100&page={page}")["workflow_runs"]
+        runs.extend(batch)
+        if len(batch) < 100 or any(r["status"] == "completed"
+                                  and r["conclusion"] == "success" for r in batch):
+            break
+        page += 1
+    sha = gh("api", f"repos/{REPO}/commits/main", "--jq", ".sha").strip()
+    failure_dir = state_dir() / "main-failures"
+    suspicion_dir = state_dir() / "main-suspicions"
+    successful = [r for r in runs if r["status"] == "completed"
+                  and r["conclusion"] == "success"]
+    green_id = max((r["id"] for r in successful), default=0)
+    for run in runs:
+        if run["id"] <= green_id:
+            continue
+        failed = run["conclusion"] in ("failure", "timed_out", "action_required")
+        if run["status"] != "completed" or run["conclusion"] == "cancelled":
+            jobs = gh_items(f"repos/{REPO}/actions/runs/{run['id']}/jobs"
+                            "?filter=latest&per_page=100", "jobs")
+            failed |= any(j["conclusion"] in ("failure", "timed_out", "action_required")
+                          for j in jobs)
+        # Recover known red state even when starting a new session mid-rerun.
+        failure_path = failure_dir / f"{run['id']}.json"
+        if run["run_attempt"] > 1 and not failure_path.exists() and not failed:
+            for attempt in range(1, run["run_attempt"]):
+                previous = gh_json("api", f"repos/{REPO}/actions/runs/{run['id']}"
+                                   f"/attempts/{attempt}")
+                if previous["conclusion"] in ("failure", "timed_out", "action_required"):
+                    failed = True
+                    break
+                if previous["conclusion"] == "cancelled":
+                    jobs = gh_items(f"repos/{REPO}/actions/runs/{run['id']}"
+                                    f"/attempts/{attempt}/jobs?per_page=100", "jobs")
+                    if any(j["conclusion"] in ("failure", "timed_out", "action_required")
+                           for j in jobs):
+                        failed = True
+                        break
+        if failed:
+            write_json(failure_path, {"sha": run["head_sha"], "url": run["html_url"]})
+    failures = [read_json(path, {}) for path in failure_dir.glob("*.json")
+                if int(path.stem) > green_id]
+    # Read workers' independent records after the network requests. A status
+    # update must not overwrite a suspicion posted while those requests ran.
+    suspicions = {}
+    for path in suspicion_dir.glob("*.json"):
+        suspicion = read_json(path, {})
+        if suspicion["run_floor"] > green_id:
+            suspicions[path.stem] = suspicion
+    current = next((r for r in runs if r["head_sha"] == sha), None)
+    return {
+        "green": bool(current and current["status"] == "completed"
+                      and current["conclusion"] == "success"),
+        "blocked": bool(failures or suspicions),
+        "sha": sha, "url": current and current["html_url"],
+        "run_floor": current["id"] if current else max((r["id"] for r in runs), default=0) + 1,
+        "failures": failures, "suspicions": suspicions,
+    }
 
 
 def comment(number, body):
@@ -404,7 +506,7 @@ def comment(number, body):
     gh("pr", "comment", str(number), "--repo", REPO, "--body-file", "-", input=text)
 
 
-def require_approved(info):
+def require_approved(info, pending_rebase=False):
     # A maintainer may merge, close, or unlabel a PR by hand at any time.
     if not info["open"] or not info["labeled"]:
         sys.exit(f"mergebot: PR #{info['number']} is no longer open and labeled; "
@@ -412,10 +514,13 @@ def require_approved(info):
     if info["approval_problem"]:
         sys.exit(f"mergebot: PR #{info['number']}: {info['approval_problem']}; "
                  "run `reject` instead")
+    if info["approval_pending"] and not (
+            pending_rebase and info["rebase"] and info["approval_captured"]):
+        sys.exit(f"mergebot: PR #{info['number']}: {info['approval_pending']}")
 
 
-def require_picked_up(info):
-    require_approved(info)
+def require_picked_up(info, pending_rebase=False):
+    require_approved(info, pending_rebase=pending_rebase)
     if not info["method"]:
         sys.exit(f"mergebot: PR #{info['number']} has not been picked up; run `pickup`")
 
@@ -433,8 +538,8 @@ def cmd_status(args):
         "pr", "list", "--repo", REPO, "--label", LABEL, "--state", "open",
         "--limit", "500", "--json", "number")]
     prs = [facts(n) for n in sorted(numbers)]
-    in_flight = sum(1 for p in prs if (p["lock"] and not p["lock"]["stale"])
-                    or (p["head_bot_pushed"] and p["ci"] == "pending"))
+    in_flight = sum(1 for p in prs if p["lock"] or p["rebase"]
+                    or (p["quick_run"] and p["quick_run"]["status"] != "completed"))
     print(json.dumps({"main": main_state(), "paused": paused(), "login": login(),
                       "in_flight": in_flight, "max_in_flight": MAX_IN_FLIGHT,
                       "prs": prs}, indent=2, default=str))
@@ -445,6 +550,9 @@ def cmd_pickup(args):
     require_approved(info)
     if info["method"]:
         sys.exit(f"mergebot: PR #{args.number} was already picked up ({info['method']})")
+    state = pr_state(args.number, info["label_id"])
+    state.update(approved_head=info["head"], method=args.method)
+    save_pr_state(args.number, state)
     if info["draft"]:
         gh("pr", "ready", str(args.number), "--repo", REPO)
     comment(args.number,
@@ -452,8 +560,7 @@ def cmd_pickup(args):
             f"Planned method: **{args.method}**. {text_arg(args)}\n\n"
             "Any push to this branch other than mergebot's own rebases removes "
             f"the `{LABEL}` label; to approve a new head, review it and apply "
-            "the label again.\n"
-            f"<!-- mergebot:approved sha={info['head']} method={args.method} -->")
+            "the label again.")
 
 
 def cmd_squash(args):
@@ -461,8 +568,12 @@ def cmd_squash(args):
     require_picked_up(info)
     if info["method"] == "squash":
         return
-    comment(args.number, f"Switching to **squash** merge. {text_arg(args)}\n"
-            "<!-- mergebot:method method=squash -->")
+    if info["lock"]:
+        sys.exit("mergebot: wait for the rebase worker before changing the merge method")
+    state = pr_state(args.number, info["label_id"])
+    state["method"] = "squash"
+    save_pr_state(args.number, state)
+    comment(args.number, f"Switching to **squash** merge. {text_arg(args)}")
 
 
 def commit_diff(sha, parent):
@@ -525,14 +636,29 @@ def check_commits(worktree, base):
         sys.exit("mergebot: refusing to push:\n" + "\n".join(problems))
 
 
+def require_lock(number, owner):
+    lock = lock_info(number)
+    if not lock or lock["owner"] != owner:
+        sys.exit(f"mergebot: PR #{number} is not locked by {owner}")
+
+
+def clean_head(worktree):
+    if git("status", "--porcelain", "--untracked-files=no", cwd=worktree):
+        sys.exit("mergebot: commit all tracked changes before publishing or completing")
+    return git("rev-parse", "HEAD", cwd=worktree)
+
+
 def cmd_push(args):
     info = facts(args.number, with_conflicts=False)
-    require_picked_up(info)
+    require_picked_up(info, pending_rebase=True)
+    require_lock(args.number, args.owner)
     if info["head"] != args.expect:
         sys.exit(f"mergebot: PR head moved: expected {args.expect[:10]}, "
                  f"found {info['head'][:10]}; rerun status before rebasing again")
     worktree = str(Path(args.worktree).resolve())
-    new = git("rev-parse", "HEAD", cwd=worktree)
+    new = clean_head(worktree)
+    if new == args.expect:
+        sys.exit("mergebot: no new head to push; complete validation or rerun CI instead")
     main = fetch(args.number)
     for ancestor, descendant, what in ((args.base, main, "a commit on main"),
                                        (args.base, new, "an ancestor of HEAD")):
@@ -540,13 +666,49 @@ def cmd_push(args):
                cwd=worktree, check=False).returncode != 0:
             sys.exit(f"mergebot: --base {args.base[:10]} is not {what}")
     check_commits(worktree, args.base)
-    # Announce first: if the push fails, a stray SHA in the record is harmless.
-    comment(args.number, f"{text_arg(args)}\n"
-            f"<!-- mergebot:pushed sha={new} from={args.expect} -->")
+    reason = text_arg(args)
+    state = pr_state(args.number, info["label_id"])
+    transition = {"from": args.expect, "head": new, "base": args.base,
+                  "owner": args.owner, "status": "prepared"}
+    state.setdefault("pushes", []).append(transition)
+    state["rebase"] = transition.copy()
+    save_pr_state(args.number, state)
+    if args.needs_review:
+        # Revoke approval before the changed head can become visible.
+        cmd_reject(argparse.Namespace(number=args.number, reason=reason,
+                                     reason_file=None, draft=False))
     run(["git", "push", f"--force-with-lease=refs/heads/{info['head_branch']}:{args.expect}",
          f"https://github.com/{info['head_repo']}.git",
          f"{new}:refs/heads/{info['head_branch']}"], cwd=worktree)
+    if not args.needs_review:
+        transition["status"] = "pushed"
+        state["rebase"] = transition.copy()
+        save_pr_state(args.number, state)
+    comment(args.number, f"{reason}\n\nPushed `{new[:12]}`; "
+            + ("human re-review is required." if args.needs_review else
+               "rebase validation is still pending."))
     print(new)
+
+
+def cmd_complete(args):
+    info = facts(args.number, with_conflicts=False)
+    require_picked_up(info, pending_rebase=True)
+    require_lock(args.number, args.owner)
+    pending = info["rebase"]
+    if not pending or pending["owner"] != args.owner:
+        sys.exit("mergebot: no pending rebase owned by this worker")
+    if info["head"] != args.expect or pending["head"] != args.expect:
+        sys.exit("mergebot: the head changed since validation")
+    if clean_head(str(Path(args.worktree).resolve())) != args.expect:
+        sys.exit("mergebot: the validated worktree does not match the PR head")
+    if args.verdict != "same":
+        cmd_reject(argparse.Namespace(number=args.number, reason=text_arg(args),
+                                     reason_file=None, draft=args.verdict == "pr-bug"))
+        return
+    state = pr_state(args.number, info["label_id"])
+    state.update(approved_head=args.expect, rebase=None)
+    save_pr_state(args.number, state)
+    comment(args.number, f"Completed validation of `{args.expect[:12]}`: {text_arg(args)}")
 
 
 def cmd_merge(args):
@@ -559,10 +721,17 @@ def cmd_merge(args):
         blockers.append("PR is a draft")
     if info["ci"] != "success":
         blockers.append(f"CI is {info['ci']}")
+    quick = info["quick_run"]
+    if not quick or quick["status"] != "completed" or quick["conclusion"] != "success":
+        blockers.append("the current Quick run has not succeeded")
+    if info["lock"]:
+        blockers.append("PR has a rebase lock (including an expired lock)")
+    if info["rebase"]:
+        blockers.append("rebase validation is unfinished")
     if info["conflicts"] or info["mergeable"] == "CONFLICTING":
         blockers.append("PR conflicts with main")
-    if not args.allow_red_main and not main_state()["green"]:
-        blockers.append("Quick on main is red")
+    if not args.allow_red_main and main_state()["blocked"]:
+        blockers.append("main has a confirmed or suspected CI failure")
     method = info["method"]
     if method == "squash" and not (args.subject and args.body_file):
         blockers.append("a squash merge needs --subject and --body-file")
@@ -600,6 +769,10 @@ def cmd_reject(args):
     gh("pr", "edit", str(args.number), "--repo", REPO, "--remove-label", LABEL)
     if args.draft:
         gh("pr", "ready", str(args.number), "--repo", REPO, "--undo")
+    path = state_dir() / "prs" / f"{args.number}.json"
+    state = read_json(path, {})
+    state["rebase"] = None
+    write_json(path, state)
     comment(args.number, f"Removed the `{LABEL}` label"
             f"{' and converted the PR to a draft' if args.draft else ''}: "
             f"{text_arg(args)}")
@@ -609,6 +782,9 @@ def cmd_rerun(args):
     info = facts(args.number, with_conflicts=False)
     require_picked_up(info)
     quick = info["quick_run"]
+    if quick and quick["status"] != "completed":
+        print("Quick is still running; wait before rerunning failed jobs")
+        return
     if not quick or quick["conclusion"] != "failure":
         sys.exit("mergebot: the head's Quick run has not failed")
     if quick["attempt"] >= MAX_RUN_ATTEMPTS:
@@ -617,19 +793,49 @@ def cmd_rerun(args):
 
 
 def cmd_comment(args):
+    require_approved(facts(args.number, with_conflicts=False))
     comment(args.number, text_arg(args))
+
+
+def cmd_suspect_main(args):
+    info = facts(args.number, with_conflicts=False)
+    require_picked_up(info, pending_rebase=True)
+    main = main_state()
+    if main["green"]:
+        sys.exit("mergebot: the current main head already passed Quick; reclassify the PR failure")
+    path = state_dir() / "main-suspicions" / f"{args.number}.json"
+    suspicion = {
+        "head": info["head"], "main_sha": main["sha"],
+        "run_floor": main["run_floor"], "reason": text_arg(args),
+    }
+    if read_json(path, None) == suspicion:
+        return
+    write_json(path, suspicion)
+    comment(args.number, f"Pausing merges while main CI confirms or rules out: {text_arg(args)}")
 
 
 def cmd_lock(args):
     path = state_dir() / "locks" / f"{args.number}.json"
     current = lock_info(args.number)
-    if current and not current["stale"]:
+    if current:
         sys.exit(f"mergebot: PR #{args.number} is locked by {current['owner']}")
-    path.write_text(json.dumps({"owner": args.owner,
-                                "time": datetime.now(timezone.utc).isoformat()}))
+    try:
+        with path.open("x") as stream:
+            json.dump({"owner": args.owner, "time": datetime.now(timezone.utc).isoformat()},
+                      stream)
+    except FileExistsError:
+        sys.exit(f"mergebot: PR #{args.number} was locked by another worker")
 
 
 def cmd_unlock(args):
+    require_lock(args.number, args.owner)
+    state = read_json(state_dir() / "prs" / f"{args.number}.json", {})
+    if state.get("rebase"):
+        info = facts(args.number, with_conflicts=False)
+        if info["open"] and info["labeled"] and state["label_id"] == info["label_id"]:
+            sys.exit("mergebot: unfinished rebase; recover and complete it or reject before unlocking")
+        state["rebase"] = None
+        save_pr_state(args.number, state)
     (state_dir() / "locks" / f"{args.number}.json").unlink(missing_ok=True)
 
 
@@ -669,6 +875,15 @@ def main():
     p.add_argument("--worktree", required=True)
     p.add_argument("--expect", required=True, help="PR head SHA the rebase started from")
     p.add_argument("--base", required=True, help="main SHA the PR was rebased onto")
+    p.add_argument("--owner", required=True, help="owner of the rebase lock")
+    p.add_argument("--needs-review", action="store_true",
+                   help="remove approval before publishing changed behavior")
+    p = command("complete", cmd_complete, "finish validation of the exact rebased head",
+                reason=True)
+    p.add_argument("--worktree", required=True)
+    p.add_argument("--expect", required=True)
+    p.add_argument("--owner", required=True)
+    p.add_argument("--verdict", choices=("same", "changed", "pr-bug"), required=True)
     p = command("merge", cmd_merge, "merge a green, approved PR", reason=True)
     p.add_argument("--subject", help="squash commit subject")
     p.add_argument("--body-file", help="squash commit body")
@@ -678,9 +893,12 @@ def main():
     p.add_argument("--draft", action="store_true", help="also convert to draft")
     command("rerun", cmd_rerun, "rerun failed Quick jobs once")
     command("comment", cmd_comment, "post a signed comment", reason=True)
+    command("suspect-main", cmd_suspect_main, "pause merges for a suspected main failure",
+            reason=True)
     p = command("lock", cmd_lock, "claim a PR for a rebase")
     p.add_argument("--owner", required=True)
-    command("unlock", cmd_unlock, "release a PR")
+    p = command("unlock", cmd_unlock, "release a PR after completion or rejection")
+    p.add_argument("--owner", required=True)
     command("pause", cmd_pause, "stop merging", number=False)
     command("resume", cmd_resume, "resume merging", number=False)
     args = parser.parse_args()

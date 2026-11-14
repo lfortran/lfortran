@@ -1,0 +1,34 @@
+name: Mergebot events
+run-name: mergebot ${{ github.event.pull_request.number }} ${{ github.event.action }} ${{ github.event.pull_request.head.sha }}
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [labeled, unlabeled, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    if: >-
+      github.repository == 'lfortran/lfortran' &&
+      (github.event.label.name == 'auto-merge' ||
+       (github.event.action == 'synchronize' &&
+        contains(github.event.pull_request.labels.*.name, 'auto-merge')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Never check out or execute the PR head in this privileged event.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Record the event snapshot
+        run: python .agents/skills/mergebot/scripts/record_event.py "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/mergebot-event.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mergebot-event
+          path: ${{ runner.temp }}/mergebot-event.json
+          if-no-files-found: error
+          retention-days: 90
