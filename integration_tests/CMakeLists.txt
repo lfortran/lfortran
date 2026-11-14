@@ -3124,6 +3124,46 @@ RUN(NAME pdt_20 LABELS gfortran llvm)
 # depend on a kind parameter, so this test is not labelled `gfortran`
 RUN(NAME pdt_21 LABELS llvm)
 RUN(NAME pdt_22 LABELS gfortran llvm)
+RUN(NAME pdt_23 LABELS gfortran llvm)
+# GFortran 16.2 fails to restore defaulted extension components on CLASS INTENT(OUT).
+RUN(NAME pdt_24 LABELS llvm)
+RUN(NAME pdt_modfile_parent_default_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
+# GNU Fortran 15.3 rejects the inherited KIND type guard and does not initialize
+# defaulted PDT components. Exclude only these companions for that version.
+if (NOT LFORTRAN_BACKEND AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+        AND CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "15.3.0")
+    list(APPEND LFORTRAN_EXCLUDE_TESTS
+        pdt_modfile_parent_default_02
+        pdt_modfile_parent_nondefault_03
+        pdt_modfile_parent_nondefault_04)
+endif()
+RUN(NAME pdt_modfile_parent_default_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_03 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_04 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
@@ -6441,6 +6481,7 @@ RUN(NAME separate_compilation_37 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_38 LABELS gfortran llvm EXTRAFILES separate_compilation_38a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_39 LABELS llvm EXTRAFILES separate_compilation_39a.f90 separate_compilation_39b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_40 LABELS llvm EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_pdt_alias_01 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_41 LABELS gfortran llvm EXTRAFILES separate_compilation_41a.f90 separate_compilation_41b.f90 separate_compilation_41c.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME separate_compilation_42 LABELS llvm EXTRA_ARGS --separate-compilation)
