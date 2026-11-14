@@ -3,6 +3,11 @@ module substring_section_arg_01_m
     interface set_generic
         module procedure set_inout
     end interface
+    type :: substring_section_arg_01_t
+    contains
+        procedure :: set_bound
+        generic :: set => set_bound
+    end type
 contains
     subroutine set_inout(c)
         character(*), intent(inout) :: c(:)
@@ -34,6 +39,12 @@ contains
         character(*), intent(out) :: r
         call join_no_intent(a(2:3)(1:2), r)
     end subroutine
+
+    subroutine set_bound(this, c)
+        class(substring_section_arg_01_t), intent(in) :: this
+        character(*), intent(inout) :: c(:)
+        c = 'dd'
+    end subroutine
 end module
 
 program substring_section_arg_01
@@ -41,6 +52,7 @@ program substring_section_arg_01
     implicit none
     character(len=3) :: e(4)
     character(len=4) :: r
+    type(substring_section_arg_01_t) :: o
 
     e = ['xxx', 'yyy', 'zzz', 'www']
     call set_inout(e(2:4:2)(1:2))
@@ -70,4 +82,9 @@ program substring_section_arg_01
     call join_intent_in(['abc', 'def', 'ghi'], r)
     print *, r
     if (r /= 'degh') error stop 6
+
+    e = ['xxx', 'yyy', 'zzz', 'www']
+    call o%set(e(2:3)(2:3))
+    print *, e
+    if (any(e /= ['xxx', 'ydd', 'zdd', 'www'])) error stop 7
 end program
