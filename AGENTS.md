@@ -75,6 +75,35 @@ follow [make-release](.agents/skills/make-release/SKILL.md). Invoking it
 authorizes the tag, the downstream PRs, and the fix PRs it describes; only
 the green tip of `main` may be released.
 
+## Auto-merge Label (mergebot)
+
+A maintainer who has reviewed a PR applies the `auto-merge` label. When the
+user asks to run mergebot or to process or babysit auto-merge PRs, load and
+follow [mergebot](.agents/skills/mergebot/SKILL.md). It waits for Quick,
+rebases labeled PRs onto `main` when they conflict or need adapting, and
+merges them itself with `gh pr merge`, as a merge commit when the history is
+clean and as a squash with a newly written message otherwise. It does not use
+GitHub's auto-merge button or a merge queue. Run it from a Claude Code
+session in the main checkout on the maintainer's machine with
+`/loop 15m /mergebot`, not with `/schedule` or other cloud routines.
+
+The trusted `Mergebot events` workflow captures the label's exact head, even
+when conflicts prevent CI from starting. The label approves that head plus
+mergebot's explicitly completed, equivalent rebases; comments cannot authorize
+heads, and pending rebase journals or locks block merging. Any other push to
+the PR removes the label, as does a CI failure caused by
+the PR (which also turns the PR back into a draft) or a rebase that changes
+what the PR does; a maintainer re-reviews and applies it again. A comment on
+the PR can ask mergebot to squash-merge instead of merging. Agents other than
+mergebot do not push to labeled PRs, merge them, or apply the label.
+
+Mergebot prioritizes throughput: keep merging green PRs while main CI is
+pending, accepting that their combination can break main. Stop merging once
+a main Quick job fails or a PR failure appears to come from main. Persist
+that pause while main CI confirms or rules out the suspicion; rerunning a
+known failure must not temporarily reopen merging. A successful main run
+on the affected head or a newer run clears the failure/suspicion.
+
 ## Project Structure & Module Organization
 - `src/`: core sources
   - `libasr/`: ASR + utilities, passes, verification, backends
@@ -108,6 +137,7 @@ Available skills:
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 | `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
+| `mergebot` | Babysit `auto-merge`-labeled PRs: keep them rebased, wait for CI, and merge or squash-merge them; remove the label when anyone else pushes or the PR fails |
 | `make-release` | Release the green tip of `main`: tag with generated notes, verify the tarball, update the conda-forge feedstock (patches upstreamed afterwards) and lfortran-conda-testing, and turn regressions into issues and fix PRs |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,
@@ -168,13 +198,16 @@ select `fix-issue` automatically. Do not require the user to repeat these defaul
   invocation, and resource budget; shell activation is not inherited.
 - `fix-mre` verifies each fix with targeted checks (the reproducers, the MRE,
   and each new test run directly in normal, `--fast`, and `--std=f23` modes
-  and with GFortran); after the last fix, the job runs the unit, integration,
-  and reference suites once, in the default mode. Then publish a draft from
-  the user's fork so Quick starts early, and review it locally with
-  `pr-review` while CI runs; the review reruns the suites only if compiler
-  source changed since they passed. Never push compiler-source changes that
-  have not passed the local suites once. In a batch, at most four PRs run
-  Quick at once. Iterate on CI failures, review findings, and human feedback
+  and with GFortran). Quick takes at least an hour, so pipeline it: after the
+  last fix, as soon as the targeted checks pass and the job is reasonably
+  confident in the change, publish a draft from the user's fork so Quick
+  starts, then run the unit, integration, and reference suites once, in the
+  default mode, while CI runs, and review the PR locally with `pr-review`.
+  Fix what the suites find and push the fix like a CI fix. Run the suites
+  before the first push only for complex or risky compiler changes (large
+  refactors, ASR or grammar changes, hard conflict resolutions). Every
+  compiler-source change passes the local suites once before the PR is
+  marked ready. In a batch, at most four PRs run Quick at once. Iterate on CI failures, review findings, and human feedback
   until Quick is green and the review is clean before marking ready. Every
   push reruns Quick, so batch pushes: push CI fixes as soon as they pass
   locally; hold other changes until the current run finishes rather than
@@ -354,9 +387,11 @@ only once, redirect to a log file and then examine the log file.
 
 ## Testing Guidelines
 - Full coverage required: every behavior change must come with tests that fail
-  before your change and pass after. Before pushing a compiler change, run
-  the unit, integration (default mode), and reference suites locally once.
-  Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
+  before your change and pass after. Run the unit, integration (default
+  mode), and reference suites locally once for every compiler change. When
+  you are reasonably confident in the change, push first so Quick runs while
+  the local suites do, and push fixes for anything they find; for complex or
+  risky changes, run them before pushing. Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
   and is the merge gate.
 
 ### CI policy

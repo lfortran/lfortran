@@ -42,8 +42,8 @@ regression issues and fix PRs → announcement and report.
   until they are merged and the new tip is green.
 - Never push to `lfortran/lfortran` except for the tag that
   `gh release create` makes. LFortran changes go through fork PRs that follow
-  AGENTS.md (fix-issue, fix-mre, pr-review, Pixi/LLVM 11, local suites before
-  pushing compiler changes).
+  AGENTS.md (fix-issue, fix-mre, pr-review, Pixi/LLVM 11, local suites once
+  for compiler changes).
 - Feedstock and conda-testing changes go through the user's forks. Never
   push to `conda-forge/*` or to `lfortran/lfortran-conda-testing` directly.
 - Commit authorship: follow AGENTS.md in every repository this skill
@@ -342,8 +342,8 @@ integration test when the behavior is testable, otherwise a focused harness
 or a build check, and say which in the PR. The PR body states that it
 upstreams the fix carried by lfortran-feedstock (link the feedstock PR and
 patch), so that the patch can be removed after the next release. Run the
-local suites before pushing compiler-source changes, and use pr-review while
-Quick runs, as fix-issue does. The next release removes the patch in Step 5.
+local suites once for compiler-source changes, and use pr-review while Quick
+runs, as fix-issue does. The next release removes the patch in Step 5.
 Merging the port does not publish the conda package. Publication is the
 feedstock PR; the package is installable only after Step 7's index check
 passes.

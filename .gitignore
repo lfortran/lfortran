@@ -243,6 +243,8 @@ doc/man/lfortran.1
 /.fix-issue/
 # make-release state, downstream clones, and downloaded tarballs/logs.
 /.release/
+# mergebot state: pause flag, locks, worktree pool, notes, and messages.
+/.mergebot/
 /mre_*.f90
 /re_*.f90
 /test_ref
