@@ -140,6 +140,9 @@ public:
     std::map<const ASR::Struct_t*, std::string> c_struct_cleanup_funcs;
     std::string c_struct_cleanup_bodies;
     size_t c_cleanup_counter = 0;
+    // Both owned automatic CHARACTER storage and borrowed dummy storage
+    // retain their declared lengths when a specification operand changes.
+    std::map<const ASR::Variable_t*, std::string> c_character_lengths;
     // A scalar allocatable's C owner pointer is distinct from its value.
     bool c_scalar_allocatable_as_storage = false;
 
@@ -170,6 +173,65 @@ public:
         self().visit_expr(*expr);
         c_scalar_allocatable_as_storage = saved;
         return std::move(src);
+    }
+
+    bool c_inline_char_storage(const ASR::Variable_t &v) const {
+        // A nonallocatable scalar owns its storage inline; a dummy borrows
+        // the actual buffer, and BIND(C) keeps its external representation.
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(v.m_type);
+        if (!is_c || !ASR::is_a<ASR::String_t>(*type) ||
+                ASRUtils::is_array(v.m_type) ||
+                ASRUtils::is_allocatable(v.m_type) ||
+                ASRUtils::is_pointer(v.m_type) ||
+                ASRUtils::is_arg_dummy(v.m_intent) ||
+                v.m_intent == ASRUtils::intent_return_var ||
+                v.m_abi == ASR::abiType::BindC) {
+            return false;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+            v.m_parent_symtab->asr_owner);
+        if (ASR::is_a<ASR::Union_t>(*owner)) {
+            return false;
+        }
+        return !ASR::is_a<ASR::Struct_t>(*owner) ||
+            ASR::down_cast<ASR::Struct_t>(owner)->m_abi != ASR::abiType::BindC;
+    }
+
+    ASR::Variable_t* c_character_designator_variable(ASR::expr_t* expr) {
+        ASR::symbol_t* sym = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            sym = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m;
+        }
+        if (!sym) return nullptr;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym));
+        return ASR::down_cast<ASR::Variable_t>(sym);
+    }
+
+    std::string c_character_length(ASR::expr_t* expr, const Location &loc) {
+        ASR::String_t* type = ASRUtils::get_string_type(expr);
+        if (type->m_kind != 1 || !type->m_len) {
+            throw CodeGenError("character operation requires an explicit "
+                "kind=1 length in the c backend", loc);
+        }
+        ASR::Variable_t* var = c_character_designator_variable(expr);
+        if (var) {
+            auto stored_length = c_character_lengths.find(var);
+            if (stored_length != c_character_lengths.end()) {
+                return stored_length->second;
+            }
+        }
+        self().visit_expr(*type->m_len);
+        return std::move(src);
+    }
+
+    std::string c_character_comparison(const std::string &left,
+            const std::string &left_len, const std::string &right,
+            const std::string &right_len) const {
+        return "str_compare(" + left + ", " + left_len + ", " +
+            right + ", " + right_len + ")";
     }
 
     // Output configuration:
@@ -1345,11 +1407,42 @@ R"(#include <stdio.h>
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string decl;
+            std::set<ASR::Variable_t*> character_dummies;
+            if (is_c && f_type->m_deftype == ASR::deftypeType::Implementation) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    if (ASRUtils::is_string_dummy_with_hidden_length(
+                            x, x.m_args[i])) {
+                        ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+                        if (!ASRUtils::is_array(arg->m_type)) {
+                            character_dummies.insert(arg);
+                        }
+                    }
+                }
+            }
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                    if (character_dummies.count(v)) {
+                        ASR::String_t* type = ASR::down_cast<ASR::String_t>(v->m_type);
+                        LCOMPILERS_ASSERT(type->m_len);
+                        int64_t constant_length;
+                        if (ASRUtils::extract_value(ASRUtils::expr_value(
+                                type->m_len), constant_length)) {
+                            c_character_lengths[v] = std::to_string(
+                                std::max<int64_t>(constant_length, 0));
+                        } else {
+                            self().visit_expr(*type->m_len);
+                            std::string length = "_lfortran_char_len_" +
+                                std::to_string(const_vars_count++);
+                            decl += indent + "int64_t " + length + " = " +
+                                src + ";\n";
+                            decl += indent + "if (" + length + " < 0) " +
+                                length + " = 0;\n";
+                            c_character_lengths[v] = length;
+                        }
+                    }
                     // A HostAssociated variable designates a variable of the
                     // host through the frame, see visit_Var.
                     if ((v->m_intent == ASRUtils::intent_local ||
@@ -1646,7 +1739,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             self().visit_expr(*call_arg);
             src = self().convert_procedure_actual(call_arg, f->m_args[i], src);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
-            if (ASR::is_a<ASR::Var_t>(*call_arg)
+            bool borrowed_char_arg = false;
+            if (is_c && ASRUtils::is_character(*type) &&
+                    !ASRUtils::is_array(type) &&
+                    ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t* formal = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                borrowed_char_arg = ASR::is_a<ASR::Variable_t>(*formal) &&
+                    ASRUtils::is_character(
+                        *ASR::down_cast<ASR::Variable_t>(formal)->m_type);
+            }
+            if (borrowed_char_arg) {
+                args += src;
+            } else if (ASR::is_a<ASR::Var_t>(*call_arg)
                 && ASR::is_a<ASR::Variable_t>(
                     *ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(m_args[i].m_value)->m_v))) {
@@ -1991,6 +2096,48 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src.clear();
         }
         src = check_tmp_buffer();
+        if (is_c && !ASRUtils::is_array(m_target_type) &&
+                ASR::is_a<ASR::String_t>(
+                    *ASRUtils::type_get_past_allocatable_pointer(
+                        m_target_type))) {
+            std::string prelude = std::move(src);
+            ASR::Variable_t* target_var =
+                c_character_designator_variable(x.m_target);
+            if (!target_var || (!c_inline_char_storage(*target_var) &&
+                    (!ASRUtils::is_arg_dummy(target_var->m_intent) ||
+                     ASRUtils::is_allocatable(target_var->m_type) ||
+                     ASRUtils::is_pointer(target_var->m_type) ||
+                     ASRUtils::is_array(target_var->m_type)))) {
+                throw CodeGenError("character assignment needs fixed storage "
+                    "or a nonallocatable dummy in the c backend",
+                    x.base.base.loc);
+            }
+            std::string lhs_len = c_character_length(
+                x.m_target, x.base.base.loc);
+            std::string rhs_len = c_character_length(
+                x.m_value, x.base.base.loc);
+            std::string prefix = "_lfortran_char_copy_" +
+                std::to_string(const_vars_count++);
+            std::string dest = prefix + "_dest";
+            std::string len = prefix + "_len";
+            std::string source_len = prefix + "_source_len";
+            src = prelude + indent + "{\n"
+                + indent + "    char* " + dest + " = " + target + ";\n"
+                + indent + "    int64_t " + len + " = " + lhs_len + ";\n"
+                + indent + "    if (" + len + " < 0) " + len + " = 0;\n"
+                + indent + "    int64_t " + source_len + " = " +
+                    rhs_len + ";\n"
+                + indent + "    if (" + source_len + " < 0) " +
+                    source_len + " = 0;\n"
+                + indent + "    _lfortran_copy_str_and_pad(" + dest +
+                    ", " + len + ", " + value + ", " +
+                    source_len + ", 1);\n";
+            if (c_inline_char_storage(*target_var)) {
+                src += indent + "    " + dest + "[" + len + "] = '\\0';\n";
+            }
+            src += indent + "}\n";
+            return;
+        }
         if (is_c && !ASRUtils::is_array(m_target_type) &&
                 (ASRUtils::is_pointer(m_target_type) ||
                  ASRUtils::is_allocatable(m_target_type))) {
@@ -2878,7 +3025,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
             } else if ((sv->m_intent == ASRUtils::intent_inout
                 || sv->m_intent == ASRUtils::intent_out)
-                && !ASRUtils::is_aggregate_type(sv->m_type)) {
+                && !ASRUtils::is_aggregate_type(sv->m_type) &&
+                !(ASRUtils::is_character(*sv->m_type) &&
+                  !ASRUtils::is_allocatable(sv->m_type) &&
+                  !ASRUtils::is_pointer(sv->m_type))) {
                 src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
             } else {
                 src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
@@ -3233,7 +3383,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         std::string op_str = ASRUtils::cmpop_to_str(x.m_op);
         if( T::class_type == ASR::exprType::StringCompare && is_c ) {
-            src = "strcmp(" + left + ", " + right + ") " + op_str + " 0";
+            int comparison_precedence = last_expr_precedence;
+            std::string left_len = c_character_length(
+                x.m_left, x.base.base.loc);
+            std::string right_len = c_character_length(
+                x.m_right, x.base.base.loc);
+            src = c_character_comparison(left, left_len, right, right_len) +
+                " " + op_str + " 0";
+            last_expr_precedence = comparison_precedence;
         } else {
             src += op_str;
             if (right_precedence <= last_expr_precedence) {
@@ -3874,7 +4031,26 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         this->visit_expr(*x.m_test);
         std::string var = std::move(src);
-        std::string out = indent + "if (";
+        bool character_case = is_c && ASRUtils::is_character(
+            *ASRUtils::expr_type(x.m_test));
+        std::string var_len, out;
+        if (character_case) {
+            std::string length = c_character_length(
+                x.m_test, x.base.base.loc);
+            std::string selected = "_lfortran_select_case_" +
+                std::to_string(const_vars_count++);
+            var_len = selected + "_len";
+            out = indent + "const char* " + selected + " = " + var + ";\n" +
+                indent + "int64_t " + var_len + " = " + length + ";\n";
+            var = selected;
+        }
+        out += indent + "if (";
+        auto compare_character = [&](ASR::expr_t* label,
+                const std::string &value, const char *op) {
+            return c_character_comparison(var, var_len, value,
+                c_character_length(label, x.base.base.loc)) +
+                " " + op + " 0";
+        };
         // Only a named SELECT CASE construct can be left by an EXIT.
         if (x.m_name != nullptr) {
             construct_frames.push_back({x.m_name, false, false, "", ""});
@@ -3891,7 +4067,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     if (j > 0)
                         out += " || ";
                     this->visit_expr(*case_stmt->m_test[j]);
-                    out += var + " == " + src;
+                    if (character_case) {
+                        std::string label = std::move(src);
+                        out += compare_character(case_stmt->m_test[j],
+                            label, "==");
+                    } else {
+                        out += var + " == " + src;
+                    }
                 }
                 out += ") {\n";
                 bracket_open--;
@@ -3919,7 +4101,20 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         "Empty range in select statement", { x.base.base.loc }, "");
                     throw Abort();
                 }
-                if (left.empty()) {
+                if (character_case) {
+                    if (left.empty()) {
+                        out += compare_character(case_stmt_range->m_end,
+                            right, "<=");
+                    } else if (right.empty()) {
+                        out += compare_character(case_stmt_range->m_start,
+                            left, ">=");
+                    } else {
+                        out += compare_character(case_stmt_range->m_start,
+                            left, ">=") + " && " +
+                            compare_character(case_stmt_range->m_end,
+                                right, "<=");
+                    }
+                } else if (left.empty()) {
                     out += var + " <= " + right;
                 } else if (right.empty()) {
                     out += var + " >= " + left;

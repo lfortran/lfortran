@@ -15,12 +15,21 @@ contains
         write(local, '(i4)') n
         r = local == expected
     end function
+
+    logical function writes_with_entry_length(n) result(r)
+        integer, intent(inout) :: n
+        character(n) :: local
+        n = n + 4
+        write(local, '(a)') "ab"
+        r = local == "ab  "
+    end function
 end module
 
 program write_48
     ! write: non-advancing output, iostat= on success and on an error,
     ! and internal files that were never assigned before the write
-    use write_48_mod, only: mbuf, fill_module_buffer, formats_as
+    use write_48_mod, only: mbuf, fill_module_buffer, formats_as, &
+        writes_with_entry_length
     implicit none
     character(10) :: never
     character(5) :: s
@@ -68,4 +77,8 @@ program write_48
     write(*, '(i0)', advance='no', iostat=ios) 42
     if (ios /= 0) error stop 10
     write(*, *)
+
+    i = 4
+    if (.not. writes_with_entry_length(i)) error stop 11
+    if (i /= 8) error stop 12
 end program
