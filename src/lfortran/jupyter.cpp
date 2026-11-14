@@ -1542,7 +1542,8 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
         prompt_interrupt = 0;
         if (reading) {
             const auto interruptible = reading->content.getBoolean("lfortran_interruptible");
-            if (!interruptible || *interruptible) reading.reset();
+            // A kernel that does not say so cannot end its READ.
+            if (interruptible && *interruptible) reading.reset();
         }
         record.clear();
         clearerr(stdin);
@@ -1561,9 +1562,9 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
             prompt_escape = 1;
         }
         // What is available of the line, without blocking
-        while (reading) {
+        while (reading && !prompt_interrupt) {
             const int c = input_source ? input_source() : stdin_character();
-            if (prompt_interrupt || c == -2) break;
+            if (c == -2) break;
             if (c == EOF || c == '\n' || c == '\r' || c == 4) {
                 if ((c == EOF || c == 4) && record.empty()) record = "\x04";
                 clearerr(stdin);
