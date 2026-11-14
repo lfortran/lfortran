@@ -19947,6 +19947,8 @@ static int execute_cancellable_command(const char *command, bool *cancelled)
     posix_spawnattr_destroy(&attributes);
     if (error) return -1;
     int status;
+    // Short commands end quickly; poll a long one every 10 ms.
+    long delay_ns = 100000;
     for (;;) {
         pid_t waited = waitpid(child, &status, WNOHANG);
         if (waited == child) return status;
@@ -19958,8 +19960,9 @@ static int execute_cancellable_command(const char *command, bool *cancelled)
             *cancelled = true;
             return -1;
         }
-        const struct timespec delay = {0, 10000000};
+        const struct timespec delay = {0, delay_ns};
         nanosleep(&delay, NULL);
+        if (delay_ns < 10000000) delay_ns *= 2;
     }
 }
 #endif
