@@ -83,7 +83,9 @@ follow [mergebot](.agents/skills/mergebot/SKILL.md). It waits for Quick,
 rebases labeled PRs onto `main` when they conflict or need adapting, and
 merges them itself with `gh pr merge`, as a merge commit when the history is
 clean and as a squash with a newly written message otherwise. It does not use
-GitHub's auto-merge button or a merge queue.
+GitHub's auto-merge button or a merge queue. Run it from a Claude Code
+session in the main checkout on the maintainer's machine with
+`/loop 15m /mergebot`, not with `/schedule` or other cloud routines.
 
 The label approves only the head it was applied to, plus mergebot's own
 rebases. Any other push to the PR removes it, as does a CI failure caused by

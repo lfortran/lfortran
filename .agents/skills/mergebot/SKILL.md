@@ -82,7 +82,38 @@ The state that is not on GitHub lives in `.mergebot/` in the main checkout
 (ignored by Git): the `PAUSE` flag, `locks/`, the worktree pool, notes, and
 squash messages.
 
-## Setup
+## How to run it
+
+The maintainer starts a Claude Code session in the main checkout, on their
+own machine, and types:
+
+```
+/loop 15m /mergebot
+```
+
+Every 15 minutes, this runs one pass (below) in that session, and the
+session stays open between passes. That is the only supported way to run
+mergebot:
+
+- **Passes never overlap.** `/loop` fires only while the session is idle, so
+  a long pass delays the next one instead of running alongside it. Rebase
+  subagents keep running in the background between passes; their locks keep
+  later passes away from their PRs, and the session is notified when they
+  finish.
+- **The maintainer stays in control.** They can watch every pass, interrupt
+  it, give instructions ("merge #123 now even though main is red"), stop the
+  loop, or run `mergebot.py pause` / `resume`.
+- **Not `/schedule` or other cloud routines.** Those start each run in a fresh
+  cloud sandbox without the persistent worktree builds (a cold build takes
+  15+ minutes) or the maintainer's Git and GitHub credentials, and they run
+  out of view.
+- **It runs on the maintainer's machine and identity,** so its commits pass
+  the authorship policy without a bot account.
+
+A `/loop` job expires after 7 days; when it does, run the same command
+again. To run a single pass by hand, type `/mergebot`.
+
+Before the first pass:
 
 1. `gh auth status` shows the maintainer's account, and `git config
    user.name` / `user.email` give the maintainer's identity.
@@ -93,18 +124,26 @@ squash messages.
    from its root. Reuse them; each rebase subagent rebuilds incrementally
    (see [references/rebase.md](references/rebase.md)). Give the worktrees a
    share of the CPUs (`CMAKE_BUILD_PARALLEL_LEVEL`, `-j`) so all of them fit.
-3. Run one pass at a time:
-   - **Interactive (start here):** `/loop 15m /mergebot` in a Claude Code
-     session. Scheduled prompts fire only while the session is idle, so passes
-     never overlap. Rebase subagents run in the background between passes,
-     and their locks keep the next pass away from their PRs. Scheduled jobs
-     expire after 7 days; start the loop again then.
-   - **Headless:** a timer running
-     `flock -n .mergebot/pass.lock claude -p "/mergebot"`. A headless pass
-     must wait for its rebase subagents before it exits; `flock -n` makes a
-     timer tick that comes while a pass is still running skip.
 
 ## One pass
+
+In short, for every labeled PR:
+
+| PR state | Action | Step |
+| --- | --- | --- |
+| Head changed since approval (a push by anyone but mergebot) | remove the label, comment | 2 |
+| Draft | mark it ready | 2 |
+| CI still running | wait | — |
+| CI green, no conflicts | merge (merge commit or squash) | 3 |
+| CI failed: flaky or infrastructure | rerun the failed jobs once | 4 |
+| CI failed: bug on `main` | keep the label; rebase once `main` is green | 4, 5 |
+| CI failed: caused by new `main` after a mergebot rebase | rebase and adapt | 4, 5 |
+| CI failed: bug in the PR | remove the label, convert to draft | 4 |
+| Conflicts with `main` | rebase in a subagent; remove the label if the PR changed | 5 |
+
+A pass works through these in phases across all PRs, not one PR at a time:
+it merges every ready PR first, then starts rebases, because each merge
+moves `main` and can create new conflicts.
 
 Keep your own context small: act on `status` and on short subagent reports,
 and delegate log reading, history judgment, and rebasing to fresh subagents.
