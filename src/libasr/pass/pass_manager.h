@@ -36,6 +36,7 @@
 #include <libasr/pass/loop_fusion.h>
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/replace_class_constructor.h>
+#include <libasr/pass/reachable_procedures.h>
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
@@ -126,6 +127,7 @@ namespace LCompilers {
             {"print_arr", &pass_replace_print_arr},
             {"print_list_tuple", &pass_replace_print_list_tuple},
             {"class_constructor", &pass_replace_class_constructor},
+            {"reachable_procedures", &pass_reachable_procedures},
             {"unused_functions", &pass_unused_functions},
             {"div_to_mul", &pass_replace_div_to_mul},
             {"loop_fusion", &pass_loop_fusion},
@@ -316,6 +318,9 @@ namespace LCompilers {
         PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
             _passes = {
+                // Drop procedures of loaded modules that this file never
+                // reaches, before the passes below lower every one of them.
+                "reachable_procedures",
                 "global_stmts",
                 "init_expr",
                 // A declaration initializer no target can lay out as static
