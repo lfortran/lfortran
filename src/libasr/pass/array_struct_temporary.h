@@ -11,6 +11,10 @@ namespace LCompilers {
     ASR::ttype_t* normalize_string_temporary_type(Allocator& al,
         const Location& loc, ASR::ttype_t* var_type, bool capture_length=false);
 
+    // The type of a pointer to the whole array `target`; assumed-rank if `target` is.
+    ASR::ttype_t* get_pointer_type_for_target(Allocator& al, ASR::expr_t* target,
+        const Location& loc);
+
     ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
         bool is_pointer_required=false, bool override_physical_type=false);
