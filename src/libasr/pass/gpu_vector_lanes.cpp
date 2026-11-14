@@ -3686,6 +3686,10 @@ public:
             kernel_lane_count[&kernel] = kernel_lanes;
             if (any_size) column_kernels.insert(&kernel);
             if (scattered) scattered_kernels.insert(&kernel);
+            if (kernel.m_gpu->m_lanes != nullptr
+                    && gpu_reads_wide(kernel, caps)) {
+                wide_kernels.insert(&kernel);
+            }
         }
         if (kernel.m_gpu->m_lanes == nullptr
                 || x.n_args == kernel.n_args) {
@@ -3715,6 +3719,14 @@ public:
                 caps.lanes_scattered_iterations_max);
             block_iterations_max = std::min(block_iterations_max,
                 caps.lanes_scattered_iterations_max);
+        }
+        // A lane that reads vectors of 16 bytes (gpu_wide_loads.cpp) reads
+        // 512 contiguous bytes with its warp; without lanes, the 32
+        // threads of a warp read 16 bytes from 32 different rows. So a
+        // launch of any size gets them: the language-model head of a
+        // 248,000-word vocabulary read at a third of the bandwidth.
+        if (wide_kernels.count(&kernel) && !scattered) {
+            iterations_max = std::max(iterations_max, wide_iterations_max);
         }
         // A kernel whose lanes were cut to the length of a loop they share
         // keeps that many.
@@ -3777,6 +3789,11 @@ private:
     // The kernels that share out a sum read across columns, which get
     // lanes only for a launch of few iterations (give_lanes).
     std::set<ASR::Function_t*> scattered_kernels;
+    // The kernels that read vectors of 16 bytes.
+    std::set<ASR::Function_t*> wide_kernels;
+    // The most iterations of a launch of such a kernel that get lanes:
+    // 32 lanes of them stay within the 32-bit thread index.
+    static constexpr int64_t wide_iterations_max = int64_t(1) << 24;
 };
 
 } // namespace
