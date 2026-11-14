@@ -104,7 +104,12 @@ statement.
 The abandoned frames are not unwound. What the interrupted cell allocated,
 and its local variables, leak; nothing is rolled back. What it did before the
 interrupt stays done, as in IPython: variables it had assigned keep their new
-values, and output it had written is shown. The runtime clears the state that
+values, and output it had written is shown. The cell can stop between any
+two instructions of its code, so a variable whose storage it was replacing
+(an allocatable, or a deferred-length string, such as `v = [v, i]`) may be
+left referring to memory that has already been freed; using it again, even
+deallocating it, can crash the session, so do not. Variables that the cell
+did not assign are not affected. The runtime clears the state that
 an I/O statement keeps across its calls. The session keeps everything that
 earlier cells defined, so later cells can use their variables and procedures.
 A request is not carried into the next cell: an interrupt that arrives while
@@ -115,7 +120,9 @@ usual.
 
 A long call into foreign (C) code, or a single long runtime call, stops only
 when it returns to Fortran code; at the prompt, a second Ctrl-C then ends the
-session. Compilation is not interrupted either; the cell stops before it
+session. If C code calls back into Fortran (a comparison function of `qsort`,
+a library callback), the interrupt can stop the cell in the callback and
+abandon the C frames below it, with whatever they held. Compilation is not interrupted either; the cell stops before it
 runs. Interruption is supported on Linux and macOS (x86-64 and AArch64). It
 is not supported on Windows, in WASM (JupyterLite) or with `--openmp`, whose
 threads and locks an interrupt would abandon: there a cell runs to its end,
