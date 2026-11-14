@@ -5021,3 +5021,16 @@ contains
         allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
     end subroutine
 end module
+
+module cc1_parameter_allocatable_pointer
+contains
+    subroutine cc1_parameter_allocatable_pointer_sub()
+        real, allocatable :: allocatable_constant
+        real, pointer :: pointer_constant
+        real :: constant_then_allocatable
+        parameter (allocatable_constant = 0.5)  ! {Error} `parameter` attribute conflicts with `allocatable` attribute
+        parameter (pointer_constant = 0.5)  ! {Error} `parameter` attribute conflicts with `pointer` attribute
+        parameter (constant_then_allocatable = 0.5)
+        allocatable :: constant_then_allocatable  ! {Error} `parameter` attribute conflicts with `allocatable` attribute
+    end subroutine
+end module

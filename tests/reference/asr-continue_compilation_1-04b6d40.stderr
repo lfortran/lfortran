@@ -2108,6 +2108,24 @@ semantic error: Template argument t has not been declared in template specificat
 4885 |        end template
      | ...^^^^^^^^^^^^^^^^^ 
 
+semantic error: `parameter` attribute conflicts with `allocatable` attribute
+    --> tests/errors/continue_compilation_1.f90:5031:20
+     |
+5031 |         parameter (allocatable_constant = 0.5)  ! {Error} `parameter` attribute conflicts with `allocatable` attribute
+     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `parameter` attribute conflicts with `pointer` attribute
+    --> tests/errors/continue_compilation_1.f90:5032:20
+     |
+5032 |         parameter (pointer_constant = 0.5)  ! {Error} `parameter` attribute conflicts with `pointer` attribute
+     |                    ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `parameter` attribute conflicts with `allocatable` attribute
+    --> tests/errors/continue_compilation_1.f90:5034:24
+     |
+5034 |         allocatable :: constant_then_allocatable  ! {Error} `parameter` attribute conflicts with `allocatable` attribute
+     |                        ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
