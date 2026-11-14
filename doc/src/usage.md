@@ -176,9 +176,10 @@ sequences. Unsupported controls, invalid UTF-8, and unfinished sequences when
 leaving a cell produce an explicit error. Retained incomplete sequences,
 styling metadata per refresh, and a final-cell combining cluster are each
 limited to 64 KiB; rejection restores terminal mode and cursor visibility.
-A cell's output is shown when the cell finishes or reads input. A cell that fails
-aborts the cells waiting behind it, unless it was sent with `stop_on_error`
-false.
+A cell's output is shown when the cell finishes or reads input. A cell that fails,
+including one interrupted with `KeyboardInterrupt`, aborts the cells waiting
+behind it, unless the failing request was sent with `stop_on_error=false`.
+Newly submitted cells can run after interruption with either setting.
 Delivery is not guaranteed if a client cannot consume output fast enough.
 Once more than 64 MiB of output waits for a client, the built-in kernel drops
 the oldest of it, not the newest, and puts a notice in its place, so that a
@@ -198,23 +199,43 @@ the kernel's exit status, as it did when it ran its cells itself.
 
 The prompt that starts a kernel ends that kernel when the prompt exits, and
 removes the connection file. Exiting ends the kernel while another client is
-still connected, and during a cell that does not return. Ctrl-C ends the
-prompt and the kernel. The kernel also stops, removing the connection file,
+still connected, and during a cell that does not return. At the idle prompt,
+as in IPython, Ctrl-C discards the line being edited and shows a new prompt;
+Ctrl-D on an empty line exits. During execution, Ctrl-C sends a Jupyter
+interrupt instead, preserving the prompt and session state; pressing it again
+soon after only repeats the interrupt. A cell that cannot be interrupted,
+such as one inside a long foreign call, keeps running. After two seconds the
+prompt then says so, and one more Ctrl-C ends the prompt and the kernel it
+started, losing the session's state. This is the way to stop a cell that
+does not return; a prompt that only joined ends but leaves the kernel
+running. When the prompt does not read a terminal, Ctrl-C at the idle prompt
+ends the prompt and the kernel. The kernel also
+stops, removing the connection file,
 when that prompt cannot end it, such as when its terminal closes or it is
 killed with `kill -9`. A prompt that only joins, with
 `lfortran --connect FILE`, leaves the kernel running; that session lasts
-until the kernel itself stops. The way to stop a cell that does not return
-is to end the prompt that started the kernel. Jupyter's Interrupt has no
-effect until the cell ends. Whoever can read the connection file can run
-code as its owner. The file is readable by its owner only.
+until the kernel itself stops. Jupyter's Interrupt cooperatively stops native
+JIT loops, procedure calls and stdin READ waits in the built-in and native
+Xeus TCP/IPv4 kernels. Completed effects are retained, not rolled back.
+Initialization/finalization must finish; foreign calls without safepoints may
+defer interruption until return. During native execution,
+`execute_command_line` cancellation stops its owned POSIX process group or
+Windows job and waits for the shell. Descendants that leave the POSIX group and
+background jobs after the shell returns are not tracked. `WAIT=.false.` retains
+its existing synchronous behavior; it does not start an asynchronous command.
+See [interactive evaluation](interactive_evaluation.md) for cancellation limits.
+Whoever can read the connection file can run code as its owner. The file is
+readable by its owner only.
 
 The client is LFortran's own. The kernel is LFortran's own implementation of
 the Jupyter messaging protocol (ZeroMQ over TCP with HMAC-SHA256 signatures),
 which needs no third-party library. In a build with `WITH_XEUS=yes`,
 `lfortran` and `lfortran kernel` both run the Xeus kernel, and the prompt
-still ends that kernel when it exits. The Xeus kernel uses Xeus's own server
-for every channel. A READ whose client has disconnected waits there, and the
-clients behind that cell wait with it. A cell that fails aborts the requests
+still ends that kernel when it exits. It uses Xeus's split server, which reads
+control messages on their own thread, so an interrupt reaches a running cell.
+For TCP/IPv4 connections, it uses LFortran's stdin channel for cancellable
+READs; with other transports, a READ waits for its input before an interrupt
+takes effect. A cell that fails aborts the requests
 already waiting with an error reply and no idle status, so a client that
 waits for the aborted cell to become idle waits with it. See
 `src/lfortran/jupyter.cpp` and `src/lfortran/fortran_kernel.cpp`.

@@ -46,6 +46,8 @@ typedef enum {
 #  include <unistd.h>
 #if !defined(COMPILE_TO_WASM)
 #  include <sys/wait.h>
+#  include <spawn.h>
+#  include <signal.h>
 #endif
 #endif
 
@@ -65,7 +67,23 @@ static int lfortran_fileno(FILE *fp) {
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/runtime/lfortran_stdin.h>
+#include <libasr/runtime/lfortran_cancellation.h>
 #include <libasr/config.h>
+
+#ifdef _MSC_VER
+static __declspec(thread) lfortran_cancel_poll cancel_poll;
+#elif defined(COMPILE_TO_WASM)
+static lfortran_cancel_poll cancel_poll;
+#else
+static _Thread_local lfortran_cancel_poll cancel_poll;
+#endif
+
+LFORTRAN_API lfortran_cancel_poll _lfortran_set_cancel_poll(lfortran_cancel_poll poll)
+{
+    lfortran_cancel_poll previous = cancel_poll;
+    cancel_poll = poll;
+    return previous;
+}
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
@@ -9441,6 +9459,22 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
     return NULL;
 }
 
+// Whether a READ of `unit_num` (-1 or -2 for `*`) may wait for the stdin
+// provider of a cancellable cell (lfortran_cancellation.h). Only such a
+// wait can be cancelled, so generated code gives only such a READ an IOSTAT
+// of its own; every other READ reports its errors here, as compiled code
+// does.
+LFORTRAN_API int32_t _lfortran_read_may_wait(int32_t unit_num)
+{
+    if (!cancel_poll || !stdin_provider) return 0;
+    if (unit_num == -1 || unit_num == -2) return 1;
+    _lfortran_init_standard_units();
+    for (int i = 0; i <= last_index_used; i++) {
+        if (unit_to_file[i].unit == unit_num) return unit_to_file[i].filep == stdin;
+    }
+    return 0;
+}
+
 char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
     _lfortran_init_standard_units();
     *unit_file_bin = false;
@@ -10716,8 +10750,39 @@ LFORTRAN_API void _lfortran_exit(int32_t status)
     exit(status);
 }
 
+#if !defined(COMPILE_TO_WASM)
+static int64_t monotonic_milliseconds(void)
+{
+#if defined(_WIN32)
+    return (int64_t)GetTickCount64();
+#else
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+#endif
+}
+#endif
+
 LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
+#if !defined(COMPILE_TO_WASM)
+    // A cancellable cell sleeps in short slices and stops once cancelled.
+    if (cancel_poll) {
+        const int64_t deadline = monotonic_milliseconds() + (int64_t)seconds * 1000;
+        for (;;) {
+            if (cancel_poll()) return;
+            int64_t remaining = deadline - monotonic_milliseconds();
+            if (remaining <= 0) return;
+            if (remaining > 10) remaining = 10;
+#if defined(_WIN32)
+            Sleep((DWORD)remaining);
+#else
+            const struct timespec delay = {0, (long)remaining * 1000000L};
+            nanosleep(&delay, NULL);
+#endif
+        }
+    }
+#endif
 #if defined(_WIN32)
     Sleep((DWORD)seconds * 1000);
 #else
@@ -20230,13 +20295,222 @@ static void copy_fchar_to_char(const fchar *src, int64_t len, char *dest) {
     dest[len] = '\0';
 }
 
+#if defined(_WIN32)
+static int execute_cancellable_command(char *command)
+{
+    if (cancel_poll()) return -1;
+    const char *shell = getenv("COMSPEC");
+    if (!shell || !*shell) shell = "cmd.exe";
+    size_t size = strlen(shell) + strlen(command) + 8;
+    char *line = (char *)malloc(size);
+    if (!line) return -1;
+    // Match system()'s cmd /c parsing, including already-quoted commands.
+    snprintf(line, size, "\"%s\" /c %s", shell, command);
+    HANDLE job = CreateJobObjectA(NULL, NULL);
+    if (!job) {
+        free(line);
+        return -1;
+    }
+    STARTUPINFOA startup = {0};
+    PROCESS_INFORMATION process = {0};
+    startup.cb = sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    HANDLE streams[3] = {NULL, NULL, NULL};
+    BOOL inherited = TRUE;
+    for (int i = 0; i < 3; i++) {
+        intptr_t handle = _get_osfhandle(i);
+        if (handle == -1 || handle == -2) continue;
+        if (!DuplicateHandle(GetCurrentProcess(), (HANDLE)handle,
+                GetCurrentProcess(), &streams[i], 0, TRUE, DUPLICATE_SAME_ACCESS)) {
+            inherited = FALSE;
+            break;
+        }
+    }
+    startup.hStdInput = streams[0];
+    startup.hStdOutput = streams[1];
+    startup.hStdError = streams[2];
+    BOOL created = inherited && CreateProcessA(NULL, line, NULL, NULL, TRUE,
+        CREATE_SUSPENDED, NULL, NULL, &startup, &process);
+    for (int i = 0; i < 3; i++) {
+        if (streams[i]) CloseHandle(streams[i]);
+    }
+    free(line);
+    if (!created) {
+        CloseHandle(job);
+        return -1;
+    }
+    // Assign before the shell can spawn anything. Never terminate the kernel's
+    // job or a process discovered by name.
+    int result = -1;
+    if (!AssignProcessToJobObject(job, process.hProcess) ||
+            ResumeThread(process.hThread) == (DWORD)-1) {
+        TerminateProcess(process.hProcess, 1);
+    } else {
+        for (;;) {
+            if (cancel_poll()) {
+                TerminateJobObject(job, 1);
+                JOBOBJECT_BASIC_ACCOUNTING_INFORMATION accounting;
+                while (QueryInformationJobObject(job, JobObjectBasicAccountingInformation,
+                        &accounting, sizeof(accounting), NULL) && accounting.ActiveProcesses) {
+                    Sleep(1);
+                }
+                break;
+            }
+            DWORD status = WaitForSingleObject(process.hProcess, 10);
+            if (status == WAIT_OBJECT_0) {
+                DWORD code;
+                if (GetExitCodeProcess(process.hProcess, &code)) result = (int)code;
+                break;
+            }
+            if (status != WAIT_TIMEOUT) {
+                TerminateJobObject(job, 1);
+                break;
+            }
+        }
+    }
+    WaitForSingleObject(process.hProcess, INFINITE);
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    // No kill-on-close limit: normally completed commands retain system()'s
+    // behavior for explicitly backgrounded processes.
+    CloseHandle(job);
+    return result;
+}
+#elif !defined(COMPILE_TO_WASM)
+extern char **environ;
+
+// The controlling terminal, if this process's group is its foreground group,
+// or -1. A command in its own group must then be given the terminal, or it
+// is stopped (SIGTTIN, SIGTTOU) as soon as it reads it or changes its modes.
+static int foreground_terminal(void)
+{
+    for (int fd = STDIN_FILENO; fd <= STDERR_FILENO; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return fd;
+    }
+    return -1;
+}
+
+// Makes `group` the terminal's foreground group. A background caller would
+// otherwise be stopped by SIGTTOU, so it is blocked meanwhile.
+static int set_terminal_group(int terminal, pid_t group)
+{
+    sigset_t blocked, previous;
+    sigemptyset(&blocked);
+    sigaddset(&blocked, SIGTTOU);
+    sigprocmask(SIG_BLOCK, &blocked, &previous);
+    int result = tcsetpgrp(terminal, group);
+    sigprocmask(SIG_SETMASK, &previous, NULL);
+    return result;
+}
+
+// Gives the terminal to the command's group; returns the terminal, or -1.
+static int give_terminal(pid_t child)
+{
+    int terminal = foreground_terminal();
+    if (terminal < 0) return -1;
+    // posix_spawn already put the child in its group; this closes the window
+    // where an implementation returns before that. EACCES means that the
+    // child has already executed the shell, so it is in its group.
+    if (setpgid(child, child) < 0 && errno != EACCES) return -1;
+    return set_terminal_group(terminal, child) == 0 ? terminal : -1;
+}
+
+// Waits for the child's termination. ECHILD means that it has already been
+// reaped (for example, with SIGCHLD ignored), so its status is unknown.
+static int reap_command(pid_t child, int *status)
+{
+    while (waitpid(child, status, 0) < 0) {
+        if (errno != EINTR) return -1;
+    }
+    return 0;
+}
+
+static int execute_cancellable_command(char *command)
+{
+    if (cancel_poll()) return -1;
+    posix_spawnattr_t attributes;
+    if (posix_spawnattr_init(&attributes)) return -1;
+    int error = posix_spawnattr_setpgroup(&attributes, 0);
+    if (!error) error = posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
+    pid_t child;
+    char *argv[] = {"sh", "-c", command, NULL};
+    // posix_spawn performs the fork/exec setup without running malloc, stdio,
+    // or other non-async-signal-safe child code in this multithreaded process.
+    if (!error) error = posix_spawn(&child, "/bin/sh", NULL, &attributes, argv, environ);
+    posix_spawnattr_destroy(&attributes);
+    if (error) {
+        errno = error;
+        return -1;
+    }
+    // As with system(), the command owns the terminal while it runs: what is
+    // typed reaches it, and so do Ctrl-C and Ctrl-Z, not this process.
+    int terminal = give_terminal(child);
+    int status, result;
+    bool abandoned = false;
+    for (;;) {
+        bool cancelled = cancel_poll();
+        pid_t waited = cancelled ? 0 : waitpid(child, &status, WNOHANG | WUNTRACED);
+        if (waited == child && WIFSTOPPED(status)) {
+            int stop = WSTOPSIG(status);
+            if (terminal >= 0 && (stop == SIGTTIN || stop == SIGTTOU)) {
+                // Stopped before it had the terminal, which it has now
+                kill(-child, SIGCONT);
+            } else if (stop == SIGTSTP || stop == SIGTTIN || stop == SIGTTOU) {
+                // Ctrl-Z, or a command of a background job that needs the
+                // terminal: stop this job too, as the shell's job control
+                // would with system(), and resume the command with this job.
+                if (terminal >= 0) set_terminal_group(terminal, getpgrp());
+                // kill() may hand the stop to another thread and return
+                // first; raise() stops this thread before it returns.
+                kill(0, stop);
+                raise(stop);
+                terminal = give_terminal(child);
+                if (terminal < 0 && stop != SIGTSTP) {
+                    // Still in the background (or the stop was discarded):
+                    // the command would stop again, silently. End it.
+                    abandoned = true;
+                } else {
+                    kill(-child, SIGCONT);
+                }
+            }
+            // Any other stop (SIGSTOP) is left to whoever sent it.
+            if (!abandoned) continue;
+        } else if (waited == child) {
+            result = status;
+            break;
+        }
+        if (waited < 0 && errno == ECHILD) {
+            // Already reaped, so the group may be gone and its id reused
+            result = -1;
+            break;
+        }
+        if (cancelled || abandoned || (waited < 0 && errno != EINTR)) {
+            // The unreaped group leader pins this exact owned process group.
+            // Kill descendants too, even if they ignore SIGTERM or are stopped.
+            kill(-child, SIGKILL);
+            result = reap_command(child, &status) == 0 && cancelled ? status : -1;
+            break;
+        }
+        const struct timespec delay = {0, 10000000};
+        nanosleep(&delay, NULL);
+    }
+    if (terminal >= 0) set_terminal_group(terminal, getpgrp());
+    return result;
+}
+#endif
+
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = internal_malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
     _lfortran_flush(-1, NULL, NULL, 0);
 
-    int result = system(c_cmd);
+    int result;
+#if !defined(COMPILE_TO_WASM)
+    result = cancel_poll ? execute_cancellable_command(c_cmd) : system(c_cmd);
+#else
+    result = system(c_cmd);
+#endif
     internal_free(c_cmd);
 
     // On POSIX systems, system() returns a wait status, not the exit code directly.

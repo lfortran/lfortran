@@ -993,6 +993,10 @@ LLVMEvaluator::~LLVMEvaluator()
     context.reset();
 }
 
+void LLVMEvaluator::define_host_symbol(const std::string &name, void *address) {
+    jit->defineHostSymbol(name, address);
+}
+
 void LLVMEvaluator::configure_module(llvm::Module &module) const
 {
 #if LLVM_VERSION_MAJOR >= 21

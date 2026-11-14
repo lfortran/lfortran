@@ -120,9 +120,9 @@ inline FortranEvaluator::CellResult execute(FortranEvaluator &e,
     const auto clear = io.clear_output;
     if (clear) io.clear_output = [&]() { text.finish(); clear(); };
     const auto input = io.input;
-    if (input) io.input = [&](std::string &record) {
+    if (input) io.input = [&](std::string &record, bool interruptible) {
         text.finish();
-        return input(record);
+        return input(record, interruptible);
     };
     io.output = [&](int fd, const std::string &bytes) { text.write(fd, bytes); };
     FortranEvaluator::CellResult cell = e.execute(code, verbose, io);

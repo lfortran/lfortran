@@ -442,6 +442,7 @@ int prompt(bool verbose, const std::string &connect,
 
     // Before the line editor changes the terminal, which Ctrl-C restores
     LCompilers::LFortran::jupyter::handle_interrupt();
+    std::setvbuf(stdin, nullptr, _IONBF, 0);
     std::unique_ptr<LCompilers::LFortran::jupyter::Client> kernel;
     std::string connection_file = connect;
     try {
@@ -463,7 +464,8 @@ int prompt(bool verbose, const std::string &connect,
     std::vector<std::string> history;
     std::deque<char> pending_input;
     const LCompilers::LFortran::jupyter::Client::InputSource read_character = [&]() {
-        if (pending_input.empty()) return getchar();
+        if (pending_input.empty())
+            return LCompilers::LFortran::jupyter::Client::stdin_character();
         const int c = static_cast<unsigned char>(pending_input.front());
         pending_input.pop_front();
         return c;
@@ -486,8 +488,9 @@ int prompt(bool verbose, const std::string &connect,
         std::string input;
         try {
             // The terminal is in raw mode only while a line is edited, so
-            // that the cell can read the terminal as usual (#15284).
-            Terminal term(true, false, &pending_input);
+            // that the cell can read the terminal as usual (#15284). The
+            // editor reads Ctrl-C as a key there.
+            Terminal term(true, true, &pending_input);
             input = prompt0(term, ">>> ", history, iscomplete, character_width, events);
         } catch (const PromptDisconnected &) {
             std::cerr << "error: the kernel has stopped" << std::endl;
@@ -499,6 +502,8 @@ int prompt(bool verbose, const std::string &connect,
         }
         // A READ ended by Ctrl-D in an earlier cell must not end later READs
         clearerr(stdin);
+        // Ctrl-C discards the line being edited, as in IPython
+        if (input.size() == 1 && input[0] == CTRL_KEY('c')) continue;
         if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
             std::cout << std::endl;
             std::cout << "Exiting." << std::endl;

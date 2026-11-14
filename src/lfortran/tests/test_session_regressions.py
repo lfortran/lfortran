@@ -100,7 +100,7 @@ def value(client, code, timeout=20):
 
 
 @contextlib.contextmanager
-def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
+def kernel(exe, cwd, ip="127.0.0.1", arguments=(), managed=False):
     """A kernel started on a connection file, as a Jupyter frontend does, a
     function that connects a client to it, and the connection file's content
     with its "path". `arguments` are compiler options of the kernel process."""
@@ -114,7 +114,8 @@ def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
 
     with connection.with_suffix(".log").open("wb") as log:
         process = subprocess.Popen(
-            [exe, "--no-color", *arguments, "kernel", "-f", str(connection)],
+            [exe, "--no-color", *arguments, "kernel", "-f", str(connection)] +
+            (["--managed"] if managed else []),
             cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
         info = json.loads(connection.read_text())
         info["path"] = str(connection)
@@ -441,6 +442,42 @@ def read_disconnect(exe, cwd):
         check(process.returncode != 0, "the kernel exited with 0 after a failed READ")
 
 
+def read_errors(exe, cwd):
+    """A READ without iostat= that fails stops the kernel with the runtime's
+    own message, as it stops a compiled program: an internal READ and a
+    READ of a file, which never wait for stdin."""
+    data = cwd / "empty.txt"
+    data.write_text("")
+    cells = [
+        ("character(len=10) :: rb = 'abc'\ninteger :: rn = 5\nread(rb, *) rn",
+            "Error: Bad integer for item in list input"),
+        ("module read_eof\ncontains\nsubroutine rd()\ninteger :: v\n"
+            "open(31, file='%s')\nread(31, *) v\nend subroutine\nend module\n"
+            "use read_eof\ncall rd()" % data,
+            "Error: Invalid int32_t input from file (EOF)."),
+    ]
+    for code, message in cells:
+        with kernel(exe, cwd) as (process, join, ports):
+            client = join()
+            msg_id = client.execute(code)
+            text = ""
+            deadline = time.monotonic() + 20
+            while process.poll() is None and time.monotonic() < deadline:
+                try:
+                    msg = client.get_iopub_msg(timeout=0.1)
+                except queue.Empty:
+                    continue
+                if parent_id(msg) == msg_id and msg["msg_type"] == "stream":
+                    text += msg["content"]["text"]
+            try:
+                process.wait(timeout=20)
+            except subprocess.TimeoutExpired:
+                raise AssertionError("the kernel went on after a failed READ")
+            check(process.returncode != 0, "the kernel exited with 0 after a failed READ")
+            text += Path(ports["path"]).with_suffix(".log").read_text(errors="replace")
+            check(message in text, "no %r in the output of %r:\n%s" % (message, code, text))
+
+
 def late_stdin(exe, cwd):
     """A READ waits a little for the stdin connection of the client that ran
     the cell, which may come after the cell."""
@@ -558,13 +595,8 @@ def prompt_departure(exe, cwd):
 
 def prompt_killed_in_cell(exe, cwd):
     """The kernel ends during a cell that does not return, and the connection
-    file is removed, when the prompt that started it gets Ctrl-C or is
-    killed."""
+    file is removed, when the prompt that started it is killed."""
     endings = [("killed", lambda process: process.kill(), None)]
-    if os.name == "posix":
-        # The prompt ends by SIGINT, as without its handler.
-        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT),
-            -signal.SIGINT))
     for how, end, status in endings:
         process, connection = started_prompt(exe, cwd)
         kernel_pids = children_of(process.pid)
@@ -588,6 +620,76 @@ def prompt_killed_in_cell(exe, cwd):
                 process.wait()
             for pid, _ in kernel_pids:
                 kill_pid(pid)
+
+
+def terminal_command(exe, cwd):
+    """A kernel started on a terminal, as by hand: `execute_command_line`
+    gives the terminal to the command, as system() does, so that the command
+    reads what is typed instead of being stopped (SIGTTIN), and Ctrl-C or
+    Ctrl-Z typed there reach the command, not the kernel, which gets the
+    terminal back afterwards."""
+    if os.name != "posix":
+        return
+    import pty
+    import termios
+    connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
+    write_connection_file(str(connection), key=uuid.uuid4().hex.encode())
+    pid, fd = pty.fork()
+    if pid == 0:
+        try:
+            os.chdir(cwd)
+            os.execv(exe, [exe, "--no-color", "kernel", "-f", str(connection)])
+        finally:
+            os._exit(127)
+    output = []
+    reader = threading.Thread(target=lambda: drain(fd, output), daemon=True)
+    reader.start()
+    client = None
+    try:
+        client = connect(connection)
+        got = cwd / ("terminal-" + uuid.uuid4().hex)
+
+        def typed(keys, expected_output, note):
+            msg_id = client.execute("call execute_command_line('head -n1 > %s')\n"
+                "print *, 'command-returned'" % got)
+            time.sleep(1)
+            for key in keys:
+                os.write(fd, key)
+                time.sleep(0.3)
+            # The command is stopped for good without the terminal: a hang
+            reply = reply_to(client, msg_id, timeout=10)
+            check(reply["status"] == "ok", (note, reply))
+            check(got.read_text() == expected_output, (note, got.read_text()))
+            check(os.tcgetpgrp(fd) == pid, "%s: the kernel did not get the "
+                "terminal back" % note)
+
+        typed([b"hello\n"], "hello\n", "a read")
+        # Ctrl-C at the terminal ends the command only
+        typed([termios.tcgetattr(fd)[6][termios.VINTR]], "", "Ctrl-C")
+        # Ctrl-Z stops the command; nothing can resume the kernel's job,
+        # which is not in a shell's job control, so the command resumes.
+        typed([termios.tcgetattr(fd)[6][termios.VSUSP], b"again\n"], "again\n",
+            "Ctrl-Z")
+        check(value(client, "40 + 2") == "42", "the kernel lost its session")
+    finally:
+        if client is not None:
+            client.stop_channels()
+        kill_pid(pid)
+        os.waitpid(pid, 0)
+        reader.join(timeout=5)
+        os.close(fd)
+
+
+def drain(fd, output):
+    """Reads a terminal's output, so that writing to it never blocks"""
+    while True:
+        try:
+            data = os.read(fd, 4096)
+        except OSError:
+            return
+        if not data:
+            return
+        output.append(data)
 
 
 def kernel_parent(exe, cwd):
@@ -790,7 +892,7 @@ def verbose(exe, cwd):
 
 
 @contextlib.contextmanager
-def editing_prompt(exe, cwd, connection, expected_status=0):
+def editing_prompt(exe, cwd, connection=None, expected_status=0):
     try:
         import fcntl
         import pty
@@ -802,7 +904,7 @@ def editing_prompt(exe, cwd, connection, expected_status=0):
         return
     screen = Screen()
     repl = PtyRepl(pty, termios, exe, cwd, timeout=30,
-        args=["--connect", str(connection)], screen=screen)
+        args=["--connect", str(connection)] if connection else [], screen=screen)
     fcntl.ioctl(repl.fd, termios.TIOCSWINSZ,
         struct.pack("HHHH", screen.rows, screen.cols, 0, 0))
     reaped = False
@@ -822,6 +924,149 @@ def editing_prompt(exe, cwd, connection, expected_status=0):
             os.kill(repl.pid, signal.SIGKILL)
             os.waitpid(repl.pid, 0)
         os.close(repl.fd)
+
+def test_interrupt_prompt(exe, cwd):
+    """Ctrl-C keeps owning/attached prompts and their state alive, also in
+    READ and commands; a control interrupt can end READ without a key."""
+    def exercise(connection=None):
+        client = None
+        owned = connection is None
+        try:
+            with editing_prompt(exe, cwd, connection) as repl:
+                if repl is None:
+                    return
+                if owned:
+                    match = re.search(r"lfortran --connect (\S+)`", repl.text())
+                    check(match is not None, repl.text())
+                    connection = Path(match.group(1))
+                client = connect(connection)
+                rendered_prompt = 0
+
+                def rendered(screen):
+                    nonlocal rendered_prompt
+                    if screen.lines[screen.row].startswith(">>> ") and screen.col == 4:
+                        rendered_prompt = repl.prompts
+
+                repl.screen.on_render = rendered
+
+                def ready():
+                    return (repl.screen.lines[repl.screen.row].startswith(">>> ")
+                        and repl.screen.col == 4
+                        and repl.screen.cursor_visible
+                        and not repl.termios.tcgetattr(repl.fd)[3] & repl.termios.ICANON)
+
+                def submit(code):
+                    check(repl.wait(ready, "editing prompt"), repl.text())
+                    queries = repl.prompts
+                    before = len(repl.out)
+                    os.write(repl.fd, code.encode() + ENTER)
+                    # Drain the editor's final redraw before Ctrl-C can flush
+                    # the PTY output queue, possibly halfway through an escape.
+                    check(repl.wait(lambda: b"\r\n\x1b[0m\x1b[?25h"
+                        in repl.out[before:], "submitted cell"), repl.text())
+                    return queries
+
+                def finished(queries):
+                    # A DSR query starts a prompt; it is not a completed redraw.
+                    check(repl.wait(lambda: rendered_prompt > queries and ready(),
+                        "prompt after cell"), repl.text())
+
+                finished(submit("integer :: kept_interrupt = 41"))
+                for code, external in [
+                        ("do while (.true.); end do", False),
+                        ("call execute_command_line('sleep 4'); print *, 'command-done'", False),
+                        ("call execute_command_line('sleep 4'); print *, 'command-done'", False),
+                        ("print '(a)', 'waiting-one'; read *, kept_interrupt", False),
+                        ("print '(a)', 'waiting-two'; read *, kept_interrupt", True)]:
+                    before = len(repl.out)
+                    queries = submit(code)
+                    if "waiting-" in code:
+                        marker = b"waiting-two" if external else b"waiting-one"
+                        check(repl.wait(lambda: marker + b"\r\n" in repl.out[before:],
+                            "READ output"), repl.text())
+                    else:
+                        check(repl.wait(lambda: repl.termios.tcgetattr(repl.fd)[3]
+                            & repl.termios.ICANON, "silent cell in line mode"), repl.text())
+                        def executing():
+                            while client.iopub_channel.msg_ready():
+                                message = client.get_iopub_msg(timeout=0)
+                                if (message["msg_type"] == "execute_input"
+                                        and message["content"]["code"].strip() == code):
+                                    return True
+                            return False
+                        # Keep behaving as a terminal while observing the
+                        # independent subscriber, including cursor queries.
+                        check(repl.wait(executing, "cell execute_input"), repl.text())
+                    children = []
+                    if "sleep 4" in code:
+                        # The observed execution belongs to this connection;
+                        # capture only its kernel's own direct command children.
+                        kernel_pids = [pid for pid, command in children_of(repl.pid)
+                            if "kernel" in command]
+                        if not owned:
+                            kernel_pids = [process.pid]
+                        def command_started():
+                            children[:] = [child for pid in kernel_pids
+                                for child, _ in children_of(pid)]
+                            return bool(children)
+                        check(repl.wait(command_started, "owned command child"), repl.text())
+                    interrupted = time.monotonic()
+                    if external:
+                        request = client.session.msg("interrupt_request")
+                        client.control_channel.send(request)
+                        reply = client.get_control_msg(timeout=5)
+                        check(parent_id(reply) == request["header"]["msg_id"], reply)
+                    elif code.startswith("do while"):
+                        # Impatient repeated Ctrl-C: whichever presses land
+                        # after the cell has stopped reach the idle prompt,
+                        # which must survive them with the session's state.
+                        for _ in range(5):
+                            os.write(repl.fd, b"\x03")
+                            # Keep answering the terminal while pausing.
+                            pause = time.monotonic() + 0.1
+                            repl.wait(lambda: time.monotonic() > pause, "a pause")
+                    else:
+                        os.write(repl.fd, b"\x03")
+                    finished(queries)
+                    if "sleep 4" in code:
+                        check(time.monotonic() - interrupted < 2,
+                            "Ctrl-C waited for command completion")
+                        check(b"command-done\r\n" not in repl.out[before:],
+                            "interrupted command executed its following statement")
+                        for pid in children:
+                            try:
+                                os.kill(pid, 0)
+                            except ProcessLookupError:
+                                continue
+                            raise AssertionError("owned command child was not reaped: %d" % pid)
+                    if not code.startswith("do while"):
+                        # A later Ctrl-C during the cell may discard its
+                        # unread terminal output, as the line discipline does.
+                        check(b"cell execution interrupted" in repl.out[before:],
+                            repl.text())
+                    check(connection.exists(), "Ctrl-C removed the connection file")
+                    finished(submit("kept_interrupt+1"))
+                    check(re.search(r"^42\r?$", repl.text(), re.M), repl.text())
+                queries = submit("read *, kept_interrupt")
+                check(repl.wait(lambda: repl.termios.tcgetattr(repl.fd)[3]
+                    & repl.termios.ICANON, "READ in line mode"), repl.text())
+                os.write(repl.fd, b"58\n")
+                finished(queries)
+                check(value(client, "kept_interrupt") == "58", "READ lost its input")
+            if owned:
+                check(wait_removed(connection), "owning prompt left its kernel file")
+            else:
+                check(value(client, "kept_interrupt") == "58",
+                    "attached prompt ended the session")
+        finally:
+            if client:
+                client.stop_channels()
+
+    exercise()
+    for managed in (False, True):
+        with kernel(exe, cwd, managed=managed) as (process, join, ports):
+            join()
+            exercise(Path(ports["path"]))
 
 
 def test_idle_updates(exe, cwd):
@@ -903,7 +1148,9 @@ def test_edited_updates(exe, cwd):
 @contextlib.contextmanager
 def display_kernel(cwd):
     """A signed Jupyter publisher for precisely fragmented output, independent
-    of either kernel's buffering. All sockets belong to the serving thread."""
+    of either kernel's buffering. Bind the client's control endpoint too, even
+    though display-only tests send no interrupts. All sockets belong to the
+    serving thread."""
     import zmq
     from jupyter_client.session import Session
     commands, answers = queue.Queue(), queue.Queue()
@@ -912,21 +1159,25 @@ def display_kernel(cwd):
     def serve():
         try:
             with zmq.Context() as context:
-                pub, shell, stdin = [context.socket(t) for t in
-                    (zmq.PUB, zmq.ROUTER, zmq.ROUTER)]
-                sockets = [pub, shell, stdin]
+                pub, shell, stdin, control = [context.socket(t) for t in
+                    (zmq.PUB, zmq.ROUTER, zmq.ROUTER, zmq.ROUTER)]
+                sockets = [pub, shell, stdin, control]
                 for s in sockets:
                     s.linger = 0
                 ports = [s.bind_to_random_port("tcp://127.0.0.1") for s in sockets]
                 session = Session(key=b"editor-test")
                 write_connection_file(str(connection), ip="127.0.0.1",
                     key=session.key, iopub_port=ports[0], shell_port=ports[1],
-                    stdin_port=ports[2])
+                    stdin_port=ports[2], control_port=ports[3])
                 answers.put(connection)
                 try:
                     while True:
+                        check(not control.poll(0),
+                            "display-only requests must not use the control channel")
                         if shell.poll(10):
                             identities, message = session.recv(shell)
+                            check(message["msg_type"] == "kernel_info_request",
+                                ("unexpected display-only shell request", message))
                             session.send(shell, "kernel_info_reply",
                                 content={"status": "ok"}, parent=message,
                                 ident=identities)
@@ -1222,8 +1473,10 @@ CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
     large_output, slow_subscriber_output, oversized_message_output,
-    stalled_connections, read_disconnect,
-    late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
+    stalled_connections, read_disconnect, read_errors,
+    late_stdin, prompt_departure, prompt_killed_in_cell, test_interrupt_prompt,
+    terminal_command,
+    kernel_parent, stop_ends_session,
     stop_on_error, queued_in_turns, aborted_in_turns, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}

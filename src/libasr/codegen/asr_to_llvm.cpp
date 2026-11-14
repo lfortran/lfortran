@@ -233,6 +233,283 @@ public:
     }
 };
 
+// Finds what can reach a JIT cancellation safepoint in a procedure: a loop,
+// a backward branch, a READ or a call (an intrinsic may still become one),
+// unless it calls a procedure that cannot reach one, or a derived type
+// variable, whose FINAL procedures may poll. The walk covers the
+// declarations and the BLOCK and ASSOCIATE constructs.
+class SafepointFinder : public ASR::BaseWalkVisitor<SafepointFinder> {
+public:
+    std::function<bool(const ASR::Function_t &)> callee_may_unwind;
+    bool found = false;
+    std::set<int64_t> targets;
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        if (found) return;
+        switch (x.type) {
+            case ASR::stmtType::DoLoop:
+            case ASR::stmtType::DoConcurrentLoop:
+            case ASR::stmtType::ForAllSingle:
+            case ASR::stmtType::WhileLoop:
+            case ASR::stmtType::FileRead:
+            case ASR::stmtType::SubroutineCall:
+            case ASR::stmtType::IntrinsicImpureSubroutine:
+                found = true;
+                return;
+            case ASR::stmtType::GoToTarget:
+                targets.insert(ASR::down_cast<ASR::GoToTarget_t>(&x)->m_id);
+                return;
+            // The construct need not be in the procedure's scope.
+            case ASR::stmtType::BlockCall:
+                visit_symbol(*ASR::down_cast<ASR::BlockCall_t>(&x)->m_m);
+                return;
+            case ASR::stmtType::AssociateBlockCall:
+                visit_symbol(*ASR::down_cast<ASR::AssociateBlockCall_t>(&x)->m_m);
+                return;
+            case ASR::stmtType::GoTo:
+                // A backward branch.
+                found = targets.count(ASR::down_cast<ASR::GoTo_t>(&x)->m_target_id) > 0;
+                return;
+            default:
+                ASR::BaseWalkVisitor<SafepointFinder>::visit_stmt(x);
+        }
+    }
+
+    void visit_expr(const ASR::expr_t &x) {
+        if (found) return;
+        switch (x.type) {
+            case ASR::exprType::IntrinsicElementalFunction:
+            case ASR::exprType::IntrinsicArrayFunction:
+            case ASR::exprType::IntrinsicImpureFunction:
+                found = true;
+                return;
+            default:
+                ASR::BaseWalkVisitor<SafepointFinder>::visit_expr(x);
+        }
+    }
+
+    // The finalization of a derived type may call FINAL procedures.
+    void visit_Variable(const ASR::Variable_t &x) {
+        ASR::ttype_t *type = ASRUtils::extract_type(x.m_type);
+        if (ASR::is_a<ASR::StructType_t>(*type) || ASRUtils::is_class_type(type)) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<SafepointFinder>::visit_Variable(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if (x.m_dt || !ASR::is_a<ASR::Function_t>(*callee)
+                || callee_may_unwind(*ASR::down_cast<ASR::Function_t>(callee))) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<SafepointFinder>::visit_FunctionCall(x);
+    }
+};
+
+// Whether the body of a counted DO loop runs a short, bounded time per
+// iteration without polling: its statements are assignments of scalar
+// numeric or logical values, IF, CYCLE and EXIT, and its expressions are
+// operators, numeric conversions, elemental intrinsics and element or
+// component references on such values, and calls of functions of the same
+// kind without loops. Only such a loop may poll once per chunk of iterations
+// (see generate_counted_do_loop). Anything else, such as I/O, a subroutine or
+// runtime call, a string or an allocation, may take long, so its loop polls
+// on every iteration. So does a loop whose body contains a loop: a chunked
+// loop polls only when a chunk ends, which an EXIT or a CYCLE of an outer
+// loop skips, so only innermost loops are chunked. Each iteration of an
+// outer loop then runs at most one chunk of its inner loop between two
+// safepoints, however deep the nest and however it is left.
+class BoundedLoopBody {
+public:
+    std::function<bool(const ASR::Function_t &)> callee_may_unwind;
+    std::map<const ASR::Function_t *, bool> &functions;
+
+    explicit BoundedLoopBody(std::map<const ASR::Function_t *, bool> &cache)
+        : functions(cache) {}
+
+    bool body(ASR::stmt_t **stmts, size_t n, bool in_function = false) {
+        for (size_t i = 0; i < n; i++) {
+            if (!stmt(*stmts[i], in_function)) return false;
+        }
+        return true;
+    }
+
+    // The control of a counted DO loop.
+    bool head(const ASR::do_loop_head_t &h) {
+        return h.m_v && value(*h.m_v) && value(*h.m_start) && value(*h.m_end)
+            && (!h.m_increment || value(*h.m_increment));
+    }
+
+private:
+    static bool scalar(ASR::ttype_t *type) {
+        switch (type->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool stmt(const ASR::stmt_t &x, bool in_function) {
+        switch (x.type) {
+            case ASR::stmtType::Assignment: {
+                const auto &a = *ASR::down_cast<ASR::Assignment_t>(&x);
+                return !a.m_overloaded && value(*a.m_target) && value(*a.m_value);
+            }
+            case ASR::stmtType::If: {
+                const auto &s = *ASR::down_cast<ASR::If_t>(&x);
+                return value(*s.m_test) && body(s.m_body, s.n_body, in_function)
+                    && body(s.m_orelse, s.n_orelse, in_function);
+            }
+            case ASR::stmtType::Cycle:
+            case ASR::stmtType::Exit:
+                return true;
+            case ASR::stmtType::Return:
+                return in_function;
+            case ASR::stmtType::BlockCall: {
+                // For example, an inlined function.
+                ASR::symbol_t *m = ASR::down_cast<ASR::BlockCall_t>(&x)->m_m;
+                if (!ASR::is_a<ASR::Block_t>(*m)) return false;
+                const auto &block = *ASR::down_cast<ASR::Block_t>(m);
+                return scalar_locals(*block.m_symtab)
+                    && body(block.m_body, block.n_body, in_function);
+            }
+            default:
+                return false;
+        }
+    }
+
+    // A variable, or an element or component of one.
+    bool designator(const ASR::expr_t &x) {
+        switch (x.type) {
+            case ASR::exprType::Var:
+                return true;
+            case ASR::exprType::ArrayItem: {
+                const auto &item = *ASR::down_cast<ASR::ArrayItem_t>(&x);
+                for (size_t i = 0; i < item.n_args; i++) {
+                    const ASR::array_index_t &index = item.m_args[i];
+                    if (!index.m_right || index.m_left || index.m_step
+                            || !value(*index.m_right)) {
+                        return false;
+                    }
+                }
+                return designator(*item.m_v);
+            }
+            case ASR::exprType::StructInstanceMember:
+                return designator(*ASR::down_cast<ASR::StructInstanceMember_t>(&x)->m_v);
+            default:
+                return false;
+        }
+    }
+
+    // Whether the variables of `scope` are scalar numeric or logical.
+    static bool scalar_locals(const SymbolTable &scope) {
+        for (auto &item : scope.get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second) && !scalar(
+                    ASR::down_cast<ASR::Variable_t>(item.second)->m_type)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // A scalar numeric or logical value that takes a bounded time.
+    bool value(const ASR::expr_t &x) {
+        if (!scalar(ASRUtils::expr_type(const_cast<ASR::expr_t *>(&x)))) {
+            return false;
+        }
+        if (ASRUtils::expr_value(const_cast<ASR::expr_t *>(&x))) return true;
+        switch (x.type) {
+            case ASR::exprType::Var:
+            case ASR::exprType::ArrayItem:
+            case ASR::exprType::StructInstanceMember:
+                return designator(x);
+            case ASR::exprType::IntegerConstant:
+            case ASR::exprType::UnsignedIntegerConstant:
+            case ASR::exprType::RealConstant:
+            case ASR::exprType::ComplexConstant:
+            case ASR::exprType::LogicalConstant:
+                return true;
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::RealBinOp:
+            case ASR::exprType::ComplexBinOp:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::LogicalCompare:
+            case ASR::exprType::LogicalNot:
+            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::RealUnaryMinus:
+            case ASR::exprType::IntegerBitNot:
+            case ASR::exprType::RealCopySign:
+            case ASR::exprType::ComplexConstructor:
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm:
+            case ASR::exprType::IfExp:
+            case ASR::exprType::Cast:
+            case ASR::exprType::IntrinsicElementalFunction: {
+                // The operands, all scalar numeric or logical values.
+                Operands operands(*this);
+                operands.visit_expr(x);
+                return operands.ok;
+            }
+            case ASR::exprType::FunctionCall: {
+                const auto &call = *ASR::down_cast<ASR::FunctionCall_t>(&x);
+                ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(call.m_name);
+                if (call.m_dt || !ASR::is_a<ASR::Function_t>(*callee)) return false;
+                for (size_t i = 0; i < call.n_args; i++) {
+                    if (!call.m_args[i].m_value || !value(*call.m_args[i].m_value)) {
+                        return false;
+                    }
+                }
+                return function(*ASR::down_cast<ASR::Function_t>(callee));
+            }
+            default:
+                return false;
+        }
+    }
+
+    // Checks the direct operands of an expression.
+    struct Operands : ASR::BaseWalkVisitor<Operands> {
+        BoundedLoopBody &check;
+        bool ok = true;
+        bool top = true;
+        explicit Operands(BoundedLoopBody &check) : check(check) {}
+        void visit_expr(const ASR::expr_t &x) {
+            if (top) {
+                top = false;
+                ASR::BaseWalkVisitor<Operands>::visit_expr(x);
+            } else if (ok) {
+                ok = check.value(x);
+            }
+        }
+        // The types and compile-time values of the node are not operands.
+        void visit_ttype(const ASR::ttype_t &) {}
+    };
+
+    // A function without loops whose locals and result are scalar numeric
+    // or logical, and which never polls.
+    bool function(const ASR::Function_t &fn) {
+        auto cached = functions.find(&fn);
+        if (cached != functions.end()) return cached->second;
+        // A recursive call is not bounded.
+        functions[&fn] = false;
+        const auto *type = ASRUtils::get_FunctionType(fn);
+        bool bounded = type->m_deftype == ASR::deftypeType::Implementation
+            && type->m_abi == ASR::abiType::Source && !callee_may_unwind(fn);
+        bounded = bounded && scalar_locals(*fn.m_symtab)
+            && body(fn.m_body, fn.n_body, true);
+        return functions[&fn] = bounded;
+    }
+};
+
 } // anonymous namespace
 
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
@@ -696,8 +973,23 @@ public:
     std::string infile;
     Allocator &al;
 
-    llvm::Value *tmp;
+    llvm::Value *tmp = nullptr;
     llvm::BasicBlock *proc_return;
+    const JITCancellation *jit_cancellation = nullptr;
+    SymbolTable *cancellation_scope = nullptr;
+    bool emitting_cancellation_cleanup = false;
+    // Generating a procedure that never reaches a safepoint (see
+    // may_unwind): it has no safepoint, and nothing in it polls, so its
+    // initialization and cleanup need no protection.
+    bool never_unwinds = false;
+    // The GOTO labels emitted so far. Labels of other procedures only make a
+    // forward branch poll as well.
+    std::set<int64_t> emitted_goto_targets;
+    // The statement being generated calls a FINAL procedure.
+    bool emitted_protected_jit_call = false;
+    // The cold code of safepoints, moved to the end of its function once
+    // generated, so that the common path falls through.
+    std::vector<llvm::BasicBlock *> cancellation_cleanup_blocks;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8, *complex_type_10, *complex_type_16;
@@ -2744,8 +3036,10 @@ public:
             compiler_options.po.run_fun + "_setup", module.get());
         builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", F));
         builder->SetCurrentDebugLocation(nullptr);
+        protect_cancellation(true);
         emit_global_struct_members_setup();
         emit_allocatable_global_array_setup();
+        protect_cancellation(false);
         builder->CreateRetVoid();
         builder->ClearInsertionPoint();
     }
@@ -8848,6 +9142,7 @@ public:
 
         builder->SetInsertPoint(BB);
         // Clear alloca pool after nested functions are processed, before main body
+        protect_cancellation(true);
         call_arg_alloca_pool.clear();
         call_arg_alloca_idx.clear();
         convert_call_args_depth = 0;
@@ -8927,11 +9222,15 @@ public:
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
         predeclare_goto_targets(F, x.m_body, x.n_body);
+        protect_cancellation(false);
+        cancellation_scope = jit_cancellation ? x.m_symtab : nullptr;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
+        cancellation_scope = nullptr;
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         start_new_block(proc_return);
+        protect_cancellation(true);
         // The variables of the main program, and those of modules, are not
         // finalized when the program terminates (F2018 7.5.6.4): their
         // memory is freed without calling final subroutines.
@@ -8981,6 +9280,8 @@ public:
                 llvm_utils->void_type, {});
             builder->CreateCall(fn, {});
         }
+        protect_cancellation(false);
+        sink_cancellation_cleanups(builder->GetInsertBlock()->getParent());
         if (interactive_program) {
             builder->CreateRetVoid();
         } else {
@@ -11006,6 +11307,9 @@ public:
 
     template<typename T>
     void declare_vars(const T &x) {
+        auto *saved_scope = cancellation_scope;
+        cancellation_scope = nullptr;
+        protect_cancellation(true);
         uint32_t debug_arg_count = 0;
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
@@ -11020,6 +11324,8 @@ public:
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
+        protect_cancellation(false);
+        cancellation_scope = saved_scope;
     }
 
     bool is_function_variable(const ASR::Variable_t &v) {
@@ -12152,6 +12458,7 @@ public:
                 ".entry", F);
         builder->SetInsertPoint(BB);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        protect_cancellation(true);
         declare_args(x, *F);
         if (dummies_may_be_noalias(x)) {
             tbaa_functions.insert(F);
@@ -12457,6 +12764,7 @@ public:
         }
         finalize_intent_out_array_args(x);
         declare_local_vars(x);
+        protect_cancellation(false);
     }
 
     /**
@@ -12586,14 +12894,28 @@ public:
         }
     }
 
+    void emit_procedure_cleanup(SymbolTable *scope, bool abandon_result = false,
+            bool call_final_subroutines = true) {
+        CancellationProtection protection(*this);
+        llvm_symtab_finalizer.finalize_symtab(scope, call_final_subroutines, abandon_result);
+        auto saved_list_args = list_call_arg_to_finalize;
+        finalize_list_call_arg_allocas();
+        if (abandon_result) list_call_arg_to_finalize = std::move(saved_list_args);
+        // A cancelled nested construct has already freed its own arrays.
+        const size_t heap_end = abandon_result && !block_cleanups.empty()
+            ? block_cleanups.front().heap_arrays_before : heap_fixed_size_arrays.n;
+        for (size_t i = 0; i < heap_end; i++) {
+            llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
+        }
+        if (!abandon_result) heap_fixed_size_arrays.n = 0;
+        convert_bindc_strides_to_byte();
+    }
+
     inline void define_function_exit(const ASR::Function_t& x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if (x.m_return_var) {
             start_new_block(proc_return);
-            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-            finalize_list_call_arg_allocas();
-            free_heap_fixed_size_arrays();
-            convert_bindc_strides_to_byte();
+            emit_procedure_cleanup(x.m_symtab);
             llvm::Function* fn = builder->GetInsertBlock()->getParent();
             if (fn->getReturnType()->isVoidTy()) {
                 // On Windows, complex(kind=8) returns use the "pass-as-subroutine" ABI:
@@ -12667,10 +12989,7 @@ public:
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
-            llvm_symtab_finalizer.finalize_symtab(x.m_symtab);
-            finalize_list_call_arg_allocas();
-            free_heap_fixed_size_arrays();
-            convert_bindc_strides_to_byte();
+            emit_procedure_cleanup(x.m_symtab);
             builder->CreateRetVoid();
         }
     }
@@ -12692,14 +13011,24 @@ public:
             if (interactive) return;
 
             if (!prototype_only) {
+                const bool saved_never_unwinds = never_unwinds;
+                never_unwinds = jit_cancellation && !may_unwind(x);
                 define_function_entry(x);
-                predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
+                llvm::Function *F = builder->GetInsertBlock()->getParent();
+                predeclare_goto_targets(F, x.m_body, x.n_body);
 
+                cancellation_scope = jit_cancellation ? x.m_symtab : nullptr;
+                // Recursion needs no loop; also observe a request that arrived
+                // during the protected initialization.
+                if (!never_unwinds) emit_cancellation_check();
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
                 }
+                cancellation_scope = nullptr;
                 
                 define_function_exit(x);
+                sink_cancellation_cleanups(F);
+                never_unwinds = saved_never_unwinds;
             }
         } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic &&
                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
@@ -17602,6 +17931,7 @@ public:
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
                 llvm_goto_targets[x.m_label] = new_target;
             }
+            emitted_goto_targets.insert(x.m_label);
             start_new_block(llvm_goto_targets[x.m_label]);
         }
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
@@ -17687,6 +18017,7 @@ public:
     // stack pointer saved on entry.
     void emit_block_cleanup(const BlockCleanup &b, size_t heap_end,
             size_t wb_end) {
+        CancellationProtection protection(*this);
         for (size_t i = b.char_writebacks_before;
                 b.writes_back_chars && i < wb_end; i++) {
             auto& wb = pending_char_writebacks[i];
@@ -18575,6 +18906,28 @@ public:
         tmp = res;
     }
 
+    // The number of iterations of a counted DO loop between two safepoints
+    // (see generate_counted_do_loop) when each iteration takes a short,
+    // bounded time and runs no loop (see BoundedLoopBody).
+    static constexpr uint64_t safepoint_chunk = 1 << 14;
+
+    // Whether the body `stmts` of a counted DO loop takes a short, bounded
+    // time per iteration, so that the loop may poll once per chunk.
+    std::map<const ASR::Function_t *, bool> bounded_function_cache;
+    // The heads `inner` of nested loops run in the body too.
+    bool bounded_loop_body(ASR::stmt_t **stmts, size_t n,
+            ASR::do_loop_head_t *inner = nullptr, size_t n_inner = 0) {
+        if (!emits_safepoints()) return false;
+        BoundedLoopBody check(bounded_function_cache);
+        check.callee_may_unwind = [this](const ASR::Function_t &callee) {
+            return call_may_unwind(callee);
+        };
+        for (size_t i = 0; i < n_inner; i++) {
+            if (!check.head(inner[i])) return false;
+        }
+        return check.body(stmts, n);
+    }
+
     // The value of the integer control expression `e` of a DO loop head.
     llvm::Value* do_loop_control_value(ASR::expr_t *e) {
         ASR::ttype_t *type = ASRUtils::expr_type(e);
@@ -18616,10 +18969,30 @@ public:
     // update of i does not overflow (nsw). The distance |b - a| is not, and
     // neither is |c| for the most negative c, so they are computed unsigned,
     // in the width of i, which holds them and the iteration count minus one.
+    //
+    // With safepoints (an interactive cell), the latch polls on every
+    // iteration, before it steps i. When `chunked` (the body takes a short,
+    // bounded time, see BoundedLoopBody), the iterations instead run in
+    // chunks of at most `safepoint_chunk`, and the safepoint polls once per
+    // chunk, so the loop of a chunk stays free of it and LLVM can vectorize
+    // it:
+    //
+    //         remaining = |b - a| / |c|, unsigned
+    //     chunk:  in_chunk = min(remaining, safepoint_chunk - 1)
+    //             chunk_last = i + in_chunk*c
+    //     body:   ...
+    //     latch:  last = i == chunk_last; i = i + c
+    //             if not last goto body
+    //     next:   safepoint
+    //             if remaining == in_chunk goto orelse
+    //             remaining = remaining - in_chunk - 1; goto chunk
+    //
+    // i takes the value chunk_last, so it is representable; the product and
+    // sum that compute it may wrap.
     template <typename Body>
     void generate_counted_do_loop(const ASR::do_loop_head_t &head,
             const char *name, Body generate_body,
-            ASR::stmt_t **orelse, size_t n_orelse) {
+            ASR::stmt_t **orelse, size_t n_orelse, bool chunked) {
         [[maybe_unused]] std::string reason;
         LCOMPILERS_ASSERT(head.m_v != nullptr &&
             ASRUtils::is_normalized_do_loop_head(head, reason));
@@ -18696,8 +19069,11 @@ public:
         llvm::Value *enter = by_step_sign(
             [&]() { return builder->CreateICmpSLE(start, end); },
             [&]() { return builder->CreateICmpSGE(start, end); });
+        chunked = chunked && emits_safepoints();
         llvm::PHINode *remaining = nullptr;
-        if (unit_step) {
+        llvm::PHINode *chunk_remaining = nullptr;
+        llvm::Value *in_chunk = nullptr, *chunk_last = nullptr;
+        if (unit_step && !chunked) {
             builder->CreateCondBr(enter, body_bb, orelse_bb);
             start_new_block(body_bb);
         } else {
@@ -18711,13 +19087,34 @@ public:
             llvm::Value *step_magnitude = by_step_sign(
                 [&]() { return step; },
                 [&]() { return builder->CreateSub(zero, step); });
-            llvm::Value *count_minus_one = builder->CreateUDiv(distance,
-                step_magnitude);
-            builder->CreateBr(body_bb);
-            start_new_block(body_bb);
-            remaining = builder->CreatePHI(iv_type, 2,
-                loop_name + ".remaining");
-            remaining->addIncoming(count_minus_one, prep);
+            llvm::Value *count_minus_one = unit_step ? distance
+                : builder->CreateUDiv(distance, step_magnitude);
+            if (chunked) {
+                llvm::BasicBlock *chunk = llvm::BasicBlock::Create(context,
+                    loop_name + ".chunk");
+                builder->CreateBr(chunk);
+                start_new_block(chunk);
+                chunk_remaining = builder->CreatePHI(iv_type, 2,
+                    loop_name + ".chunk_remaining");
+                chunk_remaining->addIncoming(count_minus_one, prep);
+                llvm::Value *chunk_max = llvm::ConstantInt::get(iv_type,
+                    std::min(safepoint_chunk - 1, llvm::APInt::getMaxValue(
+                        iv_type->getIntegerBitWidth()).getZExtValue()));
+                in_chunk = builder->CreateSelect(
+                    builder->CreateICmpULT(chunk_remaining, chunk_max),
+                    chunk_remaining, chunk_max);
+                chunk_last = builder->CreateAdd(
+                    llvm_utils->CreateLoad2(iv_type, v_ptr),
+                    builder->CreateMul(in_chunk, step));
+                builder->CreateBr(body_bb);
+                start_new_block(body_bb);
+            } else {
+                builder->CreateBr(body_bb);
+                start_new_block(body_bb);
+                remaining = builder->CreatePHI(iv_type, 2,
+                    loop_name + ".remaining");
+                remaining->addIncoming(count_minus_one, prep);
+            }
         }
 
         push_loop_targets(latch, latch_name, end_bb, end_name);
@@ -18725,19 +19122,40 @@ public:
         pop_loop_targets();
 
         start_new_block(latch);
+        // The back-edge safepoint, also for an empty body.
+        if (!chunked) emit_cancellation_check();
         llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
         LLVM::CreateStore(*builder,
             builder->CreateNSWAdd(current, step), v_ptr);
         llvm::Value *last;
-        if (unit_step) {
+        if (chunked) {
+            last = builder->CreateICmpEQ(current, chunk_last);
+        } else if (unit_step) {
             last = builder->CreateICmpEQ(current, end);
         } else {
             last = builder->CreateICmpEQ(remaining, zero);
             remaining->addIncoming(builder->CreateSub(remaining,
-                llvm::ConstantInt::get(iv_type, 1)), latch);
+                llvm::ConstantInt::get(iv_type, 1)), builder->GetInsertBlock());
         }
-        disable_runtime_unrolling(
-            builder->CreateCondBr(last, orelse_bb, body_bb));
+        if (chunked) {
+            // The safepoint of a chunk, also for an empty body.
+            llvm::BasicBlock *next = llvm::BasicBlock::Create(context,
+                loop_name + ".next");
+            disable_runtime_unrolling(
+                builder->CreateCondBr(last, next, body_bb));
+            start_new_block(next);
+            emit_cancellation_check();
+            llvm::Value *done = builder->CreateICmpEQ(chunk_remaining,
+                in_chunk);
+            chunk_remaining->addIncoming(builder->CreateSub(
+                builder->CreateSub(chunk_remaining, in_chunk),
+                llvm::ConstantInt::get(iv_type, 1)),
+                builder->GetInsertBlock());
+            builder->CreateCondBr(done, orelse_bb, chunk_remaining->getParent());
+        } else {
+            disable_runtime_unrolling(
+                builder->CreateCondBr(last, orelse_bb, body_bb));
+        }
 
         if (n_orelse > 0) {
             start_new_block(orelse_bb);
@@ -18765,12 +19183,13 @@ public:
             // DO without loop control: it ends only by a branch out of it,
             // so it never runs its loop-else.
             create_loop(x.m_name, [&]() {
+                emit_cancellation_check();
                 return llvm::ConstantInt::getTrue(context);
             }, generate_body);
             return;
         }
         generate_counted_do_loop(x.m_head, x.m_name, generate_body,
-            x.m_orelse, x.n_orelse);
+            x.m_orelse, x.n_orelse, bounded_loop_body(x.m_body, x.n_body));
     }
 
     // A DO CONCURRENT runs its iterations in no particular order. It is
@@ -18778,14 +19197,15 @@ public:
     // innermost of which a CYCLE continues.
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        generate_do_concurrent_heads(x, 0);
+        generate_do_concurrent_heads(x, 0, x.n_head > 0 && bounded_loop_body(
+            x.m_body, x.n_body, x.m_head + 1, x.n_head - 1));
     }
 
     void generate_do_concurrent_heads(const ASR::DoConcurrentLoop_t &x,
-            size_t i) {
+            size_t i, bool chunked) {
         generate_counted_do_loop(x.m_head[i], nullptr, [&]() {
             if (i + 1 < x.n_head) {
-                generate_do_concurrent_heads(x, i + 1);
+                generate_do_concurrent_heads(x, i + 1, chunked);
                 return;
             }
             enclosing_constructs.push_back(&x.base);
@@ -18793,7 +19213,7 @@ public:
                 this->visit_stmt(*x.m_body[j]);
             }
             enclosing_constructs.pop_back();
-        }, nullptr, 0);
+        }, nullptr, 0, chunked);
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
@@ -18801,6 +19221,7 @@ public:
         size_t n = strings_to_be_deallocated.n;
         strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
+            emit_cancellation_check();
             this->visit_expr_wrapper(x.m_test, true);
             // Free the test's string temporaries on every evaluation.
             free_strings_to_be_deallocated(0);
@@ -18854,6 +19275,226 @@ public:
                 wb_end = b.char_writebacks_before;
             }
         }
+    }
+
+    // A word of the JIT cancellation state (see JITCancellation), which the
+    // JIT resolves to the host's storage.
+    llvm::GlobalVariable *cancellation_word(const char *name) {
+        if (llvm::GlobalVariable *word = module->getNamedGlobal(name)) return word;
+        return new llvm::GlobalVariable(*module, llvm_utils->i32, false,
+            llvm::GlobalValue::ExternalLinkage, nullptr, name);
+    }
+
+    // Inline depth counting: with nothing that may poll in between, LLVM
+    // folds a pair away.
+    void count_cancellation_depth(const char *name, bool begin) {
+        if (!jit_cancellation) return;
+        llvm::GlobalVariable *word = cancellation_word(name);
+        llvm::Value *depth = llvm_utils->CreateLoad2(llvm_utils->i32, word);
+        llvm::Value *one = llvm::ConstantInt::get(llvm_utils->i32, 1);
+        builder->CreateStore(begin ? builder->CreateAdd(depth, one)
+            : builder->CreateSub(depth, one), word);
+    }
+
+    void sink_cancellation_cleanups(llvm::Function *fn) {
+        std::vector<llvm::BasicBlock *> others;
+        for (llvm::BasicBlock *bb : cancellation_cleanup_blocks) {
+            if (bb->getParent() == fn) bb->moveAfter(&fn->back());
+            else others.push_back(bb);
+        }
+        cancellation_cleanup_blocks = std::move(others);
+    }
+
+    void protect_cancellation(bool begin) {
+        if (never_unwinds) return;
+        count_cancellation_depth(JITCancellation::protect_symbol, begin);
+    }
+
+    void defer_cancellation(bool begin) {
+        count_cancellation_depth(JITCancellation::defer_symbol, begin);
+    }
+
+    // `calls_jit_code`: the region calls generated code (a FINAL
+    // procedure), which polls, so it is protected in any procedure.
+    struct CancellationProtection {
+        ASRToLLVMVisitor &visitor;
+        const bool saved, saved_never_unwinds;
+        CancellationProtection(ASRToLLVMVisitor &visitor, bool calls_jit_code = false)
+            : visitor(visitor), saved(visitor.emitting_cancellation_cleanup),
+              saved_never_unwinds(visitor.never_unwinds) {
+            visitor.emitting_cancellation_cleanup = true;
+            if (calls_jit_code) {
+                visitor.never_unwinds = false;
+                visitor.emitted_protected_jit_call = true;
+            }
+            visitor.protect_cancellation(true);
+        }
+        ~CancellationProtection() {
+            visitor.protect_cancellation(false);
+            visitor.never_unwinds = saved_never_unwinds;
+            visitor.emitting_cancellation_cleanup = saved;
+        }
+    };
+
+    // Whether emit_cancellation_check emits a safepoint here.
+    bool emits_safepoints() const {
+        return cancellation_scope && !emitting_cancellation_cleanup
+            && !never_unwinds;
+    }
+
+    // A safepoint. The common path loads the request word and branches; the
+    // cold path unwinds unless initialization, cleanup or a foreign call has
+    // to complete. `propagate_only` follows a call whose successful result
+    // must first acquire its normal temporary owner: it unwinds only when the
+    // callee already did.
+    //
+    // Only fully initialized scopes may be left. Reuse normal scope cleanup,
+    // but abandon the result rather than loading an incomplete return value.
+    void emit_cancellation_check(bool propagate_only = false,
+            const std::function<void()> &before_cleanup = {}) {
+        if (!emits_safepoints()) return;
+        auto *saved_tmp = tmp;
+        auto *fn = builder->GetInsertBlock()->getParent();
+        llvm::Type *i32 = llvm_utils->i32;
+        llvm::Value *zero = llvm::ConstantInt::get(i32, 0);
+        auto load_word = [&](const char *name) {
+            return llvm_utils->CreateLoad2(i32, cancellation_word(name));
+        };
+        // The host thread stores the request word (a relaxed std::atomic).
+        llvm::LoadInst *request = builder->CreateLoad(i32,
+            cancellation_word(JITCancellation::request_symbol));
+#if LLVM_VERSION_MAJOR >= 11
+        request->setAlignment(llvm::Align(4));
+#elif LLVM_VERSION_MAJOR >= 10
+        request->setAlignment(llvm::MaybeAlign(4));
+#else
+        request->setAlignment(4);
+#endif
+        request->setAtomic(llvm::AtomicOrdering::Monotonic);
+        llvm::Value *requested = builder->CreateICmpNE(request, zero);
+        auto *pending = llvm::BasicBlock::Create(context, "cancel.pending", fn);
+        auto *cleanup = llvm::BasicBlock::Create(context, "cancel.cleanup", fn);
+        auto *resume = llvm::BasicBlock::Create(context, "cancel.resume");
+        builder->CreateCondBr(requested, pending, resume,
+            llvm::MDBuilder(context).createBranchWeights(1, 1 << 20));
+        builder->SetInsertPoint(pending);
+        llvm::Value *unwind = builder->CreateICmpEQ(builder->CreateOr(
+            load_word(JITCancellation::protect_symbol),
+            load_word(JITCancellation::defer_symbol)), zero);
+        if (propagate_only) {
+            unwind = builder->CreateAnd(unwind, builder->CreateICmpNE(
+                load_word(JITCancellation::observed_symbol), zero));
+        }
+        builder->CreateCondBr(unwind, cleanup, resume);
+        builder->SetInsertPoint(cleanup);
+        builder->CreateStore(llvm::ConstantInt::get(i32, 1),
+            cancellation_word(JITCancellation::observed_symbol));
+        emitting_cancellation_cleanup = true;
+        protect_cancellation(true);
+        if (before_cleanup) before_cleanup();
+        auto strings_n = strings_to_be_deallocated.n;
+        free_strings_to_be_deallocated(0);
+        strings_to_be_deallocated.n = strings_n;
+        leave_blocks(0, true);
+        const bool finalize = !ASR::is_a<ASR::Program_t>(
+            *ASR::down_cast<ASR::symbol_t>(cancellation_scope->asr_owner));
+        emit_procedure_cleanup(cancellation_scope, true, finalize);
+        protect_cancellation(false);
+        if (fn->getReturnType()->isVoidTy()) builder->CreateRetVoid();
+        else builder->CreateRet(llvm::Constant::getNullValue(fn->getReturnType()));
+        emitting_cancellation_cleanup = false;
+        for (llvm::BasicBlock *bb = pending; bb; bb = bb->getNextNode()) {
+            cancellation_cleanup_blocks.push_back(bb);
+        }
+        llvm_fn_insert_bb(fn, resume);
+        builder->SetInsertPoint(resume);
+        tmp = saved_tmp;
+    }
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        const bool saved_protected_call = emitted_protected_jit_call;
+        emitted_protected_jit_call = false;
+        ASR::BaseVisitor<ASRToLLVMVisitor>::visit_stmt(x);
+        // A request that arrives while a called subroutine, or the FINAL
+        // procedures of a construct, run protected is observed once the
+        // statement completes.
+        if (ASR::is_a<ASR::SubroutineCall_t>(x) || (emitted_protected_jit_call
+                && (ASR::is_a<ASR::BlockCall_t>(x)
+                    || ASR::is_a<ASR::AssociateBlockCall_t>(x)))) {
+            emit_cancellation_check();
+        }
+        emitted_protected_jit_call = emitted_protected_jit_call
+            || saved_protected_call;
+    }
+
+    // Whether a call of `fn` may unwind for cancellation. Only then does it
+    // need an entry safepoint and its caller a check after the call. Other
+    // procedures run a bounded time and never reach a safepoint.
+    std::map<const ASR::Function_t *, bool> may_unwind_cache;
+    bool may_unwind(const ASR::Function_t &fn) {
+        if (ASRUtils::get_FunctionType(fn)->m_deftype
+                != ASR::deftypeType::Implementation) {
+            return true;
+        }
+        auto cached = may_unwind_cache.find(&fn);
+        if (cached != may_unwind_cache.end()) return cached->second;
+        // A recursive call may.
+        may_unwind_cache[&fn] = true;
+        SafepointFinder finder;
+        finder.callee_may_unwind = [this](const ASR::Function_t &callee) {
+            return call_may_unwind(callee);
+        };
+        finder.visit_Function(fn);
+        return may_unwind_cache[&fn] = finder.found;
+    }
+
+    // Whether a call of `fn` may unwind. An earlier JIT module's definition
+    // is the one that runs; this cell holds its ASR before the passes.
+    bool call_may_unwind(const ASR::Function_t &fn) {
+        auto declared = llvm_symtab_fn.find(get_hash((ASR::asr_t *)&fn));
+        if (declared == llvm_symtab_fn.end()) return true;
+        const std::string name = declared->second->getName().str();
+        if (jit_cancellation && jit_cancellation->cooperative_call(name)) {
+            return !jit_cancellation->never_unwinds(name);
+        }
+        return may_unwind(fn);
+    }
+
+    bool foreign_cancellation_boundary(const ASR::Function_t &fn,
+            bool indirect = false, llvm::Function *target = nullptr) {
+        const auto *type = ASRUtils::get_FunctionType(fn);
+        if (target && jit_cancellation &&
+                jit_cancellation->cooperative_call(target->getName().str())) {
+            return false;
+        }
+        // A known JIT implementation participates even with BIND(C). A C
+        // procedure pointer, however, may target an uninstrumented caller.
+        return indirect ? type->m_abi == ASR::abiType::BindC
+            || type->m_abi == ASR::abiType::ExternalUndefined
+            : type->m_deftype != ASR::deftypeType::Implementation
+                && type->m_abi != ASR::abiType::Intrinsic;
+    }
+
+    // `callee_may_unwind` is false for a callee without safepoints.
+    llvm::CallInst *create_jit_call(llvm::Function *fn,
+            llvm::ArrayRef<llvm::Value *> args = {}, bool foreign = false,
+            bool callee_may_unwind = true) {
+        if (foreign) defer_cancellation(true);
+        auto *result = builder->CreateCall(fn, args);
+        if (foreign) defer_cancellation(false);
+        // A successful result must first acquire its normal temporary owner.
+        // Here propagate only cancellation already completed in the callee.
+        if (callee_may_unwind) emit_cancellation_check(true);
+        return result;
+    }
+
+    llvm::CallInst *create_jit_call(llvm::FunctionType *type, llvm::Value *fn,
+            llvm::ArrayRef<llvm::Value *> args, bool foreign = false) {
+        if (foreign) defer_cancellation(true);
+        auto *result = builder->CreateCall(type, fn, args);
+        if (foreign) defer_cancellation(false);
+        emit_cancellation_check(true);
+        return result;
     }
 
     // Branch to `loop_or_block_end[target]`, first ending every construct
@@ -18927,6 +19568,8 @@ public:
     }
 
     void visit_GoTo(const ASR::GoTo_t &x) {
+        // A backward branch may close a loop.
+        if (emitted_goto_targets.count(x.m_target_id)) emit_cancellation_check();
         if (llvm_goto_targets.find(x.m_target_id) == llvm_goto_targets.end()) {
             // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -18967,6 +19610,7 @@ public:
     }
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        emitted_goto_targets.insert(x.m_id);
         if (llvm_goto_targets.find(x.m_id) == llvm_goto_targets.end()) {
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
             llvm_goto_targets[x.m_id] = new_target;
@@ -22759,7 +23403,8 @@ public:
             bool is_string = false,
             llvm::Value* str_src_data = nullptr,
             llvm::Value* str_src_len = nullptr,
-            llvm::Value* str_offset = nullptr) {
+            llvm::Value* str_offset = nullptr,
+            const std::function<void()> &check_read = {}) {
         ASR::Variable_t* loop_var_sym = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
 
@@ -22803,7 +23448,7 @@ public:
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[vi])) {
                 ASR::ImpliedDoLoop_t* inner_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[vi]);
                 generate_read_implied_do_loop(inner_idl, unit_val, iostat,
-                    is_string, str_src_data, str_src_len, str_offset);
+                    is_string, str_src_data, str_src_len, str_offset, check_read);
             } else {
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
@@ -22841,6 +23486,7 @@ public:
                         llvm::Value* tmp_bool = llvm_utils->CreateAlloca(
                             llvm::Type::getInt1Ty(context));
                         builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
+                        if (check_read) check_read();
                         int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                         llvm::Value* loaded = llvm_utils->CreateLoad2(
                             llvm::Type::getInt1Ty(context), tmp_bool);
@@ -22856,6 +23502,7 @@ public:
                         builder->CreateCall(read_fn, {elem_ptr, unit_val, iostat});
                     }
                 }
+                if (check_read) check_read();
             }
         }
 
@@ -22925,6 +23572,52 @@ public:
             return ;
         }
 
+        // A cancelled stdin wait must return through the normal READ frame
+        // before taking the JIT cleanup path, not exit from a runtime reader
+        // receiving a null IOSTAT. So a READ without IOSTAT= that may wait
+        // for stdin gets a status of its own, `read_status`. Every other READ
+        // passes a null IOSTAT, so the runtime reports its errors itself.
+        // File compilation keeps its original path.
+        const bool cancellable = cancellation_scope && !emitting_cancellation_cleanup
+            && !never_unwinds;
+        llvm::Value *read_status = nullptr;
+        // The IOSTAT argument of a READ of `unit` (an i32) without IOSTAT=.
+        auto own_iostat = [&](llvm::Value *unit) -> llvm::Value * {
+            llvm::Type *ptr = llvm_utils->i32->getPointerTo();
+            if (!cancellable) return llvm::ConstantPointerNull::get(
+                llvm::cast<llvm::PointerType>(ptr));
+            read_status = llvm_utils->CreateAlloca(*builder, llvm_utils->i32);
+            builder->CreateStore(llvm::ConstantInt::get(llvm_utils->i32, 0),
+                read_status);
+            llvm::Function *may_wait = LLVM::get_or_declare_function(*module,
+                "_lfortran_read_may_wait", llvm_utils->i32, {llvm_utils->i32});
+            return builder->CreateSelect(builder->CreateICmpNE(
+                    builder->CreateCall(may_wait, {unit}),
+                    llvm::ConstantInt::get(llvm_utils->i32, 0)),
+                read_status, llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(ptr)));
+        };
+        auto finish_read = [&]() {
+            if (!cancellable) return;
+            emit_cancellation_check(false, [&]() {
+                if (x.m_decimal) emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
+                    llvm_utils->i32, llvm::APInt(32, -1, true)));
+            });
+            if (read_status) {
+                // A stdin READ without IOSTAT= failed without cancellation.
+                llvm::Value *value = llvm_utils->CreateLoad2(llvm_utils->i32,
+                    read_status);
+                llvm_utils->create_if_else(builder->CreateICmpNE(value,
+                        llvm::ConstantInt::get(llvm_utils->i32, 0)), [&]() {
+                    print_error(context, *module, *builder, {
+                        LCompilers::create_global_string_ptr(context, *module, *builder,
+                            "Error: Failed to read input.\n")});
+                    exit(context, *module, *builder,
+                        llvm::ConstantInt::get(llvm_utils->i32, 1));
+                }, [](){});
+            }
+        };
+
         // Handle namelist read
         if (x.m_nml) {
             llvm::Value *unit_val, *iostat;
@@ -22962,6 +23655,9 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                     iostat);
+            } else if (!is_string) {
+                iostat = own_iostat(x.m_unit ? unit_val : llvm::ConstantInt::get(
+                    llvm_utils->i32, llvm::APInt(32, -1, true)));
             } else {
                 iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
             }
@@ -23080,6 +23776,7 @@ public:
                 builder->CreateCall(fn, {unit_val, iostat, iomsg_data, iomsg_len,
                     nml_group});
             }
+            finish_read();
             return;
         }
 
@@ -23151,10 +23848,12 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
+            if (!is_string) iostat = own_iostat(unit_val);
         }
 
         if (x.m_unit && !is_string && !x.m_rec && !x.m_pos) {
             emit_connect_unit_for_read(unit_val, !x.m_is_formatted, iostat);
+            finish_read();
         }
 
         if (x.m_decimal) {
@@ -23272,6 +23971,7 @@ public:
                 }
             }
             for (size_t i=0; i<x.n_values; i++) {
+                if (i) finish_read();
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
@@ -23459,7 +24159,8 @@ public:
                         }
                         if (can_handle) {
                             generate_read_implied_do_loop(idl, unit_val, iostat,
-                                is_string, str_src_data, str_src_len, str_offset);
+                                is_string, str_src_data, str_src_len, str_offset,
+                                [&]() { finish_read(); });
                             continue;
                         }
                     }
@@ -23682,6 +24383,7 @@ public:
                                 llvm::Type::getInt1Ty(context));
                             builder->CreateStore(cur_bool, tmp_bool);
                             builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
+                            finish_read();
                             llvm::Value* loaded = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt1Ty(context), tmp_bool);
                             llvm::Value* widened = builder->CreateZExt(loaded,
@@ -23694,6 +24396,7 @@ public:
                 }
             }
 
+            finish_read();
             // In Fortran, read(u, *) is used to read the entire line. The
             // next read(u, *) function is intended to read the next entire
             // line. Let's take an example: `read(u, *) n`, where n is an
@@ -23781,6 +24484,7 @@ public:
             emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
         }
+        finish_read();
     }
 
     // One scalar target of a formatted READ in the runtime protocol (see
@@ -29903,8 +30607,9 @@ public:
             this->visit_expr_wrapper(x.m_dt, true);
             llvm::Value* callee = tmp;
             args = convert_call_args(x, false);
-            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
-                callee, args);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -29951,7 +30656,8 @@ public:
                     fntype->getReturnType(), arg_types, false);
                 callee = builder->CreateBitCast(callee, fntype->getPointerTo());
             }
-            tmp = builder->CreateCall(fntype, callee, args);
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             return ;
         }
 
@@ -30071,7 +30777,8 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            const bool foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -30085,7 +30792,8 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            const bool foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -30121,7 +30829,10 @@ public:
                     }
                 }
             }
+            const bool foreign = foreign_cancellation_boundary(*s, false, fn);
+            if (foreign) defer_cancellation(true);
             builder->CreateCall(fn, args);
+            if (foreign) defer_cancellation(false);
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
             for (auto& fc : pending_flat_copybacks) {
@@ -30370,7 +31081,8 @@ public:
 
     llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
                                 std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type) {
+                                ASR::ttype_t* asr_return_type, bool foreign,
+                                bool callee_may_unwind) {
         if (fnty->getReturnType()->isVoidTy()) {
             // Windows complex(kind=8) uses a hidden first argument (sret-style):
             // the function returns `void` and writes the result into the first
@@ -30381,18 +31093,21 @@ public:
                 compiler_options.platform == Platform::Windows) {
                 llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                 args.insert(args.begin(), sret_tmp);
-                builder->CreateCall(fn, args);
+                create_jit_call(fn, args, foreign, callee_may_unwind);
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        llvm::Value* return_value = builder->CreateCall(fn, args);
+        llvm::Value* return_value = create_jit_call(fn, args, foreign,
+            callee_may_unwind);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
     }
 
     llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type) {
-        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
+                                ASR::ttype_t* asr_return_type, bool foreign,
+                                bool callee_may_unwind) {
+        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type,
+            foreign, callee_may_unwind);
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x) {
@@ -30456,7 +31171,7 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        builder->CreateCall(fnTy, fn, args);
+        create_jit_call(fnTy, fn, args);
         return;
     }
 
@@ -30532,7 +31247,7 @@ public:
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
             vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
-        tmp = builder->CreateCall(fnTy, fn, args);
+        tmp = create_jit_call(fnTy, fn, args);
         if (func->m_return_var) {
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
@@ -30583,9 +31298,11 @@ public:
             this->visit_expr_wrapper(x.m_dt, true);
             llvm::Value* callee = tmp;
             args = convert_call_args(x, false);
-            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
-                callee, args);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             wrap_string_function_result(x.m_type);
+            if (foreign) emit_cancellation_check();
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -30609,8 +31326,10 @@ public:
             args = convert_call_args(x, false);
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
-            tmp = builder->CreateCall(fntype, callee, args);
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             wrap_string_function_result(x.m_type);
+            if (foreign) emit_cancellation_check();
             return ;
         }
 
@@ -30697,6 +31416,7 @@ public:
         } else {
             throw CodeGenError("ABI type not implemented yet.");
         }
+        bool foreign = foreign_cancellation_boundary(*s);
         if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
             // Check if this is a callback function
             llvm::Value* fn = llvm_symtab_fn_arg[h];
@@ -30710,7 +31430,8 @@ public:
             }
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -30720,7 +31441,8 @@ public:
             fn = llvm_utils->CreateLoad2(fn_type, fn);
             args = convert_call_args(x, is_method /* skip_self */);
 
-            tmp = builder->CreateCall(fntype, fn, args);
+            foreign = foreign_cancellation_boundary(*s, true);
+            tmp = create_jit_call(fntype, fn, args, foreign);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -30728,29 +31450,46 @@ public:
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, false);
+            foreign = foreign_cancellation_boundary(*s, false, fn);
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
+                auto call_bindc = [&]() {
+                    if (foreign) defer_cancellation(true);
+                    auto *result = builder->CreateCall(fn, args);
+                    if (foreign) defer_cancellation(false);
+                    // Copy descriptor ownership back even when the callee
+                    // cancelled, before abandoning this frame.
+                    if (cancellation_scope && !emitting_cancellation_cleanup) {
+                        apply_cfi_array_writebacks();
+                        // A foreign call is checked once its result is wrapped.
+                        if (!foreign && call_may_unwind(*s)) {
+                            emit_cancellation_check(true);
+                        }
+                    }
+                    return result;
+                };
                 if (is_a<ASR::Complex_t>(*return_var_type0)) {
                     int a_kind = checked_integer_cast<int>(down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     if (a_kind == 8) {
                         if (compiler_options.platform == Platform::Windows) {
                             tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                             args.insert(args.begin(), tmp);
-                            builder->CreateCall(fn, args);
+                            call_bindc();
                             // Convert {double,double}* to {double,double}
                             tmp = llvm_utils->CreateLoad2(complex_type_8, tmp);
                         } else {
-                            tmp = builder->CreateCall(fn, args);
+                            tmp = call_bindc();
                         }
                     } else {
-                        tmp = builder->CreateCall(fn, args);
+                        tmp = call_bindc();
                     }
                 } else {
-                    tmp = builder->CreateCall(fn, args);
+                    tmp = call_bindc();
                 }
                 apply_cfi_array_writebacks();
             } else {
-                tmp = CreateCallUtil(fn, args, return_var_type0);
+                tmp = CreateCallUtil(fn, args, return_var_type0, foreign,
+                    !foreign && call_may_unwind(*s));
             }
         }
         wrap_string_function_result(x.m_type);
@@ -30762,6 +31501,7 @@ public:
                     return_var_type0);
             }
         }
+        if (foreign) emit_cancellation_check();
     }
 
     // SIZE of `array` needs the extent of its dimension `i`, which ASR may
@@ -31537,6 +32277,11 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
 }
 
 /// Defined here to use the array descriptor API.
+void LLVMFinalize::call_final(llvm::Function *fn, llvm::Value *arg) {
+    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_, true);
+    builder_->CreateCall(fn, {arg});
+}
+
 llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_t* const arr_type,
         ASR::Struct_t* const struct_sym, llvm::Value* const data, llvm::Value* const idx) {
     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
@@ -31568,6 +32313,7 @@ llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_
 void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
         llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
         ASR::Struct_t* const final_struct) {
+    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_, true);
     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
     ASR::ttype_t* const dummy_type = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(final_proc->m_args[0]));
@@ -31583,7 +32329,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
     switch (arr_t->m_physical_type) {
         case ASR::array_physical_typeType::DescriptorArray:
             if (dummy_is_descriptor && !parent_component) {
-                builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr, param_type)});
+                call_final(final_fn, builder_->CreateBitCast(ptr, param_type));
                 return;
             }
             data = llvm_utils_->CreateLoad2(elem_llvm_type->getPointerTo(),
@@ -31654,7 +32400,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
         copy_elements(true);
     }
     if (!dummy_is_descriptor) {
-        builder_->CreateCall(final_fn, {builder_->CreateBitCast(final_data, param_type)});
+        call_final(final_fn, builder_->CreateBitCast(final_data, param_type));
     } else {
         // Describe the contiguous array with a descriptor of the dummy's type.
         llvm::Type* const desc_type = get_llvm_type(dummy_type, final_struct);
@@ -31667,7 +32413,7 @@ void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Functio
             llvm_utils_->arr_api->get_pointer_to_data(desc_type, desc));
         llvm_utils_->arr_api->fill_array_details(desc_type, desc, final_elem_llvm_type,
             checked_integer_cast<int>(arr_t->n_dims), llvm_dims, llvm_utils_->module, false);
-        builder_->CreateCall(final_fn, {builder_->CreateBitCast(desc, param_type)});
+        call_final(final_fn, builder_->CreateBitCast(desc, param_type));
     }
     if (copy) {
         copy_elements(false);
@@ -31685,9 +32431,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         const LLVMTargetConfig &target_config, Allocator &al,
         LCompilers::PassManager& pass_manager,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
-        const std::string &infile, LocationManager &lm)
+        const std::string &infile, LocationManager &lm,
+        const JITCancellation *cancellation)
 {
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm, target_config);
+    v.jit_cancellation = cancellation;
 
     std::vector<int64_t> skip_optimization_func_instantiation;
     skip_optimization_func_instantiation.push_back(static_cast<int64_t>(

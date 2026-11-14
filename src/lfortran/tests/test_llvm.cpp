@@ -15,6 +15,8 @@
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/fortran_kernel.h>
 #ifndef __EMSCRIPTEN__
+#include <atomic>
+#include <chrono>
 #include <thread>
 #ifndef _WIN32
 #include <pthread.h>
@@ -6608,6 +6610,7 @@ end subroutine
 
 extern "C" void lfortran_display_data(const char *mime_type, const char *data);
 extern "C" void lfortran_clear_output();
+extern "C" int32_t _lfortran_get_decimal_mode(int32_t unit_num);
 
 static CompilerOptions execute_options() {
     CompilerOptions cu;
@@ -6617,6 +6620,938 @@ static CompilerOptions execute_options() {
     cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     return cu;
 }
+
+#ifndef __EMSCRIPTEN__
+namespace {
+std::atomic<bool> foreign_callback_entered{false}, foreign_callback_release{false};
+int foreign_callback_value = 0;
+
+extern "C" void cancellation_foreign_wait() {
+    foreign_callback_entered.store(true);
+    while (!foreign_callback_release.load()) std::this_thread::yield();
+}
+
+extern "C" int cancellation_foreign_invoke(void *(*callback)()) {
+    auto *p = static_cast<int *>(callback());
+    // Record a bad return without crashing the test process on dereference.
+    foreign_callback_value = p ? *p : -1;
+    return foreign_callback_value;
+}
+
+extern "C" void cancellation_foreign_invoke_sub(void *(*callback)()) {
+    cancellation_foreign_invoke(callback);
+}
+
+// A cell calls this once its loop has made progress. It returns only after
+// the caller's pump has requested cancellation, so the loop's own safepoints
+// must stop it, independent of how fast the machine compiles or runs.
+std::atomic<bool> cancellation_progress_reached{false},
+    cancellation_progress_observed{false};
+
+extern "C" void cancellation_progress() {
+    cancellation_progress_reached.store(true);
+    auto start = std::chrono::steady_clock::now();
+    while (!cancellation_progress_observed.load() &&
+            std::chrono::steady_clock::now() - start < std::chrono::seconds(60)) {
+        std::this_thread::yield();
+    }
+}
+}
+
+TEST_CASE("FortranEvaluator execute: defer cancellation across foreign callbacks") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        FortranEvaluator e(options);
+        // Windows does not resolve symbols added with DynamicLibrary::AddSymbol.
+        e.get_llvm_evaluator().define_host_symbol("cancellation_foreign_wait",
+            reinterpret_cast<void *>(&cancellation_foreign_wait));
+        e.get_llvm_evaluator().define_host_symbol("cancellation_foreign_invoke",
+            reinterpret_cast<void *>(&cancellation_foreign_invoke));
+        e.get_llvm_evaluator().define_host_symbol(
+            "cancellation_foreign_invoke_sub",
+            reinterpret_cast<void *>(&cancellation_foreign_invoke_sub));
+        REQUIRE(e.execute(R"(
+module foreign_cancellation
+use iso_c_binding
+implicit none
+integer(c_int), target :: retained = 41
+interface
+    subroutine cancellation_foreign_wait() bind(c)
+    end subroutine
+    integer(c_int) function cancellation_foreign_invoke(callback) bind(c)
+        import c_int, c_funptr
+        type(c_funptr), value :: callback
+    end function
+    subroutine cancellation_foreign_invoke_sub(callback) bind(c)
+        import c_funptr
+        type(c_funptr), value :: callback
+    end subroutine
+end interface
+contains
+function callback() bind(c) result(p)
+    type(c_ptr) :: p
+    p = c_loc(retained)
+    call cancellation_foreign_wait()
+    retained = 42
+end function
+end module
+use foreign_cancellation
+)").ok);
+        for (const std::string code : {
+                "cancellation_foreign_invoke(c_funloc(callback))",
+                "call cancellation_foreign_invoke_sub(c_funloc(callback))\nretained = -1"}) {
+            CAPTURE(code);
+            REQUIRE(e.execute("retained = 41").ok);
+            foreign_callback_entered = false;
+            foreign_callback_release = false;
+            foreign_callback_value = 0;
+            int polls = 0;
+            FortranEvaluator::CellIO io;
+            io.cancel_requested = [&]() {
+                if (!foreign_callback_entered.load()) return false;
+                if (++polls == 4) foreign_callback_release = true;
+                return true;
+            };
+            auto result = e.execute(code, false, io);
+            CHECK(foreign_callback_value == 42);
+            CHECK(!result.ok);
+            CHECK(result.error_name == "KeyboardInterrupt");
+            CHECK(result.value.type == FortranEvaluator::EvalResult::none);
+            CHECK(e.execute("retained").value.text() == "42");
+            CHECK(e.execute("6*7").value.text() == "42");
+        }
+    }
+}
+
+TEST_CASE("FortranEvaluator execute: cooperative native JIT cancellation") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        CompilerOptions cu = execute_options();
+        cu.po.fast = mode == 1;
+        cu.std_f23_conformance = mode == 2;
+        FortranEvaluator e(cu);
+        e.get_llvm_evaluator().define_host_symbol("cancellation_progress",
+            reinterpret_cast<void *>(&cancellation_progress));
+        auto run = [&](const std::string &code) {
+            auto result = e.execute(code);
+            REQUIRE_MESSAGE(result.ok, result.error_text());
+        };
+        run(R"(
+use lfortran_display, only: clear_output
+integer :: retained = 41, answer = 100
+module cancel_core
+use lfortran_display, only: clear_output
+use iso_c_binding, only: c_int
+implicit none
+interface
+    subroutine cancellation_progress() bind(c)
+    end subroutine
+end interface
+integer :: cleaned = 0, initialized = 0
+logical :: arm_final = .false.
+integer(c_int), allocatable :: c_data(:)
+type :: owned
+    integer, allocatable :: data(:)
+contains
+    final :: finish_owned
+end type
+contains
+subroutine finish_owned(x)
+    type(owned), intent(inout) :: x
+    integer :: i
+    if (arm_final) then
+        arm_final = .false.
+        call clear_output()
+    end if
+    do i = 1, 4
+        cleaned = cleaned + 1
+    end do
+end subroutine
+integer function leaf(n) result(r)
+    integer, intent(in) :: n
+    r = 17
+    block
+        type(owned) :: local
+        character(:), allocatable :: text
+        allocate(local%data(8))
+        local%data = 5
+        text = 'owned storage'
+        if (n < 0) then
+            call clear_output()
+            do
+            end do
+        end if
+        r = n + 1
+    end block
+end function
+integer function outer(n) result(r)
+    integer, intent(in) :: n
+    integer, allocatable :: scratch(:)
+    allocate(scratch(16))
+    r = leaf(n) + 9
+end function
+function text_result(n) result(r)
+    integer, intent(in) :: n
+    character(len=8) :: r
+    r = 'partial'
+    if (n < 0) then
+        call clear_output()
+        do
+        end do
+    end if
+    r = 'complete'
+end function
+subroutine explicit_cleanup()
+    type(owned), allocatable :: x
+    allocate(x)
+    allocate(x%data(8))
+    arm_final = .true.
+    deallocate(x)
+end subroutine
+integer function bound_size() result(n)
+    integer :: i
+    call clear_output()
+    n = 0
+    do i = 1, 3
+        n = n + 1
+    end do
+    initialized = n
+end function
+integer function initialized_descriptors() result(n)
+    real :: a(bound_size())
+    character(:), allocatable :: z
+    n = size(a)
+end function
+subroutine c_allocate(a, n) bind(c)
+    integer(c_int), allocatable, intent(out) :: a(:)
+    integer(c_int), value :: n
+    allocate(a(3))
+    a = 9
+    if (n < 0) then
+        call clear_output()
+        do
+        end do
+    end if
+end subroutine
+integer(c_int) function c_result(a, n) bind(c) result(r)
+    integer(c_int), allocatable, intent(out) :: a(:)
+    integer(c_int), value :: n
+    call c_allocate(a, n)
+    r = 7
+end function
+function owned_result(n) result(r)
+    integer, intent(in) :: n
+    type(owned) :: r
+    allocate(r%data(3))
+    r%data = n
+    if (n < 0) then
+        call clear_output()
+        do
+        end do
+    end if
+end function
+subroutine accept_owned(x)
+    type(owned), intent(in) :: x
+    if (size(x%data) /= 3) error stop
+end subroutine
+end module
+use cancel_core
+)");
+        const auto caller = std::this_thread::get_id();
+        bool entered = false;
+        int pumps = 0;
+        FortranEvaluator::CellIO io;
+        // No output capture: silent loops still need a caller-side pump and
+        // all hooks must remain on the caller.
+        io.clear_output = [&]() {
+            CHECK(std::this_thread::get_id() == caller);
+            entered = true;
+        };
+        io.cancel_requested = [&]() {
+            CHECK(std::this_thread::get_id() == caller);
+            pumps++;
+            return entered;
+        };
+        auto interrupt = [&](const std::string &code) {
+            CAPTURE(code);
+            entered = false;
+            auto result = e.execute(code, false, io);
+            CHECK(entered);
+            CHECK(pumps > 0);
+            CHECK(!result.ok);
+            CHECK(!result.internal_error);
+            CHECK(result.error_name == "KeyboardInterrupt");
+            CHECK(result.value.type == FortranEvaluator::EvalResult::none);
+        };
+        interrupt("retained = 42\ncall clear_output()\ndo\nend do");
+        // Completed side effects survive; cancellation is not a rollback.
+        CHECK(e.execute("retained").value.text() == "42");
+        run("retained = 41");
+        // A counted loop polls on its back-edge, even with an empty body and
+        // a bound it would not reach.
+        run("integer(8) :: i8");
+        interrupt("call clear_output()\ndo i8 = 1, huge(0_8)\nend do\nretained = -1");
+        CHECK(e.execute("retained").value.text() == "41");
+        // Cancels a cell once it calls cancellation_progress().
+        FortranEvaluator::CellIO timed;
+        timed.cancel_requested = [&]() {
+            if (!cancellation_progress_reached.load()) return false;
+            cancellation_progress_observed = true;
+            return true;
+        };
+        auto progressed = [&](const std::string &code) {
+            CAPTURE(code);
+            cancellation_progress_reached = false;
+            cancellation_progress_observed = false;
+            auto result = e.execute(code, false, timed);
+            CHECK(cancellation_progress_observed.load());
+            CHECK(!result.ok);
+            CHECK(result.error_name == "KeyboardInterrupt");
+        };
+        {
+            // A loop whose body does I/O polls on every iteration, so it
+            // stops long before a chunk of iterations (16384) would end:
+            // each iteration writes 512 values.
+            std::string items = "wx";
+            for (int i = 1; i < 512; i++) items += ", wx";
+            run("integer :: wm = 0\nreal(8) :: wx = 1\ncharacter(len=20000) :: wbuf");
+            progressed("do wm = 1, 100000000\nwrite(wbuf, *) " + items
+                + "\nif (wm == 2) call cancellation_progress()\nend do\nretained = -1");
+            int64_t wm = std::stoll(e.execute("wm").value.text());
+            CHECK(wm > 1);
+            CHECK(wm < 16384);
+            CHECK(e.execute("retained").value.text() == "41");
+        }
+        {
+            // Inner loops that leave through EXIT before a chunk of
+            // iterations (16384) ends do not delay the safepoints of the
+            // loops that contain them: the outermost loop stops long before
+            // a chunk of its own iterations would end. The call makes the
+            // outer body unbounded by itself; "JIT safepoints are inline"
+            // checks that an outer loop without one polls on every
+            // iteration too.
+            run("integer(8) :: ni = 0, nj, nk, ns = 0");
+            progressed(R"(do ni = 1, huge(0_8)
+if (ni == 2) call cancellation_progress()
+do nj = 1, 20000
+if (nj == 300) exit
+do nk = 1, 20000
+if (nk == 300) exit
+ns = ieor(ns*3 + nk, ns/7)
+end do
+end do
+end do
+retained = -1)");
+            int64_t ni = std::stoll(e.execute("ni").value.text());
+            CHECK(ni > 1);
+            CHECK(ni < 16384);
+            CHECK(e.execute("retained").value.text() == "41");
+        }
+        for (int repeat = 0; repeat < 2; repeat++) {
+            interrupt("answer = outer(-1)\nretained = -1");
+            CHECK(e.execute("answer").value.text() == "100");
+            CHECK(e.execute("retained").value.text() == "41");
+            CHECK(e.execute("cleaned").value.text() == std::to_string(4*(repeat+1)));
+        }
+        CHECK(e.execute("outer(2)").value.text() == "12");
+        CHECK(e.execute("cleaned").value.text() == "12");
+        interrupt("text_result(-1)");
+        CHECK(e.execute("text_result(1)").value.text() == "complete");
+        interrupt("'prefix' // text_result(-1)");
+        interrupt("answer = initialized_descriptors()");
+        CHECK(e.execute("answer").value.text() == "100");
+        CHECK(e.execute("initialized").value.text() == "3");
+        interrupt("call explicit_cleanup()\nretained = -1");
+        CHECK(e.execute("cleaned").value.text() == "16");
+        CHECK(e.execute("retained").value.text() == "41");
+        interrupt("call accept_owned(owned_result(-1))");
+        CHECK(e.execute("cleaned").value.text() == "20");
+        run("call accept_owned(owned_result(1))");
+        interrupt("call c_allocate(c_data, -1)");
+        run("if (.not. allocated(c_data)) error stop\n"
+            "if (size(c_data) /= 3) error stop\n"
+            "if (any(c_data /= 9)) error stop");
+        interrupt("answer = c_result(c_data, -1)");
+        CHECK(e.execute("answer").value.text() == "100");
+        run("if (.not. allocated(c_data)) error stop\n"
+            "if (size(c_data) /= 3) error stop\n"
+            "if (any(c_data /= 9)) error stop\n"
+            "deallocate(c_data)");
+        CHECK(e.execute("c_result(c_data, 1)").value.text() == "7");
+        run("deallocate(c_data)");
+        interrupt("program cancelled_program\n"
+            "use lfortran_display, only: clear_output\n"
+            "call clear_output()\ndo\nend do\nend program");
+        FortranEvaluator::CellIO silent;
+        auto start = std::chrono::steady_clock::now();
+        silent.cancel_requested = [&]() {
+            return std::chrono::steady_clock::now() - start >
+                std::chrono::milliseconds(250);
+        };
+        auto stopped = e.execute("do\nend do", false, silent);
+        CHECK(!stopped.ok);
+        CHECK(stopped.error_name == "KeyboardInterrupt");
+        FortranEvaluator::CellIO idle;
+        idle.cancel_requested = []() { return true; };
+        CHECK(e.execute("", false, idle).ok);
+        CHECK(e.execute("retained").value.text() == "41");
+        FortranEvaluator::CellIO broken;
+        broken.cancel_requested = []() -> bool {
+            throw std::runtime_error("cancel pump failed");
+        };
+        auto failed_pump = e.execute("do\nend do", false, broken);
+        CHECK(!failed_pump.ok);
+        CHECK(failed_pump.error_name == "ExecutionError");
+        CHECK(failed_pump.error_value == "cancel pump failed");
+        CHECK(e.execute("retained").value.text() == "41");
+        CHECK(e.execute("2.5d0").value.text() == "2.5");
+        CHECK(e.execute("(1.0, 2.0)").value.type ==
+            FortranEvaluator::EvalResult::complex4);
+        // The runtime's sleep polls the request too and stops early. The
+        // time counts from when the cell runs, not from its compilation.
+        FortranEvaluator::CellIO sleeper;
+        bool sleeping = false;
+        auto sleep_start = std::chrono::steady_clock::now();
+        sleeper.clear_output = [&]() {
+            sleeping = true;
+            sleep_start = std::chrono::steady_clock::now();
+        };
+        sleeper.cancel_requested = [&]() {
+            return sleeping && std::chrono::steady_clock::now() - sleep_start >
+                std::chrono::seconds(1);
+        };
+        auto slept = e.execute("call clear_output()\ncall sleep(30)\nretained = -1",
+            false, sleeper);
+        CHECK(sleeping);
+        CHECK(std::chrono::steady_clock::now() - sleep_start <
+            std::chrono::seconds(10));
+        CHECK(!slept.ok);
+        CHECK(slept.error_name == "KeyboardInterrupt");
+        CHECK(e.execute("retained").value.text() == "41");
+        // %%showllvm shows the code that runs, with its safepoints.
+        auto shown = e.execute("%%showllvm\ninteger :: j\ndo j=1,3\nprint *, j\nend do");
+        REQUIRE(shown.ok);
+        CHECK(shown.output.find("cancel.pending") != std::string::npos);
+        // Optimization may merge the cleanup into the function's return.
+        if (mode != 1) {
+            CHECK(shown.output.find("cancel.cleanup") != std::string::npos);
+        }
+        CHECK(shown.output.find(LCompilers::JITCancellation::request_symbol)
+            != std::string::npos);
+    }
+}
+
+// A safepoint must stay a load and a branch on the request word: an
+// out-of-line call made interactive loops several times slower. Procedures
+// that cannot reach a safepoint carry no cancellation code at all.
+TEST_CASE("FortranEvaluator JIT safepoints are inline") {
+    for (int mode = 0; mode < 2; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        FortranEvaluator e(options);
+        LCompilers::LocationManager lm;
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        auto m = e.get_llvm2(R"(
+module safepoint_cost
+implicit none
+integer(8) :: total
+contains
+integer(8) function tiny(k)
+    integer(8), intent(in) :: k
+    tiny = iand(k, 7_8)
+end function
+subroutine sum_direct(n)
+    integer(8), intent(in) :: n
+    integer(8) :: k
+    total = 0
+    do k = 1, n
+        total = total + k
+    end do
+end subroutine
+subroutine sum_calls(n)
+    integer(8), intent(in) :: n
+    integer(8) :: k
+    total = 0
+    do k = 1, n
+        total = total + tiny(k)
+    end do
+end subroutine
+subroutine nested_exit(n, m)
+    integer(8), intent(in) :: n, m
+    integer(8) :: k, j
+    total = 0
+    do k = 1, n
+        do j = 1, n
+            if (j == m) exit
+            total = ieor(total*3 + j, total/7)
+        end do
+    end do
+end subroutine
+subroutine write_each(n)
+    integer(8), intent(in) :: n
+    integer(8) :: k
+    character(len=32) :: buf
+    do k = 1, n
+        write(buf, '(i0)') k
+    end do
+end subroutine
+end module
+)", lm, lpm, d);
+        REQUIRE(m.ok);
+        llvm::Module &module = *m.result->m_m;
+        std::set<const llvm::Value *> words;
+        for (const char *name : {LCompilers::JITCancellation::request_symbol,
+                LCompilers::JITCancellation::observed_symbol,
+                LCompilers::JITCancellation::protect_symbol,
+                LCompilers::JITCancellation::defer_symbol}) {
+            if (auto *word = module.getNamedGlobal(name)) words.insert(word);
+        }
+        const llvm::Value *request = module.getNamedGlobal(
+            LCompilers::JITCancellation::request_symbol);
+        REQUIRE(request);
+        auto function = [&](const std::string &suffix) -> llvm::Function & {
+            for (llvm::Function &fn : module) {
+                const std::string name = fn.getName().str();
+                if (!fn.isDeclaration() && name.size() >= suffix.size()
+                        && name.compare(name.size() - suffix.size(),
+                            suffix.size(), suffix) == 0) {
+                    return fn;
+                }
+            }
+            FAIL("no function " << suffix);
+            throw std::logic_error("unreachable");
+        };
+        auto polls_in = [&](llvm::Loop *loop) {
+            int polls = 0;
+            for (llvm::BasicBlock *bb : loop->blocks()) {
+                for (llvm::Instruction &i : *bb) {
+                    auto *load = llvm::dyn_cast<llvm::LoadInst>(&i);
+                    if (load && load->getPointerOperand() == request) {
+                        CHECK(load->isAtomic());
+                        CHECK(load->getOrdering() == llvm::AtomicOrdering::Monotonic);
+                        polls++;
+                    }
+                }
+            }
+            return polls;
+        };
+        // The calls in the loops of `fn`, other than intrinsics (LLVM 19
+        // computes the end of a chunk with llvm.umin). Each DO loop
+        // (optimization may version one) polls the request word once per
+        // chunk of iterations, outside the loop that runs a chunk.
+        auto loop_calls = [&](llvm::Function &fn) {
+            std::vector<std::string> calls;
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            REQUIRE(!loops.empty());
+            for (llvm::Loop *loop : loops) {
+                CHECK(polls_in(loop) == 1);
+                for (llvm::BasicBlock *bb : loop->blocks()) {
+                    for (llvm::Instruction &i : *bb) {
+                        if (auto *call = llvm::dyn_cast<llvm::CallInst>(&i)) {
+                            auto *callee = call->getCalledFunction();
+                            if (callee && callee->isIntrinsic()) continue;
+                            calls.push_back(callee ? callee->getName().str() : "?");
+                        }
+                    }
+                }
+            }
+            // Optimization may replace the loop of a chunk by its result.
+            for (llvm::Loop *loop : loops.getLoopsInPreorder()) {
+                if (loop->getSubLoops().empty()
+                        && (mode == 0 || loop->getParentLoop())) {
+                    CHECK(polls_in(loop) == 0);
+                }
+            }
+            return calls;
+        };
+        CHECK(loop_calls(function("_sum_direct")).empty());
+        // Optimization may inline the call.
+        auto calls = loop_calls(function("_sum_calls"));
+        CHECK(calls.size() == (mode == 1 ? calls.size() : 1));
+        for (const std::string &callee : calls) {
+            CHECK(callee.find("tiny") != std::string::npos);
+        }
+        if (mode == 1) {
+            // Then the loop of a chunk is vectorized.
+            bool vectorized = false;
+            for (llvm::BasicBlock &bb : function("_sum_calls")) {
+                for (llvm::Instruction &i : bb) {
+                    vectorized = vectorized || i.getType()->isVectorTy();
+                }
+            }
+            CHECK(vectorized);
+        }
+        // Each iteration of a loop that contains a loop polls: an inner
+        // loop that leaves through EXIT before its chunk ends never polls,
+        // so only innermost loops may be chunked. Every loop with a subloop
+        // (the outer DO loop, or the loop of the inner one's chunks) polls
+        // in its own blocks, outside its subloops.
+        {
+            llvm::Function &fn = function("_nested_exit");
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            REQUIRE(!loops.empty());
+            for (llvm::Loop *loop : loops.getLoopsInPreorder()) {
+                if (loop->getSubLoops().empty()) continue;
+                int polls = 0;
+                for (llvm::BasicBlock *bb : loop->blocks()) {
+                    if (loops.getLoopFor(bb) != loop) continue;
+                    for (llvm::Instruction &i : *bb) {
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&i);
+                        if (load && load->getPointerOperand() == request) {
+                            polls++;
+                        }
+                    }
+                }
+                CAPTURE(loop->getLoopDepth());
+                CHECK(polls == 1);
+            }
+        }
+        // A body that does I/O may take long: its loop polls on every
+        // iteration, not once per chunk.
+        {
+            llvm::Function &fn = function("_write_each");
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            REQUIRE(!loops.empty());
+            for (llvm::Loop *loop : loops.getLoopsInPreorder()) {
+                CHECK(polls_in(loop) == 1);
+            }
+        }
+        for (llvm::BasicBlock &bb : function("_tiny")) {
+            for (llvm::Instruction &i : bb) {
+                for (const llvm::Use &operand : i.operands()) {
+                    CHECK(words.count(operand.get()) == 0);
+                }
+            }
+        }
+    }
+}
+
+// With safepoints, a counted DO loop runs its iterations in chunks (see
+// generate_counted_do_loop). The iteration count and the final value of the
+// DO variable do not change, also across chunks and near the bounds of its
+// kind.
+TEST_CASE("FortranEvaluator chunked DO loops") {
+    for (int mode = 0; mode < 2; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        FortranEvaluator e(options);
+        auto ok = [&](const std::string &code) {
+            CAPTURE(code);
+            auto r = e.evaluate2(code);
+            REQUIRE(r.ok);
+        };
+        auto i64 = [&](const std::string &expr) {
+            CAPTURE(expr);
+            auto r = e.evaluate2("int(" + expr + ", 8)");
+            REQUIRE(r.ok);
+            REQUIRE(r.result.type == FortranEvaluator::EvalResult::integer8);
+            return r.result.i64;
+        };
+        ok("integer :: i, j, n, cnt\ninteger(1) :: b\ninteger(2) :: h\n"
+            "integer(8) :: k, s8");
+        struct Case { const char *loop; int64_t count, last; const char *v; };
+        const Case cases[] = {
+            {"do i = 1, 0", 0, 1, "i"},
+            {"do i = 100000, 1, -3", 33334, -2, "i"},
+            {"do i = huge(0) - 20000, huge(0) - 1", 20000, 2147483647, "i"},
+            {"do i = -huge(0) - 1, -huge(0) + 40000, 2", 20001,
+                -2147443646, "i"},
+            {"do h = -32768_2, 32766_2", 65535, 32767, "h"},
+            {"do h = 32767_2, -32767_2, -1_2", 65535, -32768, "h"},
+            {"do b = -128_1, 126_1", 255, 127, "b"},
+            {"do i = 1, 16384", 16384, 16385, "i"},
+            {"do i = 1, 16385", 16385, 16386, "i"},
+            {"do k = 1_8, 3000000000_8, 7_8", 428571429, 3000000004LL, "k"},
+        };
+        for (const Case &c : cases) {
+            CAPTURE(c.loop);
+            ok(std::string("cnt = 0\n") + c.loop + "\ncnt = cnt + 1\nend do");
+            CHECK(i64("cnt") == c.count);
+            CHECK(i64(c.v) == c.last);
+        }
+        ok("cnt = 0\ndo i = 1, 50000\nif (mod(i, 7) == 0) cycle\n"
+            "if (i == 40000) exit\ncnt = cnt + 1\nend do");
+        CHECK(i64("cnt") == 34285);
+        CHECK(i64("i") == 40000);
+        ok("cnt = 0\nn = 20000\ndo i = 1, 3\ndo j = 1, n\ncnt = cnt + 1\n"
+            "end do\nend do");
+        CHECK(i64("cnt") == 60000);
+        CHECK(i64("j") == 20001);
+        ok("s8 = 0\ndo k = huge(0_8) - 40000, huge(0_8) - 3, 3\n"
+            "s8 = s8 + 1\nend do");
+        CHECK(i64("s8") == 13333);
+        CHECK(i64("k") == INT64_MAX - 1);
+    }
+}
+
+// A later cell holds the ASR of an earlier cell's procedures before the
+// passes; whether a call may unwind follows the code that the JIT runs.
+TEST_CASE("FortranEvaluator JIT safepoints after calls into earlier cells") {
+    auto options = execute_options();
+    FortranEvaluator e(options);
+    auto defined = e.execute(R"(
+module earlier_cell
+implicit none
+real :: big(1000)
+contains
+integer(8) function tiny(k)
+    integer(8), intent(in) :: k
+    tiny = iand(k, 7_8)
+end function
+real function fill() result(r)
+    big = 1
+    r = 2
+end function
+end module
+use earlier_cell
+real :: x
+)");
+    REQUIRE_MESSAGE(defined.ok, defined.error_text());
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    auto m = e.get_llvm2("x = fill() + tiny(3_8)", lm, lpm, d);
+    REQUIRE(m.ok);
+    const llvm::Value *request = m.result->m_m->getNamedGlobal(
+        LCompilers::JITCancellation::request_symbol);
+    REQUIRE(request);
+    // Whether the block of the call of `callee` polls after the call.
+    auto polled_after = [&](const std::string &callee) {
+        for (llvm::Function &fn : *m.result->m_m) {
+            for (llvm::BasicBlock &bb : fn) {
+                bool called = false, polled = false;
+                for (llvm::Instruction &i : bb) {
+                    if (auto *call = llvm::dyn_cast<llvm::CallInst>(&i)) {
+                        auto *target = call->getCalledFunction();
+                        if (target && target->getName().str().find(callee)
+                                != std::string::npos) {
+                            called = true;
+                        }
+                    } else if (auto *load = llvm::dyn_cast<llvm::LoadInst>(&i)) {
+                        polled = polled || (called && load->getPointerOperand() == request);
+                    }
+                }
+                if (called) return polled;
+            }
+        }
+        FAIL("no call of " << callee);
+        return false;
+    };
+    // The array assignment of `fill` became a loop with a safepoint.
+    CHECK(polled_after("_fill"));
+    CHECK(!polled_after("_tiny"));
+}
+
+// `obj%proc()` is a FunctionPointerCast call. Cancellation has to leave the
+// call before the result is stored, or the session keeps the null return.
+TEST_CASE("FortranEvaluator execute: cancel an implicit procedure component") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        options.implicit_interface = true;
+        FortranEvaluator e(options);
+        auto setup = e.execute(R"(
+module component_cancel
+use lfortran_display, only: clear_output
+implicit none
+type :: holder
+    procedure(integer), pointer, nopass :: proc
+    procedure(), pointer, nopass :: sub
+end type
+type(holder) :: obj
+integer :: answer = 100
+contains
+integer function spinning() result(r)
+    r = 0
+    call clear_output()
+    do
+    end do
+    r = 9
+end function
+subroutine spinning_sub()
+    call clear_output()
+    do
+    end do
+end subroutine
+integer function ready() result(r)
+    r = 9
+end function
+end module
+use component_cancel
+obj%proc => spinning
+obj%sub => spinning_sub
+)");
+        REQUIRE_MESSAGE(setup.ok, setup.error_text());
+        const auto caller = std::this_thread::get_id();
+        bool entered = false;
+        FortranEvaluator::CellIO io;
+        io.clear_output = [&]() {
+            CHECK(std::this_thread::get_id() == caller);
+            entered = true;
+        };
+        io.cancel_requested = [&]() {
+            CHECK(std::this_thread::get_id() == caller);
+            return entered;
+        };
+        auto interrupt = [&](const std::string &code) {
+            CAPTURE(code);
+            entered = false;
+            auto result = e.execute(code, false, io);
+            CHECK(entered);
+            CHECK(!result.ok);
+            CHECK(!result.internal_error);
+            CHECK(result.error_name == "KeyboardInterrupt");
+            CHECK(result.value.type == FortranEvaluator::EvalResult::none);
+        };
+        interrupt("answer = obj%proc()");
+        CHECK(e.execute("answer").value.text() == "100");
+        interrupt("call obj%sub()\nanswer = -1");
+        CHECK(e.execute("answer").value.text() == "100");
+        auto retarget = e.execute("obj%proc => ready");
+        REQUIRE_MESSAGE(retarget.ok, retarget.error_text());
+        auto done = e.execute("answer = obj%proc()");
+        REQUIRE_MESSAGE(done.ok, done.error_text());
+        CHECK(e.execute("answer").value.text() == "9");
+    }
+}
+
+TEST_CASE("FortranEvaluator execute: protected commands and runtime hook lifetime") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        FortranEvaluator e(options);
+        REQUIRE(e.execute(R"(
+module protected_command
+use lfortran_display, only: clear_output
+integer :: command_cleaned = 0
+type :: command_owner
+contains
+    final :: finish_command
+end type
+contains
+subroutine finish_command(x)
+type(command_owner), intent(inout) :: x
+integer :: status, command_status
+call clear_output()
+call execute_command_line('echo protected-command', exitstat=status, cmdstat=command_status)
+if (status /= 0 .or. command_status /= 0) error stop
+command_cleaned = command_cleaned + 1
+end subroutine
+end module
+use protected_command
+)").ok);
+        bool requested = false;
+        std::string output;
+        FortranEvaluator::CellIO io;
+        io.cancel_requested = [&]() { return requested; };
+        io.clear_output = [&]() { requested = true; };
+        io.output = [&](int, const std::string &text) { output += text; };
+        for (int repeat = 1; repeat <= 2; repeat++) {
+            requested = false;
+            output.clear();
+            auto cell = e.execute("block\ntype(command_owner) :: x\nend block\n"
+                "print *, 'not-reached'", false, io);
+            CHECK(!cell.ok);
+            CHECK(cell.error_name == "KeyboardInterrupt");
+            CHECK(output.find("protected-command") != std::string::npos);
+            CHECK(output.find("not-reached") == std::string::npos);
+            CHECK(e.execute("command_cleaned").value.text() == std::to_string(repeat));
+            // A completed cancellation must not leave the runtime polling that
+            // cell when later execution has no cancellation callback.
+            FortranEvaluator::CellIO capture;
+            capture.output = io.output;
+            output.clear();
+            auto next = e.execute("call execute_command_line('echo next-command')",
+                false, capture);
+            CHECK(next.ok);
+            CHECK(output.find("next-command") != std::string::npos);
+        }
+    }
+}
+
+TEST_CASE("FortranEvaluator execute: cancellable stdin and protected input") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        FortranEvaluator e(options);
+        REQUIRE(e.execute("integer :: input_saved = 17").ok);
+        bool requested = false;
+        const auto owner = std::this_thread::get_id();
+        FortranEvaluator::CellIO io;
+        io.cancel_requested = [&]() { return requested; };
+        io.input = [&](std::string &, bool interruptible) {
+            CHECK(std::this_thread::get_id() == owner);
+            CHECK(interruptible);
+            requested = true;
+            return -1;
+        };
+        for (const auto &code : {
+                "read *, input_saved",
+                "block\nreal :: r\nread(*,*,decimal='comma') r\nend block",
+                "block\nlogical :: b\nread *, b\nend block",
+                "block\ninteger :: a(2,2), i, j\n"
+                "read *, ((a(i,j), i=1,2), j=1,2)\nend block"}) {
+            requested = false;
+            auto cell = e.execute(code, false, io);
+            INFO(cell.error_text());
+            CHECK(!cell.ok);
+            CHECK(cell.error_name == "KeyboardInterrupt");
+            CHECK(_lfortran_get_decimal_mode(5) == 0);
+            auto next = e.execute("input_saved+1");
+            REQUIRE(next.ok);
+            CHECK(next.value.i32 == 18);
+        }
+        REQUIRE(e.execute(R"(
+module protected_input
+integer :: final_input = 0
+type :: owned_input
+contains
+    final :: finish_input
+end type
+contains
+subroutine finish_input(x)
+type(owned_input), intent(inout) :: x
+read *, final_input
+end subroutine
+end module
+use protected_input
+)").ok);
+        requested = false;
+        io.input = [&](std::string &record, bool interruptible) {
+            CHECK(std::this_thread::get_id() == owner);
+            CHECK(!interruptible);
+            requested = true;
+            record = "7";
+            return 0;
+        };
+        auto cell = e.execute("block\ntype(owned_input) :: x\nend block\ndo\nend do",
+            false, io);
+        CHECK(!cell.ok);
+        CHECK(cell.error_name == "KeyboardInterrupt");
+        auto next = e.execute("final_input");
+        REQUIRE(next.ok);
+        CHECK(next.value.i32 == 7);
+    }
+}
+
+#endif
 
 TEST_CASE("FortranEvaluator execute: results and cells") {
     CompilerOptions cu = execute_options();
@@ -6878,7 +7813,7 @@ TEST_CASE("FortranEvaluator execute: streaming hook affinity and failure cleanup
         CHECK(output == "printed\n");
         events += "clear ";
     };
-    io.input = [&](std::string &record) {
+    io.input = [&](std::string &record, bool) {
         CHECK(std::this_thread::get_id() == owner);
         CHECK(output == "printed\nprompt");
         events += "input";
@@ -6905,7 +7840,7 @@ if (ios /= 0 .or. answer /= 42) error stop
     CHECK(!cell.ok);
     CHECK(cell.error_name == "DisplayError");
     CHECK(cell.error_value == "display failed: clear failed");
-    io.input = [&](std::string &) -> int {
+    io.input = [&](std::string &, bool) -> int {
         CHECK(std::this_thread::get_id() == owner);
         throw std::runtime_error("input failed");
     };
@@ -6974,7 +7909,7 @@ struct InputRecords {
     int end = -1;
     FortranEvaluator::CellIO io() {
         FortranEvaluator::CellIO io;
-        io.input = [this](std::string &record) {
+        io.input = [this](std::string &record, bool) {
             calls++;
             if (next == records.size()) return end;
             record = records[next++];
@@ -7205,7 +8140,7 @@ if (ios <= 0) error stop
     CHECK(disconnected.calls == 1);
     // A hook's exception must not unwind through generated code.
     FortranEvaluator::CellIO throwing;
-    throwing.input = [](std::string &) -> int {
+    throwing.input = [](std::string &, bool) -> int {
         throw std::runtime_error("input callback failure");
     };
     run_cell(e, "read(*,*,iostat=ios) a\nif (ios <= 0) error stop", throwing);
