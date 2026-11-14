@@ -10125,6 +10125,118 @@ public:
         return iface;
     }
 
+    // Passes each substring of an array section that `f` may define through a temporary
+    void pass_substring_sections_through_temporaries(Vec<ASR::call_arg_t> &args,
+            ASR::Function_t *f, size_t offset,
+            std::vector<ASR::stmt_t*> &copy_backs) {
+        for (size_t i = 0; i < args.size() && i + offset < f->n_args; i++) {
+            ASR::expr_t *actual = args[i].m_value;
+            if (substring_section_constructors.count(actual) == 0) {
+                continue;
+            }
+            ASR::Variable_t *dummy = ASRUtils::expr_to_variable_or_null(
+                f->m_args[i + offset]);
+            ASR::ArrayConstructor_t *constructor =
+                ASR::down_cast<ASR::ArrayConstructor_t>(actual);
+            ASR::ImpliedDoLoop_t *loop =
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(constructor->m_args[0]);
+            ASR::StringSection_t *section =
+                ASR::down_cast<ASR::StringSection_t>(loop->m_values[0]);
+            ASR::ArrayItem_t *element =
+                ASR::down_cast<ASR::ArrayItem_t>(section->m_arg);
+            size_t n_ranges = 0;
+            for (size_t j = 0; j < element->n_args; j++) {
+                n_ranges += element->m_args[j].m_right == loop->m_var;
+            }
+            ASR::symbol_t *base = ASRUtils::symbol_get_past_external(
+                extract_assignment_base_symbol(section->m_arg));
+            if (dummy == nullptr || dummy->m_intent == ASRUtils::intent_in ||
+                    dummy->m_value_attr || ASRUtils::is_pointer(dummy->m_type) ||
+                    ASRUtils::is_allocatable(dummy->m_type) || n_ranges != 1 ||
+                    ASRUtils::is_named_constant_designator(section->m_arg) ||
+                    base == nullptr || !ASR::is_a<ASR::Variable_t>(*base) ||
+                    ASR::down_cast<ASR::Variable_t>(base)->m_intent == ASRUtils::intent_in) {
+                continue;
+            }
+            const Location &loc = actual->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            auto add_temporary = [&](const std::string &name, ASR::ttype_t *type,
+                    ASR::expr_t *value, bool realloc_lhs) {
+                std::string tmp_name = current_scope->get_unique_name(name);
+                ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, loc, current_scope,
+                        s2c(al, tmp_name), nullptr, 0, ASR::intentType::Local,
+                        nullptr, nullptr, ASR::storage_typeType::Default, type,
+                        nullptr, current_procedure_abi_type, ASR::Public,
+                        ASR::presenceType::Required, false));
+                current_scope->add_symbol(tmp_name, tmp_sym);
+                ASR::expr_t *tmp_var = b.Var(tmp_sym);
+                current_body->push_back(al, ASRUtils::STMT(
+                    ASRUtils::make_Assignment_t_util(al, loc, tmp_var, value,
+                        nullptr, realloc_lhs, false)));
+                return tmp_var;
+            };
+            // The subscripts are evaluated once, before the call, which may change their variables
+            auto evaluate_once = [&](ASR::expr_t *&subscript) {
+                if (subscript != nullptr && ASRUtils::expr_value(subscript) == nullptr) {
+                    subscript = add_temporary("__lfortran_substring_subscript",
+                        ASRUtils::duplicate_type(al, ASRUtils::expr_type(subscript)),
+                        subscript, false);
+                }
+            };
+            evaluate_once(loop->m_start);
+            evaluate_once(loop->m_end);
+            evaluate_once(loop->m_increment);
+            evaluate_once(section->m_start);
+            evaluate_once(section->m_end);
+            evaluate_once(section->m_step);
+            for (size_t j = 0; j < element->n_args; j++) {
+                if (element->m_args[j].m_right != loop->m_var) {
+                    evaluate_once(element->m_args[j].m_right);
+                }
+            }
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(section->m_type);
+            if (ASRUtils::expr_value(ASRUtils::get_string_type(section->m_type)->m_len) == nullptr) {
+                section->m_type = b.String(b.Add(b.Sub(section->m_end, section->m_start),
+                    b.i_t(1, ASRUtils::expr_type(section->m_start))),
+                    ASR::ExpressionLength, ASR::DescriptorString, kind);
+            }
+            ASR::ttype_t *tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::create_array_type_with_empty_dims(al, 1,
+                    b.String(nullptr, ASR::DeferredLength, ASR::DescriptorString, kind))));
+            ASR::expr_t *tmp_var = add_temporary("__lfortran_substring_section",
+                tmp_type, actual, true);
+            args.p[i].m_value = tmp_var;
+
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::ttype_t *index_type = ASRUtils::expr_type(loop->m_var);
+            ASR::expr_t *start = CastingUtil::perform_casting(
+                duplicator.duplicate_expr(loop->m_start), index_type, al, loc);
+            ASR::expr_t *step = CastingUtil::perform_casting(
+                duplicator.duplicate_expr(loop->m_increment), index_type, al, loc);
+            Vec<ASR::array_index_t> tmp_index;
+            tmp_index.reserve(al, 1);
+            ASR::array_index_t index;
+            index.loc = loc;
+            index.m_left = nullptr;
+            index.m_right = b.Add(b.Div(b.Sub(loop->m_var, start), step),
+                b.i_t(1, index_type));
+            index.m_step = nullptr;
+            tmp_index.push_back(al, index);
+            ASR::expr_t *tmp_element = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(
+                al, loc, duplicator.duplicate_expr(tmp_var), tmp_index.p,
+                tmp_index.size(), ASRUtils::extract_type(tmp_type),
+                ASR::arraystorageType::ColMajor, nullptr));
+            ASR::stmt_t *copy_back = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, duplicator.duplicate_expr(&section->base), tmp_element,
+                nullptr, false, false));
+            copy_backs.push_back(b.DoLoop(loop->m_var,
+                duplicator.duplicate_expr(loop->m_start),
+                duplicator.duplicate_expr(loop->m_end), {copy_back},
+                duplicator.duplicate_expr(loop->m_increment)));
+        }
+    }
+
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
         if (handle_conditional_arg_subroutine(x)) {
             return;
@@ -10346,8 +10458,10 @@ public:
             process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
         }
 
+        std::vector<ASR::stmt_t*> copy_backs;
         // checking for intent mismatch   
         if (f) { 
+            pass_substring_sections_through_temporaries(args, f, 0, copy_backs);
             for (size_t i = 0; i < args.size() && i < f->n_args; i++) {
                 if (args[i].m_value == nullptr) continue;
                 ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
@@ -10835,7 +10949,19 @@ public:
                 }
             }
 
+            pass_substring_sections_through_temporaries(args, f, offset, copy_backs);
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                *ASRUtils::symbol_get_past_external(final_sym))) {
+            // A generic type-bound call leaves `f` unset
+            ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    ASRUtils::symbol_get_past_external(final_sym))->m_proc);
+            if (ASR::is_a<ASR::Function_t>(*proc)) {
+                pass_substring_sections_through_temporaries(args,
+                    ASR::down_cast<ASR::Function_t>(proc),
+                    (v_expr == nullptr || nopass) ? 0 : 1, copy_backs);
+            }
         }
         ASR::stmt_t* cast_stmt = nullptr;
         ASR::call_arg_t* call_args = args.p;
@@ -10869,10 +10995,14 @@ public:
             current_body->push_back(al, cast_stmt);
         }
 
+        if (has_alt_returns || !copy_backs.empty()) {
+            current_body->push_back(al, ASRUtils::STMT(tmp));
+            for (ASR::stmt_t* copy_back : copy_backs) {
+                current_body->push_back(al, copy_back);
+            }
+            tmp = nullptr;
+        }
         if (has_alt_returns) {
-            // Push the SubroutineCall to current_body and generate if-goto for alternate returns
-            ASR::stmt_t* call_stmt = ASRUtils::STMT(tmp);
-            current_body->push_back(al, call_stmt);
             // Generate: if (alt_ret == 1) goto label1; if (alt_ret == 2) goto label2; ...
             ASR::symbol_t* alt_ret_local = current_scope->get_symbol(alt_ret_caller_name);
             ASR::expr_t *alt_ret_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, alt_ret_local));
