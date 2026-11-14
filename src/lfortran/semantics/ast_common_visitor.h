@@ -19541,26 +19541,22 @@ public:
                         !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
                     report_array_element_for_array_dummy(diag, args[i].m_value, f->m_args[i]);
                 }
-                // `w%u(2)` with `w` an array is one element of the component
-                // taken from every element of the base, so what it denotes is
-                // strided by the size of an element of the base. Passing it
-                // would hand the callee the elements that follow the first one
-                // in memory instead, and write them back through an
-                // `intent(out)` or `intent(inout)` dummy. Reject it until the
-                // argument is built by gathering the elements it names.
-                if (args[i].m_value &&
-                        ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
-                        ASRUtils::struct_base_lending_shape(
-                            ASR::down_cast<ASR::ArrayItem_t>(args[i].m_value))
-                            != nullptr) {
-                    diag.add(diag::Diagnostic(
-                        "Passing an element of an array component of an array "
-                        "as an argument is not supported yet",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {args[i].m_value->base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
+            }
+        }
+        for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
+            // `w%u(2)` is passed as a copy, which a pointer dummy must not point to.
+            if (args[i].m_value &&
+                    ASRUtils::is_pointer(ASRUtils::expr_type(f->m_args[i])) &&
+                    ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
+                    ASRUtils::struct_base_lending_shape(
+                        ASR::down_cast<ASR::ArrayItem_t>(args[i].m_value)) != nullptr) {
+                diag.add(diag::Diagnostic(
+                    "Passing an element of an array component of an array "
+                    "to a pointer dummy argument is not supported yet",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {args[i].m_value->base.loc})
+                    }));
+                throw SemanticAbort();
             }
         }
         check_array_actual_for_scalar_dummy(v, f, args);
