@@ -28268,9 +28268,9 @@ public:
 
     void visit_BoolOp(const AST::BoolOp_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag, boolop2str[x.m_op], current_scope, current_function_dependencies, current_module_dependencies);
     }
 
@@ -28490,11 +28490,11 @@ public:
     void visit_ConditionalExpr(const AST::ConditionalExpr_t &x) {
         reject_conditional_expr_in_restricted_context(x.base.base.loc);
         this->visit_expr(*x.m_test);
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_body);
-        ASR::expr_t *body = ASRUtils::EXPR(tmp);
+        ASR::expr_t *body = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_orelse);
-        ASR::expr_t *orelse = ASRUtils::EXPR(tmp);
+        ASR::expr_t *orelse = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         ensure_not_assumed_rank(test, "Conditional expression", x.base.base.loc);
         ensure_not_assumed_rank(body, "Conditional expression", x.base.base.loc);
         ensure_not_assumed_rank(orelse, "Conditional expression", x.base.base.loc);

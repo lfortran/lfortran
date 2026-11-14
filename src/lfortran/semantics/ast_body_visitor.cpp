@@ -11157,7 +11157,7 @@ public:
         all_blocks_nesting++;
         all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
@@ -11343,7 +11343,7 @@ public:
             CurrentBodyScope body_scope(*this, &test_stmts, current_scope);
             visit_expr(*x.m_test);
         }
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body + test_stmts.size() + 1);
         if (test_stmts.size() > 0) {
