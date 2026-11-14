@@ -1477,6 +1477,8 @@ RUN(NAME read_real16_internal_01 LABELS gfortran llvm COPY_TO_BIN read_real16_in
 RUN(NAME real16_softfloat_trunc_01 LABELS gfortran llvm)
 RUN(NAME real16_softfloat_mul_01 LABELS gfortran llvm)
 RUN(NAME real16_softfloat_extend_01 LABELS gfortran llvm)
+RUN(NAME real16_parameter_array_item_01 LABELS gfortran llvm)
+RUN(NAME complex16_cmplx_kind_const_01 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
