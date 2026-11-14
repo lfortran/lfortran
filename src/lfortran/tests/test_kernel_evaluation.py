@@ -219,8 +219,10 @@ def interrupt_queued(client, stop_on_error, queued_code):
     msg_id = client.execute("print '(a)', 'loop-started'\ndo\nend do", **kwargs)
     wait_iopub(client, msg_id, streamed("loop-started\n"), "loop did not start")
     queued = client.execute(queued_code)
-    # Let the queued request reach the kernel before the interrupt does.
-    time.sleep(0.5)
+    # Let the queued request reach the kernel before the interrupt does. The
+    # protocol has no acknowledgement of a queued request to wait for; both
+    # travel over local sockets, so this is ample even on a loaded machine.
+    time.sleep(2)
     request = send_interrupt(client)
     replies = shell_replies(client, {msg_id, queued})
     assert replies[msg_id]["status"] == "error", replies
@@ -275,8 +277,9 @@ def check_interruption(client, directory, builtin):
     queued, _, _ = interrupt_queued(client, None, "saved_interrupt = 0")
     assert queued["status"] in ("aborted", "error"), queued
     assert "ename" not in queued, queued
-    # Xeus also aborts requests that arrive while it drains the queue.
-    time.sleep(0.5)
+    # Xeus also aborts requests that arrive while it drains the queue, which
+    # it has done by the time it replied to the aborted request.
+    time.sleep(2)
     check(client, "interrupt_plus(saved_interrupt)", ["42"])
     # The partial effects of an interrupted cell remain.
     started = directory / "loop-started"
@@ -387,7 +390,11 @@ def check_command_interruption(client, directory, builtin):
             deadline = time.monotonic() + 10
             while any(process_running(pid) for pid in owned) and time.monotonic() < deadline:
                 time.sleep(0.01)
-            assert not any(process_running(pid) for pid in owned), ("surviving children", owned)
+            if any(process_running(pid) for pid in owned):
+                states = subprocess.run(["ps", "-o", "pid,ppid,pgid,stat,etime,args", "-p",
+                                         ",".join(map(str, owned))],
+                                        capture_output=True, text=True).stdout
+                raise AssertionError(("surviving children", owned, states, messages))
             assert unrelated.poll() is None, "command cancellation stopped an unrelated process"
             assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
                            for m in messages), messages
