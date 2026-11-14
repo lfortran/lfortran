@@ -121,6 +121,20 @@ bool picked(ASR::FunctionCall_t *call) {
         && cost_with_loops(fn->m_body, fn->n_body) <= inline_max_cost;
 }
 
+// The most a subroutine's statements may cost for its calls to be inlined.
+constexpr int64_t inline_sub_max_cost = 1024;
+
+// Whether the calls of a subroutine are inlined: the lanes of an iteration
+// cannot share a loop that calls a subroutine (it may assign anything), but
+// can share one whose body the subroutine's statements are part of.
+bool picked_sub(ASR::SubroutineCall_t *call) {
+    ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
+    if (!ASR::is_a<ASR::Function_t>(*f)) return false;
+    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
+    return gpu_subroutine_inlinable(fn)
+        && cost_with_loops(fn->m_body, fn->n_body) <= inline_sub_max_cost;
+}
+
 bool has_picked_call(ASR::expr_t *e) {
     struct Find : public ASR::BaseWalkVisitor<Find> {
         bool found = false;
@@ -145,6 +159,8 @@ public:
 private:
     Allocator &al;
     int offset_kind;
+    // How many loops the statements being visited are in.
+    int loops = 0;
 
     void stmt(SymbolTable *scope, ASR::stmt_t *&s) {
         switch (s->type) {
@@ -170,18 +186,33 @@ private:
             }
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
+                loops++;
                 body(scope, x->m_body, x->n_body);
+                loops--;
                 return;
             }
             case ASR::stmtType::DoConcurrentLoop: {
                 ASR::DoConcurrentLoop_t *x =
                     ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                loops++;
                 body(scope, x->m_body, x->n_body);
+                loops--;
                 return;
             }
             case ASR::stmtType::WhileLoop: {
                 ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                loops++;
                 body(scope, x->m_body, x->n_body);
+                loops--;
+                return;
+            }
+            case ASR::stmtType::SubroutineCall: {
+                // Only a call in a loop: that is what the lanes share out.
+                if (loops == 0) return;
+                ASR::SubroutineCall_t *c =
+                    ASR::down_cast<ASR::SubroutineCall_t>(s);
+                if (!picked_sub(c)) return;
+                subroutine_call(scope, s);
                 return;
             }
             case ASR::stmtType::Select: {
@@ -204,6 +235,30 @@ private:
             default:
                 return;
         }
+    }
+
+    // Inlines the call statement in a copy of it, which replaces it when
+    // the call could be.
+    void subroutine_call(SymbolTable *scope, ASR::stmt_t *&s) {
+        GpuDuplicator dup(al, scope);
+        std::vector<std::pair<SymbolTable*, std::string>> added;
+        dup.added = &added;
+        Vec<ASR::stmt_t*> copy;
+        dup.duplicate_body(&s, 1, copy);
+        GpuInliner inl(al, picked, offset_kind);
+        inl.select_sub = picked_sub;
+        ASR::stmt_t **cp = copy.p;
+        size_t cn = copy.n;
+        if (!dup.ok || !inl.run(scope, cp, cn) || cn != 1) {
+            inl.rollback();
+            for (auto it = added.rbegin(); it != added.rend(); ++it) {
+                if (it->first->get_symbol(it->second)) {
+                    it->first->erase_symbol(it->second);
+                }
+            }
+            return;
+        }
+        s = cp[0];
     }
 
     // Inlines the picked calls of an assignment in a copy of it, which
