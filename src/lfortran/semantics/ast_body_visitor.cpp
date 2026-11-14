@@ -10944,6 +10944,17 @@ public:
 
             pass_substring_sections_through_temporaries(args, f, offset, copy_backs);
             ASRUtils::set_absent_optional_arguments_to_null(args, f, al, v_expr, nopass);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(
+                *ASRUtils::symbol_get_past_external(final_sym))) {
+            // A generic type-bound call leaves `f` unset
+            ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    ASRUtils::symbol_get_past_external(final_sym))->m_proc);
+            if (ASR::is_a<ASR::Function_t>(*proc)) {
+                pass_substring_sections_through_temporaries(args,
+                    ASR::down_cast<ASR::Function_t>(proc),
+                    (v_expr == nullptr || nopass) ? 0 : 1, copy_backs);
+            }
         }
         ASR::stmt_t* cast_stmt = nullptr;
         ASR::call_arg_t* call_args = args.p;
