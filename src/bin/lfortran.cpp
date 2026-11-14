@@ -1334,7 +1334,8 @@ int compile_src_to_object_file(const std::string &infile,
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)
-        && !LCompilers::ASRUtils::block_data_present(*asr)) {
+        && !LCompilers::ASRUtils::block_data_present(*asr)
+        && !LCompilers::ASRUtils::submodule_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1360,9 +1361,19 @@ int compile_src_to_object_file(const std::string &infile,
     // that a BLOCK DATA program unit uses
     if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c
             && (compiler_options.generate_code_for_global_procedures
-                || LCompilers::ASRUtils::block_data_present(*asr))
+                || LCompilers::ASRUtils::block_data_present(*asr)
+                || LCompilers::ASRUtils::submodule_present(*asr))
             && !compiler_options.separate_compilation) {
-        LCompilers::ASRUtils::mark_modules_as_external(*asr);
+        // A submodule file also loads its parent from a .mod file. That
+        // parent is compiled with the program that uses it. Only the
+        // submodule's own procedures belong in this object.
+        if (LCompilers::ASRUtils::submodule_present(*asr)
+                && !compiler_options.generate_code_for_global_procedures
+                && !LCompilers::ASRUtils::block_data_present(*asr)) {
+            LCompilers::ASRUtils::mark_loaded_modules_as_external(*asr);
+        } else {
+            LCompilers::ASRUtils::mark_modules_as_external(*asr);
+        }
     }
 
     diagnostics.diagnostics.clear();

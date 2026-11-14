@@ -12649,6 +12649,26 @@ public:
 
             if (!prototype_only) {
                 define_function_entry(x);
+                // A program that uses a submodule can compile the procedure
+                // too, once the submodule has been read. The submodule's own
+                // object also defines it. The copy in the program is
+                // discardable so the two objects still link.
+                {
+                    SymbolTable* mod_scope = x.m_symtab->parent;
+                    if (mod_scope && mod_scope->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*mod_scope->asr_owner)) {
+                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                            mod_scope->asr_owner);
+                        if (ASR::is_a<ASR::Module_t>(*owner)) {
+                            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner);
+                            if (mod->m_parent_module != nullptr &&
+                                    mod->m_loaded_from_mod) {
+                                builder->GetInsertBlock()->getParent()->setLinkage(
+                                    llvm::Function::LinkOnceODRLinkage);
+                            }
+                        }
+                    }
+                }
                 predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
 
                 for (size_t i=0; i<x.n_body; i++) {
