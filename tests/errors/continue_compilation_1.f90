@@ -4884,3 +4884,12 @@ module cc1_requirement_undeclared_argument
         end function
     end template
 end module
+
+! The `&` that starts a continuation line is dropped by the prescanner; later
+! errors must still be reported at their own column
+subroutine cc1_continuation_ampersand_location()
+    integer :: i
+    i = 1 + &
+        & 2
+    i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+end subroutine

@@ -5741,6 +5741,12 @@ semantic error: Call to impure procedure 'cc1_impure_s' is not allowed inside a 
 4853 |         call cc1_impure_s(x)  ! {Error} Call to impure procedure 'cc1_impure_s' is not allowed inside a PURE procedure
      |         ^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:4894:5
+     |
+4894 |     i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^   ^^^ type mismatch (integer and string)
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
