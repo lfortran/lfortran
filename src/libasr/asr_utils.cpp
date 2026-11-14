@@ -3332,8 +3332,42 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 return;
             }
         }
-        if( ASRUtils::types_equal(target_arg_type, target_type, subrout->m_args[0], target) &&
-            ASRUtils::types_equal(value_arg_type, value_type, subrout->m_args[1], value) ) {
+        // A non-polymorphic `type(t)` dummy is type compatible only with `t`
+        // itself (F2023 7.3.2.3). `types_equal` also accepts an extension, which
+        // would select this specific for an intrinsic assignment of that
+        // extension. A `class(t)` dummy does accept the extension.
+        auto formal_accepts = [](ASR::ttype_t* formal_type, ASR::expr_t* formal_expr,
+                                  ASR::ttype_t* actual_type, ASR::expr_t* actual_expr) {
+            if (!ASRUtils::types_equal(formal_type, actual_type, formal_expr, actual_expr)) {
+                return false;
+            }
+            ASR::ttype_t* formal_base = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(formal_type)));
+            if (!ASR::is_a<ASR::StructType_t>(*formal_base)
+                    || ASRUtils::is_class_type(formal_base)) {
+                return true;
+            }
+            if (formal_expr == nullptr || actual_expr == nullptr) {
+                return true;
+            }
+            ASR::symbol_t* formal_sym = ASRUtils::get_struct_sym_from_struct_expr(formal_expr);
+            ASR::symbol_t* actual_sym = ASRUtils::get_struct_sym_from_struct_expr(actual_expr);
+            if (formal_sym == nullptr || actual_sym == nullptr) {
+                return true;
+            }
+            formal_sym = ASRUtils::symbol_get_past_external(formal_sym);
+            actual_sym = ASRUtils::symbol_get_past_external(actual_sym);
+            if (!ASR::is_a<ASR::Struct_t>(*formal_sym)
+                    || !ASR::is_a<ASR::Struct_t>(*actual_sym)) {
+                return true;
+            }
+            return ASRUtils::is_same_derived_type(
+                ASR::down_cast<ASR::Struct_t>(formal_sym),
+                ASR::down_cast<ASR::Struct_t>(actual_sym));
+        };
+        if( formal_accepts(target_arg_type, subrout->m_args[0], target_type, target) &&
+            formal_accepts(value_arg_type, subrout->m_args[1], value_type, value) ) {
             std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
             std::string arg1_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[1])->m_v);
             if( pass_arg != nullptr ) {
@@ -3413,7 +3447,11 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
 
 ASR::symbol_t* resolve_struct_assign_symbol(ASR::Struct_t* s) {
     while (s != nullptr) {
-        ASR::symbol_t* result = s->m_symtab->resolve_symbol("~assign");
+        // Only a type-bound `assignment(=)`, which lives in the type's own
+        // scope. `resolve_symbol` would also see an interface block in the
+        // enclosing module, and that generic is not inherited by an extension
+        // or available through `use ..., only:` of the type.
+        ASR::symbol_t* result = s->m_symtab->get_symbol("~assign");
         if (result != nullptr) {
             return result;
         }
