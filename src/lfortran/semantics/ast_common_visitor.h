@@ -20353,6 +20353,13 @@ public:
                     throw SemanticAbort();
                 }
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                if (dt_struct_n_args == 0) {
+                    // In a `rank (0)` block the selector is a scalar object.
+                    ASR::expr_t* selector = cast_assumed_rank_selector(ASRUtils::EXPR(v_var));
+                    if (!ASRUtils::is_array(ASRUtils::expr_type(selector))) {
+                        v_var = &selector->base;
+                    }
+                }
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
                 // Wrap with Cast if this variable needs select type casting
