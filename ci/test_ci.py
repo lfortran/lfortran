@@ -12,7 +12,6 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
-import zipfile
 from unittest.mock import call, patch
 
 
@@ -2293,14 +2292,13 @@ class MergebotTests(unittest.TestCase):
         self.label = {"id": "L", "createdAt": "2026-11-13T10:30:00Z",
                       "actor": {"login": "maintainer"},
                       "label": {"name": "auto-merge"}, "__typename": "LabeledEvent"}
-        self.snapshot = {"number": 1, "action": "labeled", "head": "H", "before": None,
-                         "actor": "maintainer", "time": self.label["createdAt"]}
+        self.runs = [self.quick_run("H", "2026-11-13T10:00:00Z")]
         self.bot.save_pr_state(1, {"label_id": "L", "approved_head": "H", "method": "merge"})
 
     def info(self, **overrides):
         info = {
             "number": 1, "open": True, "labeled": True, "label_id": "L",
-            "approval_problem": None, "approval_pending": None, "approval_captured": True,
+            "approval_problem": None, "approval_pending": None,
             "head": "H", "approved_head": "H", "method": "merge", "rebase": None,
             "head_repo": "contributor/lfortran", "head_branch": "feature",
             "draft": False, "ci": "success", "conflicts": [], "mergeable": "MERGEABLE",
@@ -2319,79 +2317,122 @@ class MergebotTests(unittest.TestCase):
         args.update(overrides)
         return SimpleNamespace(**args)
 
-    def fetch_facts(self, head="H", events=None, comments=(), can_write=True):
+    @staticmethod
+    def quick_run(sha, created, id=10):
+        return {"id": id, "event": "pull_request", "head_sha": sha, "created_at": created,
+                "head_branch": "feature",
+                "head_repository": {"full_name": "contributor/lfortran"},
+                "run_attempt": 1, "status": "completed", "conclusion": "success",
+                "html_url": f"run/{id}"}
+
+    @staticmethod
+    def force_push(sha, created):
+        return {"__typename": "HeadRefForcePushedEvent", "createdAt": created,
+                "afterCommit": sha and {"oid": sha}}
+
+    def fetch_facts(self, head="H", runs=None, nodes=(), can_write=True):
         pr = {
-            "title": "PR", "state": "OPEN", "baseRefName": "main", "headRefOid": head,
+            "title": "PR", "state": "OPEN", "createdAt": "2026-11-13T09:00:00Z",
+            "baseRefName": "main", "headRefOid": head,
             "headRefName": "feature", "headRepository": {"nameWithOwner": "contributor/lfortran"},
             "author": {"login": "contributor"}, "isDraft": False,
             "maintainerCanModify": True, "mergeable": "CONFLICTING",
             "labels": {"nodes": [{"name": "auto-merge"}]},
         }
-        with patch.object(self.bot, "load_pr", return_value=(pr, [self.label, *comments])), \
+        runs = self.runs if runs is None else runs
+
+        def items(path, key):
+            return runs if "/actions/workflows/" in path else []
+
+        with patch.object(self.bot, "load_pr", return_value=(pr, [self.label, *nodes])), \
                 patch.object(self.bot, "login", return_value="maintainer"), \
                 patch.object(self.bot, "can_write", return_value=can_write), \
-                patch.object(self.bot, "label_events",
-                             return_value=[self.snapshot] if events is None else events), \
-                patch.object(self.bot, "gh_items", return_value=[]), \
+                patch.object(self.bot, "gh_items", side_effect=items), \
                 patch.object(self.bot, "required_checks", return_value={"A"}):
             return self.bot.facts(1, with_conflicts=False)
 
-    def test_conflicting_head_is_approved_without_any_ci_run(self):
+    def test_head_pushed_before_label_is_approved_while_conflicting(self):
+        # The head's Quick run predates the label; main moved and now conflicts.
         self.bot.save_pr_state(1, {"label_id": "L"})
         info = self.fetch_facts()
         self.assertIsNone(info["approval_problem"])
         self.assertIsNone(info["approval_pending"])
-        self.assertEqual(info["ci"], "pending")
+        self.assertEqual(info["approved_head"], "H")
+        self.assertEqual(info["quick_run"]["id"], 10)
         with patch.object(self.bot, "facts", return_value=info), patch.object(self.bot, "comment"):
             self.bot.cmd_pickup(self.args())
         self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "H")
 
-    def test_missing_capture_waits_instead_of_rejecting(self):
-        info = self.fetch_facts(events=[])
+    def test_unprovable_head_is_rejected_not_assumed(self):
+        self.bot.save_pr_state(1, {"label_id": "L"})
+        for runs in ([], [self.quick_run("G", "2026-11-13T10:00:00Z")]):
+            with self.subTest(runs=runs):
+                info = self.fetch_facts(runs=runs)
+                self.assertIn("cannot prove", info["approval_problem"])
+                self.assertIsNone(info["approved_head"])
+                with patch.object(self.bot, "facts", return_value=info), \
+                        patch.object(self.bot, "gh") as gh:
+                    with self.assertRaisesRegex(SystemExit, "cannot prove"):
+                        self.bot.cmd_pickup(self.args())
+                    gh.assert_not_called()
+
+    def test_push_at_or_after_label_is_rejected(self):
+        self.bot.save_pr_state(1, {"label_id": "L"})
+        for time in (self.label["createdAt"], "2026-11-13T10:31:00Z"):
+            with self.subTest(time=time):
+                info = self.fetch_facts(runs=self.runs + [self.quick_run("H", time, id=11)])
+                self.assertIn("at or after the label", info["approval_problem"])
+
+    def test_force_push_back_to_an_older_head_after_label_is_rejected(self):
+        # H was pushed, then X (conflicting, so no run) was labeled; the
+        # return to H needs a force-push, which the timeline timestamps.
+        self.bot.save_pr_state(1, {"label_id": "L"})
+        info = self.fetch_facts(nodes=[self.force_push("H", "2026-11-13T10:31:00Z")])
+        self.assertIn("at or after the label", info["approval_problem"])
+        info = self.fetch_facts(nodes=[self.force_push(None, "2026-11-13T10:31:00Z")])
+        self.assertIn("unknown", info["approval_problem"])
+
+    def test_force_push_before_label_is_evidence(self):
+        evidence = self.bot.push_evidence(
+            [self.label, self.force_push("X", "2026-11-13T10:10:00Z")], self.runs)
+        self.assertIsNone(self.bot.labeled_head_problem(self.label["createdAt"], "X", evidence))
+        self.assertIn("cannot prove",
+                      self.bot.labeled_head_problem(self.label["createdAt"], "H", evidence))
+
+    def test_simultaneous_evidence_for_two_heads_is_not_proof(self):
+        evidence = [("2026-11-13T10:00:00Z", "H"), ("2026-11-13T10:00:00Z", "X")]
+        self.assertIn("cannot prove",
+                      self.bot.labeled_head_problem(self.label["createdAt"], "H", evidence))
+
+    def test_journal_is_authoritative_after_pickup(self):
+        # Mergebot's own rebases come after the label; the journal approves them.
+        info = self.fetch_facts(runs=self.runs + [self.quick_run("H", "2026-11-13T11:00:00Z", 11)])
         self.assertIsNone(info["approval_problem"])
-        self.assertIn("waiting", info["approval_pending"])
-        with patch.object(self.bot, "facts", return_value=info), patch.object(self.bot, "gh") as gh:
-            with self.assertRaisesRegex(SystemExit, "waiting"):
-                self.bot.cmd_pickup(self.args())
-            gh.assert_not_called()
+        self.assertEqual(info["quick_run"]["id"], 11)
 
     def test_labeler_must_have_write_access(self):
         self.assertIn("write access", self.fetch_facts(can_write=False)["approval_problem"])
 
     def test_comment_markers_never_authorize_a_head_or_method(self):
-        comments = [{
+        nodes = [{
             "__typename": "IssueComment", "author": {"login": "maintainer"},
             "createdAt": "2026-11-13T10:31:00Z", "url": "comment",
             "body": "<!-- mergebot:pushed sha=X from=H -->\n"
                     "<!-- mergebot:approved sha=X method=squash -->",
         }]
-        info = self.fetch_facts(head="X", comments=comments)
+        info = self.fetch_facts(head="X", nodes=nodes)
         self.assertIn("head changed", info["approval_problem"])
         self.assertEqual(info["method"], "merge")
 
     def test_relabel_does_not_reuse_old_approval_or_method(self):
         self.label["id"] = "new-label"
-        self.snapshot["head"] = "X"
-        info = self.fetch_facts(head="X")
+        info = self.fetch_facts(head="X", runs=[self.quick_run("X", "2026-11-13T10:00:00Z")])
         self.assertIsNone(info["approval_problem"])
         self.assertEqual(info["approved_head"], "X")
         self.assertIsNone(info["method"])
 
-    def test_ambiguous_same_second_relabel_is_rejected(self):
-        snapshot, problem = self.bot.approval_snapshot(
-            [self.label, dict(self.label, id="second-label")], [self.snapshot])
-        self.assertIsNone(snapshot)
-        self.assertIn("same second", problem)
-
     def test_push_with_same_timestamp_is_not_approved_by_date(self):
         self.assertIn("head changed", self.fetch_facts(head="X")["approval_problem"])
-
-    def test_external_push_and_return_to_approved_head_invalidates_label(self):
-        events = [self.snapshot, dict(self.snapshot, action="synchronize", before="H",
-                                     head="X", actor="contributor", time="2026-11-13T10:31:00Z"),
-                  dict(self.snapshot, action="synchronize", before="X", head="H",
-                       actor="contributor", time="2026-11-13T10:32:00Z")]
-        self.assertIn("pushed", self.fetch_facts(events=events)["approval_problem"])
 
     def test_pending_rebase_is_not_approved_until_completed(self):
         transition = dict(head="B", before=None, owner="worker", status="pushed")
@@ -2629,63 +2670,6 @@ class MergebotTests(unittest.TestCase):
         self.assertTrue(result["blocked"])
         self.assertEqual(result["suspicions"]["2"], suspicion)
         self.assertEqual(json.loads(path.read_text()), suspicion)
-
-    def test_recorder_uses_webhook_head_not_commit_or_workflow_dates(self):
-        spec = importlib.util.spec_from_file_location(
-            "mergebot_event", ROOT / ".agents/skills/mergebot/scripts/record_event.py")
-        recorder = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(recorder)
-        event = {"number": 1, "action": "labeled",
-                 "repository": {"full_name": "lfortran/lfortran"},
-                 "pull_request": {"base": {"ref": "main"}, "head": {"sha": "H"},
-                                  "updated_at": self.label["createdAt"]},
-                 "sender": {"login": "maintainer"}, "label": {"name": "auto-merge"}}
-        self.assertEqual(recorder.snapshot(event), self.snapshot)
-        event["pull_request"]["base"]["ref"] = "untrusted-branch"
-        with self.assertRaisesRegex(ValueError, "unexpected"):
-            recorder.snapshot(event)
-
-    def test_only_trusted_label_workflow_runs_supply_events(self):
-        trusted = {"id": 10, "event": "pull_request_target", "conclusion": "success",
-                   "path": ".github/workflows/Mergebot-Events.yml",
-                   "display_title": "mergebot 1 labeled H"}
-        runs = [trusted, dict(trusted, id=11, event="pull_request"),
-                dict(trusted, id=12, path=".github/workflows/other.yml"),
-                dict(trusted, id=13, display_title="mergebot 2 labeled H")]
-        with patch.object(self.bot, "gh_items", return_value=runs), \
-                patch.object(self.bot, "event_artifact", return_value=self.snapshot) as artifact:
-            events = self.bot.label_events(1, self.label["createdAt"])
-        self.assertEqual(events, [self.snapshot])
-        artifact.assert_called_once_with(10)
-
-    def test_event_artifact_must_match_workflow_identity(self):
-        run = {"id": 10, "event": "pull_request_target", "conclusion": "success",
-               "path": ".github/workflows/Mergebot-Events.yml",
-               "display_title": "mergebot 1 labeled H"}
-        with patch.object(self.bot, "gh_items", return_value=[run]), \
-                patch.object(self.bot, "event_artifact", return_value=dict(self.snapshot, head="X")):
-            with self.assertRaisesRegex(SystemExit, "does not match"):
-                self.bot.label_events(1, self.label["createdAt"])
-
-    def test_event_artifact_download_and_cache(self):
-        path = self.directory / "download.zip"
-        with zipfile.ZipFile(path, "w") as archive:
-            archive.writestr("mergebot-event.json", json.dumps(self.snapshot))
-        result = SimpleNamespace(returncode=0, stdout=path.read_bytes(), stderr=b"")
-        with patch.object(self.bot, "gh_items", return_value=[
-                {"id": 20, "name": "mergebot-event", "expired": False}]) as listing, \
-                patch.object(self.bot.subprocess, "run", return_value=result) as download:
-            self.assertEqual(self.bot.event_artifact(10), self.snapshot)
-            self.assertEqual(self.bot.event_artifact(10), self.snapshot)
-        listing.assert_called_once()
-        download.assert_called_once()
-
-    def test_expired_uncached_artifact_does_not_authorize_anything(self):
-        with patch.object(self.bot, "gh_items", return_value=[
-                {"id": 20, "name": "mergebot-event", "expired": True}]), \
-                patch.object(self.bot.subprocess, "run") as download:
-            self.assertIsNone(self.bot.event_artifact(10))
-        download.assert_not_called()
 
     def test_ci_state_uses_the_latest_required_check_runs(self):
         def run(id, name, status="completed", conclusion="success"):
