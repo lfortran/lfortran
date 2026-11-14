@@ -614,48 +614,64 @@ lf_float128 __multf3_lf_impl(lf_float128 a, lf_float128 b) {
     }
     if (pa.is_zero || pb.is_zero) return f128_make_zero(rsign);
 
-    /* Full 113×113 -> 226-bit product via 128×128 -> 256-bit */
+    /* Full 113x113 -> 226-bit product via 128x128 -> 256-bit */
     u128 prod_hi, prod_lo;
     u128_mul128(pa.mant, pb.mant, &prod_hi, &prod_lo);
 
-    /* Product has 226 significant bits (bit 224 is the leading 1 for max case).
-     * We need 113 bits. The product's binary point is at position 224
-     * (since each operand has its 1 in bit 112).
-     * Normalise: shift right so leading 1 is at bit 112. */
-    int32_t exp = pa.exp + pb.exp;
+    /* The operands are mant * 2^(exp - 112), so the product is
+     * prod * 2^(pa.exp + pb.exp - 224). Its leading one is in bit `lead` of
+     * the 256-bit product, which makes the product's exponent
+     * pa.exp + pb.exp + lead - 224. */
+    int lead = u128_is_zero(prod_hi) ? 127 - u128_clz(prod_lo)
+                                     : 255 - u128_clz(prod_hi);
+    int32_t rexp = pa.exp + pb.exp + lead - 224;
 
-    /* Leading bit of product is in prod_hi. Find its position. */
-    int lz = u128_clz(prod_hi);
-    /* bit position of leading 1 in 256-bit: (127 - lz) + 128 = 255 - lz */
-    /* We want it at bit 112 of the final 128-bit mant: shift right by (255-lz-112) */
-    int rsh = 255 - lz - 112;  /* how many bits to shift the 256-bit product right */
+    /* Number of low product bits to round off: all those below the 113-bit
+     * significand, plus the bits that fall below the least significant
+     * subnormal bit. Rounding once here avoids rounding twice for subnormal
+     * results. */
+    int32_t drop = lead - 112;
+    if (rexp < -16382) drop += -16382 - rexp;
 
-    u128 result_mant;
-    if (rsh >= 128) {
-        /* result fits entirely in prod_hi */
-        int rsh2 = rsh - 128;
-        result_mant = u128_shr(prod_hi, rsh2);
-        /* rounding bit is (prod_hi >> (rsh2-1)) & 1 if rsh2>0, else prod_lo's top */
-        int round_bit = rsh2 > 0 ? u128_bit(prod_hi, rsh2 - 1) : u128_bit(prod_lo, 127);
-        u128 sticky    = rsh2 > 1
-                       ? u128_and(prod_hi, u128_sub(u128_shl(u128_one(), rsh2 - 1), u128_one()))
-                       : u128_zero();
-        sticky = u128_or(sticky, prod_lo);
-        if (round_bit && (!u128_is_zero(sticky) || !u128_is_zero(u128_and(result_mant, u128_one())))) {
-            result_mant = u128_inc(result_mant);
-        }
+    /* q = floor(prod / 2^drop), then round to nearest, ties to even. */
+    u128 q, rest_hi, rest_lo;
+    int round_bit, sticky;
+    if (drop <= 0) {
+        /* A subnormal operand left the product with at most 128 bits: it is
+         * exact, and only needs to be aligned to the significand. */
+        q = u128_shl(prod_lo, -drop);
+        round_bit = 0;
+        rest_hi = u128_zero();
+        rest_lo = u128_zero();
+    } else if (drop > 256) {
+        return f128_make_zero(rsign);
+    } else if (drop >= 128) {
+        int m = drop - 128;
+        q = u128_shr(prod_hi, m);
+        round_bit = m > 0 ? u128_bit(prod_hi, m - 1) : u128_bit(prod_lo, 127);
+        rest_hi = m > 1 ? u128_and(prod_hi, u128_sub(u128_shl(u128_one(), m - 1), u128_one()))
+                        : u128_zero();
+        rest_lo = m > 0 ? prod_lo
+                        : u128_and(prod_lo, u128_sub(u128_shl(u128_one(), 127), u128_one()));
     } else {
-        /* straddling prod_hi and prod_lo */
-        result_mant = u128_or(u128_shl(prod_hi, 128 - rsh), u128_shr(prod_lo, rsh));
-        int round_bit = u128_bit(prod_lo, rsh - 1);
-        u128 sticky    = u128_and(prod_lo, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
-        if (round_bit && (!u128_is_zero(sticky) || !u128_is_zero(u128_and(result_mant, u128_one())))) {
-            result_mant = u128_inc(result_mant);
-        }
+        q = u128_or(u128_shl(prod_hi, 128 - drop), u128_shr(prod_lo, drop));
+        round_bit = u128_bit(prod_lo, drop - 1);
+        rest_hi = u128_zero();
+        rest_lo = u128_and(prod_lo, u128_sub(u128_shl(u128_one(), drop - 1), u128_one()));
     }
-    exp += rsh - 112;  /* correct for the shift */
+    sticky = !u128_is_zero(rest_hi) || !u128_is_zero(rest_lo);
+    if (round_bit && (sticky || (u128_lo(q) & 1))) q = u128_inc(q);
 
-    return f128_pack_parts(rsign, exp, result_mant);
+    if (rexp < -16382) {
+        /* Subnormal result: q holds the stored significand bits. If
+         * rounding carried into bit 112, that bit becomes biased exponent 1,
+         * the smallest normal number. */
+        return f128_const(rsign, (int32_t)(u128_hi(q) >> 48),
+                          u128_hi(q), u128_lo(q));
+    }
+    /* Normal result (q is in [2^112, 2^113]); f128_pack_parts handles a
+     * rounding carry to 2^113 and overflow to infinity. */
+    return f128_pack_parts(rsign, rexp, q);
 }
 
 /* ========================================================================
