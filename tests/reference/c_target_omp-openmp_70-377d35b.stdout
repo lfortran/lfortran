@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     _lpython_set_argv(argc, argv);
     int32_t __libasr_index_0_;
     int32_t __libasr_index_0_1;
-    struct r32 a_value;
+    struct r32 a_value = {0};
     struct r32* a = &a_value;
     float a_data[1000000];
     a->data = a_data;
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     a->dims[0].lower_bound = 1;
     a->dims[0].length = 1000000;
     a->dims[0].stride = 1;
-    struct r32 b_value;
+    struct r32 b_value = {0};
     struct r32* b = &b_value;
     float b_data[1000000];
     b->data = b_data;

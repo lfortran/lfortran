@@ -132,7 +132,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86")
                 OR (LFORTRAN_BACKEND STREQUAL "c") OR (LFORTRAN_BACKEND STREQUAL "fortran"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            if (LFORTRAN_BACKEND STREQUAL "c")
+                foreach(arg IN LISTS extra_args)
+                    target_compile_options(${name} PUBLIC
+                        "$<$<COMPILE_LANGUAGE:Fortran>:${arg}>")
+                endforeach()
+                target_compile_options(${name} PUBLIC
+                    "$<$<COMPILE_LANGUAGE:Fortran>:--backend=c>")
+            else()
+                target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            endif()
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "wasm")
@@ -3400,7 +3409,9 @@ RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the s
 RUN(NAME derived_types_258 LABELS gfortran llvm EXTRAFILES derived_types_258_m1.f90 derived_types_258_m2.f90) # parameter array of a use-associated derived type, reloaded from the module file
 RUN(NAME derived_types_259 LABELS gfortran llvm) # local derived type with an allocatable array component, inside a procedure that has an array argument
 RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod.f90) # runtime index into a parameter array of derived types must not use the component default
+RUN(NAME c_reset_alloc_component_01 LABELS gfortran llvm c)
 RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
+RUN(NAME c_scalar_allocatable_dummy_01 LABELS gfortran llvm c)
 RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
@@ -6645,6 +6656,9 @@ RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)
+RUN(NAME intent_out_inherited_alloc_cleanup_01 LABELS gfortran llvm c)
+RUN(NAME intent_out_inherited_alloc_cleanup_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
 RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)
@@ -7950,6 +7964,7 @@ RUN(NAME equivalence_49 LABELS gfortran llvm EXTRAFILES equivalence_49_module.f9
 RUN(NAME equivalence_50 LABELS gfortran llvm) # operands storage associated with the target (#16215)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
+RUN(NAME allocatable_scalar_assign_02 LABELS gfortran llvm c)
 RUN(NAME allocatable_function_result_01 LABELS gfortran llvm)
 RUN(NAME allocatable_function_result_02 LABELS gfortran llvm)
 RUN(NAME allocatable_function_result_03 LABELS gfortran llvm)
