@@ -6369,6 +6369,27 @@ public:
                 array_var_name = selector_variable->m_name;
             }
         }
+        // The rank of the selector is only known inside the construct, so its
+        // `assumed_rank_arrays` entry is restored to the enclosing one at
+        // `end select`, also when the construct is abandoned by an error.
+        struct AssumedRankEntryRestorer {
+            std::map<std::string, int> &ranks;
+            std::string name;
+            bool had_entry;
+            int rank;
+            ~AssumedRankEntryRestorer() {
+                if (had_entry) {
+                    ranks[name] = rank;
+                } else {
+                    ranks.erase(name);
+                }
+            }
+        };
+        auto previous_entry = assumed_rank_arrays.find(array_var_name);
+        bool had_previous_entry = previous_entry != assumed_rank_arrays.end();
+        AssumedRankEntryRestorer restore_rank_entry{assumed_rank_arrays,
+            array_var_name, had_previous_entry,
+            had_previous_entry ? previous_entry->second : 0};
         ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
         if( !ASR::is_a<ASR::Array_t>(*selector_type)) {
             // Throw error if selector is not an array

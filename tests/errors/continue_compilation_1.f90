@@ -4943,3 +4943,13 @@ contains
         close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
     end subroutine
 end module
+
+! The rank of a `select rank` selector is not known after `end select`
+subroutine cc1_select_rank_logical_after_end_select(x)
+    logical, intent(in) :: x(..)
+    select rank (x)
+    rank (0)
+        print *, x
+    end select
+    if (x) print *, "x"  ! {Error} Expected logical expression in if statement
+end subroutine

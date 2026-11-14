@@ -5843,6 +5843,12 @@ semantic error: `iostat` must be a variable of type, Integer or IntegerPointer
 4943 |         close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Expected logical expression in if statement, but recieved logical(4) instead
+    --> tests/errors/continue_compilation_1.f90:4954:9
+     |
+4954 |     if (x) print *, "x"  ! {Error} Expected logical expression in if statement
+     |         ^ logical(4) expression, expected logical
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
