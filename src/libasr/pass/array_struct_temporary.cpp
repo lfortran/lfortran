@@ -4255,9 +4255,41 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         replacer.replace_expr(*expr);
     }
 
+    // Copies arguments of calls in an IF or DO WHILE condition back before the body runs.
+    ASR::expr_t* visit_condition_with_copy_out(ASR::expr_t*& test,
+            Vec<ASR::stmt_t*>* body) {
+        Vec<ASR::stmt_t*>* body_after_stmt = body_after_curr_stmt;
+        Vec<ASR::stmt_t*> copy_outs; copy_outs.reserve(al, 0);
+        if( body_after_stmt != nullptr ) {
+            body_after_curr_stmt = &copy_outs;
+        }
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = &test;
+        call_replacer();
+        current_expr = current_expr_copy;
+        if( test && visit_expr_after_replacement ) {
+            visit_expr(*test);
+        }
+        body_after_curr_stmt = body_after_stmt;
+        if( copy_outs.empty() ) {
+            return test;
+        }
+        ASR::expr_t* test_value = create_temporary_variable_for_scalar(
+            al, test, current_scope, "_condition_", false);
+        body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, test->base.loc, test_value, test, nullptr, false, false)));
+        for( size_t i = 0; i < copy_outs.size(); i++ ) {
+            body->push_back(al, copy_outs[i]);
+        }
+        return test_value;
+    }
+
     void visit_If(const ASR::If_t& x) {
-        hoist_reductions_lowered_to_loop(&const_cast<ASR::If_t&>(x).m_test);
-        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_If(x);
+        ASR::If_t& xx = const_cast<ASR::If_t&>(x);
+        hoist_reductions_lowered_to_loop(&xx.m_test);
+        xx.m_test = visit_condition_with_copy_out(xx.m_test, current_body);
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
     }
 
     // `za%im = v` writes the parts of `za` in place, so its section is not
@@ -5281,10 +5313,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         Vec<ASR::stmt_t*> while_test_body_{};
         while_test_body_.reserve(al, 0);
         current_body = &while_test_body_; 
-        visit_expr(*x.m_test);
+        ASR::expr_t* test = visit_condition_with_copy_out(
+            const_cast<ASR::WhileLoop_t&>(x).m_test, &while_test_body_);
         if (!while_test_body_.empty()){ // Temps Created! 
             ASRUtils::ASRBuilder builder(al, x.base.base.loc);
-            while_test_body_.push_back(al, builder.If(builder.Not(x.m_test), {builder.Exit()}, {}));
+            while_test_body_.push_back(al, builder.If(builder.Not(test), {builder.Exit()}, {}));
             for(size_t i = 0; i< x.n_body; i++){
                 while_test_body_.push_back(al, x.m_body[i]);
             }
