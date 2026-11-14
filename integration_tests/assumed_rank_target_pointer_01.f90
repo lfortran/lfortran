@@ -1,5 +1,6 @@
 ! A nonpointer TARGET assumed-rank actual passed to a POINTER, INTENT(IN)
-! assumed-rank dummy, also when both are OPTIONAL (#17257)
+! assumed-rank dummy, also when both are OPTIONAL, in a subroutine call and in
+! a function call (#17257)
 module assumed_rank_target_pointer_01_mod
     implicit none
 contains
@@ -20,6 +21,12 @@ contains
         if (present(v)) n = rank(v)
     end subroutine
 
+    integer function dims_or_minus_one(u)
+        real, pointer, intent(in), optional :: u(..)
+        dims_or_minus_one = -1
+        if (present(u)) dims_or_minus_one = rank(u)
+    end function
+
     real function relay(buf)
         real, target, intent(in) :: buf(..)
         relay = total(buf)
@@ -30,6 +37,11 @@ contains
         real, target, intent(in), optional :: buf(..)
         call count_dims(n, buf)
     end subroutine
+
+    integer function relay_optional_function(buf)
+        real, target, intent(in), optional :: buf(..)
+        relay_optional_function = dims_or_minus_one(buf)
+    end function
 end module
 
 program assumed_rank_target_pointer_01
@@ -43,5 +55,7 @@ program assumed_rank_target_pointer_01
     if (n /= 3) error stop 3
     call relay_optional(n)
     if (n /= -1) error stop 4
+    if (relay_optional_function(cube) /= 3) error stop 5
+    if (relay_optional_function() /= -1) error stop 6
     print *, "OK"
 end program
