@@ -488,7 +488,7 @@ public:
         for (auto &it : symtab->get_scope()) {
             if (ASR::is_a<ASR::ExternalSymbol_t>(*it.second)) {
                 ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(it.second);
-                if (will_remove_procedure(ext->m_external)) dead.push_back(it.first);
+                if (symbol_goes_away(ext->m_external)) dead.push_back(it.first);
             }
             if (SymbolTable *child = ASRUtils::symbol_symtab(it.second)) {
                 nested.push_back(child);
@@ -520,6 +520,19 @@ public:
         if (!mod->m_loaded_from_mod) return false;
         if (startswith(mod->m_name, "lfortran_intrinsic")) return false;
         return true;
+    }
+
+    // True when `sym` itself is removed, or it lives inside a procedure that
+    // is removed. A component of a derived type declared in such a procedure
+    // disappears with it.
+    bool symbol_goes_away(ASR::symbol_t *sym) {
+        for (int n = 0; n < 32 && sym != nullptr; n++) {
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (sym == nullptr) return false;
+            if (will_remove_procedure(sym)) return true;
+            sym = ASRUtils::get_asr_owner(sym);
+        }
+        return false;
     }
 
     void visit_Program(const ASR::Program_t &/*x*/) {
