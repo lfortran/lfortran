@@ -63,6 +63,23 @@ std::string arch_of(const std::string &triple) {
 
 #ifndef __APPLE__
 
+// The operating system of a triple, as far as it decides whether GCC's start
+// files can be linked into a host executable.
+std::string os_of(const std::string &triple) {
+    if (triple.find("linux") != std::string::npos) {
+        return "linux";
+    }
+    if (triple.find("mingw") != std::string::npos
+            || triple.find("windows") != std::string::npos
+            || triple.find("cygwin") != std::string::npos) {
+        return "windows";
+    }
+    if (triple.find("freebsd") != std::string::npos) {
+        return "freebsd";
+    }
+    return "";
+}
+
 bool file_exists(const std::string &path) {
     return llvm::sys::fs::exists(path);
 }
@@ -149,7 +166,8 @@ bool version_less(const std::vector<int> &left, const std::vector<int> &right) {
     return false;
 }
 
-std::string find_gcc_lib(const std::string &prefix, const std::string &arch) {
+std::string find_gcc_lib(const std::string &prefix, const std::string &arch,
+        const std::string &os) {
     std::string base = prefix + "/lib/gcc";
     std::error_code ec;
     if (!is_dir(base)) {
@@ -165,6 +183,12 @@ std::string find_gcc_lib(const std::string &prefix, const std::string &arch) {
         }
         std::string triple = llvm::StringRef(triple_it->path()).str();
         triple = llvm::sys::path::filename(triple).str();
+        // A cross compiler for another system, such as x86_64-w64-mingw32 next
+        // to x86_64-pc-linux-gnu, has the architecture but not the start files.
+        std::string triple_os = os_of(triple);
+        if (!os.empty() && !triple_os.empty() && triple_os != os) {
+            continue;
+        }
         bool matches_arch = !arch.empty() && triple.find(arch) != std::string::npos;
         std::error_code version_ec;
         for (llvm::sys::fs::directory_iterator version_it(triple_it->path(), version_ec),
@@ -302,7 +326,7 @@ ElfToolchain discover_elf_toolchain(const std::string &triple, std::string &erro
     push_unique(prefixes, "/usr");
 
     for (const std::string &prefix : prefixes) {
-        std::string gcc_lib = find_gcc_lib(prefix, arch);
+        std::string gcc_lib = find_gcc_lib(prefix, arch, os_of(triple));
         if (gcc_lib.empty()) {
             continue;
         }
