@@ -123,8 +123,8 @@ when it returns to Fortran code; at the prompt, a second Ctrl-C then ends the
 session. If C code calls back into Fortran (a comparison function of `qsort`,
 a library callback), the interrupt can stop the cell in the callback and
 abandon the C frames below it, with whatever they held. Compilation is not
-interrupted either; the cell stops before it runs. Interruption is supported on Linux and macOS (x86-64 and AArch64). It
-is not supported on Windows, in WASM (JupyterLite) or with `--openmp`, whose
+interrupted either; the cell stops before it runs. Interruption is supported
+on Linux and macOS (x86-64 and AArch64). It is not supported on Windows, in WASM (JupyterLite) or with `--openmp`, whose
 threads and locks an interrupt would abandon: there a cell runs to its end,
 and a READ keeps waiting for its input (`lfortran_interruptible` is false in
 the kernel's `input_request`).
@@ -146,16 +146,14 @@ During a cell, Ctrl-C at the prompt only marks the interrupt; the prompt's
 client loop sends the `interrupt_request` and keeps reading the terminal
 without blocking, so that it also notices Ctrl-C while a READ waits for input.
 
-The `test_lfortran` cases `FortranEvaluator interrupt*`, `test_kernel_evaluation`
-(both kernels), `test_session_regressions` (`test_interrupt_prompt`) and
-`test_repl` cover this.
-
 ### An interrupted reallocation can leave a variable dangling
 
 The cell can stop between any two instructions of its code, so a variable
 whose storage it was replacing (an allocatable array or a deferred-length
-string) may be left referring to memory that has already been freed. For
-example, with a session-level allocatable:
+string) may be left inconsistent: pointing at memory that has already been
+freed, or with a size larger than its storage. For example, in a session
+started with `--realloc-lhs-arrays` (or `--std=f23`), so that an assignment
+reallocates its target, take a session-level allocatable:
 
 ```fortran
 integer, allocatable :: v(:)
@@ -163,7 +161,7 @@ integer :: i
 allocate(v(0))
 ```
 
-a cell that grows it in a loop, and is interrupted:
+and a cell that grows it in a loop, and is interrupted:
 
 ```fortran
 do i = 1, huge(i)
@@ -171,21 +169,28 @@ do i = 1, huge(i)
 end do
 ```
 
-Each `v = [v, i]` builds its right side in a temporary, then resizes the
-storage of `v` with `realloc`, which may move it: it frees the old storage and
-returns a new address, which the generated code then stores in `v`'s
-descriptor. If the interrupt lands after `realloc` returns and before that
-store, `v` still points at the freed storage. A later cell such as
+Each `v = [v, i]` builds its right side in a temporary, stores the new size in
+`v`'s descriptor, then resizes the storage of `v` with `realloc`, which may
+move it: it frees the old storage and returns a new address, which the
+generated code then stores in the descriptor. If the interrupt lands after
+`realloc` returns and before that store (one or two instructions), `v` still
+points at the freed storage. A later cell such as
 
 ```fortran
-print *, size(v), v(1)
+print *, v(1)
 deallocate(v)
 ```
 
 then reads freed memory, and its `deallocate` frees that memory a second time,
-which can corrupt the heap or abort the session. The window is a few
-instructions per assignment, so it is rare, but it cannot be excluded without
-changing the generated code. After an interrupt, do not use (not even
+which can corrupt the heap or abort the session. If the interrupt lands after
+the size is stored and before `realloc`, `v` reports a size one larger than its
+storage, and `print *, v` reads past its end. The windows are a few
+instructions per assignment, so this is rare, but it cannot be excluded
+without changing the generated code. After an interrupt, do not use (not even
 `deallocate` or `move_alloc`) an allocatable or deferred-length variable that
-the interrupted cell was assigning; give it no further use, or restart the
-session. Variables that the interrupted cell did not assign are not affected.
+the interrupted cell was assigning; only restarting the session recovers it.
+Variables that the interrupted cell did not assign are not affected.
+
+The `test_lfortran` cases `FortranEvaluator interrupt*`, `test_kernel_evaluation`
+(both kernels), `test_session_regressions` (`test_interrupt_prompt`) and
+`test_repl` cover this.
