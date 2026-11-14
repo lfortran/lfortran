@@ -14931,10 +14931,13 @@ void promote_arguments_kinds(Allocator &al, const Location &loc,
             target_type = ASRUtils::make_Array_t_util(al, loc, target_type, m_dims, n_dims);
             args.p[i] = EXPR(ASRUtils::make_Cast_t_value(
                 al, loc, args[i], cast_kind, target_type));
-        } else if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
-            args.p[i] = EXPR(ASR::make_RealConstant_t(
-                al, loc, ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
-                target_type));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[i]) &&
+                (kind == 4 || kind == 8)) {
+            // The m_r payload of a kind 10 or 16 constant is a pointer, so
+            // only kind 4 and 8 constants hold a double that can be widened
+            args.p[i] = ASRUtils::make_RealConstant_util(al, loc,
+                ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
+                target_type);
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
             args.p[i] = EXPR(ASR::make_IntegerConstant_t(
                 al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
