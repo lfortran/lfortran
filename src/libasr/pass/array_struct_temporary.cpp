@@ -3681,10 +3681,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASR::symbol_t*& pointer_temporary = optional_pointer_temporaries[
                 std::make_pair(current_scope, actual_sym)];
             if( pointer_temporary == nullptr ) {
-                ASR::ttype_t* actual_type = ASRUtils::expr_type(actual);
-                ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(
-                    al, loc, ASRUtils::create_array_type_with_empty_dims(al,
-                        ASRUtils::extract_n_dims_from_ttype(actual_type), actual_type)));
+                ASR::ttype_t* pointer_type = get_pointer_type_for_target(actual, loc);
                 pointer_temporary = ASR::down_cast<ASR::Var_t>(
                     create_temporary_variable_for_array(al, loc, current_scope,
                         "_subroutine_call_", pointer_type, actual,
@@ -3871,6 +3868,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         call_arg.loc = loc;
         call_arg.m_value = pointer_temporary;
         x_m_args_vec.push_back(al, call_arg);
+    }
+
+    // The type of a pointer to the whole array `target`; assumed-rank if `target` is.
+    ASR::ttype_t* get_pointer_type_for_target(ASR::expr_t* target, const Location& loc) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        ASR::ttype_t* array_type = ASRUtils::is_assumed_rank_array(target_type) ?
+            ASRUtils::duplicate_type(al, target_type) :
+            ASRUtils::create_array_type_with_empty_dims(al,
+                ASRUtils::extract_n_dims_from_ttype(target_type), target_type);
+        return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, array_type));
     }
 
     // Whether `value` is a whole array variable or array component that is
@@ -4077,12 +4084,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     LCOMPILERS_ASSERT(orig_variable->m_intent == ASRUtils::intent_in);
                     ASR::expr_t* target =
                         ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value);
-                    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-                    ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(
-                        al, target->base.loc,
-                        ASRUtils::create_array_type_with_empty_dims(al,
-                            ASRUtils::extract_n_dims_from_ttype(target_type),
-                            target_type)));
+                    ASR::ttype_t* pointer_type = get_pointer_type_for_target(
+                        target, target->base.loc);
                     pass_associated_pointer_temporary(x_m_args_vec, target,
                         pointer_type, orig_variable->m_type_declaration, name_hint);
                     continue;
