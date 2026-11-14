@@ -14809,8 +14809,12 @@ public:
                 throw SemanticAbort();
             }
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
-            type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
@@ -20349,6 +20353,9 @@ public:
                     throw SemanticAbort();
                 }
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                if (dt_struct_n_args == 0) {
+                    v_var = &resolve_selector_object(ASRUtils::EXPR(v_var), loc)->base;
+                }
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
                 // Wrap with Cast if this variable needs select type casting
@@ -26217,7 +26224,9 @@ public:
                     ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v1);
                     tmp = create_ArrayRef(x.base.base.loc, x.m_member[0].m_args, x.m_member[0].n_args, nullptr, 0, nullptr, v1, f2);
                 } else {
-                    tmp = resolve_variable(x.base.base.loc, to_lower(x.m_member[0].m_name));
+                    tmp = &resolve_selector_object(ASRUtils::EXPR(resolve_variable(
+                        x.base.base.loc, to_lower(x.m_member[0].m_name))),
+                        x.base.base.loc)->base;
                 }
             } else {
                 // To use the following function, Don't use last member and use it as id instead.
@@ -28264,9 +28273,9 @@ public:
 
     void visit_BoolOp(const AST::BoolOp_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag, boolop2str[x.m_op], current_scope, current_function_dependencies, current_module_dependencies);
     }
 
@@ -28369,6 +28378,29 @@ public:
         return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
             expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
             ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+    }
+
+    // `base` is the object of a component reference or a type-bound
+    // procedure call, e.g. `x` in `x%v`. In a `rank (0)` block the selector
+    // is a scalar object; an assumed rank array outside of a rank block
+    // cannot be such a base (C838).
+    ASR::expr_t* resolve_selector_object(ASR::expr_t* base, const Location& loc) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(base)) ||
+                !ASR::is_a<ASR::Var_t>(*base)) {
+            return base;
+        }
+        ASR::expr_t* selector = cast_assumed_rank_selector(base);
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(selector))) {
+            diag.add(Diagnostic("assumed-rank array '" + std::string(
+                ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(base)->m_v)) +
+                "' cannot be used as the base of a component or binding reference",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(selector))) {
+            return base;
+        }
+        return selector;
     }
 
     // An assumed rank array that is not the selector of an enclosing
@@ -28486,11 +28518,11 @@ public:
     void visit_ConditionalExpr(const AST::ConditionalExpr_t &x) {
         reject_conditional_expr_in_restricted_context(x.base.base.loc);
         this->visit_expr(*x.m_test);
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_body);
-        ASR::expr_t *body = ASRUtils::EXPR(tmp);
+        ASR::expr_t *body = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_orelse);
-        ASR::expr_t *orelse = ASRUtils::EXPR(tmp);
+        ASR::expr_t *orelse = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         ensure_not_assumed_rank(test, "Conditional expression", x.base.base.loc);
         ensure_not_assumed_rank(body, "Conditional expression", x.base.base.loc);
         ensure_not_assumed_rank(orelse, "Conditional expression", x.base.base.loc);
