@@ -35,7 +35,27 @@ program real16_softfloat_trunc_01
         int(z'3bd57ebc58813f82', 8)], 1.0_16), int(z'17f', 8))
     call check_double(transfer([-210_8, int(z'3bfe1321ea89b702', 8)], 1.0_16), &
         int(z'22643d5136e06', 8))
+    ! rounding carries into the exponent, and overflows to infinity
+    call check_single(2.0_16 - pow2(-100), int(z'40000000'))
+    call check_double(2.0_16 - pow2(-100), int(z'4000000000000000', 8))
+    call check_single(real(huge(1.0_4), 16) + pow2(103), int(z'7f800000'))
+    call check_double(real(huge(1.0_8), 16) + pow2(970), int(z'7ff0000000000000', 8))
+    call check_double(real(huge(1.0_8), 16) + pow2(969), int(z'7fefffffffffffff', 8))
 contains
+    function pow2(n) result(r)
+        integer, intent(in) :: n
+        real(16) :: r
+        integer :: i
+        r = 1.0_16
+        do i = 1, abs(n)
+            if (n < 0) then
+                r = r * 0.5_16
+            else
+                r = r * 2.0_16
+            end if
+        end do
+    end function
+
     subroutine check_single(q, expected)
         real(16), intent(in) :: q
         integer, intent(in) :: expected

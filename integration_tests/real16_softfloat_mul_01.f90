@@ -11,6 +11,10 @@ program real16_softfloat_mul_01
     call check(int(z'002bffffffffffff', 8), int(z'ffffffffffffffff', 8), &
         int(z'3fd1612dd0c1aefb', 8), int(z'4a042189874e5715', 8), &
         int(z'00002c25ba1835df', 8), int(z'6940843130e9cae3', 8), .true.)
+    ! smallest subnormal * 2^1000 is exact; smallest subnormal squared is 0
+    call check(0_8, 1_8, int(z'43e7000000000000', 8), 0_8, &
+        int(z'0379000000000000', 8), 0_8, .false.)
+    call check(0_8, 1_8, 0_8, 1_8, 0_8, 0_8, .false.)
 contains
     ! Checks a * b == r for the magnitudes given by the bit patterns of
     ! their high and low 64-bit words; `negative` negates the first operand.
