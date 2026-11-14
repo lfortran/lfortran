@@ -12882,6 +12882,13 @@ public:
                 !ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(v->m_type))) {
             return value;
         }
+        if (ASRUtils::is_array(v->m_type) &&
+                !ASRUtils::is_assumed_rank_array(v->m_type) &&
+                ASRUtils::extract_physical_type(v->m_type) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+            // A `type(*) a(*)` dummy is already the plain data address.
+            return value;
+        }
         ASR::ttype_t* t = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
         llvm::Type* box_type = ASRUtils::is_array(t)
             ? llvm_utils->get_el_type(target, ASRUtils::extract_type(t),
@@ -17322,6 +17329,14 @@ public:
                 tmp = llvm_utils->create_gep2(str_desc, tmp, 0);
                 tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
             }
+        } else if (
+            m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
+            m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            llvm::Value* data_loaded = llvm_utils->CreateLoad2(
+                data_type->getPointerTo(),
+                arr_descr->get_pointer_to_data(arr_type, arg));
+            tmp = llvm_utils->get_string_data(
+                ASRUtils::get_string_type(ASRUtils::expr_type(m_arg)), data_loaded);
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
@@ -27944,6 +27959,23 @@ public:
             if (x_abi == ASR::abiType::BindC && orig_arg &&
                 ASRUtils::is_assumed_rank_array(orig_arg->m_type)) {
                 skip_polymorphic_conversion = true;
+            }
+            // A `type(*) buf(*)` dummy is a plain data address: it carries no
+            // type information, so the actual is not wrapped.
+            if (orig_arg &&
+                    ASRUtils::is_assumed_type_dummy(orig_arg) &&
+                    ASRUtils::is_array(orig_arg->m_type) &&
+                    !ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                    ASRUtils::extract_physical_type(orig_arg->m_type) !=
+                        ASR::array_physical_typeType::DescriptorArray) {
+                skip_polymorphic_conversion = true;
+                llvm::Type* expected_type = llvm_utils->get_type_from_ttype_t_util(
+                    orig_arg->m_type, orig_arg->m_type_declaration, module.get());
+                if (expected_type->isPointerTy()) {
+                    tmp = builder->CreateBitCast(tmp, expected_type);
+                } else {
+                    tmp = builder->CreateBitCast(tmp, expected_type->getPointerTo());
+                }
             }
             if( orig_arg && !skip_polymorphic_conversion ) {
                 tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp, orig_arg,
