@@ -322,6 +322,47 @@ static int read_once()
     return 0;
 }
 
+// A small buffer a launch only reads is copied to the device when its bytes
+// differ from what the device holds, not at every launch.
+static int small_reads_case()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("small_reads", entry(read_once_entry));
+    std::array<int32_t, 64> a;
+    for (int i = 0; i < 64; i++) a[i] = i + 1;
+    int32_t sum_a = 64 * 65 / 2;
+    std::array<int32_t, 8> out{};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    auto h2d = []() { return stats().async_copies[cudaMemcpyHostToDevice]; };
+    auto launch = [&](int32_t chunk) {
+        auto *k = lfortran_gpu_load_kernel(ctx, "small_reads", 11);
+        lfortran_gpu_set_buffer_arg(k, 0, out.data(), sizeof(out),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, a.data(), sizeof(a),
+            LFORTRAN_GPU_READ);
+        lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+    };
+    launch(0);
+    unsigned long long first = h2d();
+    for (int32_t chunk = 1; chunk < 5; chunk++) launch(chunk);
+    require(h2d() == first, "the unchanged buffer is not copied again");
+    a[0] += 100;
+    sum_a += 100;
+    launch(5);
+    require(h2d() == first + 1, "a changed buffer is copied again");
+    launch(6);
+    require(h2d() == first + 1, "and kept");
+    lfortran_gpu_sync(ctx);
+    require(out[5] == 5 + sum_a && out[6] == 6 + sum_a
+        && out[4] == 4 + sum_a - 100, "every launch reads the bytes it was given");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
 // In the copy model a range of at least KEEP_READ_MIN_BYTES that launches
 // only read keeps its copy in device memory until the next wait: the
 // launches of a time loop, which hand the buffer over every time, copy it in
@@ -789,6 +830,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "read-once") == 0) {
         return read_once();
+    }
+    if (argc == 2 && strcmp(argv[1], "small-reads") == 0) {
+        return small_reads_case();
     }
     if (argc == 2 && strcmp(argv[1], "keep-reads") == 0) {
         return keep_reads();
