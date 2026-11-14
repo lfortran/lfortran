@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-coarray_image_queries_01-8a5171d",
+    "cmd": "lfortran --pass=coarray --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --coarray=true",
+    "infile": "tests/coarray_image_queries_01.f90",
+    "infile_hash": "bbeca5d09e162c9ab4040b98346626990958152c7f72167c0646ac1a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-coarray_image_queries_01-8a5171d.f90",
+    "stdout_hash": "69260e6ca3bec1d7b9d493c81649b90dcec96bd4520eceb1a0c306f2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

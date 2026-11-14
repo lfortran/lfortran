@@ -2099,8 +2099,8 @@ public:
         // Legacy F77 alias for command_argument_count (no args).
         {"iargc", IntrinsicSignature({}, 0, 0)},
         {"rand", IntrinsicSignature({"flag"}, 0, 1)},
-        {"this_image", IntrinsicSignature({}, 0, 0)},
-        {"num_images", IntrinsicSignature({}, 0, 0)},
+        {"this_image", IntrinsicSignature({"coarray", "dim", "team"}, 0, 3)},
+        {"num_images", IntrinsicSignature({"team", "team_number"}, 0, 2)},
         {"ishftc", IntrinsicSignature({"i", "shift", "size"}, 2, 3)},
         {"ichar", IntrinsicSignature({"C", "kind"}, 1, 2)},
         {"char", IntrinsicSignature({"I", "kind"}, 1, 2)},
@@ -23560,9 +23560,14 @@ public:
                             tmp = create_func(al, x.base.base.loc, args, diag);
                         }
                     } else {
+                        size_t n_diagnostics = diag.diagnostics.size();
                         tmp = create_func(al, x.base.base.loc, args, diag);
+                        if (tmp == nullptr && diag.diagnostics.size() > n_diagnostics) {
+                            // `create_func` rejected the arguments.
+                            throw SemanticAbort();
+                        }
                     }
-                    
+
                     if (tmp != nullptr && is_specific_type_intrinsic) {
                         if (specific_var_name == "min1" || specific_var_name == "max1") {
                             ASR::expr_t* result_expr = ASRUtils::EXPR(tmp);

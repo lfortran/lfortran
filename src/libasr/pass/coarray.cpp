@@ -8,6 +8,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <functional>
 #include <map>
 #include <set>
 
@@ -979,7 +980,11 @@ class PRIFInterface {
         }
 
         void convert_team_type(const Location &loc, ASR::expr_t *team) {
-            if (team && ASR::is_a<ASR::Var_t>(*team)) {
+            if (team && !ASR::is_a<ASR::Var_t>(*team)) {
+                throw LCompilersException("A team argument must be a variable "
+                    "in coarray lowering");
+            }
+            if (team) {
                 ASR::symbol_t *team_sym = ASR::down_cast<ASR::Var_t>(team)->m_v;
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(team_sym)));
                 ASR::Variable_t *team_var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(team_sym));
@@ -1051,6 +1056,75 @@ class PRIFInterface {
             ASR::expr_t *ni_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ni_sym));
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
             args.push_back(al, ni_expr);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        // prif_num_images_with_team(team, num_images)
+        ASR::symbol_t* get_or_create_prif_num_images_with_team_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_num_images_with_team");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            ASR::ttype_t *team_type = ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true);
+            ASR::symbol_t *team_sym = declare_variable(
+                fn_symtab, loc, "team", team_type, ASR::intentType::In, team_type_sym,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::symbol_t *ni_sym = declare_variable(
+                fn_symtab, loc, "num_images", int32, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 2);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, team_sym)));
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ni_sym)));
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(
+                al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
+                args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Interface,
+                s2c(al, sym_name),
+                false, false, true, false, false, nullptr, 0,
+                false, false, false, nullptr);
+            global_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(fn));
+            return ASR::down_cast<ASR::symbol_t>(fn);
+        }
+
+        // prif_num_images_with_team_number(team_number, num_images)
+        ASR::symbol_t* get_or_create_prif_num_images_with_team_number_sub(const Location &loc) {
+            SymbolTable *global_scope = unit.m_symtab;
+            std::string sym_name = get_mangled_name("prif", "prif_num_images_with_team_number");
+            if (ASR::symbol_t *existing = global_scope->get_symbol(sym_name)) {
+                return existing;
+            }
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
+            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+
+            ASR::symbol_t *tn_sym = declare_variable(
+                fn_symtab, loc, "team_number", int64_type, ASR::intentType::In, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+            ASR::symbol_t *ni_sym = declare_variable(
+                fn_symtab, loc, "num_images", int32, ASR::intentType::Out, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false);
+
+            Vec<ASR::expr_t*> args; args.reserve(al, 2);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, tn_sym)));
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ni_sym)));
             ASR::asr_t *fn = ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, sym_name), nullptr, 0,
                 args.p, args.n, nullptr, 0, nullptr,
@@ -2609,24 +2683,47 @@ class PRIFInterface {
                 args.p, args.n, nullptr, false));
         }
 
-        ASR::expr_t* make_prif_num_images_call(const Location &loc, ASR::ttype_t *type) {
+        // Call a wrapper function around the PRIF query subroutine `get_sub()`
+        // (result as last argument), created on first use. `query_arg` of type
+        // `arg_type` is passed as the first argument; with `arg_type` null and
+        // `has_leading_arg`, that argument is absent.
+        ASR::expr_t* make_prif_image_query_call(const Location &loc,
+                ASR::ttype_t *type, const std::string &wrapper_name,
+                const std::function<ASR::symbol_t*()> &get_sub,
+                const std::string &prif_name,
+                bool has_leading_arg, ASR::ttype_t *arg_type,
+                ASR::symbol_t *arg_type_decl, bool by_value,
+                ASR::expr_t *query_arg) {
+            LCOMPILERS_ASSERT((arg_type == nullptr) == (query_arg == nullptr));
+            LCOMPILERS_ASSERT(arg_type == nullptr || has_leading_arg);
             SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = "lcompilers_prif_num_images";
-            std::string dep_name = get_mangled_name("prif", "prif_num_images");
-            ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
+            ASR::symbol_t *wrapper_fn = global_scope->get_symbol(wrapper_name);
             if (!wrapper_fn) {
                 SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
                 ASR::symbol_t *ret_sym = declare_variable(
-                    fn_symtab, loc, sym_name, int32_type, ASR::intentType::ReturnVar, nullptr,
+                    fn_symtab, loc, wrapper_name, int32, ASR::intentType::ReturnVar, nullptr,
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
+                ASR::symbol_t *sub = get_sub();
 
-                ASR::symbol_t *sub = get_or_create_prif_num_images_sub(loc);
-                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
-                ASR::call_arg_t arg; arg.loc = loc;
-                arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym));
-                call_args.push_back(al, arg);
+                Vec<ASR::expr_t*> wrapper_args; wrapper_args.reserve(al, 1);
+                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 2);
+                if (has_leading_arg) {
+                    ASR::call_arg_t lead_arg; lead_arg.loc = loc;
+                    lead_arg.m_value = nullptr;
+                    if (arg_type) {
+                        ASR::symbol_t *arg_sym = declare_variable(
+                            fn_symtab, loc, "query_arg", arg_type, ASR::intentType::In,
+                            arg_type_decl, ASR::abiType::Source, ASR::accessType::Public,
+                            ASR::presenceType::Required, by_value);
+                        lead_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
+                        wrapper_args.push_back(al, lead_arg.m_value);
+                    }
+                    call_args.push_back(al, lead_arg);
+                }
+                ASR::call_arg_t res_arg; res_arg.loc = loc;
+                res_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym));
+                call_args.push_back(al, res_arg);
 
                 Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                 body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
@@ -2634,68 +2731,76 @@ class PRIFInterface {
 
                 Vec<char*> deps;
                 deps.reserve(al, 1);
-                deps.push_back(al, s2c(al, dep_name));
+                deps.push_back(al, s2c(al, get_mangled_name("prif", prif_name)));
 
                 ASR::asr_t *fn = ASRUtils::make_Function_t_util(
-                    al, loc, fn_symtab, s2c(al, sym_name), deps.p, deps.n,
-                    nullptr, 0, body.p, body.n, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)),
+                    al, loc, fn_symtab, s2c(al, wrapper_name), deps.p, deps.n,
+                    wrapper_args.p, wrapper_args.n, body.p, body.n,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)),
                     ASR::abiType::Source, ASR::accessType::Public,
                     ASR::deftypeType::Implementation, nullptr,
                     false, false, false, false, false, nullptr, 0,
                     false, false, false, nullptr);
                 wrapper_fn = ASR::down_cast<ASR::symbol_t>(fn);
-                global_scope->add_symbol(sym_name, wrapper_fn);
+                global_scope->add_symbol(wrapper_name, wrapper_fn);
+            }
+            Vec<ASR::call_arg_t> args; args.reserve(al, 1);
+            if (query_arg) {
+                ASR::call_arg_t arg; arg.loc = loc; arg.m_value = query_arg;
+                args.push_back(al, arg);
             }
             return ASRUtils::EXPR(ASR::make_FunctionCall_t(
-                al, loc, wrapper_fn, wrapper_fn, nullptr, 0,
+                al, loc, wrapper_fn, wrapper_fn, args.p, args.n,
                 type, nullptr, nullptr));
         }
 
-        ASR::expr_t* make_prif_this_image_call(const Location &loc, ASR::ttype_t *type) {
-            SymbolTable *global_scope = unit.m_symtab;
-            std::string sym_name = "lcompilers_prif_this_image";
-            std::string dep_name = get_mangled_name("prif", "prif_this_image_no_coarray");
-            ASR::symbol_t *wrapper_fn = global_scope->get_symbol(sym_name);
-            if (!wrapper_fn) {
-                SymbolTable *fn_symtab = al.make_new<SymbolTable>(global_scope);
-                ASR::ttype_t *int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-
-                ASR::symbol_t *ret_sym = declare_variable(
-                    fn_symtab, loc, sym_name, int32_type, ASR::intentType::ReturnVar, nullptr,
-                    ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
-
-                ASR::symbol_t *sub = get_or_create_prif_this_image_no_coarray_sub(loc);
-                Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 2);
-
-                ASR::call_arg_t team_arg; team_arg.loc = loc;
-                team_arg.m_value = nullptr;
-                call_args.push_back(al, team_arg);
-
-                ASR::call_arg_t arg; arg.loc = loc;
-                arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym));
-                call_args.push_back(al, arg);
-
-                Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-                body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
-                    al, loc, sub, sub, call_args.p, call_args.n, nullptr, nullptr, false)));
-
-                Vec<char*> deps;
-                deps.reserve(al, 1);
-                deps.push_back(al, s2c(al, dep_name));
-
-                ASR::asr_t *fn = ASRUtils::make_Function_t_util(
-                    al, loc, fn_symtab, s2c(al, sym_name), deps.p, deps.n,
-                    nullptr, 0, body.p, body.n, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)),
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::deftypeType::Implementation, nullptr,
-                    false, false, false, false, false, nullptr, 0,
-                    false, false, false, nullptr);
-                wrapper_fn = ASR::down_cast<ASR::symbol_t>(fn);
-                global_scope->add_symbol(sym_name, wrapper_fn);
+        // NUM_IMAGES([TEAM | TEAM_NUMBER]); `arg` is null if absent
+        ASR::expr_t* make_prif_num_images_call(const Location &loc, ASR::ttype_t *type,
+                ASR::expr_t *arg = nullptr) {
+            if (arg == nullptr) {
+                return make_prif_image_query_call(loc, type,
+                    "lcompilers_prif_num_images",
+                    [&]() { return get_or_create_prif_num_images_sub(loc); },
+                    "prif_num_images",
+                    false, nullptr, nullptr, false, nullptr);
             }
-            return ASRUtils::EXPR(ASR::make_FunctionCall_t(
-                al, loc, wrapper_fn, wrapper_fn, nullptr, 0,
-                type, nullptr, nullptr));
+            if (ASRUtils::is_integer(*ASRUtils::expr_type(arg))) {
+                ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(arg)) != 8) {
+                    ASRUtils::ASRBuilder b(al, loc);
+                    arg = b.i2i_t(arg, int64_type);
+                }
+                return make_prif_image_query_call(loc, type,
+                    "lcompilers_prif_num_images_with_team_number",
+                    [&]() { return get_or_create_prif_num_images_with_team_number_sub(loc); },
+                    "prif_num_images_with_team_number",
+                    true, int64_type, nullptr, true, arg);
+            }
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            convert_team_type(loc, arg);
+            return make_prif_image_query_call(loc, type,
+                "lcompilers_prif_num_images_with_team",
+                [&]() { return get_or_create_prif_num_images_with_team_sub(loc); },
+                "prif_num_images_with_team",
+                true, ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true),
+                team_type_sym, false, arg);
+        }
+
+        // THIS_IMAGE([TEAM]); `team` is null if absent
+        ASR::expr_t* make_prif_this_image_call(const Location &loc, ASR::ttype_t *type,
+                ASR::expr_t *team = nullptr) {
+            auto sub = [&]() { return get_or_create_prif_this_image_no_coarray_sub(loc); };
+            if (team == nullptr) {
+                return make_prif_image_query_call(loc, type,
+                    "lcompilers_prif_this_image", sub, "prif_this_image_no_coarray",
+                    true, nullptr, nullptr, false, nullptr);
+            }
+            ASR::symbol_t *team_type_sym = get_or_create_prif_team_type_struct(loc);
+            convert_team_type(loc, team);
+            return make_prif_image_query_call(loc, type,
+                "lcompilers_prif_this_image_with_team", sub, "prif_this_image_no_coarray",
+                true, ASRUtils::make_StructType_t_util(al, loc, team_type_sym, true),
+                team_type_sym, false, team);
         }
         ASR::symbol_t* get_or_create_prif_lcobound_with_dim_sub(const Location &loc) {
             SymbolTable *global_scope = unit.m_symtab;
@@ -3047,11 +3152,15 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
 
         void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t *x) {
             std::string intrinsic_name = ASRUtils::get_intrinsic_name(x->m_intrinsic_id);
-            if (intrinsic_name == "NumImages") {
-                ASR::expr_t *call = prif.make_prif_num_images_call(x->base.base.loc, x->m_type);
-                *current_expr = call;
-            } else if (intrinsic_name == "ThisImage") {
-                ASR::expr_t *call = prif.make_prif_this_image_call(x->base.base.loc, x->m_type);
+            if (intrinsic_name == "NumImages" || intrinsic_name == "ThisImage") {
+                // Lower the TEAM/TEAM_NUMBER argument first
+                ASR::expr_t **current_expr_copy = current_expr;
+                ASR::BaseExprReplacer<CoarrayPrifReplacer>::replace_IntrinsicElementalFunction(x);
+                current_expr = current_expr_copy;
+                ASR::expr_t *arg = x->n_args == 1 ? x->m_args[0] : nullptr;
+                ASR::expr_t *call = intrinsic_name == "NumImages"
+                    ? prif.make_prif_num_images_call(x->base.base.loc, x->m_type, arg)
+                    : prif.make_prif_this_image_call(x->base.base.loc, x->m_type, arg);
                 *current_expr = call;
             } else if (intrinsic_name == "LCoBound") {
                 ASR::expr_t *coarray = x->m_args[0];
