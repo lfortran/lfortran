@@ -1968,6 +1968,8 @@ public:
     ASRUtils::pending_implicit_dummy_fn pending_implicit_dummy_procedure;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
+    // The array constructors built for a substring of an array section, `e(2:4:2)(1:2)`
+    std::set<ASR::expr_t*> substring_section_constructors;
     std::map<AST::operatorType, std::string> binop2str = {
         {AST::operatorType::Mul, "~mul"},
         {AST::operatorType::Add, "~add"},
@@ -17878,9 +17880,11 @@ public:
                             new_data, arr_const_type, ASR::arraystorageType::ColMajor));
                     }
                 }
-                return ASR::make_ArrayConstructor_t(al, loc,
+                ASR::asr_t* substring_section = ASR::make_ArrayConstructor_t(al, loc,
                     ctor_args.p, ctor_args.size(), result_type, arr_ref_val,
                     ASR::arraystorageType::ColMajor, nullptr);
+                substring_section_constructors.insert(ASRUtils::EXPR(substring_section));
+                return substring_section;
             }
 
             Vec<ASR::dimension_t> array_section_dims;
