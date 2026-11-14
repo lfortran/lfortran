@@ -5992,6 +5992,7 @@ RUN(NAME do_concurrent_26 LABELS gfortran llvm c cpp wasm mlir)
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_string_array_01 LABELS gfortran llvm)
+RUN(NAME transfer_alloc_component_01 LABELS gfortran llvm)
 RUN(NAME transfer_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

@@ -20729,8 +20729,12 @@ public:
                 // in the variable. With no load requested, `source` is that
                 // slot. Indexing the slot as the descriptor reads the
                 // descriptor address as the data pointer. A load was already
-                // done when `ptr_loads` asked for the descriptor.
-                if (ptr_loads == 0 &&
+                // done when `ptr_loads` asked for the descriptor. A component
+                // is loaded by visit_expr_wrapper, so that pointer is already
+                // the descriptor and another load reads the array data.
+                bool source_already_descriptor =
+                    load_ref && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_source);
+                if (ptr_loads == 0 && !source_already_descriptor &&
                         (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_source)) ||
                          ASRUtils::is_pointer(ASRUtils::expr_type(x.m_source)))) {
                     source = llvm_utils->CreateLoad2(
