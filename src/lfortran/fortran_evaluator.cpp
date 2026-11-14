@@ -1037,6 +1037,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             _lfortran_reset_after_interrupt();
             out.ok = false;
             out.value = {};
+            out.interrupted = true;
             out.error_name = "KeyboardInterrupt";
             out.error_value = "cell execution interrupted";
 #endif

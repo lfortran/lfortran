@@ -7082,6 +7082,7 @@ std::string cell_output(FortranEvaluator &e, const std::string &code) {
 
 void check_interrupted(const FortranEvaluator::CellResult &cell) {
     CHECK(!cell.ok);
+    CHECK(cell.interrupted);
     CHECK(cell.error_name == "KeyboardInterrupt");
     CHECK(cell.error_text() == "cell execution interrupted\n");
 }
