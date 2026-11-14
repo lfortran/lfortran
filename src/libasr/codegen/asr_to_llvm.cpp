@@ -20725,6 +20725,17 @@ public:
                     x.m_source, source_arr_type, module.get());
                 llvm::Type* llvm_source_elem_type = llvm_utils->get_type_from_ttype_t_util(
                     x.m_source, ASRUtils::extract_type(source_arr_type), module.get());
+                // An allocatable or pointer descriptor is the pointer stored
+                // in the variable. With no load requested, `source` is that
+                // slot. Indexing the slot as the descriptor reads the
+                // descriptor address as the data pointer. A load was already
+                // done when `ptr_loads` asked for the descriptor.
+                if (ptr_loads == 0 &&
+                        (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_source)) ||
+                         ASRUtils::is_pointer(ASRUtils::expr_type(x.m_source)))) {
+                    source = llvm_utils->CreateLoad2(
+                        llvm_source_arr_type->getPointerTo(), source);
+                }
                 llvm::Value* data_ptr_ptr = arr_descr->get_pointer_to_data(
                     x.m_source, ASRUtils::expr_type(x.m_source), source, module.get());
                 source_ptr = llvm_utils->CreateLoad2(
@@ -26510,15 +26521,11 @@ public:
             target_ptr = tmp;
         }
 
-        llvm::Value* zero_based_idx;
-        if (x.m_target->type == ASR::exprType::ArrayItem) {
-            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
-            visit_expr_wrapper(array_item->m_args[0].m_right, true);
-            llvm::Value* array_index = tmp;
-            zero_based_idx = builder->CreateSub(array_index,llvm::ConstantInt::get(array_index->getType(), 1));
-        } else {
-            zero_based_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-        }
+        // `transfer` copies from the start of its source, for the size of
+        // the mold. The target element is addressed on its own. Using that
+        // index as a byte offset reads past a one-element source section.
+        llvm::Value* zero_based_idx = llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(context), 0);
         
         ASR::String_t* src_str_type = ASR::down_cast<ASR::String_t>(
             ASRUtils::type_get_past_array(ASRUtils::expr_type(x.m_value)));
