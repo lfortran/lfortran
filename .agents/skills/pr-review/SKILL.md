@@ -220,7 +220,9 @@ conditioned on a fresh full run as incomplete until that run succeeds.
 
 ## Write the review
 
-Report only actionable findings, ordered by severity. Use this shape:
+Report only actionable findings, ordered by severity. Write them in plain
+English, as `AGENTS.md` requires: short, common words and short, direct
+sentences. Use this shape:
 
 ```text
 [blocker|rework|follow-up] Short title
