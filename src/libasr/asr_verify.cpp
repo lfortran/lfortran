@@ -5895,6 +5895,22 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ExplicitDeallocate(x);
     }
 
+    void visit_IntentOutReset(const IntentOutReset_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_IntentOutReset(x);
+        ASR::ttype_t *type = ASRUtils::expr_type(x.m_var);
+        require_id(ASRUtils::is_class_type(type),
+            "asr.verify.intent_out_reset.polymorphic",
+            "IntentOutReset::m_var must be polymorphic, found " +
+            ASRUtils::type_to_str_fortran_expr(type, x.m_var));
+        require_id(!ASRUtils::is_array(type),
+            "asr.verify.intent_out_reset.scalar",
+            "IntentOutReset::m_var must be a scalar");
+        require_id(ASR::is_a<ASR::Var_t>(*x.m_var) ||
+            ASR::is_a<ASR::ArrayItem_t>(*x.m_var),
+            "asr.verify.intent_out_reset.designator",
+            "IntentOutReset::m_var must be a variable or an element of one");
+    }
+
     void visit_SyncAll(const SyncAll_t &x) {
         verify_sync_stat_list("SyncAll", x.base.base.loc, x.m_stat, x.m_errmsg);
         BaseWalkVisitor<VerifyVisitor>::visit_SyncAll(x);

@@ -51,6 +51,7 @@ GpuWideLoad
 If
 IfArithmetic
 ImplicitDeallocate
+IntentOutReset
 IntrinsicImpureSubroutine
 ListAppend
 ListClear

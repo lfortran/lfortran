@@ -3889,6 +3889,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
+    // This backend has no virtual tables to find the dynamic type of a
+    // polymorphic entity by, so it applies to an INTENT(OUT) dummy argument
+    // only what the intent_out_deallocate pass does for its declared type.
+    void visit_IntentOutReset(const ASR::IntentOutReset_t & /* x */) {
+    }
+
     void visit_Stop(const ASR::Stop_t &x) {
         print_msg("STOP");
         if (x.m_code &&
