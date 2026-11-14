@@ -2352,6 +2352,38 @@ public:
     std::map<std::string, ASR::presenceType> assgnd_presence;
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
+
+    // An ALLOCATABLE statement may follow the type declaration. Record every
+    // name it gives so a deferred-shape declaration is allocatable when it is
+    // checked, not only when the statement appears first.
+    void collect_allocatable_statements(AST::decl_stmt_t **items, size_t n_items) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(items[i]);
+            bool allocatable_stmt = false;
+            for (size_t a = 0; a < d->n_attributes; a++) {
+                if (!AST::is_a<AST::SimpleAttribute_t>(*d->m_attributes[a])) continue;
+                if (AST::down_cast<AST::SimpleAttribute_t>(
+                        d->m_attributes[a])->m_attr
+                        == AST::simple_attributeType::AttrAllocatable) {
+                    allocatable_stmt = true;
+                    break;
+                }
+            }
+            if (!allocatable_stmt) continue;
+            // `integer, allocatable :: v` already carries the attribute on
+            // that declaration. Only a separate ALLOCATABLE statement
+            // (`allocatable v`) applies to another declaration of the name.
+            // Recording every allocatable declaration made
+            // `integer, pointer, parameter :: v` look allocatable.
+            if (d->m_vartype != nullptr) continue;
+            for (size_t s = 0; s < d->n_syms; s++) {
+                if (d->m_syms[s].m_name) {
+                    assgnd_allocatable.insert(to_lower(d->m_syms[s].m_name));
+                }
+            }
+        }
+    }
     std::set<std::string> assgnd_target;
     std::set<std::string> assgnd_volatile;
     std::set<std::string> assgnd_asynchronous;
@@ -10930,7 +10962,10 @@ public:
                         // Check if intent is used on a non-argument variable
                         bool is_argument = std::find(current_procedure_args.begin(),
                                 current_procedure_args.end(), sym) !=
-                                current_procedure_args.end();
+                                current_procedure_args.end()
+                            || std::find(current_entry_args.begin(),
+                                current_entry_args.end(), sym) !=
+                                current_entry_args.end();
                         if (!is_argument) {
                             diag.add(Diagnostic(
                                 "Intent attribute can only be applied to procedure arguments",
@@ -11223,8 +11258,19 @@ public:
                 }
                 ASR::intentType s_intent;
                 bool is_argument = false;
+                // A name that occurs only in an ENTRY statement is a dummy of
+                // that entry. It stays a local of the host: a fixed-size
+                // array there is the master's own storage, and turning it
+                // into a dummy makes the host call pass an unallocated
+                // argument. An assumed-size dummy is the exception. Typing
+                // it as a local gives it a descriptor, while a call with an
+                // implicit interface passes the array's data.
+                std::string decl_name = to_lower(s.m_name);
+                bool is_entry_dummy = std::find(current_entry_args.begin(),
+                    current_entry_args.end(), decl_name) !=
+                    current_entry_args.end();
                 if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), to_lower(s.m_name)) !=
+                        current_procedure_args.end(), decl_name) !=
                         current_procedure_args.end()) {
                     s_intent = ASRUtils::intent_unspecified;
                     is_argument = true;
@@ -11240,6 +11286,10 @@ public:
                 // location for dimension(...) if present
                 Location dims_attr_loc;
                 is_allocatable = false;
+                if (assgnd_allocatable.count(sym)) {
+                    // `allocatable a` may appear before or after this declaration.
+                    is_allocatable = true;
+                }
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {
@@ -11713,7 +11763,9 @@ public:
                         current_scope, is_derived_type, hidden_derived_type_components);
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
-                        (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                        (s_intent != ASRUtils::intent_local) || is_argument
+                            || (is_entry_dummy && is_dimension_star),
+                        is_dimension_star, is_assumed_rank);
                 }
                 if (corank > 0
                         && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
