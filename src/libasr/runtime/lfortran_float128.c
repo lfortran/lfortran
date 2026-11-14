@@ -3106,7 +3106,7 @@ lf_float128 lf_float128_from_str(const char *s) {
  * PowerPC with -mfloat128). Clang passes both as plain fp128 values, the
  * same way LLVM-emitted code passes them, so only the math entry points
  * (lf_sqrtq, lf_expq, ...) are defined there; the compiler-rt routines come
- * from the system's compiler-rt/libgcc (or section P2 on WASI). s390x is
+ * from the system's compiler-rt/libgcc. s390x is
  * left out because it passes `long double` indirectly. ARM64 uses the shims
  * of section Q. On targets without a binary128 C type, the math entry points
  * are not provided.
@@ -3207,147 +3207,6 @@ lf_f128_abi lf_atandq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f
 #endif
 
 /* ========================================================================
- * P2. WASM32 fp128 ABI wrappers
- *
- * LLVM lowers fp128 soft-float calls on wasm32 as low/high i64 words, not as
- * byval C structs. Keep the portable implementation struct-based internally,
- * but export the compiler-rt symbols with the ABI LLVM expects.
- * ======================================================================== */
-#if defined(__wasm32__) && !defined(__EMSCRIPTEN__)
-
-#define LF_WASM_TF2_ATTR __attribute__((weak))
-
-static lf_float128 f128_from_words(uint64_t lo, uint64_t hi) {
-    lf_float128 r;
-    memcpy(r.bytes, &lo, 8);
-    memcpy(r.bytes + 8, &hi, 8);
-    return r;
-}
-
-static void f128_store_words(lf_float128 *out, lf_float128 v) {
-    memcpy(out->bytes, v.bytes, 16);
-}
-
-LF_WASM_TF2_ATTR void __addtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __addtf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __subtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __subtf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __multf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __multf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __divtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __divtf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __negtf2(lf_float128 *out, uint64_t a_lo, uint64_t a_hi) {
-    f128_store_words(out, __negtf2_lf_impl(f128_from_words(a_lo, a_hi)));
-}
-
-LF_WASM_TF2_ATTR void __extenddftf2(lf_float128 *out, double a) {
-    f128_store_words(out, __extenddftf2_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __extendsftf2(lf_float128 *out, float a) {
-    f128_store_words(out, __extendsftf2_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR double __trunctfdf2(uint64_t a_lo, uint64_t a_hi) {
-    return __trunctfdf2_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR float __trunctfsf2(uint64_t a_lo, uint64_t a_hi) {
-    return __trunctfsf2_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR void __floatsitf(lf_float128 *out, int32_t a) {
-    f128_store_words(out, __floatsitf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __floatditf(lf_float128 *out, int64_t a) {
-    f128_store_words(out, __floatditf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __floatunsitf(lf_float128 *out, uint32_t a) {
-    f128_store_words(out, __floatunsitf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __floatunditf(lf_float128 *out, uint64_t a) {
-    f128_store_words(out, __floatunditf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR int32_t __fixtfsi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixtfsi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR int64_t __fixtfdi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixtfdi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR uint32_t __fixunstfsi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixunstfsi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR uint64_t __fixunstfdi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixunstfdi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR int __eqtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    return f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi)) == 0 ? 0 : 1;
-}
-
-LF_WASM_TF2_ATTR int __netf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    return f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi)) != 0 ? 1 : 0;
-}
-
-LF_WASM_TF2_ATTR int __lttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __letf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __gttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __getf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    return (f128_is_nan(f128_from_words(a_lo, a_hi)) ||
-        f128_is_nan(f128_from_words(b_lo, b_hi))) ? 1 : 0;
-}
-
-#undef LF_WASM_TF2_ATTR
-
-#endif
-
-/* ========================================================================
  * Q. ARM64 calling-convention shims
  *
  * On macOS ARM64, LLVM lowers fp128 ops to runtime calls using the Apple
@@ -3363,7 +3222,10 @@ LF_WASM_TF2_ATTR int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uin
  *   fp128->int:    arg in x0/x1;    result in x0/w0.
  *
  * Each shim marshals registers in both directions so the two ABIs meet.
- * All shims are strong symbols (no `weak`) to override system versions.
+ * The compiler-rt entry points (__addtf3, ...) are provided only where the
+ * system has none (macOS, Windows). Elsewhere, such as Linux where `long
+ * double` is binary128, libgcc or compiler-rt supply them, and defining
+ * them here would override the system's versions.
  *
  * macOS asm symbol mangling: leading underscore required.
  * Linux/ELF: no leading underscore.
@@ -3489,10 +3351,12 @@ void pub(void) {                                             \
     );                                                       \
 }
 
+#if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM2(__addtf3,          __addtf3_lf_impl)
 _LF_SHIM2(__subtf3,          __subtf3_lf_impl)
 _LF_SHIM2(__multf3,          __multf3_lf_impl)
 _LF_SHIM2(__divtf3,          __divtf3_lf_impl)
+#endif
 /* SIMD-ABI public entry points for the math functions called by LLVM-emitted
  * code such as `call fp128 @lf_sqrtq(fp128)`, `lf_powq(fp128, fp128)` or
  * `lf_sinq(fp128)`. They bridge to the struct-ABI implementations lf_f128_*. */
@@ -3524,6 +3388,7 @@ _LF_SHIM1(lf_tandq,         lf_f128_tand)
 _LF_SHIM1(lf_asindq,        lf_f128_asind)
 _LF_SHIM1(lf_acosdq,        lf_f128_acosd)
 _LF_SHIM1(lf_atandq,        lf_f128_atand)
+#if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extendsftf2,   __extendsftf2_lf_impl)
@@ -3544,6 +3409,7 @@ _LF_SHIM2_TO_INT(__letf2,             __letf2_lf_impl)
 _LF_SHIM2_TO_INT(__gttf2,             __gttf2_lf_impl)
 _LF_SHIM2_TO_INT(__getf2,             __getf2_lf_impl)
 _LF_SHIM2_TO_INT(__unordtf2,          __unordtf2_lf_impl)
+#endif
 
 #undef _LF_SHIM2
 #undef _LF_SHIM1
