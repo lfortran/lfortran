@@ -27897,6 +27897,13 @@ public:
                         llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
                         llvm::Value* raw_ptr = builder->CreateBitCast(scalar_ptr, expected_ptr_type);
                         builder->CreateStore(raw_ptr, data_ptr);
+                        if (LLVM::is_llvm_pointer(*scalar_type) &&
+                                ASRUtils::is_allocatable_or_pointer(orig_arg->m_type) &&
+                                !ASRUtils::is_character(*elem_asr_type) &&
+                                !ASRUtils::is_class_type(elem_asr_type)) {
+                            pending_scalar_writebacks.push_back({
+                                tmp, descriptor, descriptor_type, scalar_llvm_type});
+                        }
                     }
                 } else if (ASRUtils::is_unlimited_polymorphic_type(orig_arg->m_type)) {
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
@@ -28454,8 +28461,12 @@ public:
                     tmp = arr_descr->internal_to_cfi(
                         desc_type, tmp, elem_llvm_type, n_dims, elem_size_val,
                         cfi_type_code, cfi_attr, assumed_rank_actual);
+                    // A scalar in a fresh rank-0 descriptor gets its base_addr
+                    // back too; apply_scalar_writebacks then copies it to the scalar.
+                    bool is_scalar_in_desc = already_has_assumed_rank_desc &&
+                        !is_character_array;
                     if (cfi_attr != 0 && !is_type_star &&
-                            ASRUtils::is_array(actual_type) &&
+                            (ASRUtils::is_array(actual_type) || is_scalar_in_desc) &&
                             orig_arg->m_intent != ASR::intentType::In) {
                         // A local of this scope (or of the main program)
                         // lives as long as this stack frame
@@ -30969,10 +30980,8 @@ public:
                 apply_cfi_array_writebacks();
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
-                llvm::Value* result = tmp;
-                apply_scalar_writebacks();
-                tmp = result;
             }
+            apply_scalar_writebacks();
         }
         wrap_string_function_result(x.m_type);
         // Convert complex return value from platform ABI to internal representation
