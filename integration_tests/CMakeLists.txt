@@ -7961,6 +7961,18 @@ RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 RUN(NAME reachable_proc_01 LABELS gfortran llvm EXTRAFILES reachable_proc_01_mod.f90)
+# `unused_functions` deletes an unreached procedure after it has been lowered,
+# so the finished object looks the same on main. Skipping that pass leaves the
+# procedure in main's object and removes it here. There is no per-test timeout
+# in the integration runner, so the slow reachable_proc_01 program would pass
+# on main.
+if (LFORTRAN_BACKEND STREQUAL "llvm")
+    add_test(NAME reachable_proc_symbols
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/reachable_proc_symbols.sh
+            ${CMAKE_Fortran_COMPILER}
+            ${CMAKE_CURRENT_SOURCE_DIR})
+    set_tests_properties(reachable_proc_symbols PROPERTIES LABELS "llvm")
+endif()
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
