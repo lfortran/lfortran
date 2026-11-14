@@ -186,13 +186,16 @@ select `fix-issue` automatically. Do not require the user to repeat these defaul
   invocation, and resource budget; shell activation is not inherited.
 - `fix-mre` verifies each fix with targeted checks (the reproducers, the MRE,
   and each new test run directly in normal, `--fast`, and `--std=f23` modes
-  and with GFortran); after the last fix, the job runs the unit, integration,
-  and reference suites once, in the default mode. Then publish a draft from
-  the user's fork so Quick starts early, and review it locally with
-  `pr-review` while CI runs; the review reruns the suites only if compiler
-  source changed since they passed. Never push compiler-source changes that
-  have not passed the local suites once. In a batch, at most four PRs run
-  Quick at once. Iterate on CI failures, review findings, and human feedback
+  and with GFortran). Quick takes at least an hour, so pipeline it: after the
+  last fix, as soon as the targeted checks pass and the job is reasonably
+  confident in the change, publish a draft from the user's fork so Quick
+  starts, then run the unit, integration, and reference suites once, in the
+  default mode, while CI runs, and review the PR locally with `pr-review`.
+  Fix what the suites find and push the fix like a CI fix. Run the suites
+  before the first push only for complex or risky compiler changes (large
+  refactors, ASR or grammar changes, hard conflict resolutions). Every
+  compiler-source change passes the local suites once before the PR is
+  marked ready. In a batch, at most four PRs run Quick at once. Iterate on CI failures, review findings, and human feedback
   until Quick is green and the review is clean before marking ready. Every
   push reruns Quick, so batch pushes: push CI fixes as soon as they pass
   locally; hold other changes until the current run finishes rather than
@@ -372,9 +375,11 @@ only once, redirect to a log file and then examine the log file.
 
 ## Testing Guidelines
 - Full coverage required: every behavior change must come with tests that fail
-  before your change and pass after. Before pushing a compiler change, run
-  the unit, integration (default mode), and reference suites locally once.
-  Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
+  before your change and pass after. Run the unit, integration (default
+  mode), and reference suites locally once for every compiler change. When
+  you are reasonably confident in the change, push first so Quick runs while
+  the local suites do, and push fixes for anything they find; for complex or
+  risky changes, run them before pushing. Quick checks covers `--fast`, `--std=f23`, other backends, and platforms,
   and is the merge gate.
 
 ### CI policy

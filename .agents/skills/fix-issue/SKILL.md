@@ -6,8 +6,9 @@ description: >
   issues or send issue-fix PRs, including pasted failures; the skill need not
   be named. Expand the full selection; use fresh per-issue subagents, isolated
   Git worktrees, and Pixi/LLVM 11. Run repro-issue, create-mre, and fix-mre
-  until every original reproducer passes, run the local suites once, publish
-  a draft fork PR, and review it with pr-review while Quick CI runs. Keep
+  until every original reproducer passes, publish a draft fork PR early, and
+  run the local suites once and review it with pr-review while Quick CI
+  runs. Keep
   independent fixes in separate PRs; group shared or dependent fixes into one
   PR with focused commits. Iterate on CI, review, and feedback until green,
   then mark ready. Exhaustive checks are opt-in. Deduplicate and file
@@ -37,20 +38,25 @@ per-job procedure below. Pass it its assigned issue IDs, not the original
 batch query, so it does not recursively redispatch the batch.
 
 Per job: setup → reproduce → (reduce → fix → original-issue check) until fixed
-→ suites once → draft PR → CI watch concurrent with the local pr-review/fix
-loop, with batched pushes → ready. Track additional bugs throughout,
+→ draft PR → CI watch concurrent with the local suites (once) and the
+pr-review/fix loop, with batched pushes → ready. Complex changes run the
+suites before the draft. Track additional bugs throughout,
 including jobs that stop without a PR.
 
 Quick checks (about 30–90 minutes) is the long pole: publish the draft as
 soon as the fix is verified, and review locally while CI runs. Every push
 reruns Quick and cancels the run in progress, so pushes are batched.
 
-**Push invariant:** never push compiler-source changes that have not passed
+**Push policy:** pipeline the local suites with Quick. Push as soon as the
+targeted checks pass and you are reasonably confident in the change, then run
 the local suites once (`fix-mre` Phase 5b: unit, integration, and reference,
-in the default mode only). Record the passing commit as `suites_green_sha` in
-`state.md`. The suites are current when
-`git diff --quiet <suites_green_sha> HEAD -- src grammar` succeeds; otherwise
-whoever pushes next runs them once first. Changes outside `src/` and
+in the default mode only) while Quick runs. Fix what they find and push it as
+a CI fix; finding it locally is cheaper than waiting for Quick to fail. For
+complex or risky compiler changes (large refactors, ASR or grammar changes,
+hard conflict resolutions), run the suites before pushing. Record the commit
+they passed on as `suites_green_sha` in `state.md`. The suites are current
+when `git diff --quiet <suites_green_sha> HEAD -- src grammar` succeeds; the
+PR is marked ready only with current suites. Changes outside `src/` and
 `grammar/` (tests, docs, commit messages, PR text) need only the changed tests
 run directly. Never rerun the suites locally with `--fast`, `--std=f23`, or
 other backends; Quick does.
@@ -167,8 +173,8 @@ failures look caused by a stale base.
 To update, run `git rebase <upstream-remote>/main` and resolve any conflicts.
 Set `suites_green_sha` to the rebased head only if the suites were current
 before the rebase and no conflicts in `src/` or `grammar/` were resolved;
-otherwise rebuild and rerun the targeted checks and the suites once before
-pushing (see **Push invariant**). Then update the fork with
+otherwise rebuild, rerun the targeted checks, and run the suites once, before
+or after pushing as the **Push policy** says. Update the fork with
 `git push --force-with-lease`.
 This applies in every PR state, including after review. Rebasing only moves
 the existing commits; address review feedback with new commits and do not
@@ -358,15 +364,18 @@ start iteration `j+1` on the next failure.
 
 #### 3d. Suites subagent (fresh)
 
-Unless the suites are already current (**Push invariant**), run `fix-mre`
-Phase 5b once on the head, handling failures as 5b describes: a regression
+Run this phase before Phase 4 only for a complex or risky change (**Push
+policy**); otherwise go to Phase 4 now, and the round-1 review subagent runs
+the suites while Quick runs. Unless the suites are already current, run
+`fix-mre` Phase 5b once on the head, handling failures as 5b describes: a regression
 caused by this branch starts iteration `j+1` on it; a pre-existing failure
 goes to `followups.md`. Record `suites_green_sha` in `state.md` and the
 results in `suites.md`, then go to Phase 4.
 
 ### Phase 4: Publish subagent
 
-Publish as soon as every included issue is fixed and the suites are current;
+Publish as soon as every included issue is fixed (and, for a complex change,
+the suites are current);
 local review follows in Phase 5, concurrently with CI. In a batch, wait for
 the coordinator to grant a Quick CI slot (`references/batch.md`). It should:
 
@@ -381,11 +390,12 @@ the coordinator to grant a Quick CI slot (`references/batch.md`). It should:
      review follow-up findings once known.
    - Verification: the integration tests added, each failing before its fix
      and passing after; the original reproducer now passing; the targeted
-     checks and default-mode local suites; other modes run by Quick CI.
+     checks and default-mode local suites (update the description once the
+     suites pass); other modes run by Quick CI.
    - Rationale: for each bug, why the fix belongs in the chosen compiler
      phase.
-2. Inspect all new commits for the authorship policy, confirm the **Push
-   invariant**, then `git push -u <fork-remote> <branch>`
+2. Inspect all new commits for the authorship policy, follow the **Push
+   policy**, then `git push -u <fork-remote> <branch>`
 3. `gh pr create --repo lfortran/lfortran --base main --head <login>:<branch> --draft --title "<title>" --body-file .fix-issue/<id>/pr_body.md`.
    The title is the commit subject when there is a single commit. Otherwise
    it is a `fix: ...` summary of the issue.
@@ -461,8 +471,8 @@ current head SHA.
   the `pr-review` skill on the local branch: all commits since the merge base
   with `<upstream-remote>/main`, including unpushed ones, not just the latest
   commit. It must not edit tracked files, commit, or push. If the suites are
-  current (**Push invariant**), it assumes they passed. Otherwise (a review
-  or CI fix changed `src/`), it rebuilds and runs them once in the background,
+  current (**Push policy**), it assumes they passed. Otherwise (they never
+  ran, or a review or CI fix changed `src/`), it rebuilds and runs them once in the background,
   with logs redirected, while it reviews; it records `suites_green_sha` if they
   pass and reports each regression as a blocker. It may build and run targeted
   tests to confirm a finding, one build/test process at a time, as long as it
@@ -561,9 +571,9 @@ comments are new. It should:
 - Verify only what changed. After a compiler-source change, rebuild and run
   the targeted checks for it; the next review round runs the suites. After
   test-only edits, run just those tests directly. After commit-message or
-  PR-description edits, rerun nothing. Before any push, satisfy the **Push
-  invariant**: a CI fix that touches `src/` runs the suites once before
-  pushing, which is cheaper than a wasted Quick run. Update
+  PR-description edits, rerun nothing. Pushes follow the **Push
+  policy**: push a CI fix as soon as its targeted checks pass, and run the
+  suites while Quick runs. Update
   `pr_body.md` and the PR description (`gh pr edit <PR> --body-file ...`) if
   scope or rationale changed.
 - Commit focused follow-ups under **Commit authorship** (no co-author lines)
