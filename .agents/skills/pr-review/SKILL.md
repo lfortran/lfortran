@@ -242,3 +242,6 @@ If no actionable findings remain, say so and mention only meaningful residual
 risks or test gaps. Treat automated-review findings as hypotheses: reproduce
 and understand them before reporting them as blockers. Do not manufacture style
 comments.
+
+If no blocker or rework finding remains, check whether the PR fits a kind in
+[low-risk](../low-risk/SKILL.md), and follow that skill if it does.
