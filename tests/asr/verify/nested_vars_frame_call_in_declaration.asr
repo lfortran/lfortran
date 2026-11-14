@@ -108,7 +108,7 @@
                     []
                     nil
                     nil
-                    [])
+                    [] nil)
                   "g" (Function
                     (SymbolTable
                       4

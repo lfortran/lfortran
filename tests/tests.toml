@@ -5,6 +5,15 @@
 # bin ... run the CodeGen and output bin, compare against reference bin
 
 [[test]]
+filename = "../integration_tests/intent_out_dynamic_base.f90"
+fortran = true
+
+[[test]]
+filename = "../integration_tests/intent_out_dynamic_extension.f90"
+extrafiles = "../integration_tests/intent_out_dynamic_base.f90"
+fortran = true
+
+[[test]]
 filename = "asr/compile/asr_text_compile_01.asr"
 asr_clojure = true
 llvm = true

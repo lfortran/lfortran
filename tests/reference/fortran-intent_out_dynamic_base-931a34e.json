@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-intent_out_dynamic_base-931a34e",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/intent_out_dynamic_base.f90",
+    "infile_hash": "601adf5266e431191ad1b8e8f3ca5d9ab79229339be85a7fcca52f62",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-intent_out_dynamic_base-931a34e.f90",
+    "stdout_hash": "92f571a55f39ddc3d6d2d482d03e4a2ac198a5d941311ccc8d884488",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

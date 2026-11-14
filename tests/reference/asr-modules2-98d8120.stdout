@@ -136,6 +136,7 @@
                                     ()
                                     10 toml_structure
                                     []
+                                    ()
                                 ),
                             toml_structure:
                                 (Struct
@@ -174,6 +175,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_structure_base
@@ -411,6 +413,87 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_toml_array:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            object:
+                                                (Variable
+                                                    17
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 toml_array
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_array
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 17 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             new:
                                 (GenericProcedure
                                     2
@@ -576,6 +659,7 @@
                                     ()
                                     2 toml_value
                                     []
+                                    2 lcompilers_intent_out_reset_toml_array
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
@@ -753,6 +837,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_type_value

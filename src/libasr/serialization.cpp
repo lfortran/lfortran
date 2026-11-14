@@ -339,6 +339,10 @@ public:
                 Function_t *m = down_cast<Function_t>(m_sym);
                 sym = m->m_symtab->find_scoped_symbol(original_name,
                         x.n_scope_names, x.m_scope_names);
+            } else if (ASR::is_a<ASR::Block_t>(*m_sym) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*m_sym)) {
+                sym = ASRUtils::symbol_symtab(m_sym)->find_scoped_symbol(
+                    original_name, x.n_scope_names, x.m_scope_names);
             }
             if (sym) {
                 // FIXME: this is a hack, we need to pass in a non-const `x`.

@@ -302,6 +302,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             fpm_new_settings:
                                 (Struct
@@ -358,6 +359,78 @@
                                     ()
                                     2 fpm_cmd_settings
                                     []
+                                    2 lcompilers_intent_out_reset_fpm_new_settings
+                                ),
+                            lcompilers_intent_out_reset_fpm_new_settings:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            object:
+                                                (Variable
+                                                    10
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 fpm_new_settings
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_fpm_new_settings
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 10 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             warnwrite:
                                 (ExternalSymbol

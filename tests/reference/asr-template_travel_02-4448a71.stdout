@@ -1788,8 +1788,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [d_divided_by_s
-                                                    avg_s_from_t]
+                                                    [avg_s_from_t
+                                                    d_divided_by_s]
                                                     [(Var 17 d1)
                                                     (Var 17 s1)
                                                     (Var 17 d2)
@@ -2042,9 +2042,9 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [plus_d
-                                                    plus_t
-                                                    d_divided_by_t]
+                                                    [d_divided_by_t
+                                                    plus_d
+                                                    plus_t]
                                                     [(Var 16 d1)
                                                     (Var 16 t1)
                                                     (Var 16 d2)
@@ -2950,8 +2950,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [div
-                                                    avg_s_from_t]
+                                                    [avg_s_from_t
+                                                    div]
                                                     [(Var 21 d1)
                                                     (Var 21 s1)
                                                     (Var 21 d2)
@@ -3204,8 +3204,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [plus
-                                                    div]
+                                                    [div
+                                                    plus]
                                                     [(Var 22 d1)
                                                     (Var 22 t1)
                                                     (Var 22 d2)

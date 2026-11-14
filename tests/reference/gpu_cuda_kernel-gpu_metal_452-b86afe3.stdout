@@ -101,7 +101,7 @@ __device__ inline T __lfortran_lane_broadcast_block(T v, int lanes, unsigned mas
     return __lfortran_lane_broadcast(v, lanes, mask);
 }
 
-__device__ inline void values_gpu_18(tensor_t self, float* __data_self_values_, int __size_self_values_, int __lb_self_values__dim1, float* r) {
+__device__ inline void values_gpu_19(tensor_t self, float* __data_self_values_, int __size_self_values_, int __lb_self_values__dim1, float* r) {
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = __lb_self_values__dim1;
@@ -161,7 +161,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
         int __libasr_index_0_1;
         float* y = ((__workspace_extent2) > 0) ? (__workspace_10 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent2) : nullptr;
         if ((__gpu_lane == 0)) {
-            values_gpu_18(outs[((int)(p__dc) - (1))], __data_outs_values_ + __offsets_outs_values_[((int)(p__dc) - (1))], __sizes_outs_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_outs_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+            values_gpu_19(outs[((int)(p__dc) - (1))], __data_outs_values_ + __offsets_outs_values_[((int)(p__dc) - (1))], __sizes_outs_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_outs_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
             for (int __copy_i = 0; __copy_i < ((((int)__sizes_outs_values_[(((int)((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
         }
         __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);

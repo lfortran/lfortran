@@ -60,6 +60,7 @@
               nil
               nil
               []
+              nil
             )
             "other" (Struct
               (SymbolTable
@@ -115,6 +116,7 @@
               nil
               nil
               []
+              nil
             )
           }
         )

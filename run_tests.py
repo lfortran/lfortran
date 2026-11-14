@@ -775,7 +775,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 raise RunException(
                     f"{filename} * x86: the executable 'output' was not written")
 
-    if fortran:
+    if fortran and compile_extrafiles("fortran"):
         if pass_ is not None:
             cmd = (
                 "lfortran --pass=" + pass_ +

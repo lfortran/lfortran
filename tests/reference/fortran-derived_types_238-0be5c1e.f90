@@ -61,7 +61,7 @@ subroutine add_col(a, j)
 end subroutine add_col
 
 subroutine add_poly(a, c)
-    type(t), intent(in) :: a
+    class(t), intent(in) :: a
     real(4), dimension(:), intent(out) :: c
     c = a%x*a%y
 end subroutine add_poly

@@ -2,7 +2,7 @@
     "basename": "asr-struct_signature_polymorphic-c562093",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_signature_polymorphic.asr",
-    "infile_hash": "3e9b08619e009730538e5a3a54a9946534161c1aaffb4a713b0a8001",
+    "infile_hash": "0bd99dafd5b980dba151dbfc7e0a90216edabff7d5ddeade0d43d584",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

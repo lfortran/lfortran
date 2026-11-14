@@ -707,6 +707,7 @@ public:
 
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        check_dynamic_reset(x);
         is_string_concat_present = false;
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items

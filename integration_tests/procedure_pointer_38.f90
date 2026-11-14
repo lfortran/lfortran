@@ -15,6 +15,9 @@ type :: mt
     procedure(later), pointer, nopass :: pf => null()
 end type
 contains
+    subroutine reset(x)
+        class(mt), intent(out) :: x
+    end subroutine
     integer function earlier(x)
         use procedure_pointer_38_sizes, only: extent
         integer, intent(in) :: x(extent())
@@ -63,6 +66,10 @@ implicit none
 type(mt) :: m
 m%pf => later
 if (m%pf([40, 2]) /= 42) error stop
+call reset(m)
+if (associated(m%pf)) error stop
+m%pf => earlier
+if (m%pf([40, 2]) /= 43) error stop
 if (invoke_local() /= 46) error stop
 if (invoke_dummy(later) /= 42) error stop
 if (invoke_internal() /= 12) error stop

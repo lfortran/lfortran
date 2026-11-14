@@ -123,6 +123,7 @@
               nil
               (SymbolRef 1 "helper")
               []
+              nil
             )
           }
         )

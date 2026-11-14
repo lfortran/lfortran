@@ -13632,7 +13632,7 @@ public:
                 is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
                 is_sequence,
                 nullptr, 0, nullptr, parent_sym,
-                kind_params.p, kind_params.size());
+                kind_params.p, kind_params.size(), nullptr);
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
 
@@ -13748,7 +13748,7 @@ public:
             is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
             is_sequence,
             nullptr, 0, nullptr, parent_sym,
-            nullptr, 0);
+            nullptr, 0, nullptr);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -14149,6 +14149,13 @@ public:
                 visitor.al, x->base.base.loc, x->m_args, x->n_args, x->m_type,
                 x->m_storage_format, x->m_struct_var));
             ASR::expr_t* array_value = ASRUtils::expr_value(array);
+            if (array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
+                // A scalar component default is stored as a constructor
+                // until its kind is concrete. Folding must retain the
+                // component's rank and bounds, not flatten it to rank one.
+                ASR::down_cast<ASR::ArrayConstant_t>(array_value)->m_type =
+                    ASRUtils::duplicate_type(visitor.al, x->m_type);
+            }
             *this->current_expr = array_value ? array_value : array;
         }
 
@@ -14416,7 +14423,7 @@ public:
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0, nullptr);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -14963,7 +14970,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -15336,7 +15343,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);

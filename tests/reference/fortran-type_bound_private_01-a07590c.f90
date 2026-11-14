@@ -18,7 +18,7 @@ integer(4), save :: counter = 0
 interface
     subroutine sub_driver(self)
         import base_t
-        type(base_t), intent(in) :: self
+        class(base_t), intent(in) :: self
     end subroutine sub_driver
 end interface
 
@@ -82,7 +82,7 @@ implicit none
 contains
 
 subroutine sub_driver(self)
-    type(base_t), intent(in) :: self
+    class(base_t), intent(in) :: self
     call self%bump()
     if (self%getf() /= 3) then
         error stop

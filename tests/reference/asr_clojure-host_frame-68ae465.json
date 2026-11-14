@@ -2,11 +2,11 @@
     "basename": "asr_clojure-host_frame-68ae465",
     "cmd": "lfortran --show-asr --no-color --no-indent --clojure --no-member-names {infile} -o {outfile}",
     "infile": "tests/asr/compile/host_frame.asr",
-    "infile_hash": "95743b4c4422a49f3d056d4f7573ea8a0323c36e85916f26d2afaca9",
+    "infile_hash": "c846d5caa8a388549ba44ae7cefee394f0bbb3894e77b04108b7356b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr_clojure-host_frame-68ae465.stdout",
-    "stdout_hash": "4cab39d77061225a7916ec9785c867724926541c83ecb48411f2b814",
+    "stdout_hash": "f3a21b8c54b0c9938cf889f406a6be17c61a2b239f9746e4edf08b86",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

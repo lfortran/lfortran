@@ -33,7 +33,7 @@ subroutine update(self, work, input, n, k)
     real(4), dimension(:, :), intent(in) :: input
     integer(4), intent(in) :: k
     integer(4), intent(in) :: n
-    type(layer), intent(inout) :: self
+    class(layer), intent(inout) :: self
     real(4), dimension(:, :, :, :), intent(inout) :: work
     __libasr_created__array_section_subscript_ = n
     __libasr_created__array_section_subscript_1 = k

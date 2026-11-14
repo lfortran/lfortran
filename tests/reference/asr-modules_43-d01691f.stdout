@@ -436,6 +436,85 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_srcfile_t:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            object:
+                                                (Variable
+                                                    6
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 8)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 srcfile_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_srcfile_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Integer 8)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             srcfile_t:
                                 (Struct
                                     (SymbolTable
@@ -551,6 +630,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_srcfile_t
                                 )
                         })
                     modules_43_fpm_sources

@@ -30,11 +30,11 @@
                             __lfortran_global_init_global_init_01:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             __lfortran_global_init_done:
                                                 (Variable
-                                                    9
+                                                    10
                                                     __lfortran_global_init_done
                                                     []
                                                     Local
@@ -66,7 +66,7 @@
                                                 ),
                                             __lfortran_global_init_global_init_01_a:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     __lfortran_global_init_global_init_01_a
                                                     2 __lfortran_global_init_global_init_01_a
                                                     global_init_01_a
@@ -76,7 +76,7 @@
                                                 ),
                                             __lfortran_global_init_global_init_01_b:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     __lfortran_global_init_global_init_01_b
                                                     4 __lfortran_global_init_global_init_01_b
                                                     global_init_01_b
@@ -106,12 +106,12 @@
                                     [(If
                                         ()
                                         (LogicalNot
-                                            (Var 9 __lfortran_global_init_done)
+                                            (Var 10 __lfortran_global_init_done)
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 9 __lfortran_global_init_done)
+                                            (Var 10 __lfortran_global_init_done)
                                             (LogicalConstant
                                                 .true.
                                                 (Logical 4)
@@ -123,15 +123,15 @@
                                             .false.
                                         )
                                         (SubroutineCall
-                                            9 __lfortran_global_init_global_init_01_a
-                                            9 __lfortran_global_init_global_init_01_a
+                                            10 __lfortran_global_init_global_init_01_a
+                                            10 __lfortran_global_init_global_init_01_a
                                             []
                                             ()
                                             .false.
                                         )
                                         (SubroutineCall
-                                            9 __lfortran_global_init_global_init_01_b
-                                            9 __lfortran_global_init_global_init_01_b
+                                            10 __lfortran_global_init_global_init_01_b
+                                            10 __lfortran_global_init_global_init_01_b
                                             []
                                             ()
                                             .false.
@@ -686,11 +686,11 @@
                             __lfortran_global_init_global_init_01_a:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             __lfortran_global_init_done:
                                                 (Variable
-                                                    7
+                                                    8
                                                     __lfortran_global_init_done
                                                     []
                                                     Local
@@ -742,12 +742,12 @@
                                     [(If
                                         ()
                                         (LogicalNot
-                                            (Var 7 __lfortran_global_init_done)
+                                            (Var 8 __lfortran_global_init_done)
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 7 __lfortran_global_init_done)
+                                            (Var 8 __lfortran_global_init_done)
                                             (LogicalConstant
                                                 .true.
                                                 (Logical 4)
@@ -855,6 +855,75 @@
                                     []
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_leaf:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            object:
+                                                (Variable
+                                                    7
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 leaf
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_leaf
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 7 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             leaf:
                                 (Struct
                                     (SymbolTable
@@ -940,6 +1009,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_leaf
                                 )
                         })
                     global_init_01_a
@@ -979,11 +1049,11 @@
                             __lfortran_global_init_global_init_01_b:
                                 (Function
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             __lfortran_global_init_done:
                                                 (Variable
-                                                    8
+                                                    9
                                                     __lfortran_global_init_done
                                                     []
                                                     Local
@@ -1035,12 +1105,12 @@
                                     [(If
                                         ()
                                         (LogicalNot
-                                            (Var 8 __lfortran_global_init_done)
+                                            (Var 9 __lfortran_global_init_done)
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 8 __lfortran_global_init_done)
+                                            (Var 9 __lfortran_global_init_done)
                                             (LogicalConstant
                                                 .true.
                                                 (Logical 4)

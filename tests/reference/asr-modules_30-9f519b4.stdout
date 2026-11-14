@@ -5,13 +5,13 @@
             fpm_manifest_executable_modules_30:
                 (Module
                     (SymbolTable
-                        7
+                        8
                         {
                             1_executable_config_main:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_executable_config_main
-                                    8 main
+                                    9 main
                                     fpm_manifest_executable_modules_30
                                     [executable_config]
                                     main
@@ -19,9 +19,9 @@
                                 ),
                             1_executable_config_name:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_executable_config_name
-                                    8 name
+                                    9 name
                                     fpm_manifest_executable_modules_30
                                     [executable_config]
                                     name
@@ -29,9 +29,9 @@
                                 ),
                             1_executable_config_source_dir:
                                 (ExternalSymbol
-                                    7
+                                    8
                                     1_executable_config_source_dir
-                                    8 source_dir
+                                    9 source_dir
                                     fpm_manifest_executable_modules_30
                                     [executable_config]
                                     source_dir
@@ -40,11 +40,11 @@
                             default_executable:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             name:
                                                 (Variable
-                                                    9
+                                                    10
                                                     name
                                                     []
                                                     InOut
@@ -70,7 +70,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    9
+                                                    10
                                                     self
                                                     []
                                                     Out
@@ -91,7 +91,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    7 executable_config
+                                                    8 executable_config
                                                     Source
                                                     Public
                                                     Required
@@ -139,18 +139,18 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 self)
-                                    (Var 9 name)]
+                                    [(Var 10 self)
+                                    (Var 10 name)]
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            7 1_executable_config_name
+                                            (Var 10 self)
+                                            8 1_executable_config_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 9 name)
+                                        (Var 10 name)
                                         ()
                                         .false.
                                         .false.
@@ -159,8 +159,8 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            7 1_executable_config_source_dir
+                                            (Var 10 self)
+                                            8 1_executable_config_source_dir
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -178,8 +178,8 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
-                                            7 1_executable_config_main
+                                            (Var 10 self)
+                                            8 1_executable_config_main
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -204,11 +204,11 @@
                             executable_config:
                                 (Struct
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             main:
                                                 (Variable
-                                                    8
+                                                    9
                                                     main
                                                     []
                                                     Local
@@ -236,7 +236,7 @@
                                                 ),
                                             name:
                                                 (Variable
-                                                    8
+                                                    9
                                                     name
                                                     []
                                                     Local
@@ -264,7 +264,7 @@
                                                 ),
                                             source_dir:
                                                 (Variable
-                                                    8
+                                                    9
                                                     source_dir
                                                     []
                                                     Local
@@ -320,6 +320,90 @@
                                     ()
                                     ()
                                     []
+                                    8 lcompilers_intent_out_reset_executable_config
+                                ),
+                            lcompilers_intent_out_reset_executable_config:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    8 executable_config
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_executable_config
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     fpm_manifest_executable_modules_30
@@ -360,7 +444,7 @@
                                 (ExternalSymbol
                                     2
                                     default_executable
-                                    7 default_executable
+                                    8 default_executable
                                     fpm_manifest_executable_modules_30
                                     []
                                     default_executable
@@ -379,11 +463,11 @@
                             package_defaults:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             package:
                                                 (Variable
-                                                    10
+                                                    12
                                                     package
                                                     []
                                                     InOut
@@ -438,7 +522,7 @@
                                                 ),
                                             root:
                                                 (Variable
-                                                    10
+                                                    12
                                                     root
                                                     []
                                                     In
@@ -510,11 +594,11 @@
                                         Host
                                     )
                                     []
-                                    [(Var 10 package)
-                                    (Var 10 root)]
+                                    [(Var 12 package)
+                                    (Var 12 root)]
                                     [(Allocate
                                         [((StructInstanceMember
-                                            (Var 10 package)
+                                            (Var 12 package)
                                             2 1_package_config_t_executable
                                             (Allocatable
                                                 (Array
@@ -555,7 +639,7 @@
                                         ()
                                         [((ArrayItem
                                             (StructInstanceMember
-                                                (Var 10 package)
+                                                (Var 12 package)
                                                 2 1_package_config_t_executable
                                                 (Allocatable
                                                     (Array
@@ -603,7 +687,7 @@
                                             .false.
                                         ))
                                         ((StructInstanceMember
-                                            (Var 10 package)
+                                            (Var 12 package)
                                             2 1_package_config_t_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -622,8 +706,8 @@
                         })
                     fpm_manifest_modules_30
                     ()
-                    [fpm_manifest_package_modules_30
-                    fpm_manifest_executable_modules_30]
+                    [fpm_manifest_executable_modules_30
+                    fpm_manifest_package_modules_30]
                     .false.
                     .false.
                     .false.
@@ -639,11 +723,126 @@
                                 (ExternalSymbol
                                     4
                                     executable_config
-                                    7 executable_config
+                                    8 executable_config
                                     fpm_manifest_executable_modules_30
                                     []
                                     executable_config
                                     Public
+                                ),
+                            lcompilers_intent_out_reset_package_config_t:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            object:
+                                                (Variable
+                                                    6
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                                Global
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 package_config_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_package_config_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             package_config_t:
                                 (Struct
@@ -770,6 +969,7 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_package_config_t
                                 )
                         })
                     fpm_manifest_package_modules_30
@@ -784,7 +984,7 @@
             modules_30:
                 (Program
                     (SymbolTable
-                        11
+                        13
                         {
                             
                         })

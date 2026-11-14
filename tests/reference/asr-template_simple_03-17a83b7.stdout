@@ -1431,8 +1431,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [__instantiated_generic_sum
-                                                    div
+                                                    [div
+                                                    __instantiated_generic_sum
                                                     cast]
                                                     [(Var 19 arr)]
                                                     [(Assignment
@@ -3022,8 +3022,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [__asr___instantiated_generic_sum
-                                                    div_integer
+                                                    [div_integer
+                                                    __asr___instantiated_generic_sum
                                                     cast_integer]
                                                     [(Var 24 arr)]
                                                     [(Assignment
@@ -3246,8 +3246,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [__asr___instantiated_generic_sum1
-                                                    div_real
+                                                    [div_real
+                                                    __asr___instantiated_generic_sum1
                                                     cast_real]
                                                     [(Var 26 arr)]
                                                     [(Assignment

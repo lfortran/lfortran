@@ -8480,18 +8480,31 @@ std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t *f)
             for (size_t i = 0; i < n_deps; ++i) {
                 if (deps[i]) unique_deps.insert(deps[i]);
             }
+            // A nonallocatable component, including an array component,
+            // requires its type definition before this definition. Pointer
+            // and allocatable components can refer to an incomplete type.
+            for (auto &item : sym->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (ASRUtils::is_allocatable_or_pointer(member->m_type) ||
+                        member->m_type_declaration == nullptr) continue;
+                ASR::symbol_t* declared = ASRUtils::symbol_get_past_external(
+                    member->m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*declared)) {
+                    unique_deps.insert(symbol_name(member->m_type_declaration));
+                }
+            }
 
             // if there exists a parent, add parent and it's dependencies
             if (sym->m_parent) {
-                ASR::Struct_t* parent = ASR::down_cast<ASR::Struct_t>(sym->m_parent);
-                unique_deps.insert(std::string(parent->m_name));
-
-                auto parent_deps = symbol_dependencies(sym->m_parent);
-                char** parent_dep_array = parent_deps.first;
-                size_t parent_dep_count = parent_deps.second;
-
-                for (size_t i = 0; i < parent_dep_count; ++i) {
-                    unique_deps.insert(parent_dep_array[i]);
+                unique_deps.insert(symbol_name(sym->m_parent));
+                // An imported parent's own dependencies belong to its
+                // defining scope, not to the scope of this extension.
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*sym->m_parent)) {
+                    auto parent_deps = symbol_dependencies(sym->m_parent);
+                    for (size_t i = 0; i < parent_deps.second; ++i) {
+                        unique_deps.insert(parent_deps.first[i]);
+                    }
                 }
             }
 
@@ -10505,7 +10518,8 @@ ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
 
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access,
-        const std::string &name_prefix, const std::string &name_suffix) {
+        const std::string &name_prefix, const std::string &name_suffix,
+        bool import_local) {
     if (is_named_from(sym, scope)) return sym;
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
@@ -10530,8 +10544,42 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         }
     }
     ASR::symbol_t* module_sym = get_asr_owner(definition);
+    Vec<char*> scope_names;
+    scope_names.reserve(al, 0);
+    if (module_sym && (ASR::is_a<ASR::Block_t>(*module_sym) ||
+            ASR::is_a<ASR::AssociateBlock_t>(*module_sym))) {
+        // Anchor a cross-block import at the outermost construct, which is
+        // visible to procedures of the enclosing host. Preserve the path to
+        // the actual declaration, including shadowed names in nested blocks.
+        std::vector<char*> path;
+        ASR::symbol_t *owner = get_asr_owner(module_sym);
+        while (owner && (ASR::is_a<ASR::Block_t>(*owner) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+            path.push_back(symbol_name(module_sym));
+            module_sym = owner;
+            owner = get_asr_owner(module_sym);
+        }
+        if (import_local) {
+            // Hoisted static storage can no longer see its source construct.
+            // Anchor its dependencies at the enclosing program unit instead.
+            while (owner) {
+                path.push_back(symbol_name(module_sym));
+                module_sym = owner;
+                owner = get_asr_owner(module_sym);
+            }
+        }
+        for (auto it = path.rbegin(); it != path.rend(); ++it) {
+            scope_names.push_back(al, *it);
+        }
+    }
     if (module_sym == nullptr || (!ASR::is_a<ASR::Module_t>(*module_sym) &&
-            !ASR::is_a<ASR::Struct_t>(*module_sym))) {
+            !ASR::is_a<ASR::Struct_t>(*module_sym) &&
+            !(ASR::is_a<ASR::Function_t>(*module_sym) &&
+              (import_local ||
+               get_FunctionType(module_sym)->m_deftype == ASR::deftypeType::Interface)) &&
+            !(import_local && ASR::is_a<ASR::Program_t>(*module_sym)) &&
+            !ASR::is_a<ASR::Block_t>(*module_sym) &&
+            !ASR::is_a<ASR::AssociateBlock_t>(*module_sym))) {
         return sym;
     }
     for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
@@ -10540,7 +10588,7 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
         ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
             s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), access));
+            scope_names.p, scope_names.n, s2c(al, name), access));
     scope->add_symbol(local_name, imported);
     return imported;
 }
@@ -12213,7 +12261,7 @@ ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* struct_sym,
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, false, nullptr, 0,
-            nullptr, nullptr, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, nullptr);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, true);
@@ -15848,6 +15896,28 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
                 orig_sym->type != item.second->type) {
             continue;
         }
+        if (ASR::is_a<ASR::Struct_t>(*orig_sym)) {
+            ASR::Struct_t* original = ASR::down_cast<ASR::Struct_t>(orig_sym);
+            ASR::Struct_t* copy = ASR::down_cast<ASR::Struct_t>(item.second);
+            if (original->m_intent_out_reset != nullptr) {
+                ASR::symbol_t *original_reset = ASRUtils::symbol_get_past_external(
+                    original->m_intent_out_reset);
+                copy->m_intent_out_reset = nullptr;
+                for (auto &scopes : copied_scopes) {
+                    if (ASRUtils::symbol_parent_symtab(original_reset) == scopes.first) {
+                        copy->m_intent_out_reset = scopes.second->get_symbol(
+                            ASRUtils::symbol_name(original_reset));
+                        break;
+                    }
+                }
+                if (copy->m_intent_out_reset != nullptr) {
+                    ASR::Function_t* reset = ASR::down_cast<ASR::Function_t>(
+                        copy->m_intent_out_reset);
+                    ASRUtils::EXPR2VAR(reset->m_args[0])->m_type_declaration =
+                        ASRUtils::import_type_declaration(al, &copy->base, reset->m_symtab);
+                }
+            }
+        }
         SymbolTable *orig_nested = ASRUtils::symbol_symtab(orig_sym);
         if (orig_nested != nullptr && orig_nested != new_nested) {
             fixup_type_declarations_in_scope(new_nested, orig_nested,
@@ -16031,7 +16101,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Struct(ASR::Struct_t* struct_type_t,
         struct_type_t->m_is_sequence,
         struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
         struct_type_t->m_parent,
-        struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+        struct_type_t->m_kind_params, struct_type_t->n_kind_params, nullptr));
 }
 
 ASR::symbol_t* SymbolDuplicator::duplicate_StructMethodDeclaration(

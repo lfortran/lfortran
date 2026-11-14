@@ -521,10 +521,25 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dim.loc = arg_type->base.loc;
                         dims.push_back(al, dim);
                     }
-                    arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
-                                array_t->m_type, dims.p, dims.size(),
-                                (ASRUtils::is_character(*array_t->m_type) || ASRUtils::is_class_type(array_t->m_type))
-                                    ? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
+                    if (ASRUtils::is_class_type(array_t->m_type)) {
+                        // Absence has no dynamic type or elements. An
+                        // disassociated descriptor is safe to pass and to
+                        // destroy; an owning one-element class temporary
+                        // would finalize an uninitialized vtable on exit.
+                        for (size_t d = 0; d < dims.size(); d++) {
+                            dims.p[d].m_start = nullptr;
+                            dims.p[d].m_length = nullptr;
+                        }
+                        arg_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                            arg_type->base.loc, ASRUtils::TYPE(ASR::make_Array_t(al,
+                                arg_type->base.loc, array_t->m_type, dims.p, dims.size(),
+                                ASR::DescriptorArray, ASR::memory_spaceType::Global))));
+                    } else {
+                        arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
+                                    array_t->m_type, dims.p, dims.size(),
+                                    ASRUtils::is_character(*array_t->m_type)
+                                        ? ASR::PointerArray : ASR::FixedSizeArray, ASR::memory_spaceType::Global));
+                    }
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
                     x.m_args[i].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);

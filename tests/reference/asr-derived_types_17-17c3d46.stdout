@@ -140,6 +140,73 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_t_1:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            object:
+                                                (Variable
+                                                    9
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 t_1
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_t_1
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 9 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             subtract:
                                 (Function
                                     (SymbolTable
@@ -287,6 +354,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_t_1
                                 )
                         })
                     derived_types_17_module_1

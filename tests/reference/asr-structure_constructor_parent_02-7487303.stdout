@@ -201,6 +201,7 @@
                                     ()
                                     8 der_t
                                     []
+                                    8 lcompilers_intent_out_reset_der2_t
                                 ),
                             der3_t:
                                 (ExternalSymbol
@@ -221,6 +222,73 @@
                                     []
                                     der_t
                                     Public
+                                ),
+                            lcompilers_intent_out_reset_der2_t:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            object:
+                                                (Variable
+                                                    10
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    8 der2_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_der2_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 10 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             p_t:
                                 (ExternalSymbol
@@ -441,6 +509,74 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_base_t
+                                ),
+                            lcompilers_intent_out_reset_base_t:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 base_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_base_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     structure_constructor_parent_02_a
@@ -508,6 +644,74 @@
                                     ()
                                     4 p_t
                                     []
+                                    4 lcompilers_intent_out_reset_der_t
+                                ),
+                            lcompilers_intent_out_reset_der_t:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            object:
+                                                (Variable
+                                                    12
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 der_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_der_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 12 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             p_t:
                                 (ExternalSymbol
@@ -585,6 +789,74 @@
                                     ()
                                     6 p_t
                                     []
+                                    6 lcompilers_intent_out_reset_der3_t
+                                ),
+                            lcompilers_intent_out_reset_der3_t:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            object:
+                                                (Variable
+                                                    13
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    6 der3_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_der3_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 13 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             p_t:
                                 (ExternalSymbol

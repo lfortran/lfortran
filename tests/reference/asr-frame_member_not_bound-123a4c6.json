@@ -2,12 +2,12 @@
     "basename": "asr-frame_member_not_bound-123a4c6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/frame_member_not_bound.asr",
-    "infile_hash": "456d4fdf5bcccea479b09097e1f8e1b93d8a9f4d022a354b7fcfd9b5",
+    "infile_hash": "fb6e6d2d3fe952892a58191a4599b0fba4ed84df4bb57b2708956744",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-frame_member_not_bound-123a4c6.stderr",
-    "stderr_hash": "b22e46d2565c5388586c5cde801e7ac4325868ab599e5a81be1e354f",
+    "stderr_hash": "4b4abaafe329075567cc0254df4368c9754f380dc13f6d2479258fb3",
     "returncode": 2
 }

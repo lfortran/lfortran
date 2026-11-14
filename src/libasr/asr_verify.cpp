@@ -8,6 +8,7 @@
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
+#include <libasr/pass/intent_out_deallocate.h>
 
 #include <algorithm>
 #include <set>
@@ -1629,6 +1630,45 @@ public:
         }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
+        if (x.m_intent_out_reset != nullptr) {
+            if (check_external) {
+                require_id(is_concrete_reset_type(x),
+                    "asr.verify.struct.reset_concrete_type",
+                    "a reset helper requires a concrete type with no uninstantiated inherited parameters");
+            }
+            ASR::symbol_t* reset = ASRUtils::symbol_get_past_external(
+                x.m_intent_out_reset);
+            require_id(reset && ASR::is_a<ASR::Function_t>(*reset),
+                "asr.verify.struct.reset_is_function",
+                "a derived type's reset helper must be a subroutine");
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(reset);
+            require_id(fn->m_symtab->parent == intent_out_reset_scope(x) &&
+                    fn->m_symtab->parent->get_symbol(fn->m_name) == reset,
+                "asr.verify.struct.reset_in_defining_scope",
+                "a reset helper must belong to its type's enclosing procedure-owning scope");
+            require_id(fn->n_args == 1 && fn->m_return_var == nullptr &&
+                    ASR::is_a<ASR::Var_t>(*fn->m_args[0]),
+                "asr.verify.struct.reset_interface",
+                "a reset helper takes one scalar type(t), intent(inout) argument");
+            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(fn->m_args[0]);
+            require_id(arg->m_intent == ASR::intentType::InOut &&
+                    arg->m_presence == ASR::presenceType::Required &&
+                    ASR::is_a<ASR::StructType_t>(*arg->m_type) &&
+                    !ASRUtils::is_class_type(arg->m_type) &&
+                    arg->m_type_declaration != nullptr,
+                "asr.verify.struct.reset_receiver",
+                "a reset helper receives an existing concrete instance of its type");
+            // Modfiles are first verified before external symbols are linked.
+            // Check the canonical identity once the imported type is resolved,
+            // just as for other imported type declarations.
+            if (check_external ||
+                    !ASR::is_a<ASR::ExternalSymbol_t>(*arg->m_type_declaration)) {
+                require_id(ASRUtils::symbol_get_past_external(
+                        arg->m_type_declaration) == &x.base,
+                    "asr.verify.struct.reset_receiver",
+                    "a reset helper receives an existing concrete instance of its type");
+            }
+        }
         visit_UserDefinedType(x);
         // The signature is the type of an instance of this type, which is not
         // polymorphic: a backend lays an instance out from it, and a
@@ -2387,11 +2427,31 @@ public:
             char *orig_name = symbol_name(x.m_external);
             require(std::string(x.m_original_name) == std::string(orig_name),
                 "ExternalSymbol::m_original_name must match external->m_name");
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(x.m_external);
+            if (owner && (ASR::is_a<ASR::Block_t>(*owner) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+                ASR::symbol_t *anchor = ASRUtils::symbol_get_past_external(
+                    current_symtab->resolve_symbol(x.m_module_name));
+                require_id(anchor && (ASR::is_a<ASR::Block_t>(*anchor) ||
+                        ASR::is_a<ASR::AssociateBlock_t>(*anchor) ||
+                        ASR::is_a<ASR::Module_t>(*anchor) ||
+                        ASR::is_a<ASR::Program_t>(*anchor) ||
+                        ASR::is_a<ASR::Function_t>(*anchor)),
+                    "asr.verify.external_symbol.block_owner_in_scope",
+                    "a block import must name a visible enclosing scope");
+                require_id(ASRUtils::symbol_symtab(anchor)->find_scoped_symbol(
+                        x.m_original_name, x.n_scope_names, x.m_scope_names) ==
+                        x.m_external,
+                    "asr.verify.external_symbol.block_path",
+                    "a block import's scope path must resolve to its canonical symbol");
+                return;
+            }
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
+            ASR::Program_t* pm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -2408,6 +2468,7 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::Program_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
@@ -2421,6 +2482,9 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
+                } else if( ASR::is_a<ASR::Program_t>(*asr_owner_sym) ) {
+                    pm = ASR::down_cast<ASR::Program_t>(asr_owner_sym);
+                    asr_owner_name = pm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -2470,6 +2534,8 @@ public:
                 s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( fm ) {
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( pm ) {
+                s = pm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
@@ -5888,6 +5954,16 @@ public:
                 stmt_name + "::" + errmsg_name + " must be of string type, found " +
                 ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg), loc);
         }
+    }
+
+    void visit_IntentOutReset(const IntentOutReset_t &x) {
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_object);
+        require_id(ASRUtils::is_class_type(type) &&
+                (ASR::is_a<ASR::Var_t>(*x.m_object) ||
+                 ASR::is_a<ASR::ArrayItem_t>(*x.m_object)),
+            "asr.verify.intent_out_reset.polymorphic_scalar",
+            "dynamic intent(out) reset requires a nonallocatable, nonpointer polymorphic scalar");
+        visit_expr(*x.m_object);
     }
 
     void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {

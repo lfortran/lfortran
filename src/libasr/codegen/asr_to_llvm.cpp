@@ -3978,6 +3978,30 @@ public:
         visit_Deallocate(x, x.m_stat);
     }
 
+    void visit_IntentOutReset(const ASR::IntentOutReset_t& x) {
+        visit_expr_load_wrapper(x.m_object, 0);
+        llvm::Value* object = tmp;
+        llvm::Type* wrapper = llvm_utils->get_type_from_ttype_t_util(
+            x.m_object, ASRUtils::expr_type(x.m_object), module.get());
+        llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
+            llvm_utils->create_gep2(wrapper, object, 0));
+        vptr = builder->CreateBitCast(vptr, llvm_utils->i8_ptr->getPointerTo());
+        llvm::Value* slot = llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr,
+            vptr, LLVMStruct::vtable_intent_out_reset_slot);
+        llvm::Value* reset = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, slot);
+        // The null slot belongs to an intrinsic dynamic type of class(*).
+        llvm_utils->create_if_else(builder->CreateIsNotNull(reset), [&]() {
+            llvm::Value* data = llvm_utils->CreateLoad2(
+                wrapper->getStructElementType(1),
+                llvm_utils->create_gep2(wrapper, object, 1));
+            llvm::FunctionType* signature = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+            builder->CreateCall(signature,
+                builder->CreateBitCast(reset, signature->getPointerTo()),
+                {builder->CreateBitCast(data, llvm_utils->i8_ptr)});
+        }, []() {});
+    }
+
     void visit_ListConstant(const ASR::ListConstant_t& x) {
         ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(x.m_type);
         bool is_array_type_local = false, is_malloc_array_type_local = false;
@@ -12174,7 +12198,9 @@ public:
             }
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym.second);
             // Reinitialize StructType members if intent is intent_out
-            if (ASR::is_a<ASR::StructType_t>(*symbol_type) && symbol_intent == ASRUtils::intent_out) {
+            if (ASR::is_a<ASR::StructType_t>(*symbol_type) &&
+                    !ASRUtils::is_class_type(symbol_type) &&
+                    symbol_intent == ASRUtils::intent_out) {
                 uint64_t h = get_hash((ASR::asr_t*)sym.second);
                 LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
                 llvm::Value* st_desc = llvm_symtab[h];
@@ -12182,11 +12208,8 @@ public:
                 ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Variable_t>(sym.second)->m_type_declaration));
 
-                if (ASRUtils::is_class_type(symbol_type)) {
-                    allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
-                } else {
-                    allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
-                }
+                allocate_array_members_of_struct(struct_sym, st_desc,
+                    ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
             }
             if (ASRUtils::is_string_only(symbol_type) && ASRUtils::is_allocatable(symbol_type)) {
                 ASR::String_t* str_t = ASRUtils::get_string_type(symbol_type);

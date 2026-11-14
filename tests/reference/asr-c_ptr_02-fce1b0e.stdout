@@ -554,6 +554,77 @@
                                     []
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_test_obj:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            object:
+                                                (Variable
+                                                    14
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(CPtr
+                                                            CPointer
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 test_obj
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_test_obj
+                                    (FunctionType
+                                        [(StructType
+                                            [(CPtr
+                                                CPointer
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 14 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             r_ptr:
                                 (Variable
                                     2
@@ -681,6 +752,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_test_obj
                                 )
                         })
                     test_c_ptr_02

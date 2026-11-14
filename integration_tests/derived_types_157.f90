@@ -7,7 +7,7 @@ module derived_types_157_m
     public :: rcurve
 
     type, bind(c) :: matrix
-        real(c_float) :: array(4,4)
+        real(c_float) :: array(4,4) = 0
     end type matrix
 
     interface
@@ -16,7 +16,7 @@ module derived_types_157_m
             implicit none
 
             type, bind(c) :: matrix
-                real(c_float) :: array(4,4)
+                real(c_float) :: array(4,4) = 0
             end type matrix
 
             type(matrix), intent(in) :: geom
@@ -31,7 +31,7 @@ contains
         implicit none
 
         type, bind(c) :: matrix
-            real(c_float) :: array(4,4)
+            real(c_float) :: array(4,4) = 0
         end type matrix
 
         real(c_float), intent(in) :: geom(4,4)
@@ -54,10 +54,12 @@ subroutine draw_rcurve(geom) bind(c, name='draw_rcurve')
     implicit none
 
     type, bind(c) :: matrix
-        real(c_float) :: array(4,4)
+        real(c_float) :: array(4,4) = 0
     end type matrix
 
     type(matrix), intent(in) :: geom
+
+    if (any(geom%array /= 5.0_c_float)) error stop 1
 
 end subroutine draw_rcurve
 

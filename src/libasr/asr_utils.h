@@ -2673,11 +2673,13 @@ static inline bool is_named_from(ASR::symbol_t* sym, SymbolTable* scope) {
 // its definition when named from there, an existing import of the definition,
 // or a new ExternalSymbol added to `scope` under a name that is free at this
 // point and starts with `name_prefix` and ends with `name_suffix`. Returns
-// `sym` unchanged when it cannot be imported because no module or derived
-// type owns its definition.
+// `sym` unchanged when it cannot be imported because no module, derived
+// type or block owns its definition. `import_local` also permits declarations
+// owned by a procedure or program when a lowering moves storage out of it.
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access=ASR::accessType::Private,
-        const std::string &name_prefix="", const std::string &name_suffix="");
+        const std::string &name_prefix="", const std::string &name_suffix="",
+        bool import_local=false);
 
 // The argument and result types of a procedure type can reference module
 // symbols named only where its interface is declared, for example the getter

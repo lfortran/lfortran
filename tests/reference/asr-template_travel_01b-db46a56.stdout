@@ -452,8 +452,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~div_intrinsic3
-                                                    avg_integer_s_from_t]
+                                                    [avg_integer_s_from_t
+                                                    ~div_intrinsic3]
                                                     [(Var 24 d1)
                                                     (Var 24 s1)
                                                     (Var 24 d2)
@@ -654,9 +654,9 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~add_intrinsic2
-                                                    ~add_intrinsic3
-                                                    ~div_intrinsic2]
+                                                    [~div_intrinsic2
+                                                    ~add_intrinsic2
+                                                    ~add_intrinsic3]
                                                     [(Var 23 d1)
                                                     (Var 23 t1)
                                                     (Var 23 d2)
@@ -855,8 +855,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~div_intrinsic1
-                                                    avg_real_s_from_t]
+                                                    [avg_real_s_from_t
+                                                    ~div_intrinsic1]
                                                     [(Var 18 d1)
                                                     (Var 18 s1)
                                                     (Var 18 d2)
@@ -1057,9 +1057,9 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~add_intrinsic
-                                                    ~add_intrinsic1
-                                                    ~div_intrinsic]
+                                                    [~div_intrinsic
+                                                    ~add_intrinsic
+                                                    ~add_intrinsic1]
                                                     [(Var 17 d1)
                                                     (Var 17 t1)
                                                     (Var 17 d2)
@@ -2594,8 +2594,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [d_divided_by_s
-                                                    avg_s_from_t]
+                                                    [avg_s_from_t
+                                                    d_divided_by_s]
                                                     [(Var 11 d1)
                                                     (Var 11 s1)
                                                     (Var 11 d2)
@@ -2848,9 +2848,9 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [plus_d
-                                                    plus_t
-                                                    d_divided_by_t]
+                                                    [d_divided_by_t
+                                                    plus_d
+                                                    plus_t]
                                                     [(Var 10 d1)
                                                     (Var 10 t1)
                                                     (Var 10 d2)

@@ -114,6 +114,104 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_dict_item
+                                ),
+                            lcompilers_intent_out_reset_dict_item:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            object:
+                                                (Variable
+                                                    5
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .true.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .true.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 dict_item
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_dict_item
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .true.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .true.
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 5 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             ~unlimited_polymorphic_type:
                                 (Struct
@@ -141,6 +239,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     fortuno_types

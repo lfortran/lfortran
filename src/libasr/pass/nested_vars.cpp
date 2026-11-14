@@ -1494,7 +1494,7 @@ public:
             members_scope, s2c(al, type_name), nullptr, dependencies.p,
             dependencies.size(), member_names.p, member_names.size(), nullptr, 0,
             ASR::abiType::Source, ASR::accessType::Public, false, false, false,
-            nullptr, 0, nullptr, nullptr, nullptr, 0));
+            nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr));
         ASR::down_cast<ASR::Struct_t>(frame.type)->m_struct_signature =
             ASRUtils::make_StructType_t_util(al, loc, frame.type, true);
         host->add_symbol(type_name, frame.type);
@@ -2188,7 +2188,7 @@ public:
             loc, members_scope, s2c(al, type_name), nullptr, dependencies.p,
             dependencies.size(), member_names.p, member_names.size(), nullptr, 0,
             ASR::abiType::Source, ASR::accessType::Public, false, false, false,
-            nullptr, 0, nullptr, nullptr, nullptr, 0));
+            nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr));
         ASR::down_cast<ASR::Struct_t>(type)->m_struct_signature =
             ASRUtils::make_StructType_t_util(al, loc, type, true);
         host->add_symbol(type_name, type);

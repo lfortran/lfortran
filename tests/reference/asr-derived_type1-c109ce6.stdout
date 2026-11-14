@@ -80,6 +80,74 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_enum_escape
+                                ),
+                            lcompilers_intent_out_reset_enum_escape:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            object:
+                                                (Variable
+                                                    4
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 enum_escape
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_enum_escape
+                                    (FunctionType
+                                        [(StructType
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             nl:
                                 (Variable

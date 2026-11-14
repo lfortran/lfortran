@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-intent_out_dynamic_extension-f5ac480",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/intent_out_dynamic_extension.f90",
+    "infile_hash": "7112784d11174e70cc68f15aa5357a3b410f49e6ba336d730f514952",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-intent_out_dynamic_extension-f5ac480.f90",
+    "stdout_hash": "b745f26e32f57fd9475219928895a592698d9089e6c9a4e863e6354a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

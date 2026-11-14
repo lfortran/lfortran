@@ -3362,6 +3362,9 @@ class ASRToLLVMVisitor;
                 bool value_is_class);
 
         public:
+            // Relative to the vptr, after copy, allocation, FINAL and free.
+            static constexpr int vtable_intent_out_reset_slot = 4;
+
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
             std::map<ASR::symbol_t*, llvm::Function*> newclass2copyfn;   // Contains the `_copy_<owner>_<type>` function for each struct

@@ -18,7 +18,12 @@ symbol
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
-    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params)
+    -- intent_out_reset names the compiler-generated, non-binding subroutine
+    -- in the defining scope. Its single required scalar type(T), intent(inout)
+    -- dummy receives an existing object, never fresh storage. The
+    -- intent_out_deallocate pass supplies its ordinary ASR body. The symbol is
+    -- retained in module files so clients use the defining module's helper.
+    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params, symbol? intent_out_reset)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     -- A Local integer Variable of Default storage whose symbolic_value is not
@@ -90,6 +95,11 @@ stmt
     | Associate(expr target, expr value, pointer_bounds_form form)
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars, expr? stat, expr? errmsg)
+    -- Reset one nonpointer, nonallocatable polymorphic scalar on INTENT(OUT)
+    -- entry, using its dynamic type's helper. Deallocate allocatable
+    -- subcomponents and restore defaults without destroying the object's
+    -- storage or pointer targets. Root finalization is a separate operation.
+    | IntentOutReset(expr object)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
     | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body, exec_target exec_target)

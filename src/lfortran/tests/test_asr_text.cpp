@@ -413,3 +413,89 @@ end program
     REQUIRE(second.ok);
     CHECK(second.result == first.result);
 }
+
+TEST_CASE("Fortran regeneration omits synthetic intent-out reset procedures") {
+    const std::string source = R"(
+module roundtrip_types
+    implicit none
+    type :: module_item
+        integer :: n = 7
+    end type
+end module
+program reset_roundtrip
+    use roundtrip_types
+    implicit none
+    type :: t
+        integer :: n = 2
+    end type
+    type(t) :: x
+    if (x%n /= 2) error stop
+    block
+        type(module_item) :: z
+        if (z%n /= 7) error stop
+    end block
+    call s()
+contains
+    subroutine s()
+        type :: u
+            integer :: n = 3
+        end type
+        type(u) :: y
+        if (y%n /= 3) error stop
+    end subroutine
+    subroutine lcompilers_intent_out_reset_user()
+    end subroutine
+end program
+)";
+    LCompilers::CompilerOptions options;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "reset_roundtrip.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    Diagnostics diagnostics;
+    auto original = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(original.ok);
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        original.result->m_symtab->get_symbol("roundtrip_types"));
+    auto *type = ASR::down_cast<ASR::Struct_t>(
+        module->m_symtab->get_symbol("module_item"));
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        original.result->m_symtab->get_symbol("reset_roundtrip"));
+    REQUIRE(type->m_intent_out_reset != nullptr);
+    REQUIRE(ASR::down_cast<ASR::Struct_t>(
+        program->m_symtab->get_symbol("t"))->m_intent_out_reset != nullptr);
+    auto *subroutine = ASR::down_cast<ASR::Function_t>(
+        program->m_symtab->get_symbol("s"));
+    REQUIRE(ASR::down_cast<ASR::Struct_t>(
+        subroutine->m_symtab->get_symbol("u"))->m_intent_out_reset != nullptr);
+    ASR::symbol_t *imported = ASRUtils::import_symbol(evaluator.get_al(),
+        type->m_intent_out_reset, program->m_symtab, ASR::accessType::Private, "reset_alias_");
+    auto printed = LCompilers::asr_to_fortran(*original.result,
+        diagnostics, false, 4);
+    REQUIRE(printed.ok);
+    INFO(printed.result);
+    CHECK(printed.result.find("subroutine lcompilers_intent_out_reset_user()")
+        != std::string::npos);
+    CHECK(printed.result.find("subroutine lcompilers_intent_out_reset_t(")
+        == std::string::npos);
+    CHECK(printed.result.find("subroutine lcompilers_intent_out_reset_u(")
+        == std::string::npos);
+    CHECK(printed.result.find(ASRUtils::symbol_name(imported)) == std::string::npos);
+    CHECK(printed.result.find("lcompilers_intent_out_reset_module_item") == std::string::npos);
+    FortranEvaluator regenerated_evaluator(options);
+    LocationManager regenerated_lm;
+    regenerated_lm.files.push_back(file);
+    regenerated_lm.file_ends.push_back(
+        LCompilers::LFortran::source_offset(printed.result.size()));
+    Diagnostics regenerated_diagnostics;
+    auto regenerated = regenerated_evaluator.get_asr2(printed.result,
+        regenerated_lm, regenerated_diagnostics);
+    INFO(regenerated_diagnostics.render2());
+    REQUIRE(regenerated.ok);
+    CHECK(LCompilers::asr_verify(*regenerated.result, true, regenerated_diagnostics));
+}

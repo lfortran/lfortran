@@ -605,8 +605,8 @@
                                                         Host
                                                     )
                                                     [zero_t
-                                                    mult_t
-                                                    plus_t]
+                                                    plus_t
+                                                    mult_t]
                                                     [(Var 18 i)
                                                     (Var 18 j)
                                                     (Var 18 k)
