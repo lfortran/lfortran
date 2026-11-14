@@ -7080,6 +7080,18 @@ std::string cell_output(FortranEvaluator &e, const std::string &code) {
     return output;
 }
 
+// Whether this process is the foreground job of a terminal.
+bool foreground_terminal() {
+#ifdef _WIN32
+    return false;
+#else
+    for (int fd = 0; fd <= 2; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return true;
+    }
+    return false;
+#endif
+}
+
 void check_interrupted(const FortranEvaluator::CellResult &cell) {
     CHECK(!cell.ok);
     CHECK(cell.interrupted);
@@ -7157,6 +7169,12 @@ end module
     };
     for (size_t n = 0; n < cells.size(); n++) {
         CAPTURE(cells[n]);
+        if (cells[n].find("execute_command_line") != std::string::npos
+                && foreground_terminal()) {
+            // The command runs as with system(), which the terminal's
+            // Ctrl-C interrupts, not this test.
+            continue;
+        }
         std::string output;
         check_interrupted(interrupt_at_marker(e, cells[n], output));
         CHECK(output.find("after") == std::string::npos);

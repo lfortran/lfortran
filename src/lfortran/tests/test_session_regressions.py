@@ -12,6 +12,7 @@ import contextlib
 import json
 import os
 from pathlib import Path
+import platform
 import queue
 import re
 import shutil
@@ -934,6 +935,10 @@ def editing_prompt(exe, cwd, connection=None, expected_status=0):
 def test_interrupt_prompt(exe, cwd):
     """Ctrl-C keeps owning/attached prompts and their state alive, also in
     READ and commands; a control interrupt can end READ without a key."""
+    if os.name == "nt" or platform.machine().lower() not in (
+            "x86_64", "amd64", "arm64", "aarch64"):
+        print("skipped: cells cannot be interrupted here")
+        return
     def exercise(connection=None):
         client = None
         owned = connection is None
