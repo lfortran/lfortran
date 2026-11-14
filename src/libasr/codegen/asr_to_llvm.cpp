@@ -27279,11 +27279,16 @@ public:
                     // When the formal is a pointer type but the actual is not,
                     // wrap the value with an extra pointer level. Skip this when
                     // the formal is a class type — convert_to_polymorphic_arg
-                    // handles the pointer level during class wrapping.
+                    // handles the pointer level during class wrapping, and
+                    // when a scalar is passed to an assumed-rank dummy: it is
+                    // wrapped in a descriptor below, which needs the scalar
+                    // itself.
                     if (orig_arg &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                         !LLVM::is_llvm_pointer(*arg->m_type) &&
-                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) &&
+                        !(ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                          !ASRUtils::is_array(arg->m_type))) {
                         if (tmp->getType()->isIntegerTy(1) &&
                             ASRUtils::is_logical(*arg->m_type)) {
                             int kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
