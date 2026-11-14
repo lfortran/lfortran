@@ -6365,6 +6365,7 @@ RUN(NAME allocatable_component_arg_03 LABELS gfortran llvm)
 RUN(NAME allocatable_component_arg_04 LABELS gfortran llvm)
 RUN(NAME allocatable_component_arg_05 LABELS gfortran llvm)
 RUN(NAME array_component_element_arg_01 LABELS gfortran llvm)
+RUN(NAME strided_arg_condition_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
