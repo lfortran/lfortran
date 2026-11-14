@@ -1,0 +1,5 @@
+code generation error: IntegerBinop kind 8: only x**2 implemented so far for powers
+ --> tests/errors/wasm_pow_nonconst_int8.f90:5:14
+  |
+5 |     print *, i**n
+  |              ^^^^ 
