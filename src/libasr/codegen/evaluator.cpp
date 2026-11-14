@@ -1019,7 +1019,8 @@ namespace {
 thread_local JITPreemption *active_preemption = nullptr;
 
 // What SIGURG did before; a signal that is not for a preemptible call goes
-// there.
+// there. That includes the interrupting thread's late signals, which arrive
+// after the call ended: a SIGURG handler must tolerate spurious ones anyway.
 struct sigaction previous_preempt;
 
 uintptr_t interrupted_pc(void *context) {
@@ -1038,12 +1039,13 @@ uintptr_t interrupted_pc(void *context) {
 void preempt(int signal, siginfo_t *info, void *context) {
     JITPreemption *p = active_preemption;
     if (!p || !p->evaluator->interrupt_requested()) {
+        if (previous_preempt.sa_handler == SIG_DFL
+                || previous_preempt.sa_handler == SIG_IGN) {
+            return;
+        }
         if (previous_preempt.sa_flags & SA_SIGINFO) {
-            if (previous_preempt.sa_sigaction) {
-                previous_preempt.sa_sigaction(signal, info, context);
-            }
-        } else if (previous_preempt.sa_handler != SIG_DFL
-                && previous_preempt.sa_handler != SIG_IGN) {
+            previous_preempt.sa_sigaction(signal, info, context);
+        } else {
             previous_preempt.sa_handler(signal);
         }
         return;
