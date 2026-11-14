@@ -19,6 +19,7 @@
 #ifndef _WIN32
 #include <pthread.h>
 #include <sys/resource.h>
+#include <unistd.h>
 #endif
 #include <libasr/codegen/KaleidoscopeJIT.h>
 #if defined(__linux__)
