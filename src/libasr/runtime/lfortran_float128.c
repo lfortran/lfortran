@@ -774,7 +774,7 @@ lf_float128 __extenddftf2_lf_impl(double d) {
     } else {
         /* subnormal double */
         mant = u128_shl(u128_from_u64(dmant), 112 - 52);
-        exp  = -1022 - 52;  /* will be corrected by pack_parts normalisation */
+        exp  = -1022;  /* pack_parts normalises the significand */
     }
     return f128_pack_parts(sign, exp, mant);
 }
@@ -799,7 +799,7 @@ lf_float128 __extendsftf2_lf_impl(float f) {
         exp  = fexp - 127;
     } else {
         mant = u128_shl(u128_from_u64(fmant), 112 - 23);
-        exp  = -126 - 23;
+        exp  = -126;  /* pack_parts normalises the significand */
     }
     return f128_pack_parts(sign, exp, mant);
 }
