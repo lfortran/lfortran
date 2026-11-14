@@ -105,3 +105,87 @@ TEST_CASE("Emscripten settings reach the link command in order without shell spl
     CHECK(options.find(" '-sEXPORT_NAME=\"my module\"'") != std::string::npos);
 #endif
 }
+
+TEST_CASE("pthread accepts both the canonical flag and the compiler alias")
+{
+    for (const char *flag : {"--pthread", "-pthread"}) {
+        const char *argv[] = {"lfortran", flag, "input.f90"};
+        LFortranCommandLineParser parser(3, argv);
+        REQUIRE_NOTHROW(parser.parse());
+        CHECK(parser.opts.pthread);
+        CHECK(parser.opts.arg_files == std::vector<std::string>{"input.f90"});
+
+        std::vector<std::string> args = {"input.f90", flag};
+        LFortranCommandLineParser vector_parser(args);
+        REQUIRE_NOTHROW(vector_parser.parse());
+        CHECK(vector_parser.opts.pthread);
+        CHECK(vector_parser.opts.arg_files == std::vector<std::string>{"input.f90"});
+    }
+}
+
+TEST_CASE("pthread-shaped filenames remain positional after --")
+{
+    const char *argv[] = {"lfortran", "fmt", "--", "-pthread"};
+    LFortranCommandLineParser parser(4, argv);
+    REQUIRE_NOTHROW(parser.parse());
+    CHECK(parser.fmt->count() == 1);
+    CHECK(parser.opts.arg_fmt_file == "-pthread");
+    CHECK_FALSE(parser.opts.pthread);
+
+    std::vector<std::string> args = {"-pthread", "--", "fmt"};
+    LFortranCommandLineParser vector_parser(args);
+    REQUIRE_NOTHROW(vector_parser.parse());
+    CHECK(vector_parser.fmt->count() == 1);
+    CHECK(vector_parser.opts.arg_fmt_file == "-pthread");
+    CHECK_FALSE(vector_parser.opts.pthread);
+
+    const char *with_flag[] = {"lfortran", "-pthread", "fmt", "--", "-pthread"};
+    LFortranCommandLineParser with_flag_parser(5, with_flag);
+    REQUIRE_NOTHROW(with_flag_parser.parse());
+    CHECK(with_flag_parser.opts.pthread);
+    CHECK(with_flag_parser.opts.arg_fmt_file == "-pthread");
+
+    const char *compiler_argv[] = {"lfortran", "--", "-pthread"};
+    LFortranCommandLineParser compiler_parser(3, compiler_argv);
+    REQUIRE_NOTHROW(compiler_parser.parse());
+    CHECK(compiler_parser.opts.arg_files == std::vector<std::string>{"-pthread"});
+    CHECK_FALSE(compiler_parser.opts.pthread);
+}
+
+TEST_CASE("pthread-shaped option values are not compiler flags")
+{
+    const char *argv[] = {"lfortran", "-o", "-pthread", "input.f90"};
+    LFortranCommandLineParser parser(4, argv);
+    REQUIRE_NOTHROW(parser.parse());
+    CHECK(parser.opts.compiler_options.arg_o == "-pthread");
+    CHECK(parser.opts.arg_files == std::vector<std::string>{"input.f90"});
+    CHECK_FALSE(parser.opts.pthread);
+
+    std::vector<std::string> args = {"input.f90", "-pthread", "-o"};
+    LFortranCommandLineParser vector_parser(args);
+    REQUIRE_NOTHROW(vector_parser.parse());
+    CHECK(vector_parser.opts.compiler_options.arg_o == "-pthread");
+    CHECK(vector_parser.opts.arg_files == std::vector<std::string>{"input.f90"});
+    CHECK_FALSE(vector_parser.opts.pthread);
+
+    const char *clustered_argv[] = {"lfortran", "-vo", "-pthread", "input.f90"};
+    LFortranCommandLineParser clustered_parser(4, clustered_argv);
+    REQUIRE_NOTHROW(clustered_parser.parse());
+    CHECK(clustered_parser.opts.arg_v);
+    CHECK(clustered_parser.opts.compiler_options.arg_o == "-pthread");
+    CHECK(clustered_parser.opts.arg_files == std::vector<std::string>{"input.f90"});
+    CHECK_FALSE(clustered_parser.opts.pthread);
+
+    const char *kernel_argv[] = {"lfortran", "kernel", "-f", "-pthread"};
+    LFortranCommandLineParser kernel_parser(4, kernel_argv);
+    REQUIRE_NOTHROW(kernel_parser.parse());
+    CHECK(kernel_parser.opts.arg_kernel_f == "-pthread");
+    CHECK_FALSE(kernel_parser.opts.pthread);
+
+    const char *subcommand_value[] = {"lfortran", "-o", "fmt", "-pthread", "input.f90"};
+    LFortranCommandLineParser subcommand_value_parser(5, subcommand_value);
+    REQUIRE_NOTHROW(subcommand_value_parser.parse());
+    CHECK(subcommand_value_parser.opts.compiler_options.arg_o == "fmt");
+    CHECK(subcommand_value_parser.opts.pthread);
+    CHECK(subcommand_value_parser.opts.arg_files == std::vector<std::string>{"input.f90"});
+}
