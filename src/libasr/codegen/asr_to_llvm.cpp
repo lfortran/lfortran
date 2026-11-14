@@ -13982,6 +13982,17 @@ public:
         });
     }
 
+    // An allocatable or pointer assumed-rank variable is visited as the
+    // address of its descriptor pointer; load it to get the descriptor.
+    void load_assumed_rank_descriptor(ASR::expr_t* expr, ASR::ttype_t* type,
+            llvm::Value*& llvm_value) {
+        if (LLVM::is_llvm_pointer(*type)) {
+            llvm_value = llvm_utils->CreateLoad2(
+                llvm_utils->get_type_from_ttype_t_util(expr, type, module.get()),
+                llvm_value);
+        }
+    }
+
     void visit_Associate(const ASR::Associate_t& x) {
         if (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds) {
             handle_pointer_section_target(x);
@@ -14142,6 +14153,7 @@ public:
                 // but `assoc` is a scalar class pointer. Associate the scalar wrapper pointer
                 // (descriptor.data) rather than bitcasting the whole descriptor.
                 LCOMPILERS_ASSERT(ASRUtils::is_class_type(ASRUtils::extract_type(value_type)))
+                load_assumed_rank_descriptor(x.m_value, value_type, llvm_value);
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
                     get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                         llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
@@ -14174,6 +14186,7 @@ public:
                        ASRUtils::is_array(value_type) &&
                        ASRUtils::is_class_type(ASRUtils::extract_type(value_type)) &&
                        ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::AssumedRankArray) {
+                load_assumed_rank_descriptor(x.m_value, value_type, llvm_value);
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
                     get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                         llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
