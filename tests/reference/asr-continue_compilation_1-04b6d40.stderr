@@ -5741,6 +5741,66 @@ semantic error: Call to impure procedure 'cc1_impure_s' is not allowed inside a 
 4853 |         call cc1_impure_s(x)  ! {Error} Call to impure procedure 'cc1_impure_s' is not allowed inside a PURE procedure
      |         ^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Incompatible ranks 1 and 2 in assignment
+    --> tests/errors/continue_compilation_1.f90:4895:5
+     |
+4895 |     names(:)(2:3) = t  ! {Error} Incompatible ranks 1 and 2 in assignment
+     |     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:4896:5
+     |
+4896 |     names(:)(2:3) = [1, 2, 3]  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^^^^^^^^^^^^^   ^^^^^^^^^ type mismatch (string[:] and integer[:])
+
+semantic error: Different shape for array assignment on dimension 1 (3 and 2)
+    --> tests/errors/continue_compilation_1.f90:4897:5
+     |
+4897 |     names(:)(2:3) = ['xy', 'zw']  ! {Error} Different shape for array assignment on dimension 1 (3 and 2)
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 1 (2 and 3)
+    --> tests/errors/continue_compilation_1.f90:4898:5
+     |
+4898 |     names(3:1:-2)(2:3) = ['xy', 'zw', 'uv']  ! {Error} Different shape for array assignment on dimension 1 (2 and 3)
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section is not supported in `where` yet
+    --> tests/errors/continue_compilation_1.f90:4899:25
+     |
+4899 |     where (names /= '') names(:)(2:3) = t(:, 1)  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4909:5
+     |
+4909 |     m(:, :)(1:2) = t2  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4910:5
+     |
+4910 |     m(:, :)(1:2) = t  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4911:5
+     |
+4911 |     m(:, :)(1:2) = c  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4912:5
+     |
+4912 |     m3(1:2, 1, :)(1:2) = 'xy'  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section is not supported in `where` yet
+    --> tests/errors/continue_compilation_1.f90:4922:25
+     |
+4922 |     where (names /= '') names(:)(n + 1:n + 2) = 'xy'  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

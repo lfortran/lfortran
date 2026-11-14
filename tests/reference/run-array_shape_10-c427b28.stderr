@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment. Tried to match size 3 of dimension 1 of LHS with size 4 of dimension 1 of RHS.
+  --> tests/errors/array_shape_10.f90:13:5
+   |
+13 |     names(:)(2:3) = t(1:n)
+   |     ^^^^^^^^^^^^^ LHS size is 3
+   |
+13 |     names(:)(2:3) = t(1:n)
+   |                     ^^^^^^ RHS size is 4

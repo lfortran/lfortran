@@ -4884,3 +4884,40 @@ module cc1_requirement_undeclared_argument
         end function
     end template
 end module
+
+! An array assigned to a substring of a character array section,
+! `names(:)(2:3) = t`, conforms to the section and is of type character
+! (#16161).
+subroutine cc1_substring_section_assignment()
+    implicit none
+    character(len=4) :: names(3)
+    character(len=2) :: t(3, 1)
+    names(:)(2:3) = t  ! {Error} Incompatible ranks 1 and 2 in assignment
+    names(:)(2:3) = [1, 2, 3]  ! {Error} Type mismatch in assignment, the types must be compatible
+    names(:)(2:3) = ['xy', 'zw']  ! {Error} Different shape for array assignment on dimension 1 (3 and 2)
+    names(3:1:-2)(2:3) = ['xy', 'zw', 'uv']  ! {Error} Different shape for array assignment on dimension 1 (2 and 3)
+    where (names /= '') names(:)(2:3) = t(:, 1)  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+end subroutine
+
+! A substring of a character array section with more than one section
+! subscript, `m(:, :)(1:2)`, is not supported as the target of an assignment
+! yet: it would define the elements `m(i, i)` only (#16161).
+subroutine cc1_substring_section_assignment_rank_2()
+    implicit none
+    character(len=4) :: m(2, 2), m3(2, 2, 2)
+    character(len=2) :: t(2), t2(2, 2), c
+    m(:, :)(1:2) = t2  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+    m(:, :)(1:2) = t  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+    m(:, :)(1:2) = c  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+    m3(1:2, 1, :)(1:2) = 'xy'  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+end subroutine
+
+! In a `where` construct, a constant assigned to a substring of a character
+! array section is not supported yet either when a bound of the substring is
+! evaluated into a temporary (#16161).
+subroutine cc1_substring_section_assignment_where()
+    implicit none
+    character(len=4) :: names(3)
+    integer :: n
+    where (names /= '') names(:)(n + 1:n + 2) = 'xy'  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+end subroutine
