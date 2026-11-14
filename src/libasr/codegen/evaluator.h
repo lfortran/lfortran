@@ -1,10 +1,12 @@
 #ifndef LFORTRAN_EVALUATOR_H
 #define LFORTRAN_EVALUATOR_H
 
+#include <atomic>
 #include <complex>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <mutex>
 
 #include <libasr/alloc.h>
 #include <libasr/asr_scopes.h>
@@ -90,10 +92,17 @@ public:
     void mlir_to_llvm(llvm::LLVMContext &ctx);
 };
 
+struct JITPreemption;
+
 class LLVMEvaluator
 {
 private:
     std::unique_ptr<llvm::orc::KaleidoscopeJIT> jit;
+    // See run_preemptible().
+    std::atomic<bool> interrupt{false};
+    std::mutex preempted_mutex;
+    JITPreemption *preempted = nullptr;
+    friend struct JITPreemption;
     std::unique_ptr<llvm::LLVMContext> context;
     LLVMTargetConfig target_config;
     std::unique_ptr<llvm::TargetMachine> TM;
@@ -134,6 +143,39 @@ public:
         T (*f)(Args...) = (T (*)(Args...))addr;
         return f(args...);
     }
+
+    // Asynchronous preemption, which lets an interactive session interrupt a
+    // cell without changing the code it runs. run_preemptible() calls
+    // fn(context) on this thread. While it runs, request_interrupt() from
+    // another thread signals it. If the signal finds the thread in machine
+    // code of this JIT, the call is abandoned at that instruction; elsewhere
+    // (the runtime library, libc) the call continues, and a later signal
+    // catches it once it is back in JIT code. A runtime wait (SLEEP,
+    // EXECUTE_COMMAND_LINE) ends at once instead. It returns false if the
+    // call was abandoned, or if an interrupt was requested before it began.
+    // The abandoned frames are not unwound: what they allocated leaks, and
+    // what they had done stays done. `fn` itself must not own anything that
+    // needs a destructor while it calls JIT code.
+    static bool preemption_supported();
+    bool run_preemptible(void (*fn)(void *context), void *context);
+    // Any thread. Call it repeatedly, every few milliseconds, until the
+    // call ends: a single signal does not stop code that is outside the JIT.
+    // Only while the thread that runs the call has not been joined.
+    void request_interrupt();
+    // Clears the request, so that later calls run. Not concurrently with
+    // request_interrupt().
+    void clear_interrupt();
+    bool interrupt_requested() const {
+        return interrupt.load(std::memory_order_relaxed);
+    }
+    // For runtime waits, on the thread that runs JIT code: whether the
+    // preemptible call it runs is interrupted, and stop it if so. The stop
+    // abandons the runtime's frames too, so a wait calls it only after it has
+    // released what it holds. It returns if there is nothing to stop.
+    static bool interrupted_here();
+    static void stop_if_interrupted();
+    // Whether `pc` lies in machine code that this JIT emitted.
+    bool contains_code(uintptr_t pc) const;
 };
 
 
