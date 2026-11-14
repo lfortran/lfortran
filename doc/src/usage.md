@@ -218,10 +218,13 @@ killed with `kill -9`. A prompt that only joins, with
 until the kernel itself stops. Jupyter's Interrupt stops a running cell in
 the built-in and the Xeus kernel, on Linux and macOS. What the cell did before
 it was interrupted stays done (variables it assigned, output it wrote); it is
-not rolled back, and what it allocated leaks. An allocatable variable that the
-cell was assigning when it stopped may be left referring to freed memory:
-do not use it again in that session. The commands that
-`execute_command_line` runs are ended with it. See
+not rolled back, and what it allocated leaks. An allocatable variable or a
+deferred-length string that the cell was assigning when it stopped may be left
+referring to freed memory: do not use it again in that session, not even to
+deallocate it or in `move_alloc`; only restarting the session recovers it. The
+commands that `execute_command_line` runs are ended with it, unless the kernel
+is the foreground job of a terminal, where Ctrl-C at that terminal reaches the
+command instead. See
 [interactive evaluation](interactive_evaluation.md) for how a cell is
 interrupted and the limits.
 Whoever can read the connection file can run code as its owner. The file is
