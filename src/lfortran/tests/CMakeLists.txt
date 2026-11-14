@@ -246,6 +246,13 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     $<TARGET_FILE:lfortran>
             )
             set_tests_properties(test_gpu_launch_bounds PROPERTIES TIMEOUT 180)
+            add_test(
+                NAME test_gpu_lanes_short
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_lanes_short.py
+                    $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_gpu_lanes_short PROPERTIES TIMEOUT 180)
             if (APPLE)
                 add_test(
                     NAME test_gpu_launch_geometry_metal
