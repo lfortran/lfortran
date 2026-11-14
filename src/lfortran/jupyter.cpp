@@ -1560,9 +1560,10 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
                 << std::endl;
             prompt_escape = 1;
         }
-        if (reading) {
+        // What is available of the line, without blocking
+        while (reading) {
             const int c = input_source ? input_source() : stdin_character();
-            if (prompt_interrupt) continue;
+            if (prompt_interrupt || c == -2) break;
             if (c == EOF || c == '\n' || c == '\r' || c == 4) {
                 if ((c == EOF || c == 4) && record.empty()) record = "\x04";
                 clearerr(stdin);
@@ -1571,12 +1572,13 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
                 if (!send_message(*stdin_, input, key)) return false;
                 reading.reset();
                 record.clear();
-            } else if (c != -2) {
+            } else {
                 record += static_cast<char>(c);
             }
         }
+        if (prompt_interrupt) continue;
         Message m;
-        const int i = next_message(peers, key, m, reading ? 1 : 50);
+        const int i = next_message(peers, key, m, reading ? 10 : 50);
         if (i == -1) continue;
         if (i < 0) {
             show_last(request.id());
