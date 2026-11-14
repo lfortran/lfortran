@@ -113,8 +113,10 @@ class InputChannel {
     std::unique_ptr<Impl> impl;
 public:
     // Listens on `port` of `ip`, or on a free port if it is 0, which `port`
-    // then becomes; `key` signs the messages.
-    InputChannel(const std::string &ip, int &port, const std::string &key);
+    // then becomes; `key` signs the messages. `resolve_host` also accepts an
+    // IPv4 host name, for Xeus connection files.
+    InputChannel(const std::string &ip, int &port, const std::string &key,
+        bool resolve_host = false);
     ~InputChannel();
     InputChannel(const InputChannel &) = delete;
     InputChannel &operator=(const InputChannel &) = delete;
@@ -125,6 +127,8 @@ public:
     // Waits at most `timeout` ms for the answer: 1 with its value, -1 if that
     // client is not connected or has disconnected, 0 if it is still awaited.
     int wait(std::string &value, int timeout);
+    // Abandons a pending request; a later READ starts a fresh wait.
+    void cancel();
     // Asks and waits as long as the client is connected; false if it is not.
     bool request(const std::string &identity, const std::string parts[4],
         std::string &value);
