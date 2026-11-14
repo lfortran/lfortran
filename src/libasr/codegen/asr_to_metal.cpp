@@ -45,6 +45,8 @@ struct MetalDialect {
         return "kernel void ";
     }
 
+    void emit_kernel_entry(std::stringstream &, const std::string &) const {}
+
     // Every kernel parameter is bound to an explicit buffer slot.
     std::string buffer_attr(int index) const {
         return " [[buffer(" + std::to_string(index) + ")]]";

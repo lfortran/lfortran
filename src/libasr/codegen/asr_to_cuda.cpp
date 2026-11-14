@@ -21,11 +21,31 @@ struct CudaDialect {
     // The integer kind element offsets are computed in
     // (GpuDeviceCapabilities::offset_kind).
     int element_offset_kind = 4;
+    // `--gpu-overlap`: every kernel waits for the grid before it in the
+    // stream first thing (see emit_kernel_entry).
+    bool overlap = false;
 
     CudaDialect(bool emit_registrar_, bool emulate_cpu_, bool hip_,
-            int offset_kind_)
+            int offset_kind_, bool overlap_ = false)
         : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_),
-          hip(hip_), element_offset_kind(offset_kind_) {}
+          hip(hip_), element_offset_kind(offset_kind_), overlap(overlap_) {}
+
+    // The runtime launches with programmatic stream serialization, so a
+    // kernel may start (its blocks being resident) before the previous grid
+    // of the stream has finished and flushed its writes. The kernel does
+    // not touch memory until `griddepcontrol.wait` returns, which waits for
+    // that grid to complete; it is a no-op if the kernel was launched
+    // without a predecessor or without the attribute. The grid never
+    // triggers its dependents early, so they launch when its blocks exit.
+    // The memory clobber keeps the compiler from moving a load above it.
+    void emit_kernel_entry(std::stringstream &src,
+            const std::string &indent) const {
+        if (!overlap || emulate_cpu || hip) return;
+        src << "#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900\n"
+            << indent << "asm volatile(\"griddepcontrol.wait;\" ::: "
+            << "\"memory\");\n"
+            << "#endif\n";
+    }
 
     // CUDA has one flat address space for global memory, so a pointer into it
     // needs no qualifier at all; only the two special spaces are named.
@@ -468,7 +488,8 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
 {
     ASRToGpuCVisitor<CudaDialect> v(co,
         CudaDialect(emit_registrar, co.gpu_cpu_emulation, co.gpu_hip,
-            gpu_device_capabilities(co.po).offset_kind));
+            gpu_device_capabilities(co.po).offset_kind,
+            co.gpu_overlap && gpu_overlap_arch_ok(co.gpu_arch)));
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

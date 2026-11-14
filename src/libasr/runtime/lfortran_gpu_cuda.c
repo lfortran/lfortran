@@ -1534,6 +1534,32 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     dim3 grid_dim = {(unsigned)grid[0], (unsigned)grid[1], (unsigned)grid[2]};
     dim3 block_dim = {(unsigned)block[0], (unsigned)block[1],
         (unsigned)block[2]};
+#ifdef LFORTRAN_GPU_OVERLAP
+    // --gpu-overlap: the kernels begin with griddepcontrol.wait, so the
+    // launch may overlap the end of the previous kernel of the stream. On a
+    // device older than sm_90 the kernels have no wait: launch as usual.
+    static int overlap = -1;
+    if (overlap < 0) {
+        int dev = 0, major = 0;
+        overlap = cudaGetDevice(&dev) == cudaSuccess
+            && cudaDeviceGetAttribute(&major,
+                cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess
+            && major >= 9;
+    }
+    if (overlap) {
+        cudaLaunchConfig_t cfg;
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gridDim = grid_dim;
+        cfg.blockDim = block_dim;
+        cudaLaunchAttribute attr[1];
+        attr[0].id = cudaLaunchAttributeProgrammaticStreamSerialization;
+        attr[0].val.programmaticStreamSerializationAllowed = 1;
+        cfg.attrs = attr;
+        cfg.numAttrs = 1;
+        check(cudaLaunchKernelExC(&cfg, (const void*)k->func, args),
+            "cudaLaunchKernelExC");
+    } else
+#endif
     check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
         0), "cudaLaunchKernel");
     device_busy = 1;

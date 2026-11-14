@@ -2363,6 +2363,11 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (compiler_options.gpu_lazy_init) {
                     cuda_rt_cmd_base += " -DLFORTRAN_GPU_LAZY_INIT";
                 }
+                if (compiler_options.gpu_overlap && !emulate_cpu && !hip
+                        && LCompilers::gpu_overlap_arch_ok(
+                            compiler_options.gpu_arch)) {
+                    cuda_rt_cmd_base += " -DLFORTRAN_GPU_OVERLAP";
+                }
                 std::vector<std::string> cuda_runtime_objs;
                 for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
                     std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
