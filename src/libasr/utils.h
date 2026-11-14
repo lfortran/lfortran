@@ -188,6 +188,8 @@ struct CompilerOptions {
     // call instead of before the program (`--gpu-lazy-init`).
     bool gpu_lazy_init = false;
     std::string openmp_lib_dir = "";
+    // C++ standard used to compile the C++ backend's output.
+    std::string cpp_std = "c++20";
     bool lookup_name = false;
     bool rename_symbol = false;
     std::string line = "";
