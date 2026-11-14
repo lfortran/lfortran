@@ -5734,7 +5734,7 @@ public:
                 }
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                    result_desc_type, order, x.m_order, result);
+                    result_desc_type, order, x.m_order, result, x.m_type);
                 // If the result type is PointerArray, extract the data pointer
                 // from the descriptor, since the assignment expects a raw pointer.
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
@@ -5984,10 +5984,12 @@ public:
             case ASR::PointerArray: {
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
                     ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
-                if ((result != nullptr ||
-                     result_ptype == ASR::array_physical_typeType::DescriptorArray ||
-                     x.m_order != nullptr) &&
-                    !ASRUtils::is_character(*x_m_array_type)) {
+                // A character array is only reshaped through a descriptor for
+                // `order`, whose element by element copy is done there.
+                if (x.m_order != nullptr ||
+                    ((result != nullptr ||
+                      result_ptype == ASR::array_physical_typeType::DescriptorArray) &&
+                     !ASRUtils::is_character(*x_m_array_type))) {
                     ASR::ttype_t* desc_input_type = ASRUtils::duplicate_type(al, x_m_array_type,
                         nullptr, ASR::array_physical_typeType::DescriptorArray, true);
                     tmp = array;
@@ -6018,7 +6020,7 @@ public:
                     tmp = arr_descr->reshape(array_type, array, llvm_data_type,
                         shape_type, shape, asr_shape_type, module.get(),
                         const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                        result_desc_type, order, x.m_order, result);
+                        result_desc_type, order, x.m_order, result, x.m_type);
                     // If the result type is not a descriptor, extract the data
                     // pointer from the descriptor, since the consumer expects
                     // a raw pointer.
@@ -10519,7 +10521,6 @@ public:
                     // This is recursion-safe unlike static storage, as each call gets its own copy.
                     // Memory is freed at function exit.
                     // BLOCK constructs always use heap regardless of size (can be in loops).
-                    constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;  // 4KB arrays and above use heap
                     bool use_heap_allocation = false;
                     uint64_t type_size = 0;
                     if (!compiler_options.po.stack_arrays &&
@@ -10529,7 +10530,7 @@ public:
                         const llvm::DataLayout& data_layout = module->getDataLayout();
                         type_size = data_layout.getTypeAllocSize(type);
                         // BLOCKs always use heap (can be in loops), others use threshold
-                        if (in_block_context || type_size > MAX_STACK_ARRAY_SIZE) {
+                        if (in_block_context || type_size > LLVMArrUtils::MAX_STACK_ARRAY_SIZE) {
                             use_heap_allocation = true;
                         }
                     }

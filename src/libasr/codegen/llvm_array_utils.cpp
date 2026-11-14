@@ -1293,7 +1293,8 @@ namespace LCompilers {
                                                   llvm::Type* result_desc_type,
                                                   llvm::Value* order,
                                                   ASR::expr_t* order_expr,
-                                                  llvm::Value* result) {
+                                                  llvm::Value* result,
+                                                  ASR::ttype_t* asr_result_type) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Type* result_type;
             if (result_desc_type) {
@@ -1319,10 +1320,27 @@ namespace LCompilers {
                     num_elements, result_elements);
             }
 
+            bool has_order = (order != nullptr && order_expr != nullptr);
+            // A character array keeps its elements in one buffer of `len`
+            // characters each, behind a single string descriptor. With
+            // `order`, the result gets a string descriptor and a buffer of
+            // its own, which the elements are copied into one by one below.
+            ASR::String_t* ordered_string_type = nullptr;
+            if (has_order && asr_data_type != nullptr &&
+                    ASRUtils::is_character(*asr_data_type) &&
+                    ASRUtils::get_string_type(asr_data_type)->m_physical_type ==
+                        ASR::string_physical_typeType::DescriptorString) {
+                LCOMPILERS_ASSERT(result == nullptr);
+                ordered_string_type = ASRUtils::get_string_type(asr_data_type);
+            }
+
             llvm::Value* first_ptr = this->get_pointer_to_data(result_type, reshaped);
             llvm::Value* arr_first;
             if (result) {
                 arr_first = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr);
+            } else if (ordered_string_type != nullptr) {
+                arr_first = llvm_utils->create_string_descriptor("reshaped_string");
+                builder->CreateStore(arr_first, first_ptr);
             } else {
                 arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);
@@ -1332,7 +1350,6 @@ namespace LCompilers {
 
             bool is_struct_type = asr_data_type != nullptr &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_data_type));
-            bool has_order = (order != nullptr && order_expr != nullptr);
             // Whether the elements were copied in array element order (so the
             // result is contiguous from its first element) rather than as the
             // raw source storage.
@@ -1456,7 +1473,10 @@ namespace LCompilers {
                 this->get_offset(result_type, reshaped, false));
 
             if( ASRUtils::is_array(asr_shape_type) ) {
-                llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+                // The elements of `shape` are read with the integer kind it
+                // is declared with.
+                llvm::Type* shape_elem_type = llvm_utils->getIntType(
+                    ASRUtils::extract_kind_from_ttype_t(asr_shape_type));
                 if (!is_source_gathered) {
                     llvm::Value* src_offset = this->get_offset(arr_type, array);
                     builder->CreateStore(src_offset,
@@ -1464,7 +1484,7 @@ namespace LCompilers {
                 }
 
                 // Determine n_dims and a pointer to the shape data.
-                // When the shape argument is a FixedSizeArray ([N x i32]) we
+                // When the shape argument is a FixedSizeArray (an LLVM array) we
                 // must not access descriptor fields that do not exist.
                 llvm::Value* n_dims = nullptr;
                 llvm::Value* shape_data = nullptr;
@@ -1479,7 +1499,7 @@ namespace LCompilers {
                 } else {
                     n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
                     shape_data = llvm_utils->CreateLoad2(
-                        i32->getPointerTo(),
+                        shape_elem_type->getPointerTo(),
                         this->get_pointer_to_data(shape_type, shape));
                 }
                 this->set_rank(result_type, reshaped, n_dims);
@@ -1508,7 +1528,7 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
                 builder->CreateStore(llvm_utils->CreateLoad2(index_type, prod), s_val);
-                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(i32, llvm_utils->create_ptr_gep2(i32, shape_data, r_val)), index_type);
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(shape_elem_type, llvm_utils->create_ptr_gep2(shape_elem_type, shape_data, r_val)), index_type);
                 builder->CreateStore(builder->CreateMul(llvm_utils->CreateLoad2(index_type, prod), dim_size), prod);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
@@ -1543,8 +1563,8 @@ namespace LCompilers {
                     std::vector<llvm::Value*> shape_values(rank);
                     for (int64_t i = 0; i < rank; i++) {
                         llvm::Value* sv = llvm_utils->CreateLoad2(
-                            i32,
-                            llvm_utils->create_ptr_gep2(i32, shape_data,
+                            shape_elem_type,
+                            llvm_utils->create_ptr_gep2(shape_elem_type, shape_data,
                                 llvm::ConstantInt::get(context, llvm::APInt(32, i))));
                         shape_values[i] = builder->CreateSExtOrTrunc(sv, index_type);
                     }
@@ -1554,9 +1574,76 @@ namespace LCompilers {
                     llvm::Value* dest_data = llvm_utils->CreateLoad2(
                         llvm_data_type->getPointerTo(), first_ptr);
 
+                    // Only the elements of the result are copied: it can have
+                    // fewer elements than `source`, and none at all, which
+                    // the subscripts below cannot be computed for.
+                    llvm::Value* result_size = llvm_utils->CreateLoad2(index_type, prod);
+                    llvm::Value* num_copied = builder->CreateSExtOrTrunc(num_elements, index_type);
+                    num_copied = builder->CreateSelect(
+                        builder->CreateICmpSLT(result_size, num_copied), result_size, num_copied);
+
+                    llvm::Value* string_elem_size = nullptr;
+                    if (ordered_string_type != nullptr) {
+                        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+                        llvm::Value* string_len = llvm_utils->get_string_length(
+                            ordered_string_type, src_data);
+                        string_elem_size = builder->CreateMul(string_len,
+                            llvm::ConstantInt::get(i64, ordered_string_type->m_kind));
+                        // A small buffer whose size is known at compile time
+                        // is taken once in an invocation of the procedure,
+                        // the first time the reshape is executed there: a
+                        // reshape inside a loop does not take more stack
+                        // every time, and one that is not executed takes
+                        // none. A BLOCK or ASSOCIATE construct moves an
+                        // alloca of a constant size to the entry block,
+                        // hence the limit. A larger buffer is taken every
+                        // time, like one of a run-time size.
+                        int64_t fixed_size = asr_result_type == nullptr ? -1 :
+                            ASRUtils::get_fixed_size_of_array(asr_result_type);
+                        int64_t fixed_len = -1;
+                        const int64_t max_reused_size = MAX_STACK_ARRAY_SIZE;
+                        llvm::Type* i8 = llvm::Type::getInt8Ty(context);
+                        llvm::Value* dest_chars = nullptr;
+                        if (fixed_size >= 0 && fixed_size <= max_reused_size &&
+                                ordered_string_type->m_len != nullptr &&
+                                ASRUtils::extract_value(ASRUtils::expr_value(
+                                    ordered_string_type->m_len), fixed_len) &&
+                                fixed_len >= 0 && fixed_len <= max_reused_size &&
+                                fixed_size * fixed_len * ordered_string_type->m_kind
+                                    <= max_reused_size) {
+                            llvm::PointerType* i8_ptr = i8->getPointerTo();
+                            llvm::AllocaInst* reused = llvm_utils->CreateAlloca(
+                                i8_ptr, nullptr, "reshaped_chars");
+                            llvm::IRBuilder<> entry_builder(context);
+                            entry_builder.SetInsertPoint(reused->getParent(),
+                                std::next(reused->getIterator()));
+                            entry_builder.CreateStore(
+                                llvm::ConstantPointerNull::get(i8_ptr), reused);
+                            llvm_utils->create_if_else(
+                                builder->CreateIsNull(
+                                    llvm_utils->CreateLoad2(i8_ptr, reused)),
+                                [&]() {
+                                    builder->CreateStore(llvm_utils->CreateAlloca(
+                                        *builder, i8, llvm::ConstantInt::get(i64,
+                                            fixed_size * fixed_len *
+                                            ordered_string_type->m_kind)), reused);
+                                }, []() {});
+                            dest_chars = llvm_utils->CreateLoad2(i8_ptr, reused);
+                        } else {
+                            dest_chars = llvm_utils->CreateAlloca(*builder,
+                                llvm::Type::getInt8Ty(context),
+                                builder->CreateMul(builder->CreateSExtOrTrunc(result_size, i64),
+                                    string_elem_size));
+                        }
+                        builder->CreateStore(dest_chars,
+                            llvm_utils->get_string_data(ordered_string_type, dest_data, true));
+                        builder->CreateStore(string_len,
+                            llvm_utils->get_string_length(ordered_string_type, dest_data, true));
+                    }
+
                     llvm::Value* I_arr = llvm_utils->CreateAlloca(
-                        *builder, llvm::Type::getInt64Ty(context),
-                        llvm::ConstantInt::get(context, llvm::APInt(32, rank)));
+                        llvm::Type::getInt64Ty(context),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, rank)), "reshape_I");
 
                     llvm::BasicBlock *order_loop_head = llvm::BasicBlock::Create(context, "reshape_order.head");
                     llvm::BasicBlock *order_loop_body = llvm::BasicBlock::Create(context, "reshape_order.body");
@@ -1567,8 +1654,7 @@ namespace LCompilers {
 
                     llvm_utils->start_new_block(order_loop_head);
                     llvm::Value* idx_val = llvm_utils->CreateLoad2(index_type, idx);
-                    llvm::Value* cond2 = builder->CreateICmpSLT(idx_val,
-                        builder->CreateSExtOrTrunc(num_elements, index_type));
+                    llvm::Value* cond2 = builder->CreateICmpSLT(idx_val, num_copied);
                     builder->CreateCondBr(cond2, order_loop_body, order_loop_end);
 
                     llvm_utils->start_new_block(order_loop_body);
@@ -1613,10 +1699,20 @@ namespace LCompilers {
                         stride = builder->CreateMul(stride, shape_dim);
                     }
 
-                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
-                    llvm::Value* val = llvm_utils->CreateLoad2(llvm_data_type, src_ptr);
-                    llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
-                    builder->CreateStore(val, dst_ptr);
+                    if (ordered_string_type != nullptr) {
+                        builder->CreateMemCpy(
+                            llvm_utils->get_string_element_in_array_(
+                                ordered_string_type, dest_data, idx_val),
+                            llvm::MaybeAlign(),
+                            llvm_utils->get_string_element_in_array_(
+                                ordered_string_type, src_data, source_index),
+                            llvm::MaybeAlign(), string_elem_size);
+                    } else {
+                        llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
+                        llvm::Value* val = llvm_utils->CreateLoad2(llvm_data_type, src_ptr);
+                        llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
+                        builder->CreateStore(val, dst_ptr);
+                    }
 
                     llvm::Value* idx_next = builder->CreateAdd(idx_val,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));

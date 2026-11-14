@@ -24,6 +24,14 @@ namespace LCompilers {
 
     namespace LLVMArrUtils {
 
+        /*
+        * The largest size in bytes of a fixed-size array, or of a
+        * fixed-size array temporary, that can be reserved on the stack
+        * in the entry block of its function, where a recursive procedure
+        * pays for it in every invocation.
+        */
+        constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;
+
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
@@ -340,7 +348,8 @@ namespace LCompilers {
                                      llvm::Type* result_desc_type = nullptr,
                                      llvm::Value* order = nullptr,
                                      ASR::expr_t* order_expr = nullptr,
-                                     llvm::Value* result = nullptr) = 0;
+                                     llvm::Value* result = nullptr,
+                                     ASR::ttype_t* asr_result_type = nullptr) = 0;
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -643,7 +652,8 @@ namespace LCompilers {
                                      llvm::Type* result_desc_type = nullptr,
                                      llvm::Value* order = nullptr,
                                      ASR::expr_t* order_expr = nullptr,
-                                     llvm::Value* result = nullptr);
+                                     llvm::Value* result = nullptr,
+                                     ASR::ttype_t* asr_result_type = nullptr);
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
