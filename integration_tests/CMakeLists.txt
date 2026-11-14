@@ -3129,6 +3129,39 @@ RUN(NAME pdt_modfile_parent_default_01 LABELS gfortran llvm
         EXTRAFILES pdt_modfile_parent_default_01_base.f90
                    pdt_modfile_parent_default_01_child.f90
         EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
+# GNU Fortran 15.3 rejects the inherited KIND type guard and does not initialize
+# defaulted PDT components. Exclude only these companions for that version.
+if (NOT LFORTRAN_BACKEND AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+        AND CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "15.3.0")
+    list(APPEND LFORTRAN_EXCLUDE_TESTS
+        pdt_modfile_parent_default_02
+        pdt_modfile_parent_nondefault_03
+        pdt_modfile_parent_nondefault_04)
+endif()
+RUN(NAME pdt_modfile_parent_default_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_03 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_04 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

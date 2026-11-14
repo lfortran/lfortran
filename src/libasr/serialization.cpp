@@ -205,13 +205,27 @@ private:
     SymbolTable *global_symtab;
     SymbolTable *current_scope;
     SymbolTable *external_symtab;
+    const std::set<std::pair<std::string, std::string>> &deferred;
 public:
     int attempt;
     bool fixed_external_syms;
 
 
-    FixExternalSymbolsVisitor(SymbolTable &symtab) : external_symtab{&symtab},
-    attempt{0}, fixed_external_syms{true} {}
+    FixExternalSymbolsVisitor(SymbolTable &symtab,
+            const std::set<std::pair<std::string, std::string>> &deferred_)
+        : external_symtab{&symtab}, deferred{deferred_}, attempt{0},
+          fixed_external_syms{true} {}
+
+    void missing_symbol(const std::string& module,
+            const std::string& original) {
+        if (deferred.count({module, original})) {
+            fixed_external_syms = false;
+            return;
+        }
+        throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
+            + original + "' was not found in the module '"
+            + module + "' (but the module was found)");
+    }
 
     void visit_TranslationUnit(const TranslationUnit_t &x) {
         global_symtab = x.m_symtab;
@@ -302,9 +316,7 @@ public:
                 ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
                 xx.m_external = sym;
             } else {
-                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
-                    + original_name + "' was not found in the module '"
-                    + module_name + "' (but the module was found)");
+                missing_symbol(module_name, original_name);
             }
         } else if (external_symtab->get_symbol(module_name) != nullptr) {
             Module_t *m = down_cast<Module_t>(external_symtab->get_symbol(module_name));
@@ -314,9 +326,7 @@ public:
                 ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
                 xx.m_external = sym;
             } else {
-                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
-                    + original_name + "' was not found in the module '"
-                    + module_name + "' (but the module was found)");
+                missing_symbol(module_name, original_name);
             }
         } else if (current_scope->resolve_symbol(module_name) != nullptr) {
             ASR::symbol_t* m_sym = ASRUtils::symbol_get_past_external(
@@ -353,14 +363,10 @@ public:
                 ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);
                 xx.m_external = enum_->m_symtab->get_symbol(x.m_original_name);
                 if(!xx.m_external) {
-                    throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
-                        + original_name + "' was not found in the module '"
-                        + module_name + "' (but the module was found)");
+                    missing_symbol(module_name, original_name);
                 }
             } else {
-                throw LCompilersException("ExternalSymbol cannot be resolved, the symbol '"
-                    + original_name + "' was not found in the module '"
-                    + module_name + "' (but the module was found)");
+                missing_symbol(module_name, original_name);
             }
         } else if(ASR::symbol_t* enum_sym = enum_in_module(module_name, original_name)){ // External -> External in module -> points to internal enum symboltable
             ASR::Enum_t* enum_ = ASR::down_cast<ASR::Enum_t>(enum_sym);
@@ -388,8 +394,9 @@ public:
 // Fix ExternalSymbol's symbol to point to symbols from `external_symtab`
 // or from `unit`.
 void fix_external_symbols(ASR::TranslationUnit_t &unit,
-        SymbolTable &external_symtab) {
-    ASR::FixExternalSymbolsVisitor e(external_symtab);
+        SymbolTable &external_symtab,
+        const std::set<std::pair<std::string, std::string>> &deferred) {
+    ASR::FixExternalSymbolsVisitor e(external_symtab, deferred);
     e.fixed_external_syms = true;
     e.attempt = 1;
     e.visit_TranslationUnit(unit);

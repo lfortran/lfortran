@@ -1,6 +1,9 @@
 #ifndef LIBASR_SERIALIZATION_H
 #define LIBASR_SERIALIZATION_H
 
+#include <set>
+#include <utility>
+
 #include <libasr/asr.h>
 
 namespace LCompilers {
@@ -13,7 +16,8 @@ namespace LCompilers {
             bool load_symtab_id, uint32_t offset);
 
     void fix_external_symbols(ASR::TranslationUnit_t &unit,
-            SymbolTable &external_symtab);
+            SymbolTable &external_symtab,
+            const std::set<std::pair<std::string, std::string>> &deferred = {});
 } // namespace LCompilers
 
 #endif // LIBASR_SERIALIZATION_H

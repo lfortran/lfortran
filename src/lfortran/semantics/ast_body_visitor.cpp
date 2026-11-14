@@ -828,7 +828,9 @@ public:
                                 diag::Label("", {err_loc})}));
                         throw SemanticAbort();
                     }, visitor->lm, visitor->compiler_options.separate_compilation,
-                    false);
+                    false, [&](ASR::TranslationUnit_t& unit) {
+                        visitor->materialize_imported_pdt_specializations(unit);
+                    });
             }
             if (!sym || !ASR::is_a<ASR::Module_t>(*sym)) {
                 return;
@@ -7286,7 +7288,10 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation, false));
+            }, lm, compiler_options.separate_compilation, false,
+                [&](ASR::TranslationUnit_t& unit) {
+                    materialize_imported_pdt_specializations(unit);
+                }));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
