@@ -5034,3 +5034,17 @@ contains
         allocatable :: constant_then_allocatable  ! {Error} `parameter` attribute conflicts with `allocatable` attribute
     end subroutine
 end module
+
+module cc1_parameter_save
+    real :: saved_constant
+    save saved_constant
+    parameter (saved_constant = 0.5)  ! {Error} `parameter` attribute conflicts with `save` attribute
+contains
+    subroutine cc1_parameter_save_sub()
+        real, save, parameter :: save_parameter = 0.5  ! {Error} `parameter` attribute conflicts with `save` attribute
+        real, parameter, save :: parameter_save = 0.5  ! {Error} `parameter` attribute conflicts with `save` attribute
+        real :: constant_then_save
+        parameter (constant_then_save = 0.5)  ! {Error} `parameter` attribute conflicts with `save` attribute
+        save constant_then_save
+    end subroutine
+end module

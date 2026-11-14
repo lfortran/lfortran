@@ -2126,6 +2126,30 @@ semantic error: `parameter` attribute conflicts with `allocatable` attribute
 5034 |         allocatable :: constant_then_allocatable  ! {Error} `parameter` attribute conflicts with `allocatable` attribute
      |                        ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: `parameter` attribute conflicts with `save` attribute
+    --> tests/errors/continue_compilation_1.f90:5041:16
+     |
+5041 |     parameter (saved_constant = 0.5)  ! {Error} `parameter` attribute conflicts with `save` attribute
+     |                ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `parameter` attribute conflicts with `save` attribute
+    --> tests/errors/continue_compilation_1.f90:5044:9
+     |
+5044 |         real, save, parameter :: save_parameter = 0.5  ! {Error} `parameter` attribute conflicts with `save` attribute
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `parameter` attribute conflicts with `save` attribute
+    --> tests/errors/continue_compilation_1.f90:5045:9
+     |
+5045 |         real, parameter, save :: parameter_save = 0.5  ! {Error} `parameter` attribute conflicts with `save` attribute
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `parameter` attribute conflicts with `save` attribute
+    --> tests/errors/continue_compilation_1.f90:5047:20
+     |
+5047 |         parameter (constant_then_save = 0.5)  ! {Error} `parameter` attribute conflicts with `save` attribute
+     |                    ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

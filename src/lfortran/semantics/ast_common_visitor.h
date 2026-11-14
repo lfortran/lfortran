@@ -9524,8 +9524,9 @@ public:
                                         assgnd_storage[sym] = std::make_pair(ASR::storage_typeType::Parameter, s.m_initializer);
                                     } else {
                                         // A named constant is not a variable, so an
-                                        // entity that is ALLOCATABLE or POINTER
-                                        // cannot become one.
+                                        // entity that is ALLOCATABLE, POINTER or SAVE
+                                        // cannot become one. An initialized variable
+                                        // is implicitly SAVE, which is not a conflict.
                                         ASR::symbol_t* sym_past_external =
                                             ASRUtils::symbol_get_past_external(sym_);
                                         if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
@@ -9536,6 +9537,9 @@ public:
                                                 conflict = "allocatable";
                                             } else if (ASRUtils::is_pointer(v->m_type)) {
                                                 conflict = "pointer";
+                                            } else if (v->m_storage == ASR::storage_typeType::Save &&
+                                                    v->m_symbolic_value == nullptr) {
+                                                conflict = "save";
                                             }
                                             if (!conflict.empty()) {
                                                 diag.add(Diagnostic(
@@ -9765,6 +9769,14 @@ public:
                                         }
                                     } else {
                                         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                        if (v->m_storage == ASR::storage_typeType::Parameter) {
+                                            diag.add(Diagnostic(
+                                                "`parameter` attribute conflicts with `save` attribute",
+                                                Level::Error, Stage::Semantic, {
+                                                    Label("", {x.m_syms[i].loc})
+                                                }));
+                                            throw SemanticAbort();
+                                        }
                                         v->m_storage = ASR::storage_typeType::Save;
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType::AttrEnumerator) {
@@ -11332,7 +11344,11 @@ public:
                                 s_access = ASR::accessType::Public;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrSave) {
-                                storage_type = ASR::storage_typeType::Save;
+                                // Keep an earlier `parameter` so that the
+                                // conflict is reported in either order.
+                                if (storage_type != ASR::storage_typeType::Parameter) {
+                                    storage_type = ASR::storage_typeType::Save;
+                                }
                                 is_save = true;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrParameter) {
@@ -11496,6 +11512,16 @@ public:
                     if (is_protected && storage_type == ASR::storage_typeType::Parameter) {
                         diag.add((Diagnostic(
                             "`parameter` attribute conflicts with `protected` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+
+                    if (is_save && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic(
+                            "`parameter` attribute conflicts with `save` attribute",
                             Level::Error, Stage::Semantic, {
                                 Label("",{x.base.base.loc})
                             }

@@ -5606,6 +5606,7 @@ RUN(NAME save_28 LABELS llvm) # not gfortran: GFortran 15.2 at CI loses the leng
 RUN(NAME save_29 LABELS gfortran llvm)
 RUN(NAME save_30 LABELS gfortran llvm)
 RUN(NAME save_31 LABELS gfortran llvm)
+RUN(NAME save_32 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
