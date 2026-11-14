@@ -4110,6 +4110,38 @@ namespace Sqrt {
 
 }  // namespace Sqrt
 
+// Calls a binary128 runtime routine of lfortran_intrinsics.c that takes its
+// inputs by reference and writes `result` through its last argument.
+static inline void call_real16_runtime(Allocator &al, const Location &loc,
+        SymbolTable *fn_symtab, SetChar &dep, Vec<ASR::stmt_t*> &body,
+        ASRBuilder &b, const std::string &c_name,
+        const std::vector<ASR::expr_t*> &inputs, ASR::expr_t *result) {
+    SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+    Vec<ASR::expr_t*> args_1;
+    args_1.reserve(al, inputs.size() + 1);
+    Vec<ASR::call_arg_t> call_args;
+    call_args.reserve(al, inputs.size() + 1);
+    for (size_t i = 0; i < inputs.size(); i++) {
+        args_1.push_back(al, b.Variable(fn_symtab_1, "a" + std::to_string(i),
+            ASRUtils::expr_type(inputs[i]), ASR::intentType::In, nullptr,
+            ASR::abiType::BindC, false));
+        ASR::call_arg_t call_arg; call_arg.loc = loc; call_arg.m_value = inputs[i];
+        call_args.push_back(al, call_arg);
+    }
+    args_1.push_back(al, b.Variable(fn_symtab_1, "r", ASRUtils::expr_type(result),
+        ASR::intentType::Out, nullptr, ASR::abiType::BindC, false));
+    ASR::call_arg_t result_arg; result_arg.loc = loc; result_arg.m_value = result;
+    call_args.push_back(al, result_arg);
+    SetChar dep_1; dep_1.reserve(al, 1);
+    Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+    ASR::symbol_t *c_sym = make_Function_Without_ReturnVar_t(c_name, fn_symtab_1,
+        dep_1, args_1, body_1, ASR::abiType::BindC, ASR::deftypeType::Interface,
+        s2c(al, c_name));
+    fn_symtab->add_symbol(c_name, c_sym);
+    dep.push_back(al, s2c(al, c_name));
+    body.push_back(al, b.SubroutineCall(c_sym, call_args));
+}
+
 namespace Exponent {
 
     static ASR::expr_t* eval_Exponent(Allocator& al, const Location& loc,
@@ -4172,6 +4204,14 @@ namespace Exponent {
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         int32_t kind = extract_kind_from_ttype_t(arg_types[0]);
+        if (kind == 16) {
+            call_real16_runtime(al, loc, fn_symtab, dep, body, b,
+                "_lfortran_exponent_f128", {args[0]}, result);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         /*
             if (x == 0.0) then
                 result = 0
@@ -4297,6 +4337,14 @@ namespace Fraction {
         declare_basic_variables("_lcompilers_fraction_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            call_real16_runtime(al, loc, fn_symtab, dep, body, b,
+                "_lfortran_fraction_f128", {args[0]}, result);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         /*
         * r = fraction(x, y)
         * r = x * radix(x)**(-exp(x))
@@ -4376,6 +4424,16 @@ namespace SetExponent {
         fill_func_arg("i", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            ASR::expr_t *i64 = declare("i64", int64, Local);
+            body.push_back(al, b.Assignment(i64, b.i2i_t(args[1], int64)));
+            call_real16_runtime(al, loc, fn_symtab, dep, body, b,
+                "_lfortran_set_exponent_f128", {args[0], i64}, result);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         /*
         * r = setexponent(x, I)
         * r = fraction(x) * radix(x)**(I)
@@ -5428,6 +5486,14 @@ namespace Nearest {
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("s", arg_types[1]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            call_real16_runtime(al, loc, fn_symtab, dep, body, b,
+                "_lfortran_nearest_f128", {args[0], args[1]}, result);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         /*
         function nearest(x, s) result(result)
             real :: x, s
@@ -5554,6 +5620,14 @@ namespace Spacing {
         declare_basic_variables("_lcompilers_spacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, arg_types[0], ReturnVar);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            call_real16_runtime(al, loc, fn_symtab, dep, body, b,
+                "_lfortran_spacing_f128", {args[0]}, result);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         /*
         function spacing(x) result(result)
             real :: x
@@ -7910,6 +7984,14 @@ namespace Rrspacing {
         declare_basic_variables("_lcompilers_optimization_rrspacing_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            call_real16_runtime(al, loc, fn_symtab, dep, body, b,
+                "_lfortran_rrspacing_f128", {args[0]}, result);
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         /*
         * r = rrspacing(X)
         * r = abs(fraction(X)) * (radix(X)**digits(X))
