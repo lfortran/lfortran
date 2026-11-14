@@ -1,0 +1,13 @@
+{
+    "basename": "run-transfer_pointer_01-a285d5b",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/transfer_pointer_01.f90",
+    "infile_hash": "7106faf7a2290458dea2ef3f62caff33d409f500461b954940620854",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-transfer_pointer_01-a285d5b.stdout",
+    "stdout_hash": "66a02dbf2489a482a6bacad0c34674b7f315936ad5824c0bf794aaad",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
