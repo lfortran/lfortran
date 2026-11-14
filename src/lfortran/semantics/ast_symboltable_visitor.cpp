@@ -1233,6 +1233,19 @@ public:
             if (!compiler_options.continue_compilation) throw;
         }
 
+        // The defining module must serialize default-kind specializations
+        // before another module can inherit or reference them.
+        std::vector<ASR::symbol_t*> defaulted_pdts;
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) &&
+                    has_pdt_kind_params(ASR::down_cast<ASR::Struct_t>(item.second))) {
+                defaulted_pdts.push_back(item.second);
+            }
+        }
+        for (ASR::symbol_t* symbol : defaulted_pdts) {
+            instantiate_default_pdt(symbol, symbol->base.loc);
+        }
+
         tmp = tmp0;
         // Add module dependencies
         R *m = ASR::down_cast2<R>(tmp);
@@ -5392,7 +5405,8 @@ public:
         }
 
         ASRUtils::SymbolDuplicator duplicator(al);
-        std::string specialization_prefix = std::string(template_struct->m_name) + "_";
+        std::string specialization_prefix = pdt_specialization_prefix(
+            &template_struct->base);
         for (auto& item : enclosing_scope->get_scope()) {
             ASR::symbol_t* candidate_sym = ASRUtils::symbol_get_past_external(item.second);
             if (!candidate_sym || !ASR::is_a<ASR::Struct_t>(*candidate_sym)) {
@@ -5401,7 +5415,9 @@ public:
 
             ASR::Struct_t* specialization = ASR::down_cast<ASR::Struct_t>(candidate_sym);
             if (specialization == template_struct ||
-                !startswith(std::string(specialization->m_name), specialization_prefix)) {
+                !startswith(std::string(specialization->m_name), specialization_prefix) ||
+                ASRUtils::symbol_parent_symtab(candidate_sym) !=
+                    ASRUtils::symbol_parent_symtab(&template_struct->base)) {
                 continue;
             }
 
@@ -5624,9 +5640,8 @@ public:
             return false;
         }
 
-        std::string template_name = template_struct->m_name;
-        std::string candidate_name = candidate_struct->m_name;
-        return startswith(candidate_name, template_name + "_") &&
+        return startswith(std::string(candidate_struct->m_name),
+                pdt_specialization_prefix(template_sym)) &&
             ASRUtils::symbol_parent_symtab(candidate_sym) ==
                 ASRUtils::symbol_parent_symtab(template_sym);
     }
