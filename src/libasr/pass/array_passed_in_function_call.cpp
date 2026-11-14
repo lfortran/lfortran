@@ -203,7 +203,8 @@ public:
              ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
             if ( !((cast->m_new == ASR::array_physical_typeType::PointerArray ||
-                     cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                     cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray ||
+                     cast->m_new == ASR::array_physical_typeType::StringArraySinglePointer) &&
                     (cast->m_old == ASR::array_physical_typeType::DescriptorArray ||
                      cast->m_old == ASR::array_physical_typeType::AssumedRankArray)) ) {
                 return false;
