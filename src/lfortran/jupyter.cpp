@@ -1367,8 +1367,9 @@ void handle_interrupt()
     struct sigaction action {};
     action.sa_handler = interrupt_prompt;
     sigemptyset(&action.sa_mask);
-    // During execution the client loop must observe the interrupt marker.
-    action.sa_flags = 0;
+    // The client loop waits with timeouts and polls stdin, so it observes
+    // the interrupt marker without the handler interrupting system calls.
+    action.sa_flags = SA_RESTART;
     if (sigaction(SIGINT, &action, nullptr) == 0) interrupt_installed = 1;
 #endif
 }
@@ -1427,6 +1428,23 @@ void show(const Message &m, bool other,
 
 } // namespace
 
+#ifdef _WIN32
+namespace {
+// The console line that stdin_character() is passing on, one byte a call.
+std::string console_line;
+size_t console_position = 0;
+}
+#endif
+
+// A new READ does not get what an abandoned one left of its line.
+static void discard_console_line()
+{
+#ifdef _WIN32
+    console_line.clear();
+    console_position = 0;
+#endif
+}
+
 int Client::stdin_character()
 {
 #ifdef _WIN32
@@ -1443,8 +1461,8 @@ int Client::stdin_character()
             // restores it before a cell runs. The console edits and echoes
             // a line only during a read, so wait without blocking until a
             // key is pressed, then read the whole line, blocking.
-            static std::string line;
-            static size_t position = 0;
+            std::string &line = console_line;
+            size_t &position = console_position;
             if (position < line.size())
                 return static_cast<unsigned char>(line[position++]);
             for (;;) {
@@ -1572,6 +1590,7 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
             std::cout << get_string(m.content, "prompt") << std::flush;
             reading.emplace(std::move(m));
             record.clear();
+            discard_console_line();
             continue;
         }
         if (m.parent_id() != request.id()) {
