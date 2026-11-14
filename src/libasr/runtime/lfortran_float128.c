@@ -2594,9 +2594,10 @@ lf_float128 lf_f128_jn(int n, lf_float128 x) {
 lf_float128 lf_f128_j0(lf_float128 x) { return lf_f128_jn(0, x); }
 lf_float128 lf_f128_j1(lf_float128 x) { return lf_f128_jn(1, x); }
 
-/* Hankel expansion of Y0 (DLMF 10.17). Accurate for x > 40; below that
- * the truncated series is short of binary128. */
-static lf_float128 f128_y0_hankel(lf_float128 x) {
+/* Hankel expansion of Y0 and Y1 (DLMF 10.17). Accurate for x > 40; below
+ * that the truncated series is short of binary128. */
+static lf_float128 f128_y01_hankel(int order, lf_float128 x) {
+    int64_t mu = 4 * (int64_t)order * order;
     lf_float128 t = f128_one();
     lf_float128 P = f128_one();
     lf_float128 Q = f128_make_zero(0);
@@ -2605,7 +2606,7 @@ static lf_float128 f128_y0_hankel(lf_float128 x) {
     for (int k = 0; k < 8000; k++) {
         /* t <- t * a_{k+1}/a_k / x, with a_{k+1}/a_k = -(2k+1)^2/(8(k+1)). */
         lf_float128 odd = f_int(2 * (int64_t)k + 1);
-        lf_float128 factor = f_div(f_neg(f_mul(odd, odd)),
+        lf_float128 factor = f_div(f_sub(f_int(mu), f_mul(odd, odd)),
             f_mul(f_mul(f_int(8), f_int((int64_t)k + 1)), x));
         t = f_mul(t, factor);
         if (f128_is_zero(t) || f128_is_inf(t) || f128_is_nan(t)) break;
@@ -2639,6 +2640,10 @@ static lf_float128 f128_y0_hankel(lf_float128 x) {
     lf_float128 pi = lf_float128_from_str(
         "3.14159265358979323846264338327950288");
     lf_float128 amp = lf_f128_sqrt(f_div(f128_two(), f_mul(pi, x)));
+    if (order == 1) {
+        /* sin(x - 3pi/4) = -cosw and cos(x - 3pi/4) = sinw. */
+        return f_mul(amp, f_sub(f_mul(sinw, Q), f_mul(cosw, P)));
+    }
     return f_mul(amp, f_add(f_mul(sinw, P), f_mul(cosw, Q)));
 }
 
@@ -2686,8 +2691,89 @@ lf_float128 lf_f128_y0(lf_float128 x) {
     if (p.is_inf) return f128_make_zero(0);
     /* The double-word series loses about |x|/ln(2) bits. Past 40 that is
      * no longer a binary128 result, and the Hankel expansion is. */
-    if (f128_cmp_internal(x, f_int(40)) > 0) return f128_y0_hankel(x);
+    if (f128_cmp_internal(x, f_int(40)) > 0) return f128_y01_hankel(0, x);
     return f128_y0_series(x);
+}
+
+/* Y1 power series (A&S 9.1.11), accumulated as a double-word like Y0:
+ * Y1(x) = (2/pi) (ln(x/2) J1(x) - 1/x
+ *         - 1/2 sum (-1)^k (H_k + H_{k+1} - 2 gamma) (x/2)^(2k+1) / (k! (k+1)!)) */
+static lf_float128 f128_y1_series(lf_float128 x) {
+    lf_float128 pi = lf_float128_from_str(
+        "3.14159265358979323846264338327950288");
+    f128_dw gamma_e = dw_make(lf_float128_from_str(
+        "0.577215664901532860606512090082402431"), f128_make_zero(0));
+    f128_dw two_gamma = dw_add(gamma_e, gamma_e);
+    lf_float128 half = f128_scale(x, -1);
+    f128_dw ln_j1 = dw_mul(f128_log_dw(half),
+        dw_make(lf_f128_j1(x), f128_make_zero(0)));
+    f128_dw half2 = two_prod(half, half);
+    f128_dw sum = dw_make(f128_make_zero(0), f128_make_zero(0));
+    f128_dw term = dw_make(half, f128_make_zero(0));
+    f128_dw Hk = dw_make(f128_make_zero(0), f128_make_zero(0));
+    f128_dw Hk1 = dw_make(f128_one(), f128_make_zero(0));
+    int max_e = -200000;
+    int prev_e = 200000;
+    for (int k = 0; k < 4000; k++) {
+        if (k > 0) {
+            Hk = Hk1;
+            Hk1 = dw_add(Hk1, dw_div(dw_make(f128_one(), f128_make_zero(0)),
+                dw_make(f_int((int64_t)k + 1), f128_make_zero(0))));
+            term = dw_div(dw_mul(term, half2),
+                two_prod(f_int(k), f_int((int64_t)k + 1)));
+        }
+        f128_dw coeff = dw_add(dw_add(Hk, Hk1), dw_neg(two_gamma));
+        f128_dw contrib = dw_mul(coeff, term);
+        if (k & 1) contrib = dw_neg(contrib);
+        sum = dw_add(sum, contrib);
+        int e = f128_mag_exp(contrib.hi);
+        if (e > max_e) max_e = e;
+        if (k > 2 && e < prev_e && max_e - e > 220) break;
+        prev_e = e;
+        if (f128_is_zero(contrib.hi) && f128_is_zero(contrib.lo)) break;
+    }
+    f128_dw inv_x = dw_div(dw_make(f128_one(), f128_make_zero(0)),
+        dw_make(x, f128_make_zero(0)));
+    f128_dw total = dw_add(ln_j1, dw_neg(inv_x));
+    total = dw_add(total, dw_neg(dw_mul_q(sum, f128_half())));
+    return dw_mul_q(total, f_div(f128_two(), pi)).hi;
+}
+
+lf_float128 lf_f128_y1(lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan) return f128_make_nan();
+    if (p.is_zero) return f128_make_inf(1);
+    if (p.sign) return f128_make_nan();
+    if (p.is_inf) return f128_make_zero(0);
+    if (f128_cmp_internal(x, f_int(40)) > 0) return f128_y01_hankel(1, x);
+    return f128_y1_series(x);
+}
+
+/* Y_n by upward recurrence from Y0 and Y1, which is stable for Y. */
+lf_float128 lf_f128_yn(int n, lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan) return f128_make_nan();
+    int flip = 0;
+    if (n < 0) {
+        if (n == (-2147483647 - 1)) return f128_make_nan();
+        n = -n;
+        flip = n & 1;
+    }
+    if (p.is_zero) return f128_make_inf(flip ? 0 : 1);
+    if (p.sign) return f128_make_nan();
+    if (p.is_inf) return f128_make_zero(0);
+    lf_float128 y_prev = lf_f128_y0(x);
+    if (n == 0) return y_prev;
+    lf_float128 y_curr = lf_f128_y1(x);
+    lf_float128 two_over = f_div(f128_two(), x);
+    for (int k = 1; k < n; k++) {
+        if (f128_is_inf(y_curr)) break;
+        lf_float128 y_next = f_sub(f_mul(f_mul(f_int(k), two_over), y_curr),
+            y_prev);
+        y_prev = y_curr;
+        y_curr = y_next;
+    }
+    return flip ? f_neg(y_curr) : y_curr;
 }
 
 lf_float128 lf_f128_erfc_scaled(lf_float128 a) {
@@ -3198,6 +3284,15 @@ lf_f128_abi lf_acoshq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f
 lf_f128_abi lf_atanhq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_atanh(lf_f128_from_abi(a))); }
 lf_f128_abi lf_erfq(lf_f128_abi a)                  { return lf_f128_to_abi(lf_f128_erf(lf_f128_from_abi(a))); }
 lf_f128_abi lf_erfcq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_erfc(lf_f128_from_abi(a))); }
+lf_f128_abi lf_tgammaq(lf_f128_abi a)               { return lf_f128_to_abi(lf_f128_tgamma(lf_f128_from_abi(a))); }
+lf_f128_abi lf_lgammaq(lf_f128_abi a)               { return lf_f128_to_abi(lf_f128_lgamma(lf_f128_from_abi(a))); }
+lf_f128_abi lf_erfc_scaledq(lf_f128_abi a)          { return lf_f128_to_abi(lf_f128_erfc_scaled(lf_f128_from_abi(a))); }
+lf_f128_abi lf_j0q(lf_f128_abi a)                   { return lf_f128_to_abi(lf_f128_j0(lf_f128_from_abi(a))); }
+lf_f128_abi lf_j1q(lf_f128_abi a)                   { return lf_f128_to_abi(lf_f128_j1(lf_f128_from_abi(a))); }
+lf_f128_abi lf_jnq(int n, lf_f128_abi a)            { return lf_f128_to_abi(lf_f128_jn(n, lf_f128_from_abi(a))); }
+lf_f128_abi lf_y0q(lf_f128_abi a)                   { return lf_f128_to_abi(lf_f128_y0(lf_f128_from_abi(a))); }
+lf_f128_abi lf_y1q(lf_f128_abi a)                   { return lf_f128_to_abi(lf_f128_y1(lf_f128_from_abi(a))); }
+lf_f128_abi lf_ynq(int n, lf_f128_abi a)            { return lf_f128_to_abi(lf_f128_yn(n, lf_f128_from_abi(a))); }
 lf_f128_abi lf_sindq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_sind(lf_f128_from_abi(a))); }
 lf_f128_abi lf_cosdq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_cosd(lf_f128_from_abi(a))); }
 lf_f128_abi lf_tandq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_tand(lf_f128_from_abi(a))); }
@@ -3351,6 +3446,38 @@ void pub(void) {                                             \
     );                                                       \
 }
 
+/* Integer order in w0, fp128 argument q0 -> x1/x2; result x0/x1 -> q0 */
+__attribute__((naked))
+void lf_jnq(void) {
+    __asm__ volatile(
+        "stp x29, x30, [sp, #-16]!\n\t"
+        "mov x29, sp\n\t"
+        "fmov x1, d0\n\t"
+        "mov  x2, v0.d[1]\n\t"
+        "bl  " _LF_SYM(lf_f128_jn) "\n\t"
+        "fmov d0, x0\n\t"
+        "mov  v0.d[1], x1\n\t"
+        "ldp x29, x30, [sp], #16\n\t"
+        "ret\n\t"
+    );
+}
+
+/* Same marshalling as lf_jnq above. */
+__attribute__((naked))
+void lf_ynq(void) {
+    __asm__ volatile(
+        "stp x29, x30, [sp, #-16]!\n\t"
+        "mov x29, sp\n\t"
+        "fmov x1, d0\n\t"
+        "mov  x2, v0.d[1]\n\t"
+        "bl  " _LF_SYM(lf_f128_yn) "\n\t"
+        "fmov d0, x0\n\t"
+        "mov  v0.d[1], x1\n\t"
+        "ldp x29, x30, [sp], #16\n\t"
+        "ret\n\t"
+    );
+}
+
 #if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM2(__addtf3,          __addtf3_lf_impl)
 _LF_SHIM2(__subtf3,          __subtf3_lf_impl)
@@ -3382,6 +3509,13 @@ _LF_SHIM1(lf_acoshq,        lf_f128_acosh)
 _LF_SHIM1(lf_atanhq,        lf_f128_atanh)
 _LF_SHIM1(lf_erfq,          lf_f128_erf)
 _LF_SHIM1(lf_erfcq,         lf_f128_erfc)
+_LF_SHIM1(lf_tgammaq,       lf_f128_tgamma)
+_LF_SHIM1(lf_lgammaq,       lf_f128_lgamma)
+_LF_SHIM1(lf_erfc_scaledq,  lf_f128_erfc_scaled)
+_LF_SHIM1(lf_j0q,           lf_f128_j0)
+_LF_SHIM1(lf_j1q,           lf_f128_j1)
+_LF_SHIM1(lf_y0q,           lf_f128_y0)
+_LF_SHIM1(lf_y1q,           lf_f128_y1)
 _LF_SHIM1(lf_sindq,         lf_f128_sind)
 _LF_SHIM1(lf_cosdq,         lf_f128_cosd)
 _LF_SHIM1(lf_tandq,         lf_f128_tand)

@@ -138,6 +138,8 @@ lf_float128 lf_f128_j0     (lf_float128 a);           /* j0q     */
 lf_float128 lf_f128_j1     (lf_float128 a);           /* j1q     */
 lf_float128 lf_f128_y0     (lf_float128 a);           /* y0q     */
 lf_float128 lf_f128_jn     (int n, lf_float128 a);    /* jnq     */
+lf_float128 lf_f128_y1     (lf_float128 a);           /* y1q     */
+lf_float128 lf_f128_yn     (int n, lf_float128 a);    /* ynq     */
 /* 1 and *out set when the binary128 value is the Bessel function.
    0 when the power series is unstable and Miller's recurrence will
    not run. The caller must leave that expression unfolded. */

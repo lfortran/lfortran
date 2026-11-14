@@ -299,6 +299,13 @@ static inline std::string real_c_func_name(const std::string &name,
         for (const char *f : quad_functions) {
             if (name == f) return "lf_" + name + "q";
         }
+        static const std::pair<const char *, const char *> renamed[] = {
+            {"gamma", "lf_tgammaq"}, {"log_gamma", "lf_lgammaq"},
+            {"bessel_j0", "lf_j0q"}, {"bessel_j1", "lf_j1q"},
+            {"bessel_y0", "lf_y0q"}, {"bessel_y1", "lf_y1q"}};
+        for (const auto &r : renamed) {
+            if (name == r.first) return r.second;
+        }
     }
     return "_lfortran_d" + name;
 }
@@ -1137,7 +1144,7 @@ namespace math_func {                                                           
 create_math_bindc(BesselJ0, HostBessel::j0, HostBessel::j0l, 0, bessel_j0, lf_f128_j0)
 create_math_bindc(BesselJ1, HostBessel::j1, HostBessel::j1l, 0, bessel_j1, lf_f128_j1)
 create_math_bindc(BesselY0, HostBessel::y0, HostBessel::y0l, 0, bessel_y0, lf_f128_y0)
-create_math_bindc(BesselY1, HostBessel::y1, HostBessel::y1l, 0, bessel_y1, nullptr)
+create_math_bindc(BesselY1, HostBessel::y1, HostBessel::y1l, 0, bessel_y1, lf_f128_y1)
 create_math_bindc(Asind, asin, asinl, 1, asind, lf_f128_asind)
 create_math_bindc(Acosd, acos, acosl, 1, acosd, lf_f128_acosd)
 create_math_bindc(Atand, atan, atanl, 1, atand, lf_f128_atand)
@@ -5719,6 +5726,8 @@ namespace BesselJN {
         std::string c_func_name;
         if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 4) {
             c_func_name = "_lfortran_sbesseljn";
+        } else if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 16) {
+            c_func_name = "lf_jnq";
         } else {
             c_func_name = "_lfortran_dbesseljn";
         }
@@ -5753,7 +5762,13 @@ namespace BesselYN {
     static ASR::expr_t *eval_BesselYN(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
-            return nullptr;
+            lf_float128 x = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            int n = checked_integer_cast<int>(
+                ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
+            // The recurrence has n steps; leave a very long one to run time.
+            if (n > 250000 || n < -250000) return nullptr;
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_yn(n, x), t1);
         }
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 10) {
             // Kind 10 stores a pointer in m_r. Fold Yn in long double.
@@ -5774,6 +5789,8 @@ namespace BesselYN {
         std::string c_func_name;
         if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 4) {
             c_func_name = "_lfortran_sbesselyn";
+        } else if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 16) {
+            c_func_name = "lf_ynq";
         } else {
             c_func_name = "_lfortran_dbesselyn";
         }
@@ -8623,11 +8640,21 @@ namespace ErfcScaled {
         /*
         * r = erfc_scaled(x)
         * r = exp(x**2) * erfc(x)
+        * For real(16) the runtime computes it directly, since exp(x**2)
+        * overflows and erfc(x) underflows long before the product does.
         */
 
-        body.push_back(al, b.Assignment(result, b.Mul(
-            b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
-            b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            std::string c_func_name = "lf_erfc_scaledq";
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 1, arg_types);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
+        } else {
+            body.push_back(al, b.Assignment(result, b.Mul(
+                b.CallIntrinsic(scope, {arg_types[0]}, {b.Pow(args[0], b.f_t(2, arg_types[0]))}, arg_types[0], 0, Exp::instantiate_Exp),
+                b.CallIntrinsic(scope, {arg_types[0]}, {args[0]}, arg_types[0], 0, Erfc::instantiate_Erfc))));
+        }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
