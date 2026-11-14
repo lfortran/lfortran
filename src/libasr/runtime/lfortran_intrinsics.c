@@ -3681,6 +3681,83 @@ static inline long double load_real10(const void *p) {
 }
 #endif
 
+// Allocation of one real(10) element, which is LLVMUtils::getFPType(10):
+// an 8-byte double on Apple x86-64, and a 16-byte slot elsewhere (binary128
+// on Apple arm64, x87 on every other host). This is not REAL10_SIZE: on
+// MSVC that load size is sizeof(long double) == 8 while the slot is 16.
+#if defined(__APPLE__) && !defined(__aarch64__)
+enum { REAL10_ELEM_SIZE = sizeof(double) };
+#else
+enum { REAL10_ELEM_SIZE = 16 };
+#endif
+
+// Little-endian 16-byte x87 image of a double (10-byte payload, zero pad).
+// getFPType(10) is that slot where C long double is not a 16-byte x87 value.
+#if !defined(__APPLE__) && LDBL_MANT_DIG != 64
+static void store_x87_image(void *dst, double v) {
+    uint64_t bits;
+    uint8_t out[16];
+    uint64_t mant;
+    uint32_t exp80;
+    unsigned sign;
+    unsigned exp;
+    uint64_t frac;
+    int i;
+    memcpy(&bits, &v, sizeof(bits));
+    sign = (unsigned)(bits >> 63);
+    exp = (unsigned)((bits >> 52) & 0x7ffu);
+    frac = bits & 0xfffffffffffffull;
+    memset(out, 0, sizeof(out));
+    if (exp == 0) {
+        if (frac == 0) {
+            mant = 0;
+            exp80 = 0;
+        } else {
+            uint64_t m = frac;
+            int s = 0;
+            while ((m & ((uint64_t)1 << 63)) == 0) {
+                m <<= 1;
+                s++;
+            }
+            mant = m;
+            exp80 = (uint32_t)(15372 - s);
+        }
+    } else if (exp == 0x7ffu) {
+        exp80 = 0x7fffu;
+        mant = ((uint64_t)1 << 63) | (frac << 11);
+    } else {
+        exp80 = (uint32_t)(exp + 15360u);
+        mant = ((uint64_t)1 << 63) | (frac << 11);
+    }
+    if (sign) exp80 |= 0x8000u;
+    for (i = 0; i < 8; i++) out[i] = (uint8_t)(mant >> (8 * i));
+    out[8] = (uint8_t)(exp80 & 0xffu);
+    out[9] = (uint8_t)((exp80 >> 8) & 0xffu);
+    memcpy(dst, out, 16);
+}
+#endif
+
+// Write `v` into a getFPType(10) object. Returns 0 if that image cannot be
+// written, so the caller does not report a successful read.
+static inline int store_real10(void *dst, long double v) {
+#if defined(__APPLE__) && defined(__aarch64__)
+    lf_float128 q = lf_f128_from_double((double)v);
+    memcpy(dst, &q, sizeof(q));
+    return 1;
+#elif defined(__APPLE__)
+    double d = (double)v;
+    memcpy(dst, &d, sizeof(d));
+    return 1;
+#elif LDBL_MANT_DIG == 64
+    if (sizeof(long double) != 16) return 0;
+    memcpy(dst, &v, 16);
+    return 1;
+#else
+    store_x87_image(dst, (double)v);
+    return 1;
+#endif
+}
+
 
 char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
     switch(primitive_enum){
@@ -18755,6 +18832,98 @@ LFORTRAN_API void _lfortran_string_read_f128_array(char *str, int64_t len, char 
         lf_float128 value;
         if (!string_read_f128_token(pos, &value, &consumed)) break;
         arr[count * stride] = value;
+        count++;
+        pos += consumed;
+    }
+    if (offset) *offset = off + (pos - buf);
+    internal_free(buf);
+    if (iostat) *iostat = (count < array_size) ? -1 : 0;
+}
+
+// Internal reads of real(10). Parsing uses a C long double; the stored
+// object is the getFPType(10) image from store_real10, not that C type.
+static int string_read_f80_token(const char *s, long double *value, int *consumed)
+{
+    size_t token_len = fortran_real_token_length(s);
+    char *temp;
+    char *endptr;
+    long double v;
+    if (token_len == 0) {
+        *consumed = 0;
+        return 0;
+    }
+    temp = (char*)internal_malloc(token_len + 2);
+    if (!temp) {
+        *consumed = 0;
+        return 0;
+    }
+    memcpy(temp, s, token_len);
+    temp[token_len] = '\0';
+    normalize_fortran_real_token(temp, token_len + 2);
+    v = strtold(temp, &endptr);
+    if (endptr == temp || *endptr != '\0') {
+        internal_free(temp);
+        *consumed = 0;
+        return 0;
+    }
+    internal_free(temp);
+    *value = v;
+    *consumed = (int)token_len;
+    return 1;
+}
+
+LFORTRAN_API void _lfortran_string_read_f80(char *str, int64_t len, char *format, void *f, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    int rc = 0;
+    int skip = 0;
+    if (offset) {
+        /* Handle empty fields like: 1.5, , 2.5 */
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
+    } else {
+        while (buf[skip] == ' ' || buf[skip] == '\t') skip++;
+    }
+    int consumed = 0;
+    long double tmp;
+    if (string_read_f80_token(buf + skip, &tmp, &consumed) &&
+            string_read_f128_separator(buf[skip + consumed]) &&
+            store_real10(f, tmp)) {
+        if (offset) *offset = off + skip + consumed;
+        rc = 1;
+    }
+    internal_free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_f80_array(char *str, int64_t len, char *format,
+        void *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    const char *pos = buf;
+    const char *end = buf + (len - off);
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        int consumed = 0;
+        long double value;
+        if (!string_read_f80_token(pos, &value, &consumed)) break;
+        if (!store_real10((char *)arr + (count * stride) * (int64_t)REAL10_ELEM_SIZE,
+                value)) break;
         count++;
         pos += consumed;
     }
