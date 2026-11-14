@@ -46,6 +46,8 @@ typedef enum {
 #  include <unistd.h>
 #if !defined(COMPILE_TO_WASM)
 #  include <sys/wait.h>
+#  include <spawn.h>
+#  include <signal.h>
 #endif
 #endif
 
@@ -65,7 +67,34 @@ static int lfortran_fileno(FILE *fp) {
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/runtime/lfortran_stdin.h>
+#include <libasr/runtime/lfortran_cancellation.h>
 #include <libasr/config.h>
+
+#if defined(_MSC_VER)
+static __declspec(thread) lfortran_cancel_requested cancel_requested;
+static __declspec(thread) lfortran_cancel_stop cancel_stop;
+#elif defined(COMPILE_TO_WASM)
+static lfortran_cancel_requested cancel_requested;
+static lfortran_cancel_stop cancel_stop;
+#else
+static _Thread_local lfortran_cancel_requested cancel_requested;
+static _Thread_local lfortran_cancel_stop cancel_stop;
+#endif
+
+LFORTRAN_API void _lfortran_set_cancel_hooks(lfortran_cancel_requested requested,
+    lfortran_cancel_stop stop)
+{
+    cancel_requested = requested;
+    cancel_stop = stop;
+}
+
+// Where a runtime call of an output or formatted input statement begins, an
+// interrupted cell stops, so that a loop which spends its time in the
+// runtime stops soon. Nothing is held there yet.
+static inline void cancellation_point(void)
+{
+    if (cancel_requested && cancel_requested()) cancel_stop();
+}
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
@@ -622,6 +651,9 @@ static size_t _internal_alloc_capacity = 0;
    they are made, so a live record can be attributed to the statement that
    was executing when it was made. */
 static uint64_t _internal_alloc_serial = 0;
+/* Allocations older than this were abandoned by an interrupted cell
+   (_lfortran_reset_after_interrupt); they are not reported. */
+static uint64_t _internal_alloc_abandoned_serial = 0;
 
 static void _internal_alloc_record_add(void *ptr, size_t size,
                                        const char *file, int line)
@@ -740,7 +772,10 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
     uint64_t in_flight_serial = dtio_in_flight_alloc_serial();
     size_t n_leaks = 0;
     for (size_t i = 0; i < _internal_alloc_count; i++) {
-        if (_internal_alloc_table[i].serial < in_flight_serial) n_leaks++;
+        if (_internal_alloc_table[i].serial < in_flight_serial
+                && _internal_alloc_table[i].serial >= _internal_alloc_abandoned_serial) {
+            n_leaks++;
+        }
     }
     int has_leaks = (n_leaks > 0);
     if (has_leaks) {
@@ -749,7 +784,8 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
                 n_leaks);
         for (size_t i = 0; i < _internal_alloc_count; i++) {
             _internal_alloc_record *r = &_internal_alloc_table[i];
-            if (r->serial >= in_flight_serial) continue;
+            if (r->serial >= in_flight_serial
+                    || r->serial < _internal_alloc_abandoned_serial) continue;
             fprintf(stderr,
                     "  LEAK: %zu bytes at %s:%d (ptr=%p)\n",
                     r->size, r->file, r->line, r->ptr);
@@ -976,6 +1012,7 @@ static int32_t dtio_take_error(int32_t* iostat);
 
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len)
 {
+    cancellation_point();
     dtio_take_error(NULL);
     if (str == NULL) {
         str = (fchar*)" "; // dummy output
@@ -5321,6 +5358,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
     int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int decimal_mode, int sign_mode, int round_mode, int32_t leading_blank,
     int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs, ...)
 {
+    cancellation_point();
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
     if (dtio_capture_depth == 0) {
         dtio_statement_alloc_serial = internal_alloc_next_serial();
@@ -10540,6 +10578,19 @@ LFORTRAN_API void _lfortran_exit(int32_t status)
 
 LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    if (cancel_requested) {
+        // A signal ends nanosleep() early; a cancelled cell stops then.
+        struct timespec remaining = {seconds > 0 ? seconds : 0, 0};
+        while (nanosleep(&remaining, &remaining) < 0 && errno == EINTR) {
+            if (cancel_requested()) {
+                cancel_stop();
+                return;
+            }
+        }
+        return;
+    }
+#endif
 #if defined(_WIN32)
     Sleep((DWORD)seconds * 1000);
 #else
@@ -16794,6 +16845,7 @@ LFORTRAN_API void _lfortran_formatted_read(
     char* pad, int64_t pad_len,
     ...)
 {
+    cancellation_point();
     InputSource inputSource = {};
     bool unit_file_bin = false, blank_zero = false;
     int pad_mode;
@@ -17504,6 +17556,7 @@ bool is_write_and_open_format_match(bool unit_file_bin, const char* format_data)
 
 LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...)
 {
+    cancellation_point();
     int32_t dtio_iostat = format_data[0] != '\0' ? dtio_take_error(iostat) : 0;
     if (format_data[0] != '\0' && dtio_find_capture_frame(unit_num) != NULL) {
         // Formatted output of a defined output procedure (child data
@@ -17818,6 +17871,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_holder, bool is_allocatable, bool is_deferred,
     bool is_array_unit, int32_t char_kind, int64_t array_size, int64_t* len, int32_t* iostat, const char* format,
     int64_t format_len, ...) {
+    cancellation_point();
     int32_t dtio_iostat = dtio_take_error(iostat);
     dtio_report_formatted(-1, 0);
     va_list args;
@@ -19871,14 +19925,62 @@ static void copy_fchar_to_char(const fchar *src, int64_t len, char *dest) {
     dest[len] = '\0';
 }
 
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+extern char **environ;
+
+// Runs `command` like system(), but in a process group of its own, which a
+// cancelled cell ends with all its processes. Sets `*cancelled` then.
+static int execute_cancellable_command(const char *command, bool *cancelled)
+{
+    // As the terminal's foreground job, the command gets Ctrl-C from the
+    // terminal anyway, and a group of its own could not read the terminal.
+    for (int fd = STDIN_FILENO; fd <= STDERR_FILENO; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return system(command);
+    }
+    posix_spawnattr_t attributes;
+    if (posix_spawnattr_init(&attributes)) return -1;
+    int error = posix_spawnattr_setpgroup(&attributes, 0);
+    if (!error) error = posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
+    pid_t child;
+    char *argv[] = {"sh", "-c", (char *)command, NULL};
+    if (!error) error = posix_spawn(&child, "/bin/sh", NULL, &attributes, argv, environ);
+    posix_spawnattr_destroy(&attributes);
+    if (error) return -1;
+    int status;
+    for (;;) {
+        pid_t waited = waitpid(child, &status, WNOHANG);
+        if (waited == child) return status;
+        if (waited < 0 && errno != EINTR) return -1;
+        if (cancel_requested()) {
+            // The unreaped leader keeps the group id ours.
+            kill(-child, SIGKILL);
+            while (waitpid(child, &status, 0) < 0 && errno == EINTR) {}
+            *cancelled = true;
+            return -1;
+        }
+        const struct timespec delay = {0, 10000000};
+        nanosleep(&delay, NULL);
+    }
+}
+#endif
+
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = internal_malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
     _lfortran_flush(-1, NULL, NULL, 0);
 
-    int result = system(c_cmd);
+    int result;
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    bool cancelled = false;
+    result = cancel_requested ? execute_cancellable_command(c_cmd, &cancelled)
+        : system(c_cmd);
     internal_free(c_cmd);
+    if (cancelled) cancel_stop();
+#else
+    result = system(c_cmd);
+    internal_free(c_cmd);
+#endif
 
     // On POSIX systems, system() returns a wait status, not the exit code directly.
     // Use WEXITSTATUS to extract the actual exit code.
@@ -21216,4 +21318,35 @@ __lfortran_dynamic_cast(const void* static_ptr,
     }
 
     return (void*) dst_ptr;
+}
+
+LFORTRAN_API void _lfortran_reset_after_interrupt(void)
+{
+    // A defined output procedure that was running: its parent statement's
+    // capture frames point into abandoned stack frames.
+    dtio_capture_depth = 0;
+    internal_free(dtio_capture_stack);
+    dtio_capture_stack = NULL;
+    dtio_capture_capacity = 0;
+    dtio_error_iostat = 0;
+    dtio_error_iomsg_pending = false;
+    // State of an I/O statement that spans several runtime calls.
+    transfer_decimal_mode = -1;
+    lf_cross_record_null = 0;
+    lf_comma_flag = 0;
+    for (int32_t i = 0; i <= last_index_used; i++) {
+        struct UNIT_FILE *uf = &unit_to_file[i];
+        uf->lf_child_io_mode = 0;
+        uf->lf_list_dir_null_remaining = 0;
+        if (uf->seq_unf_record_len > 0 && uf->filep) {
+            // Skip the rest of a partly read record and its end marker.
+            fseek(uf->filep, (long)uf->seq_unf_pending + (long)sizeof(int32_t),
+                SEEK_CUR);
+        }
+        uf->seq_unf_pending = 0;
+        uf->seq_unf_record_len = 0;
+    }
+#ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+    _internal_alloc_abandoned_serial = _internal_alloc_serial;
+#endif
 }
