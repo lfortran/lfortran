@@ -820,38 +820,50 @@ lf_float128 __extendsftf2_lf_impl(float f) {
     return f128_pack_parts(sign, exp, mant);
 }
 
+/* Round the finite nonzero magnitude of p to a binary format with `mbits`
+ * stored significand bits and exponent bias `bias`, rounding to nearest and
+ * ties to even once, also for subnormal results. Returns the bits of the
+ * magnitude: the biased exponent and stored significand, without the sign. */
+static uint64_t f128_round_to_narrow(f128_parts p, int mbits, int bias) {
+    const int emin = 1 - bias;
+    const uint64_t inf_bits = (uint64_t)(2 * bias + 1) << mbits;
+    if (p.exp > bias) return inf_bits;
+    int32_t drop = 112 - mbits;
+    if (p.exp < emin) drop += emin - p.exp;
+    /* Dropping 114 or more bits leaves less than half the smallest
+     * subnormal. */
+    if (drop > 113) return 0;
+    u128 q = u128_shr(p.mant, drop);
+    u128 rest = u128_and(p.mant, u128_sub(u128_shl(u128_one(), drop), u128_one()));
+    u128 half = u128_shl(u128_one(), drop - 1);
+    if (u128_gt(rest, half) || (u128_eq(rest, half) && (u128_lo(q) & 1)))
+        q = u128_inc(q);
+    uint64_t bits = u128_lo(q);
+    /* A subnormal result stores its significand directly, and a carry into
+     * bit `mbits` is the smallest normal number. A normal result has its
+     * implicit bit in bit `mbits`, which adds one to the exponent field, and
+     * a carry out of the significand increments the exponent likewise. */
+    if (p.exp >= emin) bits += (uint64_t)(p.exp + bias - 1) << mbits;
+    if (bits > inf_bits) bits = inf_bits;
+    return bits;
+}
+
 double __trunctfdf2_lf_impl(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan) return NAN;
     if (p.is_inf) return p.sign ? -INFINITY : INFINITY;
     if (p.is_zero) return p.sign ? -0.0 : 0.0;
-
-    /* Shift mant right to get 52 bits + rounding */
-    int32_t dexp = p.exp + 1023;
-    if (dexp >= 0x7FF) return p.sign ? -INFINITY : INFINITY;  /* overflow */
-    if (dexp <= 0) {
-        /* subnormal double: shift further */
-        int extra_shift = 1 - dexp;
-        int rsh = (112 - 52) + extra_shift;
-        if (rsh >= 128) return p.sign ? -0.0 : 0.0;
-        uint64_t dmant = u128_lo(u128_shr(p.mant, rsh));
-        uint64_t bits  = ((uint64_t)p.sign << 63) | dmant;
-        double r; memcpy(&r, &bits, 8); return r;
-    }
-    int rsh = 112 - 52;
-    uint64_t dmant = u128_lo(u128_shr(p.mant, rsh)) & 0x000FFFFFFFFFFFFFull;
-    /* rounding */
-    int round_bit = u128_bit(p.mant, rsh - 1);
-    u128 sticky    = u128_and(p.mant, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
-    if (round_bit && (!u128_is_zero(sticky) || (dmant & 1))) dmant++;
-    /* A carry out of the 52 stored bits gives the next power of two. */
-    if (dmant >> 52) { dmant = 0; dexp++; }
-    uint64_t bits = ((uint64_t)p.sign << 63) | ((uint64_t)dexp << 52) | dmant;
+    uint64_t bits = ((uint64_t)p.sign << 63) | f128_round_to_narrow(p, 52, 1023);
     double r; memcpy(&r, &bits, 8); return r;
 }
 
 float __trunctfsf2_lf_impl(lf_float128 a) {
-    return (float)__trunctfdf2_lf_impl(a);  /* double handles the precision */
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan) return NAN;
+    if (p.is_inf) return p.sign ? -INFINITY : INFINITY;
+    if (p.is_zero) return p.sign ? -0.0f : 0.0f;
+    uint32_t bits = ((uint32_t)p.sign << 31) | (uint32_t)f128_round_to_narrow(p, 23, 127);
+    float r; memcpy(&r, &bits, 4); return r;
 }
 
 lf_float128 __floatsitf_lf_impl(int32_t x) {
