@@ -13190,6 +13190,31 @@ public:
             // The data of a polymorphic pointer array is its class wrapper.
             ptr_is_class_array = x.m_tgt
                 && ASRUtils::is_class_type(ASRUtils::extract_type(p_type));
+        } else if( ASRUtils::is_array(p_type) &&
+            !ASRUtils::is_array_of_strings(p_type) &&
+            ASRUtils::extract_physical_type(p_type) ==
+            ASR::array_physical_typeType::AssumedRankArray ) {
+            // An assumed-rank pointer dummy is associated with a descriptor
+            // even when its actual argument is disassociated, so the data
+            // of a non-null descriptor is what is tested.
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*p_type));
+            ptr_array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
+                ASRUtils::extract_type(p_type), module.get());
+            llvm::Value* data = llvm_utils->CreateAlloca(
+                ptr_array_inner_type->getPointerTo(), nullptr, "assumed_rank_data");
+            builder->CreateStore(llvm::ConstantPointerNull::get(
+                ptr_array_inner_type->getPointerTo()), data);
+            llvm::Value* descriptor = ptr;
+            llvm_utils->create_if_else(builder->CreateIsNotNull(descriptor), [&]() {
+                builder->CreateStore(llvm_utils->CreateLoad2(
+                    ptr_array_inner_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(x.m_ptr,
+                        ASRUtils::type_get_past_allocatable_pointer(p_type),
+                        descriptor, module.get())), data);
+            }, []() {});
+            ptr = llvm_utils->CreateLoad2(ptr_array_inner_type->getPointerTo(), data);
+            ptr_is_class_array = x.m_tgt
+                && ASRUtils::is_class_type(ASRUtils::extract_type(p_type));
         }
         ptr_loads = ptr_loads_copy;
         auto to_int64 = [&](llvm::Value* v) {
