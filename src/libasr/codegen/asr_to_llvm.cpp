@@ -6949,8 +6949,8 @@ public:
                 if (a_kind != 4 && a_kind != 8 && a_kind != 16) {
                     throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer");
                 }
-                re = llvm::ConstantFP::get(llvm_utils->getFPType(a_kind), comp_const->m_re);
-                im = llvm::ConstantFP::get(llvm_utils->getFPType(a_kind), comp_const->m_im);
+                re = complex_part_constant(comp_const, false, a_kind);
+                im = complex_part_constant(comp_const, true, a_kind);
                 struct_type = llvm::cast<llvm::StructType>(llvm_utils->getComplexType(a_kind));
                 arr_elements.push_back(llvm::ConstantStruct::get(struct_type, {re, im}));
             }
@@ -8413,7 +8413,8 @@ public:
 
             if (!external) {
                 double x_re = 0.0, x_im = 0.0;
-                if (x.m_value && ASR::is_a<ASR::ComplexConstructor_t>(*x.m_value)) {
+                if (x.m_value && ASR::is_a<ASR::ComplexConstant_t>(*x.m_value) &&
+                        a_kind == 16) {
                     init_value = create_llvm_constant_from_asr_expr(x.m_value, x.m_type);
                     if (!init_value) {
                         throw CodeGenError("cannot create a constant initializer for complex variable '"
@@ -9925,19 +9926,6 @@ public:
                 }
                 break;
             }
-            case ASR::exprType::ComplexConstructor: {
-                ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(expr);
-                if (ASRUtils::extract_kind_from_ttype_t(cc->m_type) != 16) {
-                    break;
-                }
-                ASR::ttype_t* real16 = ASRUtils::TYPE(ASR::make_Real_t(al, expr->base.loc, 16));
-                llvm::Constant* re = create_llvm_constant_from_asr_expr(cc->m_re, real16);
-                llvm::Constant* im = create_llvm_constant_from_asr_expr(cc->m_im, real16);
-                if (re == nullptr || im == nullptr) {
-                    break;
-                }
-                return llvm::ConstantStruct::get(complex_type_16, {re, im});
-            }
             case ASR::exprType::ComplexConstant: {
                 ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(expr);
                 ASR::ttype_t* const_type = target_type != nullptr ? target_type : cc->m_type;
@@ -9954,8 +9942,8 @@ public:
                     }
                     case 16: {
                         complex_type = complex_type_16;
-                        re = llvm::ConstantFP::get(llvm_utils->getFPType(16), cc->m_re);
-                        im = llvm::ConstantFP::get(llvm_utils->getFPType(16), cc->m_im);
+                        re = complex_part_constant(cc, false, 16);
+                        im = complex_part_constant(cc, true, 16);
                         break;
                     }
                     case 8: {
@@ -10103,8 +10091,8 @@ public:
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
     // A fixed-size array constructor whose elements are all real constants.
-    // The constant data of an ArrayConstant holds doubles, so such an array of
-    // a wider kind stays an ArrayConstructor.
+    // The constant data of an ArrayConstant does not hold every real kind
+    // (for example real(10)), so such an array stays an ArrayConstructor.
     static bool is_constant_real_array_constructor(ASR::expr_t* e) {
         if (e == nullptr || !ASR::is_a<ASR::ArrayConstructor_t>(*e)) return false;
         ASR::ArrayConstructor_t* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(e);
@@ -10116,6 +10104,33 @@ public:
             if (!ASR::is_a<ASR::RealConstant_t>(*ctor->m_args[i])) return false;
         }
         return true;
+    }
+
+    // The binary128 constant of the 16 bytes at `bytes`.
+    llvm::Constant* binary128_constant(const uint8_t* bytes) {
+        uint64_t words[2];
+        std::memcpy(&words[0], bytes, sizeof(uint64_t));
+        std::memcpy(&words[1], bytes + 8, sizeof(uint64_t));
+        llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+        return llvm::ConstantFP::get(context,
+            llvm::APFloat(llvm::APFloat::IEEEquad(), bits));
+    }
+
+    // The binary128 constant of a part of a kind=16 ComplexConstant.
+    llvm::Constant* complex_part_r16_constant(double part) {
+        return binary128_constant(ASRUtils::real_constant_unpack_r16(part));
+    }
+
+    // The constant of the real part (or, if `imag`, the imaginary part) of
+    // the ComplexConstant `c` as a floating point value of kind `kind`.
+    llvm::Constant* complex_part_constant(const ASR::ComplexConstant_t* c,
+            bool imag, int kind) {
+        double part = imag ? c->m_im : c->m_re;
+        if (ASRUtils::complex_constant_is_r16(c)) {
+            LCOMPILERS_ASSERT(kind == 16);
+            return complex_part_r16_constant(part);
+        }
+        return llvm::ConstantFP::get(llvm_utils->getFPType(kind), part);
     }
 
     // Whether the initial value of the SAVE variable `v` is a constant that
@@ -20083,7 +20098,13 @@ public:
         } else if (ASRUtils::is_real(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantFP::get(el_type, down_cast<ASR::RealConstant_t>(el)->m_r));
+                ASR::RealConstant_t *real_const = down_cast<ASR::RealConstant_t>(el);
+                if (ASRUtils::extract_kind_from_ttype_t(x_m_type) == 16) {
+                    values.push_back(binary128_constant(
+                        ASRUtils::real_constant_get_r16_bytes(real_const)));
+                } else {
+                    values.push_back(llvm::ConstantFP::get(el_type, real_const->m_r));
+                }
             }
         } else if (ASRUtils::is_logical(*x_m_type)) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x_m_type);
@@ -20099,8 +20120,8 @@ public:
                 int ckind = ASRUtils::extract_kind_from_ttype_t(comp_const->m_type);
                 values.push_back(llvm::ConstantStruct::get(
                     llvm::cast<llvm::StructType>(llvm_utils->getComplexType(ckind)),
-                    {llvm::ConstantFP::get(llvm_utils->getFPType(ckind), comp_const->m_re),
-                    llvm::ConstantFP::get(llvm_utils->getFPType(ckind), comp_const->m_im)}));
+                    {complex_part_constant(comp_const, false, ckind),
+                    complex_part_constant(comp_const, true, ckind)}));
             }
         } else if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
@@ -20240,8 +20261,8 @@ public:
                 break;
             }
             case 16: {
-                re2 = llvm::ConstantFP::get(llvm_utils->getFPType(16), re);
-                im2 = llvm::ConstantFP::get(llvm_utils->getFPType(16), im);
+                re2 = complex_part_constant(&x, false, 16);
+                im2 = complex_part_constant(&x, true, 16);
                 type = complex_type_16;
                 break;
             }

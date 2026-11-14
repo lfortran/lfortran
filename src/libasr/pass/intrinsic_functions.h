@@ -845,7 +845,7 @@ namespace X {                                                                   
             std::complex<double> crv;                                           \
             if( ASRUtils::extract_value(args[0], crv) ) {                       \
                 std::complex<double> val = std::stdeval(crv);                   \
-                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(              \
+                return ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(              \
                     al, loc, val.real(), val.imag(), t));                       \
             }                                                                   \
         }                                                                       \
@@ -910,7 +910,7 @@ namespace Log {
                     return nullptr;
                 }
                 std::complex<double> val = std::log(crv);
-                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                return ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(
                     al, loc, val.real(), val.imag(), t));
             }
         }
@@ -1249,7 +1249,11 @@ namespace Aimag {
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         std::complex<double> crv;
-        if( ASRUtils::extract_value(args[0], crv) ) {
+        ASR::expr_t* value = ASRUtils::expr_value(args[0]);
+        if( value && ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
+            return ASRUtils::complex_constant_part_to_real(al, loc,
+                ASR::down_cast<ASR::ComplexConstant_t>(value), true, t);
+        } else if( ASRUtils::extract_value(args[0], crv) ) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
             return ASRUtils::make_RealConstant_util(al, loc, c->m_im, t);
         } else {
@@ -1513,8 +1517,8 @@ namespace Abs {
             int64_t val = std::abs(rv);
             return make_ConstantWithType(make_IntegerConstant_t, val, t, loc);
         } else if (ASRUtils::is_complex(*expr_type(arg))) {
-            double re = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_re;
-            double im = ASR::down_cast<ASR::ComplexConstant_t>(arg)->m_im;
+            double re = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(arg));
+            double im = ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(arg));
             std::complex<double> x(re, im);
             double result = std::abs(x);
             return ASRUtils::make_RealConstant_util(al, loc, result, t);
@@ -3293,7 +3297,7 @@ namespace Int {
             }
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
-            i = static_cast<int64_t>(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re);
+            i = static_cast<int64_t>(ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))));
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else {
             append_error(diag, "Invalid argument to `int` intrinsic", loc);
@@ -4072,7 +4076,7 @@ namespace Sqrt {
             std::complex<double> crv;
             if( ASRUtils::extract_value(args[0], crv) ) {
                 std::complex<double> val = std::sqrt(crv);
-                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                return ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(
                     al, loc, val.real(), val.imag(), arg_type));
             } else {
                 return nullptr;
@@ -5913,7 +5917,7 @@ namespace Real {
                 ASRUtils::real_constant_get_double(r), t1);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
-            return ASRUtils::make_RealConstant_util(al, loc, c->m_re, t1);
+            return ASRUtils::complex_constant_part_to_real(al, loc, c, false, t1);
         } else {
             append_error(diag, "Invalid argument to `real` intrinsic", loc);
             return nullptr;
@@ -5956,41 +5960,77 @@ namespace Cmplx {
         }
     }
 
+    // The value of the real or integer constant `arg` as a binary128 value.
+    static inline bool cmplx_part_r16(ASR::expr_t* arg, lf_float128 &v) {
+        ASR::expr_t* value = ASRUtils::expr_value(arg);
+        if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+            v = lf_f128_from_int64(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)) {
+            v = lf_f128_from_double(static_cast<double>(
+                ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value)->m_n));
+        } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            ASR::RealConstant_t* r = ASR::down_cast<ASR::RealConstant_t>(value);
+            v = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 16 ?
+                ASRUtils::real_constant_get_r16(r) : lf_f128_from_double(r->m_r);
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    // The value of the real or integer constant `arg` as a double.
+    static inline bool cmplx_part_double(ASR::expr_t* arg, double &v) {
+        ASR::expr_t* value = ASRUtils::expr_value(arg);
+        if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+            v = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)) {
+            v = static_cast<double>(ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value)->m_n);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            ASR::RealConstant_t* r = ASR::down_cast<ASR::RealConstant_t>(value);
+            v = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 16 ?
+                lf_f128_to_double(ASRUtils::real_constant_get_r16(r)) : r->m_r;
+        } else {
+            return false;
+        }
+        return true;
+    }
+
     static ASR::expr_t *eval_Cmplx(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
-            return nullptr;
-        }
         ASRUtils::ASRBuilder b(al, loc);
-        double arg1_val = 0.0;
-        double arg2_val = 0.0;
-        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
-            arg1_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n);
-        } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
-            arg1_val = ASRUtils::real_constant_get_double(
-                ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0])));
-        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[0])) {
-            arg1_val = static_cast<double>(ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n);
-        } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
+        bool kind16 = ASRUtils::extract_kind_from_ttype_t(t1) == 16;
+        if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             // If the first argument is already a complex constant, construct
             // a complex constant of the requested return type `t1` to ensure
             // the kind matches (e.g., cmplx(complex(4), kind=8)).
-            double re = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_re;
-            double im = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))->m_im;
-            return b.complex_t(re, im, t1);
-        } else {
+            ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            if (kind16 && ASRUtils::complex_constant_is_r16(c)) {
+                return ASRUtils::make_ComplexConstant_r16(al, loc,
+                    ASRUtils::complex_constant_re_r16(c),
+                    ASRUtils::complex_constant_im_r16(c), t1);
+            }
+            return b.complex_t(ASRUtils::complex_constant_re(c),
+                ASRUtils::complex_constant_im(c), t1);
+        }
+        if (kind16) {
+            lf_float128 re, im;
+            if (!cmplx_part_r16(args[0], re)) {
+                append_error(diag, "Invalid first argument to `cmplx` intrinsic", loc);
+                return nullptr;
+            }
+            if (!cmplx_part_r16(args[1], im)) {
+                append_error(diag, "Invalid second argument to `cmplx` intrinsic", loc);
+                return nullptr;
+            }
+            return ASRUtils::make_ComplexConstant_r16(al, loc, re, im, t1);
+        }
+        double arg1_val = 0.0;
+        double arg2_val = 0.0;
+        if (!cmplx_part_double(args[0], arg1_val)) {
             append_error(diag, "Invalid first argument to `cmplx` intrinsic", loc);
             return nullptr;
         }
-
-        if (ASR::is_a<ASR::RealConstant_t>(*args[1])) {
-            arg2_val = ASRUtils::real_constant_get_double(
-                ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[1])));
-        } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
-            arg2_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n);
-        } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*args[1])) {
-           arg2_val = static_cast<double>(ASR::down_cast<ASR::UnsignedIntegerConstant_t>(ASRUtils::expr_value(args[1]))->m_n);
-        } else {
+        if (!cmplx_part_double(args[1], arg2_val)) {
             append_error(diag, "Invalid second argument to `cmplx` intrinsic", loc);
             return nullptr;
         }
@@ -6041,6 +6081,15 @@ namespace Cmplx {
             }
         }
 
+        if (is_complex(*expr_type(args[0])) && !ASRUtils::is_array(return_type) &&
+                !ASRUtils::is_array(expr_type(args[0])) && expr_value(args[0]) &&
+                ASR::is_a<ASR::ComplexConstant_t>(*expr_value(args[0]))) {
+            ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(expr_value(args[0]));
+            if (ASRUtils::complex_constant_is_r16(cc)) {
+                m_value = ASRUtils::fold_complex_cast(al, loc, cc,
+                    ASR::cast_kindType::ComplexToComplex, return_type);
+            }
+        }
         if (extract_kind_from_ttype_t(return_type) != 16 && all_args_evaluated(m_args)) {
             Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
             args_values.push_back(al, expr_value(m_args[0]));
@@ -6054,9 +6103,6 @@ namespace Cmplx {
         if (extract_kind_from_ttype_t(return_type) == 16 && !ASRUtils::is_array(return_type) &&
                 !is_complex(*expr_type(args[0])) && !ASRUtils::is_array(expr_type(args[0])) &&
                 !ASRUtils::is_array(expr_type(m_args[1])) && all_args_evaluated(m_args)) {
-            // A ComplexConstant holds doubles, which cannot hold a complex(16)
-            // value: a constant such value is a constructor from two real(16)
-            // constants.
             ASR::ttype_t* real16 = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 16));
             auto to_real16 = [&](ASR::expr_t* a) -> ASR::expr_t* {
                 if (is_integer(*expr_type(a))) {
@@ -6072,8 +6118,14 @@ namespace Cmplx {
             };
             ASR::expr_t* re = to_real16(m_args[0]);
             ASR::expr_t* im = to_real16(m_args[1]);
-            if (re && im && is_value_constant(expr_value(re)) && is_value_constant(expr_value(im))) {
-                m_value = EXPR(ASR::make_ComplexConstructor_t(al, loc, re, im, return_type, nullptr));
+            ASR::expr_t* re_value = re ? expr_value(re) : nullptr;
+            ASR::expr_t* im_value = im ? expr_value(im) : nullptr;
+            if (re_value && im_value && ASR::is_a<ASR::RealConstant_t>(*re_value) &&
+                    ASR::is_a<ASR::RealConstant_t>(*im_value)) {
+                m_value = ASRUtils::make_ComplexConstant_r16(al, loc,
+                    ASRUtils::real_constant_get_r16(ASR::down_cast<ASR::RealConstant_t>(re_value)),
+                    ASRUtils::real_constant_get_r16(ASR::down_cast<ASR::RealConstant_t>(im_value)),
+                    return_type);
             }
         }
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Cmplx), m_args.p, m_args.n, 0, return_type, m_value);
@@ -8483,7 +8535,7 @@ namespace Exp {
             std::complex<double> crv;
             if( ASRUtils::extract_value(args[0], crv) ) {
                 std::complex<double> val = std::exp(crv);
-                return ASRUtils::EXPR(ASR::make_ComplexConstant_t(
+                return ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(
                     al, loc, val.real(), val.imag(), t));
             }
         }
@@ -9664,9 +9716,16 @@ namespace Conjg {
     static ASR::expr_t *eval_Conjg(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::complex<double> crv;
-        if( extract_value(args[0], crv) ) {
+        ASR::expr_t* value = ASRUtils::expr_value(args[0]);
+        if( value && ASR::is_a<ASR::ComplexConstant_t>(*value) &&
+                ASRUtils::complex_constant_is_r16(ASR::down_cast<ASR::ComplexConstant_t>(value)) ) {
+            ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(value);
+            return ASRUtils::make_ComplexConstant_r16(al, loc,
+                ASRUtils::complex_constant_re_r16(c),
+                lf_f128_neg(ASRUtils::complex_constant_im_r16(c)), arg_type);
+        } else if( extract_value(args[0], crv) ) {
             std::complex<double> val = std::conj(crv);
-            return EXPR(ASR::make_ComplexConstant_t(
+            return EXPR(ASRUtils::make_ComplexConstant_util(
                 al, loc, val.real(), val.imag(), arg_type));
         } else {
             return nullptr;
@@ -9693,7 +9752,7 @@ namespace Conjg {
             ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)),
             b.Mul(EXPR(ASR::make_Cast_t(al, loc, EXPR(ASR::make_ComplexIm_t(al, loc,
             args[0], TYPE(ASR::make_Real_t(al, loc, extract_kind_from_ttype_t(arg_types[0]))), nullptr)),
-            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)), EXPR(ASR::make_ComplexConstant_t(al, loc,
+            ASR::cast_kindType::RealToComplex, arg_types[0], nullptr, nullptr)), EXPR(ASRUtils::make_ComplexConstant_util(al, loc,
             0.0, 1.0, arg_types[0]))))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

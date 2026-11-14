@@ -331,7 +331,7 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* complex_t(double x, double y, ASR::ttype_t* t) {
-        return EXPR(ASR::make_ComplexConstant_t(al, loc, x, y, t));
+        return EXPR(ASRUtils::make_ComplexConstant_util(al, loc, x, y, t));
     }
 
     inline ASR::expr_t* c32(double x, double y) {
@@ -489,8 +489,14 @@ class ASRBuilder {
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
         ASR::expr_t* value = ASRUtils::expr_value(x);
         if ( value != nullptr ) {
-            double re = ASR::down_cast<ASR::ComplexConstant_t>(value)->m_re;
-            value = f_t(re, t);
+            ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(value);
+            if (ASRUtils::complex_constant_is_r16(c) &&
+                    ASRUtils::extract_kind_from_ttype_t(t) == 16) {
+                value = ASRUtils::make_RealConstant_r16(al, loc,
+                    ASRUtils::complex_constant_re_r16(c), t);
+            } else {
+                value = f_t(ASRUtils::complex_constant_re(c), t);
+            }
         }
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, value, nullptr));
     }

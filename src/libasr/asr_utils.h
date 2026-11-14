@@ -815,6 +815,87 @@ static inline lf_float128 real16_fmod(const lf_float128& a, const lf_float128& b
     return result;
 }
 
+// --- complex(16) value access ------------------------------------------------
+//
+// The `ComplexConstant_t.m_re` and `m_im` fields follow the `RealConstant_t.m_r`
+// convention (see "real(16) value access" above): for kind=4,8 they hold the
+// values as doubles, for kind=16 each one is bit-cast from a pointer to 16
+// arena-allocated bytes holding a binary128 value. All access goes through the
+// helpers below.
+
+// Whether the parts of `c` are binary128 payloads.
+static inline bool complex_constant_is_r16(const ASR::ComplexConstant_t* c) {
+    return extract_kind_from_ttype_t(c->m_type) == 16;
+}
+
+static inline lf_float128 complex_constant_part_r16(double part) {
+    lf_float128 v;
+    std::memcpy(v.bytes, real_constant_unpack_r16(part), 16);
+    return v;
+}
+
+// The real part of a ComplexConstant of any kind, rounded to a double for
+// kind=16.
+static inline double complex_constant_re(const ASR::ComplexConstant_t* c) {
+    return complex_constant_is_r16(c) ?
+        lf_f128_to_double(complex_constant_part_r16(c->m_re)) : c->m_re;
+}
+
+// The imaginary part of a ComplexConstant of any kind, rounded to a double for
+// kind=16.
+static inline double complex_constant_im(const ASR::ComplexConstant_t* c) {
+    return complex_constant_is_r16(c) ?
+        lf_f128_to_double(complex_constant_part_r16(c->m_im)) : c->m_im;
+}
+
+// The binary128 real part of a kind=16 ComplexConstant.
+static inline lf_float128 complex_constant_re_r16(const ASR::ComplexConstant_t* c) {
+    LCOMPILERS_ASSERT(complex_constant_is_r16(c));
+    return complex_constant_part_r16(c->m_re);
+}
+
+// The binary128 imaginary part of a kind=16 ComplexConstant.
+static inline lf_float128 complex_constant_im_r16(const ASR::ComplexConstant_t* c) {
+    LCOMPILERS_ASSERT(complex_constant_is_r16(c));
+    return complex_constant_part_r16(c->m_im);
+}
+
+// The real (or, if `imag`, the imaginary) part of `c` as a RealConstant of
+// `real_type`, which is exact when both are kind=16.
+static inline ASR::expr_t* complex_constant_part_to_real(Allocator& al,
+        const Location& loc, const ASR::ComplexConstant_t* c, bool imag,
+        ASR::ttype_t* real_type) {
+    if (complex_constant_is_r16(c) && extract_kind_from_ttype_t(real_type) == 16) {
+        return make_RealConstant_r16(al, loc,
+            imag ? complex_constant_im_r16(c) : complex_constant_re_r16(c), real_type);
+    }
+    return make_RealConstant_util(al, loc,
+        imag ? complex_constant_im(c) : complex_constant_re(c), real_type);
+}
+
+// Build a kind=16 ComplexConstant from two binary128 values.
+static inline ASR::expr_t* make_ComplexConstant_r16(Allocator& al,
+        const Location& loc, lf_float128 re, lf_float128 im, ASR::ttype_t* type) {
+    uint8_t* re_bytes = static_cast<uint8_t*>(al.alloc(16));
+    uint8_t* im_bytes = static_cast<uint8_t*>(al.alloc(16));
+    std::memcpy(re_bytes, re.bytes, 16);
+    std::memcpy(im_bytes, im.bytes, 16);
+    return ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, loc,
+        real_constant_pack_r16(re_bytes), real_constant_pack_r16(im_bytes), type));
+}
+
+// Kind-aware counterpart of `ASR::make_ComplexConstant_t` taking two doubles:
+// for kind=16 the values are widened to binary128. This is the single supported
+// way to build a complex constant from host doubles when the kind may be 16.
+static inline ASR::asr_t* make_ComplexConstant_util(Allocator& al,
+        const Location& loc, double re, double im, ASR::ttype_t* type) {
+    if (extract_kind_from_ttype_t(type) == 16) {
+        return &make_ComplexConstant_r16(al, loc, lf_f128_from_double(re),
+            lf_f128_from_double(im), type)->base;
+    }
+    return ASR::make_ComplexConstant_t(al, loc, re, im, type);
+}
+
 void set_kind_to_ttype_t(ASR::ttype_t* type, int kind);
 
 ASR::Variable_t* expr_to_variable_or_null(ASR::expr_t* expr);
@@ -934,20 +1015,7 @@ static inline std::string logicalbinop_to_str_python(const ASR::logicalbinopType
 
 static inline ASR::expr_t* expr_value(ASR::expr_t *f)
 {
-    ASR::expr_t* value = ASR::expr_value0(f);
-    if (value == nullptr && f->type == ASR::exprType::ComplexConstructor) {
-        // A constant complex(16) value is a constructor from two real(16)
-        // constants (a ComplexConstant holds doubles), which is its own value.
-        ASR::ComplexConstructor_t* c = (ASR::ComplexConstructor_t*)f;
-        ASR::expr_t* re = ASR::expr_value0(c->m_re);
-        ASR::expr_t* im = ASR::expr_value0(c->m_im);
-        if (re && im && re->type == ASR::exprType::RealConstant &&
-                im->type == ASR::exprType::RealConstant &&
-                extract_kind_from_ttype_t(c->m_type) == 16) {
-            return f;
-        }
-    }
-    return value;
+    return ASR::expr_value0(f);
 }
 
 std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t *f);
@@ -1397,19 +1465,40 @@ bool is_value_equal(ASR::expr_t* test_expr, ASR::expr_t* desired_expr);
 
 bool is_value_in_range(ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* value);
 
+// Returns true if the expression is an array constant of real(16) or complex(16)
+// elements
+static inline bool is_kind16_array_constant(ASR::expr_t* a_value) {
+    if( !a_value || !ASR::is_a<ASR::ArrayConstant_t>(*a_value) ) {
+        return false;
+    }
+    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(a_value));
+    return (ASR::is_a<ASR::Real_t>(*elem_type) || ASR::is_a<ASR::Complex_t>(*elem_type)) &&
+        ASRUtils::extract_kind_from_ttype_t(elem_type) == 16;
+}
+
 // Returns true if all arguments are evaluated
-static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore_null=false) {
+// `allow_complex16` accepts complex(16) constants, for the callers that
+// evaluate them without rounding to a double.
+// `allow_kind16_arrays` accepts real(16) and complex(16) array constants, for
+// the callers that evaluate such an array element by element.
+static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore_null=false,
+        bool allow_complex16=false, bool allow_kind16_arrays=false) {
     for (auto &a : args) {
         if (ignore_null && !a) continue;
         ASR::expr_t* a_value = ASRUtils::expr_value(a);
         if( !is_value_constant(a_value) ) {
             return false;
         }
-        // A ComplexConstant holds its parts as doubles, so a complex(16)
-        // value is never folded: it would lose precision.
-        if( a_value && (ASR::is_a<ASR::ComplexConstant_t>(*a_value) ||
-                ASR::is_a<ASR::ComplexConstructor_t>(*a_value)) &&
-                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_value)) == 16 ) {
+        // Intrinsic folding evaluates complex values as doubles, which would
+        // lose precision for complex(16).
+        if( !allow_complex16 && a_value && ASR::is_a<ASR::ComplexConstant_t>(*a_value) &&
+                ASRUtils::complex_constant_is_r16(
+                    ASR::down_cast<ASR::ComplexConstant_t>(a_value)) ) {
+            return false;
+        }
+        // The array intrinsics read the elements of an array constant as
+        // doubles, which would lose precision for real(16) and complex(16).
+        if( !allow_kind16_arrays && is_kind16_array_constant(a_value) ) {
             return false;
         }
     }
@@ -1636,17 +1725,12 @@ ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
 
 ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type);
 
-// The cast `cast_kind` (ComplexToComplex or ComplexToReal) of a complex(16)
-// constant `value`: a ComplexConstant, or a ComplexConstructor from real(16)
-// constants. A complex(16) constant is not a ComplexConstant, whose parts are
-// doubles. Returns nullptr if `value` is not such a constant.
-ASR::expr_t* fold_complex16_cast(Allocator& al, const Location& loc,
-    ASR::expr_t* value, ASR::cast_kindType cast_kind, ASR::ttype_t* dest_type);
-
-// The cast of the real(16) constant `value` to the complex(16) type
-// `dest_type`.
-ASR::expr_t* make_complex16_from_real16(Allocator& al, const Location& loc,
-    ASR::expr_t* value, ASR::ttype_t* dest_type);
+// The constant cast `cast_kind` (ComplexToComplex or ComplexToReal) of the
+// complex constant `c` to `dest_type`, exact when `c` and `dest_type` are
+// both kind=16.
+ASR::expr_t* fold_complex_cast(Allocator& al, const Location& loc,
+    const ASR::ComplexConstant_t* c, ASR::cast_kindType cast_kind,
+    ASR::ttype_t* dest_type);
 
 const ASR::intentType intent_local=ASR::intentType::Local; // local variable (not a dummy argument)
 const ASR::intentType intent_in   =ASR::intentType::In; // dummy argument, intent(in)
@@ -4399,7 +4483,7 @@ inline bool is_array_constant_element_type(ASR::ttype_t* type) {
             return kind == 1 || kind == 2 || kind == 4 || kind == 8;
         case ASR::ttypeType::Real:
         case ASR::ttypeType::Complex:
-            return kind == 4 || kind == 8;
+            return kind == 4 || kind == 8 || kind == 16;
         case ASR::ttypeType::Logical:
         case ASR::ttypeType::String:
         case ASR::ttypeType::StructType:
@@ -4460,13 +4544,46 @@ T* set_data_real(T* data, ASR::expr_t** a_args, size_t n_args) {
     return data;
 }
 
+inline lf_float128 load_float128(const uint8_t* bytes) {
+    lf_float128 v;
+    std::memcpy(v.bytes, bytes, 16);
+    return v;
+}
+
+inline std::string float128_to_string(const uint8_t* bytes) {
+    char buf[64];
+    lf_f128_to_str(buf, load_float128(bytes));
+    return buf;
+}
+
+// The data of a real(16) array constant: 16 bytes of binary128 per element.
+inline void* set_data_real16(uint8_t* data, ASR::expr_t** a_args, size_t n_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        std::memcpy(data + 16*i, real_constant_get_r16_bytes(
+            ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))), 16);
+    }
+    return data;
+}
+
+// The data of a complex(16) array constant: the binary128 real and imaginary
+// parts of each element, 32 bytes per element.
+inline void* set_data_complex16(uint8_t* data, ASR::expr_t** a_args, size_t n_args) {
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(
+            ASRUtils::expr_value(a_args[i]));
+        std::memcpy(data + 32*i, complex_constant_re_r16(c).bytes, 16);
+        std::memcpy(data + 32*i + 16, complex_constant_im_r16(c).bytes, 16);
+    }
+    return data;
+}
+
 template<typename T>
 T* set_data_complex(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
         data[2*i] = static_cast<T>(
-            ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_re);
+            ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))));
         data[2*i + 1] = static_cast<T>(
-            ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))->m_im);
+            ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(a_args[i]))));
     }
     return data;
 }

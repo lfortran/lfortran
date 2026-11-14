@@ -294,6 +294,17 @@ public:
         }
     }
 
+    void write_complex_constant_part(const ASR::ComplexConstant_t &value,
+            double part) {
+        if (ASRUtils::complex_constant_is_r16(&value)) {
+            output += "#asr/real128 \"";
+            output += byte_hex(ASRUtils::real_constant_unpack_r16(part), 16);
+            output.push_back('"');
+        } else {
+            write_float(part);
+        }
+    }
+
     void write_symbol_table_ref(const SymbolTable &symtab) {
         output += std::to_string(symbol_table_id(symtab));
     }

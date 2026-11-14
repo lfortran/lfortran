@@ -946,6 +946,8 @@ intrinsic_funcs_args = {
 }
 
 skip_create_func = ["Partition"]
+# Intrinsics whose compile-time evaluation is exact for complex(16) constants
+exact_complex16_fold = ["Aimag", "Conjg", "Real"]
 compile_time_only_fn = [
     "Epsilon",
     "Radix",
@@ -1242,7 +1244,10 @@ def add_create_func_return_src(func_name):
         src += indent * 3 +         "}\n"
         src += indent * 2 +     "}\n"
 
-        src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
+        evaluated_check = "all_args_evaluated(m_args)"
+        if func_name in exact_complex16_fold:
+            evaluated_check = "all_args_evaluated(m_args, false, true)"
+        src += indent * 2 + f"if ({evaluated_check}) " + "{\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
         for _i in range(no_of_args):
             src += indent * 3 + f"args_values.push_back(al, expr_value(m_args[{_i}]));\n"

@@ -64,6 +64,19 @@ public:
         }
     }
 
+    // Counterpart of write_real() for the parts of a ComplexConstant: only
+    // kind 16 parts are pointers to binary128 payloads.
+    void write_complex_part(double part, ASR::ttype_t *type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+            const uint8_t *bytes = ASRUtils::real_constant_unpack_r16(part);
+            for (int i = 0; i < 16; i++) {
+                write_int8(bytes[i]);
+            }
+        } else {
+            write_float64(part);
+        }
+    }
+
     void visit_StringConstant(const ASR::StringConstant_t &x) {
         write_int8(x.base.type);
         write_int64(x.base.base.loc.first);
@@ -155,6 +168,18 @@ public:
         } else {
             return read_float64();
         }
+    }
+
+    // Counterpart of ASRSerializationVisitor::write_complex_part().
+    double read_complex_part(ASR::ttype_t *type) {
+        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+            uint8_t *bytes = static_cast<uint8_t*>(al.alloc(16));
+            for (int i = 0; i < 16; i++) {
+                bytes[i] = read_int8();
+            }
+            return ASRUtils::real_constant_pack_r16(bytes);
+        }
+        return read_float64();
     }
 
     ASR::symbol_t *read_symbol() {
