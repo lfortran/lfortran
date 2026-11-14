@@ -580,6 +580,7 @@ RUN(NAME use_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_05 LABELS gfortran llvm fortran)
 RUN(NAME use_06 LABELS gfortran llvm fortran)
+RUN(NAME use_07 LABELS gfortran llvm c)
 RUN(NAME symbol_table_jloop_01 LABELS gfortran llvm)
 
 RUN(NAME value_attribute_01 LABELS gfortran llvm)
@@ -2519,6 +2520,7 @@ RUN(NAME bindc_74 LABELS gfortran llvm)
 RUN(NAME bindc_75 LABELS gfortran llvm EXTRAFILES bindc_75.c)
 RUN(NAME bindc_76 LABELS gfortran llvm EXTRAFILES bindc_76.c)
 RUN(NAME bindc_77 LABELS gfortran llvm EXTRAFILES bindc_77.c)
+RUN(NAME bindc_module_init_01 LABELS gfortran llvm c)
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
@@ -3398,6 +3400,7 @@ RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the s
 RUN(NAME derived_types_258 LABELS gfortran llvm EXTRAFILES derived_types_258_m1.f90 derived_types_258_m2.f90) # parameter array of a use-associated derived type, reloaded from the module file
 RUN(NAME derived_types_259 LABELS gfortran llvm) # local derived type with an allocatable array component, inside a procedure that has an array argument
 RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod.f90) # runtime index into a parameter array of derived types must not use the component default
+RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
 RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
@@ -4376,6 +4379,9 @@ RUN(NAME class_173 LABELS gfortran llvm)
 RUN(NAME class_174 LABELS gfortran llvm)
 RUN(NAME class_175 LABELS gfortran llvm EXTRAFILES class_175_ext.f90)
 RUN(NAME class_176 LABELS gfortran llvm)
+RUN(NAME class_intent_out_inherited_c_01 LABELS gfortran llvm c)
+RUN(NAME class_182 LABELS gfortran llvm c)
+RUN(NAME class_183 LABELS gfortran llvm c)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -6388,6 +6394,7 @@ RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array pas
 
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME module_fixed_array_01 LABELS gfortran llvm c)
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME separate_compilation_01 LABELS gfortran llvm EXTRAFILES separate_compilation_01b.f90)
