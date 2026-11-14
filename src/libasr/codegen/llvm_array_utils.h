@@ -690,6 +690,10 @@ namespace LCompilers {
                 // Get or create the CFI struct type (no offset field)
                 llvm::StructType* get_cfi_type(llvm::Type* el_type, int n_dims);
 
+                // Runs body(r) for each dim of cfi; n_dims 0 (assumed rank) uses the run-time rank
+                void for_each_cfi_dim(llvm::StructType* cfi_type, llvm::Value* cfi,
+                    int n_dims, const std::function<void(llvm::Value*)>& body);
+
                 // Convert an internal descriptor to a CFI descriptor:
                 // folds offset into base_addr, converts strides to bytes.
                 llvm::Value* internal_to_cfi(

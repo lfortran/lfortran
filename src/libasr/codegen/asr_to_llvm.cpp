@@ -12234,12 +12234,14 @@ public:
                         builder->SetInsertPoint(convert_bb);
                         llvm::Value* internal_desc = arr_descr->cfi_to_internal(
                             desc_type, elem_llvm_type, sym_val, n_dims, elem_size);
+                        // The conversion may end in a later block (assumed rank loops)
+                        llvm::BasicBlock* convert_end_bb = builder->GetInsertBlock();
                         builder->CreateBr(merge_bb);
                         builder->SetInsertPoint(merge_bb);
                         llvm::PHINode* phi = builder->CreatePHI(
                             sym_val->getType(), 2);
                         phi->addIncoming(sym_val, entry_bb);
-                        phi->addIncoming(internal_desc, convert_bb);
+                        phi->addIncoming(internal_desc, convert_end_bb);
                         llvm_symtab[h] = phi;
                     } else {
                         llvm::Value* internal_desc = arr_descr->cfi_to_internal(
@@ -12574,7 +12576,17 @@ public:
                 el_size, info.type_code, info.cfi_attr);
             // Copy CFI data back to the original CFI descriptor
             llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type, info.n_dims);
-            uint64_t cfi_size = dl.getTypeAllocSize(cfi_type);
+            llvm::Value* cfi_size = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                dl.getTypeAllocSize(cfi_type));
+            if (info.n_dims == 0) {
+                // Assumed rank: the header and as many dims as the rank
+                llvm::Value* rank = builder->CreateZExt(
+                    arr_descr->get_rank(info.desc_array_type, internal_ptr),
+                    llvm::Type::getInt64Ty(context));
+                cfi_size = builder->CreateAdd(cfi_size, builder->CreateMul(rank,
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                        dl.getTypeAllocSize(arr_descr->get_dimension_descriptor_type()))));
+            }
             llvm::Value* orig_cfi_i8 = builder->CreateBitCast(
                 info.original_cfi_ptr,
                 llvm::Type::getInt8Ty(context)->getPointerTo());

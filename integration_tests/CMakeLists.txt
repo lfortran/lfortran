@@ -1738,6 +1738,7 @@ RUN(NAME procedure_pointer_52 LABELS gfortran llvm llvm_submodule EXTRAFILES pro
 RUN(NAME procedure_pointer_53 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_53_mod.f90) # nullifying that component through an optional procedure dummy
 RUN(NAME procedure_pointer_54 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_54_mod.f90) # array arguments on a procedure pointer component
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
+RUN(NAME bindc_assumed_rank_02 LABELS gfortran llvm) # SIZE and SHAPE of an assumed-rank dummy of a bind(c) procedure
 
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
