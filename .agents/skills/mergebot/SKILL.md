@@ -62,11 +62,18 @@ maintainer's identity, with no co-author lines or bot signatures.
 ## The script enforces the safety rules
 
 [scripts/mergebot.py](scripts/mergebot.py) enforces approval and merge gates.
-`Mergebot-Events.yml` records the label webhook's exact head SHA in an immutable
-Actions artifact. It runs trusted main-branch code, never PR code, including
-when conflicts prevent Quick from starting. Commit dates and CI timestamps
-are not evidence of which head was labeled. Ambiguous same-second label
-applications require removing and reapplying the label.
+The label approves the head the PR had when it was applied. Commit dates are
+set by the pusher, so the script proves that head from server-timestamped push
+evidence instead: the creation time of each Quick `pull_request` run (created
+at push time, even while it waits for a runner) and each force-push event in
+the PR timeline. The head is approved only if the latest evidence before the
+label names it and nothing was pushed at or after the label. Returning to an
+older head needs a force-push, so this also catches a push that is undone.
+A push made while the PR conflicted with `main` starts no Quick run; if the
+labeled head has no evidence, `status` reports an approval problem: the PR
+needs a rebase onto `main`, a new review, and a new label. Once picked up,
+the approved head lives in the local journal, which also approves mergebot's
+completed rebases; no workflow or runner is involved.
 
 Merge methods and rebase transitions are journaled locally. A push is not an
 approval: its head stays pending until the worker completes final-head
@@ -102,9 +109,9 @@ refuses, that is the answer: reject the PR or report it, and never work
 around the check.
 
 The state that is not on GitHub lives in `.mergebot/` in the main checkout
-(ignored by Git): the `PAUSE` flag, `locks/`, approval-bound `prs/` journals,
-cached event artifacts, sticky main-failure/suspicion state, worktree pool,
-notes, and squash messages. Preserve this directory across passes. If control
+(ignored by Git): the `PAUSE` flag, `locks/`, approval-bound `prs/` journals
+(the approved head and mergebot's pushes), sticky main-failure/suspicion
+state, worktree pool, notes, and squash messages. Preserve this directory across passes. If control
 state is lost, do not reconstruct approvals from comments; re-review and relabel
 rebased heads. An interrupted or failed push leaves a pending journal, not
 authorization to merge.
@@ -142,14 +149,9 @@ again. To run a single pass by hand, type `/mergebot`.
 
 Before the first pass:
 
-1. Install `Mergebot-Events.yml` and its recorder on upstream `main`. Existing
-   labels predate the recorder: remove and reapply them after reviewing the
-   current head. Wait for the event artifact before pickup, not for Quick.
-   Artifacts expire after 90 days; an expired artifact that was never cached
-   locally also requires relabeling.
-2. `gh auth status` shows the maintainer's account, and `git config
+1. `gh auth status` shows the maintainer's account, and `git config
    user.name` / `user.email` give the maintainer's identity.
-3. Worktree pool: up to `max_in_flight` (4) worktrees, created once with
+2. Worktree pool: up to `max_in_flight` (4) worktrees, created once with
    `git worktree add --detach .mergebot/worktrees/w<k> <main-sha>`, one at a
    time. Build each once with
    `pixi run -e llvm11 build '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2' > ../w<k>.build.log 2>&1`
@@ -164,7 +166,6 @@ In short, for every labeled PR:
 | PR state | Action | Step |
 | --- | --- | --- |
 | Head changed since approval (a push by anyone but mergebot) | remove the label, comment | 2 |
-| Label-event artifact not ready | wait; do not reject or start a rebase | 2 |
 | Draft | mark it ready | 2 |
 | CI still running | wait | — |
 | CI green, no conflicts | merge (merge commit or squash) unless main is blocked | 4 |
