@@ -2486,6 +2486,7 @@ RUN(NAME bindc2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc5 LABELS gfortran llvm fortran)
+RUN(NAME bindc_section_01 LABELS gfortran llvm EXTRAFILES bindc_section_01c.c) # non-contiguous section passed to a bind(c) (*) dummy is packed
 RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME test_c_long_double LABELS gfortran llvm EXTRAFILES test_c_long_double_c.c)
