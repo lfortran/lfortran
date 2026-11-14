@@ -978,7 +978,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     auto execute_cell = [&]() {
 #ifndef __EMSCRIPTEN__
         struct CancelHooks {
-            explicit CancelHooks(bool install) {
+            explicit CancelHooks([[maybe_unused]] bool install) {
 #ifdef HAVE_LFORTRAN_LLVM
                 if (install) {
                     _lfortran_set_cancel_hooks(cancel_requested_hook, cancel_stop_hook);
