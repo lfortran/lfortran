@@ -58,22 +58,47 @@ the main program compiles the module's procedures, and is assumed to be
 compiled with a device like this unit, so it defines their twins.
 
 * At its exits the twin discards, or waits for, the launches on its locals,
-  and returns without waiting when what is still pending writes and reads
-  only what its dummy arguments hold and no pending launch may have
-  recorded a stop (its replay reads a local status buffer). Otherwise it
-  waits as before.
+  and returns without waiting when what is still pending writes only what
+  its dummy arguments hold, reads only that or a variable of a module or of
+  this file that is not a target or a pointer, and no pending launch may
+  have recorded a stop (its replay reads a local status buffer). Otherwise
+  it waits as before.
 * Its caller treats the call as a launch that writes the actual arguments
-  of its dummies that are not intent(in) and reads the others: what the
-  twin's declaration allows, or, for a twin of this translation unit, what
-  the launches pending at its exits write and read (Deferral::Pending). An
-  actual argument this pass cannot follow is waited for after the call.
+  of its dummies that are not intent(in) and reads the others, and reads
+  those module or file variables: what the twin's declaration allows, or,
+  for a twin of this translation unit, what the launches pending at its
+  exits write and read (Deferral::Pending). An actual argument this pass
+  cannot follow is waited for after the call.
 * The caller does not wait before the call for the launches pending on an
-  array actual argument that only the twin can name; the twin starts as if
+  array actual argument the twin is handed, including one only the twin can
+  name and a module array passed as that argument. The twin starts as if
   launches were pending on what its array dummies hold, and waits where it
-  accesses that on the host. For any other actual argument, for what other
-  procedures can reach, and while a launch that may have recorded a stop is
-  pending (the twin could not replay it), the caller waits before the call
-  as before any call.
+  accesses that on the host. When every exit of the twin has waited, that
+  wait covered every launch pending at the call, and the caller keeps only
+  what the twin still leaves pending. The exit contract is only the launches
+  this body made: a launch the caller had already left pending stays the
+  caller's, and is not reported again. For any other actual argument, for
+  what other procedures can reach, and while a launch that may have
+  recorded a stop is pending (the twin could not replay it), the caller
+  waits before the call as before any call.
+* An external subroutine or scalar function defined in this file gets a
+  twin on the same terms when its body launches or calls a procedure that
+  does. A target dummy still gets one unless the body associates a pointer
+  with it: a pointer this body creates could outlive the call under another
+  name. That is not because the dummy is safe when the body associates
+  nothing. The caller may already have associated a pointer with the actual
+  argument, which this body does not see, so a call that may read through
+  it is ordered with the launch here, before the call. A name that is not a
+  pointer is not always safe either: while a scalar or assumed-shape target
+  dummy that is not intent(in) is associated, the actual argument may be
+  referenced by its own name, so that dummy overlaps a non-local variable of
+  the same declared type, kind, and rank. An explicit-shape or assumed-size
+  dummy does not. A pointer component reaches other storage even though its
+  root is not a pointer variable. Another file calls the original
+  procedure, which waits. A call through an explicit interface
+  of that procedure in this file is redirected to the twin too. A module
+  procedure is unchanged: only its declaration decides, so a target dummy
+  still gets no twin.
 
 Storage a launch only reads the runtime may hand the kernel in place (the
 unified and managed memory models), so a GpuWait -- wait for the launches
@@ -116,6 +141,10 @@ struct State {
     bool reachable = true;
     // Any launch may be pending.
     bool any = false;
+    // A GpuSync has run on this path. A later launch does not clear it.
+    // Joined with AND, so it holds only when every path that reaches here
+    // has waited.
+    bool saw_sync = false;
     // What the pending launches may write, sorted; `Path::pointee()` for a
     // write through a pointer that may point to anything, and a path rooted
     // at the pointer for one that the procedure never associates
@@ -124,6 +153,13 @@ struct State {
     // What the launches since the last wait may read and not write, sorted,
     // in the same form as `written`.
     std::vector<Path> read;
+    // The part of `written` and `read` that launches in this procedure
+    // produced. A twin is entered with its array dummies already pending
+    // (its caller did not wait); that is not something this body launched,
+    // and its exit contract must not report it as still pending or the
+    // caller waits again for a launch it has already waited for.
+    std::vector<Path> produced_written;
+    std::vector<Path> produced_read;
     // The pending launches that may have recorded a stop, in launch order.
     std::vector<ASR::GpuKernelLaunch_t*> stops;
 
@@ -135,8 +171,11 @@ struct State {
 
     void clear() {
         any = false;
+        saw_sync = false;
         written.clear();
         read.clear();
+        produced_written.clear();
+        produced_read.clear();
         stops.clear();
     }
 
@@ -153,6 +192,29 @@ struct State {
         add_path(read, p);
     }
 
+    // A launch this procedure made, as opposed to one assumed pending on
+    // entry to a twin.
+    void add_produced_written(const Path &p) {
+        add_written(p);
+        add_path(produced_written, p);
+    }
+
+    void add_produced_read(const Path &p) {
+        add_read(p);
+        add_path(produced_read, p);
+    }
+
+    void keep_produced(std::vector<Path> &produced,
+            const std::vector<Path> &kept) {
+        std::vector<Path> next;
+        for (const Path &p : produced) {
+            if (std::find(kept.begin(), kept.end(), p) != kept.end()) {
+                next.push_back(p);
+            }
+        }
+        produced.swap(next);
+    }
+
     void add_stop(ASR::GpuKernelLaunch_t *launch) {
         if (std::find(stops.begin(), stops.end(), launch) == stops.end()) {
             stops.push_back(launch);
@@ -166,14 +228,21 @@ struct State {
             return;
         }
         any = any || o.any;
+        saw_sync = saw_sync && o.saw_sync;
         for (const Path &p : o.written) add_written(p);
         for (const Path &p : o.read) add_read(p);
+        for (const Path &p : o.produced_written) add_path(produced_written, p);
+        for (const Path &p : o.produced_read) add_path(produced_read, p);
         for (ASR::GpuKernelLaunch_t *l : o.stops) add_stop(l);
     }
 
     bool operator==(const State &o) const {
         return reachable == o.reachable && any == o.any
-            && written == o.written && read == o.read && stops == o.stops;
+            && saw_sync == o.saw_sync
+            && written == o.written && read == o.read
+            && produced_written == o.produced_written
+            && produced_read == o.produced_read
+            && stops == o.stops;
     }
 };
 
@@ -193,9 +262,17 @@ struct Deferral {
     // the index of the dummy.
     struct Pending {
         bool known = false;
+        // Set once an exit has been placed, then AND-ed across exits.
+        bool exit_seen = false;
+        bool synced_on_every_path = false;
         std::vector<std::pair<size_t, Path>> written;
         std::vector<std::pair<size_t, Path>> read;
+        // Module or file variables a pending launch reads.
+        std::vector<Path> global_read;
     };
+    // External procedures of this file, by name, so a call through an
+    // explicit interface of the same name reaches the twin.
+    std::map<std::string, ASR::Function_t*> external_by_name;
     std::map<ASR::Function_t*, Pending> pending;
     // The procedures whose syncs are placed or being placed.
     std::set<ASR::Function_t*> started;
@@ -210,7 +287,13 @@ struct Deferral {
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(c);
         if (twins.count(fn) > 0) return fn;
         auto it = twin.find(fn);
-        return it == twin.end() ? nullptr : it->second;
+        if (it != twin.end()) return it->second;
+        ASR::FunctionType_t *type = ASRUtils::get_FunctionType(fn);
+        if (type->m_deftype != ASR::deftypeType::Implementation) {
+            auto ext = external_by_name.find(fn->m_name);
+            if (ext != external_by_name.end()) return ext->second;
+        }
+        return nullptr;
     }
 };
 
@@ -227,6 +310,12 @@ public:
             found = true;
         }
         BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (deferral != nullptr && deferral->callee(x.m_name, x.m_dt)) {
+            found = true;
+        }
+        BaseWalkVisitor::visit_FunctionCall(x);
     }
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
@@ -311,6 +400,26 @@ bool gets_twin(ASR::Module_t *m, ASR::Function_t *fn) {
     return data;
 }
 
+// A scalar intrinsic result. A subroutine has none.
+bool scalar_result(ASR::Function_t *fn) {
+    if (fn->m_return_var == nullptr) return true;
+    if (!ASR::is_a<ASR::Var_t>(*fn->m_return_var)) return false;
+    ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v;
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+    if (v->m_target_attr || ASRUtils::is_pointer(v->m_type)
+            || ASRUtils::is_array(v->m_type) || refers(v->m_type)) {
+        return false;
+    }
+    ASR::ttype_t *t = ASRUtils::extract_type(v->m_type);
+    return ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t)
+        || ASR::is_a<ASR::Complex_t>(*t) || ASR::is_a<ASR::Logical_t>(*t)
+        || ASR::is_a<ASR::UnsignedInteger_t>(*t);
+}
+
+bool target_dummy_escaped(ASR::Function_t *fn);
+bool external_gets_twin(ASR::Function_t *fn);
+
 // The variables of `scope` an expression or type names.
 class DeclarationNames : public ASR::BaseWalkVisitor<DeclarationNames> {
 public:
@@ -357,13 +466,13 @@ bool made_twin(ASR::Function_t *fn) {
     return ends_with(split_generic(fn).first, twin_suffix);
 }
 
-// Moves the body of `fn` into a new procedure of `m`, its twin, and makes
-// `fn` call the twin with its own dummies. Returns the twin, or nullptr when
-// a symbol of the twin's name exists already.
-ASR::Function_t *make_twin(Allocator &al, ASR::Module_t *m,
+// Moves the body of `fn` into a new procedure of `parent_scope`, its twin,
+// and makes `fn` call the twin with its own dummies. Returns the twin, or
+// nullptr when a symbol of the twin's name exists already.
+ASR::Function_t *make_twin(Allocator &al, SymbolTable *parent_scope,
         ASR::Function_t *fn) {
     std::string name = twin_name(fn);
-    SymbolTable *module_scope = m->m_symtab;
+    SymbolTable *module_scope = parent_scope;
     if (module_scope->get_symbol(name) != nullptr) return nullptr;
     const Location &loc = fn->base.base.loc;
     SymbolTable *body_scope = fn->m_symtab;
@@ -385,6 +494,15 @@ ASR::Function_t *make_twin(Allocator &al, ASR::Module_t *m,
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
             ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
         if (seen.insert(v).second) copied.push_back(v);
+    }
+    if (fn->m_return_var != nullptr
+            && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+        ASR::symbol_t *rv_sym = ASR::down_cast<ASR::Var_t>(
+            fn->m_return_var)->m_v;
+        if (ASR::is_a<ASR::Variable_t>(*rv_sym)) {
+            ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(rv_sym);
+            if (seen.insert(rv).second) copied.push_back(rv);
+        }
     }
     for (size_t k = 0; k < copied.size(); k++) {
         DeclarationNames names(body_scope);
@@ -437,15 +555,36 @@ ASR::Function_t *make_twin(Allocator &al, ASR::Module_t *m,
     ASR::symbol_t *twin = ASR::down_cast<ASR::symbol_t>(ASR::make_Function_t(
         al, loc, body_scope, s2c(al, name), fn->m_function_signature,
         fn->m_dependencies, fn->n_dependencies, fn->m_args, fn->n_args,
-        fn->m_body, fn->n_body, nullptr, fn->m_access, fn->m_deterministic,
+        fn->m_body, fn->n_body, fn->m_return_var, fn->m_access,
+        fn->m_deterministic,
         fn->m_side_effect_free, fn->m_module_file, nullptr, nullptr,
         fn->m_start_name, fn->m_end_name));
     body_scope->asr_owner = (ASR::asr_t*)twin;
     module_scope->add_symbol(name, twin);
+    ASR::Variable_t *result_copy = nullptr;
+    if (fn->m_return_var != nullptr
+            && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+        ASR::symbol_t *copy = scope->get_symbol(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v));
+        if (copy == nullptr || !ASR::is_a<ASR::Variable_t>(*copy)) {
+            return nullptr;
+        }
+        result_copy = ASR::down_cast<ASR::Variable_t>(copy);
+    }
     Vec<ASR::stmt_t*> body;
     body.reserve(al, 1);
-    body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-        twin, nullptr, call_args.p, call_args.n, nullptr, false)));
+    if (result_copy == nullptr) {
+        body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+            twin, nullptr, call_args.p, call_args.n, nullptr, false)));
+    } else {
+        ASR::expr_t *lhs = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            &result_copy->base));
+        ASR::expr_t *rhs = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+            twin, nullptr, call_args.p, call_args.n,
+            ASRUtils::expr_type(lhs), nullptr, nullptr));
+        body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+            lhs, rhs, nullptr, false, false, false, false)));
+    }
     Vec<char*> deps;
     deps.reserve(al, 1);
     deps.push_back(al, s2c(al, name));
@@ -458,6 +597,10 @@ ASR::Function_t *make_twin(Allocator &al, ASR::Module_t *m,
     fn->n_body = body.n;
     fn->m_dependencies = deps.p;
     fn->n_dependencies = deps.n;
+    if (result_copy != nullptr) {
+        fn->m_return_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            &result_copy->base));
+    }
     return ASR::down_cast<ASR::Function_t>(twin);
 }
 
@@ -500,12 +643,54 @@ void make_twins(Allocator &al, ASR::TranslationUnit_t &unit,
             }
         }
         for (ASR::Function_t *fn : selected) {
-            ASR::Function_t *twin = make_twin(al, m, fn);
+            ASR::Function_t *twin = make_twin(al, m->m_symtab, fn);
             if (twin == nullptr) continue;
             deferral.twin[fn] = twin;
             deferral.twins.insert(twin);
             if (!m->m_loaded_from_mod) deferral.own.insert(twin);
         }
+    }
+    // External procedures. A twin is worth making only when the body
+    // launches or calls one that does; a declaration-only twin of every
+    // array helper would mark launches the body does not make.
+    std::vector<ASR::Function_t*> candidates;
+    for (auto &item : unit.m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
+        if (made_twin(fn)) {
+            deferral.twins.insert(fn);
+            deferral.own.insert(fn);
+            continue;
+        }
+        ASR::symbol_t *t = unit.m_symtab->get_symbol(twin_name(fn));
+        if (t != nullptr && ASR::is_a<ASR::Function_t>(*t)) {
+            ASR::Function_t *twin = ASR::down_cast<ASR::Function_t>(t);
+            deferral.twin[fn] = twin;
+            deferral.twins.insert(twin);
+            deferral.own.insert(twin);
+            deferral.external_by_name[fn->m_name] = twin;
+            continue;
+        }
+        if (external_gets_twin(fn)) candidates.push_back(fn);
+    }
+    bool grew = true;
+    while (grew) {
+        grew = false;
+        std::vector<ASR::Function_t*> left;
+        for (ASR::Function_t *fn : candidates) {
+            if (!launches(fn->m_body, fn->n_body, &deferral)) {
+                left.push_back(fn);
+                continue;
+            }
+            ASR::Function_t *twin = make_twin(al, unit.m_symtab, fn);
+            if (twin == nullptr) continue;
+            deferral.twin[fn] = twin;
+            deferral.twins.insert(twin);
+            deferral.own.insert(twin);
+            deferral.external_by_name[fn->m_name] = twin;
+            grew = true;
+        }
+        candidates.swap(left);
     }
 }
 
@@ -753,6 +938,78 @@ public:
     }
 };
 
+// Whether the body associates a pointer with a target dummy. The pointer
+// could outlive the call, so the launches on that dummy cannot be left
+// pending under the dummy's name alone.
+bool target_dummy_escaped(ASR::Function_t *fn) {
+    bool target = false;
+    for (size_t i = 0; i < fn->n_args; i++) {
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        if (v->m_target_attr) target = true;
+    }
+    if (!target) return false;
+    std::set<ASR::symbol_t*> reached;
+    PointerReach reach(reached);
+    for (size_t i = 0; i < fn->n_body; i++) reach.visit_stmt(*fn->m_body[i]);
+    for (size_t i = 0; i < fn->n_args; i++) {
+        ASR::symbol_t *d = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(d);
+        if (v->m_target_attr && reached.count(
+                ASRUtils::symbol_get_past_external(d)) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// An external procedure of this translation unit. The body is compiled
+// here, so unlike a module procedure the choice may use it: another file
+// calls the original, which waits. A target dummy still gets a twin unless
+// the body associates a pointer with it. The caller may already have
+// associated one with the actual argument; that does not refuse the twin,
+// but a call here that can read through it waits for the launch first.
+bool external_gets_twin(ASR::Function_t *fn) {
+    SymbolTable *parent = fn->m_symtab == nullptr ? nullptr
+        : fn->m_symtab->parent;
+    if (parent == nullptr || parent->asr_owner == nullptr
+            || !ASR::is_a<ASR::unit_t>(*parent->asr_owner)) {
+        return false;
+    }
+    if (fn->m_gpu != nullptr || !scalar_result(fn)) return false;
+    ASR::FunctionType_t *type = ASRUtils::get_FunctionType(fn);
+    if (type->m_deftype != ASR::deftypeType::Implementation
+            || (type->m_abi != ASR::abiType::Source
+                && type->m_abi != ASR::abiType::ExternalUndefined)
+            || type->m_elemental || type->m_module
+            || type->m_exec_space != ASR::exec_spaceType::Host) {
+        return false;
+    }
+    bool data = false;
+    for (size_t i = 0; i < fn->n_args; i++) {
+        if (fn->m_args[i] == nullptr
+                || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+            return false;
+        }
+        ASR::symbol_t *d = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*d)) return false;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(d);
+        if (ASRUtils::is_pointer(v->m_type)
+                || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(
+                    v->m_type))
+                || refers(v->m_type)) {
+            return false;
+        }
+        if (ASRUtils::is_array(v->m_type) || ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::extract_type(v->m_type))) {
+            data = true;
+        }
+    }
+    if (!data) return false;
+    return !target_dummy_escaped(fn);
+}
+
 class RoutineSync {
 public:
     RoutineSync(Allocator &al_, SymbolTable *routine_,
@@ -774,6 +1031,7 @@ public:
         out.reserve(al, n_body + 4);
         State end = process_body(body, n_body, entry(), true, &out);
         if (end.reachable && end.any) leave(end, true, &out, loc);
+        else if (end.reachable) note_exit(end, true);
         place_keeps(out, loc);
         // Each status buffer is cleared once, before its first launch.
         Vec<ASR::stmt_t*> result;
@@ -886,9 +1144,23 @@ private:
         return s;
     }
 
+    // Records whether this exit ran a GpuSync, once the syncs are emitted.
+    void note_exit(const State &s, bool emit) {
+        if (!emit || !twin || self == nullptr) return;
+        Deferral::Pending &pending = deferral.pending[self];
+        if (!pending.exit_seen) {
+            pending.synced_on_every_path = s.saw_sync;
+            pending.exit_seen = true;
+        } else {
+            pending.synced_on_every_path =
+                pending.synced_on_every_path && s.saw_sync;
+        }
+    }
+
     // At a `return` or the end of the procedure, with launches pending.
     // A procedure waits for them, except a twin, which leaves pending the
-    // launches that write and read only what its dummies hold, for its
+    // launches that write only what its dummies hold and read only that or
+    // a module or file variable that is not a target or a pointer, for its
     // caller to wait for, once its locals are discarded: the locals end
     // here, the stop replays read status buffers that are locals, and
     // anything else the caller cannot follow.
@@ -899,25 +1171,33 @@ private:
         // local of the procedure.
         if (!twin || !s.stops.empty()) {
             sync(s, emit, out, loc);
+            note_exit(s, emit);
             return;
         }
         leave_blocks(0, s, emit, out, loc);
         discard_locals(routine, s, emit, out, loc);
-        if (!s.any) return;
+        if (!s.any) {
+            note_exit(s, emit);
+            return;
+        }
         bool deferrable = true;
         for (const Path &p : s.written) {
             if (dummy_index(p.root) < 0) deferrable = false;
         }
         for (const Path &p : s.read) {
-            if (dummy_index(p.root) < 0) deferrable = false;
+            if (dummy_index(p.root) < 0 && !deferrable_global_read(p)) {
+                deferrable = false;
+            }
         }
         if (!deferrable) {
             sync(s, emit, out, loc);
+            note_exit(s, emit);
             return;
         }
+        note_exit(s, emit);
         if (!emit) return;
         Deferral::Pending &pending = deferral.pending[self];
-        for (const Path &p : s.written) {
+        for (const Path &p : s.produced_written) {
             // Only a launch of the caller writes what an intent(in) dummy
             // holds, which the caller knows of.
             if (ASR::down_cast<ASR::Variable_t>(p.root)->m_intent
@@ -930,8 +1210,17 @@ private:
                 pending.written.push_back(e);
             }
         }
-        for (const Path &p : s.read) {
-            std::pair<size_t, Path> e((size_t)dummy_index(p.root), p);
+        for (const Path &p : s.produced_read) {
+            int index = dummy_index(p.root);
+            if (index < 0) {
+                if (std::find(pending.global_read.begin(),
+                            pending.global_read.end(), p)
+                        == pending.global_read.end()) {
+                    pending.global_read.push_back(p);
+                }
+                continue;
+            }
+            std::pair<size_t, Path> e((size_t)index, p);
             if (std::find(pending.read.begin(), pending.read.end(), e)
                     == pending.read.end()) {
                 pending.read.push_back(e);
@@ -1005,17 +1294,18 @@ private:
     // no pointer reaches). After the call, what the twin leaves pending
     // writes and reads the actual arguments: an actual argument this pass
     // cannot follow there is waited for at once.
-    void call_twin(ASR::SubroutineCall_t &x, ASR::Function_t *t, State &s,
-            bool emit, Vec<ASR::stmt_t*> *out) {
-        const Location &loc = x.base.base.loc;
+    void call_twin(ASR::call_arg_t *args, size_t n_args, ASR::expr_t *dt,
+            const Location &loc, ASR::Function_t *t, State &s, bool emit,
+            Vec<ASR::stmt_t*> *out, const std::function<void()> &emit_stmt) {
         Accesses acc;
         AccessCollector c(acc, routine, pointers, outside, &summaries);
         // What the call only reads: the actual arguments of intent(in)
         // dummies the twin cannot change through a pointer.
         Accesses read;
         AccessCollector r(read, routine, pointers, outside, &summaries);
-        for (size_t i = 0; i < x.n_args; i++) {
-            ASR::expr_t *arg = x.m_args[i].m_value;
+        std::set<ASR::symbol_t*> handed_roots;
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::expr_t *arg = args[i].m_value;
             if (arg == nullptr) continue;
             ASR::Variable_t *dummy = i < t->n_args
                 ? ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(
@@ -1033,34 +1323,55 @@ private:
             }
             for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
             for (const Path &p : paths) {
-                if (is_pointer_variable(p.root)) acc.globals = true;
-                if ((!reachable_elsewhere(p.root, routine)
+                if (is_pointer_variable(p.root)) {
+                    acc.globals = true;
+                    acc.paths.push_back(p);
+                } else if ((!reachable_elsewhere(p.root, routine)
                             && escaped.count(p.root) == 0)
                         || unnamed_by_others(p.root, escaped)) {
                     continue;
+                } else {
+                    // The twin waits where it uses this actual on the host,
+                    // so the caller does not, module arrays included.
+                    handed_roots.insert(p.root);
                 }
-                acc.paths.push_back(p);
             }
         }
+        (void)dt;
         // The twin may access what other procedures can reach, and stop.
         acc.globals = true;
         if (acts_outside(t, outside)) acc.observable = true;
         if (!s.stops.empty()) sync(s, emit, out, loc);
-        before(read, s, emit, out, loc);
-        before(acc, s, emit, out, loc, true);
-        if (emit) out->push_back(al, &x.base);
+        auto guard = [&](const Accesses &a, bool statement) {
+            if (conflicts(a, s.written, &handed_roots)
+                    || (a.observable && !s.stops.empty())) {
+                sync(s, emit, out, loc);
+            } else if (conflicts(a, s.read, &handed_roots)
+                    && (statement || a.everything || a.globals)) {
+                wait(s, emit, out, loc);
+            }
+        };
+        guard(read, false);
+        guard(acc, true);
+        emit_stmt();
         const Deferral::Pending &pending = twin_pending(t);
+        bool synced = pending.known && pending.synced_on_every_path;
+        if (synced) {
+            // The twin's GpuSync waited for every launch pending here.
+            s.clear();
+            s.saw_sync = true;
+        }
+        bool added = false;
         bool wait_written = false, wait_read = false;
         for (int pass = 0; pass < 2; pass++) {
             const std::vector<std::pair<size_t, Path>> &paths = pass == 0
                 ? pending.written : pending.read;
             for (const auto &e : paths) {
-                if (e.first >= x.n_args || x.m_args[e.first].m_value
-                        == nullptr) {
+                if (e.first >= n_args || args[e.first].m_value == nullptr) {
                     continue;
                 }
                 std::vector<Path> actual;
-                if (!designated_paths(x.m_args[e.first].m_value, actual,
+                if (!designated_paths(args[e.first].m_value, actual,
                         nullptr)) {
                     (pass == 0 ? wait_written : wait_read) = true;
                     continue;
@@ -1069,17 +1380,30 @@ private:
                     p.members.insert(p.members.end(),
                         e.second.members.begin(), e.second.members.end());
                     p.shallow = e.second.shallow;
-                    if (pass == 0) s.add_written(p);
-                    else s.add_read(p);
+                    if (pass == 0) s.add_produced_written(p);
+                    else s.add_produced_read(p);
+                    added = true;
                 }
             }
         }
-        s.any = true;
+        for (const Path &p : pending.global_read) {
+            s.add_produced_read(p);
+            added = true;
+        }
+        if (added || !synced) s.any = true;
         if (wait_written) {
             sync(s, emit, out, loc);
         } else if (wait_read) {
             wait(s, emit, out, loc);
         }
+    }
+
+    void call_twin(ASR::SubroutineCall_t &x, ASR::Function_t *t, State &s,
+            bool emit, Vec<ASR::stmt_t*> *out) {
+        call_twin(x.m_args, x.n_args, x.m_dt, x.base.base.loc, t, s, emit,
+            out, [&]() {
+                if (emit) out->push_back(al, &x.base);
+            });
     }
 
     // Whether a call only reads its actual argument `arg` of the dummy `d`:
@@ -1114,24 +1438,38 @@ private:
 
     // Makes the call `x` name the twin of the procedure it calls, which
     // `t` is.
-    void redirect(ASR::SubroutineCall_t &x, ASR::Function_t *t) {
-        if (ASRUtils::symbol_get_past_external(x.m_name) == &t->base) return;
-        if (!ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name)) {
-            x.m_name = &t->base;
-        } else {
-            ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(
-                x.m_name);
-            std::string name = t->m_name;
-            ASR::symbol_t *s = ext->m_parent_symtab->get_symbol(name);
-            if (s == nullptr) {
-                s = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                    al, x.base.base.loc, ext->m_parent_symtab, s2c(al, name),
-                    &t->base, ext->m_module_name, nullptr, 0, s2c(al, name),
-                    ext->m_access));
-                ext->m_parent_symtab->add_symbol(name, s);
-            }
-            x.m_name = s;
+    void redirect_symbol(ASR::symbol_t *&name, const Location &loc,
+            ASR::Function_t *t) {
+        if (ASRUtils::symbol_get_past_external(name) == &t->base) return;
+        // A twin of an external procedure lives in this file. Name it
+        // directly; an ExternalSymbol would still say it is in the module
+        // that held the interface.
+        SymbolTable *home = ASRUtils::symbol_parent_symtab(&t->base);
+        if (home != nullptr && home->asr_owner != nullptr
+                && ASR::is_a<ASR::unit_t>(*home->asr_owner)) {
+            name = &t->base;
+            return;
         }
+        if (!ASR::is_a<ASR::ExternalSymbol_t>(*name)) {
+            name = &t->base;
+            return;
+        }
+        ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(
+            name);
+        std::string twin = t->m_name;
+        ASR::symbol_t *s = ext->m_parent_symtab->get_symbol(twin);
+        if (s == nullptr) {
+            s = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                al, loc, ext->m_parent_symtab, s2c(al, twin),
+                &t->base, ext->m_module_name, nullptr, 0, s2c(al, twin),
+                ext->m_access));
+            ext->m_parent_symtab->add_symbol(twin, s);
+        }
+        name = s;
+    }
+
+    void redirect(ASR::SubroutineCall_t &x, ASR::Function_t *t) {
+        redirect_symbol(x.m_name, x.base.base.loc, t);
         x.m_original_name = nullptr;
     }
 
@@ -1150,6 +1488,7 @@ private:
             }
         }
         s.clear();
+        s.saw_sync = true;
     }
 
     // Waits for the launches that read host memory in place, which leaves
@@ -1161,6 +1500,7 @@ private:
             out->push_back(al, ASRUtils::STMT(ASR::make_GpuWait_t(al, loc)));
         }
         s.read.clear();
+        s.produced_read.clear();
     }
 
     // Whether `root` is a target local of a `block` (or `associate`) that
@@ -1198,6 +1538,50 @@ private:
             && escaped.count(root) == 0;
     }
 
+    // Fortran 2018 15.5.2.13: while a scalar or assumed-shape target dummy
+    // that is not intent(in) is associated, the actual argument may be
+    // referenced by its own name. An explicit-shape dummy, and an
+    // assumed-size dummy, are not that case. `pending` is the launch;
+    // `other` is storage that is not local to this procedure and whose
+    // declared type, kind, and rank match the dummy.
+    bool actual_name_overlaps(const Path &pending, const Path &other) const {
+        if (pending.root == nullptr || other.root == nullptr
+                || pending.root == other.root
+                || !ASR::is_a<ASR::Variable_t>(*pending.root)
+                || !ASR::is_a<ASR::Variable_t>(*other.root)) {
+            return false;
+        }
+        if (dummy_index(pending.root) < 0) return false;
+        ASR::Variable_t *dummy = ASR::down_cast<ASR::Variable_t>(pending.root);
+        if (!dummy->m_target_attr
+                || dummy->m_intent == ASR::intentType::In) {
+            return false;
+        }
+        ASR::ttype_t *dtype = dummy->m_type;
+        bool scalar = !ASRUtils::is_array(dtype);
+        bool assumed_shape = false;
+        if (!scalar && !ASRUtils::has_explicit_dimension_bounds(dtype)
+                && !ASRUtils::is_assumed_size_array(dtype)
+                && !ASRUtils::is_assumed_rank_array(dtype)) {
+            ASR::ttype_t *array = ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(dtype));
+            assumed_shape = ASR::is_a<ASR::Array_t>(*array)
+                && ASR::down_cast<ASR::Array_t>(array)->m_physical_type
+                    == ASR::array_physical_typeType::DescriptorArray;
+        }
+        if (!scalar && !assumed_shape) return false;
+        ASR::Variable_t *named = ASR::down_cast<ASR::Variable_t>(other.root);
+        if (enclosing_routine(named->m_parent_symtab) == routine) {
+            return false;
+        }
+        if (!ASRUtils::types_equal(dtype, named->m_type, nullptr, nullptr,
+                false)) {
+            return false;
+        }
+        return ASRUtils::extract_n_dims_from_ttype(dtype)
+            == ASRUtils::extract_n_dims_from_ttype(named->m_type);
+    }
+
     bool may_overlap(const Path &a, const Path &b) const {
         if (a.root != b.root
                 && (out_of_reach(a.root) || out_of_reach(b.root))) {
@@ -1209,6 +1593,9 @@ private:
                 || (may_point_anywhere(b.root) && reached.count(a.root) > 0)) {
             return true;
         }
+        // `b` is the pending launch at both call sites. A non-pointer root
+        // is not safe when it can be this dummy's actual argument.
+        if (actual_name_overlaps(b, a)) return true;
         return overlap(a, b);
     }
 
@@ -1216,15 +1603,56 @@ private:
         return conflicts(acc, s.written);
     }
 
-    // Whether `acc` may access storage one of `paths` names.
-    bool conflicts(const Accesses &acc, const std::vector<Path> &paths) {
+    // Whether a call counted as `globals` can reach `root` while this
+    // procedure runs. A local cannot, unless `esc` names it: a pointer that
+    // escaped was associated with it, or (`escaped_host`) a procedure
+    // contained here names it. A target dummy can: the caller may already
+    // have associated a pointer with the actual argument, and that pointer
+    // is not visible here, so it is not in `esc`. A summarized call that
+    // kept its real roots does not use this; it overlaps those roots. A
+    // module pointer path still overlaps this dummy, and so does a
+    // non-local variable of the same type, kind, and rank when the dummy
+    // is a scalar or assumed-shape target that is not intent(in): that
+    // name may be the actual argument. An explicit-shape dummy does not.
+    bool globals_reach(ASR::symbol_t *root,
+            const std::set<ASR::symbol_t*> &esc) const {
+        if (may_point_anywhere(root) || root == nullptr
+                || !ASR::is_a<ASR::Variable_t>(*root)) {
+            return true;
+        }
+        if (esc.count(root) > 0) return true;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        if (v->m_target_attr && dummy_index(root) >= 0) return true;
+        if (enclosing_routine(v->m_parent_symtab) == routine) return false;
+        return reachable_elsewhere(root, routine);
+    }
+
+    // A read of a module or file variable that is not a target or a pointer
+    // can stay pending: the caller waits before it changes that variable.
+    bool deferrable_global_read(const Path &p) const {
+        if (p.root == nullptr || !ASR::is_a<ASR::Variable_t>(*p.root)) {
+            return false;
+        }
+        if (may_point_anywhere(p.root) || escaped.count(p.root) > 0) {
+            return false;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(p.root);
+        if (v->m_target_attr || ASRUtils::is_pointer(v->m_type)) return false;
+        return enclosing_routine(v->m_parent_symtab) != routine;
+    }
+
+    // Whether `acc` may access storage one of `paths` names. Roots in
+    // `ignore` are array actuals a deferring twin is handed: it waits
+    // before it uses them on the host.
+    bool conflicts(const Accesses &acc, const std::vector<Path> &paths,
+            const std::set<ASR::symbol_t*> *ignore = nullptr) {
         if (paths.empty()) return false;
         if (acc.everything) return true;
         const std::set<ASR::symbol_t*> &esc = acc.contained_call
             ? escaped_host : escaped;
         for (const Path &w : paths) {
-            if (acc.globals && (reachable_elsewhere(w.root, routine)
-                        || esc.count(w.root) > 0)
+            if (ignore != nullptr && ignore->count(w.root) > 0) continue;
+            if (acc.globals && globals_reach(w.root, esc)
                     && !out_of_reach(w.root)
                     && !unnamed_by_others(w.root, esc)) {
                 return true;
@@ -1327,6 +1755,7 @@ private:
                     p.root)));
             }
             s.read = read_kept;
+            s.keep_produced(s.produced_read, s.read);
         }
         std::vector<Path> kept;
         bool must_sync = false;
@@ -1382,6 +1811,7 @@ private:
                 vars.p, vars.n)));
         }
         s.written = kept;
+        s.keep_produced(s.produced_written, s.written);
     }
 
     void leave_blocks(size_t depth, State &s, bool emit,
@@ -1465,11 +1895,19 @@ private:
         Vec<ASR::stmt_t*> nb = new_body(n_body);
         State end = process_body(body, n_body, head, emit,
             emit ? &nb : nullptr);
+        bool synced_back = false;
         if (loops.back().sync_at_back_edge && end.reachable && end.any) {
             sync(end, emit, &nb, loc);
+            synced_back = true;
         }
         State after = head;
         after.join(loops.back().at_exit);
+        // Falling out of the loop runs the back-edge sync. head was joined
+        // from the cleared back edge, whose saw_sync an entry that had not
+        // waited would have cleared; the sync did run.
+        if (synced_back && !loops.back().at_exit.reachable) {
+            after.saw_sync = true;
+        }
         loops.pop_back();
         if (emit) {
             body = nb.p;
@@ -1617,8 +2055,8 @@ private:
         }
         if (emit) out->push_back(al, &x.base);
         s.any = true;
-        for (const Path &p : writes) s.add_written(p);
-        for (const Path &p : reads) s.add_read(p);
+        for (const Path &p : writes) s.add_produced_written(p);
+        for (const Path &p : reads) s.add_produced_read(p);
         if (x.m_stop_status != nullptr) s.add_stop(&x);
         if (opaque) {
             sync(s, emit, out, loc);
@@ -1641,6 +2079,11 @@ private:
             if (it == s.written.end()) continue;
             forget.push_back(al, vars[i]);
             s.written.erase(it);
+            auto produced = std::find(s.produced_written.begin(),
+                s.produced_written.end(), p);
+            if (produced != s.produced_written.end()) {
+                s.produced_written.erase(produced);
+            }
         }
         if (emit && forget.size() > 0) {
             out->push_back(al, ASRUtils::STMT(ASR::make_GpuDiscard_t(al, loc,
@@ -1890,6 +2333,7 @@ private:
             }
             case ASR::stmtType::Return: {
                 if (s.any) leave(s, emit, out, loc);
+                else note_exit(s, emit);
                 if (emit) out->push_back(al, x);
                 return State::unreachable();
             }
@@ -1961,6 +2405,24 @@ private:
                 // it calls may change an argument: storage a pending launch
                 // only reads needs no wait for that. The target is written.
                 ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(x);
+                if (a->m_overloaded == nullptr && !a->m_move_allocation
+                        && ASR::is_a<ASR::FunctionCall_t>(*a->m_value)) {
+                    ASR::FunctionCall_t *call =
+                        ASR::down_cast<ASR::FunctionCall_t>(a->m_value);
+                    if (ASR::Function_t *t = deferral.callee(call->m_name,
+                            call->m_dt)) {
+                        redirect_symbol(call->m_name, call->base.base.loc, t);
+                        call->m_original_name = nullptr;
+                        before(expression_accesses(a->m_target, routine,
+                            pointers, outside, &summaries), s, emit, out,
+                            loc, true);
+                        call_twin(call->m_args, call->n_args, call->m_dt, loc,
+                            t, s, emit, out, [&]() {
+                                if (emit) out->push_back(al, x);
+                            });
+                        return s;
+                    }
+                }
                 if (a->m_overloaded != nullptr || a->m_move_allocation
                         || changes_arguments(a->m_value)) {
                     return process_accesses(x, s, emit, out, loc);

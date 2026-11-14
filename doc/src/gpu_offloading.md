@@ -1075,21 +1075,50 @@ compiled with `--gpu` too when other files that call them are. The
 calls the pass sees by name are redirected to the twin; a call through a
 procedure pointer, a dummy procedure or a binding, and one from a file
 compiled without a GPU device or from C, reaches the subroutine, which
-waits. The twin may return with launches pending, provided they write and
-read only what its dummy arguments hold -- not what an intent(in) dummy
-holds, a module variable, what a pointer points to -- and none may have
+waits. The twin may return with launches pending, provided they write only
+what its dummy arguments hold -- not what an intent(in) dummy holds, and
+not what a pointer points to -- and read only that or a variable of a module
+or of this file that is not a target or a pointer, and none may have
 recorded a stop (whose replay reads a status buffer that is a local of the
 twin): otherwise it waits at its exits as before, once the launches on its
 locals are discarded. A call of a twin is followed like a launch: it may
 leave launches pending that write the actual arguments of the dummies that
-are not intent(in), and read the others -- or, for a twin of this file, only
-those that the launches pending at its exits do. A caller does not wait
-before the call for the launches pending on an array actual argument that
-only the twin can name (a local or dummy no pointer reaches); the twin
-starts as if launches its caller made were pending on what its array
-dummies hold, and waits where it accesses them on the host. Before any other
-actual argument, a module variable, and when a launch that may have
-recorded a stop is pending, the caller waits as before.
+are not intent(in), and read the others and those module or file variables
+-- or, for a twin of this file, only what the launches pending at its exits
+do. A caller does not wait before the call for the launches pending on an
+array actual argument the twin is handed, a module array included, and not
+only one that only the twin can name; the twin starts as if launches its
+caller made were pending on what its array dummies hold, and waits where it
+accesses them on the host. When every exit of that twin has waited, the
+wait covered the launches pending at the call, and the caller keeps only
+what the twin still leaves pending. Before any other actual argument, what
+other procedures can reach, and when a launch that may have recorded a stop
+is pending, the caller waits as before.
+
+An external subroutine or scalar function defined in this file gets a twin
+on the same terms when its body launches a kernel or calls a procedure that
+does. The body is compiled here, so the choice may use it. A target dummy
+still gets a twin when the body itself associates no pointer with it: a
+pointer this body creates could outlive the call under a name other than
+the dummy, and the launch is then not left pending. That is not because the
+dummy is safe when the body associates nothing. The caller may already have
+associated a pointer with the actual argument, and this body does not see
+that pointer. A call that may read or write through it is ordered with the
+launch inside the procedure that launched the kernel, before the call. That
+is a call whose body is not summarized, and a summarized call whose roots
+can alias the dummy. A module or file pointer stays a path, so it overlaps
+the dummy, and a pointer component makes the call reach other storage. The
+actual argument's own name can alias a scalar or assumed-shape target dummy
+that is not `intent(in)`, when a variable that is not local to the launching
+procedure has the same declared type, kind, and rank. An explicit-shape or
+assumed-size dummy does not overlap every such name. A summarized call that
+only names a variable of a different type, such as a module integer a timer
+increments, does not. A module procedure is not given
+a twin: only its declaration decides, and a target dummy still gets no twin.
+Another file calls the original procedure, which waits. A call through an
+explicit interface of that procedure in this file is redirected to the twin
+too. A scalar function's twin returns the same result; the original assigns
+that result and then waits.
 
 Storage that a launch only reads the runtime may hand the kernel in place
 (the unified and managed memory models), and the host must not change it
@@ -1162,11 +1191,23 @@ Of a derived-type value it is handed, a call whose callee's body is known
 accesses only the components the body names. A call of a procedure whose
 body is known, launches nothing and has no pointer, target or procedure
 dummy accesses what that body accesses: the same parts of its actual
-arguments, the variables of its host procedure it names, what another
-procedure can reach only when the body names or calls something that can,
-and it acts outside the program when the body may, `stop` included. So a
-call that only asks for the shapes of its arguments (`call
-check_shapes(x, y)`) does not wait for the launch that writes them.
+arguments, the variables of its host procedure it names, and the module or
+file variables it names. A pointer variable among those stays a path, so it
+overlaps every target, including a target dummy of the caller that this body
+never associates a pointer with. A pointer component is not itself a root,
+but it reaches other storage, so that path is kept and the call also counts
+as reaching what another procedure can reach. What another procedure can
+reach, beyond those roots, counts when the body calls a procedure whose
+accesses are not known that way, or a path's root or a component is a
+pointer; such a call also reaches a target dummy, because the caller may
+already have associated a pointer with its actual argument. A path whose
+root and components are not pointers is not proof that every non-pointer
+name is unreachable from the launch: a scalar or assumed-shape target dummy
+that is not `intent(in)` may still be the actual argument those names refer
+to. The call acts outside the program when the body may, `stop`
+included. So a call that only asks for the shapes of its arguments (`call
+check_shapes(x, y)`) does not wait for the launch that writes them, and
+neither does one that only increments a module integer.
 
 The data the host copies for a launch itself -- a contiguous copy of a
 strided array, the components of an array of derived type, the arrays of a

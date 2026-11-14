@@ -34,10 +34,15 @@ A collector given a `CallSummaries` (an opt-in of the passes that use it)
 counts a call of a procedure whose body it knows, and which launches nothing,
 more precisely: such a call accesses what that body accesses, with what the
 body names through a dummy argument replaced by the same part of the actual
-argument, and the variables of the procedures it is contained in that it
-names; it may access what another procedure can reach only when the body
-names such a variable or calls a procedure, and it acts outside the program
-when the body may, `stop` included.
+argument, the variables of the procedures it is contained in that it names,
+and the module or file variables it names. A pointer variable among them
+stays a path, so it overlaps every target, including a target dummy of the
+caller, and a pointer component stays a path too: the component is not a
+root, but the call also reaches other storage. It may access what another
+procedure can reach, beyond those roots, only when the body calls a
+procedure whose accesses are not known that way, or a path's root or a
+component is a pointer; it acts outside the program when the body may,
+`stop` included.
 */
 
 namespace AccessPaths {
@@ -91,9 +96,25 @@ inline bool is_pointer_variable(ASR::symbol_t *s) {
 }
 
 // Whether a path with root `root` is whatever a pointer may point to: no
-// root (`Path::pointee()`), or a pointer variable.
+// root (`Path::pointee()`), or a pointer variable. A pointer component is
+// not a root; `reaches_other_storage` is what sees it. `same_storage_root`
+// stays on this test alone.
 inline bool may_point_anywhere(ASR::symbol_t *root) {
     return root == nullptr || is_pointer_variable(root);
+}
+
+// Whether a path can name storage other than the bytes of its root. The
+// root may be a pointer variable, or a component may be a pointer. The
+// path is still kept: a pointer variable has to overlap every target, and
+// a pointer component is part of the root the body named.
+inline bool reaches_other_storage(const Path &p) {
+    if (may_point_anywhere(p.root)) return true;
+    for (ASR::symbol_t *m : p.members) {
+        if (m != nullptr && ASRUtils::is_pointer(ASRUtils::symbol_type(m))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // A root a pointer may point into, or that another procedure can reach.
@@ -899,6 +920,10 @@ struct BodyAccesses {
     std::vector<std::pair<size_t, Path>> dummies;
     // What it names of the procedures it is contained in.
     std::vector<Path> host;
+    // Module and file variables it names, and other roots that are not its
+    // dummies or the non-aliasable variables of its host. A pointer root
+    // stays here so overlap can see it, and is also `globals`.
+    std::vector<Path> named;
     bool globals = false;
     bool everything = false;
     bool observable = false;
@@ -1061,7 +1086,19 @@ private:
                 // A variable of a procedure `fn` is contained in.
                 s.host.push_back(p);
             } else {
-                s.globals = true;
+                // Keep the root. A module pointer overlaps every target,
+                // including a target dummy the caller associated it with
+                // and this body never names; collapsing it to `globals`
+                // hides that path. A pointer component is not a root, so
+                // `may_point_anywhere` does not see it, but the pointer
+                // reaches other storage: the path stays and the call is
+                // also `globals`. Leaving `globals` unset does not mean a
+                // non-pointer root is safe against every launch. An
+                // assumed-shape or scalar target dummy may still be this
+                // variable (RoutineSync::may_overlap); `globals` would also
+                // reach a target dummy the body does not touch.
+                s.named.push_back(p);
+                if (reaches_other_storage(p)) s.globals = true;
             }
         }
         return true;
@@ -1106,6 +1143,12 @@ inline bool AccessCollector::summarized_call(ASR::Function_t *fn,
                     ->m_parent_symtab) != routine) {
             acc.globals = true;
         }
+    }
+    for (const Path &p : body->named) {
+        acc.paths.push_back(p);
+        // A pointer, or a pointer component, may also reach storage this
+        // path does not name. The path itself stays.
+        if (reaches_other_storage(p)) acc.globals = true;
     }
     acc.globals = acc.globals || body->globals;
     acc.everything = acc.everything || body->everything;
