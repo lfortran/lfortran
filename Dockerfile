@@ -22,19 +22,19 @@ RUN pixi install -e llvm11
 
 # Pixi's GCC 15 libstdc++ is newer than the app image's, so link it
 # statically; the compiler then needs only the system's C libraries.
-RUN pixi run -e llvm11 build \
-        -DCMAKE_BUILD_TYPE=Release \
-        "-DCMAKE_CXX_FLAGS_RELEASE=-Wall -Wextra -O3 -funroll-loops -DNDEBUG" \
-        -DWITH_LSP=yes \
-        -DWITH_STACKTRACE=no \
-        -DWITH_INTERNAL_ALLOC_CHECK=no \
+RUN pixi run -e llvm11 build-release \
         "-DCMAKE_EXE_LINKER_FLAGS=-static-libstdc++ -static-libgcc" \
-        -DCMAKE_INSTALL_PREFIX=/lfortran_build/inst && \
-    pixi run -e llvm11 cmake --build build/llvm11 --target install
+        -DCMAKE_INSTALL_PREFIX=/lfortran_build/inst
 
-RUN pixi run -e llvm11 ctest
-RUN LFORTRAN_TEST_ENV_VAR='STATUS OK!' pixi run -e llvm11 integration_tests
-RUN pixi run -e llvm11 tests
+# The release build is in build/release, so the suites need its directory;
+# the tasks take build/llvm11 from the environment.
+RUN pixi run -e llvm11 ctest --test-dir /lfortran_build/build/release
+RUN LFORTRAN_TEST_ENV_VAR='STATUS OK!' pixi run -e llvm11 integration_tests \
+        --compiler-dir /lfortran_build/build/release/src/bin \
+        --build-dir /lfortran_build/build/release/integration_tests
+RUN pixi run -e llvm11 tests \
+        --compiler-dir /lfortran_build/build/release/src/bin \
+        --build-dir /lfortran_build/build/release/reference_tests
 
 FROM ubuntu:22.04 AS app
 
