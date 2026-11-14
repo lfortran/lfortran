@@ -1519,9 +1519,10 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
         ~Executing() { executing_prompt = 0; prompt_escape = 0; prompt_interrupt = 0; }
     } executing;
     // A cell stops within milliseconds, but not inside a long foreign call,
-    // nor at all where the kernel cannot interrupt it (Windows). Until this long after the first Ctrl-C, more presses
-    // only repeat the interrupt, so that impatient presses cannot end the
-    // session; after it, the prompt offers to end the session.
+    // nor at all where the kernel cannot interrupt it (Windows). Until this
+    // long after the first Ctrl-C, more presses only repeat the interrupt, so
+    // that impatient presses cannot end the session; after it, the prompt
+    // offers to end the session.
     const auto escape_after = std::chrono::seconds(2);
     std::optional<std::chrono::steady_clock::time_point> interrupted;
     Object content{{"code", kernel::utf8(code)}, {"silent", false},
