@@ -93,8 +93,10 @@ mergebot's explicitly completed, equivalent rebases; comments cannot authorize
 heads, and pending rebase journals or locks block merging. Any other push to
 the PR removes the label, as does a CI failure caused by
 the PR (which also turns the PR back into a draft) or a rebase that changes
-what the PR does; a maintainer re-reviews and applies it again. A comment on
-the PR can ask mergebot to squash-merge instead of merging. Agents other than
+what the PR does; a maintainer re-reviews and applies it again. Mergebot
+accepts the label only from an account with write access. A comment from an
+account with write access can ask mergebot to squash-merge instead of
+merging; mergebot ignores comments from anyone else. Agents other than
 mergebot do not push to labeled PRs, merge them, or apply the label.
 
 Mergebot prioritizes throughput: keep merging green PRs while main CI is
