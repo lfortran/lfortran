@@ -124,10 +124,10 @@ session. If C code calls back into Fortran (a comparison function of `qsort`,
 a library callback), the interrupt can stop the cell in the callback and
 abandon the C frames below it, with whatever they held. Compilation is not
 interrupted either; the cell stops before it runs. Interruption is supported
-on Linux and macOS (x86-64 and AArch64). It is not supported on Windows, in WASM (JupyterLite) or with `--openmp`, whose
-threads and locks an interrupt would abandon: there a cell runs to its end,
-and a READ keeps waiting for its input (`lfortran_interruptible` is false in
-the kernel's `input_request`).
+on Linux and macOS (x86-64 and AArch64). It is not supported on Windows, in
+WASM (JupyterLite) or with `--openmp`, whose threads and locks an interrupt
+would abandon: there a cell runs to its end, and a READ keeps waiting for its
+input (`lfortran_interruptible` is false in the kernel's `input_request`).
 
 The built-in kernel reads its control channel while a cell runs, through the
 callback, and answers `interrupt_request` at once; it defers other control
@@ -145,6 +145,10 @@ takes effect once the READ has its input.
 During a cell, Ctrl-C at the prompt only marks the interrupt; the prompt's
 client loop sends the `interrupt_request` and keeps reading the terminal
 without blocking, so that it also notices Ctrl-C while a READ waits for input.
+
+The `test_lfortran` cases `FortranEvaluator interrupt*`, `test_kernel_evaluation`
+(both kernels), `test_session_regressions` (`test_interrupt_prompt`) and
+`test_repl` cover this.
 
 ### An interrupted reallocation can leave a variable dangling
 
@@ -190,7 +194,3 @@ without changing the generated code. After an interrupt, do not use (not even
 `deallocate` or `move_alloc`) an allocatable or deferred-length variable that
 the interrupted cell was assigning; only restarting the session recovers it.
 Variables that the interrupted cell did not assign are not affected.
-
-The `test_lfortran` cases `FortranEvaluator interrupt*`, `test_kernel_evaluation`
-(both kernels), `test_session_regressions` (`test_interrupt_prompt`) and
-`test_repl` cover this.
