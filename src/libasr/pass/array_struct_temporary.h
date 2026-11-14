@@ -11,9 +11,12 @@ namespace LCompilers {
     ASR::ttype_t* normalize_string_temporary_type(Allocator& al,
         const Location& loc, ASR::ttype_t* var_type, bool capture_length=false);
 
+    // `lower_bounds_of_one` gives a temporary declared with the shape of
+    // `value` lower bounds of 1 instead of the ones in the type of `value`.
     ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
-        bool is_pointer_required=false, bool override_physical_type=false);
+        bool is_pointer_required=false, bool override_physical_type=false,
+        bool lower_bounds_of_one=false);
 
     ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
         ASR::expr_t* value, SymbolTable* scope, std::string name_hint, bool is_pointer_required=false);
