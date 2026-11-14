@@ -5354,13 +5354,43 @@ ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType c
     }
 }
 
+// Module procedures stay external: a program that uses the module emits
+// them, and emitting them here as well is a duplicate symbol. Module
+// variables are left as definitions. A program that uses the module emits
+// those too, so the definitions in this object are weak (see the LLVM
+// backend); a program that only calls a global procedure of this file
+// still finds the initializer.
+static void mark_module_procedures_external(SymbolTable *symtab) {
+    for (auto &item : symtab->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(item.second);
+            ASR::FunctionType_t *fn_type = ASR::down_cast<ASR::FunctionType_t>(
+                fn->m_function_signature);
+            if (fn_type->m_abi != ASR::abiType::ExternalUndefined
+                    && fn_type->m_abi != ASR::abiType::BindC) {
+                fn_type->m_abi = ASR::abiType::ExternalUndefined;
+            }
+        } else if (ASR::is_a<ASR::Module_t>(*item.second)) {
+            mark_module_procedures_external(
+                ASR::down_cast<ASR::Module_t>(item.second)->m_symtab);
+        }
+    }
+}
+
 void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u)
 {
     Allocator al(4*1024);
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
             LCompilers::ASR::Module_t *m = LCompilers::ASR::down_cast<LCompilers::ASR::Module_t>(item.second);
-            m->m_symtab->mark_all_variables_external(al);
+            if (m->m_loaded_from_mod) {
+                // Defined in another object.
+                m->m_symtab->mark_all_variables_external(al);
+            } else {
+                // Defined in this file. Keep the variables; do not emit the
+                // procedures a second time.
+                mark_module_procedures_external(m->m_symtab);
+            }
         }
     }
 }

@@ -8488,6 +8488,27 @@ public:
                 gv->setLinkage(llvm::GlobalValue::InternalLinkage);
             }
         }
+        // A file that is compiled for its global procedures also defines the
+        // modules written in that file. A program that uses the module emits
+        // the same variables again, so this copy is weak and yields to that
+        // definition. A program that only calls the procedure still finds
+        // the initializer here.
+        if (!external && compiler_options.generate_code_for_global_procedures
+                && x.m_parent_symtab && x.m_parent_symtab->asr_owner
+                && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)
+                && ASR::is_a<ASR::Module_t>(
+                    *ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner))
+                && !ASR::down_cast<ASR::Module_t>(
+                    ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner))
+                    ->m_loaded_from_mod) {
+            if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
+                if (!gv->isDeclaration()
+                        && gv->getLinkage() != llvm::GlobalValue::InternalLinkage
+                        && gv->getLinkage() != llvm::GlobalValue::PrivateLinkage) {
+                    gv->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+                }
+            }
+        }
         if (!external && x.m_storage == ASR::storage_typeType::Save
                 && ASRUtils::is_class_type(ASRUtils::extract_type(x.m_type))) {
             // Define the static class wrapper with the variable, for the
