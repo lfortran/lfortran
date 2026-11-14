@@ -14816,7 +14816,7 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 16) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 10 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Complex",
                     Level::Error, Stage::Semantic, {
@@ -18383,7 +18383,44 @@ public:
             } else {
                 n_elements += 1;
             }
-            body.push_back(al, expr);
+            // The data of a constant array holds no real(10) or complex(10)
+            // elements: such a constant array, and such an implied do loop
+            // evaluated at compile time, are an
+            // ArrayConstructor of the constant elements, which stands for
+            // the array in a larger one.
+            std::function<bool(ASR::expr_t*)> push_constant_elements =
+                    [&](ASR::expr_t* element) -> bool {
+                ASR::expr_t* element_value = ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ?
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element)->m_value :
+                    ASRUtils::expr_value(element);
+                if (element_value == nullptr && ASR::is_a<ASR::Var_t>(*element)) {
+                    ASR::symbol_t* element_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(element)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*element_sym) &&
+                            ASR::down_cast<ASR::Variable_t>(element_sym)->m_storage == ASR::storage_typeType::Parameter) {
+                        element_value = ASR::down_cast<ASR::Variable_t>(element_sym)->m_symbolic_value;
+                    }
+                }
+                if (element_value == nullptr ||
+                        !ASR::is_a<ASR::ArrayConstructor_t>(*element_value)) {
+                    return false;
+                }
+                ASR::ArrayConstructor_t* values = ASR::down_cast<ASR::ArrayConstructor_t>(element_value);
+                ASR::ttype_t* values_type = ASRUtils::extract_type(values->m_type);
+                if (!(ASRUtils::is_real(*values_type) || ASRUtils::is_complex(*values_type)) ||
+                        ASRUtils::extract_kind_from_ttype_t(values_type) != 10) {
+                    return false;
+                }
+                for (size_t k = 0; k < values->n_args; k++) {
+                    if (!push_constant_elements(values->m_args[k])) {
+                        body.push_back(al, values->m_args[k]);
+                    }
+                }
+                return true;
+            };
+            if (!push_constant_elements(expr)) {
+                body.push_back(al, expr);
+            }
         }
 
         ASR::dimension_t dim;
@@ -22872,7 +22909,7 @@ public:
         }
         ASRUtils::set_kind_to_ttype_t(ret_type, max_ret_kind);
 
-        if (max_ret_kind != 16 && ASRUtils::all_args_evaluated(args)) {
+        if (!ASRUtils::is_wide_float_kind(max_ret_kind) && ASRUtils::all_args_evaluated(args)) {
             double re, im;
             ASRUtils::extract_value(ASRUtils::expr_value(args[0]), re);
             ASRUtils::extract_value(ASRUtils::expr_value(args[1]), im);
@@ -22885,7 +22922,7 @@ public:
         ASR::expr_t* re = CastingUtil::perform_casting(args[0], expected_arg_type, al, loc);
         ASR::expr_t* im = CastingUtil::perform_casting(args[1], expected_arg_type, al, loc);
 
-        if (max_ret_kind == 16 && ASRUtils::all_args_evaluated(args)) {
+        if (ASRUtils::is_wide_float_kind(max_ret_kind) && ASRUtils::all_args_evaluated(args)) {
             value = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, re, im,
                 ret_type, nullptr));
         }
@@ -25630,9 +25667,11 @@ public:
         try {
             if constexpr (std::is_same_v<T, ASR::expr_t*>) {
                 ASR::ttype_t* element_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
-                if ((ASRUtils::is_real(*element_type) || ASRUtils::is_complex(*element_type)) &&
-                        ASRUtils::extract_kind_from_ttype_t(element_type) == 16) {
-                    // A real(16) or complex(16) value is kept as the constant it evaluates to.
+                int element_kind = ASRUtils::extract_kind_from_ttype_t(element_type);
+                if ((ASRUtils::is_real(*element_type) && element_kind == 10) ||
+                        ((ASRUtils::is_real(*element_type) || ASRUtils::is_complex(*element_type)) &&
+                        element_kind == 16)) {
+                    // A real(10), real(16) or complex(16) value is kept as the constant it evaluates to.
                     visitor.value = nullptr;
                     visitor.visit_expr(*expr);
                     if (visitor.value == nullptr ||
@@ -25919,6 +25958,10 @@ public:
         }
         // check compiletime evaluation possibility
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
+        // The data of a constant array holds no real(10) or complex(10)
+        // elements: the values of such a loop are kept as constant elements.
+        bool is_kind10_loop = (ASRUtils::is_real(*type) || ASRUtils::is_complex(*type)) &&
+                ASRUtils::extract_kind_from_ttype_t(type) == 10;
 
         if (is_compiletime && idl_nesting_level == 1) {
             std::vector<int64_t> loop_indices; // fill it with all zero
@@ -25931,7 +25974,28 @@ public:
             idl_not_evaluated = false;
             // TODO: handle multiple types
             // populate compiletime array
-            if (ASRUtils::is_integer(*type)) {
+            if (is_kind10_loop) {
+                Vec<ASR::expr_t*> array; array.reserve(al, 1);
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                bool all_constant = !idl_not_evaluated;
+                for (int i = 0; all_constant && i < itr; i++) {
+                    all_constant = array.p[i] != nullptr;
+                }
+                if (all_constant) {
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                    ASR::dimension_t dim; dim.loc = x.base.base.loc;
+                    ASR::ttype_t* int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int4));
+                    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, itr, int4));
+                    dims.push_back(al, dim);
+                    ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc,
+                        ASRUtils::extract_type(type), dims.p, dims.n,
+                        ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                    idl->m_value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                        x.base.base.loc, array.p, itr, array_type, ASR::arraystorageType::ColMajor));
+                    tmp = (ASR::asr_t*) idl;
+                }
+            } else if (ASRUtils::is_integer(*type)) {
                 Vec<int> array; array.reserve(al, 1);
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
                 data = &array.p[0];
@@ -29344,7 +29408,8 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                 complex_kind));
         ASR::expr_t *value = nullptr;
-        if (re_value && im_value && complex_kind != 16) {
+        // A ComplexConstant holds no complex(10) value: see below.
+        if (re_value && im_value && complex_kind != 16 && complex_kind != 10) {
             double re_double;
             if (ASR::is_a<ASR::RealConstant_t>(*re_value)) {
                 re_double = ASR::down_cast<ASR::RealConstant_t>(re_value)->m_r;
@@ -29381,6 +29446,17 @@ public:
                         ASR::down_cast<ASR::RealConstant_t>(re16_value)),
                     ASRUtils::real_constant_get_r16(
                         ASR::down_cast<ASR::RealConstant_t>(im16_value)), type);
+            }
+        } else if (complex_kind == 10) {
+            // A ComplexConstant holds no complex(10) value. A constant such
+            // value is instead a constructor from the two real(10)
+            // constants: it is its own compile-time value.
+            ASR::ttype_t *part_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, complex_kind));
+            re = CastingUtil::perform_casting(re, part_type, al, x.base.base.loc);
+            im = CastingUtil::perform_casting(im, part_type, al, x.base.base.loc);
+            if (ASRUtils::expr_value(re) && ASRUtils::expr_value(im)) {
+                value = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
+                    x.base.base.loc, re, im, type, nullptr));
             }
         }
         tmp = ASR::make_ComplexConstructor_t(al, x.base.base.loc,

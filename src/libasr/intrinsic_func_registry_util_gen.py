@@ -917,7 +917,7 @@ intrinsic_funcs_args = {
             "return": "real32",
             "kind_arg": True,
             "real_32_except_complex": True,
-            "valid_kinds": [4, 8, 16]
+            "valid_kinds": [4, 8, 10, 16]
         },
     ],
     "Int": [

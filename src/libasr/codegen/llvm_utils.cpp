@@ -230,6 +230,9 @@ namespace LCompilers {
             std::vector<llvm::Type*> els_8 = {
                 llvm::Type::getDoubleTy(context),
                 llvm::Type::getDoubleTy(context)};
+            std::vector<llvm::Type*> els_10 = {
+                getFPType(10),
+                getFPType(10)};
             std::vector<llvm::Type*> els_16 = {
                 llvm::Type::getFP128Ty(context),
                 llvm::Type::getFP128Ty(context)};
@@ -244,9 +247,10 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context)  /*length*/ };
             complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
             complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
-            // Not packed: complex(16) has the 16-byte alignment of its fp128
-            // parts, as in C, so it is laid out like C in a derived type and
-            // its parts can be moved with aligned SSE instructions.
+            // Not packed: complex(10) and complex(16) have the alignment of
+            // their parts, as in C, so they are laid out like C in a derived
+            // type and their parts can be moved with aligned instructions.
+            complex_type_10 = llvm::StructType::create(context, els_10, "complex_10");
             complex_type_16 = llvm::StructType::create(context, els_16, "complex_16");
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
@@ -821,11 +825,14 @@ namespace LCompilers {
             case 8:
                 type = complex_type_8;
                 break;
+            case 10:
+                type = complex_type_10;
+                break;
             case 16:
                 type = complex_type_16;
                 break;
             default:
-                throw CodeGenError("Only 32, 64 and 128 bits complex kinds are supported.");
+                throw CodeGenError("Only 32, 64, 80 and 128 bits complex kinds are supported.");
         }
         if( type != nullptr ) {
             if( get_pointer ) {
@@ -1170,7 +1177,7 @@ namespace LCompilers {
                                 type = type_fx2;
                             }
                         } else {
-                            LCOMPILERS_ASSERT(a_kind == 8 || a_kind == 16)
+                            LCOMPILERS_ASSERT(a_kind == 8 || a_kind == 10 || a_kind == 16)
                             if (compiler_options.platform == Platform::Windows) {
                                 // 128 bit aggregate type is passed by reference
                                 type = getComplexType(a_kind, true);
@@ -1500,7 +1507,7 @@ namespace LCompilers {
             // <2 x float>
             return FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
         }
-        LCOMPILERS_ASSERT(a_kind == 8 || a_kind == 16)
+        LCOMPILERS_ASSERT(a_kind == 8 || a_kind == 10 || a_kind == 16)
         if (a_kind == 8 && compiler_options.platform == Platform::Windows) {
             return nullptr;
         }

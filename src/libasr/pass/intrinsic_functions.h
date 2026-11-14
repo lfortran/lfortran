@@ -329,15 +329,18 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     // scalar and pass it where the C function expects a value.
     ASR::ttype_t *value_arg_type = ASRUtils::type_get_past_pointer(arg_type);
     std::string c_func_name;
-    // The complex(16) routines of the runtime take and return their value
-    // through pointers: the ABI for a pair of binary128 numbers passed by
-    // value differs between platforms.
+    // The complex(10) and complex(16) routines of the runtime take and return
+    // their value through pointers: the ABI for a pair of x87 or binary128
+    // numbers passed by value differs between platforms.
     bool by_reference = false;
     switch (value_arg_type->type) {
         case ASR::ttypeType::Complex : {
             int complex_kind = ASRUtils::extract_kind_from_ttype_t(value_arg_type);
             if (complex_kind == 4) {
                 c_func_name = "_lfortran_c" + new_name;
+            } else if (complex_kind == 10) {
+                c_func_name = "_lfortran_c80_" + new_name;
+                by_reference = true;
             } else if (complex_kind == 16) {
                 c_func_name = "_lfortran_c128_" + new_name;
                 by_reference = true;
@@ -1675,6 +1678,14 @@ namespace StorageSize {
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
             if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 64, t1, loc);
             else if (kind == 8) return make_ConstantWithType(make_IntegerConstant_t, 128, t1, loc);
+            else if (kind == 10) {
+                // The size of the platform's storage of two real(10) parts.
+                int64_t bytes = ASRUtils::get_type_byte_size(type);
+                if (bytes > 0) {
+                    return make_ConstantWithType(make_IntegerConstant_t, bytes * 8, t1, loc);
+                }
+                return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
+            }
             else if (kind == 16) return make_ConstantWithType(make_IntegerConstant_t, 256, t1, loc);
             else return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
             
@@ -6085,12 +6096,14 @@ namespace Cmplx {
                 !ASRUtils::is_array(expr_type(args[0])) && expr_value(args[0]) &&
                 ASR::is_a<ASR::ComplexConstant_t>(*expr_value(args[0]))) {
             ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(expr_value(args[0]));
-            if (ASRUtils::complex_constant_is_r16(cc)) {
+            // A conversion to complex(10) is left to run time.
+            if (ASRUtils::complex_constant_is_r16(cc) &&
+                    extract_kind_from_ttype_t(return_type) != 10) {
                 m_value = ASRUtils::fold_complex_cast(al, loc, cc,
                     ASR::cast_kindType::ComplexToComplex, return_type);
             }
         }
-        if (extract_kind_from_ttype_t(return_type) != 16 && all_args_evaluated(m_args)) {
+        if (!is_wide_float_kind(extract_kind_from_ttype_t(return_type)) && all_args_evaluated(m_args)) {
             Vec<ASR::expr_t*> args_values; args_values.reserve(al, 3);
             args_values.push_back(al, expr_value(m_args[0]));
             args_values.push_back(al, expr_value(m_args[1]));
@@ -6100,27 +6113,35 @@ namespace Cmplx {
                 return nullptr;
             }
         }
-        if (extract_kind_from_ttype_t(return_type) == 16 && !ASRUtils::is_array(return_type) &&
+        if (is_wide_float_kind(extract_kind_from_ttype_t(return_type)) && !ASRUtils::is_array(return_type) &&
                 !is_complex(*expr_type(args[0])) && !ASRUtils::is_array(expr_type(args[0])) &&
                 !ASRUtils::is_array(expr_type(m_args[1])) && all_args_evaluated(m_args)) {
-            ASR::ttype_t* real16 = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 16));
-            auto to_real16 = [&](ASR::expr_t* a) -> ASR::expr_t* {
+            // A constant complex(16) value is a ComplexConstant of binary128
+            // parts; a constant complex(10) value is a constructor from two
+            // real(10) constants, as a ComplexConstant holds no x87 parts.
+            int part_kind = extract_kind_from_ttype_t(return_type);
+            ASR::ttype_t* part_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, part_kind));
+            auto to_part = [&](ASR::expr_t* a) -> ASR::expr_t* {
                 if (is_integer(*expr_type(a))) {
                     return EXPR(ASRUtils::make_Cast_t_value(al, loc, a,
-                        ASR::cast_kindType::IntegerToReal, real16));
-                } else if (is_real(*expr_type(a)) && extract_kind_from_ttype_t(expr_type(a)) == 16) {
+                        ASR::cast_kindType::IntegerToReal, part_type));
+                } else if (is_real(*expr_type(a)) && extract_kind_from_ttype_t(expr_type(a)) == part_kind) {
                     return a;
                 } else if (is_real(*expr_type(a))) {
                     return EXPR(ASRUtils::make_Cast_t_value(al, loc, a,
-                        ASR::cast_kindType::RealToReal, real16));
+                        ASR::cast_kindType::RealToReal, part_type));
                 }
                 return nullptr;
             };
-            ASR::expr_t* re = to_real16(m_args[0]);
-            ASR::expr_t* im = to_real16(m_args[1]);
+            ASR::expr_t* re = to_part(m_args[0]);
+            ASR::expr_t* im = to_part(m_args[1]);
             ASR::expr_t* re_value = re ? expr_value(re) : nullptr;
             ASR::expr_t* im_value = im ? expr_value(im) : nullptr;
-            if (re_value && im_value && ASR::is_a<ASR::RealConstant_t>(*re_value) &&
+            if (part_kind == 10) {
+                if (re && im && is_value_constant(re_value) && is_value_constant(im_value)) {
+                    m_value = EXPR(ASR::make_ComplexConstructor_t(al, loc, re, im, return_type, nullptr));
+                }
+            } else if (re_value && im_value && ASR::is_a<ASR::RealConstant_t>(*re_value) &&
                     ASR::is_a<ASR::RealConstant_t>(*im_value)) {
                 m_value = ASRUtils::make_ComplexConstant_r16(al, loc,
                     ASRUtils::real_constant_get_r16(ASR::down_cast<ASR::RealConstant_t>(re_value)),
@@ -6147,17 +6168,29 @@ namespace Cmplx {
             result = a
         end function
         */
+        // A real part of another kind than the result is converted explicitly
+        // when kind=10 is involved, as the backend does not infer conversions.
+        ASR::ttype_t* part_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+            ASRUtils::extract_kind_from_ttype_t(return_type)));
+        auto to_part = [&](ASR::expr_t* a, ASR::ttype_t* a_type) -> ASR::expr_t* {
+            int a_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+            int r_kind = ASRUtils::extract_kind_from_ttype_t(return_type);
+            if (a_kind != r_kind && (a_kind == 10 || r_kind == 10)) {
+                return b.r2r_t(a, part_type);
+            }
+            return a;
+        };
         if (is_integer(*arg_types[0])) {
             if (is_integer(*arg_types[1])) {
                 body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  b.i2r_t(args[1], real32), return_type, nullptr))));
             } else if (is_real(*arg_types[1])) {
-                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  args[1], return_type, nullptr))));
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, b.i2r_t(args[0], real32),  to_part(args[1], arg_types[1]), return_type, nullptr))));
             }
         } else if (is_real(*arg_types[0])) {
             if (is_integer(*arg_types[1])) {
-                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0], b.i2r_t(args[1], real32), return_type, nullptr))));
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, to_part(args[0], arg_types[0]), b.i2r_t(args[1], real32), return_type, nullptr))));
             } else if (is_real(*arg_types[0])) {
-                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, args[0],  args[1], return_type, nullptr))));
+                body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstructor_t(al, loc, to_part(args[0], arg_types[0]),  to_part(args[1], arg_types[1]), return_type, nullptr))));
             }
         } else if (is_complex(*arg_types[0])) {
             if (ASRUtils::check_equal_type(ASRUtils::expr_type(args[0]), return_type, args[0], nullptr)) {
