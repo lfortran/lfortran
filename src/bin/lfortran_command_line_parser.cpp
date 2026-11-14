@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -429,8 +430,34 @@ namespace LCompilers::CommandLineInterface {
             handle_help_category(app, help_arg);
         }
 
+        // gfortran spells the preprocessor switch `-cpp` / `-nocpp`.
+        // `-cpp` is otherwise read as the `-c` flag plus an unknown `-pp`.
+        std::vector<const char *> rewritten_argv;
+        const char *const *parse_argv = argv;
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            rewritten_argv.reserve(static_cast<size_t>(argc));
+            for (int i = 0; i < argc; ++i) {
+                if (std::strcmp(argv[i], "-cpp") == 0) {
+                    rewritten_argv.push_back("--cpp");
+                } else if (std::strcmp(argv[i], "-nocpp") == 0) {
+                    rewritten_argv.push_back("--no-cpp");
+                } else {
+                    rewritten_argv.push_back(argv[i]);
+                }
+            }
+            parse_argv = rewritten_argv.data();
+        } else {
+            for (std::string &arg : args) {
+                if (arg == "-cpp") {
+                    arg = "--cpp";
+                } else if (arg == "-nocpp") {
+                    arg = "--no-cpp";
+                }
+            }
+        }
+
+        if (argv != nullptr) {
+            app.parse(argc, parse_argv);
         } else {
             app.parse(args);
         }
