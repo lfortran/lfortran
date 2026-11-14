@@ -108,14 +108,10 @@ the signals that are not for a cell, and SIGURG is reserved from then on.
 The abandoned frames are not unwound. What the interrupted cell allocated,
 and its local variables, leak; nothing is rolled back. What it did before the
 interrupt stays done, as in IPython: variables it had assigned keep their new
-values, and output it had written is shown. The cell can stop between any
-two instructions of its code, so a variable whose storage it was replacing
-(an allocatable, or a deferred-length string, such as `v = [v, i]`) may be
-left referring to memory that has already been freed; using it again, even
-deallocating it, can crash the session, so do not. Variables that the cell
-did not assign are not affected. The runtime clears the state that
-an I/O statement keeps across its calls. The session keeps everything that
-earlier cells defined, so later cells can use their variables and procedures.
+values, and output it had written is shown. The runtime clears the state
+that an I/O statement keeps across its calls. The session keeps everything
+that earlier cells defined, so later cells can use their variables and
+procedures, with one exception, described at the end of this section.
 A request is not carried into the next cell: an interrupt that arrives while
 no cell runs does nothing. An interrupted cell is a failed cell, so with
 Jupyter's `stop_on_error` (the default) the cells already queued behind it are
@@ -153,3 +149,43 @@ without blocking, so that it also notices Ctrl-C while a READ waits for input.
 The `test_lfortran` cases `FortranEvaluator interrupt*`, `test_kernel_evaluation`
 (both kernels), `test_session_regressions` (`test_interrupt_prompt`) and
 `test_repl` cover this.
+
+### An interrupted reallocation can leave a variable dangling
+
+The cell can stop between any two instructions of its code, so a variable
+whose storage it was replacing (an allocatable array or a deferred-length
+string) may be left referring to memory that has already been freed. For
+example, with a session-level allocatable:
+
+```fortran
+integer, allocatable :: v(:)
+integer :: i
+allocate(v(0))
+```
+
+a cell that grows it in a loop, and is interrupted:
+
+```fortran
+do i = 1, huge(i)
+    v = [v, i]
+end do
+```
+
+Each `v = [v, i]` builds its right side in a temporary, then resizes the
+storage of `v` with `realloc`, which may move it: it frees the old storage and
+returns a new address, which the generated code then stores in `v`'s
+descriptor. If the interrupt lands after `realloc` returns and before that
+store, `v` still points at the freed storage. A later cell such as
+
+```fortran
+print *, size(v), v(1)
+deallocate(v)
+```
+
+then reads freed memory, and its `deallocate` frees that memory a second time,
+which can corrupt the heap or abort the session. The window is a few
+instructions per assignment, so it is rare, but it cannot be excluded without
+changing the generated code. After an interrupt, do not use (not even
+`deallocate` or `move_alloc`) an allocatable or deferred-length variable that
+the interrupted cell was assigning; give it no further use, or restart the
+session. Variables that the interrupted cell did not assign are not affected.
