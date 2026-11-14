@@ -2429,7 +2429,7 @@ private:
                 traceback.push_back(kernel::utf8(line));
             }
             result["traceback"] = std::move(traceback);
-            if (!silent && cell.error_name == "KeyboardInterrupt")
+            if (!silent && cell.interrupted)
                 publish("error", request.header, Object{{"ename", cell.error_name},
                     {"evalue", kernel::utf8(cell.error_value)}, {"traceback", Array{}}});
         }

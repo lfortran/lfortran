@@ -227,7 +227,7 @@ namespace LCompilers::LFortran {
                 traceback.push_back(utf8(line));
             }
             result["traceback"] = traceback;
-            if (!silent && cell.error_name == "KeyboardInterrupt")
+            if (!silent && cell.interrupted)
                 publish_execution_error(cell.error_name, utf8(cell.error_value), {});
         }
         cb(result);

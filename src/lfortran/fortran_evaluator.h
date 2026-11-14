@@ -122,6 +122,8 @@ public:
         // trace (empty without stacktrace support).
         std::string error_name, error_value;
         bool internal_error = false;
+        // An interrupt stopped the cell (error_name "KeyboardInterrupt").
+        bool interrupted = false;
         std::string error_traceback;
 
         // The text a frontend shows for a failed cell.
