@@ -362,7 +362,8 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 //     else
 //         nullify(tmp)
 //     end if
-// and `is_present`, the presence of the target, is passed for it as well.
+// (with no `nullify` for an assumed-rank `x`) and `is_present`, the
+// presence of the target, is passed for it as well.
 // The association depends only on the target, which a nonpointer dummy
 // keeps for the whole procedure, so it can precede the statement, even one
 // that evaluates the call several times or under a mask.
@@ -385,22 +386,25 @@ void associate_maybe_absent_target_with_pointer(Allocator& al,
     // An assumed-length `character(len=*)` target gives the local temporary
     // a deferred length instead
     ASR::ttype_t* pointer_type = normalize_string_temporary_type(al, loc,
-        ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-            ASRUtils::create_array_type_with_empty_dims(al,
-                ASRUtils::extract_n_dims_from_ttype(target_type), target_type))));
+        get_pointer_type_for_target(al, target, loc));
     std::string pointer_name = scope->get_unique_name(
         "__libasr_created_optional_target_pointer_");
     ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(loc,
         pointer_name, al, scope, pointer_type, ASR::intentType::Local,
         ASRUtils::EXPR2VAR(target)->m_type_declaration, target);
     ASRUtils::ASRBuilder builder(al, loc);
-    Vec<ASR::expr_t*> nullify_vars; nullify_vars.reserve(al, 1);
-    nullify_vars.push_back(al, pointer_variable);
+    std::vector<ASR::stmt_t*> absent_body;
+    // NULLIFY does not take an assumed-rank pointer; the callee never reads an absent one
+    if( !ASRUtils::is_assumed_rank_array(target_type) ) {
+        Vec<ASR::expr_t*> nullify_vars; nullify_vars.reserve(al, 1);
+        nullify_vars.push_back(al, pointer_variable);
+        absent_body.push_back(ASRUtils::STMT(ASR::make_Nullify_t(al, loc,
+            nullify_vars.p, nullify_vars.size())));
+    }
     pass_result.push_back(al, builder.If(is_present,
         {ASRUtils::STMT(ASR::make_Associate_t(al, loc, pointer_variable, target,
             ASR::pointer_bounds_formType::NoPointerBounds))},
-        {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_vars.p,
-            nullify_vars.size()))}));
+        absent_body));
     call_arg.m_value = pointer_variable;
 }
 
