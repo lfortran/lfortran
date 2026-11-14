@@ -99,9 +99,11 @@ runs in a process group of its own that is killed (with its descendants that
 stay in the group) and reaped first, and a READ from stdin that waits for
 input. (In a process that is the foreground job of a terminal, the command
 runs as with `system()`: the terminal's Ctrl-C reaches it, and the cell
-waits for it.) Output statements and formatted READ also stop where their runtime call
-begins, so that a loop that spends its time in the runtime stops at its next
-statement.
+waits for it.) Output statements and formatted READ also stop where their
+runtime call begins, so that a loop that spends its time in the runtime stops
+at its next statement. The signal handler is installed once a cell runs that
+can be interrupted; a SIGURG handler that the process had before still gets
+the signals that are not for a cell, and SIGURG is reserved from then on.
 
 The abandoned frames are not unwound. What the interrupted cell allocated,
 and its local variables, leak; nothing is rolled back. What it did before the
@@ -124,8 +126,8 @@ A long call into foreign (C) code, or a single long runtime call, stops only
 when it returns to Fortran code; at the prompt, a second Ctrl-C then ends the
 session. If C code calls back into Fortran (a comparison function of `qsort`,
 a library callback), the interrupt can stop the cell in the callback and
-abandon the C frames below it, with whatever they held. Compilation is not interrupted either; the cell stops before it
-runs. Interruption is supported on Linux and macOS (x86-64 and AArch64). It
+abandon the C frames below it, with whatever they held. Compilation is not
+interrupted either; the cell stops before it runs. Interruption is supported on Linux and macOS (x86-64 and AArch64). It
 is not supported on Windows, in WASM (JupyterLite) or with `--openmp`, whose
 threads and locks an interrupt would abandon: there a cell runs to its end,
 and a READ keeps waiting for its input (`lfortran_interruptible` is false in
