@@ -4663,12 +4663,16 @@ public:
             this->visit_expr_wrapper(m_args[i], true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
-                // Use ordered comparison for Fortran-compatible NaN propagation
-                // If either operand is NaN, comparison returns false, preserving result
+                // GFortran returns the numeric argument when the other is
+                // NaN. An ordered compare keeps the running result when the
+                // new argument is NaN; if the running result is NaN, take
+                // the new argument instead.
+                llvm::Value *result_is_nan = builder->CreateFCmpUNO(result, result);
                 llvm::Value *cmp = is_max
                     ? builder->CreateFCmpOGT(arg, result)
                     : builder->CreateFCmpOLT(arg, result);
-                result = builder->CreateSelect(cmp, arg, result);
+                llvm::Value *use_arg = builder->CreateOr(cmp, result_is_nan);
+                result = builder->CreateSelect(use_arg, arg, result);
             } else if (val_type->isIntegerTy()) {
                 llvm::Value *cmp = is_max
                     ? builder->CreateICmpSGT(result, arg)
@@ -7901,6 +7905,20 @@ public:
         if (x.m_abi == ASR::abiType::BindC &&
                 (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
+        }
+        // With separate compilation the unit that compiles the module
+        // defines its variables, and a unit that only loads the module
+        // references them. Without it the module file emits an empty
+        // object, so the unit that has the program defines them.
+        if (compiler_options.separate_compilation
+                && x.m_parent_symtab && x.m_parent_symtab->asr_owner
+                && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                x.m_parent_symtab->asr_owner);
+            if (ASR::is_a<ASR::Module_t>(*owner)
+                    && ASR::down_cast<ASR::Module_t>(owner)->m_loaded_from_mod) {
+                external = true;
+            }
         }
         llvm::Constant* init_value = get_static_pointer_association(x);
         llvm::Constant* alias_target = nullptr;
@@ -29568,6 +29586,12 @@ public:
             if (function == nullptr) {
                 return;
             }
+            // An implicit interface has no dummy to require the actual
+            // argument to be allocated. Callers such as f2py pass the
+            // descriptor of an unallocated allocatable and a separate flag.
+            if (ASRUtils::is_bare_implicit_interface(*function)) {
+                return;
+            }
         } else {
             throw CodeGenError("bounds_check_call: Symbol type not supported");
         }
@@ -29634,10 +29658,15 @@ public:
 
                     // Throw error if descriptor array is not allocated
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
-                    if (is_return_value) {
+                    // A cast wrapper for an implicit-interface call passes the
+                    // descriptor through even when the allocatable is not
+                    // allocated. The callee receives that state itself.
+                    bool implicit_cast = std::string(ASRUtils::symbol_name(m_name)).find(
+                        "~fpcast_ptr") != std::string::npos;
+                    if (!implicit_cast && is_return_value) {
                         generate_unallocated_array_runtime_error(
                             builder->CreateNot(is_allocated), arr_cast->m_arg);
-                    } else {
+                    } else if (!implicit_cast) {
                         llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
                                 "Argument %d of subroutine %s is unallocated.",
                                 {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc}, {})},
