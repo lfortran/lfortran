@@ -41,6 +41,13 @@ subroutine grow(c) bind(c)
     end select
 end subroutine
 
+subroutine check_opt(o, n) bind(c)
+    real(c_float), optional, intent(in) :: o(..)
+    integer(c_int), value :: n
+    if (.not. present(o)) error stop 12
+    if (size(o) /= n) error stop 13
+end subroutine
+
 subroutine fwd(a, n1, n, last)
     real(c_float), intent(in) :: a(..)
     integer(c_int), value :: n1, n
@@ -70,6 +77,7 @@ call check(x, 3, 12, 12.0)
 ! An assumed-rank actual passed on to a bind(c) procedure
 call fwd(x, 3, 12, 12.0)
 call check_char(w, 3)
+call check_opt(x, 12)
 allocate(z(2, 3))
 call fwd_alloc(z, 6)
 if (any(shape(z) /= [2, 3])) error stop 9
