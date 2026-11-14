@@ -444,8 +444,8 @@ def read_disconnect(exe, cwd):
 
 def read_errors(exe, cwd):
     """A READ without iostat= that fails stops the kernel with the runtime's
-    own message, as it stops a compiled program: an internal READ and a
-    READ of a file, which never wait for stdin."""
+    own message, as it stops a compiled program: an internal READ, a READ of
+    a file, and a READ of stdin."""
     data = cwd / "empty.txt"
     data.write_text("")
     cells = [
@@ -456,10 +456,16 @@ def read_errors(exe, cwd):
             "use read_eof\ncall rd()" % data,
             "Error: Invalid int32_t input from file (EOF)."),
     ]
+    # A typo at a READ of stdin, which the kernel can interrupt
+    cells.append(("integer :: sn\nread *, sn", "Error: Invalid input for int32_t."))
     for code, message in cells:
         with kernel(exe, cwd) as (process, join, ports):
             client = join()
-            msg_id = client.execute(code)
+            stdin = "read *" in code
+            msg_id = client.execute(code, allow_stdin=stdin)
+            if stdin:
+                client.get_stdin_msg(timeout=60)
+                client.input("abc")
             text = ""
             deadline = time.monotonic() + 20
             while process.poll() is None and time.monotonic() < deadline:
