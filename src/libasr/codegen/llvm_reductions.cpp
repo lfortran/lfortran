@@ -65,8 +65,15 @@ using namespace llvm;
 #if LLVM_VERSION_MAJOR >= 11
 
 bool is_fast(Value *v) {
-    return isa<FPMathOperator>(v)
-        && cast<Instruction>(v)->getFastMathFlags().isFast();
+    // `--fast` does not set NoNaNs or NoInfs: an infinity from
+    // `ieee_value` would be poison. The rewrite still applies to the
+    // other fast-math flags.
+    if (!isa<FPMathOperator>(v)) {
+        return false;
+    }
+    FastMathFlags f = cast<Instruction>(v)->getFastMathFlags();
+    return f.allowReassoc() && f.noSignedZeros() && f.allowReciprocal()
+        && f.allowContract() && f.approxFunc();
 }
 
 // Whether the constant element index `at` is inside the vector type

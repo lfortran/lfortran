@@ -204,8 +204,15 @@ Value *rsqrt_estimate(IRBuilder<> &b, Type *type, Value *x) {
 }
 
 bool is_fast(Value *v) {
-    return isa<FPMathOperator>(v)
-        && cast<Instruction>(v)->getFastMathFlags().isFast();
+    // `--fast` does not set NoNaNs or NoInfs: an infinity from
+    // `ieee_value` would be poison. The estimate still applies to the
+    // other fast-math flags.
+    if (!isa<FPMathOperator>(v)) {
+        return false;
+    }
+    FastMathFlags f = cast<Instruction>(v)->getFastMathFlags();
+    return f.allowReassoc() && f.noSignedZeros() && f.allowReciprocal()
+        && f.allowContract() && f.approxFunc();
 }
 
 Intrinsic::ID intrinsic_id(Instruction &i) {
