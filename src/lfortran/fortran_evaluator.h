@@ -93,7 +93,7 @@ public:
         // Flush the frontend's transport before STOP terminates the process.
         // Called on the execute() caller, after the last output.
         std::function<void()> flush_on_exit;
-        // Set, the cell runs on a separate thread and execute() asks this
+        // If set, the cell runs on a separate thread and execute() asks this
         // every few milliseconds on the caller, and after each callback above.
         // Once it returns true, the cell is interrupted (see
         // interruptible()) and fails with a KeyboardInterrupt. It must not

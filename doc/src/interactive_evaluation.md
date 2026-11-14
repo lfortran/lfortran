@@ -97,7 +97,9 @@ returns, and a later signal stops the cell once it is back in Fortran code.
 The runtime's waits stop at once: SLEEP, EXECUTE_COMMAND_LINE, whose command
 runs in a process group of its own that is killed (with its descendants that
 stay in the group) and reaped first, and a READ from stdin that waits for
-input. Output statements and formatted READ also stop where their runtime call
+input. (In a process that is the foreground job of a terminal, the command
+runs as with `system()`: the terminal's Ctrl-C reaches it, and the cell
+waits for it.) Output statements and formatted READ also stop where their runtime call
 begins, so that a loop that spends its time in the runtime stops at its next
 statement.
 
