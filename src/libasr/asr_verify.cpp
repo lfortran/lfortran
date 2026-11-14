@@ -11,6 +11,8 @@
 
 #include <algorithm>
 #include <set>
+#include <tuple>
+#include <vector>
 
 namespace LCompilers {
 
@@ -509,14 +511,37 @@ public:
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
-            // The backends only declare the procedures of a BLOCK: the
-            // procedures of its interface blocks and its external procedures.
             if (ASR::is_a<ASR::Function_t>(*a.second)) {
-                require_with_loc(ASRUtils::get_FunctionType(*ASR::down_cast<ASR::Function_t>(
-                        a.second))->m_deftype != ASR::deftypeType::Implementation,
-                    "The procedure '" + a.first + "' in the scope of a Block "
-                    "must not have an implementation",
-                    a.second->base.loc);
+                bool implementation = ASRUtils::get_FunctionType(
+                    *ASR::down_cast<ASR::Function_t>(a.second))->m_deftype ==
+                        ASR::deftypeType::Implementation;
+                if (implementation) {
+                    // A pass can implement a local type's binding in its
+                    // BLOCK scope, which also makes the local type visible.
+                    bool bound_to_local_type = false;
+                    for (auto &local : x.m_symtab->get_scope()) {
+                        if (!ASR::is_a<ASR::Struct_t>(*local.second)) continue;
+                        ASR::Struct_t *type =
+                            ASR::down_cast<ASR::Struct_t>(local.second);
+                        for (auto &member : type->m_symtab->get_scope()) {
+                            if (!ASR::is_a<ASR::StructMethodDeclaration_t>(
+                                    *member.second)) continue;
+                            auto *binding =
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                                    member.second);
+                            if (binding->m_proc == a.second) {
+                                bound_to_local_type = true;
+                                break;
+                            }
+                        }
+                        if (bound_to_local_type) break;
+                    }
+                    require_with_loc(bound_to_local_type,
+                        "The procedure '" + a.first +
+                        "' in the scope of a Block may have an implementation "
+                        "only when bound to a type declared in that Block",
+                        a.second->base.loc);
+                }
             }
             this->visit_symbol(*a.second);
         }
@@ -636,6 +661,89 @@ public:
                 "A module dependency must not be an empty string");
             require(valid_name(x.m_dependencies[i]),
                 "A module dependency must be a valid string");
+        }
+        if (x.m_pdt_state) {
+            std::set<std::tuple<std::string, std::string, std::vector<int64_t>>>
+                specializations;
+            auto kind_values = [&](ASR::expr_t** kinds, size_t count) {
+                std::vector<int64_t> values;
+                require_id(count > 0,
+                    "asr.verify.pdt.kinds_required",
+                    "A PDT specialization must have concrete kind values");
+                for (size_t i = 0; i < count; i++) {
+                    require_id(kinds[i] &&
+                            ASR::is_a<ASR::IntegerConstant_t>(*kinds[i]),
+                        "asr.verify.pdt.kind_is_integer_constant",
+                        "PDT kind values must be integer constants");
+                    int64_t value = ASR::down_cast<ASR::IntegerConstant_t>(
+                        kinds[i])->m_n;
+                    require_id(value >= 0,
+                        "asr.verify.pdt.kind_is_nonnegative",
+                        "PDT kind values must be nonnegative");
+                    values.push_back(value);
+                }
+                return values;
+            };
+            for (size_t i = 0; i < x.m_pdt_state->n_specializations; i++) {
+                const ASR::pdt_specialization_t& spec =
+                    x.m_pdt_state->m_specializations[i];
+                require_id(spec.m_owner_module && spec.m_template_name &&
+                        valid_name(spec.m_owner_module) &&
+                        valid_name(spec.m_template_name) &&
+                        std::string(spec.m_owner_module) != x.m_name,
+                    "asr.verify.pdt.specialization_owner",
+                    "A foreign PDT specialization needs a defining module "
+                    "and template");
+                require_id(present(x.m_dependencies, x.n_dependencies,
+                        spec.m_owner_module),
+                    "asr.verify.pdt.owner_dependency",
+                    "A PDT specialization's defining module must be a "
+                    "declared dependency");
+                require_id(specializations.insert({
+                        spec.m_owner_module, spec.m_template_name,
+                        kind_values(spec.m_kinds, spec.n_kinds)}).second,
+                    "asr.verify.pdt.duplicate_specialization",
+                    "A module must not request the same PDT specialization twice");
+            }
+            std::set<std::string> templates;
+            for (size_t i = 0; i < x.m_pdt_state->n_templates; i++) {
+                const ASR::pdt_template_recipe_t& recipe =
+                    x.m_pdt_state->m_templates[i];
+                require_id(recipe.m_template_name &&
+                        templates.insert(recipe.m_template_name).second,
+                    "asr.verify.pdt.template_recipe",
+                    "A PDT template may have only one deferred-member recipe");
+                ASR::symbol_t* symbol = x.m_symtab->get_symbol(
+                    recipe.m_template_name);
+                require_id(symbol && ASR::is_a<ASR::Struct_t>(*symbol),
+                    "asr.verify.pdt.recipe_template_is_struct",
+                    "A deferred-member recipe must name a local PDT template");
+                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(symbol);
+                std::set<std::string> members;
+                for (size_t j = 0; j < recipe.n_members; j++) {
+                    const ASR::pdt_member_recipe_t& member =
+                        recipe.m_members[j];
+                    ASR::symbol_t* declared = member.m_member_name
+                        ? st->m_symtab->get_symbol(member.m_member_name)
+                        : nullptr;
+                    require_id(member.m_member_name && member.m_type_name &&
+                            members.insert(member.m_member_name).second &&
+                            declared && ASR::is_a<ASR::Variable_t>(*declared),
+                        "asr.verify.pdt.recipe_member",
+                        "A PDT member recipe must name a unique declared variable");
+                    ASR::symbol_t* inner = st->m_symtab->resolve_symbol(
+                        member.m_type_name);
+                    if (check_external && inner) {
+                        inner = ASRUtils::symbol_get_past_external(inner);
+                    }
+                    require_id(inner && (ASR::is_a<ASR::Struct_t>(*inner) ||
+                            (!check_external &&
+                                ASR::is_a<ASR::ExternalSymbol_t>(*inner))),
+                        "asr.verify.pdt.recipe_type",
+                        "A PDT member recipe must name a derived type template");
+                    kind_values(member.m_kinds, member.n_kinds);
+                }
+            }
         }
         verify_separate_module_procedures(x, parent_symtab);
         for( auto& dep: module_dependencies ) {

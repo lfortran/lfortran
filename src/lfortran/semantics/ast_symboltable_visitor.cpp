@@ -1010,7 +1010,10 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation
+                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation,
+                                                false, [&](ASR::TranslationUnit_t& tu) {
+                                                    materialize_imported_pdt_specializations(tu);
+                                                }
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
@@ -1020,7 +1023,7 @@ public:
                                                 nullptr,
                                                 0,
                                                 false, false, false,
-                                                host_only_object, nullptr);
+                                                host_only_object, nullptr, nullptr);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -1068,7 +1071,7 @@ public:
                                                 nullptr,
                                                 0,
                                                 false, false, false,
-                                                host_only_object, nullptr);
+                                                host_only_object, nullptr, nullptr);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {
@@ -1232,6 +1235,21 @@ public:
         } catch (SemanticAbort &) {
             if (!compiler_options.continue_compilation) throw;
         }
+
+        // The defining module must serialize default-kind specializations
+        // before another module can inherit or reference them.
+        std::vector<ASR::symbol_t*> defaulted_pdts;
+        for (auto &item : current_scope->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) &&
+                    has_pdt_kind_params(ASR::down_cast<ASR::Struct_t>(item.second))) {
+                defaulted_pdts.push_back(item.second);
+            }
+        }
+        for (ASR::symbol_t* symbol : defaulted_pdts) {
+            instantiate_default_pdt(symbol, symbol->base.loc);
+        }
+        persist_pdt_member_recipes(
+            ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(tmp0)));
 
         tmp = tmp0;
         // Add module dependencies
@@ -2053,7 +2071,7 @@ public:
                                         ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
                                             al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
                                             orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
-                                            s2c(al, type_decl_name), dflt_access));
+                                            ASRUtils::symbol_name(orig_sym), dflt_access));
                                         current_scope->add_symbol(type_decl_name, external_sym);
                                         local_sym = external_sym;
                                     }
@@ -5392,7 +5410,8 @@ public:
         }
 
         ASRUtils::SymbolDuplicator duplicator(al);
-        std::string specialization_prefix = std::string(template_struct->m_name) + "_";
+        std::string specialization_prefix = pdt_specialization_prefix(
+            &template_struct->base);
         for (auto& item : enclosing_scope->get_scope()) {
             ASR::symbol_t* candidate_sym = ASRUtils::symbol_get_past_external(item.second);
             if (!candidate_sym || !ASR::is_a<ASR::Struct_t>(*candidate_sym)) {
@@ -5401,7 +5420,9 @@ public:
 
             ASR::Struct_t* specialization = ASR::down_cast<ASR::Struct_t>(candidate_sym);
             if (specialization == template_struct ||
-                !startswith(std::string(specialization->m_name), specialization_prefix)) {
+                !startswith(std::string(specialization->m_name), specialization_prefix) ||
+                ASRUtils::symbol_parent_symtab(candidate_sym) !=
+                    ASRUtils::symbol_parent_symtab(&template_struct->base)) {
                 continue;
             }
 
@@ -5624,9 +5645,8 @@ public:
             return false;
         }
 
-        std::string template_name = template_struct->m_name;
-        std::string candidate_name = candidate_struct->m_name;
-        return startswith(candidate_name, template_name + "_") &&
+        return startswith(std::string(candidate_struct->m_name),
+                pdt_specialization_prefix(template_sym)) &&
             ASRUtils::symbol_parent_symtab(candidate_sym) ==
                 ASRUtils::symbol_parent_symtab(template_sym);
     }
@@ -6607,7 +6627,10 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation, load_submodules));
+            }, lm, compiler_options.separate_compilation, load_submodules,
+                [&](ASR::TranslationUnit_t& tu) {
+                    materialize_imported_pdt_specializations(tu);
+                }));
         } else {
             if (!ASR::is_a<ASR::Module_t>(*t)) {
                 diag.add(diag::Diagnostic(
@@ -6625,7 +6648,10 @@ public:
                                                             msg, diag::Level::Error, diag::Stage::Semantic, {
                                                                 diag::Label("", {loc})}));
                                                         throw SemanticAbort();
-                                                    }, lm);
+                                                    }, lm,
+                                                    [&](ASR::TranslationUnit_t& tu) {
+                                                        materialize_imported_pdt_specializations(tu);
+                                                    });
 
                 // Create a temporary TranslationUnit just for fixing the symbols
                 ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
@@ -6634,6 +6660,7 @@ public:
                         tu_symtab, nullptr, 0, nullptr));
 
                 // Fix all external symbols and update dependencies
+                materialize_imported_pdt_specializations(*tu);
                 ASRUtils::fix_translation_unit(al, tu, tu_symtab, !diag.has_error());
                 tu_symtab->asr_owner = orig_asr_owner;
             }

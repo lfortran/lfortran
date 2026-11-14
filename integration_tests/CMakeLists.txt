@@ -132,7 +132,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86")
                 OR (LFORTRAN_BACKEND STREQUAL "c") OR (LFORTRAN_BACKEND STREQUAL "fortran"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            if (LFORTRAN_BACKEND STREQUAL "c")
+                foreach(arg IN LISTS extra_args)
+                    target_compile_options(${name} PUBLIC
+                        "$<$<COMPILE_LANGUAGE:Fortran>:${arg}>")
+                endforeach()
+                target_compile_options(${name} PUBLIC
+                    "$<$<COMPILE_LANGUAGE:Fortran>:--backend=c>")
+            else()
+                target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            endif()
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "wasm")
@@ -491,6 +500,7 @@ RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-inte
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_02 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME fpie_flag_01 LABELS gfortran llvm EXTRA_ARGS -fPIE GFORTRAN_ARGS -fPIE)
+RUN(NAME pthread_flag_01 LABELS gfortran llvm EXTRA_ARGS -pthread GFORTRAN_ARGS -pthread)
 RUN(NAME stack_array_function_temporaries LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
 RUN(NAME stack_array_polymorphic_results LABELS gfortran llvm
@@ -580,6 +590,7 @@ RUN(NAME use_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c wasm)
 RUN(NAME use_05 LABELS gfortran llvm fortran)
 RUN(NAME use_06 LABELS gfortran llvm fortran)
+RUN(NAME use_07 LABELS gfortran llvm c)
 RUN(NAME symbol_table_jloop_01 LABELS gfortran llvm)
 
 RUN(NAME value_attribute_01 LABELS gfortran llvm)
@@ -1040,6 +1051,7 @@ RUN(NAME arrays_reshape_56 LABELS gfortran llvm) # reshape whose shape argument 
 RUN(NAME arrays_reshape_57 LABELS gfortran llvm) # shape of a reshape of an array constant (#3520)
 RUN(NAME arrays_reshape_58 LABELS gfortran llvm) # reshape of an automatic array into an assumed-shape dummy (#5663)
 RUN(NAME arrays_reshape_59 LABELS gfortran llvm) # integer(8) rank-2 initializer from reshape of a default-kind constructor (#5284)
+RUN(NAME arrays_reshape_60 LABELS gfortran llvm) # reshape assigned to a non-contiguous array section
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_02 LABELS gfortran llvm) # pad= of another rank, or allocatable/pointer unlike source (#14279)
 RUN(NAME array_reshape_pad_03 LABELS gfortran llvm) # pad= of run-time size with a fixed-size source (#14279)
@@ -1259,6 +1271,8 @@ RUN(NAME select_rank_43 LABELS gfortran llvm)
 RUN(NAME select_rank_44 LABELS gfortran llvm)
 RUN(NAME select_rank_45 LABELS gfortran llvm)
 RUN(NAME select_rank_46 LABELS gfortran llvm)
+RUN(NAME select_rank_47 LABELS gfortran llvm EXTRAFILES select_rank_47c.c) # select rank selector passed to a bind(c) type(*) buf(*) dummy
+RUN(NAME select_rank_48 LABELS gfortran llvm)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2476,6 +2490,17 @@ RUN(NAME bindc2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc4 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc5 LABELS gfortran llvm fortran)
+RUN(NAME bindc_optional_array_01 LABELS gfortran llvm EXTRAFILES bindc_optional_array_01c.c) # absent optional dummy passed to a bind(c) optional (*) dummy must be NULL
+RUN(NAME bindc_optional_rank_forward_01 LABELS gfortran llvm EXTRAFILES bindc_optional_rank_forward_01c.c) # forwarding preserves assumed rank and absence for bind(c)
+RUN(NAME bindc_optional_type_star_rank_01 LABELS gfortran llvm EXTRAFILES bindc_optional_type_star_rank_01c.c)
+RUN(NAME bindc_optional_pointer_rank_01 LABELS gfortran llvm EXTRAFILES bindc_optional_pointer_rank_01c.c)
+RUN(NAME assumed_rank_pointer_slot_01 LABELS gfortran llvm)
+RUN(NAME bindc_optional_associate_01 LABELS gfortran llvm EXTRAFILES bindc_optional_associate_01c.c)
+RUN(NAME bindc_optional_char_01 LABELS gfortran llvm EXTRAFILES bindc_optional_char_01c.c)
+RUN(NAME bindc_section_01 LABELS gfortran llvm EXTRAFILES bindc_section_01c.c) # non-contiguous section passed to a bind(c) (*) dummy is packed
+RUN(NAME bindc_char_typestar_01 LABELS gfortran llvm EXTRAFILES bindc_char_typestar_01c.c) # character data passed to a bind(c) type(*) assumed-size dummy is the C buffer of its characters
+RUN(NAME bindc_char_section_01 LABELS gfortran llvm EXTRAFILES bindc_char_section_01c.c) # non-contiguous character sections passed to a bind(c) type(*) dummy are packed
+RUN(NAME assumed_type_09 LABELS gfortran llvm EXTRAFILES assumed_type_09c.c) # non-bind(c) type(*) buf(*) dummy forwarded to a bind(c) type(*) buf(*) dummy
 RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME test_c_long_double LABELS gfortran llvm EXTRAFILES test_c_long_double_c.c)
@@ -2508,6 +2533,7 @@ RUN(NAME bindc_74 LABELS gfortran llvm)
 RUN(NAME bindc_75 LABELS gfortran llvm EXTRAFILES bindc_75.c)
 RUN(NAME bindc_76 LABELS gfortran llvm EXTRAFILES bindc_76.c)
 RUN(NAME bindc_77 LABELS gfortran llvm EXTRAFILES bindc_77.c)
+RUN(NAME bindc_module_init_01 LABELS gfortran llvm c)
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
@@ -3121,6 +3147,46 @@ RUN(NAME pdt_20 LABELS gfortran llvm)
 # depend on a kind parameter, so this test is not labelled `gfortran`
 RUN(NAME pdt_21 LABELS llvm)
 RUN(NAME pdt_22 LABELS gfortran llvm)
+RUN(NAME pdt_23 LABELS gfortran llvm)
+# GFortran 16.2 fails to restore defaulted extension components on CLASS INTENT(OUT).
+RUN(NAME pdt_24 LABELS llvm)
+RUN(NAME pdt_modfile_parent_default_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
+# GNU Fortran 15.3 rejects the inherited KIND type guard and does not initialize
+# defaulted PDT components. Exclude only these companions for that version.
+if (NOT LFORTRAN_BACKEND AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU"
+        AND CMAKE_Fortran_COMPILER_VERSION VERSION_EQUAL "15.3.0")
+    list(APPEND LFORTRAN_EXCLUDE_TESTS
+        pdt_modfile_parent_default_02
+        pdt_modfile_parent_nondefault_03
+        pdt_modfile_parent_nondefault_04)
+endif()
+RUN(NAME pdt_modfile_parent_default_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_03 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_04 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
@@ -3387,6 +3453,24 @@ RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the s
 RUN(NAME derived_types_258 LABELS gfortran llvm EXTRAFILES derived_types_258_m1.f90 derived_types_258_m2.f90) # parameter array of a use-associated derived type, reloaded from the module file
 RUN(NAME derived_types_259 LABELS gfortran llvm) # local derived type with an allocatable array component, inside a procedure that has an array argument
 RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod.f90) # runtime index into a parameter array of derived types must not use the component default
+RUN(NAME c_reset_alloc_component_01 LABELS gfortran llvm c)
+RUN(NAME c_reset_pointer_component_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
+RUN(NAME c_pointer_dummy_abi_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_host_reference_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_allocatable_derived_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_associated_empty_01 LABELS gfortran c) # LLVM zero-sized TARGET bug: #14340
+RUN(NAME c_associated_fixed_component_01 LABELS gfortran llvm c)
+RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
+RUN(NAME c_reset_character_component_01 LABELS gfortran llvm c)
+RUN(NAME c_character_dummy_length_01 LABELS gfortran llvm c)
+RUN(NAME c_character_select_case_01 LABELS gfortran llvm c)
+RUN(NAME c_scalar_allocatable_dummy_01 LABELS gfortran llvm c)
+RUN(NAME c_character_storage_01 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
+RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
 RUN(NAME vector_subscript_02 LABELS gfortran llvm) # vector subscript that is an elemental expression, vals(abs(idx)) and v(int(r)) (#17225)
@@ -4362,6 +4446,16 @@ RUN(NAME class_173 LABELS gfortran llvm)
 RUN(NAME class_174 LABELS gfortran llvm)
 RUN(NAME class_175 LABELS gfortran llvm EXTRAFILES class_175_ext.f90)
 RUN(NAME class_176 LABELS gfortran llvm)
+RUN(NAME class_intent_out_dynamic_01 LABELS gfortran llvm)
+RUN(NAME class_intent_out_inherited_c_01 LABELS gfortran llvm c)
+RUN(NAME class_177 LABELS gfortran llvm)
+RUN(NAME class_178 LABELS gfortran llvm)
+RUN(NAME class_179 LABELS gfortran llvm EXTRAFILES class_179_base.f90 class_179_child.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME class_180 LABELS gfortran llvm)
+# GNU Fortran 15 on Linux emits invalid '@' assembler symbols for these BLOCK-local types.
+RUN(NAME class_181 LABELS llvm)
+RUN(NAME class_182 LABELS gfortran llvm c)
+RUN(NAME class_183 LABELS gfortran llvm c)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -6290,6 +6384,7 @@ RUN(NAME contig LABELS gfortran llvm)
 RUN(NAME contig_stmt_01 LABELS gfortran llvm)
 RUN(NAME contiguous_dummy_01 LABELS gfortran llvm) # non-contiguous actual for a contiguous dummy (#17133)
 RUN(NAME contiguous_dummy_02 LABELS gfortran llvm) # copy-back of an actual copied in the test of an IF or DO WHILE
+RUN(NAME contiguous_dummy_03 LABELS gfortran llvm) # non-contiguous actual for a contiguous dummy of a type-bound procedure
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -6372,6 +6467,7 @@ RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array pas
 
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME module_fixed_array_01 LABELS gfortran llvm c)
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME separate_compilation_01 LABELS gfortran llvm EXTRAFILES separate_compilation_01b.f90)
@@ -6435,6 +6531,7 @@ RUN(NAME separate_compilation_37 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_38 LABELS gfortran llvm EXTRAFILES separate_compilation_38a.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_39 LABELS llvm EXTRAFILES separate_compilation_39a.f90 separate_compilation_39b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_40 LABELS llvm EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_pdt_alias_01 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_41 LABELS gfortran llvm EXTRAFILES separate_compilation_41a.f90 separate_compilation_41b.f90 separate_compilation_41c.f90 EXTRA_ARGS --separate-compilation)
 
 RUN(NAME separate_compilation_42 LABELS llvm EXTRA_ARGS --separate-compilation)
@@ -6622,6 +6719,9 @@ RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)
+RUN(NAME intent_out_inherited_alloc_cleanup_01 LABELS gfortran llvm c)
+RUN(NAME intent_out_inherited_alloc_cleanup_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
 RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)
@@ -7900,6 +8000,7 @@ RUN(NAME equivalence_49 LABELS gfortran llvm EXTRAFILES equivalence_49_module.f9
 RUN(NAME equivalence_50 LABELS gfortran llvm) # operands storage associated with the target (#16215)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
+RUN(NAME allocatable_scalar_assign_02 LABELS gfortran llvm c)
 RUN(NAME allocatable_function_result_01 LABELS gfortran llvm)
 RUN(NAME allocatable_function_result_02 LABELS gfortran llvm)
 RUN(NAME allocatable_function_result_03 LABELS gfortran llvm)

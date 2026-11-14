@@ -5,6 +5,17 @@ target datalayout = "..."
 %codegen_function_polymorphic.abstype.3_class = type <{ i32 (...)**, %codegen_function_polymorphic.abstype.3* }>
 %codegen_function_polymorphic.abstype.3 = type {}
 
+define internal void @__intent_out_init_abstype(%codegen_function_polymorphic.abstype.3_class* %this) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___intent_out_init_abstype
+
+FINALIZE_SYMTABLE___intent_out_init_abstype:      ; preds = %return
+  ret void
+}
+
 define void @__module_codegen_function_polymorphic_my_func(%codegen_function_polymorphic.abstype.3_class** %obj) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()

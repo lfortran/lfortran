@@ -1858,6 +1858,8 @@ ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m);
 
 void fix_translation_unit(Allocator &al, ASR::TranslationUnit_t *tu, SymbolTable *symtab, bool run_verify);
 
+using PrepareModuleLoad = std::function<void(ASR::TranslationUnit_t&)>;
+
 ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::string &module_name,
                             const Location &loc, bool intrinsic,
@@ -1867,7 +1869,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::function<void (const std::string &, const Location &)> err,
                             LCompilers::LocationManager &lm,
                             bool generate_object_code = false,
-                            bool load_submodules = false);
+                            bool load_submodules = false,
+                            const PrepareModuleLoad &prepare = {});
 
 void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                ASR::Module_t* mod, const Location &loc,
@@ -1875,7 +1878,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                LCompilers::PassOptions& pass_options,
                                bool run_verify,
                                const std::function<void (const std::string &, const Location &)> err,
-                               LCompilers::LocationManager &lm);
+                               LCompilers::LocationManager &lm,
+                               const PrepareModuleLoad &prepare = {});
 
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,

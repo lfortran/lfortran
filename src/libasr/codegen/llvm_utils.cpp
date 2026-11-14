@@ -10318,6 +10318,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return struct_vtab_function_offset[struct_sym][name];
     }
 
+    // Program-wide unique name of a derived type: its owners from the
+    // outermost scope to the type, joined by `.` (which no Fortran name
+    // contains). The vtable and type-info globals are `linkonce_odr`, so
+    // distinct types of equal name in different modules must not share a name.
+    static std::string qualified_struct_name(ASR::symbol_t* struct_sym) {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        std::string name = ASRUtils::symbol_name(struct_sym);
+        for (ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_sym); owner;
+                owner = ASRUtils::get_asr_owner(owner)) {
+            name = std::string(ASRUtils::symbol_name(owner)) + "." + name;
+        }
+        return name;
+    }
+
     void LLVMStruct::create_type_info_for_intrinsic_type(ASR::ttype_t* ttype, int kind, llvm::Module* module)
     {
         if (intrinsic_type_info.find(ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind))
@@ -10449,7 +10463,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
-        std::string gv_name = "_VTable_" + std::string(ASRUtils::symbol_name(struct_sym));
+        std::string gv_name = "_VTable_" + qualified_struct_name(struct_sym);
         llvm::StructType *outerStructTy = llvm::StructType::get(context, { arrTy }, false);
         llvm::Constant *structInit = llvm::ConstantStruct::get(outerStructTy, arrInit);
 
@@ -10475,7 +10489,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
 
         ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym));
-        const std::string type_info_name = "_Type_Info_" + std::string(struct_t->m_name);
+        const std::string type_info_name = "_Type_Info_" + qualified_struct_name(struct_sym);
 
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,

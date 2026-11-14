@@ -348,6 +348,10 @@ namespace LCompilers {
                                 bool reserve_memory) = 0;
 
                 virtual
+                void copy_scalar_metadata(llvm::Type* src_ty, llvm::Value* src,
+                    llvm::Type* dest_ty, llvm::Value* dest) = 0;
+
+                virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type,
                                 bool reset_lower_bound) = 0;
@@ -392,7 +396,7 @@ namespace LCompilers {
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
                     llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
-                    int8_t type_code, int cfi_attr) = 0;
+                    int8_t type_code, int cfi_attr, bool assumed_rank) = 0;
 
                 virtual
                 llvm::Value* cfi_to_internal(
@@ -651,6 +655,10 @@ namespace LCompilers {
                                 bool reserve_memory);
 
                 virtual
+                void copy_scalar_metadata(llvm::Type* src_ty, llvm::Value* src,
+                    llvm::Type* dest_ty, llvm::Value* dest);
+
+                virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::expr_t* array_exp, ASR::ttype_t* asr_data_type,
                                 bool reset_lower_bound);
@@ -695,7 +703,7 @@ namespace LCompilers {
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
                     llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
-                    int8_t type_code, int cfi_attr);
+                    int8_t type_code, int cfi_attr, bool assumed_rank);
 
                 // Convert a CFI descriptor to an internal descriptor:
                 // sets offset=0, converts byte strides to element strides.

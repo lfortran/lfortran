@@ -87,6 +87,7 @@ struct PassOptions {
     bool tree = false;
     bool with_intrinsic_mods = false;
     bool c_mangling = false;
+    bool c_module_variable_mangling = false;
     bool enable_cpython = false;
     bool c_skip_bindpy_pass = false;
     bool openmp = false;
@@ -130,6 +131,9 @@ struct PassOptions {
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     // Whether the target can lower descriptor-to-data views in retained entries.
     bool supports_descriptor_entry_wrappers = true;
+    // Whether the target can lower explicit allocation of a derived or
+    // polymorphic scalar on intrinsic assignment.
+    bool supports_derived_scalar_assignment_allocation = true;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
     // Short-circuit evaluation of logical .and./.or. (the standard permits

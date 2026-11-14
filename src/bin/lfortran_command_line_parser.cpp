@@ -80,6 +80,59 @@ namespace LCompilers::CommandLineInterface {
         return "";
     }
 
+    static void normalize_pthread_flag(std::vector<std::string> &args,
+                                       const CLI::App &app) {
+        const CLI::App *command = &app;
+        const auto subcommands = app.get_subcommands(
+            [](const CLI::App *sub) { return !sub->get_name().empty(); });
+        bool positional_only = false;
+        bool expects_value = false;
+        for (std::string &arg : args) {
+            if (expects_value) {
+                expects_value = false;
+                continue;
+            }
+            if (arg == "--") {
+                positional_only = true;
+                continue;
+            }
+            if (positional_only) continue;
+
+            if (command == &app) {
+                for (const CLI::App *sub : subcommands) {
+                    if (arg == sub->get_name()) {
+                        command = sub;
+                        break;
+                    }
+                }
+            }
+            if (arg == "-pthread") {
+                arg = "--pthread";
+                continue;
+            }
+            const auto find_option = [&](const std::string &name) {
+                const CLI::Option *option = command->get_option_no_throw(name);
+                if (!option && command->get_fallthrough()) {
+                    option = app.get_option_no_throw(name);
+                }
+                return option;
+            };
+            const CLI::Option *option = find_option(arg);
+            if (option) {
+                expects_value = option->get_items_expected_min() > 0;
+            } else if (arg.size() > 2 && arg[0] == '-' && arg[1] != '-') {
+                for (std::size_t i = 1; i < arg.size(); ++i) {
+                    option = find_option(std::string("-") + arg[i]);
+                    if (!option) break;
+                    if (option->get_items_expected_min() > 0) {
+                        expects_value = i == arg.size() - 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     static void handle_help_category(const CLI::App &app, const std::string &help_arg) {
         std::string query = to_lower(help_arg);
         std::vector<std::string> groups = get_groups(app);
@@ -259,6 +312,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
         app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
         app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
+        app.add_flag("--pthread", opts.pthread, "Pass -pthread to the linker");
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
@@ -429,10 +483,25 @@ namespace LCompilers::CommandLineInterface {
             handle_help_category(app, help_arg);
         }
 
+        // CLI11 cannot declare the GCC-compatible single-dash -pthread flag.
+        std::vector<std::string> normalized_args;
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            for (int i = 1; i < argc; ++i) {
+                normalized_args.emplace_back(argv[i]);
+            }
         } else {
-            app.parse(args);
+            normalized_args.assign(args.rbegin(), args.rend());
+        }
+        normalize_pthread_flag(normalized_args, app);
+        if (argv != nullptr) {
+            std::vector<const char *> normalized_argv{argv[0]};
+            for (const std::string &arg : normalized_args) {
+                normalized_argv.push_back(arg.c_str());
+            }
+            app.parse(static_cast<int>(normalized_argv.size()), normalized_argv.data());
+        } else {
+            std::reverse(normalized_args.begin(), normalized_args.end());
+            app.parse(normalized_args);
         }
 
         if (!opts.emscripten_settings.empty()
