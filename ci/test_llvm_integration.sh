@@ -36,6 +36,10 @@ if [[ "${LFORTRAN_LLVM_VERSION}" == "7" || "${LFORTRAN_LLVM_VERSION}" == "8" ]];
     LFORTRAN_CTEST_EXCLUDE+='|real128_intrinsic_math_02|real128_intrinsic_math_03|real128_intrinsic_real_02|real128_intrinsic_sqrt_01'
     LFORTRAN_CTEST_EXCLUDE+='|real128_int_to_real_02|real128_int_to_real_03|real128_cast_01|real128_cast_04'
     LFORTRAN_CTEST_EXCLUDE+='|implied_do_loops61'
+    # Their optimizer also folds the product of the smallest real(16)
+    # subnormal with itself to infinity instead of 0, so the --fast variant of
+    # real16_softfloat_mul_01, whose operands are all constants, error-stops.
+    LFORTRAN_CTEST_EXCLUDE+='|real16_softfloat_mul_01_FAST'
     export LFORTRAN_CTEST_EXCLUDE
     echo "LFORTRAN_CTEST_EXCLUDE=${LFORTRAN_CTEST_EXCLUDE}"
 fi
