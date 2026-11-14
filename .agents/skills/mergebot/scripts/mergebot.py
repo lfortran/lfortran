@@ -155,14 +155,17 @@ def history_facts(commits):
     return facts
 
 
-def squash_requests(comments):
-    """Comments that mention squashing, excluding mergebot's own."""
+def squash_requests(comments, can_write):
+    """Comments from accounts with write access that mention squashing.
+
+    Comments from anyone else are ignored, as are mergebot's own."""
     return [{"author": c["author"], "time": c["createdAt"], "url": c["url"],
              "body": c["body"][:500]}
             for c in comments
             if re.search(r"\bsquash", c["body"], re.IGNORECASE)
             and "<!-- mergebot:" not in c["body"]
-            and "-- mergebot (" not in c["body"]]
+            and "-- mergebot (" not in c["body"]
+            and c["author"] and can_write(c["author"])]
 
 
 def squash_subject(subject, number):
@@ -431,7 +434,7 @@ def facts(number, with_conflicts=True):
                                 "conclusion": quick["conclusion"],
                                 "url": quick["html_url"]},
         "mergeable": pr["mergeable"], "maintainer_can_modify": pr["maintainerCanModify"],
-        "squash_requests": squash_requests(comments), "lock": lock_info(number),
+        "squash_requests": squash_requests(comments, can_write), "lock": lock_info(number),
     }
     if with_conflicts:
         result["conflicts"] = conflicts(fetch(number), f"refs/mergebot/pr/{number}")
@@ -570,6 +573,9 @@ def cmd_squash(args):
         return
     if info["lock"]:
         sys.exit("mergebot: wait for the rebase worker before changing the merge method")
+    if not info["squash_requests"]:
+        sys.exit(f"mergebot: PR #{args.number} has no squash request from an account "
+                 "with write access")
     state = pr_state(args.number, info["label_id"])
     state["method"] = "squash"
     save_pr_state(args.number, state)

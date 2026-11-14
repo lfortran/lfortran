@@ -2304,7 +2304,7 @@ class MergebotTests(unittest.TestCase):
             "head": "H", "approved_head": "H", "method": "merge", "rebase": None,
             "head_repo": "contributor/lfortran", "head_branch": "feature",
             "draft": False, "ci": "success", "conflicts": [], "mergeable": "MERGEABLE",
-            "lock": None, "head_bot_pushed": False,
+            "lock": None, "head_bot_pushed": False, "squash_requests": [],
             "quick_run": {"id": 10, "attempt": 1, "status": "completed",
                           "conclusion": "success"},
         }
@@ -2329,7 +2329,8 @@ class MergebotTests(unittest.TestCase):
         }
         with patch.object(self.bot, "load_pr", return_value=(pr, [self.label, *comments])), \
                 patch.object(self.bot, "login", return_value="maintainer"), \
-                patch.object(self.bot, "can_write", return_value=can_write), \
+                patch.object(self.bot, "can_write",
+                             side_effect=lambda user: can_write is True or user in can_write), \
                 patch.object(self.bot, "label_events",
                              return_value=[self.snapshot] if events is None else events), \
                 patch.object(self.bot, "gh_items", return_value=[]), \
@@ -2356,7 +2357,7 @@ class MergebotTests(unittest.TestCase):
             gh.assert_not_called()
 
     def test_labeler_must_have_write_access(self):
-        self.assertIn("write access", self.fetch_facts(can_write=False)["approval_problem"])
+        self.assertIn("write access", self.fetch_facts(can_write=set())["approval_problem"])
 
     def test_comment_markers_never_authorize_a_head_or_method(self):
         comments = [{
@@ -2528,6 +2529,30 @@ class MergebotTests(unittest.TestCase):
         with patch.object(self.bot, "facts", return_value=self.info(lock={"owner": "worker"})):
             with self.assertRaisesRegex(SystemExit, "wait for the rebase worker"):
                 self.bot.cmd_squash(self.args())
+
+    def test_squash_requires_a_request_from_a_writer(self):
+        with patch.object(self.bot, "facts", return_value=self.info()), \
+                patch.object(self.bot, "comment") as comment:
+            with self.assertRaisesRegex(SystemExit, "no squash request"):
+                self.bot.cmd_squash(self.args())
+        comment.assert_not_called()
+        self.assertEqual(self.bot.pr_state(1, "L")["method"], "merge")
+        request = {"author": "maintainer", "time": "2026-11-13T10:40:00Z",
+                   "url": "u", "body": "Please squash."}
+        with patch.object(self.bot, "facts",
+                          return_value=self.info(squash_requests=[request])), \
+                patch.object(self.bot, "comment"):
+            self.bot.cmd_squash(self.args())
+        self.assertEqual(self.bot.pr_state(1, "L")["method"], "squash")
+
+    def test_squash_requests_from_non_writers_are_ignored(self):
+        self.bot.save_pr_state(1, {"label_id": "L"})
+        comments = [{"__typename": "IssueComment", "author": {"login": login},
+                     "body": "Please squash this.", "createdAt": "2026-11-13T10:40:00Z",
+                     "url": login} for login in ("maintainer", "contributor")]
+        info = self.fetch_facts(comments=comments, can_write={"maintainer"})
+        self.assertIsNone(info["approval_problem"])
+        self.assertEqual([c["url"] for c in info["squash_requests"]], ["maintainer"])
 
     def test_wrong_worker_cannot_push_or_unlock(self):
         self.bot.cmd_lock(self.args())
@@ -2753,8 +2778,14 @@ class MergebotTests(unittest.TestCase):
              "url": "u2", "createdAt": "2026-11-13T10:01:00Z"},
             {"author": "c", "body": "Looks good.", "url": "u3",
              "createdAt": "2026-11-13T10:02:00Z"},
+            {"author": "outsider", "body": "Please squash this.", "url": "u4",
+             "createdAt": "2026-11-13T10:03:00Z"},
+            {"author": None, "body": "squash", "url": "u5",
+             "createdAt": "2026-11-13T10:04:00Z"},
         ]
-        self.assertEqual([c["url"] for c in self.bot.squash_requests(comments)], ["u1"])
+        writers = {"a", "b", "c"}
+        requests = self.bot.squash_requests(comments, lambda user: user in writers)
+        self.assertEqual([c["url"] for c in requests], ["u1"])
         self.assertEqual(self.bot.squash_subject("fix: x", 7), "fix: x (#7)")
         self.assertEqual(self.bot.squash_subject("fix: x (#7)", 7), "fix: x (#7)")
         self.assertRegex("Co-authored-by: A <a@b.c>", self.bot.TRAILER)
