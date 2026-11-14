@@ -65,6 +65,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <netdb.h>
 #include <poll.h>
 #include <spawn.h>
 #include <sys/socket.h>
@@ -950,7 +951,7 @@ struct InputChannel::Impl {
     std::atomic<bool> stop{false};
     // The input_request, for the client of `identity`, and its answer
     Status status = none;
-    std::string identity, value;
+    std::string identity, value, request_id;
     std::vector<std::string> request;
     Peer *target = nullptr;
     std::chrono::steady_clock::time_point deadline;
@@ -999,7 +1000,8 @@ struct InputChannel::Impl {
                 Message m;
                 while (peer->next(frames)) {
                     if (status == waiting && peer.get() == target && decode(frames, key, m)
-                            && m.type() == "input_reply") {
+                            && m.type() == "input_reply"
+                            && (m.parent_id().empty() || m.parent_id() == request_id)) {
                         value = get_string(m.content, "value");
                         status = answered;
                         target = nullptr;
@@ -1013,10 +1015,26 @@ struct InputChannel::Impl {
     }
 };
 
-InputChannel::InputChannel(const std::string &ip, int &port, const std::string &key)
+InputChannel::InputChannel(const std::string &ip, int &port, const std::string &key,
+    bool resolve_host)
 {
     start_sockets();
-    impl = std::make_unique<Impl>(listen_on(ip, port), key);
+    std::string host = ip;
+    if (resolve_host && !serves(host)) {
+        addrinfo hints{}, *result = nullptr;
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        if (getaddrinfo(host.c_str(), nullptr, &hints, &result) != 0)
+            throw std::runtime_error("cannot resolve stdin address: " + host);
+        char numeric[INET_ADDRSTRLEN];
+        const auto *socket_address = reinterpret_cast<const sockaddr_in *>(result->ai_addr);
+        const char *resolved = inet_ntop(AF_INET, &socket_address->sin_addr,
+            numeric, sizeof(numeric));
+        if (resolved) host = numeric;
+        freeaddrinfo(result);
+        if (!resolved) throw std::runtime_error("cannot resolve stdin address: " + ip);
+    }
+    impl = std::make_unique<Impl>(listen_on(host, port), key);
     impl->thread = std::thread([this]() { impl->run(); });
 }
 
@@ -1032,6 +1050,10 @@ void InputChannel::ask(const std::string &identity, const std::string parts[4])
     impl->request = {"<IDS|MSG>", sign(impl->key, parts)};
     impl->request.insert(impl->request.end(), parts, parts + 4);
     impl->identity = identity;
+    auto header = llvm::json::parse(parts[0]);
+    impl->request_id = header && header->getAsObject()
+        ? get_string(*header->getAsObject(), "msg_id") : "";
+    if (!header) llvm::consumeError(header.takeError());
     impl->status = Impl::waiting;
     impl->target = nullptr;
     impl->deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
@@ -1049,6 +1071,15 @@ int InputChannel::wait(std::string &value, int timeout)
     if (status != Impl::answered) return -1;
     value = std::move(impl->value);
     return 1;
+}
+
+void InputChannel::cancel()
+{
+    std::lock_guard<std::mutex> lock(impl->mutex);
+    impl->status = Impl::none;
+    impl->target = nullptr;
+    impl->request.clear();
+    impl->changed.notify_all();
 }
 
 bool InputChannel::request(const std::string &identity, const std::string parts[4],
@@ -1892,10 +1923,10 @@ bool connected(socket_t listener, const std::vector<socket_t> &clients)
     return false;
 }
 
-// The kernel does not read its connections while it runs a cell. A thread
-// watches them meanwhile, and ends the process if the kernel is asked to
-// stop (SIGINT, SIGTERM) or, for a managed kernel, once its last client has
-// gone. The prompt ends the kernel it started with SIGTERM, including
+// Shell requests wait while a cell runs; the caller pumps control and IOPub.
+// A thread watches the shell connections meanwhile, and ends the process if
+// the kernel is asked to stop (SIGINT, SIGTERM) or, for a managed kernel, once
+// its last client has gone. The prompt ends its kernel with SIGTERM, including
 // during a cell that does not return; this is what makes that cell stop.
 class CellWatch {
     std::mutex mutex;
@@ -1963,6 +1994,8 @@ class Kernel {
     // Set while the execute_requests that wait behind a failed cell are
     // aborted
     bool aborting = false;
+    bool interrupted_cell = false;
+    std::vector<std::pair<Peer *, Message>> deferred_control;
     const std::thread::id owner = std::this_thread::get_id();
 
 public:
@@ -2032,6 +2065,26 @@ private:
             if (peer->waiting()) return true;
         }
         return false;
+    }
+
+    bool pump_interrupt()
+    {
+        progress({&control_, &iopub_}, 0);
+        for (auto &peer : control_.peers) {
+            std::vector<std::string> frames;
+            for (int n = 0; n < 32 && peer->next(frames); n++) {
+                Message request;
+                if (!decode(frames, key, request)) continue;
+                if (request.type() == "interrupt_request") {
+                    interrupted_cell = true;
+                    handle(*peer, request);
+                } else {
+                    deferred_control.emplace_back(peer.get(), std::move(request));
+                }
+            }
+        }
+        for (auto &subscriber : iopub_.peers) subscriber->flush(65536);
+        return interrupted_cell;
     }
 
     // Handles at most one request read from each connection of `endpoint`,
@@ -2144,8 +2197,6 @@ private:
             reply(peer, request, "comm_info_reply", Object{{"status", "ok"},
                 {"comms", Object{}}});
         } else if (type == "interrupt_request") {
-            // A cell cannot be interrupted yet; between cells there is
-            // nothing to interrupt.
             reply(peer, request, "interrupt_reply", Object{{"status", "ok"}});
         } else if (type == "shutdown_request") {
             bool restart = get_bool(request.content, "restart", false);
@@ -2156,6 +2207,12 @@ private:
         // Before the idle, after which the client may send its next cell
         if (failed) abort_waiting();
         publish("status", request.header, Object{{"execution_state", "idle"}});
+        // Never re-enter execution or shutdown while the evaluator is active.
+        if (type == "execute_request") {
+            auto deferred = std::move(deferred_control);
+            deferred_control.clear();
+            for (auto &item : deferred) handle(*item.first, item.second);
+        }
     }
 
     // Runs the cell of an execute_request; true if it failed and the
@@ -2174,6 +2231,9 @@ private:
                 Object{{"code", code}, {"execution_count", execution_count}});
         }
         FortranEvaluator::CellIO io;
+        // An interrupt that arrived while idle does not apply to this cell.
+        interrupted_cell = false;
+        io.interrupt_requested = [&]() { return pump_interrupt(); };
         io.progress_output = [&]() {
             for (auto &subscriber : iopub_.peers) subscriber->flush(65536);
         };
@@ -2217,6 +2277,9 @@ private:
                 traceback.push_back(kernel::utf8(line));
             }
             result["traceback"] = std::move(traceback);
+            if (!silent && cell.error_name == "KeyboardInterrupt")
+                publish("error", request.header, Object{{"ename", cell.error_name},
+                    {"evalue", kernel::utf8(cell.error_value)}, {"traceback", Array{}}});
         }
         reply(peer, request, "execute_reply", std::move(result));
         return !cell.ok && !silent && get_bool(content, "stop_on_error", true);
@@ -2226,16 +2289,23 @@ private:
     // the same identity, and waits for its answer, sending the subscribers
     // what the cell wrote before; other requests wait in their sockets.
     // Returns as the CellIO input hook does: > 0 (an I/O error) if that
-    // client is not connected or disconnects.
+    // client is not connected or disconnects. An interrupt ends the wait if
+    // the evaluator can stop the cell.
     int read_input(const std::string &identity, const Object &parent, std::string &record)
     {
         if (identity.empty()) return 1;
+        const bool interruptible = e.interruptible();
         Message request = new_message("input_request", parent,
-            Object{{"prompt", ""}, {"password", false}}, session);
+            Object{{"prompt", ""}, {"password", false},
+                {"lfortran_interruptible", interruptible}}, session);
         std::string parts[4];
         message_parts(request, parts);
         stdin_.ask(identity, parts);
         for (;;) {
+            if (pump_interrupt() && interruptible) {
+                stdin_.cancel();
+                return -1;
+            }
             std::vector<pollfd> fds;
             for (auto &peer : iopub_.peers) {
                 peer->flush();

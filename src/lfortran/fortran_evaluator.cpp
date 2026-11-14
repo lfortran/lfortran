@@ -829,6 +829,10 @@ bool FortranEvaluator::interrupt_supported() {
 #endif
 }
 
+bool FortranEvaluator::interruptible() const {
+    return interrupt_supported() && !compiler_options.openmp;
+}
+
 FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     LCOMPILERS_ASSERT(compiler_options.interactive);
@@ -855,9 +859,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     // The caller interrupts the cell's thread (LLVMEvaluator::run_preemptible).
     LLVMEvaluator *preemptible = nullptr;
 #ifdef HAVE_LFORTRAN_LLVM
-    // Abandoning an OpenMP region would leave its threads and locks behind.
-    if (io.interrupt_requested && interrupt_supported()
-            && !compiler_options.openmp) {
+    if (io.interrupt_requested && interruptible()) {
         preemptible = &get_llvm_evaluator();
         preemptible->clear_interrupt();
     }
