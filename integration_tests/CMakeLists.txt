@@ -7887,6 +7887,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
     # The value check waits on #17031.
+    RUN(NAME ieee_is_nan_fast_01 LABELS gfortran llvm EXTRA_ARGS --fast)
     RUN(NAME separate_compilation_73 LABELS gfortran llvm
         EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)
 elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")

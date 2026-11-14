@@ -58,11 +58,11 @@ module lfortran_intrinsic_ieee_arithmetic
     end interface
 
     interface ieee_value
-        module procedure spieee_value, dpieee_value, qpieee_value
+        module procedure spieee_value, dpieee_value, xpieee_value, qpieee_value
     end interface
 
     interface ieee_is_nan
-        module procedure spieee_is_nan, dpieee_is_nan, qpieee_is_nan
+        module procedure spieee_is_nan, dpieee_is_nan, xpieee_is_nan, qpieee_is_nan
     end interface
 
     interface ieee_is_finite
@@ -336,6 +336,40 @@ module lfortran_intrinsic_ieee_arithmetic
             y = 1.0_real64
         case (10)  ! ieee_positive_inf
             y = transfer(int(z'7FF0000000000000', kind=8), 1.0_real64)
+        case (11)  ! ieee_other_value
+            y = x
+        case default
+            y = x
+        end select
+    end function
+
+    elemental function xpieee_value(x, cls) result(y)
+        real(10), intent(in) :: x
+        type(ieee_class_type), intent(in) :: cls
+        real(10) :: y
+        ! x86 80-bit: the significand is the first 8 bytes and the sign and
+        ! exponent are the next 2. The remaining 6 bytes are padding.
+        select case (cls%value)
+        case (1)  ! ieee_signaling_nan
+            y = transfer([int(z'A000000000000000', kind=8), int(z'7FFF', kind=8)], 1.0_10)
+        case (2)  ! ieee_quiet_nan
+            y = transfer([int(z'C000000000000000', kind=8), int(z'7FFF', kind=8)], 1.0_10)
+        case (3)  ! ieee_negative_inf
+            y = transfer([int(z'8000000000000000', kind=8), int(z'FFFF', kind=8)], 1.0_10)
+        case (4)  ! ieee_negative_normal
+            y = -1.0_10
+        case (5)  ! ieee_negative_denormal
+            y = transfer([int(z'4000000000000000', kind=8), int(z'8000', kind=8)], 1.0_10)
+        case (6)  ! ieee_negative_zero
+            y = transfer([0_8, int(z'8000', kind=8)], 1.0_10)
+        case (7)  ! ieee_positive_zero
+            y = 0.0_10
+        case (8)  ! ieee_positive_denormal
+            y = transfer([int(z'4000000000000000', kind=8), 0_8], 1.0_10)
+        case (9)  ! ieee_positive_normal
+            y = 1.0_10
+        case (10)  ! ieee_positive_inf
+            y = transfer([int(z'8000000000000000', kind=8), int(z'7FFF', kind=8)], 1.0_10)
         case (11)  ! ieee_other_value
             y = x
         case default
@@ -989,11 +1023,30 @@ module lfortran_intrinsic_ieee_arithmetic
         end select
     end function
 
+    elemental function xpieee_is_nan(x) result(r)
+        real(10), intent(in) :: x
+        logical :: r
+        ! `x /= x` is folded to false under `--fast`. An x86 extended value
+        ! is a NaN when its exponent is all ones and its significand is not
+        ! the infinity pattern.
+        integer(8) :: bits(2)
+        bits = transfer(x, bits)
+        r = iand(bits(2), int(z'7FFF', 8)) == int(z'7FFF', 8) .and. &
+            bits(1) /= int(z'8000000000000000', 8)
+    end function
+
     elemental function qpieee_is_nan(x) result(r)
         use iso_fortran_env, only: real128
         real(real128), intent(in) :: x
         logical :: r
-        r = x /= x
+        ! `x /= x` is folded to false under `--fast`. A binary128 value is
+        ! a NaN when its exponent is all ones and its fraction is not zero.
+        integer(8) :: bits(2)
+        bits = transfer(x, bits)
+        r = iand(bits(2), int(z'7FFF000000000000', 8)) == &
+                int(z'7FFF000000000000', 8) .and. &
+            (bits(1) /= 0_8 .or. &
+                iand(bits(2), int(z'0000FFFFFFFFFFFF', 8)) /= 0_8)
     end function
 
     elemental function qpieee_is_finite(x) result(r)
