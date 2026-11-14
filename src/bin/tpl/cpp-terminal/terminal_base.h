@@ -70,7 +70,7 @@ private:
 
 public:
 #ifdef _WIN32
-    BaseTerminal(bool enable_keyboard=false, bool /*disable_ctrl_c*/ = true)
+    BaseTerminal(bool enable_keyboard=false, bool disable_ctrl_c=true)
         : keyboard_enabled{enable_keyboard}
     {
         // Silently disable raw mode for non-tty
@@ -108,6 +108,8 @@ public:
             DWORD flags = dwOriginalInMode;
             flags |= ENABLE_VIRTUAL_TERMINAL_INPUT;
             flags &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+            // Ctrl-C is then read as a key, as without ISIG on POSIX
+            if (disable_ctrl_c) flags &= ~ENABLE_PROCESSED_INPUT;
             if (!SetConsoleMode(hin, flags)) {
                 throw std::runtime_error("SetConsoleMode() failed");
             }
