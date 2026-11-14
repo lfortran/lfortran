@@ -222,9 +222,9 @@ not rolled back, and what it allocated leaks. An allocatable variable or a
 deferred-length string that the cell was assigning when it stopped may be left
 referring to freed memory: do not use it again in that session, not even to
 deallocate it or in `move_alloc`; only restarting the session recovers it. For
-example, interrupting a cell that runs `v = [v, i]` in a loop can leave the
-session's `v` pointing at its old, freed storage, so that a later
-`deallocate(v)` frees it twice (see
+example, with `--realloc-lhs-arrays`, interrupting a cell that runs
+`v = [v, i]` in a loop can leave the session's `v` pointing at its old, freed
+storage, so that a later `deallocate(v)` frees it twice (see
 [interactive evaluation](interactive_evaluation.md#an-interrupted-reallocation-can-leave-a-variable-dangling)). The
 commands that `execute_command_line` runs are ended with it, unless the kernel
 is the foreground job of a terminal, where Ctrl-C at that terminal reaches the
