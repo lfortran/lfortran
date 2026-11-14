@@ -1474,7 +1474,7 @@ RUN(NAME real16_module_var_01 LABELS gfortran llvm)
 RUN(NAME real16_host_assoc_01 LABELS gfortran llvm)
 RUN(NAME real16_literal_exponent_01 LABELS gfortran llvm)
 RUN(NAME read_real16_internal_01 LABELS gfortran llvm COPY_TO_BIN read_real16_internal_01_data.txt)
-RUN(NAME real16_softfloat_trunc_01 LABELS gfortran llvm)
+RUN(NAME real16_softfloat_trunc_01 LABELS gfortran llvm NO_FAST_MATH)
 RUN(NAME real16_softfloat_mul_01 LABELS gfortran llvm)
 RUN(NAME real16_softfloat_extend_01 LABELS gfortran llvm)
 
