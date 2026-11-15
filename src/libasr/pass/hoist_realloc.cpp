@@ -1198,6 +1198,106 @@ public:
         return step > 0 ? b.LtE(start, end) : b.GtE(start, end);
     }
 
+    // The variable `s` reallocates with the shape of a variable, `size(v,
+    // 1), ..., size(v, n)` for the rank n of both, or nullptr.
+    static ASR::symbol_t* copies_shape_of(ASR::ReAlloc_t* r, ASR::symbol_t*& target) {
+        if (r->n_args != 1) {
+            return nullptr;
+        }
+        const ASR::alloc_arg_t& arg = r->m_args[0];
+        if (!ASR::is_a<ASR::Var_t>(*arg.m_a) || arg.m_type != nullptr ||
+                arg.m_sym_subclass != nullptr || arg.n_codims != 0 ||
+                arg.m_len_expr != nullptr) {
+            return nullptr;
+        }
+        ASR::ttype_t* type = ASRUtils::expr_type(arg.m_a);
+        if (!is_reallocatable_element_type(type) || ASRUtils::is_character(*type) ||
+                arg.n_dims != ASRUtils::extract_n_dims_from_ttype(type)) {
+            return nullptr;
+        }
+        ASR::symbol_t* source = nullptr;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            ASR::expr_t* length = arg.m_dims[d].m_length;
+            if (length == nullptr || !ASR::is_a<ASR::ArraySize_t>(*length)) {
+                return nullptr;
+            }
+            ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(length);
+            int64_t dim;
+            if (!ASR::is_a<ASR::Var_t>(*size->m_v) ||
+                    !ASRUtils::is_value_constant(size->m_dim, dim) ||
+                    dim != static_cast<int64_t>(d) + 1) {
+                return nullptr;
+            }
+            ASR::symbol_t* v = past_external(ASR::down_cast<ASR::Var_t>(size->m_v)->m_v);
+            if (source != nullptr && v != source) {
+                return nullptr;
+            }
+            source = v;
+            if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::symbol_type(v)) != arg.n_dims) {
+                return nullptr;
+            }
+        }
+        target = past_external(ASR::down_cast<ASR::Var_t>(arg.m_a)->m_v);
+        return source;
+    }
+
+    // Removes from `body` each reallocation of `v` with the shape of `u`
+    // that follows a reallocation of `u` with the shape of `v`, with nothing
+    // that can change the allocation of either in between, as in
+    //
+    //     un = u
+    //     un(2:n-1) = ...
+    //     u = un
+    //
+    // The first one gives `u` and `v` the same shape, so the second finds
+    // `v` allocated (its shape was read) with the shape of `u`, and does
+    // nothing.
+    void remove_redundant_reallocations(ASR::stmt_t**& body, size_t& n_body) {
+        std::vector<bool> redundant(n_body, false);
+        bool any = false;
+        for (size_t j = 0; j < n_body; j++) {
+            if (!ASR::is_a<ASR::ReAlloc_t>(*body[j])) {
+                continue;
+            }
+            ASR::symbol_t* v = nullptr;
+            ASR::symbol_t* u = copies_shape_of(
+                ASR::down_cast<ASR::ReAlloc_t>(body[j]), v);
+            if (u == nullptr) {
+                continue;
+            }
+            Effects between;
+            for (size_t i = j; i-- > 0;) {
+                if (ASR::is_a<ASR::ReAlloc_t>(*body[i]) && !redundant[i]) {
+                    ASR::symbol_t* target = nullptr;
+                    ASR::symbol_t* source = copies_shape_of(
+                        ASR::down_cast<ASR::ReAlloc_t>(body[i]), target);
+                    if (target == u && source == v) {
+                        redundant[j] = !between.unknown &&
+                            between.alloc_modified.count(u) == 0 &&
+                            between.alloc_modified.count(v) == 0 &&
+                            (!between.calls || (is_call_safe(u) && is_call_safe(v)));
+                        any = any || redundant[j];
+                        break;
+                    }
+                }
+                EffectsCollector c(between);
+                c.visit_stmt(*body[i]);
+            }
+        }
+        if (!any) {
+            return;
+        }
+        Vec<ASR::stmt_t*> kept;
+        kept.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            if (!redundant[i]) {
+                kept.push_back(al, body[i]);
+            }
+        }
+        body = kept.p;
+        n_body = kept.size();
+    }
+
     void visit_DoLoop(const ASR::DoLoop_t& x) {
         ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);
@@ -1205,6 +1305,7 @@ public:
         if (scope.symtab == nullptr) {
             return;
         }
+        remove_redundant_reallocations(xx.m_body, xx.n_body);
         int64_t step = 1;
         if (x.m_head.m_increment &&
                 (!ASRUtils::is_value_constant(
