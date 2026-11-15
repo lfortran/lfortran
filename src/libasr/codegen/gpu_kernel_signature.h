@@ -42,9 +42,11 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         }
     }
     kernel_streams_strided_rows = streams_rows && loop_dimensions <= 1;
+    kernel_lane_vectors = kernel.m_gpu->m_lanes != nullptr
+        && holds_wide_load(kernel.m_body, kernel.n_body);
     src << dialect.kernel_qualifier(
             gpu_device_capabilities(co.po).threads_per_block,
-            streams_rows)
+            streams_rows, kernel_lane_vectors)
         << name << "(\n";
     kernel_params.clear();
     int slot = 0;

@@ -4257,6 +4257,8 @@ public:
     // Whether the kernel being written streams down rows of a matrix
     // (streams_strided_rows).
     bool kernel_streams_strided_rows = false;
+    // Whether the kernel has lanes that read vectors of 16 bytes.
+    bool kernel_lane_vectors = false;
 
     // Whether the kernel being written runs each iteration on lanes.
     bool kernel_has_lanes() const {
@@ -4526,7 +4528,7 @@ public:
             src << get_indent() << "const " << type_name << " " << trips
                 << " = " << end << " >= " << v << " ? (" << end << " - " << v
                 << ") / " << inc << " + 1 : 0;\n";
-            src << get_indent() << (wide ? dialect.unroll_wide_pragma()
+            src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
                 : dialect.unroll_pragma(deep)) << "\n";
             src << get_indent() << "for (" << type_name << " " << count
                 << " = 0; " << count << " < " << trips << "; " << count
@@ -4534,7 +4536,7 @@ public:
             return;
         }
         if (pragma) {
-            src << get_indent() << (wide ? dialect.unroll_wide_pragma()
+            src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
                 : dialect.unroll_pragma(deep)) << "\n";
         } else if (unroll_few && !dialect.unroll_few_pragma().empty()) {
             src << get_indent() << dialect.unroll_few_pragma() << "\n";
