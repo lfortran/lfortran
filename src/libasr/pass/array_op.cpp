@@ -4298,7 +4298,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
-        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
+        // A move gives the target the allocation of the value, a new array
+        // (a function result): reallocating the target first would only
+        // allocate what the move then frees.
+        if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
+                !xx.m_move_allocation) {
             bool per_assign_realloc = xx.m_realloc_lhs ||
                 should_auto_realloc_component_assignment(xx.m_target);
             insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc, &x);
@@ -4364,7 +4368,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 vars.push_back(al, expr_duplicator.duplicate_expr(component));
             }
 
-            if (debug_inserted.find(&x) == debug_inserted.end()) {
+            // A move gives the target the shape of the value: there is
+            // nothing to check
+            if (debug_inserted.find(&x) == debug_inserted.end() &&
+                    !x.m_move_allocation) {
                 if (!conforms_at_compile_time && vars.size() > 0) {
                     pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
                         x.base.base.loc, d_target, vars, x.m_move_allocation));
@@ -4404,10 +4411,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // The assignment should be handled in the backend
         if (x.m_move_allocation) {
             if (ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)) && vars.size() != 1) {
-                // ReAlloc was inserted for an allocatable target in previous part,
-                // but the move assignment overwrites target.data
-                // with value.data — leaking the buffer ReAlloc just allocated.
-                // Free it first to avoid this memory leak. 
+                // The move assignment overwrites target.data with
+                // value.data, which would leak what the target holds.
+                // Free it first.
                 // Note: This fix is temporary. This fix should be in backend, where 
                 // while assigning to any allocatable variable target, backend should 
                 // deallocate target first to free any heap allocation (malloc) used
