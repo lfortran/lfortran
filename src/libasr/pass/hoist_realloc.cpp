@@ -63,11 +63,13 @@ only when all of the following hold, so that the program does the same:
   H reallocates;
 * the statements before H do not name an array H reallocates, so moving H
   before them in the first iteration cannot change what they do;
-* no statement of the body other than H can change the allocation, shape or
-  bounds of an array H reallocates, or the allocation or shape of an array
-  whose shape H reads, or any value H reads, and H does not read the loop
-  variable: every later execution of H then finds its arrays allocated with
-  the shape it would give them, and does nothing;
+* no statement of the body other than H and the statements before H that
+  move before the loop too can change the allocation, shape or bounds of an
+  array H reallocates, or the allocation or shape of an array whose shape H
+  reads, or any value H reads, and H does not read the loop variable: every
+  later execution of H then finds its arrays allocated with the shape it
+  would give them, and does nothing. So in `t1 = a + b; t2 = 2*t1`, the
+  reallocation of `t2` to the shape of `t1` moves after that of `t1`;
 * a variable that something can reach by another name (TARGET, POINTER,
   EQUIVALENCE, COMMON, the target of a pointer assignment, a variable of an
   enclosing scope) is not one H reallocates, nor one whose value H reads,
@@ -1127,9 +1129,14 @@ public:
             if (!is_candidate[k]) {
                 continue;
             }
+            // An earlier statement that moves before the loop runs there
+            // before this one, as it does in the first iteration, and is no
+            // longer in the body: a reallocation to the shape of an array
+            // that an earlier one reallocates, as in `t1 = a + b; t2 = 2*t1`,
+            // can move too.
             Effects others, before;
             for (size_t j = 0; j < x.n_body; j++) {
-                if (j == k) {
+                if (j == k || (j < k && hoist[j])) {
                     continue;
                 }
                 others.merge(effects[j]);
