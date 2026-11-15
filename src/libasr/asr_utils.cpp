@@ -12,6 +12,7 @@
 #include <libasr/utils.h>
 #include <libasr/modfile.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
+#include <libasr/runtime/lfortran_complex128.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
@@ -5054,37 +5055,40 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         return nullptr;
     } else if (ASRUtils::is_complex(*dest_type) &&
             ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+        // Folded with the arithmetic of the runtime, so that a folded
+        // constant equals the value computed at run time.
         if (!ASR::is_a<ASR::ComplexConstant_t>(*left) ||
-                !ASR::is_a<ASR::ComplexConstant_t>(*right) ||
-                (op != ASR::Add && op != ASR::Sub && op != ASR::Mul)) {
+                !ASRUtils::complex_constant_is_r16(
+                    ASR::down_cast<ASR::ComplexConstant_t>(left))) {
             return nullptr;
         }
         ASR::ComplexConstant_t *lc = ASR::down_cast<ASR::ComplexConstant_t>(left);
-        ASR::ComplexConstant_t *rc = ASR::down_cast<ASR::ComplexConstant_t>(right);
-        if (!ASRUtils::complex_constant_is_r16(lc) ||
-                !ASRUtils::complex_constant_is_r16(rc)) {
-            return nullptr;
+        lf_complex128 a = lf_c128_make(ASRUtils::complex_constant_re_r16(lc),
+            ASRUtils::complex_constant_im_r16(lc));
+        lf_complex128 res;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*right)) {
+            LCOMPILERS_ASSERT(op == ASR::binopType::Pow);
+            res = lf_c128_pow_int(a,
+                ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n);
+        } else {
+            if (!ASR::is_a<ASR::ComplexConstant_t>(*right) ||
+                    !ASRUtils::complex_constant_is_r16(
+                        ASR::down_cast<ASR::ComplexConstant_t>(right))) {
+                return nullptr;
+            }
+            ASR::ComplexConstant_t *rc = ASR::down_cast<ASR::ComplexConstant_t>(right);
+            lf_complex128 b = lf_c128_make(ASRUtils::complex_constant_re_r16(rc),
+                ASRUtils::complex_constant_im_r16(rc));
+            switch (op) {
+                case ASR::Add: res = lf_c128_add(a, b); break;
+                case ASR::Sub: res = lf_c128_sub(a, b); break;
+                case ASR::Mul: res = lf_c128_mul(a, b); break;
+                case ASR::Div: res = lf_c128_div(a, b); break;
+                case ASR::Pow: res = lf_c128_pow(a, b); break;
+                default: return nullptr;
+            }
         }
-        lf_float128 a = ASRUtils::complex_constant_re_r16(lc);
-        lf_float128 b = ASRUtils::complex_constant_im_r16(lc);
-        lf_float128 c = ASRUtils::complex_constant_re_r16(rc);
-        lf_float128 d = ASRUtils::complex_constant_im_r16(rc);
-        lf_float128 re, im;
-        switch (op) {
-            case ASR::Add:
-                re = lf_f128_add(a, c);
-                im = lf_f128_add(b, d);
-                break;
-            case ASR::Sub:
-                re = lf_f128_sub(a, c);
-                im = lf_f128_sub(b, d);
-                break;
-            default:
-                re = lf_f128_sub(lf_f128_mul(a, c), lf_f128_mul(b, d));
-                im = lf_f128_add(lf_f128_mul(a, d), lf_f128_mul(b, c));
-                break;
-        }
-        return ASRUtils::make_ComplexConstant_r16(al, loc, re, im, dest_type);
+        return ASRUtils::make_ComplexConstant_r16(al, loc, res.re, res.im, dest_type);
     } else if (ASR::is_a<ASR::ComplexConstant_t>(*left) && ASR::is_a<ASR::ComplexConstant_t>(*right)) {
         ASR::ComplexConstant_t *left_value
             = ASR::down_cast<ASR::ComplexConstant_t>(

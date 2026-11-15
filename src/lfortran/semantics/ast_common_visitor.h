@@ -27138,8 +27138,8 @@ public:
                 ASR::expr_t* element = visit_BinOp_helper(ASRUtils::fetch_ArrayConstant_value(al, left_array, i),
                                 ASRUtils::fetch_ArrayConstant_value(al, right_array, i), op, loc, ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, left_array, i)));
                 if (element == nullptr) {
-                    // An element that cannot be folded, e.g. a complex(16)
-                    // division, leaves the array to be evaluated at run time
+                    // An element that cannot be folded leaves the array
+                    // to be evaluated at run time
                     return nullptr;
                 }
                 values.push_back(al, element);
