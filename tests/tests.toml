@@ -5742,6 +5742,13 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_independent_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, the phases of attention in one kernel: the `do concurrent`
+# loops inside the iteration of a head are shared out between its lanes, also
+# where a plain loop with a sum is inside them.
+[[test]]
+filename = "../integration_tests/gpu_lanes_concurrent_01.f90"
+gpu_cuda_kernel = true
+
 # On an NVIDIA GPU, the sum over the codes of a group of a quantized
 # matrix-vector product is shared out between 16 lanes, and a warp runs two
 # iterations.
