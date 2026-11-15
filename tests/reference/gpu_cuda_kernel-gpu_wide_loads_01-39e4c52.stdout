@@ -271,7 +271,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_19gpu_wide_loads_01_m3qmv {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_wide_loads_01_m3qmv(
+extern "C" __global__ void __launch_bounds__(256, 6) __lfortran_gpu_kernel_0_19gpu_wide_loads_01_m3qmv(
     int* __restrict__ w,
     int16_t* __restrict__ x,
     float* __restrict__ y,
@@ -305,13 +305,13 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_
             }
             c = (1 + (((int)__gpu_lane) * 1));
             const int __lfortran_trips_0 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
-            #pragma unroll 2
+            #pragma unroll 1
             for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, c += (1 * ((int)__gpu_lanes))) {
                 total = (total + chunk_dot_gpu_16(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
             }
             total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
         } else {
-            #pragma unroll 2
+            #pragma unroll 1
             for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
                 total = (total + chunk_dot_gpu_16(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
             }
@@ -432,7 +432,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_19gpu_wide_loads_01_m10qmv_inline {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_19gpu_wide_loads_01_m10qmv_inline(
+extern "C" __global__ void __launch_bounds__(256, 6) __lfortran_gpu_kernel_1_19gpu_wide_loads_01_m10qmv_inline(
     int* __restrict__ w,
     int16_t* __restrict__ x,
     float* __restrict__ y,
@@ -509,7 +509,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_19gpu_
             if (((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0) && (((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0) && (((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
                 c = (1 + (((int)__gpu_lane) * 1));
                 const int __lfortran_trips_1 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
-                #pragma unroll 2
+                #pragma unroll 1
                 for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, c += (1 * ((int)__gpu_lanes))) {
                     __lfortran_wide_load(true, &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
                     __lfortran_wide_load(true, &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
@@ -519,7 +519,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_19gpu_
             } else {
                 c = (1 + (((int)__gpu_lane) * 1));
                 const int __lfortran_trips_2 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
-                #pragma unroll 2
+                #pragma unroll 1
                 for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, c += (1 * ((int)__gpu_lanes))) {
                     __lfortran_wide_load(((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
                     __lfortran_wide_load((((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
@@ -530,7 +530,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_19gpu_
             total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
         } else {
             if (((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0) && (((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0) && (((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
-                #pragma unroll 2
+                #pragma unroll 1
                 for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
                     __lfortran_wide_load(true, &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
                     __lfortran_wide_load(true, &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27, __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
@@ -538,7 +538,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_19gpu_
                     total = (total + ((((((((((((((((((float)_lcompilers_ibits_i3216_gpu_105(__gpu_wide20, 0, 8)) * ((float)__gpu_wide24)) + (((float)_lcompilers_ibits_i3217_gpu_106(__gpu_wide20, 8, 8)) * ((float)__gpu_wide25))) + (((float)_lcompilers_ibits_i3218_gpu_107(__gpu_wide20, 16, 8)) * ((float)__gpu_wide26))) + (((float)_lcompilers_ibits_i3219_gpu_108(__gpu_wide20, 24, 8)) * ((float)__gpu_wide27))) + (((float)_lcompilers_ibits_i3220_gpu_109(__gpu_wide21, 0, 8)) * ((float)__gpu_wide28))) + (((float)_lcompilers_ibits_i3221_gpu_110(__gpu_wide21, 8, 8)) * ((float)__gpu_wide29))) + (((float)_lcompilers_ibits_i3222_gpu_111(__gpu_wide21, 16, 8)) * ((float)__gpu_wide30))) + (((float)_lcompilers_ibits_i3223_gpu_112(__gpu_wide21, 24, 8)) * ((float)__gpu_wide31))) + (((float)_lcompilers_ibits_i3224_gpu_113(__gpu_wide22, 0, 8)) * ((float)__gpu_wide32))) + (((float)_lcompilers_ibits_i3225_gpu_114(__gpu_wide22, 8, 8)) * ((float)__gpu_wide33))) + (((float)_lcompilers_ibits_i3226_gpu_115(__gpu_wide22, 16, 8)) * ((float)__gpu_wide34))) + (((float)_lcompilers_ibits_i3227_gpu_116(__gpu_wide22, 24, 8)) * ((float)__gpu_wide35))) + (((float)_lcompilers_ibits_i3228_gpu_117(__gpu_wide23, 0, 8)) * ((float)__gpu_wide36))) + (((float)_lcompilers_ibits_i3229_gpu_118(__gpu_wide23, 8, 8)) * ((float)__gpu_wide37))) + (((float)_lcompilers_ibits_i3230_gpu_119(__gpu_wide23, 16, 8)) * ((float)__gpu_wide38))) + (((float)_lcompilers_ibits_i3231_gpu_120(__gpu_wide23, 24, 8)) * ((float)__gpu_wide39))));
                 }
             } else {
-                #pragma unroll 2
+                #pragma unroll 1
                 for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
                     __lfortran_wide_load(((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
                     __lfortran_wide_load((((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27, __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);

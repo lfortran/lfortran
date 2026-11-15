@@ -108,12 +108,24 @@ struct CudaDialect {
     // sparse matrix-vector product lost a quarter of its speed with the
     // bound). The CPU emulation's host compiler knows no such attribute, and
     // HIP, tuned on AMD GPUs without it, is left as it was.
+    //
+    // A kernel whose lanes read vectors of 16 bytes (`lane_vectors`) is held
+    // to the registers that let three quarters of the threads of a
+    // multiprocessor (1536 of 2048) run, six blocks of 256. It needs the
+    // loads of its iterations in flight, which a bound that lets ptxas
+    // cut the registers to run all 2048 does not leave it, and the
+    // many threads that hide them, which one block per multiprocessor
+    // would not.
     std::string kernel_qualifier(int64_t threads_per_block,
-            bool few_blocks) const {
+            bool few_blocks, bool lane_vectors = false) const {
         if (emulate_cpu || hip) return "extern \"C\" __global__ void ";
+        std::string min_blocks = few_blocks ? ", 1"
+            : lane_vectors && threads_per_block > 0
+                && threads_per_block <= 1536
+                ? ", " + std::to_string(1536 / threads_per_block)
+                : std::string();
         return "extern \"C\" __global__ void __launch_bounds__("
-            + std::to_string(threads_per_block)
-            + (few_blocks ? ", 1" : "") + ") ";
+            + std::to_string(threads_per_block) + min_blocks + ") ";
     }
 
     // A kernel parameter is bound by position, not to a named buffer slot.
@@ -348,9 +360,15 @@ struct CudaDialect {
     // of a quantized matrix-vector product keeps its loads in flight with
     // few registers; by 4 it takes 64 and the SM runs a third fewer warps
     // (the product of 17408 rows takes 15% longer).
-    std::string unroll_wide_pragma() const {
+    // A kernel whose lanes read such vectors (`lane_vectors`) does not
+    // unroll it: its lanes have the next vectors to load in flight with the
+    // registers of the bound of kernel_qualifier, which an unrolled loop
+    // takes for its copies (a quantized matrix-vector product read 3%
+    // faster over its launches, together with the bound).
+    std::string unroll_wide_pragma(bool lane_vectors = false) const {
         return emulate_cpu || hip ? std::string()
-            : std::string("#pragma unroll 2");
+            : std::string(lane_vectors ? "#pragma unroll 1"
+                                       : "#pragma unroll 2");
     }
     // A loop that combines the values of the lanes of an iteration in each
     // of its iterations is unrolled by four: the shuffles of one iteration
