@@ -5937,6 +5937,12 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_scattered_02.f90"
 gpu_cuda_kernel = true
 
+# An assignment to an allocatable array that one ALLOCATE statement gave the
+# bounds of its value is offloaded; others stay on the host.
+[[test]]
+filename = "../integration_tests/gpu_array_statements_realloc_01.f90"
+gpu_cuda_kernel = true
+
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]

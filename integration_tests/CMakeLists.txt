@@ -7214,6 +7214,7 @@ RUN(NAME gpu_lanes_block_03 LABELS gfortran llvm cuda NO_FAST_MATH)
 RUN(NAME gpu_lanes_block_04 LABELS gfortran llvm cuda)
 RUN(NAME gpu_lanes_scattered_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_lanes_scattered_02 LABELS gfortran llvm cuda)
+RUN(NAME gpu_array_statements_realloc_01 LABELS gfortran llvm cuda) # assignments to arrays allocated with the same bounds
 RUN(NAME gpu_lanes_short_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_lanes_unroll_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_lanes_const_trips_01 LABELS gfortran llvm cuda)
