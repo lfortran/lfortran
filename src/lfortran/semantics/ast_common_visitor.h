@@ -2298,6 +2298,24 @@ public:
         {"atanpi", "atan2pi"},
     };
 
+    // The two-argument forms of atan, atand and atanpi take real y and x.
+    // Report a mismatch here, naming the intrinsic as referenced, instead
+    // of in the intrinsic it is mapped to.
+    void check_two_argument_intrinsic_args(const std::string& intrinsic_name,
+            const Vec<ASR::expr_t*>& args, const Location& loc) {
+        LCOMPILERS_ASSERT(args.size() == 2 && args[0] && args[1]);
+        ASR::ttype_t* y_type = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t* x_type = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_real(*y_type) || !ASRUtils::is_real(*x_type)) {
+            diag.add(Diagnostic("arguments 'y' and 'x' of the '" +
+                intrinsic_name + "' intrinsic must be real, found " +
+                ASRUtils::type_to_str_with_kind(y_type, args[0]) + " and " +
+                ASRUtils::type_to_str_with_kind(x_type, args[1]),
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     // The specific intrinsic functions of Fortran 2018, Table 16.2, that
     // `intrinsic_mapping` does not have (most of them have their generic
     // name), with their generic function and the types of their arguments.
@@ -20760,14 +20778,8 @@ public:
         return member;
     }
 
-    // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
-    template <typename T>
-    bool handle_intrinsic_node_args(const T& x,
-        Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
-        size_t min_args, size_t max_args, const std::string& intrinsic_name,
-        bool raise_error=true) {
-        // raise_error is used only when the error is not related to number of arguments
-        size_t total_args = x.n_args + x.n_keywords;
+    void check_intrinsic_arg_count(const Location& loc, size_t total_args,
+        size_t min_args, size_t max_args, const std::string& intrinsic_name) {
         if( !(total_args <= max_args && total_args >= min_args) ) {
             if (min_args == max_args) {
                 diag.add(diag::Diagnostic(
@@ -20776,7 +20788,7 @@ public:
                     "It accepts exactly " + std::to_string(min_args) +
                     " arguments.",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
+                        diag::Label("", {loc})}));
                     throw SemanticAbort();
             } else {
                 diag.add(diag::Diagnostic(
@@ -20785,10 +20797,21 @@ public:
                     "It accepts at least " + std::to_string(min_args) +
                     " and at most " + std::to_string(max_args) + " arguments.",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
+                        diag::Label("", {loc})}));
                     throw SemanticAbort();
             }
         }
+    }
+
+    // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
+    template <typename T>
+    bool handle_intrinsic_node_args(const T& x,
+        Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
+        size_t min_args, size_t max_args, const std::string& intrinsic_name,
+        bool raise_error=true) {
+        // raise_error is used only when the error is not related to number of arguments
+        check_intrinsic_arg_count(x.base.base.loc, x.n_args + x.n_keywords,
+            min_args, max_args, intrinsic_name);
         args.reserve(al, max_args);
 
         for( size_t i = 0; i < max_args; i++ ) {
@@ -23475,12 +23498,23 @@ public:
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
+            // The two-argument form of atan, atand and atanpi is mapped to
+            // another intrinsic, but diagnostics name the one referenced.
+            std::string diag_var_name;
             if (is_specific_type_intrinsic) {
                 specific_var_name = var_name;
                 var_name = intrinsic_mapping[var_name].first;
-            } else if (x.n_args + x.n_keywords == 2 &&
-                    two_argument_intrinsic_mapping.count(var_name)) {
-                var_name = two_argument_intrinsic_mapping[var_name];
+            } else if (two_argument_intrinsic_mapping.count(var_name)) {
+                size_t total_args = x.n_args + x.n_keywords;
+                check_intrinsic_arg_count(x.base.base.loc, total_args, 1, 2,
+                    var_name);
+                if (total_args == 2) {
+                    diag_var_name = var_name;
+                    var_name = two_argument_intrinsic_mapping[var_name];
+                }
+            }
+            if (diag_var_name.empty()) {
+                diag_var_name = var_name;
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
@@ -23490,12 +23524,16 @@ public:
                 signature_matched = handle_intrinsic_node_args(
                     x, args, signature.kwarg_names,
                     signature.positional_args, signature.max_args,
-                    var_name, false);
+                    diag_var_name, false);
                 check_specific_type_intrinsics(specific_var_name, args, x.base.base.loc);
                 if( !signature_matched ) {
-                    diag.add(Diagnostic("No matching signature found for intrinsic " + var_name,
+                    diag.add(Diagnostic("No matching signature found for intrinsic " + diag_var_name,
                                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
+                }
+                if (diag_var_name != var_name) {
+                    check_two_argument_intrinsic_args(diag_var_name, args,
+                        x.base.base.loc);
                 }
                 {
                     auto dim_it = std::find(signature.kwarg_names.begin(), signature.kwarg_names.end(), "dim");
