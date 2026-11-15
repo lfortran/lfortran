@@ -330,7 +330,7 @@ else7:                                            ; preds = %ifcont
   br label %ifcont8
 
 ifcont8:                                          ; preds = %else7, %then6
-  store void (i8*, i8*, i64, i64)* bitcast (void ()* @check to void (i8*, i8*, i64, i64)*), void (i8*, i8*, i64, i64)** %"check~fpcast_ptr", align 8
+  store void (i8*, i8*, i64, i64)* @check, void (i8*, i8*, i64, i64)** %"check~fpcast_ptr", align 8
   %76 = load void (i8*, i8*, i64, i64)*, void (i8*, i8*, i64, i64)** %"check~fpcast_ptr", align 8
   %77 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
   %78 = load i8*, i8** %77, align 8
@@ -382,8 +382,6 @@ ifcont14:                                         ; preds = %else13, %then12
   ret i32 0
 }
 
-declare void @check()
-
 declare void @"check~fpcast"(i8*, i8*, i64, i64)
 
 declare void @_lpython_call_initial_functions(i32, i8**)
@@ -405,3 +403,5 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
+
+declare void @check(i8*, i8*, i64, i64)
