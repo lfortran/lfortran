@@ -129,6 +129,7 @@ set(SRC
     pass/gpu_launch_sync.cpp
     pass/gpu_sequential_unroll.cpp
     pass/gpu_residue_unroll.cpp
+    pass/gpu_dp4a.cpp
     pass/gpu_integer_powers.cpp
     pass/gpu_device_guard_fold.cpp
     pass/gpu_affine.cpp
