@@ -3746,6 +3746,8 @@ RUN(NAME realloc_lhs_hoist_09 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # calls and element assignments that reallocate components
 RUN(NAME realloc_lhs_hoist_10 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # components of array elements
+RUN(NAME realloc_lhs_hoist_11 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # the shape from the operand the loops do not change
 RUN(NAME realloc_lhs_version_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # loops run without reallocations that do nothing
 RUN(NAME realloc_lhs_hoist_08 LABELS gfortran llvm

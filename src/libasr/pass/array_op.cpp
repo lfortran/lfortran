@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <map>
+#include <set>
 #include <vector>
 
 namespace LCompilers {
@@ -1318,8 +1319,108 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     // allocatable array tell about its target, see AllocationFacts
     enum class KnownTarget { HasValueShape, Unallocated };
     std::map<const ASR::Assignment_t*, KnownTarget> known_targets;
+    // The variables of the DO loops around the statement being visited,
+    // the innermost last
+    std::vector<ASR::symbol_t*> loop_variables;
 
     public:
+
+    void visit_DoLoop(const ASR::DoLoop_t& x) {
+        ASR::symbol_t* v = nullptr;
+        if (x.m_head.m_v != nullptr && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)) {
+            v = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v);
+        }
+        loop_variables.push_back(v);
+        ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor>::visit_DoLoop(x);
+        loop_variables.pop_back();
+    }
+
+    // How many of the DO loops around the statement, counted from the
+    // outermost, reach to the innermost one whose variable `e` reads: 0
+    // when it reads none.
+    size_t loop_dependence(ASR::expr_t* e) {
+        class VarFinder : public ASR::BaseWalkVisitor<VarFinder> {
+            public:
+            std::set<ASR::symbol_t*> vars;
+            bool calls = false;
+            void visit_Var(const ASR::Var_t& x) {
+                vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                calls = true;
+                ASR::BaseWalkVisitor<VarFinder>::visit_FunctionCall(x);
+            }
+        };
+        VarFinder f;
+        f.visit_expr(*e);
+        if (f.calls) {
+            return loop_variables.size() + 1;
+        }
+        size_t depth = 0;
+        for (size_t i = 0; i < loop_variables.size(); i++) {
+            if (loop_variables[i] != nullptr && f.vars.count(loop_variables[i]) > 0) {
+                depth = i + 1;
+            }
+        }
+        return depth;
+    }
+
+    // Whether `e` designates an array or a section of one, through
+    // components: an operand whose shape can be inquired without
+    // evaluating anything but subscripts.
+    static bool is_array_designator(ASR::expr_t* e) {
+        while (true) {
+            switch (e->type) {
+                case ASR::exprType::Var:
+                    return true;
+                case ASR::exprType::StructInstanceMember:
+                    e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                    break;
+                case ASR::exprType::ArraySection:
+                    e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                    break;
+                case ASR::exprType::ArrayItem:
+                    e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                    break;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    // The operand of the array expression `value` whose shape the
+    // reallocation of the target of its assignment reads, `chosen` unless
+    // another of the operands that give `value` its shape (which all
+    // conform, see collect_shape_operands) depends on fewer of the innermost
+    // DO loops around the assignment: in `d = p(j)%r - p(i)%r` in a loop over
+    // `j`, `p(i)%r`, whose shape the loop does not change, so that the
+    // reallocation can move out of it (see hoist_realloc).
+    ASR::expr_t* least_loop_dependent_shape_operand(ASR::expr_t* value,
+            ASR::expr_t* chosen, size_t rank) {
+        if (loop_variables.empty() || !is_array_designator(chosen)) {
+            return chosen;
+        }
+        std::vector<ASR::expr_t*> operands;
+        collect_shape_operands(value, operands);
+        size_t best = loop_dependence(chosen);
+        for (ASR::expr_t* operand : operands) {
+            operand = ASRUtils::get_past_array_physical_cast(operand);
+            if (best == 0) {
+                break;
+            }
+            if (!is_array_designator(operand) ||
+                    ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(operand)) != rank) {
+                continue;
+            }
+            size_t depth = loop_dependence(operand);
+            if (depth < best) {
+                best = depth;
+                chosen = operand;
+            }
+        }
+        return chosen;
+    }
 
     int get_index_kind() const {
         return pass_options.descriptor_index_64 ? 8 : 4;
@@ -2893,6 +2994,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::expr_t* size_expr = ASRUtils::get_expr_size_expr(value);
         if (size_expr == nullptr) {
             return;
+        }
+        if (!ASRUtils::is_character(*ASRUtils::expr_type(value))) {
+            size_expr = least_loop_dependent_shape_operand(value, size_expr,
+                ASRUtils::extract_n_dims_from_ttype(target_type));
         }
         ASR::expr_t* realloc_var = d.duplicate_expr(size_expr);
 
