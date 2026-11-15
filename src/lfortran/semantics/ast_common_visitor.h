@@ -2289,6 +2289,15 @@ public:
         {"dmod", {"mod", {"real8", "real8"}}},
     };
 
+    // Generic intrinsics whose two-argument form is another intrinsic:
+    // atan(y, x) is atan2(y, x) (Fortran 2008), atand(y, x) and atanpi(y, x)
+    // are atan2d(y, x) and atan2pi(y, x) (Fortran 2023).
+    std::map<std::string, std::string> two_argument_intrinsic_mapping = {
+        {"atan", "atan2"},
+        {"atand", "atan2d"},
+        {"atanpi", "atan2pi"},
+    };
+
     // The specific intrinsic functions of Fortran 2018, Table 16.2, that
     // `intrinsic_mapping` does not have (most of them have their generic
     // name), with their generic function and the types of their arguments.
@@ -23469,6 +23478,9 @@ public:
             if (is_specific_type_intrinsic) {
                 specific_var_name = var_name;
                 var_name = intrinsic_mapping[var_name].first;
+            } else if (x.n_args + x.n_keywords == 2 &&
+                    two_argument_intrinsic_mapping.count(var_name)) {
+                var_name = two_argument_intrinsic_mapping[var_name];
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {

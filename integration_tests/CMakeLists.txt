@@ -2307,6 +2307,8 @@ RUN(NAME real16_bessel_01 LABELS gfortran llvm) # real(16) bessel_j0/j1/jn of no
 RUN(NAME real16_bessel_02 LABELS gfortran llvm) # real(16) bessel_y0/y1/yn of non-constant arguments (#15736, #17463)
 RUN(NAME real16_atan2_01 LABELS gfortran llvm) # atan2/atan2d parameters of real(16) and x87 kind 10 (#17816)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_atan_01 LABELS gfortran llvm) # two-argument atan(y, x) (#17824)
+RUN(NAME intrinsics_atan_02 LABELS llvm) # two-argument atand(y, x), atanpi(y, x) (#17824)  <--- GFortran does not have support for these
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
