@@ -63,7 +63,9 @@ struct PassOptions {
     bool pass_cumulative = false; // Apply passes cumulatively
     bool verify_all_passes = false; // Verify ASR after every pass
     bool disable_main = false;
-    bool realloc_lhs_arrays = false;
+    // Reallocate an allocatable array on intrinsic assignment when it is
+    // unallocated or has a different shape (F2018 10.2.1.3)
+    bool realloc_lhs_arrays = true;
     bool stack_arrays = false;
     // Each module is compiled into an object file of its own, so a module
     // read back from a `.mod` file is defined elsewhere and this translation
