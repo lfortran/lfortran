@@ -5642,8 +5642,31 @@ namespace Spacing {
             result = nearest(x, 1.0) - x
         end function
         */
-        ASR::expr_t* nearest_expr = Nearest::NEAREST(b, args[0], b.f_t(1, arg_types[0]), scope);
-        body.push_back(al, b.Assignment(result, b.Sub(nearest_expr, args[0])));
+        // The spacing at |x| (F2018 16.9.180): above |x|, except at huge,
+        // and not below tiny, which is also the spacing of 0.
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t* ax = declare("ax", arg_types[0], Local);
+        body.push_back(al, b.If(b.Lt(args[0], b.f_t(0.0, arg_types[0])), {
+            b.Assignment(ax, b.Mul(b.f_t(-1.0, arg_types[0]), args[0]))
+        }, {
+            b.Assignment(ax, args[0])
+        }));
+        ASR::expr_t* up = Nearest::NEAREST(b, ax, b.f_t(1, arg_types[0]), scope);
+        ASR::expr_t* down = Nearest::NEAREST(b, ax, b.f_t(-1, arg_types[0]), scope);
+        double huge_value = kind == 4 ? std::numeric_limits<float>::max()
+            : std::numeric_limits<double>::max();
+        double tiny_value = kind == 4 ? std::numeric_limits<float>::min()
+            : std::numeric_limits<double>::min();
+        body.push_back(al, b.If(b.Eq(ax, b.f_t(huge_value, arg_types[0])), {
+            b.Assignment(result, b.Sub(ax, down))
+        }, {
+            b.Assignment(result, b.Sub(up, ax))
+        }));
+        if (kind == 4 || kind == 8) {
+            body.push_back(al, b.If(b.Lt(result, b.f_t(tiny_value, arg_types[0])), {
+                b.Assignment(result, b.f_t(tiny_value, arg_types[0]))
+            }, {}));
+        }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
