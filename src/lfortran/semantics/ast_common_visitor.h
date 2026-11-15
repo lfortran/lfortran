@@ -22915,7 +22915,8 @@ public:
         return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, current_struct_type_var_expr);
     }
 
-    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x,
+            bool c_associated=false) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
@@ -22935,6 +22936,16 @@ public:
         }
         ASR::ttype_t* associated_type_ = ASRUtils::TYPE(ASR::make_Logical_t(
                                             al, x.base.base.loc, compiler_options.po.default_integer_kind));
+        if (c_associated && tgt_ == nullptr && ASRUtils::is_pointer(ASRUtils::expr_type(ptr_))
+                && ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(ASRUtils::expr_type(ptr_)))) {
+            // c_associated tests the value of a c_ptr; for a c_ptr with the
+            // POINTER attribute, that is its target, not its association.
+            ASR::ttype_t* cptr_type = ASRUtils::extract_type(ASRUtils::expr_type(ptr_));
+            ASR::expr_t* null_cptr = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
+                al, x.base.base.loc, cptr_type, nullptr));
+            return ASR::make_CPtrCompare_t(al, x.base.base.loc, ptr_, ASR::cmpopType::NotEq,
+                null_cptr, associated_type_, nullptr);
+        }
         ASR::expr_t* associated_value = nullptr;
         if (ASR::expr_t* ptr_value = ASRUtils::expr_value(ptr_)) {
             if (ASR::is_a<ASR::PointerNullConstant_t>(*ptr_value)) {
@@ -26516,7 +26527,7 @@ public:
                     if (orig_name == "c_loc") {
                         tmp = create_PointerToCptr(x, orig_name);
                     } else if (orig_name == "c_associated") {
-                        tmp = create_Associated(x);
+                        tmp = create_Associated(x, true);
                     } else if (orig_name == "c_funloc") {
                         tmp = create_PointerToCptr(x, orig_name);
                     } else if (orig_name == "c_sizeof") {
