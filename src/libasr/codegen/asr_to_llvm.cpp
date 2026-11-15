@@ -12571,6 +12571,16 @@ public:
             }
 
             if (ASRUtils::is_descriptorString(fptr_data_type)) {
+                // A disassociated pointer has no string descriptor.
+                llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                    llvm_fptr_data_type->getPointerTo(), fptr_data);
+                llvm_utils->create_if_else(builder->CreateIsNull(str_desc), [&]() {
+                    llvm::Value* new_str_desc = llvm_utils->allocate_string_descriptor_on_heap(
+                        llvm_fptr_data_type);
+                    ASR::String_t* str_type = ASRUtils::get_string_type(fptr_type);
+                    setup_string_length(new_str_desc, str_type, str_type->m_len);
+                    builder->CreateStore(new_str_desc, fptr_data);
+                }, [](){});
                 fptr_data = llvm_utils->CreateLoad2(llvm_fptr_data_type->getPointerTo(), fptr_data);
                 fptr_data = llvm_utils->create_gep2(llvm_fptr_data_type, fptr_data, 0);
                 llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_utils->i8_ptr);
