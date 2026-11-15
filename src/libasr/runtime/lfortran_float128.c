@@ -1408,26 +1408,27 @@ static f128_dw fast_two_sum(lf_float128 a, lf_float128 b) {
     return dw_make(s, f_sub(b, f_sub(s, a)));
 }
 
-/* Veltkamp splitting a = hi + lo, each part with at most 56 significant
- * bits, so that the products of two parts are exact. */
-static void f128_split(lf_float128 a, lf_float128 *hi, lf_float128 *lo) {
-    /* 2^57 + 1 */
-    lf_float128 c = f_mul(f128_const(0, 16383 + 57, 0, (uint64_t)1 << 55), a);
-    *hi = f_sub(c, f_sub(c, a));
-    *lo = f_sub(a, *hi);
-}
-
-/* p + e = a * b exactly, p = fl(a * b) (Dekker). |a|, |b| < 2^16000. */
+/* p + e = a * b, p = fl(a * b). e is the difference between the exact
+ * product of the significands and p, which has at most 113 bits, so the sum
+ * is exact unless e underflows. e is 0 when p is zero, infinite or NaN, or
+ * subnormal with more than 113 bits lost. */
 static f128_dw two_prod(lf_float128 a, lf_float128 b) {
     lf_float128 p = f_mul(a, b);
-    lf_float128 ah, al, bh, bl;
-    f128_split(a, &ah, &al);
-    f128_split(b, &bh, &bl);
-    lf_float128 e = f_sub(f_mul(ah, bh), p);
-    e = f_add(e, f_mul(ah, bl));
-    e = f_add(e, f_mul(al, bh));
-    e = f_add(e, f_mul(al, bl));
-    return dw_make(p, e);
+    f128_parts pa = f128_unpack(a), pb = f128_unpack(b), pp = f128_unpack(p);
+    if (pp.is_nan || pp.is_inf || pp.is_zero) {
+        return dw_make(p, f128_make_zero(0));
+    }
+    /* a * b = prod * 2^e0 and p = pp.mant * 2^(e0 + k) */
+    u128 prod_hi, prod_lo;
+    u128_mul128(pa.mant, pb.mant, &prod_hi, &prod_lo);
+    int32_t e0 = pa.exp + pb.exp - 224;
+    int32_t k = pp.exp - 112 - e0;
+    if (k < 0 || k > 113) return dw_make(p, f128_make_zero(0));
+    /* |prod - pp.mant * 2^k| <= 2^(k-1), so its low 128 bits are exact */
+    u128 d = u128_sub(prod_lo, u128_shl(pp.mant, k));
+    int neg = u128_bit(d, 127);
+    if (neg) d = u128_sub(u128_zero(), d);
+    return dw_make(p, f128_pack_parts(pa.sign ^ pb.sign ^ neg, e0 + 112, d));
 }
 
 static f128_dw dw_add(f128_dw a, f128_dw b) {
