@@ -944,6 +944,140 @@ class ReplacePlaceholder: public ASR::BaseExprReplacer<ReplacePlaceholder> {
 
 };
 
+// Whether an intrinsic function, applied elementally, gives its array
+// arguments' shape. The inquiry and coarray functions do not.
+static bool is_shape_preserving_elemental_intrinsic(int64_t id) {
+    switch (static_cast<ASRUtils::IntrinsicElementalFunctions>(id)) {
+        case ASRUtils::IntrinsicElementalFunctions::ObjectType:
+        case ASRUtils::IntrinsicElementalFunctions::Kind:
+        case ASRUtils::IntrinsicElementalFunctions::SameTypeAs:
+        case ASRUtils::IntrinsicElementalFunctions::ExtendsTypeOf:
+        case ASRUtils::IntrinsicElementalFunctions::Digits:
+        case ASRUtils::IntrinsicElementalFunctions::MinExponent:
+        case ASRUtils::IntrinsicElementalFunctions::MaxExponent:
+        case ASRUtils::IntrinsicElementalFunctions::Radix:
+        case ASRUtils::IntrinsicElementalFunctions::Range:
+        case ASRUtils::IntrinsicElementalFunctions::Epsilon:
+        case ASRUtils::IntrinsicElementalFunctions::Precision:
+        case ASRUtils::IntrinsicElementalFunctions::Tiny:
+        case ASRUtils::IntrinsicElementalFunctions::Huge:
+        case ASRUtils::IntrinsicElementalFunctions::BitSize:
+        case ASRUtils::IntrinsicElementalFunctions::StorageSize:
+        case ASRUtils::IntrinsicElementalFunctions::IsContiguous:
+        case ASRUtils::IntrinsicElementalFunctions::NewLine:
+        case ASRUtils::IntrinsicElementalFunctions::Loc:
+        case ASRUtils::IntrinsicElementalFunctions::Present:
+        case ASRUtils::IntrinsicElementalFunctions::ThisImage:
+        case ASRUtils::IntrinsicElementalFunctions::NumImages:
+        case ASRUtils::IntrinsicElementalFunctions::LCoBound:
+        case ASRUtils::IntrinsicElementalFunctions::UCoBound:
+        case ASRUtils::IntrinsicElementalFunctions::ListIndex:
+        case ASRUtils::IntrinsicElementalFunctions::Partition:
+        case ASRUtils::IntrinsicElementalFunctions::ListReverse:
+        case ASRUtils::IntrinsicElementalFunctions::ListPop:
+        case ASRUtils::IntrinsicElementalFunctions::ListReserve:
+        case ASRUtils::IntrinsicElementalFunctions::DictKeys:
+        case ASRUtils::IntrinsicElementalFunctions::DictValues:
+        case ASRUtils::IntrinsicElementalFunctions::SetAdd:
+        case ASRUtils::IntrinsicElementalFunctions::SetRemove:
+            return false;
+        default:
+            return true;
+    }
+}
+
+// Collects the array operands of `value` that give it its shape: `value`
+// itself, unless it is an elemental expression, an intrinsic operation,
+// conversion or elemental function reference, whose array operands all
+// conform with its result (F2018 10.1.5, 15.8.2), and then their operands
+// recursively. Anything else, such as `[x, 1]`, `x(2:)`, `pack(x, m)` or
+// `transpose(x)`, is an operand itself, and its own operands are not, nor
+// are those of a scalar such as `size(x)`.
+static void collect_shape_operands(ASR::expr_t* value,
+        std::vector<ASR::expr_t*>& operands) {
+    value = ASRUtils::get_past_array_physical_cast(value);
+    if (!ASRUtils::is_array(ASRUtils::expr_type(value))) {
+        return;
+    }
+    if (ASRUtils::is_binop_expr(value)) {
+        collect_shape_operands(ASRUtils::extract_member_from_binop(value, 0),
+            operands);
+        collect_shape_operands(ASRUtils::extract_member_from_binop(value, 1),
+            operands);
+        return;
+    }
+    if (ASRUtils::is_unaryop_expr(value)) {
+        collect_shape_operands(ASRUtils::extract_member_from_unaryop(value),
+            operands);
+        return;
+    }
+    switch (value->type) {
+        case ASR::exprType::IntegerBitNot:
+            collect_shape_operands(
+                ASR::down_cast<ASR::IntegerBitNot_t>(value)->m_arg, operands);
+            return;
+        case ASR::exprType::Cast:
+            collect_shape_operands(
+                ASR::down_cast<ASR::Cast_t>(value)->m_arg, operands);
+            return;
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* x =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+            if (!is_shape_preserving_elemental_intrinsic(x->m_intrinsic_id)) {
+                break;
+            }
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (x->m_args[i] != nullptr) {
+                    collect_shape_operands(x->m_args[i], operands);
+                }
+            }
+            return;
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* x = ASR::down_cast<ASR::FunctionCall_t>(value);
+            if (!ASRUtils::is_elemental(x->m_name)) {
+                break;
+            }
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (x->m_args[i].m_value != nullptr) {
+                    collect_shape_operands(x->m_args[i].m_value, operands);
+                }
+            }
+            return;
+        }
+        default:
+            break;
+    }
+    operands.push_back(value);
+}
+
+// Whether the intrinsic assignment of an array to the allocatable `target`
+// reallocates it only for the shape of the value (F2018 10.2.1.3 p3). A
+// character or polymorphic one can need a new length or dynamic type too.
+static bool is_reallocated_for_shape_only(ASR::expr_t* target) {
+    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+    return !ASRUtils::is_character(*target_type) &&
+        !ASRUtils::is_class_type(ASRUtils::extract_type(target_type));
+}
+
+// Whether the assignment of the array `value` to the allocatable `target`
+// leaves the shape of `target` as it is, because `target` gives `value` its
+// shape: `x = x + dt*v`, `x = merge(x, y, m)`. `target` is then allocated
+// too, as `value` references it.
+static bool value_has_target_shape(ASR::expr_t* target, ASR::expr_t* value) {
+    if (!is_reallocated_for_shape_only(target)) {
+        return false;
+    }
+    std::vector<ASR::expr_t*> operands;
+    collect_shape_operands(value, operands);
+    for (ASR::expr_t* operand: operands) {
+        if (PassUtils::same_expression(operand, target)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -2292,6 +2426,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::expr_t* underlying_value = ASRUtils::get_past_array_physical_cast(value);
         bool array_copy = ASR::is_a<ASR::Var_t>(*underlying_value) && ASR::is_a<ASR::Var_t>(*underlying_target);
         if (!realloc) {
+            return;
+        }
+        if (value_has_target_shape(underlying_target, value)) {
             return;
         }
         bool is_bitcast = ASR::is_a<ASR::BitCast_t>(*underlying_value);

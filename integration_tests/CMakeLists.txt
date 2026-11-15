@@ -3726,6 +3726,8 @@ RUN(NAME realloc_lhs_func_result_03 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_func_result_04 LABELS llvm
     EXTRA_ARGS --realloc-lhs-arrays) # GFortran returns the result into a variable the function reads
+RUN(NAME realloc_lhs_elide_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # no reallocation when the target is a whole operand of its elemental value
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
