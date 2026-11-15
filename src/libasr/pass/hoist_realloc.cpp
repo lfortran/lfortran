@@ -370,11 +370,13 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         // An element or a section of an array is assigned in place; a whole
-        // variable or component may be reallocated.
-        if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ||
+        // variable or component may be reallocated. Assigning an element of
+        // a derived type reallocates its allocatable components.
+        if ((ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ||
                 ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
                 ASR::is_a<ASR::StringItem_t>(*x.m_target) ||
-                ASR::is_a<ASR::StringSection_t>(*x.m_target)) {
+                ASR::is_a<ASR::StringSection_t>(*x.m_target)) &&
+                !is_derived_type(x.m_target)) {
             modify_value(x.m_target);
         } else {
             modify_allocation(x.m_target);
@@ -435,8 +437,9 @@ public:
     // The effects of a call of `name` with `args` on its actual arguments.
     // Through a dummy argument that is neither allocatable nor a pointer, a
     // procedure can change the value of the actual argument but not its
-    // allocation; the variables of an actual argument that is not a
-    // variable are only read.
+    // allocation, except for the allocatable components of a derived type,
+    // which are part of its value; the variables of an actual argument that
+    // is not a variable are only read.
     void pass_arguments(ASR::symbol_t* name, ASR::call_arg_t* args,
             size_t n_args, ASR::expr_t* dt) {
         ASR::Function_t* callee = nullptr;
@@ -456,6 +459,8 @@ public:
             } else if (is_intent_in(callee->m_args[i])) {
                 // An INTENT(IN) dummy argument that is neither allocatable
                 // nor a pointer is not changed (F2018 8.5.10).
+            } else if (is_derived_type(arg)) {
+                clobber(arg);
             } else if (designator_root(arg) != nullptr) {
                 modify_value(arg);
             }
