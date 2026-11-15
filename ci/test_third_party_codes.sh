@@ -217,7 +217,7 @@ time_section "🧪 Testing neural-fortran" '
   export PATH="$(pwd)/../src/bin:$PATH"
 
   git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
-  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation
 
   print_success "Done with neural-fortran"
   cd ..
@@ -229,7 +229,7 @@ time_section "🧪 Testing Fiats" '
   export PATH="$(pwd)/../src/bin:$PATH"
 
   git checkout d6f9d93f952acb4b5d5865e6b79369c477d3a291
-  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation
 
   if [[ "$(uname)" == "Darwin" ]]; then
     rm -rf build
@@ -237,7 +237,7 @@ time_section "🧪 Testing Fiats" '
     # unsupported list for Metal (it has no 64-bit float), so
     # --gpu-allow-cpu-fallback runs those `do concurrent` loops on the CPU
     # with a warning; every other loop is offloaded.
-    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag "--gpu=metal --gpu-allow-cpu-fallback"
   fi
 
   print_success "Done with Fiats"
@@ -251,9 +251,9 @@ time_section "🧪 Testing smart-pointers" '
 
   git checkout -t origin/lf2
   assert_git_commit 95de5105c6a469b64feb39e999567f5e2fcdd033
-  fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp
   rm -rf build
-  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation
 
   print_success "Done with smart-pointers"
   cd ..
@@ -267,14 +267,14 @@ time_section "🧪 Testing Formal" '
   git checkout 0.4.0
   assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
   # disabled because it gets a SEGV on Linux:
-  #fpm test --compiler=lfortran --flag --cpp --flag --realloc-lhs-arrays
+  #fpm test --compiler=lfortran --flag --cpp
   rm -rf build
-  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation
   if [[ "$(uname)" == "Darwin" ]]; then
     # Every do concurrent in Formal is offloaded to Metal. A loop the
     # compiler cannot lower is a compile error, so this keeps it that way.
     rm -rf build
-    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag --gpu=metal
+    fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --gpu=metal
   fi
 
   print_success "Done with Formal"
@@ -288,7 +288,7 @@ time_section "🧪 Testing Julienne" '
   # Release 4.1.0
   git checkout 4.1.0
   assert_git_commit 632dbbe876fc2567f27a2c906429a3b596b6fd63
-  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
+  fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation
 
   print_success "Done with Julienne"
   cd ..
@@ -313,8 +313,8 @@ time_section "🧪 Testing fortran-shlex" '
   export PATH="$(pwd)/../src/bin:$PATH"
 
   git checkout e20b6f86c82e33fae78b54b074bab5369efde6a3
-  fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
-  fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
+  fpm --compiler=$FC build
+  fpm --compiler=$FC test
 
   print_success "Done with fortran-shlex"
   cd ..
@@ -326,8 +326,8 @@ time_section "🧪 Testing toml-f" '
   export PATH="$(pwd)/../src/bin:$PATH"
 
   git checkout 27abd768e79c7c790ffa58fe5ccfb105ba00883d
-  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC build --flag "--cpp"
+  fpm --compiler=$FC test --flag "--cpp"
 
   print_success "Done with toml-f"
   cd ..
@@ -340,7 +340,7 @@ time_section "🧪 Testing jonquil" '
   git checkout lf-7
 
   git checkout 8aad5a901810bd669e851eead633c0df2bb7b423
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC test --flag "--cpp"
 
   print_success "Done with jonquil"
   cd ..
@@ -352,8 +352,8 @@ time_section "🧪 Testing M_CLI2" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-9
   assert_git_commit 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
-  fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
-  fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
+  fpm --compiler=$FC build
+  fpm --compiler=$FC test
 
   print_success "Done with M_CLI2"
   cd ..
@@ -364,7 +364,7 @@ time_section "🧪 Testing M_intrinsics" '
   cd M_intrinsics
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout 6f7a80a2920b9f276069a7c31606f03482afd611
-  fpm --compiler=$FC build --flag "--realloc-lhs-arrays --cpp"
+  fpm --compiler=$FC build --flag "--cpp"
 
   print_success "Done with M_intrinsics"
   cd ..
@@ -433,8 +433,8 @@ time_section "🧪 Testing FPM" '
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout v0.13.0
   assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
-  fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
-  fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
+  fpm --compiler=$FC build --flag "--cpp"
+  fpm --compiler=$FC test --flag "--cpp"
 
   print_success "Done with FPM"
   cd ..
@@ -467,7 +467,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   assert_git_commit a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
-  FC="$FC --no-array-bounds-checking --realloc-lhs-arrays" make
+  FC="$FC --no-array-bounds-checking" make
 
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
@@ -575,7 +575,7 @@ time_section "🧪 Building featom (build-only)" '
   git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
   export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
   # Build-only smoke test for now; runtime tests can be added later.
-  FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
+  FPM_FFLAGS="--cpp --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
 
   print_success "Done with featom (build-only)"
   cd ..
@@ -601,7 +601,7 @@ time_section "🧪 Testing fastGPT" '
 
     mkdir lf
     cd lf
-    FC="$FC --realloc-lhs-arrays" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+    FC="$FC" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
     make VERBOSE=1
     ln -s ../model.dat .
     ./gpt2
@@ -627,7 +627,7 @@ time_section "🧪 Testing stdlib" '
     # selected_real_kind(18) now returns 10, so stdlib would detect extended
     # double precision, but LFortran does not support complex(10) yet (#17195).
     # Keep the configuration stdlib built in before: no extended precision.
-    FC=$FC cmake . -DWITH_XDP=OFF -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays"
+    FC=$FC cmake . -DWITH_XDP=OFF -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp"
     make -j8
     ctest
 '
