@@ -360,20 +360,25 @@ end module
         "not a module\n",
         // The start of a gzip file, as written by GFortran
         std::string("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x03", 10),
-        modfile.substr(0, 4),
-        modfile.substr(0, 30),
-        modfile.substr(0, 100),
-        modfile.substr(0, modfile.size() - 1),
     };
+    {
+        // A valid header, but no files in the location information
 #ifdef WITH_LFORTRAN_BINARY_MODFILES
-    // A valid header followed by a string length that overflows when added
-    // to the position: the type and version strings, the number of files,
-    // then the length of the first file name.
-    size_t header_size = 8 + std::string("LCompilers Modfile").size()
-        + 8 + std::string(LFORTRAN_VERSION).size() + 4;
-    invalid_modfiles.push_back(modfile.substr(0, header_size)
-        + std::string(8, '\xff') + "test");
+        LCompilers::BinaryWriter b;
+#else
+        LCompilers::TextWriter b;
 #endif
+        b.write_string("LCompilers Modfile");
+        b.write_string(LFORTRAN_VERSION);
+        b.write_int32(0);
+        b.write_int32(0);
+        b.write_string("");
+        invalid_modfiles.push_back(b.get_str());
+    }
+    // Every truncation of a valid modfile
+    for (size_t n = 1; n < modfile.size(); n++) {
+        invalid_modfiles.push_back(modfile.substr(0, n));
+    }
     for (const std::string &invalid : invalid_modfiles) {
         LCompilers::SymbolTable symtab(nullptr);
         LCompilers::LocationManager lm2;
@@ -382,6 +387,22 @@ end module
         REQUIRE(!res.ok);
         CHECK(LCompilers::startswith(res.error.message, "file 'm.mod' is "));
     }
+
+    // Changing any byte of a valid modfile either still loads or gives an
+    // error, but never throws
+    for (size_t i = 0; i < modfile.size(); i++) {
+        std::string corrupted = modfile;
+        corrupted[i] = static_cast<char>(corrupted[i] ^ 0xff);
+        LCompilers::SymbolTable symtab(nullptr);
+        LCompilers::LocationManager lm2;
+        CHECK_NOTHROW(LCompilers::load_modfile(al, corrupted, true, symtab, lm2, "m.mod"));
+    }
+}
+
+TEST_CASE("BinaryReader: string length past the end") {
+    // The length plus the current position does not fit in 64 bits
+    LCompilers::BinaryReader b(std::string(8, '\xff') + "test");
+    CHECK_THROWS_AS(b.read_string(), LCompilers::LCompilersException);
 }
 
 TEST_CASE("Topological sorting mod_int") {
