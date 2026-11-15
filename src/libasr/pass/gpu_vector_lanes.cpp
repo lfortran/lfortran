@@ -117,7 +117,9 @@ values in its private scalars, except for these statements:
   the ones to share out (the positions of attention, each with the plain loop
   of its sum on one lane), so the phases of a step written as `do concurrent`
   loops after each other run on all the lanes, one after the other behind a
-  barrier. The loop is kept twice, and the iterations decide when the kernel
+  barrier (and it is not asked to tell its iterations apart by the
+  subscripts of what they assign: the `do concurrent` says they do). The
+  loop is kept twice, and the iterations decide when the kernel
   runs.
   An independent loop whose body holds such a reduction loop of a number
   of iterations not known at compile time has that sum shared out instead
@@ -3690,7 +3692,10 @@ private:
         changed.insert(v);
 
         // Every shared array is assigned at one subscript list, which tells
-        // the iterations apart.
+        // the iterations apart; for a `do concurrent` of the iteration the
+        // programmer says that the iterations do not depend on each other,
+        // as the standard requires of them.
+        const bool asserted = concurrent_loops.count(&d->base) > 0;
         Assignments assigns;
         for (size_t i = 0; i < d->n_body; i++) {
             assigns.visit_stmt(*d->m_body[i]);
@@ -3716,6 +3721,8 @@ private:
                 tells_apart |= injective(item->m_args[i].m_right, v,
                     changed);
             }
+            // A `do concurrent` says so itself.
+            if (asserted) continue;
             if (!tells_apart) return false;
             bool same = false;
             for (ASR::expr_t *w : written) {
@@ -3726,6 +3733,7 @@ private:
             }
             if (!same) written.push_back(a->m_target);
         }
+        if (asserted) written.clear();
         // Each of them is read at that subscript list only.
         Designators names;
         names.visit_expr(*d->m_head.m_v);
