@@ -78,6 +78,10 @@ the loop, at least not without the transformation named in the last column:
 | `datadep` | `c = a(1:k) + b(1:k)`, `k` read from data in every iteration | the shape depends on a value the loop changes |
 | `alternate` * | `c = a(1:k) + b(1:k)`, `k` alternating between n and n - 1 | a reallocation in every iteration |
 | `ctorv` | `c = [(2*a(j), j = 1, m)]` | the array constructor is a temporary of its own |
+| `charcond` | a character array target, assigned one of two values depending on the iteration | conditional assignments of a character array |
+| `ptrcond` | `c = 2*p` or `c = p + 1` depending on the iteration, `p` a pointer | conditional assignments whose shape a pointer gives |
+| `exit2d` | `c = a + b`, rank 2, after a test that can leave the loop | (versioning, rank 2) |
+| `intabs` | `k = abs(j)` for integer arrays after an opaque call | (versioning, integers) |
 
 For `pairs`, `pairsc`, `concur` and `jagged` the table shows the time per
 assignment (pair, particle or row), not per iteration of the outer loop.
@@ -114,6 +118,9 @@ warns otherwise), so that the numbers stay comparable when a compiler's
 default changes. Other options (`--help` lists all):
 
 - `-r N`: runs per kernel and configuration, the best is reported (default 5)
+- `--placements N`: build each configuration N times with the kernels at
+  different addresses (opaque calls inserted before them) and report the
+  best over all builds (default 1), see below
 - `-k add,func:3`: only these kernels (`NAME` or `NAME:N`; `--list` lists them)
 - `--scale 0.1`: scale the repetition counts, for a quick run
 - `--cpu N`, `--no-pin`: the CPU the runs are pinned to with `taskset`
@@ -147,5 +154,8 @@ A difference in a single kernel can also come from where the linker happens
 to place its loop rather than from the generated code: `pack` at `n` = 1000
 has measured 263 ns and 464 ns for identical machine code at two addresses.
 Before reading such a difference as a regression, compare the code
-(`--show-llvm`, `--show-asm`) or shift the placement, for example by adding
-an unrelated procedure that the driver calls.
+(`--show-llvm`, `--show-asm`) or shift the placement with `--placements`.
+At 3 elements, byte-identical machine code of `while`, `copy` and `self`
+has measured up to 8% apart in two builds, so a difference of a few percent
+at small `n` means nothing unless the code differs or it persists over
+several placements.

@@ -736,6 +736,75 @@ do i = 1, reps
 end do
 end subroutine
 
+! c = trim-free copy of a character array, conditional: versioning does
+! not handle character targets
+subroutine k_charcond(a, c, reps, s)
+character(len=8), allocatable, intent(inout) :: a(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1)(1:1) = achar(65 + mod(i, 26))
+    if (mod(i, 2) == 0) then
+        c = a
+    else
+        c = a(size(a):1:-1)
+    end if
+    s = s + iachar(c(1 + mod(i, size(c)))(1:1))
+end do
+end subroutine
+
+! c = 2*p with p a pointer, conditional: versioning does not read pointers
+subroutine k_ptrcond(p, c, reps, s)
+real(dp), pointer, intent(in) :: p(:)
+real(dp), allocatable, intent(inout) :: c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    p(1) = p(1) + eps
+    if (mod(i, 2) == 0) then
+        c = 2*p
+    else
+        c = p + 1
+    end if
+    s = s + c(1 + mod(i, size(c)))
+end do
+end subroutine
+
+! c = a + b, rank 2, after a test that can leave the loop
+subroutine k_exit2d(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:,:), b(:,:), c(:,:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    if (s < 0) exit
+    a(1,1) = a(1,1) + eps
+    c = a + b
+    s = s + c(1 + mod(i, size(c, 1)), 1 + mod(i/size(c, 1), size(c, 2)))
+end do
+end subroutine
+
+! k = abs(j) for integer arrays after an opaque call
+subroutine k_intabs(j, k, reps, s)
+integer, allocatable, intent(inout) :: j(:), k(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i, t
+s = 0
+t = 0
+do i = 1, reps
+    call ext_tick(t)
+    j(1) = -t
+    k = abs(j)
+    s = s + k(1 + mod(i, size(k)))
+end do
+end subroutine
+
 end module
 
 program realloc_lhs
@@ -745,6 +814,10 @@ character(len=32) :: name, arg
 integer :: n, reps
 real(dp), allocatable :: a(:), b(:), c(:), a2(:,:), b2(:,:), c2(:,:)
 real(dp), allocatable :: a3(:,:,:), b3(:,:,:), c3(:,:,:), w(:)
+real(dp), allocatable, target :: pt(:)
+real(dp), pointer :: pp(:)
+character(len=8), allocatable :: ca(:), cc(:)
+integer, allocatable :: ia(:), ib(:)
 logical, allocatable :: m(:)
 type(state_t) :: st, q
 type(particle_t), allocatable :: p(:)
@@ -774,7 +847,7 @@ case ("ctor")
 case ("section")
     allocate(a2(n,16))
     a2 = 1
-case ("matmul", "add2d", "xadd2d")
+case ("matmul", "add2d", "xadd2d", "exit2d")
     allocate(a2(n,n), b2(n,n), c2(n,n))
     a2 = 1
     b2 = 0.5_dp
@@ -799,6 +872,18 @@ case ("dtexpr")
     st%x = a
     st%v = b
     q%x = 0
+case ("charcond")
+    allocate(ca(n), cc(n))
+    ca = "abcdefgh"
+    cc = ""
+case ("ptrcond")
+    allocate(pt(n))
+    pt = a
+    pp => pt
+case ("intabs")
+    allocate(ia(n), ib(n))
+    ia = 1
+    ib = 0
 case ("xadd3d")
     allocate(a3(n,n,n), b3(n,n,n), c3(n,n,n))
     a3 = 1
@@ -907,6 +992,14 @@ case ("alternate")
     call k_alternate(a, b, c, reps, s)
 case ("ctorv")
     call k_ctorv(a, c, reps, s)
+case ("charcond")
+    call k_charcond(ca, cc, reps, s)
+case ("ptrcond")
+    call k_ptrcond(pp, c, reps, s)
+case ("exit2d")
+    call k_exit2d(a2, b2, c2, reps, s)
+case ("intabs")
+    call k_intabs(ia, ib, reps, s)
 case default
     error stop "unknown kernel"
 end select
