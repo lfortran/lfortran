@@ -5021,3 +5021,20 @@ contains
         allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
     end subroutine
 end module
+
+! Diagnostics for atan, atand and atanpi name them, not the atan2, atan2d and
+! atan2pi intrinsics that their two-argument forms are.
+subroutine cc1_two_argument_atan_errors()
+    complex :: cc1_ta_z
+    real :: cc1_ta_r
+    cc1_ta_z = (1.0, 0.0)
+    cc1_ta_r = atan(cc1_ta_z, cc1_ta_z)  ! {Error} arguments 'y' and 'x' of the 'atan' intrinsic must be real, found complex(4) and complex(4)
+    cc1_ta_r = atand(1, 2.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must be real, found integer(4) and real(4)
+    cc1_ta_r = atanpi(cc1_ta_r, cc1_ta_z)  ! {Error} arguments 'y' and 'x' of the 'atanpi' intrinsic must be real, found real(4) and complex(4)
+    cc1_ta_r = atan(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atan
+    cc1_ta_r = atand(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atand
+    cc1_ta_r = atanpi(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atanpi
+    cc1_ta_r = atan()  ! {Error} Incorrect number of arguments passed to the 'atan' intrinsic. It accepts at least 1 and at most 2 arguments.
+    cc1_ta_r = atand(1.0, 2.0, 3.0)  ! {Error} Incorrect number of arguments passed to the 'atand' intrinsic. It accepts at least 1 and at most 2 arguments.
+    cc1_ta_r = atanpi()  ! {Error} Incorrect number of arguments passed to the 'atanpi' intrinsic. It accepts at least 1 and at most 2 arguments.
+end subroutine cc1_two_argument_atan_errors
