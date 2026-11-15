@@ -2120,18 +2120,6 @@ semantic error: `vector` and `field` arguments of `unpack` must have the same ty
 5046 |     real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
      |                                                                                               ^^^ 
 
-semantic error: an array constructor with an implied-do loop in a specification expression is not supported yet
-    --> tests/errors/continue_compilation_1.f90:5064:23
-     |
-5064 |     integer :: d(sum([(i, i = 1, n)]))  ! {Error} an array constructor with an implied-do loop in a specification expression is not supported yet
-     |                       ^^^^^^^^^^^^^ an implied-do loop is evaluated here to give an array bound
-
-semantic error: an array constructor with an implied-do loop in a specification expression is not supported yet
-    --> tests/errors/continue_compilation_1.f90:5065:25
-     |
-5065 |     integer :: b(maxval(ubound(c)))  ! {Error} an array constructor with an implied-do loop in a specification expression is not supported yet
-     |                         ^^^^^^^^^ an implied-do loop is evaluated here to give an array bound
-
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
