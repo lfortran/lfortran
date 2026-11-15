@@ -2108,6 +2108,18 @@ semantic error: Template argument t has not been declared in template specificat
 4885 |        end template
      | ...^^^^^^^^^^^^^^^^^ 
 
+semantic error: `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
+    --> tests/errors/continue_compilation_1.f90:5045:99
+     |
+5045 |     real(16), parameter :: cc1_puk_p(2) = pack([1.5_8, 2.5_8, 3.5_8], [.true., .false., .false.], [9.0_16, 8.0_16])  ! {Error} `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
+     |                                                                                                   ^^^^^^^^^^^^^^^^ 
+
+semantic error: `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
+    --> tests/errors/continue_compilation_1.f90:5046:95
+     |
+5046 |     real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
+     |                                                                                               ^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
