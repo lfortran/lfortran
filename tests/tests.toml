@@ -7849,6 +7849,16 @@ run = true
 options = "--no-realloc-lhs-arrays"
 
 [[test]]
+filename = "errors/realloc_lhs_disabled_01.f90"
+run = true
+options = "--no-realloc-lhs-arrays"
+
+[[test]]
+filename = "errors/realloc_lhs_disabled_02.f90"
+run = true
+options = "--disable-realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/global_init_01.f90"
 # Both halves, so the reference output documents the whole shape in one
 # place: the run-once guard, the dependency call, the initialization and the

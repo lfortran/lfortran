@@ -1,0 +1,13 @@
+{
+    "basename": "run-realloc_lhs_disabled_01-5575304",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/realloc_lhs_disabled_01.f90",
+    "infile_hash": "c360bc3b942dc80e7efbf00a93f3d2191f76d433f4e659596b051de8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-realloc_lhs_disabled_01-5575304.stdout",
+    "stdout_hash": "7f04f368ab5b53d568c1590932a5ceebec89b14fcb03bf7f46197078",
+    "stderr": "run-realloc_lhs_disabled_01-5575304.stderr",
+    "stderr_hash": "0d958e91ffd813a61aa8a83ba20357acc36fd89aa07f73a6457dad60",
+    "returncode": 1
+}
