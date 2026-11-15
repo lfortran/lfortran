@@ -51,6 +51,12 @@ program array_constructor_char_len_01
 
     call fill_assumed(h%names, 3)
     if (h%names(1) /= 'pla' .or. h%names(2) /= 'xy') error stop 14
+
+    cut = [(word(i:i+2), i = 1, 3)]
+    if (cut(1) /= 'pla' .or. cut(2) /= 'lan' .or. cut(3) /= 'ane') error stop 15
+
+    cut = [character(len=2) :: (word(i:i+2), i = 1, 3)]
+    if (cut(1) /= 'pl' .or. cut(2) /= 'la' .or. cut(3) /= 'an') error stop 16
     print *, "OK"
 contains
     subroutine fill_automatic()
