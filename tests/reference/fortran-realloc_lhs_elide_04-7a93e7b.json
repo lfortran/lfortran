@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-realloc_lhs_elide_04-7a93e7b",
+    "cmd": "lfortran --pass=array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --realloc-lhs-arrays",
+    "infile": "tests/../integration_tests/realloc_lhs_elide_04.f90",
+    "infile_hash": "434592655ebdaf0cf4dc597c3158d7d15cc44369c5e9a663d0a3a0a5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-realloc_lhs_elide_04-7a93e7b.f90",
+    "stdout_hash": "a6da64f865b1d3ca2d3b7c3ed8f1cec8e709ac81a251fcfff3b1837c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

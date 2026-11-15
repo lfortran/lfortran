@@ -1100,10 +1100,14 @@ class ImpureCallFinder: public ASR::BaseWalkVisitor<ImpureCallFinder> {
 
 /*
 What the statements of a body before one of its statements tell about the
-allocation of whole arrays: groups of arrays that have the same shape.
+allocation of whole arrays:
+
+* groups of arrays that have the same shape, and
+* allocatable arrays that are unallocated.
 
 An intrinsic assignment of an array to an allocatable array of the same group
-as an array that gives the value its shape needs no reallocation:
+as an array that gives the value its shape needs no reallocation, and one to
+an unallocated array allocates it without a check:
 
     un = u              ! un and u have the same shape
     un(2:n-1) = ...     ! keeps it
@@ -1119,6 +1123,7 @@ from a variable without TARGET, which nothing else can then designate.
 */
 class AllocationFacts {
     std::vector<std::vector<ASR::expr_t*>> same_shape;
+    std::vector<ASR::expr_t*> unallocated;
 
     public:
 
@@ -1201,6 +1206,11 @@ class AllocationFacts {
 
     void clear() {
         same_shape.clear();
+        unallocated.clear();
+    }
+
+    bool is_unallocated(ASR::expr_t* x) const {
+        return contains(unallocated, ASRUtils::get_past_array_physical_cast(x));
     }
 
     bool have_same_shape(ASR::expr_t* x, ASR::expr_t* y) const {
@@ -1221,6 +1231,8 @@ class AllocationFacts {
         auto is_part = [&](ASR::expr_t* y) {
             return designates_part_of(y, x);
         };
+        unallocated.erase(std::remove_if(unallocated.begin(),
+            unallocated.end(), is_part), unallocated.end());
         for (std::vector<ASR::expr_t*>& group: same_shape) {
             group.erase(std::remove_if(group.begin(), group.end(), is_part),
                 group.end());
@@ -1231,10 +1243,22 @@ class AllocationFacts {
             }), same_shape.end());
     }
 
-    // Records that the tracked arrays `xs` have the same shape
+    void set_unallocated(ASR::expr_t* x) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        forget(x);
+        unallocated.push_back(x);
+        limit_size();
+    }
+
+    // Records that the tracked arrays `xs`, which are referenced, have the
+    // same shape
     void set_same_shape(const std::vector<ASR::expr_t*>& xs) {
         std::vector<ASR::expr_t*> merged;
         for (ASR::expr_t* x: xs) {
+            unallocated.erase(std::remove_if(unallocated.begin(),
+                unallocated.end(), [&](ASR::expr_t* y) {
+                    return PassUtils::same_expression(y, x);
+                }), unallocated.end());
             if (!contains(merged, x)) {
                 merged.push_back(x);
             }
@@ -1268,7 +1292,7 @@ class AllocationFacts {
 
     // Keeps the comparisons of a long body cheap
     void limit_size() {
-        size_t n = 0;
+        size_t n = unallocated.size();
         for (const std::vector<ASR::expr_t*>& group: same_shape) {
             n += group.size();
         }
@@ -1292,7 +1316,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     inline static std::set<const ASR::Assignment_t*> debug_inserted;
     // What the statements before an intrinsic assignment of an array to an
     // allocatable array tell about its target, see AllocationFacts
-    enum class KnownTarget { HasValueShape };
+    enum class KnownTarget { HasValueShape, Unallocated };
     std::map<const ASR::Assignment_t*, KnownTarget> known_targets;
 
     public:
@@ -1453,6 +1477,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return finder.found;
     }
 
+    // The unallocated local allocatable arrays of the procedure or program
+    // whose body is `m_body`, which are unallocated when it starts
+    void set_entry_allocation_facts(ASR::stmt_t** const& m_body,
+            AllocationFacts& facts) {
+        ASR::asr_t* owner = current_scope->asr_owner;
+        if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner)) {
+            return;
+        }
+        ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(owner);
+        if (!((ASR::is_a<ASR::Function_t>(*owner_sym) &&
+                    &ASR::down_cast<ASR::Function_t>(owner_sym)->m_body == &m_body) ||
+                (ASR::is_a<ASR::Program_t>(*owner_sym) &&
+                    &ASR::down_cast<ASR::Program_t>(owner_sym)->m_body == &m_body))) {
+            return;
+        }
+        for (auto& item: current_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_intent == ASR::intentType::Local &&
+                    v->m_storage == ASR::storage_typeType::Default &&
+                    ASRUtils::is_allocatable(v->m_type) &&
+                    ASRUtils::is_array(v->m_type)) {
+                facts.set_unallocated(ASRUtils::EXPR(ASR::make_Var_t(al,
+                    v->base.base.loc, item.second)));
+            }
+        }
+    }
+
     // Records in `known_targets` what `facts` tell about the target of the
     // assignment `x`, and updates them with its effect
     void track_assignment(const ASR::Assignment_t& x, AllocationFacts& facts) {
@@ -1503,10 +1557,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             [](ASR::expr_t* operand) {
                 return !AllocationFacts::is_tracked(operand);
             }), operands.end());
-        for (ASR::expr_t* operand: operands) {
-            if (facts.have_same_shape(operand, target)) {
-                known_targets[&x] = KnownTarget::HasValueShape;
-                break;
+        if (facts.is_unallocated(target)) {
+            known_targets[&x] = KnownTarget::Unallocated;
+        } else {
+            for (ASR::expr_t* operand: operands) {
+                if (facts.have_same_shape(operand, target)) {
+                    known_targets[&x] = KnownTarget::HasValueShape;
+                    break;
+                }
             }
         }
         if (!AllocationFacts::contains(operands, target)) {
@@ -1516,10 +1574,51 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         facts.set_same_shape(operands);
     }
 
+    // Whether `x` is `if (allocated(a)) deallocate(a)`, which leaves `a`
+    // unallocated
+    static ASR::expr_t* deallocates_if_allocated(const ASR::If_t& x) {
+        if (x.n_orelse != 0 || x.n_body != 1 ||
+                !ASR::is_a<ASR::IntrinsicImpureFunction_t>(*x.m_test)) {
+            return nullptr;
+        }
+        ASR::IntrinsicImpureFunction_t* test =
+            ASR::down_cast<ASR::IntrinsicImpureFunction_t>(x.m_test);
+        if (test->m_impure_intrinsic_id != static_cast<int64_t>(
+                    ASRUtils::IntrinsicImpureFunctions::Allocated) ||
+                test->n_args != 1) {
+            return nullptr;
+        }
+        ASR::expr_t** vars = nullptr;
+        size_t n_vars = 0;
+        if (ASR::is_a<ASR::ExplicitDeallocate_t>(*x.m_body[0])) {
+            ASR::ExplicitDeallocate_t* d =
+                ASR::down_cast<ASR::ExplicitDeallocate_t>(x.m_body[0]);
+            vars = d->m_vars;
+            n_vars = d->n_vars;
+        } else if (ASR::is_a<ASR::ImplicitDeallocate_t>(*x.m_body[0])) {
+            ASR::ImplicitDeallocate_t* d =
+                ASR::down_cast<ASR::ImplicitDeallocate_t>(x.m_body[0]);
+            vars = d->m_vars;
+            n_vars = d->n_vars;
+        }
+        if (n_vars != 1 || !PassUtils::same_expression(
+                ASRUtils::get_past_array_physical_cast(vars[0]),
+                ASRUtils::get_past_array_physical_cast(test->m_args[0]))) {
+            return nullptr;
+        }
+        return vars[0];
+    }
+
     void track_deallocation(ASR::expr_t** vars, size_t n_vars,
             AllocationFacts& facts) {
         for (size_t i = 0; i < n_vars; i++) {
-            facts.forget(vars[i]);
+            ASR::ttype_t* type = ASRUtils::expr_type(vars[i]);
+            if (AllocationFacts::is_tracked(vars[i]) &&
+                    ASRUtils::is_allocatable(type) && ASRUtils::is_array(type)) {
+                facts.set_unallocated(vars[i]);
+            } else {
+                facts.forget(vars[i]);
+            }
         }
     }
 
@@ -1566,6 +1665,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 facts.forget(ASR::down_cast<ASR::Associate_t>(&x)->m_target);
                 return;
             }
+            case ASR::stmtType::If: {
+                ASR::expr_t* deallocated = deallocates_if_allocated(
+                    *ASR::down_cast<ASR::If_t>(&x));
+                if (deallocated == nullptr || calls_impure_function(x)) {
+                    break;
+                }
+                track_deallocation(&deallocated, 1, facts);
+                return;
+            }
             default: {
                 break;
             }
@@ -1583,6 +1691,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
         AllocationFacts facts;
+        set_entry_allocation_facts(m_body, facts);
         for (size_t i = 0; i < n_body; i++) {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
@@ -2764,11 +2873,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (value_has_target_shape(underlying_target, value)) {
             return;
         }
+        bool target_unallocated = false;
         auto known = known_targets.find(assignment);
         if (known != known_targets.end() &&
-                known->second == KnownTarget::HasValueShape &&
                 is_reallocated_for_shape_only(underlying_target)) {
-            return;
+            if (known->second == KnownTarget::HasValueShape) {
+                return;
+            }
+            target_unallocated = known->second == KnownTarget::Unallocated;
         }
         bool is_bitcast = ASR::is_a<ASR::BitCast_t>(*underlying_value);
         if( (!ASRUtils::is_allocatable(underlying_target_type) || vars.size() == 1) &&
@@ -2885,15 +2997,18 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_sym_subclass = nullptr;
         alloc_arg.m_codims = nullptr;
         alloc_arg.n_codims = 0;
-        reallocate_target(alloc_arg, underlying_target, value, loc);
+        reallocate_target(alloc_arg, underlying_target, value, loc,
+            target_unallocated);
     }
 
-    // Reallocates the target of `alloc_arg` for the assignment of `value`.
+    // Reallocates the target of `alloc_arg` for the assignment of `value`,
+    // or just allocates it when it is known to be unallocated.
     // A polymorphic target takes the dynamic type of the value: a value
     // that is not polymorphic gives it statically, and a polymorphic one
     // gives it at run time, as the MOLD= of an ALLOCATE of the target.
     void reallocate_target(ASR::alloc_arg_t& alloc_arg, ASR::expr_t* target,
-            ASR::expr_t* value, const Location& loc) {
+            ASR::expr_t* value, const Location& loc,
+            bool target_unallocated = false) {
         ASR::expr_t* mold = get_polymorphic_mold(target, value);
         set_dynamic_type_of_polymorphic_target(alloc_arg, target, value, mold);
         deallocate_polymorphic_target_of_other_shape_or_type(alloc_arg, mold,
@@ -2901,6 +3016,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Vec<ASR::alloc_arg_t> alloc_args;
         alloc_args.reserve(al, 1);
         alloc_args.push_back(al, alloc_arg);
+        if (mold == nullptr && target_unallocated) {
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(
+                al, loc, alloc_args.p, alloc_args.size(), nullptr, nullptr,
+                nullptr)));
+            return;
+        }
         if (mold == nullptr) {
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
                 al, loc, alloc_args.p, alloc_args.size(),
