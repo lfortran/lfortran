@@ -182,8 +182,6 @@ real(4), dimension(3), parameter :: __libasr_created__array_constant_8 = [3.0000
          3.00000000e+00]
 real(4), dimension(3), parameter :: __libasr_created__array_constant_9 = [1.00000000e+00, 2.00000000e+00,&
          3.00000000e+00]
-real(4), dimension(3) :: __libasr_created__function_call_f
-real(4), dimension(3) :: __libasr_created__function_call_f1
 logical(4), dimension(3) :: __libasr_created__intrinsic_array_function_Any
 logical(4), dimension(3) :: __libasr_created__intrinsic_array_function_Any1
 logical(4), dimension(:), allocatable :: __libasr_created__intrinsic_array_function_Any10
@@ -372,16 +370,14 @@ if (__libasr_created__intrinsic_array_function_Any30) then
     error stop
 end if
 g%w = __libasr_created__array_constant_11
-__libasr_created__function_call_f = f()
-g%w = __libasr_created__function_call_f
+g%w = f()
 __libasr_created__intrinsic_array_function_Any15 = g%w /= __libasr_created_real_compare_right_13
 __libasr_created__intrinsic_array_function_Any31 = Any(__libasr_created__intrinsic_array_function_Any15)
 if (__libasr_created__intrinsic_array_function_Any31) then
     error stop
 end if
 g%w = __libasr_created__array_constant_12
-__libasr_created__function_call_f1 = f1()
-g%w = __libasr_created__function_call_f1
+g%w = f1()
 __libasr_created__intrinsic_array_function_Any16 = g%w /= __libasr_created_real_compare_right_14
 __libasr_created__intrinsic_array_function_Any32 = Any(__libasr_created__intrinsic_array_function_Any16)
 if (__libasr_created__intrinsic_array_function_Any32) then
