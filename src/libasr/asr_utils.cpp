@@ -6417,6 +6417,16 @@ ASR::asr_t* make_ArraySize_t_util(
                 return make_ArraySize_t_util(al, a_loc, elemental->m_args[i], a_dim, a_type, a_value, for_type);
             }
         }
+    } else if( (ASR::is_a<ASR::OverloadedBinOp_t>(*a_v) ||
+                ASR::is_a<ASR::OverloadedUnaryMinus_t>(*a_v)) && for_type ) {
+        // A defined operation is a reference to the function that defines it
+        // (F2018 10.1.6.1), which has the same shape.
+        ASR::expr_t* overloaded = ASR::is_a<ASR::OverloadedBinOp_t>(*a_v)
+            ? ASR::down_cast<ASR::OverloadedBinOp_t>(a_v)->m_overloaded
+            : ASR::down_cast<ASR::OverloadedUnaryMinus_t>(a_v)->m_overloaded;
+        if( overloaded ) {
+            return make_ArraySize_t_util(al, a_loc, overloaded, a_dim, a_type, a_value, for_type);
+        }
     }
     if( ASR::is_a<ASR::ArraySection_t>(*a_v) ) {
         ASR::ArraySection_t* array_section_t = ASR::down_cast<ASR::ArraySection_t>(a_v);

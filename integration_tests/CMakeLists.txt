@@ -3010,6 +3010,7 @@ RUN(NAME operator_overloading_50 LABELS gfortran llvm)
 RUN(NAME operator_overloading_51 LABELS gfortran llvm)
 RUN(NAME operator_overloading_52 LABELS gfortran llvm)
 RUN(NAME operator_overloading_53 LABELS gfortran llvm)
+RUN(NAME operator_overloading_54 LABELS gfortran llvm llvm_wasm_emcc) # size() of a defined operation as actual argument, in a function result
 RUN(NAME operator_overloading_override_01 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
