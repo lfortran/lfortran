@@ -13,6 +13,9 @@ integration_tests = {cmd = 'python run_tests.py --build-dir "$LFORTRAN_BUILD_DIR
 # Language server tests: build with -DWITH_LSP=yes. Their test packages are
 # imported from the source tree instead of being installed with pip.
 lsp_tests = {cmd = 'pytest tests/server', env = {PYTHONPATH = "$PIXI_PROJECT_ROOT/src/server/tests/src:$PIXI_PROJECT_ROOT/tests/server/src", LFORTRAN_PATH = "$LFORTRAN_BUILD_DIR/src/bin/lfortran"}, default-environment = "llvm11"}
+# Timing benchmark of reallocation on assignment; see
+# benchmarks/realloc_lhs/README.md. Not part of any test suite.
+bench_realloc_lhs = {cmd = 'python benchmarks/realloc_lhs/run_benchmark.py', default-environment = "llvm11"}
 
 [feature.coarray-reference]
 platforms = ["osx-arm64", "linux-64"]
