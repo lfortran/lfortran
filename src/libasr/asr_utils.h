@@ -28,6 +28,7 @@
 #include <libasr/asr_expr_value_visitor.h>
 #include <libasr/asr_walk_visitor.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
+#include <libasr/runtime/lfortran_complex128.h>
 
 #include <complex>
 #include <string>
@@ -882,6 +883,26 @@ static inline ASR::expr_t* make_ComplexConstant_r16(Allocator& al,
     std::memcpy(im_bytes, im.bytes, 16);
     return ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, loc,
         real_constant_pack_r16(re_bytes), real_constant_pack_r16(im_bytes), type));
+}
+
+// Whether `value` is a kind=16 ComplexConstant; if so, `c` is set to its
+// value.
+static inline bool extract_complex_r16(ASR::expr_t* value, lf_complex128& c) {
+    if (!value || !ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+        return false;
+    }
+    ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(value);
+    if (!complex_constant_is_r16(cc)) {
+        return false;
+    }
+    c = lf_c128_make(complex_constant_re_r16(cc), complex_constant_im_r16(cc));
+    return true;
+}
+
+// Build a kind=16 ComplexConstant from a complex(16) value.
+static inline ASR::expr_t* make_ComplexConstant_c128(Allocator& al,
+        const Location& loc, lf_complex128 c, ASR::ttype_t* type) {
+    return make_ComplexConstant_r16(al, loc, c.re, c.im, type);
 }
 
 // Kind-aware counterpart of `ASR::make_ComplexConstant_t` taking two doubles:
