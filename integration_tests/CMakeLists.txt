@@ -6567,6 +6567,7 @@ RUN(NAME char4_string_literal_01 LABELS llvm)
 
 #test for coarray
 RUN(NAME coarray_01 LABELS gfortran GFORTRAN_ARGS -fcoarray=single)
+RUN(NAME coarray_02 LABELS gfortran llvm GFORTRAN_ARGS -fcoarray=single)
 RUN(NAME coarrays_03 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_04 EXTRA_ARGS --coarray=true)
 RUN(NAME coarrays_05 EXTRA_ARGS --coarray=true)
