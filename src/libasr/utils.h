@@ -188,6 +188,9 @@ struct CompilerOptions {
     // The CUDA runtime creates the context of the device at the first CUDA
     // call instead of before the program (`--gpu-lazy-init`).
     bool gpu_lazy_init = false;
+    // With --gpu=cuda, a kernel may start while the one before it in the
+    // stream finishes (programmatic dependent launch, `--gpu-overlap`).
+    bool gpu_overlap = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
@@ -261,6 +264,20 @@ const int32_t LCOMPILERS_FE_OVERFLOW  = 4;
 const int32_t LCOMPILERS_FE_UNDERFLOW = 8;
 const int32_t LCOMPILERS_FE_INEXACT   = 16;
 const int32_t LCOMPILERS_FE_DENORMAL  = 32;
+
+// Whether device code built for `arch` (--gpu-arch; empty: the GPUs of the
+// compiling machine) has the grid dependency instructions of --gpu-overlap:
+// no architecture named, or sm_90 and newer. The runtime and the kernels
+// must agree, so an older named architecture turns the option off.
+inline bool gpu_overlap_arch_ok(const std::string &arch) {
+    if (arch.empty()) return true;
+    if (arch.compare(0, 3, "sm_") != 0) return false;
+    int n = 0;
+    for (size_t i = 3; i < arch.size() && arch[i] >= '0' && arch[i] <= '9'; i++) {
+        n = n * 10 + (arch[i] - '0');
+    }
+    return n >= 90;
+}
 
 } // namespace LCompilers
 

@@ -103,6 +103,7 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
     }
     src << ")\n{\n";
     indent_level++;
+    dialect.emit_kernel_entry(src, get_indent());
     // The declarations ahead of the body are collected rather than written,
     // so that the kernel writes only those its body refers to.
     kernel_declarations.clear();
