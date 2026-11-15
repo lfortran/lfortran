@@ -9,7 +9,12 @@ end type
 type :: array_constructor_22_holder
     type(array_constructor_22_pt) :: p(0:2)
 end type
-type(array_constructor_22_pt) :: pts(0:2), grid(-1:1, 2:3)
+type :: array_constructor_22_ptr_holder
+    type(array_constructor_22_pt), pointer :: p(:)
+end type
+type(array_constructor_22_pt), target :: pts(0:2), grid(-1:1, 2:3)
+type(array_constructor_22_pt), pointer :: pp(:), pg(:,:)
+type(array_constructor_22_ptr_holder) :: ph
 type(array_constructor_22_pt), allocatable :: pa(:)
 type(array_constructor_22_holder) :: h
 integer :: w(3), w6(6), i, j
@@ -39,6 +44,24 @@ w = [pa%x]
 if (any(w /= [7, 8, 9])) error stop 5
 
 call check_dummy(pts)
+
+pp => pts
+w = [pp%x]
+if (any(w /= [4, 5, 6])) error stop 7
+pp(5:) => pts
+w = [pp%x]
+if (any(w /= [4, 5, 6])) error stop 8
+ph%p => pts
+w = [ph%p%x]
+if (any(w /= [4, 5, 6])) error stop 9
+pg => grid
+w6 = [pg%x]
+if (any(w6 /= [12, 22, 32, 13, 23, 33])) error stop 10
+allocate(pp(3))
+pp%x = [1, 2, 3]
+w = [pp%x]
+if (any(w /= [1, 2, 3])) error stop 11
+deallocate(pp)
 print *, "OK"
 
 contains
