@@ -1324,6 +1324,7 @@ RUN(NAME pointer_section_07 LABELS gfortran llvm)
 RUN(NAME pointer_section_08 LABELS llvm)
 RUN(NAME pointer_section_09 LABELS gfortran llvm)
 RUN(NAME pointer_section_10 LABELS gfortran llvm)
+RUN(NAME pointer_remap_component_01 LABELS gfortran llvm llvm_wasm_emcc) # bounds-remapping pointer assignment to a component
 RUN(NAME pointer_function_result_01 LABELS gfortran llvm)
 
 RUN(NAME array_section_is_non_allocatable LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
