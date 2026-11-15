@@ -3445,6 +3445,7 @@ RUN(NAME allocate_76 LABELS gfortran llvm)
 RUN(NAME allocate_77 LABELS gfortran llvm c) # allocation on assignment of a derived-type scalar with the C backend (#15949)
 RUN(NAME allocate_78 LABELS gfortran llvm) # typed allocation with a named-constant kind (#14384)
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
+RUN(NAME allocate_char_pointer_array_02 LABELS gfortran llvm NO_DETECT_LEAKS) # c_f_pointer into a disassociated character-array pointer
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
