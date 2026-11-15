@@ -183,10 +183,33 @@ bool is_derived_type(ASR::expr_t* e) {
 // such a designator that is a scalar of a derived type that is not
 // polymorphic and not a pointer, as `q%x` or `q%s%x`. Otherwise nullptr.
 // Anything that changes the allocation of `e` then changes the allocation of
-// a part of that variable.
-ASR::symbol_t* component_root(ASR::expr_t* e) {
+// a part of that variable. With `subscripts`, the scalar may also be an
+// element of such an array that is not a pointer, as `p(i)%x`, and the
+// subscripts are appended to `subscripts`: `e` then designates the same
+// object as long as their values do not change.
+ASR::symbol_t* component_root(ASR::expr_t* e,
+        std::vector<ASR::expr_t*>* subscripts = nullptr) {
     if (ASR::is_a<ASR::Var_t>(*e)) {
         return past_external(ASR::down_cast<ASR::Var_t>(e)->m_v);
+    }
+    if (subscripts != nullptr && ASR::is_a<ASR::ArrayItem_t>(*e)) {
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(e);
+        ASR::ttype_t* array_type = ASRUtils::expr_type(item->m_v);
+        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(array_type));
+        if (ASRUtils::is_pointer(array_type) ||
+                !ASR::is_a<ASR::StructType_t>(*element_type) ||
+                ASRUtils::is_class_type(element_type)) {
+            return nullptr;
+        }
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left != nullptr || item->m_args[i].m_step != nullptr ||
+                    item->m_args[i].m_right == nullptr) {
+                return nullptr;
+            }
+            subscripts->push_back(item->m_args[i].m_right);
+        }
+        return component_root(item->m_v, subscripts);
     }
     if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
         return nullptr;
@@ -200,7 +223,7 @@ ASR::symbol_t* component_root(ASR::expr_t* e) {
                 ASRUtils::type_get_past_allocatable(base_type))) {
         return nullptr;
     }
-    return component_root(base);
+    return component_root(base, subscripts);
 }
 
 // Whether an input/output statement may run a defined input/output
@@ -727,9 +750,13 @@ public:
     // a component that only it reaches (see component_root) reads only the
     // allocation of a part of that variable.
     bool inquire(ASR::expr_t* v) {
-        ASR::symbol_t* root = component_root(v);
+        std::vector<ASR::expr_t*> subscripts;
+        ASR::symbol_t* root = component_root(v, &subscripts);
         if (root != nullptr) {
             inquired.insert(root);
+            for (ASR::expr_t* subscript : subscripts) {
+                visit_expr(*subscript);
+            }
             return true;
         }
         return false;
@@ -861,8 +888,10 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
             return false;
         }
         // The target is a variable or a component that only it reaches,
-        // which stands for it below.
-        ASR::symbol_t* target = component_root(arg.m_a);
+        // which stands for it below, with subscripts that the analysis below
+        // takes as read.
+        std::vector<ASR::expr_t*> target_subscripts;
+        ASR::symbol_t* target = component_root(arg.m_a, &target_subscripts);
         if (target == nullptr) {
             return false;
         }
@@ -873,6 +902,9 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
             return false;
         }
         SourceCollector c;
+        for (ASR::expr_t* subscript : target_subscripts) {
+            c.visit_expr(*subscript);
+        }
         for (size_t i = 0; i < arg.n_dims; i++) {
             if (arg.m_dims[i].m_start) {
                 c.visit_expr(*arg.m_dims[i].m_start);
@@ -1676,6 +1708,22 @@ public:
         return true;
     }
 
+    // Whether the reallocation `r` reads an element of an array: the test
+    // before a versioned loop would read it even when the loop would not,
+    // with subscripts that may not be valid there.
+    static bool reads_array_element(ASR::ReAlloc_t* r) {
+        class ElementFinder : public ASR::BaseWalkVisitor<ElementFinder> {
+        public:
+            bool found = false;
+            void visit_ArrayItem(const ASR::ArrayItem_t& /*x*/) {
+                found = true;
+            }
+        };
+        ElementFinder f;
+        f.visit_stmt(r->base);
+        return f.found;
+    }
+
     // Whether `s` may be an optional dummy argument, which may be absent.
     // transform_optional_argument_functions makes an optional dummy
     // required and adds a scalar logical argument after it, which tells
@@ -1861,7 +1909,8 @@ public:
         for (ASR::ReAlloc_t* r : reallocs) {
             Candidate c{r, Hoistable(), nullptr};
             if (!analyze_hoistable(&r->base, c.h) ||
-                    ASRUtils::is_character(*ASRUtils::expr_type(r->m_args[0].m_a))) {
+                    ASRUtils::is_character(*ASRUtils::expr_type(r->m_args[0].m_a)) ||
+                    reads_array_element(r)) {
                 continue;
             }
             c.test = does_nothing_test(r, ok);
