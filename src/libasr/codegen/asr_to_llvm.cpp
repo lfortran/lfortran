@@ -9409,6 +9409,17 @@ public:
                         && !ASRUtils::is_class_type(ASRUtils::type_get_past_array(symbol_type))) {
                         allocate_array_members_of_struct_arrays(v->m_type_declaration, ptr_member, symbol_type);
                     }
+                } else if (is_intent_out && apply_init && ASR::is_a<ASR::Variable_t>(*sym) &&
+                        ASRUtils::is_fixed_size_array(symbol_type) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(symbol_type)) &&
+                        !ASRUtils::is_class_type(ASRUtils::type_get_past_array(symbol_type))) {
+                    // An intent(out) dummy, and a function result returned
+                    // through one, is default initialized on entry (F2018
+                    // 8.5.10), the elements of a fixed-size component array
+                    // too; they have no descriptor that could be returned.
+                    allocate_array_members_of_struct_arrays(
+                        ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration,
+                        ptr_member, symbol_type);
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration));
