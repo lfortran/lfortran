@@ -1784,7 +1784,34 @@ namespace Scale {
        //TODO: Radix for most of the device is 2, so we can use the b.i2r_t(2, real32) instead of args[1]. Fix (find a way to get the radix of the device and use it here)
         // The exponentiation must be done in floating point: `i` may be negative,
         // and integer 2**i truncates to 0 for any i < 0.
-        body.push_back(al, b.Assignment(result, b.Mul(args[0], b.Pow(b.f_t(2.0, return_type), b.i2r_t(args[1], return_type)))));
+        int kind = ASRUtils::extract_kind_from_ttype_t(return_type);
+        if (kind == 4 || kind == 8) {
+            // x*2**i overflows or underflows in 2**i where the result is
+            // representable, as scale(0.75d0, 1024); ldexp is exact there.
+            std::string c_name = kind == 4 ? "ldexpf" : "ldexp";
+            SymbolTable* fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> args_1; args_1.reserve(al, 2);
+            args_1.push_back(al, b.Variable(fn_symtab_1, "x", arg_types[0],
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
+            args_1.push_back(al, b.Variable(fn_symtab_1, "e", int32,
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
+            ASR::expr_t* return_var_1 = b.Variable(fn_symtab_1, c_name, return_type,
+                ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+            SetChar dep_1; dep_1.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+            ASR::symbol_t* c_sym = make_ASR_Function_t(c_name, fn_symtab_1, dep_1,
+                args_1, body_1, return_var_1, ASR::abiType::BindC,
+                ASR::deftypeType::Interface, s2c(al, c_name));
+            fn_symtab->add_symbol(c_name, c_sym);
+            dep.push_back(al, s2c(al, c_name));
+            Vec<ASR::expr_t*> c_args; c_args.reserve(al, 2);
+            c_args.push_back(al, args[0]);
+            c_args.push_back(al, ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 4
+                ? args[1] : b.i2i_t(args[1], int32));
+            body.push_back(al, b.Assignment(result, b.Call(c_sym, c_args, return_type)));
+        } else {
+            body.push_back(al, b.Assignment(result, b.Mul(args[0], b.Pow(b.f_t(2.0, return_type), b.i2r_t(args[1], return_type)))));
+        }
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args, body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
