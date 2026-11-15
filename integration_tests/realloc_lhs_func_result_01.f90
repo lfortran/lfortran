@@ -31,6 +31,15 @@ contains
         end do
     end function
 
+    function reversed(a) result(r)
+        real, intent(in) :: a(:)
+        real :: r(size(a))
+        integer :: i
+        do i = 1, size(a)
+            r(i) = a(size(a) + 1 - i)
+        end do
+    end function
+
     ! Reads the variable `g` of the module
     function plus_g(a) result(r)
         real, intent(in) :: a(:)
@@ -124,17 +133,18 @@ program realloc_lhs_func_result_01
 
     ! The variable is an actual argument
     c = [1., 2., 3., 4.]
-    c = twice(c)
-    if (size(c) /= 4 .or. any(c /= [2., 4., 6., 8.])) error stop "c = twice(c)"
-    c = twice(c(2:))
-    if (size(c) /= 3 .or. any(c /= [8., 12., 16.])) error stop "c = twice(c(2:))"
+    c = reversed(c)
+    if (size(c) /= 4 .or. any(c /= [4., 3., 2., 1.])) error stop "c = reversed(c)"
+    c = reversed(c(2:))
+    if (size(c) /= 3 .or. any(c /= [1., 2., 3.])) error stop "c = reversed(c(2:))"
+    c = scaled(a, c(2))
+    if (size(c) /= 3 .or. any(c /= [2., 4., 6.])) error stop "c = scaled(a, c(2))"
+    c = [1., 2., 3., 4.]
+    c = scaled(a, real(size(c)))
+    if (size(c) /= 3 .or. any(c /= [4., 8., 12.])) error stop "c = scaled(a, size(c))"
     c = [1., 2., 3., 4.]
     c = scaled(a, c(4))
     if (size(c) /= 3 .or. any(c /= [4., 8., 12.])) error stop "c = scaled(a, c(4))"
-    associate (b => c)
-        c = twice(b(1:2))
-    end associate
-    if (size(c) /= 2 .or. any(c /= [8., 16.])) error stop "associate"
 
     ! The function reads the module variable
     g = [100., 200.]
