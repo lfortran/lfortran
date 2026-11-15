@@ -7872,6 +7872,9 @@ RUN(NAME gpu_do_loop_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_03 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_reduction_strided_01 LABELS llvm metal cuda) # gfortran on CI lacks the reduce clause
+RUN(NAME gpu_result_realloc_01 LABELS gfortran llvm metal cuda)
+# Declined on the GPU backends; tests.toml records the errors.
+RUN(NAME gpu_result_realloc_02 LABELS gfortran llvm)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
