@@ -1,7 +1,7 @@
 ! Reallocation on assignment of an allocatable array that is a whole
 ! operand of its own elemental value, which keeps its shape and bounds,
 ! and of values that only reference it in another way, which can change it.
-module realloc_lhs_34_mod
+module realloc_lhs_elide_01_mod
     implicit none
     type :: state_t
         real, allocatable :: x(:), v(:)
@@ -25,8 +25,8 @@ contains
     end function
 end module
 
-program realloc_lhs_34
-    use realloc_lhs_34_mod
+program realloc_lhs_elide_01
+    use realloc_lhs_elide_01_mod
     implicit none
     real, allocatable :: x(:), y(:), m(:,:)
     integer, allocatable :: k(:)

@@ -1,4 +1,4 @@
-module realloc_lhs_37_mod
+module realloc_lhs_elide_04_mod
 implicit none
 
 contains
@@ -103,11 +103,11 @@ subroutine step(x, v, dt)
     call check(u, t)
 end subroutine step
 
-end module realloc_lhs_37_mod
+end module realloc_lhs_elide_04_mod
 
-program realloc_lhs_37
-use realloc_lhs_37_mod, only: check
-use realloc_lhs_37_mod, only: step
+program realloc_lhs_elide_04
+use realloc_lhs_elide_04_mod, only: check
+use realloc_lhs_elide_04_mod, only: step
 implicit none
 integer(4) :: __libasr_lbound_
 integer(4) :: __libasr_lbound_1
@@ -129,4 +129,4 @@ if (size(v) /= 3 .or. Any(v /= [4.00000000e+00, 5.00000000e+00, 6.00000000e+00])
     error stop
 end if
 print *, "ok"
-end program realloc_lhs_37
+end program realloc_lhs_elide_04

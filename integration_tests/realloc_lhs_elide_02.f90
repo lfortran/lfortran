@@ -2,7 +2,7 @@
 ! assignment of the same statement sequence gave the shape of the value,
 ! with nothing in between that can change either, and of arrays that
 ! something in between can change, which must still be reallocated.
-module realloc_lhs_35_mod
+module realloc_lhs_elide_02_mod
     implicit none
     type :: state_t
         real, allocatable :: x(:)
@@ -49,8 +49,8 @@ contains
     end subroutine
 end module
 
-program realloc_lhs_35
-    use realloc_lhs_35_mod
+program realloc_lhs_elide_02
+    use realloc_lhs_elide_02_mod
     implicit none
     real, allocatable :: u(:), un(:), a(:), b(:), c(:), d(:)
     type(state_t) :: s, t

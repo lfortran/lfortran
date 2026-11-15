@@ -1,7 +1,7 @@
 ! Which intrinsic assignments to allocatable arrays are reallocated, which
 ! allocate without a check, and which need neither (the reference test of
 ! this file shows them after the array_op pass).
-module realloc_lhs_37_mod
+module realloc_lhs_elide_04_mod
     implicit none
 contains
     subroutine step(x, v, dt)
@@ -35,8 +35,8 @@ contains
     end subroutine
 end module
 
-program realloc_lhs_37
-    use realloc_lhs_37_mod
+program realloc_lhs_elide_04
+    use realloc_lhs_elide_04_mod
     implicit none
     real, allocatable :: x(:), v(:)
     x = [1., 2., 3.]

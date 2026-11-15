@@ -2,7 +2,7 @@
 ! before it: a local array before anything uses it, an array just
 ! deallocated, an intent(out) dummy, and arrays that something before the
 ! assignment can allocate, which must still be checked and reallocated.
-module realloc_lhs_36_mod
+module realloc_lhs_elide_03_mod
     implicit none
     real, allocatable :: shared(:)
 contains
@@ -102,8 +102,8 @@ contains
     end subroutine
 end module
 
-program realloc_lhs_36
-    use realloc_lhs_36_mod
+program realloc_lhs_elide_03
+    use realloc_lhs_elide_03_mod
     implicit none
     real, allocatable :: x(:), y(:), z(:)
     integer :: i
