@@ -7505,6 +7505,128 @@ LFORTRAN_API int32_t _lfortran_exponent_f80(const void *x)
     return bit - 16444;
 }
 
+// Fortran model intrinsics of binary128 (kind 16) values. All of them take
+// the argument by reference and return through `result`.
+
+static int f128_biased_exponent(lf_float128 v)
+{
+    return (((int) v.bytes[15] & 0x7f) << 8) | (int) v.bytes[14];
+}
+
+// Split a finite, non-zero v as f * 2**e with 0.5 <= |f| < 1.
+static void f128_frexp(lf_float128 v, lf_float128 *f, int *e)
+{
+    int biased = f128_biased_exponent(v);
+    int extra = 0;
+    if (biased == 0) {
+        v = f128_scale(v, 112);
+        biased = f128_biased_exponent(v);
+        extra = 112;
+    }
+    *e = biased - 16382 - extra;
+    *f = f128_scale(v, -(*e + extra));
+}
+
+static int f128_is_finite_nonzero(lf_float128 v)
+{
+    return f128_biased_exponent(v) != 0x7fff && !f128_is_zero(v);
+}
+
+LFORTRAN_API void _lfortran_exponent_f128(const lf_float128 *x, int32_t *result)
+{
+    lf_float128 f;
+    int e;
+    if (f128_biased_exponent(*x) == 0x7fff) {
+        *result = 2147483647;
+    } else if (f128_is_zero(*x)) {
+        *result = 0;
+    } else {
+        f128_frexp(*x, &f, &e);
+        *result = e;
+    }
+}
+
+LFORTRAN_API void _lfortran_fraction_f128(const lf_float128 *x, lf_float128 *result)
+{
+    int e;
+    if (f128_is_finite_nonzero(*x)) {
+        f128_frexp(*x, result, &e);
+    } else {
+        *result = *x;
+    }
+}
+
+LFORTRAN_API void _lfortran_set_exponent_f128(const lf_float128 *x,
+        const int64_t *i, lf_float128 *result)
+{
+    lf_float128 f;
+    int e;
+    if (f128_is_finite_nonzero(*x)) {
+        f128_frexp(*x, &f, &e);
+        // 2**40000 overflows and 2**-40000 underflows to zero anyway
+        int32_t n = *i > 40000 ? 40000 : (*i < -40000 ? -40000 : (int32_t) *i);
+        *result = f128_scale(f, n);
+    } else {
+        *result = *x;
+    }
+}
+
+LFORTRAN_API void _lfortran_rrspacing_f128(const lf_float128 *x, lf_float128 *result)
+{
+    lf_float128 f;
+    int e;
+    if (f128_is_finite_nonzero(*x)) {
+        f128_frexp(*x, &f, &e);
+        *result = f128_scale(lf_f128_abs(f), 113);
+    } else {
+        *result = lf_f128_abs(*x);
+    }
+}
+
+LFORTRAN_API void _lfortran_spacing_f128(const lf_float128 *x, lf_float128 *result)
+{
+    lf_float128 f;
+    int e = -16269;
+    if (f128_biased_exponent(*x) == 0x7fff) {
+        *result = *x;
+        return;
+    }
+    if (!f128_is_zero(*x)) {
+        f128_frexp(*x, &f, &e);
+    }
+    // tiny(x) = 2**(-16382) is the result when 2**(e - 113) is not normal
+    e -= 113;
+    *result = f128_scale(f128_one(), e < -16382 ? -16382 : e);
+}
+
+LFORTRAN_API void _lfortran_nearest_f128(const lf_float128 *x,
+        const lf_float128 *s, lf_float128 *result)
+{
+    lf_float128 r = *x;
+    int i;
+    int up = !lf_f128_signbit(*s);
+    int negative = (x->bytes[15] & 0x80) != 0;
+    if (f128_biased_exponent(*x) == 0x7fff || f128_is_zero(*s)) {
+        *result = *x;
+        return;
+    }
+    if (f128_is_zero(*x)) {
+        memset(r.bytes, 0, sizeof(r.bytes));
+        r.bytes[0] = 1;
+        r.bytes[15] = up ? 0 : 0x80;
+        *result = r;
+        return;
+    }
+    for (i = 0; i < 16; i++) {
+        if (up == negative) {
+            if (r.bytes[i]-- != 0) break;
+        } else {
+            if (++r.bytes[i] != 0) break;
+        }
+    }
+    *result = r;
+}
+
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x)
 {
     return clogf(x);

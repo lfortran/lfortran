@@ -785,6 +785,7 @@ public:
     struct CFIArrayWriteback {
         llvm::Value* internal_desc;
         llvm::Value* cfi_desc;
+        llvm::Value* is_absent;
         llvm::Type* internal_type;
         llvm::Type* el_type;
         int n_dims;
@@ -3715,6 +3716,23 @@ public:
             if(ASRUtils::is_array(ASRUtils::expr_type(x.m_vars[i]))){
                 llvm::Type* x_m_vars_type = llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
                     ASRUtils::expr_type(x.m_vars[i]), module.get());
+                if (ASRUtils::is_pointer(sym_type) &&
+                        ASRUtils::is_assumed_rank_array(sym_type)) {
+                    // The descriptor may be absent entirely; release any
+                    // owned class wrapper before clearing the pointer slot.
+                    if (ASRUtils::is_class_type(ASRUtils::extract_type(sym_type))) {
+                        llvm::Value* desc = llvm_utils->CreateLoad2(x_m_vars_type, target);
+                        llvm_utils->create_if_else(builder->CreateIsNotNull(desc), [&]() {
+                            llvm::Value* data_ptr = arr_descr->get_pointer_to_data(
+                                x.m_vars[i], ASRUtils::expr_type(x.m_vars[i]),
+                                desc, module.get());
+                            free_owned_class_array_wrapper(x.m_vars[i], data_ptr);
+                        }, [](){});
+                    }
+                    builder->CreateStore(llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(x_m_vars_type)), target);
+                    continue;
+                }
                 llvm::Value* target_ = llvm_utils->CreateLoad2(x_m_vars_type, target);
                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(x.m_vars[i], ASRUtils::expr_type(x.m_vars[i]), target_ , module.get());
                 free_owned_class_array_wrapper(x.m_vars[i], data_ptr);
@@ -3722,6 +3740,10 @@ public:
                     llvm::ConstantPointerNull::get(llvm_utils->get_el_type(x.m_vars[i],
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_vars[i])), module.get())->getPointerTo())
                     , data_ptr);
+                // A disassociated array has a zero offset, so that its
+                // data pointer stays NULL when passed on by address.
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
+                    arr_descr->get_offset(tp, target_, false));
             } else if(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_vars[i]))) {
                 llvm::Value* np = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
                 llvm::Value* data_target = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
@@ -12571,7 +12593,7 @@ public:
             }
             llvm::Value* cfi_result = arr_descr->internal_to_cfi(
                 info.desc_array_type, internal_ptr, info.el_type, info.n_dims,
-                el_size, info.type_code, info.cfi_attr);
+                el_size, info.type_code, info.cfi_attr, false);
             // Copy CFI data back to the original CFI descriptor
             llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type, info.n_dims);
             uint64_t cfi_size = dl.getTypeAllocSize(cfi_type);
@@ -13195,6 +13217,31 @@ public:
                 ASRUtils::extract_type(p_type), module.get());
             ptr = llvm_utils->CreateLoad2(ptr_array_inner_type->getPointerTo(), ptr);
             // The data of a polymorphic pointer array is its class wrapper.
+            ptr_is_class_array = x.m_tgt
+                && ASRUtils::is_class_type(ASRUtils::extract_type(p_type));
+        } else if( ASRUtils::is_array(p_type) &&
+            !ASRUtils::is_array_of_strings(p_type) &&
+            ASRUtils::extract_physical_type(p_type) ==
+            ASR::array_physical_typeType::AssumedRankArray ) {
+            // An assumed-rank pointer dummy is associated with a descriptor
+            // even when its actual argument is disassociated, so the data
+            // of a non-null descriptor is what is tested.
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*p_type));
+            ptr_array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_ptr,
+                ASRUtils::extract_type(p_type), module.get());
+            llvm::Value* data = llvm_utils->CreateAlloca(
+                ptr_array_inner_type->getPointerTo(), nullptr, "assumed_rank_data");
+            builder->CreateStore(llvm::ConstantPointerNull::get(
+                ptr_array_inner_type->getPointerTo()), data);
+            llvm::Value* descriptor = ptr;
+            llvm_utils->create_if_else(builder->CreateIsNotNull(descriptor), [&]() {
+                builder->CreateStore(llvm_utils->CreateLoad2(
+                    ptr_array_inner_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(x.m_ptr,
+                        ASRUtils::type_get_past_allocatable_pointer(p_type),
+                        descriptor, module.get())), data);
+            }, []() {});
+            ptr = llvm_utils->CreateLoad2(ptr_array_inner_type->getPointerTo(), data);
             ptr_is_class_array = x.m_tgt
                 && ASRUtils::is_class_type(ASRUtils::extract_type(p_type));
         }
@@ -14033,6 +14080,17 @@ public:
         });
     }
 
+    // An allocatable or pointer assumed-rank variable is visited as the
+    // address of its descriptor pointer; load it to get the descriptor.
+    void load_assumed_rank_descriptor(ASR::expr_t* expr, ASR::ttype_t* type,
+            llvm::Value*& llvm_value) {
+        if (LLVM::is_llvm_pointer(*type)) {
+            llvm_value = llvm_utils->CreateLoad2(
+                llvm_utils->get_type_from_ttype_t_util(expr, type, module.get()),
+                llvm_value);
+        }
+    }
+
     void visit_Associate(const ASR::Associate_t& x) {
         if (x.m_form != ASR::pointer_bounds_formType::NoPointerBounds) {
             handle_pointer_section_target(x);
@@ -14193,6 +14251,7 @@ public:
                 // but `assoc` is a scalar class pointer. Associate the scalar wrapper pointer
                 // (descriptor.data) rather than bitcasting the whole descriptor.
                 LCOMPILERS_ASSERT(ASRUtils::is_class_type(ASRUtils::extract_type(value_type)))
+                load_assumed_rank_descriptor(x.m_value, value_type, llvm_value);
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
                     get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                         llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
@@ -14225,6 +14284,7 @@ public:
                        ASRUtils::is_array(value_type) &&
                        ASRUtils::is_class_type(ASRUtils::extract_type(value_type)) &&
                        ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::AssumedRankArray) {
+                load_assumed_rank_descriptor(x.m_value, value_type, llvm_value);
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
                     get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                         llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
@@ -14737,6 +14797,15 @@ public:
                                         // Simple bitcast if element types differ
                                         loaded_data_ptr = builder->CreateBitCast(loaded_data_ptr, target_el_type->getPointerTo());
                                         builder->CreateStore(loaded_data_ptr, target_data_ptr);
+                                    }
+
+                                    // The pointer owns a different class wrapper, but
+                                    // its descriptor retains the source's dynamic
+                                    // element size, type and other scalar metadata.
+                                    if (target_is_class && source_is_class) {
+                                        arr_descr->copy_scalar_metadata(
+                                            value_array_desc_type, llvm_value,
+                                            target_array_desc_type, llvm_target_);
                                     }
                                     
                                     // Deep Copy dimension descriptors (inline)
@@ -27294,11 +27363,16 @@ public:
                     // When the formal is a pointer type but the actual is not,
                     // wrap the value with an extra pointer level. Skip this when
                     // the formal is a class type — convert_to_polymorphic_arg
-                    // handles the pointer level during class wrapping.
+                    // handles the pointer level during class wrapping, and
+                    // when a scalar is passed to an assumed-rank dummy: it is
+                    // wrapped in a descriptor below, which needs the scalar
+                    // itself.
                     if (orig_arg &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                         !LLVM::is_llvm_pointer(*arg->m_type) &&
-                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
+                        !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type)) &&
+                        !(ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                          !ASRUtils::is_array(arg->m_type))) {
                         if (tmp->getType()->isIntegerTy(1) &&
                             ASRUtils::is_logical(*arg->m_type)) {
                             int kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
@@ -27985,35 +28059,26 @@ public:
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
             }
 
-            // For assumed-rank parameters, bitcast the descriptor pointer
-            // to match the function signature (all descriptor types share
-            // the same layout; the callee reads the rank field to determine
-            // how many dim entries are valid).
+            // A scalar passed to a Fortran pointer/allocatable assumed-rank
+            // dummy has a freshly constructed descriptor, but the dummy ABI
+            // expects the address of a descriptor pointer. Array actuals
+            // already supply that slot; bind(C) instead takes one CFI pointer.
             if (orig_arg &&
-                    ASRUtils::is_assumed_rank_array(orig_arg->m_type)) {
+                    ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                    x_abi != ASR::abiType::BindC) {
                 llvm::Type* expected_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     orig_arg->m_type, orig_arg->m_type_declaration, module.get());
                 if (tmp == scalar_assumed_rank_desc &&
-                        x_abi != ASR::abiType::BindC &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type)) {
-                    // An allocatable or pointer assumed-rank dummy takes a
-                    // pointer to the caller's descriptor pointer (a bind(C)
-                    // one takes the descriptor itself). A scalar
-                    // actual is wrapped in a fresh descriptor, so store its
-                    // address in a slot rather than punning the descriptor
-                    // itself as a pointer to a pointer. Decide this from the
-                    // dummy's type: with opaque pointers both LLVM types are
-                    // the same `ptr`.
                     llvm::Value* desc_slot = llvm_utils->CreateAlloca(
-                        expected_desc_type, nullptr,
-                        "assumed_rank_desc");
+                        expected_desc_type, nullptr, "assumed_rank_desc");
                     builder->CreateStore(
                         builder->CreateBitCast(tmp, expected_desc_type),
                         desc_slot);
                     tmp = desc_slot;
-                } else if (tmp->getType() != expected_desc_type->getPointerTo()) {
-                    tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
                 }
+                tmp = builder->CreateBitCast(tmp,
+                    expected_desc_type->getPointerTo());
             }
 
             // For bind(c) character array arguments passed as Var, extract the raw data pointer
@@ -28197,6 +28262,19 @@ public:
                                 ASRUtils::type_get_past_pointer(actual_type)), module.get());
                     }
 
+                    llvm::Value* absent_optional_pointer = nullptr;
+                    if (orig_arg->m_presence == ASR::presenceType::Optional &&
+                            ASRUtils::is_pointer(actual_type) &&
+                            ASRUtils::is_assumed_rank_array(actual_type) &&
+                            ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                        ASR::Variable_t* arg = EXPR2VAR(x.m_args[i].m_value);
+                        llvm::Value* slot = llvm_symtab[get_hash((ASR::asr_t*)arg)];
+                        llvm::Value* actual_desc = llvm_utils->CreateLoad2(
+                            desc_type->getPointerTo(), slot);
+                        absent_optional_pointer = builder->CreateIsNull(actual_desc);
+                        tmp = actual_desc;
+                    }
+
                     // Ensure tmp is a pointer to the descriptor.
                     // For allocatable/pointer arrays the upstream Var handler
                     // may have loaded the struct VALUE (which is wrong on
@@ -28213,7 +28291,8 @@ public:
                             x.m_args[i].m_value));
                     if (LLVM::is_llvm_pointer(*actual_type)
                             && ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)
-                            && !already_has_assumed_rank_desc) {
+                            && !already_has_assumed_rank_desc
+                            && absent_optional_pointer == nullptr) {
                         ASR::Variable_t *arg = EXPR2VAR(x.m_args[i].m_value);
                         uint64_t h = get_hash((ASR::asr_t*)arg);
                         // The variable's alloca (ptr-to-ptr for
@@ -28244,6 +28323,20 @@ public:
                     if (tmp->getType()->isPointerTy()) {
                         tmp = builder->CreateBitCast(tmp,
                             desc_type->getPointerTo());
+                    }
+
+                    llvm::BasicBlock* absent_cfi_block = nullptr;
+                    llvm::BasicBlock* cfi_merge_block = nullptr;
+                    if (absent_optional_pointer) {
+                        llvm::Function* caller = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock* cfi_convert_block =
+                            llvm::BasicBlock::Create(context, "cfi_present", caller);
+                        cfi_merge_block = llvm::BasicBlock::Create(
+                            context, "cfi_optional_merge", caller);
+                        absent_cfi_block = builder->GetInsertBlock();
+                        builder->CreateCondBr(absent_optional_pointer,
+                            cfi_merge_block, cfi_convert_block);
+                        builder->SetInsertPoint(cfi_convert_block);
                     }
 
                     // Convert internal descriptor to CFI layout (no offset
@@ -28315,9 +28408,16 @@ public:
                             : llvm_utils->get_string_length(str_type, str_desc);
                         elem_size_val = builder->CreateMul(str_len, elem_size_val);
                     }
-                    int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
                     bool is_type_star = ASR::is_a<ASR::StructType_t>(*elem_asr_type)
                         && ASR::down_cast<ASR::StructType_t>(elem_asr_type)->m_is_unlimited_polymorphic;
+                    if (is_type_star) {
+                        elem_size_val = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context),
+                            llvm_utils->create_gep2(desc_type, tmp, 1));
+                    }
+                    bool assumed_rank_actual = ASRUtils::is_assumed_rank_array(actual_type);
+                    int n_dims = assumed_rank_actual ? 15 :
+                        ASRUtils::extract_n_dims_from_ttype(actual_type);
                     int8_t cfi_type_code = get_cfi_type_code(elem_asr_type);
                     int cfi_attr = 0;
                     if (actual_type && ASRUtils::is_allocatable(actual_type)) {
@@ -28325,10 +28425,17 @@ public:
                     } else if (actual_type && ASRUtils::is_pointer(actual_type)) {
                         cfi_attr = 1;
                     }
+                    if (absent_optional_pointer &&
+                            !ASRUtils::is_pointer(orig_arg->m_type) &&
+                            !ASRUtils::is_allocatable(orig_arg->m_type)) {
+                        // The transport pointer does not change the C dummy's
+                        // nonpointer descriptor attribute.
+                        cfi_attr = 0;
+                    }
                     llvm::Value* internal_desc_ptr = tmp;
                     tmp = arr_descr->internal_to_cfi(
                         desc_type, tmp, elem_llvm_type, n_dims, elem_size_val,
-                        cfi_type_code, cfi_attr);
+                        cfi_type_code, cfi_attr, assumed_rank_actual);
                     if (cfi_attr != 0 && !is_type_star &&
                             ASRUtils::is_array(actual_type) &&
                             orig_arg->m_intent != ASR::intentType::In) {
@@ -28353,7 +28460,8 @@ public:
                         // Write back to the original descriptor, not to the
                         // base_addr-replaced copy made for character arrays
                         pending_cfi_array_writebacks.push_back({orig_desc_ptr,
-                            tmp, desc_type, elem_llvm_type, n_dims, elem_size,
+                            tmp, absent_optional_pointer, desc_type, elem_llvm_type,
+                            n_dims, elem_size,
                             local_str_desc});
                     }
                     if (is_type_star) {
@@ -28364,7 +28472,8 @@ public:
                         llvm::Value* cfi_base_gep = llvm_utils->create_gep2(
                             cfi_struct, tmp, 0);
                         llvm::Value* box_i8 = llvm_utils->CreateLoad2(
-                            i8_ptr_type, cfi_base_gep);
+                            i8_ptr_type,
+                            llvm_utils->create_gep2(desc_type, internal_desc_ptr, 0));
                         llvm::Value* box_ptr = builder->CreateBitCast(
                             box_i8, elem_llvm_type->getPointerTo());
                         llvm::Value* data_ptr = unwrap_polymorphic_box_data(
@@ -28373,9 +28482,7 @@ public:
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
                             llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 4));
-                        llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt64Ty(context),
-                            llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
+                        llvm::Value* src_elem_len = elem_size_val;
 
                         // The box of a `type(*)` dummy already holds the
                         // address of the data. A `class(*)` box holds a
@@ -28409,7 +28516,15 @@ public:
                         final_data->addIncoming(raw_char_data, char_bb);
                         final_data->addIncoming(data_ptr, other_bb);
 
-                        builder->CreateStore(final_data, cfi_base_gep);
+                        llvm::Value* offset = arr_descr->get_offset(
+                            desc_type, internal_desc_ptr, true);
+                        llvm::Value* offset_bytes = builder->CreateMul(
+                            offset, src_elem_len);
+                        llvm::Value* first_data = builder->CreateGEP(
+                            llvm::Type::getInt8Ty(context), final_data, offset_bytes);
+                        builder->CreateStore(builder->CreateSelect(
+                            builder->CreateIsNull(final_data), final_data, first_data),
+                            cfi_base_gep);
 
                         builder->CreateStore(src_type,
                             llvm_utils->create_gep2(cfi_struct, tmp, 4));
@@ -28426,6 +28541,17 @@ public:
                         if (tmp->getType() != expected_type) {
                             tmp = builder->CreateBitCast(tmp, expected_type);
                         }
+                    }
+                    if (absent_optional_pointer) {
+                        llvm::BasicBlock* converted_block = builder->GetInsertBlock();
+                        builder->CreateBr(cfi_merge_block);
+                        builder->SetInsertPoint(cfi_merge_block);
+                        llvm::PHINode* cfi_arg = builder->CreatePHI(tmp->getType(), 2);
+                        cfi_arg->addIncoming(llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(tmp->getType())),
+                            absent_cfi_block);
+                        cfi_arg->addIncoming(tmp, converted_block);
+                        tmp = cfi_arg;
                     }
                 }
             }
@@ -29653,6 +29779,26 @@ public:
                     }
                 }
 
+                if (optional_check_mergeBB == nullptr && i < function->n_args &&
+                        ASRUtils::get_FunctionType(function)->m_abi == ASR::abiType::BindC &&
+                        ASRUtils::is_pointer(ASRUtils::expr_type(arr_cast->m_arg)) &&
+                        ASRUtils::expr_to_variable_or_null(function->m_args[i]) != nullptr &&
+                        ASRUtils::expr_to_variable_or_null(function->m_args[i])->m_presence ==
+                            ASR::presenceType::Optional) {
+                    // A disassociated pointer is an absent argument for an
+                    // optional bind(C) dummy, which receives NULL for it.
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
+                    this->visit_expr_wrapper(arr_cast->m_arg, true);
+                    ptr_loads = ptr_loads_copy;
+                    is_present_flag = arr_descr->get_is_allocated_flag(tmp, arr_cast->m_arg);
+                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock *present_checkBB = llvm::BasicBlock::Create(context, "optional_present", fn);
+                    optional_check_mergeBB = llvm::BasicBlock::Create(context, "optional_merge");
+                    builder->CreateCondBr(llvm_utils->to_i1(is_present_flag), present_checkBB, optional_check_mergeBB);
+                    builder->SetInsertPoint(present_checkBB);
+                }
+
                 if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
@@ -30172,26 +30318,34 @@ public:
 
     void apply_cfi_array_writebacks() {
         for (auto& wb : pending_cfi_array_writebacks) {
-            if (is_string_descriptor_type(wb.el_type)) {
-                if (wb.local_str_desc) {
-                    // Use a stack string_descriptor, so it is not leaked
-                    llvm::Value* base_addr_gep = llvm_utils->create_gep2(
-                        wb.internal_type, wb.internal_desc, 0);
-                    llvm::Value* str_desc = llvm_utils->CreateLoad2(
-                        wb.el_type->getPointerTo(), base_addr_gep);
-                    llvm::Value* is_null = builder->CreateICmpEQ(str_desc,
-                        llvm::ConstantPointerNull::get(
-                            llvm::cast<llvm::PointerType>(str_desc->getType())));
-                    llvm_utils->create_if_else(is_null, [&]() {
-                        builder->CreateStore(llvm_utils->CreateAlloca(
-                            wb.el_type, nullptr, "cfi_str_desc"), base_addr_gep);
-                    }, [](){});
+            auto write_back = [&]() {
+                if (is_string_descriptor_type(wb.el_type)) {
+                    if (wb.local_str_desc) {
+                        // Use a stack string_descriptor, so it is not leaked
+                        llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                            wb.internal_type, wb.internal_desc, 0);
+                        llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                            wb.el_type->getPointerTo(), base_addr_gep);
+                        llvm::Value* is_null = builder->CreateICmpEQ(str_desc,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(str_desc->getType())));
+                        llvm_utils->create_if_else(is_null, [&]() {
+                            builder->CreateStore(llvm_utils->CreateAlloca(
+                                wb.el_type, nullptr, "cfi_str_desc"), base_addr_gep);
+                        }, [](){});
+                    }
+                    arr_descr->cfi_to_internal_string(wb.internal_type, wb.el_type,
+                        wb.cfi_desc, wb.n_dims, wb.internal_desc);
+                } else {
+                    arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
+                        wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
                 }
-                arr_descr->cfi_to_internal_string(wb.internal_type, wb.el_type,
-                    wb.cfi_desc, wb.n_dims, wb.internal_desc);
+            };
+            if (wb.is_absent) {
+                llvm_utils->create_if_else(builder->CreateNot(wb.is_absent),
+                    write_back, [](){});
             } else {
-                arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
-                    wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
+                write_back();
             }
         }
         pending_cfi_array_writebacks.clear();

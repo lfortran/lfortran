@@ -6369,6 +6369,27 @@ public:
                 array_var_name = selector_variable->m_name;
             }
         }
+        // The rank of the selector is only known inside the construct, so its
+        // `assumed_rank_arrays` entry is restored to the enclosing one at
+        // `end select`, also when the construct is abandoned by an error.
+        struct AssumedRankEntryRestorer {
+            std::map<std::string, int> &ranks;
+            std::string name;
+            bool had_entry;
+            int rank;
+            ~AssumedRankEntryRestorer() {
+                if (had_entry) {
+                    ranks[name] = rank;
+                } else {
+                    ranks.erase(name);
+                }
+            }
+        };
+        auto previous_entry = assumed_rank_arrays.find(array_var_name);
+        bool had_previous_entry = previous_entry != assumed_rank_arrays.end();
+        AssumedRankEntryRestorer restore_rank_entry{assumed_rank_arrays,
+            array_var_name, had_previous_entry,
+            had_previous_entry ? previous_entry->second : 0};
         ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
         if( !ASR::is_a<ASR::Array_t>(*selector_type)) {
             // Throw error if selector is not an array
@@ -10195,7 +10216,7 @@ public:
         if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
-            v_expr = ASRUtils::EXPR(tmp);
+            v_expr = resolve_selector_object(ASRUtils::EXPR(tmp), x.base.base.loc);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
@@ -11157,7 +11178,7 @@ public:
         all_blocks_nesting++;
         all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
@@ -11343,7 +11364,7 @@ public:
             CurrentBodyScope body_scope(*this, &test_stmts, current_scope);
             visit_expr(*x.m_test);
         }
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body + test_stmts.size() + 1);
         if (test_stmts.size() > 0) {

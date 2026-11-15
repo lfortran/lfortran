@@ -4770,11 +4770,28 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
                        ASRUtils::expr_value(a_arg));
             int src_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_arg));
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
-            // Skip compile-time folding when either side is real(16): m_r is
-            // a pointer payload for kind=16 (see real_constant_get_r16_bytes),
-            // and folding through double would silently truncate. Runtime
-            // cast handles it.
-            if (src_kind != 16 && dest_kind != 16) {
+            // kind=16 m_r is a pointer payload (see
+            // real_constant_get_r16_bytes), never a double: read it with
+            // real_constant_get_r16 and build kind=16 results with
+            // make_RealConstant_r16. Kind=10 sources are not folded into
+            // kind=16, as their long double would be narrowed through double.
+            if (src_kind == 16 && dest_kind == 16) {
+                value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                    ASRUtils::real_constant_get_r16(rc), a_type);
+            } else if (src_kind == 16) {
+                // Only real(8) is folded: going through a double would round
+                // twice for real(4) and lose bits for real(10).
+                if (dest_kind == 8) {
+                    value = ASRUtils::make_RealConstant_util(al, a_loc,
+                        lf_f128_to_double(ASRUtils::real_constant_get_r16(rc)),
+                        a_type);
+                }
+            } else if (dest_kind == 16) {
+                if (src_kind != 10) {
+                    value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                        lf_f128_from_double(rc->m_r), a_type);
+                }
+            } else {
                 // kind=10 m_r is a pointer to the long double bytes, so
                 // read it with real_constant_get_r10 and build a kind=10
                 // result with make_RealConstant_util.
