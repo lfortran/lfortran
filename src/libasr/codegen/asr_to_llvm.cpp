@@ -800,6 +800,9 @@ public:
         llvm::Value* desc;
         llvm::Type* desc_type;
         llvm::Type* el_type;
+        // The slot holding `desc` that a Fortran dummy receives; the callee
+        // may null it (nullify) or point it to another descriptor.
+        llvm::Value* desc_slot = nullptr;
     };
     std::vector<ScalarWriteback> pending_scalar_writebacks;
 
@@ -28100,6 +28103,10 @@ public:
                     builder->CreateStore(
                         builder->CreateBitCast(tmp, expected_desc_type),
                         desc_slot);
+                    if (!pending_scalar_writebacks.empty() &&
+                            pending_scalar_writebacks.back().desc == scalar_assumed_rank_desc) {
+                        pending_scalar_writebacks.back().desc_slot = desc_slot;
+                    }
                     tmp = desc_slot;
                 }
                 tmp = builder->CreateBitCast(tmp,
@@ -30345,11 +30352,28 @@ public:
         // A call inside the arguments of another call leaves them to the outer call.
         if (convert_call_args_depth != 0) return;
         for (auto& wb : pending_scalar_writebacks) {
-            llvm::Value* data = llvm_utils->CreateLoad2(
-                wb.desc_type->getStructElementType(0),
-                arr_descr->get_pointer_to_data(wb.desc_type, wb.desc));
-            builder->CreateStore(builder->CreateBitCast(data,
-                wb.el_type->getPointerTo()), wb.scalar_slot);
+            auto write_back = [&](llvm::Value* desc) {
+                llvm::Value* data = llvm_utils->CreateLoad2(
+                    wb.desc_type->getStructElementType(0),
+                    arr_descr->get_pointer_to_data(wb.desc_type, desc));
+                builder->CreateStore(builder->CreateBitCast(data,
+                    wb.el_type->getPointerTo()), wb.scalar_slot);
+            };
+            if (wb.desc_slot) {
+                llvm::Value* desc = builder->CreateBitCast(
+                    llvm_utils->CreateLoad2(wb.desc_type->getPointerTo(),
+                        builder->CreateBitCast(wb.desc_slot,
+                            wb.desc_type->getPointerTo()->getPointerTo())),
+                    wb.desc_type->getPointerTo());
+                llvm_utils->create_if_else(builder->CreateIsNull(desc), [&]() {
+                    builder->CreateStore(llvm::ConstantPointerNull::get(
+                        wb.el_type->getPointerTo()), wb.scalar_slot);
+                }, [&]() {
+                    write_back(desc);
+                });
+            } else {
+                write_back(wb.desc);
+            }
         }
         pending_scalar_writebacks.clear();
     }
