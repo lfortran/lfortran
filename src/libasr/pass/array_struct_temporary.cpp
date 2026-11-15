@@ -1069,6 +1069,7 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::FindLoc):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Reduce): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
@@ -1077,9 +1078,10 @@ bool set_allocation_size(
                         int dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
                             static_cast<ASRUtils::IntrinsicArrayFunctions>(
                                 intrinsic_array_function->m_arr_intrinsic_id));
-                        // Norm2, MaxLoc and MinLoc are not listed there; their `dim` is the second argument
+                        // Not listed there: `dim` is the third argument of FindLoc, the second of the others
                         if( dim_index < 0 ) {
-                            dim_index = 1;
+                            dim_index = intrinsic_array_function->m_arr_intrinsic_id ==
+                                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::FindLoc) ? 2 : 1;
                         }
                         LCOMPILERS_ASSERT((size_t) dim_index < intrinsic_array_function->n_args);
                         dim = intrinsic_array_function->m_args[dim_index];
