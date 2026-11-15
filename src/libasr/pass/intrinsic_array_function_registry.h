@@ -2171,29 +2171,12 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts, {}));
             }, index_kind);
     } else {
-        int dim = 0;
-        extract_value(expr_value(m_args[1].m_value), dim);
         int branch_dim = 0;
         b.generate_reduction_intrinsic_stmts_for_array_output(
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
-            [=, &al, &body, &b, &result_kind, &index_kind] () {
+            [=, &al, &body, &b] () {
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
-                if (overload_id != 3) {
-                    ASR::expr_t *lb = nullptr;
-                    if (dim > 0) {
-                        lb = b.GetLBound(args[0], dim, index_kind);
-                    } else {
-                        ASR::expr_t *dim_i32 = extract_kind_from_ttype_t(arg_types[1]) == 4
-                            ? args[1] : b.i2i_t(args[1], int32);
-                        lb = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, args[0], dim_i32,
-                            b.int_type(index_kind), ASR::arrayboundType::LBound, nullptr));
-                    }
-                    if (result_kind != index_kind) {
-                        lb = b.i2i_t(lb, type);
-                    }
-                    body.push_back(al, b.Assignment(result, lb));
-                }
             }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind, &branch_dim] () {
                 int dim = branch_dim;
                 ASR::expr_t *result_ref, *array_ref_02;
@@ -2261,7 +2244,9 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                         }, {})
                     }));
                 } else {
-                    doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {}));
+                    doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {
+                        b.Assignment(result_ref, res_idx)
+                    }));
                 }
             }, index_kind, &branch_dim);
     }
