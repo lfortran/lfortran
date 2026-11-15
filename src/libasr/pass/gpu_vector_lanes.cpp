@@ -112,6 +112,13 @@ values in its private scalars, except for these statements:
   every lane gets what they hold combined (GpuLaneReduce): the inner
   product of a matrix-vector product, the forces on one body. What the loop
   leaves in its variable and in an induction is set after it.
+  An independent loop that is a `do concurrent` inside the iteration of at
+  least a warp of iterations is the exception: it says its own iterations are
+  the ones to share out (the positions of attention, each with the plain loop
+  of its sum on one lane), so the phases of a step written as `do concurrent`
+  loops after each other run on all the lanes, one after the other behind a
+  barrier. The loop is kept twice, and the iterations decide when the kernel
+  runs.
   An independent loop whose body holds such a reduction loop of a number
   of iterations not known at compile time has that sum shared out instead
   of its own iterations, which may be fewer than the lanes (a sum split in
@@ -1348,7 +1355,10 @@ public:
             // kept as such where the lanes share them out.
             ASR::stmt_t *concurrent = body[i];
             ASR::stmt_t *serial = serial_loops(body[i]);
-            if (serial) body[i] = serial;
+            if (serial) {
+                body[i] = serial;
+                concurrent_loops.insert(serial);
+            }
             Role r = role(body[i], frames);
             if (serial && r != Role::Distribute && r != Role::Recurse) {
                 body[i] = concurrent;
@@ -1357,7 +1367,8 @@ public:
                 serialized.push_back({&body[i], concurrent});
             }
             frames.pop_back();
-            if (r == Role::Distribute && !reductions.count(body[i])) {
+            if (r == Role::Distribute && !reductions.count(body[i])
+                    && !either.count(body[i])) {
                 fuse_following(body, n_body, i, owner, frames);
                 frames.push_back({body, n_body, i, owner});
                 if (collapsible(ASR::down_cast<ASR::DoLoop_t>(body[i]))) {
@@ -1394,6 +1405,12 @@ public:
             }
             if (i == n_body) break;
             if (r == Role::Distribute) {
+                auto copy = either.find(body[i]);
+                if (copy != either.end()) {
+                    emit_either(ASR::down_cast<ASR::DoLoop_t>(body[i]),
+                        copy->second, out);
+                    continue;
+                }
                 distribute(ASR::down_cast<ASR::DoLoop_t>(body[i]), out);
                 continue;
             }
@@ -1442,6 +1459,64 @@ private:
     // Where decide() put the loops of a `do concurrent` in its place, and
     // the `do concurrent`.
     std::vector<std::pair<ASR::stmt_t**, ASR::stmt_t*>> serialized;
+    // The loops decide() made of a `do concurrent` of the iteration.
+    std::set<ASR::stmt_t*> concurrent_loops;
+    // The `do concurrent` loops of the iteration that have a sum inside
+    // them, with a copy in which the lanes share the sum instead.
+    std::map<ASR::stmt_t*, ASR::stmt_t*> either;
+
+    // The lanes of the iteration share out a `do concurrent` of it when it
+    // has at least a warp of iterations, and the sum of the plain loop
+    // inside it otherwise (a long sum split in a few parts). Which one
+    // is only known when the kernel runs, so the loop is kept twice.
+    bool share_either(ASR::stmt_t *s, std::vector<Frame> &frames) {
+        auto *l = ASR::down_cast<ASR::DoLoop_t>(s);
+        bool copyable = true;
+        SymbolTable *scope = block_scope(l->m_body, l->n_body, copyable);
+        if (!copyable) return false;
+        ASR::stmt_t *copy = nullptr;
+        if (scope) {
+            GpuDuplicator dup(al, scope);
+            copy = dup.duplicate_stmt(s);
+            if (!dup.ok) copy = nullptr;
+        } else {
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.success = true;
+            copy = dup.duplicate_stmt(s);
+            if (!dup.success) copy = nullptr;
+        }
+        if (!copy) return false;
+        bool was_failed = failed;
+        size_t n_serialized = serialized.size();
+        int64_t was_limit = lane_limit;
+        bool ok = nested_decide(copy, frames) && !failed;
+        lane_limit = was_limit;
+        if (!ok) {
+            failed = was_failed;
+            for (size_t i = serialized.size(); i-- > n_serialized;) {
+                *serialized[i].first = serialized[i].second;
+            }
+            serialized.resize(n_serialized);
+            return false;
+        }
+        either[s] = copy;
+        return true;
+    }
+
+    void emit_either(ASR::DoLoop_t *d, ASR::stmt_t *copy,
+            Vec<ASR::stmt_t*> &out) {
+        const Location &loc = d->base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *type = ASRUtils::expr_type(d->m_head.m_v);
+        ASR::expr_t *n = trip_count(b, d, type, out);
+        Vec<ASR::stmt_t*> outer;
+        outer.reserve(al, 4);
+        distribute(d, outer);
+        nested_apply(copy);
+        std::vector<ASR::stmt_t*> shared_out(outer.p, outer.p + outer.n);
+        out.push_back(al, b.If(b.GtE(n, b.i_t(32, type)), shared_out,
+            {copy}));
+    }
 
     // The loops over the indices of a nested `do concurrent`, the first
     // index outermost, with its body inside: they run its iterations in an
@@ -1725,7 +1800,13 @@ private:
         for (size_t i = 0; i < n_body; i++) {
             auto r = roles.find(body[i]);
             Role role = r == roles.end() ? Role::Replicate : r->second;
-            if (role == Role::Distribute) {
+            if (role == Role::Distribute && either.count(body[i])) {
+                // The copy that shares the sum instead decides the launch
+                // size at which the lanes pay.
+                auto *x = ASR::down_cast<ASR::DoLoop_t>(
+                    either.find(body[i])->second);
+                if (!pays(x->m_body, x->n_body, column)) return false;
+            } else if (role == Role::Distribute) {
                 if (!walks_columns(ASR::down_cast<ASR::DoLoop_t>(body[i]),
                         column)) {
                     return false;
@@ -2211,8 +2292,16 @@ private:
             case ASR::stmtType::DoLoop: {
                 if (k.independent_loops && distributable(
                         ASR::down_cast<ASR::DoLoop_t>(s), frames)) {
+                    // A `do concurrent` of the iteration says its own
+                    // iterations are the ones to share out, and the plain
+                    // loop with the sum inside it stays on each lane.
                     if (prefers_inner_reduction(
                             ASR::down_cast<ASR::DoLoop_t>(s), frames)) {
+                        if (concurrent_loops.count(s)
+                                && share_either(s, frames)) {
+                            distributed = true;
+                            return Role::Distribute;
+                        }
                         bool was_failed = failed;
                         size_t n_serialized = serialized.size();
                         if (nested_decide(s, frames) && !failed) {
