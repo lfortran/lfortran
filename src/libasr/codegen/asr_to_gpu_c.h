@@ -6033,8 +6033,15 @@ public:
                         visit_expr(fc->m_args[0].m_value);
                     }
                     src << ")";
-                } else if (fn_name.find("_lcompilers_int_") == 0 ||
-                           fn_name.find("_lcompilers_nint_") == 0) {
+                } else if (fn_name.find("_lcompilers_nint_") == 0) {
+                    // Rounds half away from zero, as Fortran does.
+                    std::string target = gpu_type(fc->m_type);
+                    src << "((" << target << ")round(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value) {
+                        visit_expr(fc->m_args[0].m_value);
+                    }
+                    src << "))";
+                } else if (fn_name.find("_lcompilers_int_") == 0) {
                     std::string target = gpu_type(fc->m_type);
                     src << "((" << target << ")";
                     if (fc->n_args > 0 && fc->m_args[0].m_value) {
