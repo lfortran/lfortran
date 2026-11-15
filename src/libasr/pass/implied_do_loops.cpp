@@ -791,7 +791,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             // A length set inside an implied-do loop cannot size the temporary
             if (!(constructor_len && uses_implied_do_variable(constructor_len,
                     x->m_args, x->n_args)) &&
-                    string_length_may_differ(ASRUtils::expr_type(result_var), x->m_type)) {
+                    (is_assumed_length_string(ASRUtils::expr_type(result_var)) ||
+                    string_length_may_differ(ASRUtils::expr_type(result_var), x->m_type))) {
                 is_result_var_fixed_size = false;
             }
         }
