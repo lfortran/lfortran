@@ -79,8 +79,10 @@ only when all of the following hold, so that the program does the same:
   procedure only when it is an actual argument of the call, which the body
   does name (F2018 15.5.2.13);
 * the loop has a constant step, its bounds call no procedure and do not
-  name an array H reallocates, so that they can be evaluated again for the
-  test that the loop runs at all, with the same value.
+  name an array H reallocates (but may inquire about the shape of a
+  variable a component of which H reallocates, as in `do j = 1, size(p)`
+  around `p(i)%d = ...`), so that they can be evaluated again for the test
+  that the loop runs at all, with the same value.
 
 Every other statement, and every statement this analysis does not know,
 keeps H in the loop. Loops are processed innermost first, so that a ReAlloc
@@ -737,14 +739,37 @@ bool reads_only_its_arguments(const ASR::Function_t& f) {
     return c.ok;
 }
 
+// What the head of a loop (its bounds, or the condition of a DO WHILE loop)
+// reads: the variables whose shape or allocation as a whole it inquires
+// about, and those whose value or parts it reads. Reallocating a component
+// of a variable changes neither the shape nor the allocation of the variable
+// as a whole.
+struct HeadReads {
+    SymbolSet whole;
+    SymbolSet parts;
+};
+
 // The variables an expression of a hoisted statement reads: those whose
 // allocation, shape or bounds only it inquires about, and those whose value
 // it reads.
 class SourceCollector : public ASR::BaseWalkVisitor<SourceCollector> {
 public:
     SymbolSet inquired;
+    // The variables whose shape or allocation as a whole an inquiry reads
+    SymbolSet inquired_whole;
+    // The variables whose components an inquiry reads
+    SymbolSet inquired_parts;
     SymbolSet valued;
     bool calls = false;
+
+    // What a loop head that this collected reads
+    HeadReads head_reads() const {
+        HeadReads r;
+        r.whole = inquired_whole;
+        r.parts = inquired_parts;
+        r.parts.insert(valued.begin(), valued.end());
+        return r;
+    }
 
     // An inquiry about the allocation, shape or bounds of a variable or of
     // a component that only it reaches (see component_root) reads only the
@@ -754,6 +779,11 @@ public:
         ASR::symbol_t* root = component_root(v, &subscripts);
         if (root != nullptr) {
             inquired.insert(root);
+            if (ASR::is_a<ASR::Var_t>(*v)) {
+                inquired_whole.insert(root);
+            } else {
+                inquired_parts.insert(root);
+            }
             for (ASR::expr_t* subscript : subscripts) {
                 visit_expr(*subscript);
             }
@@ -856,9 +886,12 @@ public:
 // ELSE whose body is such statements, with what it reallocates and reads.
 struct Hoistable {
     SymbolSet targets;
+    // The targets that are reallocated as whole variables, not components
+    SymbolSet whole_targets;
     SymbolSet inquired;
     SymbolSet valued;
 };
+
 
 bool is_reallocatable_element_type(ASR::ttype_t* type) {
     ASR::ttype_t* element = ASRUtils::type_get_past_array(
@@ -922,6 +955,9 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
         }
         c.inquired.erase(target);
         h.targets.insert(target);
+        if (ASR::is_a<ASR::Var_t>(*arg.m_a)) {
+            h.whole_targets.insert(target);
+        }
         h.inquired = c.inquired;
         h.valued = c.valued;
         return true;
@@ -946,6 +982,8 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
                     return false;
                 }
             }
+            h.whole_targets.insert(parts[i].whole_targets.begin(),
+                parts[i].whole_targets.end());
         }
         // A statement of the body must not read what another one
         // reallocates.
@@ -1281,14 +1319,15 @@ public:
     }
 
     bool can_hoist(const Hoistable& h, const Effects& others,
-            const Effects& before, const SymbolSet& head_vars) {
+            const Effects& before, const HeadReads& head) {
         // What runs before the reallocation in the first iteration must
         // reach it: if it could stop the program instead, as a check that an
         // array is allocated does, the reallocation, done first, could read
         // the shape of an array that is not allocated.
         if (others.unknown || before.escapes || before.terminates ||
                 before.reads_through_call ||
-                intersects(h.targets, head_vars) ||
+                intersects(h.targets, head.parts) ||
+                intersects(h.whole_targets, head.whole) ||
                 intersects(h.targets, others.alloc_modified) ||
                 intersects(h.inquired, others.alloc_modified) ||
                 intersects(h.valued, others.value_modified) ||
@@ -1337,16 +1376,15 @@ public:
         if (head_sources.calls) {
             return {};
         }
-        SymbolSet head_vars = head_sources.inquired;
-        head_vars.insert(head_sources.valued.begin(), head_sources.valued.end());
-        return hoist_from_body(x.m_body, x.n_body, head_vars, loop_var);
+        return hoist_from_body(x.m_body, x.n_body, head_sources.head_reads(),
+            loop_var);
     }
 
     // The statements of the loop body `m_body` that move before the loop,
-    // removed from it, or none. `head_vars` are the variables that the
-    // head of the loop reads, `loop_var` its loop variable or nullptr.
+    // removed from it, or none. `head` is what the head of the loop
+    // reads, `loop_var` its loop variable or nullptr.
     std::vector<ASR::stmt_t*> hoist_from_body(ASR::stmt_t**& m_body,
-            size_t& n_body, const SymbolSet& head_vars,
+            size_t& n_body, const HeadReads& head,
             ASR::symbol_t* loop_var) {
         std::vector<ASR::stmt_t*> hoisted;
         std::vector<Hoistable> candidates(n_body);
@@ -1410,7 +1448,7 @@ public:
             if (loop_var != nullptr) {
                 others.value_modified.insert(loop_var);
             }
-            hoist[k] = can_hoist(candidates[k], others, before, head_vars);
+            hoist[k] = can_hoist(candidates[k], others, before, head);
             if (hoist[k]) {
                 continue;
             }
@@ -1427,7 +1465,7 @@ public:
             ASR::stmt_t* resolved = resolve_sections(al, m_body[k], before_k);
             Hoistable h;
             if (resolved != nullptr && analyze_hoistable(resolved, h) &&
-                    can_hoist(h, others, before, head_vars)) {
+                    can_hoist(h, others, before, head)) {
                 hoist[k] = true;
                 hoistable[k] = resolved;
             }
@@ -1988,10 +2026,8 @@ public:
         if (test_sources.calls) {
             return;
         }
-        SymbolSet test_vars = test_sources.inquired;
-        test_vars.insert(test_sources.valued.begin(), test_sources.valued.end());
         std::vector<ASR::stmt_t*> hoisted = hoist_from_body(xx.m_body,
-            xx.n_body, test_vars, nullptr);
+            xx.n_body, test_sources.head_reads(), nullptr);
         std::vector<ASR::stmt_t*> versioned = version_loop(&xx.base,
             xx.m_body, xx.n_body, nullptr);
         if (hoisted.empty() && versioned.empty()) {
