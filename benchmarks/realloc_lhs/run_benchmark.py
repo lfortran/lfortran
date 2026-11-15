@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Benchmark reallocation on assignment (realloc-lhs) across compilers.
 
-Builds realloc_lhs.f90 once per configuration, runs every kernel best-of-N,
+Builds realloc_lhs.f90, linked with the separately compiled
+realloc_lhs_ext.f90, once per configuration, runs every kernel best-of-N,
 checks that the checksums agree across configurations and prints a
 GitHub-flavored Markdown table. See README.md in this directory.
 
@@ -25,6 +26,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(HERE, "realloc_lhs.f90")
+# Compiled separately (with -c) and linked, so that the compiler of SOURCE
+# cannot inline its procedures or see what they do.
+EXTRA_SOURCES = [os.path.join(HERE, "realloc_lhs_ext.f90")]
 
 # (kernel, n, reps, requires_realloc). reps is chosen so that one run takes
 # roughly 0.1-0.3 s. Kernels that require reallocation on assignment are
@@ -63,7 +67,47 @@ CASES = [
     ("local", 1000, 1_000_000, True),
     ("resize", 8, 10_000_000, True),
     ("resize", 1000, 1_000_000, True),
+    # Kernels whose shape check the compiler cannot remove or move out of
+    # the loop at compile time (see README.md).
+    ("xadd", 3, 30_000_000, False),
+    ("xadd", 1000, 2_000_000, False),
+    ("xadd2d", 3, 20_000_000, False),
+    ("xadd3d", 3, 10_000_000, False),
+    ("xchain", 3, 20_000_000, False),
+    ("xchain", 1000, 1_000_000, False),
+    ("xchainalloc", 3, 10_000_000, False),
+    ("xchainlocal", 3, 10_000_000, True),
+    ("opaque", 3, 50_000_000, False),
+    ("exit", 3, 50_000_000, False),
+    ("target", 3, 50_000_000, False),
+    ("modvar", 3, 50_000_000, False),
+    ("internal", 3, 50_000_000, False),
+    ("saved", 3, 30_000_000, False),
+    ("pairs", 16, 200_000, False),
+    ("pairsc", 16, 200_000, False),
+    ("concur", 64, 1_000_000, False),
+    ("jagged", 3, 3_000_000, False),
+    ("jagged", 1000, 20_000, False),
+    ("while", 3, 50_000_000, False),
+    ("cond", 3, 50_000_000, False),
+    ("chain", 3, 20_000_000, False),
+    ("chain", 1000, 1_000_000, False),
+    ("datadep", 3, 50_000_000, False),
+    ("alternate", 3, 10_000_000, True),
+    ("ctorv", 3, 30_000_000, False),
 ]
+
+
+def inner_iterations(kernel, n):
+    """The assignments of one repetition of a kernel that runs several,
+    so that the table shows the time per assignment."""
+    if kernel in ("pairs", "pairsc"):
+        return n * n
+    if kernel == "concur":
+        return n
+    if kernel == "jagged":
+        return 16
+    return 1
 
 # Flags that disable reallocation on assignment (LFortran, GFortran/Flang,
 # Intel, NVIDIA). A configuration with one of them skips kernels that
@@ -137,14 +181,22 @@ def build(config, build_dir, index):
     d = os.path.join(build_dir, f"{index}")
     os.makedirs(d, exist_ok=True)
     exe = os.path.join(d, "realloc_lhs")
-    cmd = config.command + [SOURCE, "-o", exe]
-    print(f"[build] {config.label}: {' '.join(shlex.quote(t) for t in cmd)}",
-          file=sys.stderr)
-    p = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
-    if p.returncode != 0 or not os.path.exists(exe):
-        sys.stderr.write(p.stdout + p.stderr)
-        raise SystemExit(f"error: building configuration "
-                         f"{config.label!r} failed")
+    objects = []
+    commands = []
+    for src in EXTRA_SOURCES:
+        obj = os.path.join(
+            d, os.path.splitext(os.path.basename(src))[0] + ".o")
+        objects.append(obj)
+        commands.append((config.command + ["-c", src, "-o", obj], obj))
+    commands.append((config.command + [SOURCE] + objects + ["-o", exe], exe))
+    for cmd, output in commands:
+        print(f"[build] {config.label}: "
+              f"{' '.join(shlex.quote(t) for t in cmd)}", file=sys.stderr)
+        p = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
+        if p.returncode != 0 or not os.path.exists(output):
+            sys.stderr.write(p.stdout + p.stderr)
+            raise SystemExit(f"error: building configuration "
+                             f"{config.label!r} failed")
     config.exe = exe
     config.version = compiler_version(config.command)
 
@@ -225,7 +277,9 @@ def main():
 
     if args.list:
         for kernel, n, reps, req in CASES:
+            inner = inner_iterations(kernel, n)
             print(f"{kernel}:{n} reps={reps}"
+                  + (f" x {inner} assignments" if inner > 1 else "")
                   + (" (requires realloc)" if req else ""))
         return 0
 
@@ -301,8 +355,9 @@ def main():
                         best[j] = t
             results.append(best)
             checksums.append(sums)
+            per = reps * inner_iterations(kernel, n)
             shown = "  ".join(
-                f"{c.label}=" + (fmt_ns(b * 1e9 / reps)
+                f"{c.label}=" + (fmt_ns(b * 1e9 / per)
                                  if isinstance(b, float) else
                                  ("n/a" if b is None else "FAIL"))
                 for c, b in zip(configs, best))
@@ -337,14 +392,15 @@ def main():
     out.append("| --- | ---: | " + " | ".join("---:" for _ in labels) + " |")
     for (kernel, n, reps, req), best in zip(cases, results):
         cells = []
-        base = best[0] * 1e9 / reps if isinstance(best[0], float) else None
+        per = reps * inner_iterations(kernel, n)
+        base = best[0] * 1e9 / per if isinstance(best[0], float) else None
         for j, b in enumerate(best):
             if b is None:
                 cells.append("n/a")
             elif isinstance(b, str):
                 cells.append("**FAIL**")
             else:
-                ns = b * 1e9 / reps
+                ns = b * 1e9 / per
                 cell = fmt_ns(ns)
                 if j > 0 and base is not None and base > 0:
                     cell += f" ({fmt_pct(ns, base)})"
@@ -352,7 +408,8 @@ def main():
         name = kernel + (" *" if req else "")
         out.append(f"| {name} | {n} | " + " | ".join(cells) + " |")
     out.append("")
-    out.append(f"Nanoseconds per iteration, best of {args.repeat}"
+    out.append(f"Nanoseconds per iteration (per assignment for pairs, "
+               f"pairsc, concur and jagged), best of {args.repeat}"
                + (f", pinned to CPU {cpu}" if pin else ", not pinned")
                + f"; percentages relative to {labels[0]}. "
                "Kernels marked * require reallocation on assignment and are "
