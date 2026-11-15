@@ -82,19 +82,40 @@ end subroutine source_changes
 subroutine target_component(p, q, reps)
     integer(4) :: __libasr_index_0_
     integer(4) :: __libasr_index_0_1
+    logical(4) :: __libasr_reallocations_do_nothing
     integer(4) :: i
     type(state_t), intent(inout) :: p
     type(state_t), intent(inout), target :: q
     integer(4), intent(in) :: reps
-    do i = 1, reps
-        reallocate(q%x(size(p%x, 1)))
-        ! CheckBounds LHS = q%x, RHS = p%x, 
-        __libasr_index_0_1 = lbound(p%x, 1)
-        do __libasr_index_0_ = lbound(q%x, 1), ubound(q%x, 1)
-            q%x(__libasr_index_0_) = p%x(__libasr_index_0_1)
-            __libasr_index_0_1 = __libasr_index_0_1 + 1
+    __libasr_reallocations_do_nothing = .true.
+    if (__libasr_reallocations_do_nothing) then
+        __libasr_reallocations_do_nothing = .false.
+        if (Allocated(q%x)) then
+            if (Allocated(p%x)) then
+                __libasr_reallocations_do_nothing = .not. size(q%x, 1) /= size(p%x, 1)
+            end if
+        end if
+    end if
+    if (__libasr_reallocations_do_nothing) then
+        do i = 1, reps
+            ! CheckBounds LHS = q%x, RHS = p%x, 
+            __libasr_index_0_1 = lbound(p%x, 1)
+            do __libasr_index_0_ = lbound(q%x, 1), ubound(q%x, 1)
+                q%x(__libasr_index_0_) = p%x(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
         end do
-    end do
+    else
+        do i = 1, reps
+            reallocate(q%x(size(p%x, 1)))
+            ! CheckBounds LHS = q%x, RHS = p%x, 
+            __libasr_index_0_1 = lbound(p%x, 1)
+            do __libasr_index_0_ = lbound(q%x, 1), ubound(q%x, 1)
+                q%x(__libasr_index_0_) = p%x(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
+        end do
+    end if
 end subroutine target_component
 
 subroutine two_components(p, q, reps)

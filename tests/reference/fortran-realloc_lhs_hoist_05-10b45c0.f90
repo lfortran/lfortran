@@ -87,28 +87,64 @@ subroutine chain_reversed(a, t1, t2, sizes)
     integer(4) :: __libasr_index_0_1
     integer(4) :: __libasr_index_0_2
     integer(4) :: __libasr_index_0_3
+    logical(4) :: __libasr_reallocations_do_nothing
     real(4), dimension(:), allocatable, intent(inout) :: a
     integer(4) :: i
     integer(4), dimension(2), intent(out) :: sizes
     real(4), dimension(:), allocatable, intent(inout) :: t1
     real(4), dimension(:), allocatable, intent(inout) :: t2
-    do i = 1, 2
-        reallocate(t2(size(t1, 1)))
-        ! CheckBounds LHS = t2, RHS = t1, t1, 
-        __libasr_index_0_1 = lbound(t1, 1)
-        do __libasr_index_0_ = lbound(t2, 1), ubound(t2, 1)
-            t2(__libasr_index_0_) = real(2, kind=4)*t1(__libasr_index_0_1)
-            __libasr_index_0_1 = __libasr_index_0_1 + 1
+    __libasr_reallocations_do_nothing = .true.
+    if (__libasr_reallocations_do_nothing) then
+        __libasr_reallocations_do_nothing = .false.
+        if (Allocated(t2)) then
+            if (Allocated(t1)) then
+                __libasr_reallocations_do_nothing = .not. size(t2, 1) /= size(t1, 1)
+            end if
+        end if
+    end if
+    if (__libasr_reallocations_do_nothing) then
+        __libasr_reallocations_do_nothing = .false.
+        if (Allocated(t1)) then
+            if (Allocated(a)) then
+                __libasr_reallocations_do_nothing = .not. size(t1, 1) /= size(a, 1)
+            end if
+        end if
+    end if
+    if (__libasr_reallocations_do_nothing) then
+        do i = 1, 2
+            ! CheckBounds LHS = t2, RHS = t1, t1, 
+            __libasr_index_0_1 = lbound(t1, 1)
+            do __libasr_index_0_ = lbound(t2, 1), ubound(t2, 1)
+                t2(__libasr_index_0_) = real(2, kind=4)*t1(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
+            sizes(i) = size(t2)
+            ! CheckBounds LHS = t1, RHS = a, 
+            __libasr_index_0_3 = lbound(a, 1)
+            do __libasr_index_0_2 = lbound(t1, 1), ubound(t1, 1)
+                t1(__libasr_index_0_2) = a(__libasr_index_0_3)
+                __libasr_index_0_3 = __libasr_index_0_3 + 1
+            end do
         end do
-        sizes(i) = size(t2)
-        reallocate(t1(size(a, 1)))
-        ! CheckBounds LHS = t1, RHS = a, 
-        __libasr_index_0_3 = lbound(a, 1)
-        do __libasr_index_0_2 = lbound(t1, 1), ubound(t1, 1)
-            t1(__libasr_index_0_2) = a(__libasr_index_0_3)
-            __libasr_index_0_3 = __libasr_index_0_3 + 1
+    else
+        do i = 1, 2
+            reallocate(t2(size(t1, 1)))
+            ! CheckBounds LHS = t2, RHS = t1, t1, 
+            __libasr_index_0_1 = lbound(t1, 1)
+            do __libasr_index_0_ = lbound(t2, 1), ubound(t2, 1)
+                t2(__libasr_index_0_) = real(2, kind=4)*t1(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
+            sizes(i) = size(t2)
+            reallocate(t1(size(a, 1)))
+            ! CheckBounds LHS = t1, RHS = a, 
+            __libasr_index_0_3 = lbound(a, 1)
+            do __libasr_index_0_2 = lbound(t1, 1), ubound(t1, 1)
+                t1(__libasr_index_0_2) = a(__libasr_index_0_3)
+                __libasr_index_0_3 = __libasr_index_0_3 + 1
+            end do
         end do
-    end do
+    end if
 end subroutine chain_reversed
 
 end module realloc_lhs_hoist_05_mod

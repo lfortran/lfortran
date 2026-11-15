@@ -61,42 +61,86 @@ end subroutine while_calls
 subroutine while_exit_first(a, c, k)
     integer(4) :: __libasr_index_0_
     integer(4) :: __libasr_index_0_1
+    logical(4) :: __libasr_reallocations_do_nothing
     real(4), dimension(:), allocatable, intent(inout) :: a
     real(4), dimension(:), allocatable, intent(inout) :: c
     integer(4) :: i
     integer(4), intent(in) :: k
     i = 0
-    do while (i < 3)
-        i = i + 1
-        if (i == k) then
-            exit
+    __libasr_reallocations_do_nothing = .true.
+    if (__libasr_reallocations_do_nothing) then
+        __libasr_reallocations_do_nothing = .false.
+        if (Allocated(c)) then
+            if (Allocated(a)) then
+                __libasr_reallocations_do_nothing = .not. size(c, 1) /= size(a, 1)
+            end if
         end if
-        reallocate(c(size(a, 1)))
-        ! CheckBounds LHS = c, RHS = a, 
-        __libasr_index_0_1 = lbound(a, 1)
-        do __libasr_index_0_ = lbound(c, 1), ubound(c, 1)
-            c(__libasr_index_0_) = a(__libasr_index_0_1)
-            __libasr_index_0_1 = __libasr_index_0_1 + 1
+    end if
+    if (__libasr_reallocations_do_nothing) then
+        do while (i < 3)
+            i = i + 1
+            if (i == k) then
+                exit
+            end if
+            ! CheckBounds LHS = c, RHS = a, 
+            __libasr_index_0_1 = lbound(a, 1)
+            do __libasr_index_0_ = lbound(c, 1), ubound(c, 1)
+                c(__libasr_index_0_) = a(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
         end do
-    end do
+    else
+        do while (i < 3)
+            i = i + 1
+            if (i == k) then
+                exit
+            end if
+            reallocate(c(size(a, 1)))
+            ! CheckBounds LHS = c, RHS = a, 
+            __libasr_index_0_1 = lbound(a, 1)
+            do __libasr_index_0_ = lbound(c, 1), ubound(c, 1)
+                c(__libasr_index_0_) = a(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
+        end do
+    end if
 end subroutine while_exit_first
 
 subroutine while_reads_target(a, c, trips)
     integer(4) :: __libasr_index_0_
     integer(4) :: __libasr_index_0_1
+    logical(4) :: __libasr_reallocations_do_nothing
     real(4), dimension(:), allocatable, intent(inout) :: a
     real(4), dimension(:), allocatable, intent(inout) :: c
     integer(4), intent(out) :: trips
     trips = 0
-    do while (size(c) < 3)
-        trips = trips + 1
-        reallocate(c((size(c) + 1 - 1)/1 + 1))
-        __libasr_index_0_1 = 1
-        do __libasr_index_0_ = lbound(c, 1), ubound(c, 1)
-            c(__libasr_index_0_) = a(__libasr_index_0_1)
-            __libasr_index_0_1 = __libasr_index_0_1 + 1
+    __libasr_reallocations_do_nothing = .true.
+    if (__libasr_reallocations_do_nothing) then
+        __libasr_reallocations_do_nothing = .false.
+        if (Allocated(c)) then
+            __libasr_reallocations_do_nothing = .not. size(c, 1) /= (size(c) + 1 - 1)/1 + 1
+        end if
+    end if
+    if (__libasr_reallocations_do_nothing) then
+        do while (size(c) < 3)
+            trips = trips + 1
+            __libasr_index_0_1 = 1
+            do __libasr_index_0_ = lbound(c, 1), ubound(c, 1)
+                c(__libasr_index_0_) = a(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
         end do
-    end do
+    else
+        do while (size(c) < 3)
+            trips = trips + 1
+            reallocate(c((size(c) + 1 - 1)/1 + 1))
+            __libasr_index_0_1 = 1
+            do __libasr_index_0_ = lbound(c, 1), ubound(c, 1)
+                c(__libasr_index_0_) = a(__libasr_index_0_1)
+                __libasr_index_0_1 = __libasr_index_0_1 + 1
+            end do
+        end do
+    end if
 end subroutine while_reads_target
 
 end module realloc_lhs_hoist_06_mod

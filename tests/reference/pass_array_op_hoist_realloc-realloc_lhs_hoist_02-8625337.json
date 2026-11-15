@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "pass_array_op_hoist_realloc-realloc_lhs_hoist_02-8625337.stdout",
-    "stdout_hash": "7bbd9e0d719dec1819386c1b87f259d71e82fdda87319c19cb913427",
+    "stdout_hash": "b8e122e4466b66e5315534ba636a9c113347cb78f0ea9465b0763494",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

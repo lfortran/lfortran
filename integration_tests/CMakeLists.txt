@@ -3742,6 +3742,8 @@ RUN(NAME realloc_lhs_hoist_03 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_hoist_04 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_version_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # loops run without reallocations that do nothing
 RUN(NAME realloc_lhs_hoist_08 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # shapes from functions of the arguments, INTENT(IN) calls
 RUN(NAME realloc_lhs_hoist_07 LABELS gfortran llvm

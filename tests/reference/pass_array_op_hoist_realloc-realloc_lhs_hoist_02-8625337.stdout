@@ -527,6 +527,32 @@
                                     []
                                     ()
                                 ),
+                            __libasr_reallocations_do_nothing:
+                                (Variable
+                                    2
+                                    __libasr_reallocations_do_nothing
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             a:
                                 (Variable
                                     2
@@ -1202,24 +1228,96 @@
                         )]
                         []
                     )
-                    (DoLoop
+                    (Assignment
+                        (Var 2 __libasr_reallocations_do_nothing)
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
+                        )
                         ()
-                        ((Var 2 i)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 n)
-                        (IntegerConstant 1 (Integer 4) Decimal))
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (Var 2 __libasr_reallocations_do_nothing)
                         [(Assignment
-                            (ArrayItem
-                                (Var 2 a)
-                                [(()
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                ())]
-                                (Real 4)
-                                ColMajor
-                                ()
+                            (Var 2 __libasr_reallocations_do_nothing)
+                            (LogicalConstant
                                 .false.
+                                (Logical 4)
                             )
-                            (RealBinOp
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntrinsicImpureFunction
+                                Allocated
+                                [(Var 2 d)]
+                                0
+                                (Logical 4)
+                                ()
+                            )
+                            [(If
+                                ()
+                                (IntrinsicImpureFunction
+                                    Allocated
+                                    [(Var 2 a)]
+                                    0
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(Assignment
+                                    (Var 2 __libasr_reallocations_do_nothing)
+                                    (LogicalNot
+                                        (IntegerCompare
+                                            (ArraySize
+                                                (Var 2 d)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (ArraySize
+                                                (Var 2 a)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )]
+                                []
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (Var 2 __libasr_reallocations_do_nothing)
+                        [(DoLoop
+                            ()
+                            ((Var 2 i)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 n)
+                            (IntegerConstant 1 (Integer 4) Decimal))
+                            [(Assignment
                                 (ArrayItem
                                     (Var 2 a)
                                     [(()
@@ -1230,142 +1328,27 @@
                                     ()
                                     .false.
                                 )
-                                Add
-                                (Cast
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    IntegerToReal
-                                    (Real 4)
-                                    (RealConstant
-                                        1.000000
-                                        (Real 4)
-                                    )
-                                    ()
-                                )
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (DebugCheckArrayBounds
-                            (Var 2 c)
-                            [(Var 2 a)
-                            (Var 2 b)]
-                            [(1
-                            2
-                            1
-                            (ArraySize
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
-                            (ArraySize
-                                (Var 2 b)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            ))
-                            (0
-                            1
-                            1
-                            (ArraySize
-                                (Var 2 c)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
-                            (ArraySize
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            ))]
-                            .false.
-                        )
-                        (Assignment
-                            (Var 2 __libasr_index_0_1)
-                            (ArrayBound
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                LBound
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (Assignment
-                            (Var 2 __libasr_index_0_2)
-                            (ArrayBound
-                                (Var 2 b)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                LBound
-                                ()
-                            )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (DoLoop
-                            ()
-                            ((Var 2 __libasr_index_0_)
-                            (ArrayBound
-                                (Var 2 c)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                LBound
-                                ()
-                            )
-                            (ArrayBound
-                                (Var 2 c)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                UBound
-                                ()
-                            )
-                            (IntegerConstant 1 (Integer 4) Decimal))
-                            [(Assignment
-                                (ArrayItem
-                                    (Var 2 c)
-                                    [(()
-                                    (Var 2 __libasr_index_0_)
-                                    ())]
-                                    (Real 4)
-                                    ColMajor
-                                    ()
-                                    .true.
-                                )
                                 (RealBinOp
                                     (ArrayItem
                                         (Var 2 a)
                                         [(()
-                                        (Var 2 __libasr_index_0_1)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
                                         ())]
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .true.
+                                        .false.
                                     )
                                     Add
-                                    (ArrayItem
-                                        (Var 2 b)
-                                        [(()
-                                        (Var 2 __libasr_index_0_2)
-                                        ())]
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToReal
                                         (Real 4)
-                                        ColMajor
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
                                         ()
-                                        .true.
                                     )
                                     (Real 4)
                                     ()
@@ -1376,13 +1359,49 @@
                                 .false.
                                 .false.
                             )
-                            (Assignment
-                                (Var 2 __libasr_index_0_1)
-                                (IntegerBinOp
-                                    (Var 2 __libasr_index_0_1)
-                                    Add
+                            (DebugCheckArrayBounds
+                                (Var 2 c)
+                                [(Var 2 a)
+                                (Var 2 b)]
+                                [(1
+                                2
+                                1
+                                (ArraySize
+                                    (Var 2 a)
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
+                                    ()
+                                )
+                                (ArraySize
+                                    (Var 2 b)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ))
+                                (0
+                                1
+                                1
+                                (ArraySize
+                                    (Var 2 c)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (ArraySize
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ))]
+                                .false.
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_0_1)
+                                (ArrayBound
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
                                     ()
                                 )
                                 ()
@@ -1393,151 +1412,322 @@
                             )
                             (Assignment
                                 (Var 2 __libasr_index_0_2)
-                                (IntegerBinOp
+                                (ArrayBound
+                                    (Var 2 b)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (DoLoop
+                                ()
+                                ((Var 2 __libasr_index_0_)
+                                (ArrayBound
+                                    (Var 2 c)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                (ArrayBound
+                                    (Var 2 c)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    UBound
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4) Decimal))
+                                [(Assignment
+                                    (ArrayItem
+                                        (Var 2 c)
+                                        [(()
+                                        (Var 2 __libasr_index_0_)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    (RealBinOp
+                                        (ArrayItem
+                                            (Var 2 a)
+                                            [(()
+                                            (Var 2 __libasr_index_0_1)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Add
+                                        (ArrayItem
+                                            (Var 2 b)
+                                            [(()
+                                            (Var 2 __libasr_index_0_2)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                                (Assignment
+                                    (Var 2 __libasr_index_0_1)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_index_0_1)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                                (Assignment
                                     (Var 2 __libasr_index_0_2)
-                                    Add
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_index_0_2)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
                                     ()
-                                )
-                                ()
-                                .false.
-                                .false.
-                                .false.
-                                .false.
-                            )]
-                            []
-                        )
-                        (Assignment
-                            (Var 2 seen)
-                            (IntegerBinOp
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )]
+                                []
+                            )
+                            (Assignment
                                 (Var 2 seen)
-                                Add
-                                (ArraySize
-                                    (Var 2 d)
-                                    ()
+                                (IntegerBinOp
+                                    (Var 2 seen)
+                                    Add
+                                    (ArraySize
+                                        (Var 2 d)
+                                        ()
+                                        (Integer 4)
+                                        ()
+                                    )
                                     (Integer 4)
                                     ()
                                 )
-                                (Integer 4)
                                 ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
                             )
-                            ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (ReAlloc
-                            [((Var 2 d)
-                            [((ArrayBound
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                LBound
-                                ()
-                            )
-                            (ArraySize
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            ))]
-                            []
-                            ()
-                            ()
-                            ())]
-                            (IntegerCompare
+                            (DebugCheckArrayBounds
+                                (Var 2 d)
+                                [(Var 2 a)]
+                                [(0
+                                1
+                                1
                                 (ArraySize
                                     (Var 2 d)
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
                                 )
-                                NotEq
                                 (ArraySize
                                     (Var 2 a)
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
+                                ))]
+                                .false.
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_0_4)
+                                (ArrayBound
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
                                 )
-                                (Logical 4)
                                 ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
                             )
-                        )
-                        (DebugCheckArrayBounds
-                            (Var 2 d)
-                            [(Var 2 a)]
-                            [(0
-                            1
-                            1
-                            (ArraySize
-                                (Var 2 d)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
+                            (DoLoop
                                 ()
-                            )
-                            (ArraySize
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            ))]
-                            .false.
-                        )
-                        (Assignment
-                            (Var 2 __libasr_index_0_4)
-                            (ArrayBound
-                                (Var 2 a)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                LBound
-                                ()
-                            )
+                                ((Var 2 __libasr_index_0_3)
+                                (ArrayBound
+                                    (Var 2 d)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                (ArrayBound
+                                    (Var 2 d)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    UBound
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4) Decimal))
+                                [(Assignment
+                                    (ArrayItem
+                                        (Var 2 d)
+                                        [(()
+                                        (Var 2 __libasr_index_0_3)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (Var 2 __libasr_index_0_4)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                                (Assignment
+                                    (Var 2 __libasr_index_0_4)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_index_0_4)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )]
+                                []
+                            )]
+                            []
+                        )]
+                        [(DoLoop
                             ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )
-                        (DoLoop
-                            ()
-                            ((Var 2 __libasr_index_0_3)
-                            (ArrayBound
-                                (Var 2 d)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                LBound
-                                ()
-                            )
-                            (ArrayBound
-                                (Var 2 d)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                UBound
-                                ()
-                            )
+                            ((Var 2 i)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 n)
                             (IntegerConstant 1 (Integer 4) Decimal))
                             [(Assignment
                                 (ArrayItem
-                                    (Var 2 d)
-                                    [(()
-                                    (Var 2 __libasr_index_0_3)
-                                    ())]
-                                    (Real 4)
-                                    ColMajor
-                                    ()
-                                    .true.
-                                )
-                                (ArrayItem
                                     (Var 2 a)
                                     [(()
-                                    (Var 2 __libasr_index_0_4)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
                                     (Real 4)
                                     ColMajor
                                     ()
-                                    .true.
+                                    .false.
+                                )
+                                (RealBinOp
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    Add
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (DebugCheckArrayBounds
+                                (Var 2 c)
+                                [(Var 2 a)
+                                (Var 2 b)]
+                                [(1
+                                2
+                                1
+                                (ArraySize
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (ArraySize
+                                    (Var 2 b)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ))
+                                (0
+                                1
+                                1
+                                (ArraySize
+                                    (Var 2 c)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (ArraySize
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ))]
+                                .false.
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_0_1)
+                                (ArrayBound
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
                                 )
                                 ()
                                 .false.
@@ -1546,11 +1736,123 @@
                                 .false.
                             )
                             (Assignment
-                                (Var 2 __libasr_index_0_4)
-                                (IntegerBinOp
-                                    (Var 2 __libasr_index_0_4)
-                                    Add
+                                (Var 2 __libasr_index_0_2)
+                                (ArrayBound
+                                    (Var 2 b)
                                     (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (DoLoop
+                                ()
+                                ((Var 2 __libasr_index_0_)
+                                (ArrayBound
+                                    (Var 2 c)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                (ArrayBound
+                                    (Var 2 c)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    UBound
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4) Decimal))
+                                [(Assignment
+                                    (ArrayItem
+                                        (Var 2 c)
+                                        [(()
+                                        (Var 2 __libasr_index_0_)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    (RealBinOp
+                                        (ArrayItem
+                                            (Var 2 a)
+                                            [(()
+                                            (Var 2 __libasr_index_0_1)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Add
+                                        (ArrayItem
+                                            (Var 2 b)
+                                            [(()
+                                            (Var 2 __libasr_index_0_2)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                                (Assignment
+                                    (Var 2 __libasr_index_0_1)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_index_0_1)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                                (Assignment
+                                    (Var 2 __libasr_index_0_2)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_index_0_2)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )]
+                                []
+                            )
+                            (Assignment
+                                (Var 2 seen)
+                                (IntegerBinOp
+                                    (Var 2 seen)
+                                    Add
+                                    (ArraySize
+                                        (Var 2 d)
+                                        ()
+                                        (Integer 4)
+                                        ()
+                                    )
                                     (Integer 4)
                                     ()
                                 )
@@ -1559,10 +1861,143 @@
                                 .false.
                                 .false.
                                 .false.
+                            )
+                            (ReAlloc
+                                [((Var 2 d)
+                                [((ArrayBound
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                (ArraySize
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ))]
+                                []
+                                ()
+                                ()
+                                ())]
+                                (IntegerCompare
+                                    (ArraySize
+                                        (Var 2 d)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    NotEq
+                                    (ArraySize
+                                        (Var 2 a)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                            )
+                            (DebugCheckArrayBounds
+                                (Var 2 d)
+                                [(Var 2 a)]
+                                [(0
+                                1
+                                1
+                                (ArraySize
+                                    (Var 2 d)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (ArraySize
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                ))]
+                                .false.
+                            )
+                            (Assignment
+                                (Var 2 __libasr_index_0_4)
+                                (ArrayBound
+                                    (Var 2 a)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )
+                            (DoLoop
+                                ()
+                                ((Var 2 __libasr_index_0_3)
+                                (ArrayBound
+                                    (Var 2 d)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    LBound
+                                    ()
+                                )
+                                (ArrayBound
+                                    (Var 2 d)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    UBound
+                                    ()
+                                )
+                                (IntegerConstant 1 (Integer 4) Decimal))
+                                [(Assignment
+                                    (ArrayItem
+                                        (Var 2 d)
+                                        [(()
+                                        (Var 2 __libasr_index_0_3)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    (ArrayItem
+                                        (Var 2 a)
+                                        [(()
+                                        (Var 2 __libasr_index_0_4)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )
+                                (Assignment
+                                    (Var 2 __libasr_index_0_4)
+                                    (IntegerBinOp
+                                        (Var 2 __libasr_index_0_4)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                )]
+                                []
                             )]
                             []
                         )]
-                        []
                     )
                     (If
                         ()

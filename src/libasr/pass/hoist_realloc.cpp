@@ -96,6 +96,9 @@ The shape H gives may be computed by a function that reads only its
 arguments (see reads_only_its_arguments), such as the `count` of
 `c = pack(a, m)`, and a procedure does not change an INTENT(IN) dummy
 argument.
+
+What cannot move before its loop may still be removed from a copy of it,
+see version_loop.
 */
 
 namespace {
@@ -286,8 +289,12 @@ public:
     // The names of the loops nested in the statement around the statement
     // being visited (nullptr for a loop without a name).
     std::vector<char*> loops;
+    // Reallocations whose effects are not collected, or nullptr
+    const std::set<const ASR::stmt_t*>* ignored;
 
-    explicit EffectsCollector(Effects& e_) : e(e_) {}
+    explicit EffectsCollector(Effects& e_,
+            const std::set<const ASR::stmt_t*>* ignored_ = nullptr)
+        : e(e_), ignored(ignored_) {}
 
     void modify_value(ASR::expr_t* x) {
         if (x == nullptr) {
@@ -393,6 +400,9 @@ public:
     }
 
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
+        if (ignored != nullptr && ignored->count(&x.base) > 0) {
+            return;
+        }
         for (size_t i = 0; i < x.n_args; i++) {
             modify_allocation(x.m_args[i].m_a);
         }
@@ -772,6 +782,41 @@ public:
             return;
         }
         calls = true;
+    }
+};
+
+// The allocatable designators whose shape or bounds an expression inquires
+// about, which must be allocated for the expression to be evaluated; `ok` is
+// false when it inquires about a pointer, which may be disassociated.
+class InquiryCollector : public ASR::BaseWalkVisitor<InquiryCollector> {
+public:
+    std::vector<ASR::expr_t*> designators;
+    bool ok = true;
+
+    void inquire(ASR::expr_t* v) {
+        v = ASRUtils::get_past_array_physical_cast(v);
+        ASR::ttype_t* type = ASRUtils::expr_type(v);
+        if (ASRUtils::is_pointer(type)) {
+            ok = false;
+        } else if (ASRUtils::is_allocatable(type)) {
+            designators.push_back(v);
+        } else {
+            visit_expr(*v);
+        }
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t& x) {
+        inquire(x.m_v);
+        if (x.m_dim) {
+            visit_expr(*x.m_dim);
+        }
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+        inquire(x.m_v);
+        if (x.m_dim) {
+            visit_expr(*x.m_dim);
+        }
     }
 };
 
@@ -1507,20 +1552,365 @@ public:
             return;
         }
         std::vector<ASR::stmt_t*> hoisted = hoist_from(xx);
-        if (hoisted.empty()) {
+        std::vector<ASR::stmt_t*> versioned;
+        if (x.n_orelse == 0 && x.m_head.m_v != nullptr &&
+                designator_root(x.m_head.m_v) != nullptr) {
+            versioned = version_loop(&xx.base, xx.m_body, xx.n_body,
+                designator_root(x.m_head.m_v));
+        }
+        if (hoisted.empty() && versioned.empty()) {
             return;
         }
-        pass_result.reserve(al, hoisted.size() + 1);
+        pass_result.reserve(al, hoisted.size() + versioned.size() + 1);
         if (trips == 1) {
             for (ASR::stmt_t* s : hoisted) {
                 pass_result.push_back(al, s);
             }
-        } else {
+        } else if (!hoisted.empty()) {
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
             pass_result.push_back(al, b.If(runs_at_least_once(x, step),
                 hoisted, {}));
         }
-        pass_result.push_back(al, &xx.base);
+        push_loop(&xx.base, versioned);
+    }
+
+    // Appends `versioned` to pass_result, or `loop` when it is empty.
+    void push_loop(ASR::stmt_t* loop, const std::vector<ASR::stmt_t*>& versioned) {
+        if (versioned.empty()) {
+            pass_result.push_back(al, loop);
+        }
+        for (ASR::stmt_t* s : versioned) {
+            pass_result.push_back(al, s);
+        }
+    }
+
+    // Loop versioning. A reallocation that cannot move before its loop,
+    // because the loop may leave or stop before it, because it is
+    // conditional, or because its target has the TARGET attribute, still
+    // does nothing in any iteration when its target has, before the loop,
+    // the shape it gives it, and nothing else in the loop changes the
+    // allocation of its target or what its shape is computed from. The loop
+    // then runs without it, and as it was otherwise:
+    //
+    //     if (allocated(c) .and. size(c, 1) == size(a, 1)) then
+    //         do i = 1, n  ! without the reallocations
+    //     else
+    //         do i = 1, n  ! as it was
+    //     end if
+    //
+    // The test is evaluated even when the original loop would not reach the
+    // reallocation, so it reads nothing that may not exist: each array it
+    // inquires about is tested to be allocated first (and none is a pointer
+    // or an optional dummy argument), and it reads the value of no
+    // allocatable or pointer variable. A loop is versioned only when its
+    // body has no versioned loop, so that the code grows at most twofold.
+    std::set<const ASR::stmt_t*> versioned_loops;
+    static constexpr size_t max_versioned_statements = 200;
+
+    // Collects the reallocations anywhere in `body` into `out` and counts its
+    // statements in `count`; false if it has a statement that may not be
+    // duplicated or a versioned loop.
+    bool collect_versionable(ASR::stmt_t** body, size_t n_body,
+            std::vector<ASR::ReAlloc_t*>& out, size_t& count) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t* s = body[i];
+            if (versioned_loops.count(s) > 0 ||
+                    ++count > max_versioned_statements) {
+                return false;
+            }
+            switch (s->type) {
+                case ASR::stmtType::ReAlloc:
+                    out.push_back(ASR::down_cast<ASR::ReAlloc_t>(s));
+                    break;
+                case ASR::stmtType::If: {
+                    ASR::If_t* x = ASR::down_cast<ASR::If_t>(s);
+                    if (!collect_versionable(x->m_body, x->n_body, out, count) ||
+                            !collect_versionable(x->m_orelse, x->n_orelse, out, count)) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t* x = ASR::down_cast<ASR::DoLoop_t>(s);
+                    if (x->m_name != nullptr ||
+                            !collect_versionable(x->m_body, x->n_body, out, count) ||
+                            !collect_versionable(x->m_orelse, x->n_orelse, out, count)) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t* x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                    if (x->m_name != nullptr ||
+                            !collect_versionable(x->m_body, x->n_body, out, count) ||
+                            !collect_versionable(x->m_orelse, x->n_orelse, out, count)) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::stmtType::Assignment:
+                case ASR::stmtType::SubroutineCall:
+                case ASR::stmtType::Exit:
+                case ASR::stmtType::Cycle:
+                case ASR::stmtType::Return:
+                case ASR::stmtType::Stop:
+                case ASR::stmtType::ErrorStop:
+                case ASR::stmtType::Print:
+                case ASR::stmtType::FileWrite:
+                case ASR::stmtType::Allocate:
+                case ASR::stmtType::ExplicitDeallocate:
+                case ASR::stmtType::ImplicitDeallocate:
+                case ASR::stmtType::Associate:
+                case ASR::stmtType::Nullify:
+                case ASR::stmtType::DebugCheckArrayBounds:
+                    break;
+                default:
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    // Whether `s` may be an optional dummy argument, which may be absent.
+    // transform_optional_argument_functions makes an optional dummy
+    // required and adds a scalar logical argument after it, which tells
+    // whether it is present.
+    bool may_be_optional(ASR::symbol_t* s) {
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return true;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
+        if (v->m_presence == ASR::presenceType::Optional) {
+            return true;
+        }
+        if (v->m_intent == ASR::intentType::Local ||
+                v->m_intent == ASR::intentType::ReturnVar) {
+            return false;
+        }
+        ASR::asr_t* owner = v->m_parent_symtab->asr_owner;
+        if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return true;
+        }
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(owner));
+        for (size_t i = 0; i < f->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*f->m_args[i]) ||
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v != s) {
+                continue;
+            }
+            if (i + 1 == f->n_args) {
+                return false;
+            }
+            ASR::expr_t* next = f->m_args[i + 1];
+            return ASR::is_a<ASR::Var_t>(*next) &&
+                ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(next));
+        }
+        return true;
+    }
+
+    // The statement that sets `ok` to .false. unless the reallocation `r`
+    // does nothing, when `ok` is .true. before it: it tests that the target
+    // and every array whose shape `r` reads are allocated before it reads
+    // their shapes. Or nullptr when it cannot be evaluated before the loop
+    // safely.
+    ASR::stmt_t* does_nothing_test(ASR::ReAlloc_t* r, ASR::expr_t* ok) {
+        const ASR::alloc_arg_t& arg = r->m_args[0];
+        ASR::ttype_t* test_type = ASRUtils::expr_type(r->m_shape_differs);
+        if (!ASR::is_a<ASR::Logical_t>(*test_type) ||
+                ASRUtils::extract_kind_from_ttype_t(test_type) !=
+                    ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(ok))) {
+            return nullptr;
+        }
+        InquiryCollector c;
+        for (size_t i = 0; i < arg.n_dims; i++) {
+            if (arg.m_dims[i].m_start) {
+                c.visit_expr(*arg.m_dims[i].m_start);
+            }
+            if (arg.m_dims[i].m_length) {
+                c.visit_expr(*arg.m_dims[i].m_length);
+            }
+        }
+        c.visit_expr(*r->m_shape_differs);
+        if (!c.ok) {
+            return nullptr;
+        }
+        std::vector<ASR::expr_t*> guards;
+        guards.push_back(arg.m_a);
+        for (ASR::expr_t* e : c.designators) {
+            bool known = false;
+            for (ASR::expr_t* g : guards) {
+                known = known || PassUtils::same_expression(g, e);
+            }
+            if (!known) {
+                guards.push_back(e);
+            }
+        }
+        const Location& loc = r->base.base.loc;
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::stmt_t* test = b.Assignment(ok,
+            b.Not(d.duplicate_expr(r->m_shape_differs)));
+        for (size_t i = guards.size(); i-- > 0;) {
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, d.duplicate_expr(guards[i]));
+            ASR::expr_t* allocated = ASRUtils::EXPR(
+                ASR::make_IntrinsicImpureFunction_t(al, loc,
+                    static_cast<int64_t>(
+                        ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    args.p, args.n, 0, ASRUtils::expr_type(ok), nullptr));
+            test = b.If(allocated, {test}, {});
+        }
+        return b.If(ok, {b.Assignment(ok, b.bool_t(false,
+            ASRUtils::expr_type(ok))), test}, {});
+    }
+
+    // Whether the reallocation `h` does nothing in every iteration of a
+    // loop whose other statements have the effects `others`, once it does
+    // nothing before the loop.
+    bool can_version(const Hoistable& h, const Effects& others) {
+        if (others.unknown ||
+                intersects(h.targets, others.alloc_modified) ||
+                intersects(h.inquired, others.alloc_modified) ||
+                intersects(h.valued, others.value_modified)) {
+            return false;
+        }
+        for (ASR::symbol_t* s : h.valued) {
+            if (is_aliased(s) || may_be_optional(s) ||
+                    ASRUtils::is_allocatable(ASRUtils::symbol_type(s)) ||
+                    ASRUtils::is_pointer(ASRUtils::symbol_type(s)) ||
+                    (others.calls && !is_call_safe(s))) {
+                return false;
+            }
+        }
+        for (const SymbolSet* set : {&h.inquired, &h.targets}) {
+            for (ASR::symbol_t* s : *set) {
+                if (may_be_optional(s) || (others.calls && !is_call_safe(s))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Removes the statements `removed` from `body` and the bodies nested in
+    // it.
+    void strip(ASR::stmt_t**& body, size_t& n_body,
+            const std::set<const ASR::stmt_t*>& removed) {
+        Vec<ASR::stmt_t*> kept;
+        kept.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t* s = body[i];
+            if (removed.count(s) > 0) {
+                continue;
+            }
+            if (ASR::is_a<ASR::If_t>(*s)) {
+                ASR::If_t* x = ASR::down_cast<ASR::If_t>(s);
+                strip(x->m_body, x->n_body, removed);
+                strip(x->m_orelse, x->n_orelse, removed);
+            } else if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                ASR::DoLoop_t* x = ASR::down_cast<ASR::DoLoop_t>(s);
+                strip(x->m_body, x->n_body, removed);
+                strip(x->m_orelse, x->n_orelse, removed);
+            } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                ASR::WhileLoop_t* x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                strip(x->m_body, x->n_body, removed);
+                strip(x->m_orelse, x->n_orelse, removed);
+            }
+            kept.push_back(al, s);
+        }
+        body = kept.p;
+        n_body = kept.size();
+    }
+
+    // The statements of the loop `loop` with the body `body`, versioned, or
+    // none. `loop_var` is its loop variable or nullptr.
+    std::vector<ASR::stmt_t*> version_loop(ASR::stmt_t* loop,
+            ASR::stmt_t**& body, size_t& n_body, ASR::symbol_t* loop_var) {
+        std::vector<ASR::ReAlloc_t*> reallocs;
+        size_t count = 0;
+        if (!collect_versionable(body, n_body, reallocs, count) ||
+                reallocs.empty()) {
+            return {};
+        }
+        const Location& loc = loop->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        std::string ok_name = scope.symtab->get_unique_name(
+            "__libasr_reallocations_do_nothing");
+        ASR::symbol_t* ok_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, scope.symtab,
+                s2c(al, ok_name), nullptr, 0, ASR::intentType::Local,
+                nullptr, nullptr, ASR::storage_typeType::Default,
+                logical_type, nullptr, ASR::abiType::Source,
+                ASR::accessType::Public, ASR::presenceType::Required, false));
+        ASR::expr_t* ok = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ok_sym));
+        struct Candidate {
+            ASR::ReAlloc_t* r;
+            Hoistable h;
+            ASR::stmt_t* test;
+        };
+        std::vector<Candidate> candidates;
+        for (ASR::ReAlloc_t* r : reallocs) {
+            Candidate c{r, Hoistable(), nullptr};
+            if (!analyze_hoistable(&r->base, c.h) ||
+                    ASRUtils::is_character(*ASRUtils::expr_type(r->m_args[0].m_a))) {
+                continue;
+            }
+            c.test = does_nothing_test(r, ok);
+            if (c.test != nullptr) {
+                candidates.push_back(c);
+            }
+        }
+        // A reallocation that stays in the loop is among the effects that
+        // the others must not depend on.
+        while (!candidates.empty()) {
+            std::set<const ASR::stmt_t*> removed;
+            for (const Candidate& c : candidates) {
+                removed.insert(&c.r->base);
+            }
+            Effects others;
+            for (size_t i = 0; i < n_body; i++) {
+                EffectsCollector e(others, &removed);
+                e.visit_stmt(*body[i]);
+            }
+            if (loop_var != nullptr) {
+                others.value_modified.insert(loop_var);
+            }
+            std::vector<Candidate> kept;
+            for (const Candidate& c : candidates) {
+                if (can_version(c.h, others)) {
+                    kept.push_back(c);
+                }
+            }
+            if (kept.size() == candidates.size()) {
+                break;
+            }
+            candidates = kept;
+        }
+        if (candidates.empty()) {
+            return {};
+        }
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::stmt_t* fallback = d.duplicate_stmt(loop);
+        if (fallback == nullptr) {
+            return {};
+        }
+        scope.symtab->add_symbol(ok_name, ok_sym);
+        std::vector<ASR::stmt_t*> result;
+        result.push_back(b.Assignment(ok, b.bool_t(true, logical_type)));
+        std::set<const ASR::stmt_t*> removed;
+        for (const Candidate& c : candidates) {
+            result.push_back(c.test);
+            removed.insert(&c.r->base);
+        }
+        strip(body, n_body, removed);
+        ASR::stmt_t* versioned = b.If(ok, {loop}, {fallback});
+        versioned_loops.insert(versioned);
+        result.push_back(versioned);
+        return result;
     }
 
     // A DO WHILE loop runs its body at least once when its condition holds
@@ -1548,14 +1938,18 @@ public:
         test_vars.insert(test_sources.valued.begin(), test_sources.valued.end());
         std::vector<ASR::stmt_t*> hoisted = hoist_from_body(xx.m_body,
             xx.n_body, test_vars, nullptr);
-        if (hoisted.empty()) {
+        std::vector<ASR::stmt_t*> versioned = version_loop(&xx.base,
+            xx.m_body, xx.n_body, nullptr);
+        if (hoisted.empty() && versioned.empty()) {
             return;
         }
         ASRUtils::ExprStmtDuplicator d(al);
         ASRUtils::ASRBuilder b(al, x.base.base.loc);
-        pass_result.reserve(al, 2);
-        pass_result.push_back(al, b.If(d.duplicate_expr(x.m_test), hoisted, {}));
-        pass_result.push_back(al, &xx.base);
+        pass_result.reserve(al, versioned.size() + 2);
+        if (!hoisted.empty()) {
+            pass_result.push_back(al, b.If(d.duplicate_expr(x.m_test), hoisted, {}));
+        }
+        push_loop(&xx.base, versioned);
     }
 };
 
