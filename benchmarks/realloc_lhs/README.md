@@ -108,22 +108,21 @@ of the two is the cost of reallocation on assignment for that statement:
 
 | kernel | application assignment | explicit form |
 | --- | --- | --- |
-| `values` | `tensor_values = self%values_`, the allocatable result of a pure accessor (Fiats `tensor_s.f90:17`), 1-4 elements | `allocate(r(size(c))); r(:) = c` |
-| `tensor` | `tensor%values_ = values`, a component of a constructor's result (`tensor_s.f90:9`) | the same |
-| `batch` | `mini_batch%input_output_pairs_ = input_output_pairs` and `my_input_output_pairs = self%input_output_pairs_` (`mini_batch_s.f90:9`, `:17`), arrays of pairs of tensors | the same |
+| `values` * | `tensor_values = self%values_`, the allocatable result of a pure accessor (Fiats `tensor_s.f90:17`), 1-4 elements | `allocate(r(size(c))); r(:) = c` |
+| `tensor` * | `tensor%values_ = values`, a component of a constructor's result (`tensor_s.f90:9`) | the same |
+| `batch` * | `mini_batch%input_output_pairs_ = input_output_pairs` and `my_input_output_pairs = self%input_output_pairs_` (`mini_batch_s.f90:9`, `:17`), arrays of pairs of tensors | the same |
 | `inputs` * | `inputs = input_output_pairs%inputs()` in the training loop (`neural_network_s.F90:772`), an elemental function over the pairs, into an allocated array whose shape changes twice every 4294 iterations, as in Fiats | a size test, then `inputs(:) = ...` |
 | `inputsc` * | the same, the shape never changes | the same |
 | `minibatches` * | `mini_batches = [(mini_batch_t(...), bin = 1, n)]` in the epoch loop, allocated by the first iteration | `allocate` before the loop, `mini_batches(:) = [...]` |
-| `centers` | `centers_extended = [first*f(1), matmul(...), [(dot_product(...), row = ...)], matmul(...), final*f(N)]`, the result of Formal's interpolator (`interpolator_1D_s.F90:96`), 12-32 elements | `allocate(c(n)); c(:) = [...]` |
+| `centers` * | `centers_extended = [first*f(1), matmul(...), [(dot_product(...), row = ...)], matmul(...), final*f(N)]`, the result of Formal's interpolator (`interpolator_1D_s.F90:96`), 12-32 elements | `allocate(c(n)); c(:) = [...]` |
 | `harvest` | `harvest = 2.*(harvest - 0.5)` (Fiats tests), 40000 elements, always conforming | `harvest(:) = ...` |
 | `points` | `d(1)%values_ = dx + dy`, a rank-2 component of an array element, always conforming (Formal `vector_2D_s.F90:141`) | `d(1)%values_(:,:) = ...` |
 | `deepcopy` | `my_inputs = self%inputs_`, a derived-type copy (Fiats `input_output_pair_s.f90:19`); no array switch affects it | the component copied by `allocate` and `(:)` |
 | `string` | `lhs%string_ = rhs` in a defined assignment (julienne `string_s.F90:581`), 32 characters; a deferred-length character, which no array switch affects | `allocate(character(len=len(rhs)) :: s); s(:) = rhs` |
 
-Kernels marked * are those whose original form requires reallocation on
-assignment beyond a first assignment in a function (all the others, except
-`harvest`, `points`, `deepcopy` and `string`, first assign an unallocated
-result or component, which also requires it).
+The original forms of the kernels marked * require reallocation on
+assignment (they assign to an unallocated array, or change its shape); the
+others are valid without it.
 
 ```bash
 pixi run -e llvm11 bench_realloc_lhs --apps --placements 4 \
