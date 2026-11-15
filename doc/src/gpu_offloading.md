@@ -446,13 +446,13 @@ generates the device source. It never falls back to the CPU:
   may be `t(i) = f(...)`, where `f` gives the component of its result a
   size, `t(i) = tt(...)`, or `t(i)%v = ...`. That follows the rule every
   assignment follows: an allocatable scalar is always allocated or
-  reallocated automatically, but an allocatable array, including an
-  allocatable array component such as `t(i)%v`, only with
-  `--realloc-lhs-arrays`.
-  * With the option, the host allocates `t(i)%v` before the launch, or
+  reallocated automatically, and so is an allocatable array, including an
+  allocatable array component such as `t(i)%v`, unless
+  `--no-realloc-lhs-arrays` is given.
+  * With reallocation on assignment (the default), the host allocates `t(i)%v` before the launch, or
     reallocates it when it is allocated with another size.
-  * Without it, nothing is allocated, and the component has to be allocated
-    with the right size already. With bounds checking on (the default,
+  * With `--no-realloc-lhs-arrays`, nothing is allocated, and the component
+    has to be allocated with the right size already. With bounds checking on (the default,
     without `--fast`), the launch checks this with the same run-time check an
     assignment gets ("Array 't(i)%v' is not allocated", "Array shape mismatch
     in assignment"), pointing at the write. Allocation status and size are
@@ -494,11 +494,11 @@ generates the device source. It never falls back to the CPU:
       between them; writes in different branches of one `if` or
       `select case` each give their own size.
       In all these cases the host does not allocate the component.
-      With the option, with or without bounds checking, the type of `t`
+      With reallocation on assignment, with or without bounds checking, the type of `t`
       becomes a heap type instead: the value written is made on the device
       heap and stored into `t(i)` after the launch, with the size the loop
       gave it (see [Allocating on the device](#allocating-on-the-device)).
-      Without the option, with bounds checking on, the launch stops if the
+      With `--no-realloc-lhs-arrays` and bounds checking on, the launch stops if the
       component is not allocated, with the usual "Array ... is not
       allocated"; a wrong preallocated size is not detected, and without
       bounds checking nothing is checked and the kernel writes storage that
@@ -627,7 +627,7 @@ Which one is used is decided per array and per derived type:
   result of an elemental constructor, `pair_t(a(:), b(:))`), a value held in a
   component or in an element of an allocatable component of another value, or
   a local whose component's shape cannot be told on entry to its procedure --
-  or when, with `--realloc-lhs-arrays`, the loop gives a component of an
+  or when, with reallocation on assignment, the loop gives a component of an
   element of an array argument a size the host cannot tell before the launch
   (see the host preallocation above). A type with a component of a heap type
   is a heap type too. Every value of a heap type that device code creates -- a
@@ -706,8 +706,8 @@ leading part the heap state counts.
   procedure is passed as the section of the arena that holds its elements,
   which sequence association hands to the explicit-shape dummy the shared
   passes give every array dummy of device code.
-* An assignment to an allocatable array on the heap (with
-  `--realloc-lhs-arrays`, or an `allocate`) allocates it again when its
+* An assignment to an allocatable array on the heap (unless
+  `--no-realloc-lhs-arrays` is given), or an `allocate`, allocates it again when its
   shape changes. An assignment of a whole value of a heap type, which copies
   its allocatable components in Fortran, allocates them again and copies
   their elements, recursively. A new image -- a local, an `intent(out)`
@@ -736,7 +736,7 @@ host hands over, and it is never on the heap. Where it meets heap values:
   host allocates before the launch, and a flag per element. After the
   launch, and after a recorded `stop` would have ended the program, the host
   assigns every flagged element its image, as a Fortran assignment of the
-  whole value does whatever `--realloc-lhs-arrays` says: each allocatable
+  whole value does unless `--no-realloc-lhs-arrays` is given: each allocatable
   component of the element is deallocated, allocated again with the bounds
   of the image's descriptor, and its elements copied from the arena,
   recursively through components of heap types, by a host procedure the
@@ -1245,7 +1245,7 @@ An assignment is sent to the device when all of this holds:
 * Its target is a whole array of an intrinsic type -- a variable, a
   component, or an associate name bound to a whole array -- and the
   assignment cannot change its shape: not an allocatable it may reallocate
-  (with `--realloc-lhs-arrays`), not a pointer other than an associate name,
+  (unless `--no-realloc-lhs-arrays` is given), not a pointer other than an associate name,
   and not a defined assignment.
 * Its value is computed element by element: scalars, arrays of the target's
   rank, intrinsic operators, casts and elemental intrinsic functions of them,
