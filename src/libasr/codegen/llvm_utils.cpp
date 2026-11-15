@@ -10516,10 +10516,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                            "_Name_" + std::string(struct_t->m_name)),
             llvm_utils->i8_ptr));
         llvm::Type* struct_type = llvm_utils->getStructType(struct_t, module, false);
-        uint64_t struct_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(struct_type);
+        // A sizeof constant, folded with the target layout when the module is
+        // emitted: during codegen the module has the host layout, whose
+        // pointers are 64 bits also for wasm32.
         type_info_member_values.push_back(
             llvm::ConstantExpr::getIntToPtr(
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), struct_size),
+                llvm::ConstantExpr::getSizeOf(struct_type),
                 llvm_utils->i8_ptr));
         if (struct_t->m_parent) {
             // Pointer to parent struct's type-info
