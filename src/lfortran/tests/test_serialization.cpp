@@ -395,6 +395,12 @@ TEST_CASE("BinaryReader: string length past the end") {
     // The length plus the current position does not fit in 64 bits
     LCompilers::BinaryReader b(std::string(8, '\xff') + "test");
     CHECK_THROWS_AS(b.read_string(), LCompilers::LCompilersException);
+
+    // The length does not fit in a 32-bit size_t (as on WebAssembly)
+    LCompilers::BinaryWriter w;
+    w.write_int64((uint64_t(1) << 32) + 4);
+    LCompilers::BinaryReader b2(w.get_str() + "test");
+    CHECK_THROWS_AS(b2.read_string(), LCompilers::LCompilersException);
 }
 
 TEST_CASE("Topological sorting mod_int") {
