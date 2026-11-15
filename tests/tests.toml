@@ -3852,6 +3852,12 @@ pass = "array_op,hoist_realloc"
 options = "--realloc-lhs-arrays"
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_hoist_14.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/inline_loop_subroutine_calls_01.f90"
 fortran = true
 pass = "inline_loop_subroutine_calls"

@@ -103,7 +103,8 @@ loop gives it then, so the statements of the body may reallocate `w`, as
 The shape H gives may be computed by a function that reads only its
 arguments (see reads_only_its_arguments), such as the `count` of
 `c = pack(a, m)`, and a procedure does not change an INTENT(IN) dummy
-argument.
+argument. A call of such a function elsewhere in the body, such as of the
+implementation of `mod`, is no call that could change anything.
 
 What cannot move before its loop may still be removed from a copy of it,
 see version_loop.
@@ -317,6 +318,8 @@ struct Effects {
     }
 };
 
+bool reads_only_its_arguments(const ASR::Function_t& f);
+
 // Collects the Effects of a statement of a loop body, with everything
 // nested in it.
 class EffectsCollector : public ASR::BaseWalkVisitor<EffectsCollector> {
@@ -525,6 +528,15 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        // A function that computes its result from its arguments alone, as
+        // the implementations of intrinsic functions such as `mod` do, reads
+        // only its arguments and changes nothing.
+        ASR::symbol_t* f = past_external(x.m_name);
+        if (x.m_dt == nullptr && ASR::is_a<ASR::Function_t>(*f) &&
+                reads_only_its_arguments(*ASR::down_cast<ASR::Function_t>(f))) {
+            ASR::BaseWalkVisitor<EffectsCollector>::visit_FunctionCall(x);
+            return;
+        }
         e.reads_through_call = true;
         // A pure function changes none of its arguments (F2018 C1590) and
         // nothing else it can reach (C1594).
