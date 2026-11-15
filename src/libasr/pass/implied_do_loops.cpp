@@ -697,8 +697,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return false;
     }
 
-    // Whether the constructor gives its elements a string length that may
-    // differ from the string length of the target.
+    // Whether the constructor's string length may differ from the target's
     bool string_length_may_differ(ASR::ttype_t* target_type,
             ASR::ttype_t* constructor_type) {
         ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
@@ -726,6 +725,23 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return ASR::is_a<ASR::String_t>(*elem) &&
             ASR::down_cast<ASR::String_t>(elem)->m_len_kind ==
                 ASR::string_length_kindType::AssumedLength;
+    }
+
+    // Whether `len` uses the variable of an implied-do loop in `values`
+    bool uses_implied_do_variable(ASR::expr_t* len, ASR::expr_t** values,
+            size_t n_values) {
+        for (size_t i = 0; i < n_values; i++) {
+            if (values[i] == nullptr || !ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                continue;
+            }
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+            if ((ASR::is_a<ASR::Var_t>(*idl->m_var) && ASRUtils::expr_references_symbol(
+                    len, ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v)) ||
+                    uses_implied_do_variable(len, idl->m_values, idl->n_values)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
@@ -768,9 +784,16 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             resultvar2value[result_var] == &(x->base)) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
         }
-        if (is_result_var_fixed_size && string_length_may_differ(
-                ASRUtils::expr_type(result_var), x->m_type)) {
-            is_result_var_fixed_size = false;
+        if (is_result_var_fixed_size) {
+            ASR::ttype_t* constructor_elem = ASRUtils::extract_type(x->m_type);
+            ASR::expr_t* constructor_len = ASR::is_a<ASR::String_t>(*constructor_elem) ?
+                ASR::down_cast<ASR::String_t>(constructor_elem)->m_len : nullptr;
+            // A length set inside an implied-do loop cannot size the temporary
+            if (!(constructor_len && uses_implied_do_variable(constructor_len,
+                    x->m_args, x->n_args)) &&
+                    string_length_may_differ(ASRUtils::expr_type(result_var), x->m_type)) {
+                is_result_var_fixed_size = false;
+            }
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
