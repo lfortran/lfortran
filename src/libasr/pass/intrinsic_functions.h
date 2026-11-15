@@ -1292,7 +1292,8 @@ namespace Atan2 {
     /* Folds atan2(y, x) of kind 10 and 16 constants, which extract_value
        (double) does not read. `quad_eval` gives the kind 16 result; kind 10
        folds in long double as atan2(y, x) * num / den. Returns nullptr for
-       other kinds and non-constant arguments. */
+       other kinds, non-constant arguments and arguments whose kind differs
+       from the result kind. */
     static inline ASR::expr_t *eval_atan2_r10_r16(Allocator &al,
             const Location &loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
             lf_float128 (*quad_eval)(lf_float128, lf_float128),
@@ -1302,6 +1303,12 @@ namespace Atan2 {
             return nullptr;
         }
         int kind = ASRUtils::extract_kind_from_ttype_t(t);
+        if (ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(args[0])) != kind ||
+                ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(args[1])) != kind) {
+            return nullptr;
+        }
         if (kind == 16) {
             return ASRUtils::make_RealConstant_r16(al, loc, quad_eval(
                 ASRUtils::real_expr_get_r16(args[0]),
