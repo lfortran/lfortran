@@ -3632,6 +3632,7 @@ RUN(NAME realloc_lhs_33 LABELS gfortran llvm
 RUN(NAME realloc_lhs_34 LABELS gfortran llvm) # reallocation on assignment is the default (#10331)
 RUN(NAME realloc_lhs_35 LABELS gfortran llvm) # default reallocation of allocatable dummy arguments and function results (#10331)
 RUN(NAME realloc_lhs_36 LABELS gfortran llvm) # default reallocation of components, rank 2 shape changes and bounds (#10331)
+RUN(NAME realloc_lhs_37 LABELS gfortran llvm c) # the C backend reallocates only an unallocated array or one of another shape
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
