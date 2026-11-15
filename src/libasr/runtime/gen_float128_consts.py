@@ -120,6 +120,18 @@ out.append("static const uint64_t F128_INV_FACT[32][2] = {")
 for k in range(32):
     out.append("    %s," % cw(rn(Fr(1, math.factorial(k)))))
 out.append("};")
+out.append("/* 2^(j/32) for j = 0..31, as {hi, lo} pairs */")
+out.append("static const uint64_t F128_EXP2_TABLE[32][2][2] = {")
+for j in range(32):
+    h, l = dw(dec_to_fr((D(j) / 32 * D(2).ln()).exp()) if j else Fr(1))
+    out.append("    {%s, %s}," % (cw(h), cw(l)))
+out.append("};")
+out.append("/* 1/k! for k = 0..12, as {hi, lo} pairs */")
+out.append("static const uint64_t F128_INV_FACT_DW[13][2][2] = {")
+for k in range(13):
+    h, l = dw(Fr(1, math.factorial(k)))
+    out.append("    {%s, %s}," % (cw(h), cw(l)))
+out.append("};")
 out.append("/* 1/(2k+1) for k = 0..31 */")
 out.append("static const uint64_t F128_INV_ODD[32][2] = {")
 for k in range(32):

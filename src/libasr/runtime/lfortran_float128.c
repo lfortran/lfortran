@@ -1183,6 +1183,57 @@ static const uint64_t F128_INV_FACT[32][2] = {
     {0x3F933932C5047D60ULL, 0xE60CADED4C2989C5ULL},
     {0x3F8E434D2E783F5BULL, 0xC42E1EE46FA6BFC4ULL},
 };
+/* 2^(j/32) for j = 0..31, as {hi, lo} pairs */
+static const uint64_t F128_EXP2_TABLE[32][2][2] = {
+    {{0x3FFF000000000000ULL, 0x0000000000000000ULL}, {0x0000000000000000ULL, 0x0000000000000000ULL}},
+    {{0x3FFF059B0D315857ULL, 0x43AE7C548EB68CA4ULL}, {0x3F8B7FE53E3495F7ULL, 0xDF4BAF84A05E2A0DULL}},
+    {{0x3FFF0B5586CF9890ULL, 0xF6298B92B71842AAULL}, {0xBF8DF26F5BAFDD30ULL, 0xC53D757515EA64EBULL}},
+    {{0x3FFF11301D0125B5ULL, 0x0A4EBBF1AED9318DULL}, {0xBF8B53A33B854E99ULL, 0x11A8BD8E8794F00AULL}},
+    {{0x3FFF172B83C7D517ULL, 0xADCDF7C8C50EB14AULL}, {0x3F8DE480D5427FDFULL, 0x5D61A4FC8F09AF74ULL}},
+    {{0x3FFF1D4873168B9AULL, 0xA7805B8028990F08ULL}, {0xBF8D59D2F77E46E7ULL, 0xA64C3EB8A3798E48ULL}},
+    {{0x3FFF2387A6E75623ULL, 0x866C1FADB1C15CB6ULL}, {0xBF8DB13F35EA65BFULL, 0x482586C876FE1A85ULL}},
+    {{0x3FFF29E9DF51FDEEULL, 0x12C25D15F5A24AA4ULL}, {0xBF8D0D5DBD4FDCB7ULL, 0xF0049FD7E5024E5AULL}},
+    {{0x3FFF306FE0A31B71ULL, 0x52DE8D5A46305C86ULL}, {0xBF8B21343D8CBC9DULL, 0x60AFD0E50E934682ULL}},
+    {{0x3FFF371A7373AA9CULL, 0xAA7145502F454798ULL}, {0x3F8DF8F84945AFE7ULL, 0x1A66F90CBB4ECD85ULL}},
+    {{0x3FFF3DEA64C12342ULL, 0x235B41223E13D774ULL}, {0xBF89174D1F51F6EFULL, 0x660EAEEF034400C2ULL}},
+    {{0x3FFF44E086061892ULL, 0xD03136F409DF01A0ULL}, {0xBF8D0AC312DE3D92ULL, 0x1E9B8A8D2C2C336FULL}},
+    {{0x3FFF4BFDAD5362A2ULL, 0x71D4397AFEC42E21ULL}, {0xBF8BFC9C45D1EA63ULL, 0xA8607D1B4EC6CEB0ULL}},
+    {{0x3FFF5342B569D4F8ULL, 0x1DF0A83C49D86A64ULL}, {0xBF8A6331AB837ACFULL, 0xF49F6D7368D8777FULL}},
+    {{0x3FFF5AB07DD48542ULL, 0x958C93015191EB34ULL}, {0x3F8D76235F204A03ULL, 0x81A7EF6D8B2F8A0CULL}},
+    {{0x3FFF6247EB03A558ULL, 0x4B1F0FA06FD2DA43ULL}, {0xBF8D138C54182337ULL, 0x6291D44341893B79ULL}},
+    {{0x3FFF6A09E667F3BCULL, 0xC908B2FB1366EA95ULL}, {0x3F8DF4F8EB7B05D4ULL, 0x49DD426768BD642CULL}},
+    {{0x3FFF71F75E8EC5F7ULL, 0x3DD2370F2EF0ACD7ULL}, {0xBF8CA5E5A54E930BULL, 0xAEFA912CDD2876C1ULL}},
+    {{0x3FFF7A11473EB018ULL, 0x6D7D51023F6CDA1FULL}, {0x3F8D7BD0AD9A5DE5ULL, 0x814C7A086CD25F01ULL}},
+    {{0x3FFF82589994CCE1ULL, 0x28ACF88AFAB34A01ULL}, {0x3F8AED5ACB977581ULL, 0xEA65A737BFBFB9CBULL}},
+    {{0x3FFF8ACE5422AA0DULL, 0xB5BA7C55A192C9BBULL}, {0x3F8CF376B0F93999ULL, 0x8251A36C7686006EULL}},
+    {{0x3FFF93737B0CDC5EULL, 0x4F4501C3F2540A23ULL}, {0xBF8C681DA853F24EULL, 0x0BE6C880B22FDC00ULL}},
+    {{0x3FFF9C49182A3F09ULL, 0x01C7C46B071F2BE6ULL}, {0xBF8DC89486BCF7A3ULL, 0x9E4DBD2EA21633A8ULL}},
+    {{0x3FFFA5503B23E255ULL, 0xC8B424491CAF87BDULL}, {0xBF8DFEBD6FEB1FA3ULL, 0xF0420D402C4CE7E6ULL}},
+    {{0x3FFFAE89F995AD3AULL, 0xD5E8734D1773205AULL}, {0x3F8DFEF0EB99D7A9ULL, 0x102C58B5AE09D6D0ULL}},
+    {{0x3FFFB7F76F2FB5E4ULL, 0x6EAA7B081AB53C53ULL}, {0x3F8D532240F0D5B9ULL, 0x2D896AB309D868EEULL}},
+    {{0x3FFFC199BDD85529ULL, 0xC2220CB12A091BA6ULL}, {0x3F8D9E51125928D9ULL, 0x98490010E5CCE9F9ULL}},
+    {{0x3FFFCB720DCEF906ULL, 0x91503CBD1E949DB7ULL}, {0x3F8D8765566B032DULL, 0xB74FB56677E6ADB1ULL}},
+    {{0x3FFFD5818DCFBA48ULL, 0x725DA05AEB66E0DDULL}, {0xBF8D5829D82A98FDULL, 0xE240371F413970BAULL}},
+    {{0x3FFFDFC97337B9B5ULL, 0xEB968CAC39ED291BULL}, {0x3F8DC896A513BF56ULL, 0xED5492E49C943842ULL}},
+    {{0x3FFFEA4AFA2A490DULL, 0x9858F73A18F5DB30ULL}, {0x3F8BF86DEA20610CULL, 0xEEE13EB7BB006527ULL}},
+    {{0x3FFFF50765B6E454ULL, 0x0674F84B762862BBULL}, {0xBF859BFFC80EF2B5ULL, 0x17591DBDDA6B205BULL}},
+};
+/* 1/k! for k = 0..12, as {hi, lo} pairs */
+static const uint64_t F128_INV_FACT_DW[13][2][2] = {
+    {{0x3FFF000000000000ULL, 0x0000000000000000ULL}, {0x0000000000000000ULL, 0x0000000000000000ULL}},
+    {{0x3FFF000000000000ULL, 0x0000000000000000ULL}, {0x0000000000000000ULL, 0x0000000000000000ULL}},
+    {{0x3FFE000000000000ULL, 0x0000000000000000ULL}, {0x0000000000000000ULL, 0x0000000000000000ULL}},
+    {{0x3FFC555555555555ULL, 0x5555555555555555ULL}, {0x3F8A555555555555ULL, 0x5555555555555555ULL}},
+    {{0x3FFA555555555555ULL, 0x5555555555555555ULL}, {0x3F88555555555555ULL, 0x5555555555555555ULL}},
+    {{0x3FF8111111111111ULL, 0x1111111111111111ULL}, {0x3F84111111111111ULL, 0x1111111111111111ULL}},
+    {{0x3FF56C16C16C16C1ULL, 0x6C16C16C16C16C17ULL}, {0xBF82F49F49F49F49ULL, 0xF49F49F49F49F49FULL}},
+    {{0x3FF2A01A01A01A01ULL, 0xA01A01A01A01A01AULL}, {0x3F7AA01A01A01A01ULL, 0xA01A01A01A01A01AULL}},
+    {{0x3FEFA01A01A01A01ULL, 0xA01A01A01A01A01AULL}, {0x3F77A01A01A01A01ULL, 0xA01A01A01A01A01AULL}},
+    {{0x3FEC71DE3A556C73ULL, 0x38FAAC1C88E50017ULL}, {0x3F78DE3A556C7338ULL, 0xFAAC1C88E500171EULL}},
+    {{0x3FE927E4FB7789F5ULL, 0xC72EF016D3EA6679ULL}, {0xBF75B49E220FA3D2ULL, 0x6AA982C5AF3320B5ULL}},
+    {{0x3FE5AE64567F544EULL, 0x38FE747E4B837DC7ULL}, {0x3F71E202B72F11B6ULL, 0xAAAC590F0129FEF9ULL}},
+    {{0x3FE21EED8EFF8D89ULL, 0x7B544DA987ACFE85ULL}, {0xBF7004FF8C22D261ULL, 0x8E389BD2D523AAD7ULL}},
+};
 /* 1/(2k+1) for k = 0..31 */
 static const uint64_t F128_INV_ODD[32][2] = {
     {0x3FFF000000000000ULL, 0x0000000000000000ULL},
@@ -1438,6 +1489,11 @@ static f128_dw dw_add(f128_dw a, f128_dw b) {
 
 static f128_dw dw_neg(f128_dw a) { return dw_make(f_neg(a.hi), f_neg(a.lo)); }
 
+/* 2^n * a, exact unless a part underflows. */
+static f128_dw dw_scale(f128_dw a, int32_t n) {
+    return dw_make(f128_scale(a.hi, n), f128_scale(a.lo, n));
+}
+
 static f128_dw dw_mul(f128_dw a, f128_dw b) {
     f128_dw p = two_prod(a.hi, b.hi);
     lf_float128 e = f_add(f_mul(a.hi, b.lo), f_mul(a.lo, b.hi));
@@ -1475,44 +1531,71 @@ static lf_float128 f128_poly(lf_float128 x, const uint64_t (*c)[2],
     return r;
 }
 
-/* exp(r) - 1 for |r| <= 0.36 (Taylor series). */
-static lf_float128 f128_expm1_kernel(lf_float128 r) {
-    lf_float128 q = f128_poly(r, F128_INV_FACT, 2, 26, 1);
-    return f_add(r, f_mul(f_mul(r, r), q));
+/* sum_j x^j / k_j! with k_j = first + j * step, as a double-word: the
+ * terms through k_j = last in double-word Horner form, the following ones
+ * through k_j = end in single word. |x| < first + 1, so that each step
+ * s = 1/k! + x * s adds a smaller term to 1/k!. */
+static f128_dw f128_fact_series_dw(f128_dw x, int first, int last, int end,
+                                   int step) {
+    f128_dw s = dw_make(f128_poly(x.hi, F128_INV_FACT, last + step, end, step),
+                        f128_make_zero(0));
+    for (int k = last; k >= first; k -= step) {
+        f128_dw c = dw_from_bits(F128_INV_FACT_DW[k]);
+        f128_dw p = two_prod(x.hi, s.hi);
+        f128_dw t = fast_two_sum(c.hi, p.hi);
+        lf_float128 lo = f_add(t.lo, f_add(p.lo, c.lo));
+        lo = f_add(lo, f_add(f_mul(x.hi, s.lo), f_mul(x.lo, s.hi)));
+        s = fast_two_sum(t.hi, lo);
+    }
+    return s;
 }
 
-/* exp(xh + xl) = 2^n * (1 + p) for |xh| < 11500; returns p, sets n. */
-static lf_float128 f128_exp_core(lf_float128 xh, lf_float128 xl,
-                                 int32_t *n) {
-    *n = (int32_t)floor(f_dbl(xh) * 1.4426950408889634 + 0.5);
-    lf_float128 nf = f_int(*n);
-    /* n * LN2_HI98 is exact and so is the difference. */
-    lf_float128 r = f_sub(xh, f_mul(nf, f128_bits(F128_LN2_HI98)));
-    r = f_add(f_sub(r, f_mul(nf, f128_bits(F128_LN2_LO98))), xl);
-    return f128_expm1_kernel(r);
+/* exp(r) - 1 for |r| <= 0.35, as a double-word (Taylor series). The terms
+ * from r^9/9! on, below 2^-30 relative, are single-word, so the relative
+ * error is below 2^-140. */
+static f128_dw f128_expm1_kernel(f128_dw r) {
+    return dw_mul(r, f128_fact_series_dw(r, 1, 8, 26, 1));
 }
 
-/* exp(x.hi + x.lo), with r + r^2/2 + r^3/6 of exp(r) - 1 in double-word,
- * so that only the final rounding is of ulp size. */
+/* exp(x.hi + x.lo) = 2^n * m for |x.hi| < 22000, m in [0.98, 2) as a
+ * double-word with a relative error below 2^-140; sets n.
+ * x = (32 n + j) log(2)/32 + r with |r| <= log(2)/64, so that
+ * exp(x) = 2^n 2^(j/32) exp(r); exp(r) - 1 is a Taylor series whose terms
+ * from r^5/5! on (below 2^-32 relative) are single-word. */
+static f128_dw f128_exp_core(f128_dw x, int32_t *n) {
+    int32_t nj = (int32_t)floor(f_dbl(x.hi) * 46.16624130844683 + 0.5);
+    int j = ((nj % 32) + 32) % 32;
+    *n = (nj - j) / 32;
+    f128_dw l = dw_scale(dw_from_bits(F128_LN2), -5);
+    lf_float128 nf = f_int(nj);
+    f128_dw p = two_prod(nf, l.hi);
+    /* x.hi and p.hi are within a factor of 2 (or p.hi = 0), so the
+     * difference is exact. */
+    lf_float128 rh = f_sub(x.hi, p.hi);
+    f128_dw r = two_sum(rh, f_sub(f_sub(x.lo, p.lo), f_mul(nf, l.lo)));
+    f128_dw e = dw_mul(r, f128_fact_series_dw(r, 1, 4, 16, 1));
+    f128_dw t = dw_from_bits(F128_EXP2_TABLE[j]);
+    return dw_add(t, dw_mul(t, e));
+}
+
+/* exp(x.hi + x.lo), rounded once (twice if the result is subnormal). */
 static lf_float128 f128_exp_dw(f128_dw x) {
     double d = f_dbl(x.hi);
     if (d > 11357.0) return f128_make_inf(0);
     if (d < -11434.0) return f128_make_zero(0);
+    int32_t n;
+    f128_dw m = f128_exp_core(x, &n);
+    return f128_scale(m.hi, n);
+}
+
+/* exp(a) - 1 as a double-word, for |a| <= 100. */
+static f128_dw f128_expm1_dw(lf_float128 a) {
     lf_float128 zero = f128_make_zero(0);
-    int32_t n = (int32_t)floor(d * 1.4426950408889634 + 0.5);
-    lf_float128 nf = f_int(n);
-    /* n * LN2_HI98 is exact and so is the difference. */
-    lf_float128 rh = f_sub(x.hi, f_mul(nf, f128_bits(F128_LN2_HI98)));
-    f128_dw r = two_sum(rh,
-        f_sub(x.lo, f_mul(nf, f128_bits(F128_LN2_LO98))));
-    f128_dw r2 = dw_mul(r, r);
-    f128_dw r3 = dw_div(dw_mul(r2, r), dw_make(f_int(6), zero));
-    lf_float128 t = f_mul(f_mul(r2.hi, r2.hi),
-                          f128_poly(r.hi, F128_INV_FACT, 4, 26, 1));
-    f128_dw p = dw_add(r, dw_make(f128_scale(r2.hi, -1),
-                                  f128_scale(r2.lo, -1)));
-    p = dw_add(p, dw_add(r3, dw_make(t, zero)));
-    return f128_scale(dw_add(dw_make(f128_one(), zero), p).hi, n);
+    f128_dw x = dw_make(a, zero);
+    if (fabs(f_dbl(a)) < 0.35) return f128_expm1_kernel(x);
+    int32_t n;
+    f128_dw m = f128_exp_core(x, &n);
+    return dw_add(dw_scale(m, n), dw_make(f_neg(f128_one()), zero));
 }
 
 lf_float128 lf_f128_exp(lf_float128 a) {
@@ -1520,12 +1603,7 @@ lf_float128 lf_f128_exp(lf_float128 a) {
     if (p.is_nan) return a;
     if (p.is_inf) return p.sign ? f128_make_zero(0) : a;
     if (p.is_zero) return f128_one();
-    double d = f_dbl(a);
-    if (d > 11357.0) return f128_make_inf(0);
-    if (d < -11434.0) return f128_make_zero(0);
-    int32_t n;
-    lf_float128 q = f128_exp_core(a, f128_make_zero(0), &n);
-    return f128_scale(f_add(f128_one(), q), n);
+    return f128_exp_dw(dw_make(a, f128_make_zero(0)));
 }
 
 lf_float128 lf_f128_expm1(lf_float128 a) {
@@ -1533,15 +1611,10 @@ lf_float128 lf_f128_expm1(lf_float128 a) {
     if (p.is_nan || p.is_zero) return a;
     if (p.is_inf) return p.sign ? f_neg(f128_one()) : a;
     double d = f_dbl(a);
-    if (d > -0.35 && d < 0.35) return f128_expm1_kernel(a);
-    if (d > 11357.0) return f128_make_inf(0);
+    /* exp(a) > 2^144: the -1 does not change the rounding */
+    if (d > 100.0) return lf_f128_exp(a);
     if (d < -80.0) return f_neg(f128_one());
-    int32_t n;
-    lf_float128 q = f128_exp_core(a, f128_make_zero(0), &n);
-    if (n > 113) return f_sub(f128_scale(f_add(f128_one(), q), n), f128_one());
-    /* 2^n - 1 is exact for -113 <= n <= 113. */
-    lf_float128 two_n = f128_scale(f128_one(), n);
-    return f_add(f_sub(two_n, f128_one()), f128_scale(q, n));
+    return f128_expm1_dw(a).hi;
 }
 
 lf_float128 lf_f128_exp2(lf_float128 a) {
@@ -1554,10 +1627,9 @@ lf_float128 lf_f128_exp2(lf_float128 a) {
     if (d < -16495.0) return f128_make_zero(0);
     int32_t n = (int32_t)floor(d + 0.5);
     lf_float128 r = f_sub(a, f_int(n));   /* exact */
-    f128_dw y = dw_mul_q(dw_from_bits(F128_LN2), r);
     int32_t m;
-    lf_float128 q = f128_exp_core(y.hi, y.lo, &m);
-    return f128_scale(f_add(f128_one(), q), n + m);
+    f128_dw e = f128_exp_core(dw_mul_q(dw_from_bits(F128_LN2), r), &m);
+    return f128_scale(e.hi, n + m);
 }
 
 /* log(a) as a double-word, for a finite and positive.
@@ -1586,19 +1658,26 @@ static f128_dw f128_log_dw(lf_float128 a) {
     lf_float128 rr = f_sub(f_sub(f, pr.hi), pr.lo);
     rr = f_sub(rr, f_mul(uh, s.lo));
     lf_float128 ul = f_div(rr, s.hi);
-    /* 2*atanh(u) = 2u + 2u * v * (1/3 + v/5 + ...), v = u^2 */
-    lf_float128 v = f_mul(uh, uh);
-    lf_float128 tail = f_mul(f_mul(f128_scale(uh, 1), v),
-                             f128_poly(v, F128_INV_ODD, 1, 9, 1));
+    /* 2*atanh(u) = 2u + 2u^3/3 + 2u * v^2 * (1/5 + v/7 + ...), v = u^2,
+     * with 2u^3/3 (up to 2^-15 of the result) in double-word; ul adds
+     * 2 ul (1 + v). */
+    lf_float128 zero = f128_make_zero(0);
+    f128_dw v = two_prod(uh, uh);
+    f128_dw c3 = dw_div(dw_scale(dw_mul_q(v, uh), 1), dw_make(f_int(3), zero));
+    lf_float128 tail = f_mul(f_mul(f128_scale(uh, 1), f_mul(v.hi, v.hi)),
+                             f128_poly(v.hi, F128_INV_ODD, 2, 9, 1));
+    tail = f_add(tail, f_mul(f128_scale(ul, 1), f_add(f128_one(), v.hi)));
     f128_dw lf = dw_from_bits(F128_LOG_TABLE[i + 16]);
     lf_float128 kf = f_int(k);
     f128_dw s1 = two_sum(f_mul(kf, f128_bits(F128_LN2_HI98)), lf.hi);
     f128_dw s2 = two_sum(s1.hi, f128_scale(uh, 1));
+    f128_dw s3 = two_sum(s2.hi, c3.hi);
     lf_float128 lo = f_add(s1.lo, s2.lo);
+    lo = f_add(lo, s3.lo);
     lo = f_add(lo, f_mul(kf, f128_bits(F128_LN2_LO98)));
     lo = f_add(lo, lf.lo);
-    lo = f_add(lo, f_add(f128_scale(ul, 1), tail));
-    return fast_two_sum(s2.hi, lo);
+    lo = f_add(lo, f_add(c3.lo, tail));
+    return fast_two_sum(s3.hi, lo);
 }
 
 /* NaN, -inf, +inf or a result for the special arguments of log;
@@ -1630,16 +1709,16 @@ lf_float128 lf_f128_log10(lf_float128 a) {
     return dw_mul(f128_log_dw(a), dw_from_bits(F128_LOG10E)).hi;
 }
 
-/* log(1 + a) */
-static lf_float128 f128_log1p(lf_float128 a) {
-    f128_parts p = f128_unpack(a);
-    if (p.is_nan || p.is_zero) return a;
-    if (p.is_inf) return p.sign ? f128_make_nan() : a;
-    f128_dw s = two_sum(f128_one(), a);
-    lf_float128 r;
-    if (f128_log_special(s.hi, &r)) return r;
-    f128_dw l = f128_log_dw(s.hi);
-    return f_add(l.hi, f_add(l.lo, f_div(s.lo, s.hi)));
+/* log(a.hi + a.lo) as a double-word, for a.hi finite and positive. */
+static f128_dw f128_log_dw2(f128_dw a) {
+    return dw_add(f128_log_dw(a.hi),
+                  dw_make(f_div(a.lo, a.hi), f128_make_zero(0)));
+}
+
+/* log(1 + a.hi + a.lo) as a double-word, for a > -1. */
+static f128_dw f128_log1p_dw(f128_dw a) {
+    f128_dw s = two_sum(f128_one(), a.hi);
+    return f128_log_dw2(dw_make(s.hi, f_add(s.lo, a.lo)));
 }
 
 /* 0 if b is not an integer, 1 if it is an odd and 2 if an even integer.
@@ -1699,12 +1778,7 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
     f128_dw y = large ? dw_make(exp_v, f128_make_zero(0))
                       : dw_mul_q(f128_log_dw(ax), exp_v);
     if (large && (f128_cmp_internal(ax, one) < 0)) y.hi = f_neg(y.hi);
-    double d = f_dbl(y.hi);
-    if (d > 11357.0) return f128_make_inf(rsign);
-    if (d < -11434.0) return f128_make_zero(rsign);
-    int32_t n;
-    lf_float128 q = f128_exp_core(y.hi, y.lo, &n);
-    return f_sign(f128_scale(f_add(one, q), n), rsign);
+    return f_sign(f128_exp_dw(y), rsign);
 }
 
 /* ========================================================================
@@ -2179,25 +2253,20 @@ lf_float128 lf_f128_sinh(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan || p.is_inf || p.is_zero) return a;
     if (p.exp < -57) return a;              /* sinh(x) = x */
-    lf_float128 ax = lf_f128_abs(a), one = f128_one(), r;
+    lf_float128 ax = lf_f128_abs(a), zero = f128_make_zero(0), r;
     double d = f_dbl(ax);
-    if (d < 40.0) {
-        /* t = expm1(|x|): sinh = (2t - t^2/(t+1))/2 for |x| < 1,
-         * (t + t/(t+1))/2 otherwise */
-        lf_float128 t = lf_f128_expm1(ax);
-        lf_float128 tp1 = f_add(t, one);
-        if (d < 1.0) {
-            r = f_sub(f128_scale(t, 1), f_div(f_mul(t, t), tp1));
-        } else {
-            r = f_add(t, f_div(t, tp1));
-        }
-        r = f128_scale(r, -1);
+    if (d < 50.0) {
+        /* t = expm1(|x|): sinh = (t + t/(t+1))/2 */
+        f128_dw t = f128_expm1_dw(ax);
+        f128_dw tp1 = dw_add(t, dw_make(f128_one(), zero));
+        r = f128_scale(dw_add(t, dw_div(t, tp1)).hi, -1);
     } else if (d > 11358.0) {
         r = f128_make_inf(0);
     } else {
+        /* exp(-2|x|) < 2^-144 */
         int32_t n;
-        lf_float128 q = f128_exp_core(ax, f128_make_zero(0), &n);
-        r = f128_scale(f_add(one, q), n - 1);
+        f128_dw m = f128_exp_core(dw_make(ax, zero), &n);
+        r = f128_scale(m.hi, n - 1);
     }
     return f_sign(r, p.sign);
 }
@@ -2206,43 +2275,34 @@ lf_float128 lf_f128_cosh(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan) return a;
     if (p.is_inf) return f128_make_inf(0);
-    lf_float128 ax = lf_f128_abs(a), one = f128_one();
+    lf_float128 ax = lf_f128_abs(a), one = f128_one(), zero = f128_make_zero(0);
     if (p.is_zero || p.exp < -57) return one;
     double d = f_dbl(ax);
-    if (d < 0.3465) {
-        /* t = expm1(|x|): cosh = 1 + t^2/(2(1+t)) */
-        lf_float128 t = lf_f128_expm1(ax);
-        lf_float128 w = f128_scale(f_add(one, t), 1);
-        return f_add(one, f_div(f_mul(t, t), w));
-    }
-    if (d < 40.0) {
-        lf_float128 t = lf_f128_exp(ax);
-        return f_add(f128_scale(t, -1), f_div(f128_half(), t));
-    }
     if (d > 11358.0) return f128_make_inf(0);
     int32_t n;
-    lf_float128 q = f128_exp_core(ax, f128_make_zero(0), &n);
-    return f128_scale(f_add(one, q), n - 1);
+    f128_dw m = f128_exp_core(dw_make(ax, zero), &n);
+    /* exp(-2|x|) < 2^-144 */
+    if (d >= 50.0) return f128_scale(m.hi, n - 1);
+    /* (exp(|x|) + exp(-|x|))/2 */
+    f128_dw e = dw_scale(m, n);
+    f128_dw r = dw_add(e, dw_div(dw_make(one, zero), e));
+    return f128_scale(r.hi, -1);
 }
 
 lf_float128 lf_f128_tanh(lf_float128 a) {
     f128_parts p = f128_unpack(a);
-    lf_float128 one = f128_one(), two = f128_two(), r;
+    lf_float128 one = f128_one(), r;
     if (p.is_nan || p.is_zero) return a;
     if (p.is_inf) return f_sign(one, p.sign);
     if (p.exp < -57) return a;              /* tanh(x) = x */
     lf_float128 ax = lf_f128_abs(a);
-    double d = f_dbl(ax);
-    if (d > 40.0) {
+    if (f_dbl(ax) > 40.0) {
+        /* 1 - tanh(x) < 2^-114 */
         r = one;
-    } else if (d >= 1.0) {
-        /* 1 - 2/(expm1(2|x|) + 2) */
-        lf_float128 t = lf_f128_expm1(f128_scale(ax, 1));
-        r = f_sub(one, f_div(two, f_add(t, two)));
     } else {
-        /* -t/(t + 2), t = expm1(-2|x|) */
-        lf_float128 t = lf_f128_expm1(f_neg(f128_scale(ax, 1)));
-        r = f_neg(f_div(t, f_add(t, two)));
+        /* t/(t + 2), t = expm1(2|x|) */
+        f128_dw t = f128_expm1_dw(f128_scale(ax, 1));
+        r = dw_div(t, dw_add(t, dw_make(f128_two(), f128_make_zero(0)))).hi;
     }
     return f_sign(r, p.sign);
 }
@@ -2251,68 +2311,67 @@ lf_float128 lf_f128_asinh(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan || p.is_inf || p.is_zero) return a;
     if (p.exp < -57) return a;              /* asinh(x) = x */
-    lf_float128 ax = lf_f128_abs(a), one = f128_one(), r;
-    if (p.exp > 57) {
-        /* log(2|x|) */
-        f128_dw l = dw_add(f128_log_dw(ax),
-                           dw_from_bits(F128_LN2));
-        r = l.hi;
-    } else if (f_dbl(ax) > 2.0) {
-        /* log(2|x| + 1/(sqrt(x^2 + 1) + |x|)) */
-        lf_float128 s = lf_f128_sqrt(f_add(f_mul(ax, ax), one));
-        r = lf_f128_log(f_add(f128_scale(ax, 1), f_div(one, f_add(s, ax))));
+    lf_float128 ax = lf_f128_abs(a), zero = f128_make_zero(0);
+    f128_dw one = dw_make(f128_one(), zero), r;
+    if (p.exp > 66) {
+        /* log(2|x|), the next term 1/(4x^2) is below 2^-136 */
+        r = dw_add(f128_log_dw(ax), dw_from_bits(F128_LN2));
     } else {
-        /* log1p(|x| + x^2/(1 + sqrt(1 + x^2))) */
-        lf_float128 t = f_mul(ax, ax);
-        lf_float128 s = lf_f128_sqrt(f_add(one, t));
-        r = f128_log1p(f_add(ax, f_div(t, f_add(one, s))));
+        f128_dw x2 = two_prod(ax, ax);
+        f128_dw s = dw_sqrt(dw_add(x2, one));
+        if (f_dbl(ax) > 2.0) {
+            /* log(2|x| + 1/(sqrt(x^2 + 1) + |x|)) */
+            f128_dw q = dw_div(one, dw_add(s, dw_make(ax, zero)));
+            r = f128_log_dw2(dw_add(dw_make(f128_scale(ax, 1), zero), q));
+        } else {
+            /* log1p(|x| + x^2/(1 + sqrt(1 + x^2))) */
+            f128_dw q = dw_div(x2, dw_add(one, s));
+            r = f128_log1p_dw(dw_add(dw_make(ax, zero), q));
+        }
     }
-    return f_sign(r, p.sign);
+    return f_sign(r.hi, p.sign);
 }
 
 lf_float128 lf_f128_acosh(lf_float128 a) {
     f128_parts p = f128_unpack(a);
-    lf_float128 one = f128_one();
+    lf_float128 zero = f128_make_zero(0);
+    f128_dw one = dw_make(f128_one(), zero);
     if (p.is_nan) return a;
-    int c = f128_cmp_internal(a, one);
+    int c = f128_cmp_internal(a, one.hi);
     if (c < 0) return f128_make_nan();
-    if (c == 0) return f128_make_zero(0);
+    if (c == 0) return zero;
     if (p.is_inf) return a;
-    if (p.exp > 57) {
-        /* log(2x) */
-        return dw_add(f128_log_dw(a),
-                      dw_from_bits(F128_LN2)).hi;
+    if (p.exp > 66) {
+        /* log(2x), the next term -1/(4x^2) is below 2^-136 */
+        return dw_add(f128_log_dw(a), dw_from_bits(F128_LN2)).hi;
     }
     if (f_dbl(a) > 2.0) {
         /* log(2x - 1/(x + sqrt(x^2 - 1))) */
-        lf_float128 s = lf_f128_sqrt(f_sub(f_mul(a, a), one));
-        return lf_f128_log(f_sub(f128_scale(a, 1), f_div(one, f_add(a, s))));
+        f128_dw s = dw_sqrt(dw_add(two_prod(a, a), dw_neg(one)));
+        f128_dw q = dw_div(one, dw_add(s, dw_make(a, zero)));
+        return f128_log_dw2(dw_add(dw_make(f128_scale(a, 1), zero),
+                                   dw_neg(q))).hi;
     }
     /* log1p(t + sqrt(2t + t^2)), t = x - 1 (exact) */
-    lf_float128 t = f_sub(a, one);
-    lf_float128 s = lf_f128_sqrt(f_add(f128_scale(t, 1), f_mul(t, t)));
-    return f128_log1p(f_add(t, s));
+    lf_float128 t = f_sub(a, one.hi);
+    f128_dw s = dw_sqrt(dw_add(two_prod(t, t),
+                               dw_make(f128_scale(t, 1), zero)));
+    return f128_log1p_dw(dw_add(dw_make(t, zero), s)).hi;
 }
 
 lf_float128 lf_f128_atanh(lf_float128 a) {
     f128_parts p = f128_unpack(a);
-    lf_float128 one = f128_one(), r;
+    lf_float128 one = f128_one();
     if (p.is_nan || p.is_zero) return a;
     lf_float128 ax = lf_f128_abs(a);
     int c = f128_cmp_internal(ax, one);
     if (c > 0) return f128_make_nan();
     if (c == 0) return f128_make_inf(p.sign);
     if (p.exp < -57) return a;              /* atanh(x) = x */
-    lf_float128 t = f128_scale(ax, 1);
-    lf_float128 d = f_sub(one, ax);
-    if (f128_cmp_internal(ax, f128_half()) < 0) {
-        /* log1p(2|x| + 2|x|*|x|/(1 - |x|))/2 */
-        r = f128_log1p(f_add(t, f_div(f_mul(t, ax), d)));
-    } else {
-        /* log1p(2|x|/(1 - |x|))/2, 1 - |x| is exact */
-        r = f128_log1p(f_div(t, d));
-    }
-    return f_sign(f128_scale(r, -1), p.sign);
+    /* log1p(2|x|/(1 - |x|))/2 */
+    f128_dw q = dw_div(dw_make(f128_scale(ax, 1), f128_make_zero(0)),
+                       two_sum(one, f_neg(ax)));
+    return f_sign(f128_scale(f128_log1p_dw(q).hi, -1), p.sign);
 }
 
 /* ========================================================================
@@ -2438,12 +2497,6 @@ static int f128_factorial_exact(int64_t n, lf_float128 *out) {
     }
     *out = p;
     return 1;
-}
-
-/* log(a.hi + a.lo) as a double-word, for a.hi finite and positive. */
-static f128_dw f128_log_dw2(f128_dw a) {
-    return dw_add(f128_log_dw(a.hi),
-                  dw_make(f_div(a.lo, a.hi), f128_make_zero(0)));
 }
 
 /* log Γ(z) for 40 <= z < 2^200 (Stirling series; truncating it after
