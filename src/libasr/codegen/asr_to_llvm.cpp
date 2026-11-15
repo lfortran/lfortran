@@ -11230,10 +11230,43 @@ public:
     std::set<llvm::Value*> dummy_array_storage;
 
     // The globals of the module variables that are arrays with a descriptor
-    // (allocatable and pointer arrays): each holds a pointer to the
-    // descriptor of the variable, which only the code the compiler generates
-    // for the variable reads or writes, so these accesses are "descriptor".
+    // (allocatable and pointer arrays), and the parameters of the dummy
+    // arguments that are such arrays (see is_descriptor_pointer_dummy): each
+    // holds or points to the pointer to the descriptor of the variable,
+    // which only the code the compiler generates for the variable reads or
+    // writes, so these accesses are "descriptor". Without the tag a store to
+    // an element of any array could change the pointer, and LLVM would
+    // reload the descriptor of an allocatable dummy argument for every
+    // element of a loop that assigns to an array.
     std::set<llvm::Value*> descriptor_pointer_globals;
+
+    // Whether the parameter of the dummy argument `arg` is the address of
+    // the pointer to the descriptor of an allocatable or pointer array of
+    // the caller, which the caller stores in a variable, a module variable
+    // or a component: storage that holds nothing else, and that a
+    // conforming program cannot make an array element share (see
+    // tbaa_functions).
+    static bool is_descriptor_pointer_dummy(const ASR::Variable_t &arg) {
+        if (arg.m_storage == ASR::storage_typeType::ResultArgument ||
+                arg.m_value_attr || arg.m_is_volatile ||
+                arg.m_is_asynchronous || arg.n_codims != 0 ||
+                !ASRUtils::is_array(arg.m_type) ||
+                !LLVM::is_llvm_pointer(*arg.m_type) ||
+                !(ASRUtils::is_allocatable(arg.m_type) ||
+                  ASRUtils::is_pointer(arg.m_type)) ||
+                ASRUtils::is_assumed_rank_array(arg.m_type) ||
+                ASRUtils::extract_physical_type(arg.m_type) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+            return false;
+        }
+        ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(arg.m_type));
+        return ASR::is_a<ASR::Integer_t>(*element_type) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+            ASR::is_a<ASR::Real_t>(*element_type) ||
+            ASR::is_a<ASR::Complex_t>(*element_type) ||
+            ASR::is_a<ASR::Logical_t>(*element_type);
+    }
 
     static bool is_dummy_array_storage(const ASR::Variable_t &arg) {
         if (arg.m_storage == ASR::storage_typeType::ResultArgument ||
@@ -11707,6 +11740,11 @@ public:
                             is_dummy_array_storage(*arg)) {
                         dummy_array_storage.insert(&llvm_arg);
                         dummy_array_storage.insert(llvm_sym);
+                    }
+                    if (noalias_dummies && llvm_sym == &llvm_arg &&
+                            llvm_arg.getType()->isPointerTy() &&
+                            is_descriptor_pointer_dummy(*arg)) {
+                        descriptor_pointer_globals.insert(&llvm_arg);
                     }
                 }
             }
