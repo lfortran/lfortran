@@ -1385,6 +1385,16 @@ bool device_no_op(const ASR::stmt_t &s) {
     }
 }
 
+// The number of iterations of a loop the lanes share out, `end - start + 1`
+// with a constant start, and an end that is a constant or a scalar
+// parameter of the kernel (whose value at a launch is the argument).
+struct TripBound {
+    int64_t start;
+    // The end when `param` is null.
+    int64_t end;
+    ASR::symbol_t *param;
+};
+
 class LaneRewriter {
 public:
     LaneRewriter(Allocator &al_, KernelInfo &k_) : al(al_), k(k_) {}
@@ -1418,6 +1428,52 @@ public:
         bool column = false;
         collect_aliases(body, n_body);
         return pays(body, n_body, column) && column;
+    }
+
+    // The numbers of iterations of the loops the lanes share out, when every
+    // one is known at a launch: a constant, or a scalar parameter of the
+    // kernel (none, when one loop is not). A whole block of lanes per iteration (the lanes of a column kernel,
+    // or of a launch of few iterations) leaves most of its threads idle
+    // when such a loop is short, and pays for the barriers its threads wait
+    // at: a sum of 128 elements takes 29 microseconds on 256 lanes and 5 on
+    // a warp.
+    void loop_bounds(std::vector<TripBound> &bounds) {
+        for (auto &r : roles) {
+            if (r.second != Role::Distribute
+                    || !ASR::is_a<ASR::DoLoop_t>(*r.first)
+                    || collapse.count(r.first)) {
+                if (r.second == Role::Distribute) {
+                    bounds.clear();
+                    return;
+                }
+                continue;
+            }
+            auto *d = ASR::down_cast<ASR::DoLoop_t>(r.first);
+            int64_t start = 0, end = 0, step = 1;
+            if (d->m_head.m_increment && (!ASRUtils::extract_value(
+                    ASRUtils::expr_value(d->m_head.m_increment), step)
+                    || step != 1)) {
+                bounds.clear();
+                return;
+            }
+            if (!ASRUtils::extract_value(ASRUtils::expr_value(
+                    d->m_head.m_start), start)) {
+                bounds.clear();
+                return;
+            }
+            if (ASRUtils::extract_value(ASRUtils::expr_value(
+                    d->m_head.m_end), end)) {
+                bounds.push_back({start, end, nullptr});
+            } else if (ASR::is_a<ASR::Var_t>(*d->m_head.m_end)
+                    && k.params.count(root_of(d->m_head.m_end))
+                    && ASRUtils::is_integer(*ASRUtils::expr_type(
+                        d->m_head.m_end))) {
+                bounds.push_back({start, 0, root_of(d->m_head.m_end)});
+            } else {
+                bounds.clear();
+                return;
+            }
+        }
     }
 
     // Puts back the `do concurrent` loops decide() tried as loops one
@@ -3855,7 +3911,7 @@ ASR::symbol_t* add_lanes_parameter(Allocator &al, ASR::Function_t &kernel) {
 // distribute and nothing in the way.
 bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         const GpuDeviceCapabilities &caps, bool &any_size, int &lanes,
-        bool &scattered) {
+        bool &scattered, std::vector<TripBound> &bounds) {
     any_size = false;
     scattered = false;
     // A kernel whose warps already combine the accumulators of a reduction
@@ -3959,6 +4015,7 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     kernel.m_gpu->m_lanes_max = lanes == caps.lanes_per_iteration
         ? std::max({lanes, caps.lanes_block,
             any_size ? caps.lanes_column_block : 0}) : lanes;
+    rewrite.loop_bounds(bounds);
     rewrite.apply(kernel.m_body, kernel.n_body);
     return true;
 }
@@ -3980,7 +4037,8 @@ public:
         if (decided.insert(&kernel).second && kernel.m_gpu->m_lanes == nullptr) {
             bool any_size = false, scattered = false;
             int kernel_lanes = lanes;
-            give_lanes(al, kernel, caps, any_size, kernel_lanes, scattered);
+            give_lanes(al, kernel, caps, any_size, kernel_lanes, scattered,
+                kernel_bounds[&kernel]);
             kernel_lane_count[&kernel] = kernel_lanes;
             if (any_size) column_kernels.insert(&kernel);
             if (scattered) scattered_kernels.insert(&kernel);
@@ -4043,6 +4101,38 @@ public:
                 b.i_t(block_iterations_max, count_type)),
                 {b.Assignment(n, b.i32(kernel.m_gpu->m_lanes_max))}, {}));
         }
+        // When every loop the lanes share out is shorter than a few
+        // iterations per thread of a block, they are the lanes of a warp: a
+        // block would leave most of its threads idle.
+        {
+            ASR::expr_t *shorter = nullptr;
+            for (const TripBound &t : kernel_bounds[&kernel]) {
+                ASR::expr_t *end = nullptr;
+                if (t.param == nullptr) {
+                    end = b.i32(static_cast<int32_t>(t.end));
+                } else {
+                    for (size_t i = 0; i < x.n_args && i < kernel.n_args; i++) {
+                        if (ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(kernel.m_args[i])
+                                    ->m_v) == t.param) {
+                            end = x.m_args[i].m_value;
+                        }
+                    }
+                }
+                if (end == nullptr) continue;
+                ASR::expr_t *trips = b.Add(b.Sub(b.i2i_t(end, int4),
+                    b.i32(static_cast<int32_t>(t.start))), b.i32(1));
+                ASR::expr_t *test = b.Lt(trips, b.i32(
+                    static_cast<int32_t>(short_loop_threads
+                        * caps.threads_per_block)));
+                shorter = shorter ? b.And(shorter, test) : test;
+            }
+            if (shorter) {
+                pass_result.push_back(al, b.If(b.And(shorter,
+                    b.Gt(n, b.i32(lanes))),
+                    {b.Assignment(n, b.i32(lanes))}, {}));
+            }
+        }
         // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
         // from the thread index along the tile's width and height, which
         // lanes narrow to the iterations' (the lanes of one iteration share
@@ -4081,6 +4171,9 @@ private:
     std::set<ASR::Function_t*> decided;
     // The lanes of an iteration of each kernel that has them.
     std::map<ASR::Function_t*, int> kernel_lane_count;
+    // The numbers of iterations of the loops each kernel shares out that a
+    // launch knows (LaneRewriter::loop_bounds).
+    std::map<ASR::Function_t*, std::vector<TripBound>> kernel_bounds;
     // The kernels whose lanes pay for themselves however many iterations a
     // launch has (LaneRewriter::pays_at_any_size).
     std::set<ASR::Function_t*> column_kernels;
@@ -4092,6 +4185,9 @@ private:
     // The most iterations of a launch of such a kernel that get lanes:
     // 32 lanes of them stay within the 32-bit thread index.
     static constexpr int64_t wide_iterations_max = int64_t(1) << 24;
+    // A loop of fewer iterations than this many per thread of a block does
+    // not get a block of lanes.
+    static constexpr int64_t short_loop_threads = 8;
 };
 
 } // namespace
