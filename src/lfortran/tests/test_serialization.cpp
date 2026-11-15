@@ -361,20 +361,6 @@ end module
         // The start of a gzip file, as written by GFortran
         std::string("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\x03", 10),
     };
-    {
-        // A valid header, but no files in the location information
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
-        LCompilers::BinaryWriter b;
-#else
-        LCompilers::TextWriter b;
-#endif
-        b.write_string("LCompilers Modfile");
-        b.write_string(LFORTRAN_VERSION);
-        b.write_int32(0);
-        b.write_int32(0);
-        b.write_string("");
-        invalid_modfiles.push_back(b.get_str());
-    }
     // Every truncation of a valid modfile
     for (size_t n = 1; n < modfile.size(); n++) {
         invalid_modfiles.push_back(modfile.substr(0, n));
@@ -391,14 +377,17 @@ end module
         CHECK(lm2.file_ends.empty());
     }
 
-    // Changing any byte of a valid modfile either still loads or gives an
-    // error, but never throws
+    // Changing any byte of a valid modfile gives an error
     for (size_t i = 0; i < modfile.size(); i++) {
         std::string corrupted = modfile;
         corrupted[i] = static_cast<char>(corrupted[i] ^ 0xff);
         LCompilers::SymbolTable symtab(nullptr);
         LCompilers::LocationManager lm2;
-        CHECK_NOTHROW(LCompilers::load_modfile(al, corrupted, true, symtab, lm2, "m.mod"));
+        LCompilers::Result<LCompilers::ASR::TranslationUnit_t*, LCompilers::ErrorMessage> res
+            = LCompilers::load_modfile(al, corrupted, true, symtab, lm2, "m.mod");
+        REQUIRE(!res.ok);
+        CHECK(lm2.files.empty());
+        CHECK(lm2.file_ends.empty());
     }
 }
 

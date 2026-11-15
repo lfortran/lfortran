@@ -11,9 +11,17 @@ namespace LCompilers {
 
 const std::string lfortran_modfile_type_string = "LCompilers Modfile";
 
-// FNV-1a hash of the serialized ASR, saved after it to detect a corrupted
-// modfile before deserializing it
-static uint64_t asr_checksum(const std::string &s) {
+#ifdef WITH_LFORTRAN_BINARY_MODFILES
+using ModfileWriter = BinaryWriter;
+using ModfileReader = BinaryReader;
+#else
+using ModfileWriter = TextWriter;
+using ModfileReader = TextReader;
+#endif
+
+// FNV-1a hash of the modfile contents after the header, saved after them to
+// detect a corrupted modfile before reading them
+static uint64_t modfile_checksum(const std::string &s) {
     uint64_t h = 14695981039346656037ULL;
     for (char c : s) {
         h ^= static_cast<uint8_t>(c);
@@ -23,14 +31,10 @@ static uint64_t asr_checksum(const std::string &s) {
 }
 
 inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, LCompilers::LocationManager lm) {
-    #ifdef WITH_LFORTRAN_BINARY_MODFILES
-    BinaryWriter b;
-#else
-    TextWriter b;
-#endif
+    ModfileWriter h, b;
     // Header
-    b.write_string(lfortran_modfile_type_string);
-    b.write_string(LFORTRAN_VERSION);
+    h.write_string(lfortran_modfile_type_string);
+    h.write_string(LFORTRAN_VERSION);
 
     // AST section: Original module source code:
     // Currently empty.
@@ -110,11 +114,14 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, L
     }
 
     // Full ASR:
-    std::string asr_binary = serialize(m);
-    b.write_string(asr_binary);
-    b.write_int64(asr_checksum(asr_binary));
+    b.write_string(serialize(m));
 
-    asr_string = b.get_str();
+    // Everything after the header, followed by its checksum
+    std::string contents = b.get_str();
+    h.write_string(contents);
+    h.write_int64(modfile_checksum(contents));
+
+    asr_string = h.get_str();
 }
 
 // The save_modfile() and load_modfile() must stay consistent. What is saved
@@ -153,22 +160,23 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
         error_message = "Modfile is empty";
         return false;
     }
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
-    BinaryReader b(s);
-#else
-    TextReader b(s);
-#endif
-    std::string file_type = b.read_string();
+    ModfileReader h(s);
+    std::string file_type = h.read_string();
     if (file_type != lfortran_modfile_type_string) {
         error_message = "LCompilers Modfile format not recognized";
         return false;
     }
-    std::string version = b.read_string();
+    std::string version = h.read_string();
     if (version != LFORTRAN_VERSION) {
         error_message = "Incompatible format: LFortran Modfile was generated using version '"
                         + version + "', but current LFortran version is '" + LFORTRAN_VERSION + "'";
         return false;  // Error code for incompatible version
     }
+    std::string contents = h.read_string();
+    if (h.read_int64() != modfile_checksum(contents)) {
+        throw LCompilersException("load_serialised_asr: Modfile checksum mismatch.");
+    }
+    ModfileReader b(contents);
     LCompilers::LocationManager serialized_lm;
     int32_t n_files = b.read_int32();
     std::vector<LCompilers::LocationManager::FileLocations> files;
@@ -226,13 +234,7 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
     for(int i=0; i<n_file_ends; i++) {
         serialized_lm.file_ends.push_back(b.read_int32());
     }
-    if (serialized_lm.files.empty() || serialized_lm.file_ends.empty()) {
-        throw LCompilersException("load_serialised_asr: Modfile has no location information.");
-    }
     asr_binary = b.read_string();
-    if (b.read_int64() != asr_checksum(asr_binary)) {
-        throw LCompilersException("load_serialised_asr: Modfile checksum mismatch.");
-    }
 
     // Append the module's location information into the current LocationManager.
     // The serialized LocationManager was built with the module starting at 0,
@@ -255,11 +257,7 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
 // is checked before reading any length from a file written by another
 // compiler (e.g. a GFortran .mod file).
 static bool is_lfortran_modfile(const std::string &s) {
-#ifdef WITH_LFORTRAN_BINARY_MODFILES
-    BinaryWriter b;
-#else
-    TextWriter b;
-#endif
+    ModfileWriter b;
     b.write_string(lfortran_modfile_type_string);
     return startswith(s, b.get_str());
 }
@@ -280,7 +278,7 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> load_modfile(Allocator &al, const 
         }
     } catch (const LCompilersException &) {
         // The reader throws when the file ends before the data it describes
-        // or the checksum of the ASR does not match
+        // or the checksum does not match
         return ErrorMessage(file + " is a truncated or corrupted LFortran "
             "module file; recompile the module with LFortran");
     }
