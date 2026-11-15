@@ -1084,6 +1084,8 @@ static const uint64_t F128_LOG10E[2][2] = {{0x3FFDBCB7B1526E50ULL, 0xE32A6AB7555
 static const uint64_t F128_D2R[2][2] = {{0x3FF91DF46A2529D3ULL, 0x915C1D8BECDD290CULL}, {0xBF87D937FA428857ULL, 0xF250CA38D7EAB25AULL}};
 /* 180/pi, {hi, lo} */
 static const uint64_t F128_R2D[2][2] = {{0x4004CA5DC1A63C1FULL, 0x7B86152EA6FE81A5ULL}, {0xBF9241465BEAED04ULL, 0x1A07E91992EC5EB2ULL}};
+/* 2/sqrt(pi), {hi, lo} */
+static const uint64_t F128_TWO_OVER_SQRT_PI[2][2] = {{0x3FFF20DD750429B6ULL, 0xD11AE3A914FED7FEULL}, {0xBF8DE5DF5FB2F8A2ULL, 0x9E0C574632F53E7AULL}};
 /* log(1 + i/64) for i = -16..32, as {hi, lo} pairs */
 static const uint64_t F128_LOG_TABLE[49][2][2] = {
     {{0xBFFD269621134DB9ULL, 0x2783BEB7676C0AAAULL}, {0x3F8AEAE785B7919AULL, 0x55E432A52FB80667ULL}},
@@ -2374,29 +2376,54 @@ lf_float128 lf_f128_atanh(lf_float128 a) {
  * evaluated from the bottom, which converges quickly there.
  * ======================================================================== */
 
-static lf_float128 f128_erf_series(lf_float128 a) {
-    lf_float128 a2 = f_mul(a, a);
-    lf_float128 two_a2 = f128_scale(a2, 1);
-    lf_float128 term = a;
-    lf_float128 sum = a;
-    lf_float128 eps = lf_float128_from_str("1e-36");
-    for (int n = 1; n < 400; n++) {
-        term = f_div(f_mul(term, two_a2), lf_f128_from_int64(2 * (int64_t)n + 1));
-        sum = f_add(sum, term);
-        if (f128_cmp_internal(term, f_mul(sum, eps)) < 0) break;
+/* erf(a) for 0 <= a < 2, as a double-word. The terms are summed in
+ * double-word until they drop below 2^-30 of the sum, then in single word. */
+static f128_dw f128_erf_series_dw(lf_float128 a) {
+    lf_float128 zero = f128_make_zero(0);
+    f128_dw a2 = two_prod(a, a);
+    f128_dw x = dw_scale(a2, 1);
+    f128_dw term = dw_make(a, zero), sum = term;
+    int n = 1;
+    for (; n < 400; n++) {
+        term = dw_div(dw_mul(term, x), dw_make(f_int(2 * n + 1), zero));
+        sum = dw_add(sum, term);
+        if (f128_cmp_internal(term.hi, f128_scale(sum.hi, -30)) < 0) break;
     }
-    lf_float128 two_over_sqrt_pi = lf_float128_from_str("1.12837916709551257389615890312154517");
-    return f_mul(f_mul(two_over_sqrt_pi, lf_f128_exp(f_neg(a2))), sum);
+    lf_float128 t = term.hi, tail = zero;
+    for (n++; n < 400; n++) {
+        t = f_div(f_mul(t, x.hi), f_int(2 * n + 1));
+        tail = f_add(tail, t);
+        if (f128_cmp_internal(t, f128_scale(sum.hi, -120)) < 0) break;
+    }
+    sum = dw_add(sum, dw_make(tail, zero));
+    int32_t e;
+    f128_dw m = f128_exp_core(dw_neg(a2), &e);
+    return dw_scale(dw_mul(dw_mul(dw_from_bits(F128_TWO_OVER_SQRT_PI), m),
+                           sum), e);
 }
 
-static lf_float128 f128_erfc_fraction(lf_float128 a) {
+/* erfc(a) for 2 <= a <= 110, as a double-word. The continued fraction is
+ * truncated after 40 + 1600/a^2 levels (at most 400), which leaves a
+ * relative error below 2^-150; its last 24 levels are double-word. */
+static f128_dw f128_erfc_fraction_dw(lf_float128 a) {
+    lf_float128 zero = f128_make_zero(0);
     lf_float128 t = a;
-    for (int k = 400; k >= 1; k--) {
-        lf_float128 c = f128_scale(lf_f128_from_int64(k), -1);
-        t = f_add(a, f_div(c, t));
+    double d = f_dbl(a);
+    int levels = 40 + (int)(1600.0 / (d * d));
+    if (levels > 400) levels = 400;
+    for (int k = levels; k > 24; k--) {
+        t = f_add(a, f_div(f128_scale(f_int(k), -1), t));
     }
-    lf_float128 sqrt_pi = lf_float128_from_str("1.77245385090551602729816748334114518");
-    return f_div(lf_f128_exp(f_neg(f_mul(a, a))), f_mul(sqrt_pi, t));
+    f128_dw td = dw_make(t, zero);
+    for (int k = 24; k >= 1; k--) {
+        f128_dw c = dw_make(f128_scale(f_int(k), -1), zero);
+        td = dw_add(dw_make(a, zero), dw_div(c, td));
+    }
+    int32_t e;
+    f128_dw m = f128_exp_core(dw_neg(two_prod(a, a)), &e);
+    /* 1/sqrt(pi) */
+    f128_dw c = dw_scale(dw_from_bits(F128_TWO_OVER_SQRT_PI), -1);
+    return dw_scale(dw_div(dw_mul(c, m), td), e);
 }
 
 lf_float128 lf_f128_erf(lf_float128 a) {
@@ -2405,35 +2432,51 @@ lf_float128 lf_f128_erf(lf_float128 a) {
     if (p.is_nan || p.is_zero) return a;
     lf_float128 ax = lf_f128_abs(a);
     lf_float128 r;
-    if (f128_cmp_internal(ax, lf_f128_from_int64(2)) < 0) {
-        r = f128_erf_series(ax);
-    } else if (f128_cmp_internal(ax, lf_f128_from_int64(7)) > 0) {
+    if (p.exp < -57) {
+        /* 2x/sqrt(pi) (1 - x^2/3 + ...); x^4/10 < 2^-228. x is scaled
+         * by 2^128 so that the low word does not underflow. */
+        f128_dw k = dw_from_bits(F128_TWO_OVER_SQRT_PI);
+        f128_dw c = dw_mul_q(k, f128_scale(ax, 128));
+        lf_float128 d = f_div(f_mul(c.hi, f_mul(ax, ax)), f_int(3));
+        r = f_add(c.hi, f_sub(c.lo, d));
+        if (f128_unpack(r).exp >= -16382 + 128) {
+            r = f128_scale(r, -128);
+        } else {
+            /* subnormal result: round the unscaled product only once */
+            r = dw_mul_q(k, ax).hi;
+        }
+    } else if (f128_cmp_internal(ax, f_int(2)) < 0) {
+        r = f128_erf_series_dw(ax).hi;
+    } else if (f128_cmp_internal(ax, f_int(9)) > 0) {
+        /* erfc(9) < 2^-120 */
         r = one;
     } else {
-        r = f_sub(one, f128_erfc_fraction(ax));
+        r = dw_add(dw_make(one, f128_make_zero(0)),
+                   dw_neg(f128_erfc_fraction_dw(ax))).hi;
     }
     return f_sign(r, p.sign);
 }
 
 lf_float128 lf_f128_erfc(lf_float128 a) {
     f128_parts p = f128_unpack(a);
-    lf_float128 one = f128_one();
+    lf_float128 zero = f128_make_zero(0);
     if (p.is_nan) return a;
+    if (p.is_zero) return f128_one();
     lf_float128 ax = lf_f128_abs(a);
-    lf_float128 r;
-    if (p.is_zero) {
-        return one;
-    } else if (f128_cmp_internal(ax, lf_f128_from_int64(2)) < 0) {
-        r = f_sub(one, f128_erf_series(ax));
-    } else if (f128_cmp_internal(ax, lf_f128_from_int64(110)) > 0) {
-        r = lf_f128_from_int64(0);
+    f128_dw r;
+    if (f128_cmp_internal(ax, f_int(2)) < 0) {
+        /* 1 - erf(x) */
+        r = f128_erf_series_dw(ax);
+        return dw_add(dw_make(f128_one(), zero), p.sign ? r : dw_neg(r)).hi;
+    }
+    if (f128_cmp_internal(ax, f_int(110)) > 0) {
+        r = dw_make(zero, zero);
     } else {
-        r = f128_erfc_fraction(ax);
+        r = f128_erfc_fraction_dw(ax);
     }
-    if (p.sign) {
-        r = f_sub(lf_f128_from_int64(2), r);
-    }
-    return r;
+    /* erfc(-x) = 2 - erfc(x) */
+    if (p.sign) return dw_add(dw_make(f128_two(), zero), dw_neg(r)).hi;
+    return r.hi;
 }
 
 /* ========================================================================

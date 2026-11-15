@@ -3,8 +3,10 @@
 Section K of lfortran_float128.c starts with a block of constants and tables
 (from "pi/2 = PIO2_1 + PIO2_2 + PIO2_3" through F128_TWO_OVER_PI_BITS). This
 script prints that block. It uses only the Python standard library: exact
-rational arithmetic (fractions), 140-digit decimal logarithms (decimal) and
-integer arithmetic for the bits of 2/pi. Every value is rounded to nearest
+rational arithmetic (fractions), 140-digit decimal logarithms, exponentials
+and square roots (decimal; e.g. 2^(j/32) and 2/sqrt(pi)), Euler-Maclaurin
+sums with exact Bernoulli numbers (Euler's constant and zeta(k)) and integer
+arithmetic for the bits of 2/pi. Every value is rounded to nearest
 (ties to even) to binary128; a {hi, lo} pair holds the rounded value and the
 rounded remainder. The script is not run by the build. To regenerate the
 block, run
@@ -100,6 +102,7 @@ const_dw("F128_LOG2E", "1/log(2)", 1/ln2)
 const_dw("F128_LOG10E", "1/log(10)", 1/ln10)
 const_dw("F128_D2R", "pi/180", pi/180)
 const_dw("F128_R2D", "180/pi", 180/pi)
+const_dw("F128_TWO_OVER_SQRT_PI", "2/sqrt(pi)", dec_to_fr(2 / pi_d.sqrt()))
 out.append("/* log(1 + i/64) for i = -16..32, as {hi, lo} pairs */")
 out.append("static const uint64_t F128_LOG_TABLE[49][2][2] = {")
 for i in range(-16, 33):
