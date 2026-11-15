@@ -1212,7 +1212,7 @@ public:
         }
         ASR::ttype_t* type = ASRUtils::expr_type(arg.m_a);
         if (!is_reallocatable_element_type(type) || ASRUtils::is_character(*type) ||
-                arg.n_dims != ASRUtils::extract_n_dims_from_ttype(type)) {
+                arg.n_dims != static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(type))) {
             return nullptr;
         }
         ASR::symbol_t* source = nullptr;
@@ -1233,7 +1233,7 @@ public:
                 return nullptr;
             }
             source = v;
-            if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::symbol_type(v)) != arg.n_dims) {
+            if (static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(ASRUtils::symbol_type(v))) != arg.n_dims) {
                 return nullptr;
             }
         }
