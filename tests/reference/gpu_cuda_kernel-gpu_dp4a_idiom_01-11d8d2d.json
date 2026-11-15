@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_dp4a_idiom_01-11d8d2d",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_dp4a_idiom_01.f90",
+    "infile_hash": "1fd24e2af22cbe82409b8221daf477b3fc2ede7526f2f9a863bea313",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_dp4a_idiom_01-11d8d2d.stdout",
+    "stdout_hash": "dab7943b13da38ba9a71b8e539e641d8a0c162f712092d57a126fe82",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

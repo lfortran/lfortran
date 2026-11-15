@@ -1316,6 +1316,30 @@ host computes. A power whose base can only be evaluated where it is written
 (in the test of a `do while`, or an operand of `.and.` that need not be
 evaluated) is kept as it is, unless its base is a variable or an element.
 
+### Packed byte dot product (`dp4a`)
+
+With `--gpu=cuda` on an NVIDIA GPU, the portable integer dot product of the
+four signed bytes of two `integer(4)` values plus a third,
+
+```fortran
+r = c + shifta(shiftl(a, 24), 24) * shifta(shiftl(b, 24), 24) &
+      + shifta(shiftl(a, 16), 24) * shifta(shiftl(b, 16), 24) &
+      + shifta(shiftl(a,  8), 24) * shifta(shiftl(b,  8), 24) &
+      + shifta(a, 24) * shifta(b, 24)
+```
+
+is written as one call of the `__dp4a` instruction (`gpu_dp4a`), whether it
+is in a function of its own, in the loop or inlined into it. The results
+are the same as the plain arithmetic's, except that the instruction wraps
+where the sum overflows. The additions may be associated any way, the
+factors of a product may be swapped, `a` and `b` may be any expressions
+(the same in all four products, compared node for node) and every other term
+is added to `c`. The four left shifts must be 24, 16, 8 and 0 (a shift by
+0 may be left out), once each. Other spellings (`ishft`, `ibits`,
+`int(..., int8)`), other kinds, and sums with a missing or repeated byte
+position are left as they are. HIP, Metal and the CPU emulation (`cuda_cpu`)
+do not have the instruction and compile the arithmetic.
+
 ### Loads in flight
 
 A GPU hides the latency of memory with many threads, each waiting for a
