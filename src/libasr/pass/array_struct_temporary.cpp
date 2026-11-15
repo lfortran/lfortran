@@ -2892,6 +2892,37 @@ bool is_numeric_array_of_element_type(ASR::ttype_t* x, ASR::ttype_t* y) {
             ASRUtils::extract_kind_from_ttype_t(y_element);
 }
 
+// Whether `x` and `y` are arrays of the same derived type, neither
+// polymorphic nor with final subroutines anywhere in it, so that an
+// allocatable array result `x` can be moved into an allocatable target `y`
+// instead of being copied into it element by element (see
+// make_move_unless_conforming in subroutine_from_function.cpp).
+bool is_movable_struct_array_of_type(ASR::expr_t* x, ASR::expr_t* y) {
+    ASR::ttype_t* x_type = ASRUtils::expr_type(x);
+    ASR::ttype_t* y_type = ASRUtils::expr_type(y);
+    if (!ASRUtils::is_array(x_type) || !ASRUtils::is_array(y_type) ||
+            ASRUtils::extract_n_dims_from_ttype(x_type) !=
+                ASRUtils::extract_n_dims_from_ttype(y_type)) {
+        return false;
+    }
+    ASR::ttype_t* x_element = ASRUtils::extract_type(x_type);
+    ASR::ttype_t* y_element = ASRUtils::extract_type(y_type);
+    if (!ASR::is_a<ASR::StructType_t>(*x_element) ||
+            !ASR::is_a<ASR::StructType_t>(*y_element) ||
+            ASRUtils::is_class_type(x_element) ||
+            ASRUtils::is_class_type(y_element)) {
+        return false;
+    }
+    ASR::symbol_t* x_sym = ASRUtils::get_struct_sym_from_struct_expr(x);
+    ASR::symbol_t* y_sym = ASRUtils::get_struct_sym_from_struct_expr(y);
+    if (x_sym == nullptr || y_sym == nullptr) {
+        return false;
+    }
+    x_sym = ASRUtils::symbol_get_past_external(x_sym);
+    return x_sym == ASRUtils::symbol_get_past_external(y_sym) &&
+        !ASRUtils::struct_needs_finalization(x_sym);
+}
+
 // Whether another variable may name the storage of `var` by storage
 // association: `var` is in a common block (a view of the same block in
 // another scoping unit, accessible by host or use association, is a different
@@ -6181,16 +6212,19 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             // reallocated target itself. A target that is not allocatable
             // is not reallocated, nor is the target of an assignment that
             // does not reallocate (such as `x(:) = v`, see
-            // full_section_target.cpp). An allocatable numeric result is returned
-            // into a temporary anyway, which subroutine_from_function moves
-            // into an allocatable target of its type.
+            // full_section_target.cpp). An allocatable numeric result, or one of
+            // a derived type that is not finalized, is returned into a
+            // temporary anyway, which subroutine_from_function moves into an
+            // allocatable target of its type.
             ASR::ttype_t* target_type = ASRUtils::expr_type(
                 ASRUtils::get_past_array_physical_cast(target));
             bool result_moved_into_target = !inside_where &&
                 ASRUtils::is_allocatable(x->m_type) &&
                 ASRUtils::is_allocatable(target_type) &&
-                is_numeric_array_of_element_type(x->m_type, target_type) &&
-                is_numeric_array_of_element_type(target_type, x->m_type);
+                ((is_numeric_array_of_element_type(x->m_type, target_type) &&
+                  is_numeric_array_of_element_type(target_type, x->m_type)) ||
+                 is_movable_struct_array_of_type(*current_expr,
+                    ASRUtils::get_past_array_physical_cast(target)));
             bool reallocated_from_temporary = realloc_lhs && assignment_realloc_lhs &&
                 ASRUtils::is_allocatable(target_type) &&
                 !result_moved_into_target &&

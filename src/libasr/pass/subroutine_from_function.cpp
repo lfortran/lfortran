@@ -1419,6 +1419,22 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                  ASR::is_a<ASR::Logical_t>(*element));
         }
 
+        // Whether `x` is an array of a derived type that is neither
+        // polymorphic nor finalized, whose elements, with their
+        // allocatable components, a move takes along unchanged
+        static bool is_movable_struct_array(ASR::expr_t* x) {
+            ASR::ttype_t* type = ASRUtils::expr_type(x);
+            ASR::ttype_t* element = ASRUtils::extract_type(type);
+            if (!ASRUtils::is_array(type) ||
+                    !ASR::is_a<ASR::StructType_t>(*element) ||
+                    ASRUtils::is_class_type(element)) {
+                return false;
+            }
+            ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(x);
+            return sym != nullptr && !ASRUtils::struct_needs_finalization(
+                ASRUtils::symbol_get_past_external(sym));
+        }
+
         // `move`, the assignment of an allocatable array result, returned
         // into a temporary, to an allocatable variable with reallocation,
         // moves the temporary into the variable, which then has lower
@@ -1738,7 +1754,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
                     if (value_and_target_allocatable_array &&
                             assignment->m_realloc_lhs &&
-                            is_numeric_or_logical_array(assignment->m_target)) {
+                            (is_numeric_or_logical_array(assignment->m_target) ||
+                             is_movable_struct_array(assignment->m_target))) {
                         move_unless_conforming = make_move_unless_conforming(
                             assignment->base.base.loc, *assignment);
                     } else if (value_and_target_allocatable_array) {
