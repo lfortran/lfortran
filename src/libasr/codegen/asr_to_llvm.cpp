@@ -19799,6 +19799,42 @@ public:
                     llvm::Function *fn_pow = LLVM::get_or_declare_function(
                         *module, func_name, base_type, { base_type, exponent_type });
                     tmp = builder->CreateCall(fn_pow, {left_val, right_val});
+                    if (func_name.rfind("llvm.powi.f", 0) == 0) {
+                        // llvm.powi computes x**(-n) as 1/x**n, which is 0
+                        // or infinite where x**(-n) is a finite subnormal or
+                        // normal number, as 2.0**(-1074); pow is exact there.
+                        llvm::Value* y = tmp;
+                        llvm::BasicBlock* start = builder->GetInsertBlock();
+                        llvm::Function* fn = start->getParent();
+                        llvm::BasicBlock* by_pow = llvm::BasicBlock::Create(context,
+                            "pow_negative_exponent", fn);
+                        llvm::BasicBlock* done = llvm::BasicBlock::Create(context,
+                            "pow_done", fn);
+                        llvm::Value* zero = llvm::ConstantFP::get(base_type, 0.0);
+                        llvm::Value* inf = llvm::ConstantFP::getInfinity(base_type);
+                        llvm::Value* abs_y = builder->CreateSelect(
+                            builder->CreateFCmpOLT(y, zero), builder->CreateFNeg(y), y);
+                        llvm::Value* out_of_range = builder->CreateOr(
+                            builder->CreateFCmpOEQ(y, zero), builder->CreateFCmpOEQ(abs_y, inf));
+                        llvm::Value* negative = builder->CreateICmpSLT(right_val,
+                            llvm::ConstantInt::get(right_val->getType(), 0));
+                        builder->CreateCondBr(builder->CreateAnd(negative, out_of_range),
+                            by_pow, done);
+                        builder->SetInsertPoint(by_pow);
+                        std::string pow_name = func_name.find("f80") != std::string::npos
+                            ? "llvm.pow.f80" : (return_kind == 4 ? "llvm.pow.f32" : "llvm.pow.f64");
+                        llvm::Function* fn_fpow = LLVM::get_or_declare_function(
+                            *module, pow_name, base_type, { base_type, base_type });
+                        llvm::Value* y_pow = builder->CreateCall(fn_fpow,
+                            {left_val, builder->CreateSIToFP(right_val, base_type)});
+                        llvm::BasicBlock* by_pow_end = builder->GetInsertBlock();
+                        builder->CreateBr(done);
+                        builder->SetInsertPoint(done);
+                        llvm::PHINode* phi = builder->CreatePHI(base_type, 2);
+                        phi->addIncoming(y, start);
+                        phi->addIncoming(y_pow, by_pow_end);
+                        tmp = phi;
+                    }
                 }
                 break;
             };
