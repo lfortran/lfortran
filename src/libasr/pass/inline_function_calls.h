@@ -9,6 +9,9 @@ namespace LCompilers {
     void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
 
+    void pass_inline_loop_subroutine_calls(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_INLINE_FUNCTION_CALLS_H

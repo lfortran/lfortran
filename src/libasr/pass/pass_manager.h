@@ -190,6 +190,7 @@ namespace LCompilers {
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
+            {"inline_loop_subroutine_calls", &pass_inline_loop_subroutine_calls},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"gpu_struct_component_copies", &pass_gpu_struct_component_copies},
@@ -401,6 +402,13 @@ namespace LCompilers {
                 // the dummy into a required one and `present()` into its
                 // presence argument.
                 "intent_out_deallocate",
+                // With --fast, a small subroutine called in a loop, whose body
+                // this file has, becomes statements of the loop, which the
+                // passes below handle as such: a reallocation on assignment in
+                // it can move out of the loop (hoist_realloc). It runs while
+                // optional dummies and host associated variables are what the
+                // source says they are.
+                "inline_loop_subroutine_calls",
                 "transform_optional_argument_functions",
                 "select_case",
                 // With --fast, a call that passes an internal procedure to a

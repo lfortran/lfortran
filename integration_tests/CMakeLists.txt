@@ -7915,6 +7915,7 @@ RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_413_
 RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_435_mod.f90 EXTRA_ARGS --separate-compilation $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME inline_loop_subroutine_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast) # small subroutines called in loops, see tests/tests.toml
 
 RUN(NAME gpu_nint_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_nint_02 LABELS gfortran llvm cuda) # metal declines real(8)
