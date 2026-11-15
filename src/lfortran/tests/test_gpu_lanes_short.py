@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 import tempfile
@@ -52,6 +53,10 @@ def main():
         # loop with 2048, to keep the lanes of a warp rather than a block.
         host = llvm_ir(lfortran, short)
         assert " 2048\n" in host, "no test of the length of the loop"
+        # ... but only for a launch of more iterations than the few that get
+        # a whole block each (a warp each would leave the GPU idle).
+        assert re.search(r"icmp sgt i64 %\d+, 1024\n", host), \
+            "a launch of few iterations is given a warp each"
         # A kernel with a loop of any other length keeps what it had.
         host = llvm_ir(lfortran, unknown)
         assert " 2048\n" not in host, "test of an unknown length"

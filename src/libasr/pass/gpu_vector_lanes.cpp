@@ -4127,9 +4127,13 @@ public:
                         * caps.threads_per_block)));
                 shorter = shorter ? b.And(shorter, test) : test;
             }
+            // Not for a launch of few iterations, which gives each a whole
+            // block because a warp each would leave most of the GPU idle:
+            // a loop that is short does not change that.
             if (shorter) {
-                pass_result.push_back(al, b.If(b.And(shorter,
+                pass_result.push_back(al, b.If(b.And(b.And(shorter,
                     b.Gt(n, b.i32(lanes))),
+                    b.Gt(count, b.i_t(block_iterations_max, count_type))),
                     {b.Assignment(n, b.i32(lanes))}, {}));
             }
         }
