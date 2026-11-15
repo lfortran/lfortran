@@ -30,10 +30,22 @@ program array_constant_char_assumed_len_01
 
     call fill(wide)
     if (wide(1) /= "ab" .or. wide(2) /= "wx") error stop 5
+
+    call fill_deferred(wide)
+    if (wide(1) /= "hello" .or. wide(2) /= "hello") error stop 6
+    call fill_deferred(narrow)
+    if (narrow(1) /= "he" .or. narrow(2) /= "he") error stop 7
     print *, "OK"
 contains
     subroutine fill(y)
         character(len=*), intent(out) :: y(2)
         y = [character(len=2) :: "abcd", "wxyz"]
+    end subroutine
+
+    subroutine fill_deferred(y)
+        character(len=*), intent(out) :: y(2)
+        character(len=:), allocatable :: s
+        s = "hello world"
+        y = [s, s]
     end subroutine
 end program
