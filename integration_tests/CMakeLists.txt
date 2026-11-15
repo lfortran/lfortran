@@ -7737,6 +7737,7 @@ RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME gpu_nint_01 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_nint_02 LABELS gfortran llvm cuda) # metal declines real(8)
 RUN(NAME gpu_minmax_args_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_decline_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_decline_02 LABELS gfortran llvm metal cuda)
