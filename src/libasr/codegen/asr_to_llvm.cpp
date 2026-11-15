@@ -31163,6 +31163,21 @@ public:
             this->visit_expr(*x.m_value);
             return;
         }
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_v) && x.m_dim &&
+                ASRUtils::is_value_constant(x.m_dim)) {
+            // A section has lower bounds 1 and its extents as upper bounds
+            // (F2018 16.9.109, 16.9.197); its value need not be a descriptor.
+            ASR::expr_t* bound = nullptr;
+            if (x.m_bound == ASR::arrayboundType::LBound) {
+                bound = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    x.base.base.loc, 1, x.m_type));
+            } else {
+                bound = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al,
+                    x.base.base.loc, x.m_v, x.m_dim, x.m_type, nullptr, true));
+            }
+            this->visit_expr_wrapper(bound, true);
+            return;
+        }
         ASR::expr_t* array_value = ASRUtils::expr_value(x.m_v);
         if( array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value) && ASRUtils::is_value_constant(x.m_dim) ) {
             int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
