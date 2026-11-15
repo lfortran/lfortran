@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <cstring>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -709,6 +710,168 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
     return false;
 }
 
+// Pointers that a statement of a loop body associates with an array section
+// (`p => a(l:u, j)`), with no other statement of the body changing their
+// association. Array expressions over sections refer to such temporaries,
+// and the reallocation of the target of the assignment reads its shape from
+// them: `size(p, 1)`.
+using SectionPointers = std::map<ASR::symbol_t*, ASR::ArraySection_t*>;
+
+// Replaces the inquiries of an expression about the extents and bounds of
+// array sections, or of section pointers, by the extents of the sections,
+// computed from their bounds and strides: the subscripts of a section, such
+// as `j` above, do not take part in its shape. `failed` is set when anything
+// else names such a pointer.
+class SectionInquiryReplacer
+        : public ASR::BaseExprReplacer<SectionInquiryReplacer> {
+public:
+    Allocator& al;
+    const SectionPointers& sections;
+    bool failed = false;
+    bool changed = false;
+
+    SectionInquiryReplacer(Allocator& al_, const SectionPointers& sections_)
+        : al(al_), sections(sections_) {}
+
+    ASR::ArraySection_t* section_of(ASR::expr_t* v) {
+        if (ASR::is_a<ASR::ArraySection_t>(*v)) {
+            return ASR::down_cast<ASR::ArraySection_t>(v);
+        }
+        if (!ASR::is_a<ASR::Var_t>(*v)) {
+            return nullptr;
+        }
+        auto it = sections.find(past_external(ASR::down_cast<ASR::Var_t>(v)->m_v));
+        return it == sections.end() ? nullptr : it->second;
+    }
+
+    // The range of the section `s` that is dimension `dim` of a pointer to
+    // it, with a constant nonzero stride, or nullptr.
+    const ASR::array_index_t* range(ASR::ArraySection_t* s, ASR::expr_t* dim,
+            int64_t& stride) {
+        int64_t d;
+        if (dim == nullptr || !ASRUtils::is_value_constant(ASRUtils::expr_value(dim), d)) {
+            return nullptr;
+        }
+        int64_t n = 0;
+        for (size_t i = 0; i < s->n_args; i++) {
+            const ASR::array_index_t& index = s->m_args[i];
+            if (index.m_step == nullptr) {
+                continue;
+            }
+            if (++n == d) {
+                if (index.m_left == nullptr || index.m_right == nullptr ||
+                        !ASRUtils::is_value_constant(
+                            ASRUtils::expr_value(index.m_step), stride) ||
+                        stride == 0) {
+                    return nullptr;
+                }
+                return &index;
+            }
+        }
+        return nullptr;
+    }
+
+    ASR::expr_t* as_type(ASRUtils::ASRBuilder& b, ASR::expr_t* e, ASR::ttype_t* type) {
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(e)) ==
+                ASRUtils::extract_kind_from_ttype_t(type)) {
+            return e;
+        }
+        return b.i2i_t(e, type);
+    }
+
+    // (u - l + s) / s, of type `type`
+    ASR::expr_t* count(const ASR::array_index_t& index, int64_t stride,
+            ASR::ttype_t* type, const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::expr_t* l = as_type(b, d.duplicate_expr(index.m_left), type);
+        ASR::expr_t* u = as_type(b, d.duplicate_expr(index.m_right), type);
+        ASR::expr_t* n = b.Add(b.Sub(u, l), b.i_t(stride, type));
+        return stride == 1 ? n : b.Div(n, b.i_t(stride, type));
+    }
+
+    // max(0, (u - l + s) / s): the extent of the range
+    ASR::expr_t* extent(const ASR::array_index_t& index, int64_t stride,
+            ASR::ttype_t* type, const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+            b.Gt(count(index, stride, type, loc), b.i_t(0, type)),
+            count(index, stride, type, loc), b.i_t(0, type), type, nullptr));
+    }
+
+    void replace_ArraySize(ASR::ArraySize_t* x) {
+        ASR::ArraySection_t* s = section_of(x->m_v);
+        if (s == nullptr) {
+            ASR::BaseExprReplacer<SectionInquiryReplacer>::replace_ArraySize(x);
+            return;
+        }
+        int64_t stride;
+        const ASR::array_index_t* index = range(s, x->m_dim, stride);
+        if (index == nullptr) {
+            failed = true;
+            return;
+        }
+        *current_expr = extent(*index, stride, x->m_type, x->base.base.loc);
+        changed = true;
+    }
+
+    void replace_ArrayBound(ASR::ArrayBound_t* x) {
+        ASR::ArraySection_t* s = section_of(x->m_v);
+        if (s == nullptr) {
+            ASR::BaseExprReplacer<SectionInquiryReplacer>::replace_ArrayBound(x);
+            return;
+        }
+        int64_t stride;
+        const ASR::array_index_t* index = range(s, x->m_dim, stride);
+        if (index == nullptr) {
+            failed = true;
+            return;
+        }
+        // A pointer associated without bounds has lower bounds 1.
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        if (x->m_bound == ASR::arrayboundType::LBound) {
+            *current_expr = b.i_t(1, x->m_type);
+        } else {
+            *current_expr = extent(*index, stride, x->m_type, x->base.base.loc);
+        }
+        changed = true;
+    }
+
+    void replace_Var(ASR::Var_t* x) {
+        if (section_of(&x->base) != nullptr) {
+            failed = true;
+        }
+    }
+};
+
+// A copy of the ReAlloc `s` that computes the shapes of the array sections
+// and of the section pointers `sections` it reads from the bounds of the
+// sections, or nullptr when it reads none or cannot.
+ASR::stmt_t* resolve_sections(Allocator& al, ASR::stmt_t* s,
+        const SectionPointers& sections) {
+    if (!ASR::is_a<ASR::ReAlloc_t>(*s)) {
+        return nullptr;
+    }
+    ASRUtils::ExprStmtDuplicator d(al);
+    ASR::ReAlloc_t* r = ASR::down_cast<ASR::ReAlloc_t>(d.duplicate_stmt(s));
+    SectionInquiryReplacer replacer(al, sections);
+    auto replace = [&](ASR::expr_t*& e) {
+        if (e != nullptr) {
+            replacer.current_expr = &e;
+            replacer.replace_expr(e);
+        }
+    };
+    for (size_t i = 0; i < r->n_args; i++) {
+        for (size_t j = 0; j < r->m_args[i].n_dims; j++) {
+            replace(r->m_args[i].m_dims[j].m_start);
+            replace(r->m_args[i].m_dims[j].m_length);
+        }
+        replace(r->m_args[i].m_len_expr);
+    }
+    replace(r->m_shape_differs);
+    return replacer.failed || !replacer.changed ? nullptr : &r->base;
+}
+
 // The variables of a procedure that something can reach by another name:
 // the targets of pointer assignments, variables referenced by internal
 // procedures and the selectors of ASSOCIATE constructs.
@@ -936,6 +1099,29 @@ public:
             EffectsCollector c(effects[i]);
             c.visit_stmt(*x.m_body[i]);
         }
+        // The section pointers of the body, with the statement that
+        // associates each.
+        std::map<ASR::symbol_t*, std::pair<size_t, ASR::ArraySection_t*>> sections;
+        for (size_t i = 0; i < x.n_body; i++) {
+            if (!ASR::is_a<ASR::Associate_t>(*x.m_body[i])) {
+                continue;
+            }
+            ASR::Associate_t* a = ASR::down_cast<ASR::Associate_t>(x.m_body[i]);
+            if (ASR::is_a<ASR::Var_t>(*a->m_target) &&
+                    ASR::is_a<ASR::ArraySection_t>(*a->m_value) &&
+                    a->m_form == ASR::pointer_bounds_formType::NoPointerBounds &&
+                    ASRUtils::is_pointer(ASRUtils::expr_type(a->m_target))) {
+                ASR::symbol_t* p = designator_root(a->m_target);
+                size_t associations = 0;
+                for (size_t j = 0; j < x.n_body; j++) {
+                    associations += effects[j].alloc_modified.count(p);
+                }
+                if (associations == 1) {
+                    sections[p] = {i, ASR::down_cast<ASR::ArraySection_t>(a->m_value)};
+                }
+            }
+        }
+        std::vector<ASR::stmt_t*> hoistable(x.m_body, x.m_body + x.n_body);
         std::vector<bool> hoist(x.n_body, false);
         for (size_t k = 0; k < x.n_body; k++) {
             if (!is_candidate[k]) {
@@ -953,12 +1139,32 @@ public:
             }
             others.value_modified.insert(loop_var);
             hoist[k] = can_hoist(candidates[k], others, before, head_vars);
+            if (hoist[k]) {
+                continue;
+            }
+            // The shape of a section does not depend on its subscripts, and
+            // a section pointer associated before the reallocation in every
+            // iteration has the shape of its section there.
+            SectionPointers before_k;
+            for (auto& section : sections) {
+                if (section.second.first < k &&
+                        candidates[k].inquired.count(section.first) > 0) {
+                    before_k[section.first] = section.second.second;
+                }
+            }
+            ASR::stmt_t* resolved = resolve_sections(al, x.m_body[k], before_k);
+            Hoistable h;
+            if (resolved != nullptr && analyze_hoistable(resolved, h) &&
+                    can_hoist(h, others, before, head_vars)) {
+                hoist[k] = true;
+                hoistable[k] = resolved;
+            }
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
         for (size_t i = 0; i < x.n_body; i++) {
             if (hoist[i]) {
-                hoisted.push_back(x.m_body[i]);
+                hoisted.push_back(hoistable[i]);
             } else {
                 body.push_back(al, x.m_body[i]);
             }
