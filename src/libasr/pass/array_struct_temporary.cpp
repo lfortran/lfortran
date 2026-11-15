@@ -6179,10 +6179,21 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             // temporary, which the target is reallocated to the shape of
             // and assigned, unless the result can be returned into the
             // reallocated target itself. A target that is not allocatable
-            // is not reallocated, nor is one of an assignment that does not
-            // reallocate (such as `x(:) = v`, see full_section_target.cpp).
+            // is not reallocated, nor is the target of an assignment that
+            // does not reallocate (such as `x(:) = v`, see
+            // full_section_target.cpp). An allocatable numeric result is returned
+            // into a temporary anyway, which subroutine_from_function moves
+            // into an allocatable target of its type.
+            ASR::ttype_t* target_type = ASRUtils::expr_type(
+                ASRUtils::get_past_array_physical_cast(target));
+            bool result_moved_into_target = !inside_where &&
+                ASRUtils::is_allocatable(x->m_type) &&
+                ASRUtils::is_allocatable(target_type) &&
+                is_numeric_array_of_element_type(x->m_type, target_type) &&
+                is_numeric_array_of_element_type(target_type, x->m_type);
             bool reallocated_from_temporary = realloc_lhs && assignment_realloc_lhs &&
-                ASRUtils::is_allocatable(ASRUtils::get_past_array_physical_cast(target)) &&
+                ASRUtils::is_allocatable(target_type) &&
+                !result_moved_into_target &&
                 !(results_into_reallocated_target != nullptr &&
                   results_into_reallocated_target->count(*current_expr) > 0);
             if( (target_Type == targetType::OriginalTarget && (reallocated_from_temporary ||
