@@ -3662,6 +3662,7 @@ RUN(NAME allocate_79 LABELS gfortran llvm) # allocate with source= and no shape 
 RUN(NAME allocate_80 LABELS gfortran llvm) # allocate(source=) from a deferred-length character scalar (#3640)
 RUN(NAME allocate_81 LABELS gfortran llvm) # allocate(mold=) and allocate(source=) with derived-type array components (#5400)
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
+RUN(NAME char_array_pointer_02 LABELS gfortran llvm) # c_f_pointer into an associated character-array pointer (#17884)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
