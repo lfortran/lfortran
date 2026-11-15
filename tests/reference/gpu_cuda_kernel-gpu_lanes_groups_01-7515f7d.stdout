@@ -209,7 +209,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
                         acc = (acc + (((float)code_gpu_18(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                         acc = (acc + (((float)code_gpu_18(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                     }
-                    acc = __lfortran_lane_reduce_block<0>(acc, __gpu_lanes_n, __gpu_lane_mask);
+                    acc = __lfortran_lane_reduce<0>(acc, __gpu_lanes_n, __gpu_lane_mask);
                 } else {
                     #pragma unroll 16
                     for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
@@ -225,7 +225,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
             if ((__gpu_lane == 0)) {
                 y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
             }
-            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+            __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
         }
     }
 }
