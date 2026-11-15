@@ -5886,6 +5886,9 @@ public:
 
     // True for an assumed-rank selector inside its `rank (0)` block, where it
     // is a scalar. The innermost `select rank` block of the selector decides.
+    // Inside a procedure, only `Block` (`block` and the blocks of `select
+    // rank` and `select type`) and `AssociateBlock` (`associate`) own a
+    // scope, so the walk stops at any other owner.
     bool is_rank_zero_selector(ASR::expr_t *expr) {
         if (!ASR::is_a<ASR::Var_t>(*expr) ||
                 !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
@@ -5896,6 +5899,9 @@ public:
         for (SymbolTable *s = current_symtab; s && s->parent && s->asr_owner &&
                 ASR::is_a<ASR::symbol_t>(*s->asr_owner); s = s->parent) {
             ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+            if (ASR::is_a<ASR::AssociateBlock_t>(*block)) {
+                continue;
+            }
             if (!ASR::is_a<ASR::Block_t>(*block) || !s->parent->asr_owner ||
                     !ASR::is_a<ASR::symbol_t>(*s->parent->asr_owner)) {
                 return false;
@@ -5912,6 +5918,9 @@ public:
             } else if (ASR::is_a<ASR::Block_t>(*owner)) {
                 body = ASR::down_cast<ASR::Block_t>(owner)->m_body;
                 n_body = ASR::down_cast<ASR::Block_t>(owner)->n_body;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->m_body;
+                n_body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->n_body;
             }
             SelectRankBlockFinder finder(selector, block);
             for (size_t i = 0; i < n_body; i++) {
