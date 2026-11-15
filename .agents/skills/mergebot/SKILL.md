@@ -94,7 +94,7 @@ python3 .agents/skills/mergebot/scripts/mergebot.py <command> ...
 | `squash N --reason R` | switch a picked-up PR to squash (never back) |
 | `merge N --reason R [--subject S --body-file F]` | merge a green, approved, conflict-free PR (subject and body only for squash) |
 | `push N --worktree W --expect H --base B --owner O --reason-file F [--needs-review]` | journal and push a pending rebase; revoke approval first if its behavior changed |
-| `complete N --worktree W --expect H --owner O --verdict same\|changed\|pr-bug --reason R` | attest final-head validation; approve an equivalent rebase, or reject a changed/buggy one |
+| `complete N --worktree W --expect H --owner O --verdict same\|changed\|pr-bug --reason R [--squash]` | attest final-head validation; approve an equivalent rebase (switching to squash if changes already on `main` dropped out), or reject a changed/buggy one |
 | `reject N --reason R [--draft]` | remove the label (and convert to draft) |
 | `rerun N` | rerun the failed Quick jobs once |
 | `suspect-main N --reason R` | persist a merge pause while main CI confirms or rules out a suspected main-caused PR failure |
@@ -300,7 +300,10 @@ Put the reason in the `pickup` comment in one sentence, such as "five focused
 commits with clear messages" or "commits 3 and 5 rewrite the same reference
 outputs".
 
-After pickup, the method changes only when someone asks to squash. A rebase
+After pickup, the method changes only when someone asks to squash, or when
+a rebase drops changes that already landed on `main` identically and leaves
+a commit message describing them: the worker then completes the rebase with
+`--squash`, so the squash message is written from the final diff. A rebase
 may squash a squash-bound PR into one commit first, so the method is never
 re-derived from the rebased history.
 

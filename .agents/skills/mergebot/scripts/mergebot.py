@@ -667,14 +667,24 @@ def cmd_complete(args):
         sys.exit("mergebot: the head changed since validation")
     if clean_head(str(Path(args.worktree).resolve())) != args.expect:
         sys.exit("mergebot: the validated worktree does not match the PR head")
+    if args.squash and args.verdict != "same":
+        sys.exit("mergebot: --squash only applies to an equivalent rebase")
     if args.verdict != "same":
         cmd_reject(argparse.Namespace(number=args.number, reason=text_arg(args),
                                      reason_file=None, draft=args.verdict == "pr-bug"))
         return
     state = pr_state(args.number, info["label_id"])
     state.update(approved_head=args.expect, rebase=None)
+    switch = args.squash and state.get("method") != "squash"
+    if switch:
+        # Changes that already landed on main dropped out, so the commit
+        # messages describe more than the PR now does; squash rewrites them.
+        state["method"] = "squash"
     save_pr_state(args.number, state)
-    comment(args.number, f"Completed validation of `{args.expect[:12]}`: {text_arg(args)}")
+    comment(args.number, f"Completed validation of `{args.expect[:12]}`: {text_arg(args)}"
+            + ("\n\nSwitching to **squash** merge, so that the commit message describes "
+               "only what remains after the changes already on main dropped out."
+               if switch else ""))
 
 
 def cmd_merge(args):
@@ -850,6 +860,8 @@ def main():
     p.add_argument("--expect", required=True)
     p.add_argument("--owner", required=True)
     p.add_argument("--verdict", choices=("same", "changed", "pr-bug"), required=True)
+    p.add_argument("--squash", action="store_true",
+                   help="switch to squash: changes already on main dropped out")
     p = command("merge", cmd_merge, "merge a green, approved PR", reason=True)
     p.add_argument("--subject", help="squash commit subject")
     p.add_argument("--body-file", help="squash commit body")
