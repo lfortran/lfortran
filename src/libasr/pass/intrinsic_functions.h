@@ -1180,6 +1180,14 @@ namespace math_func {                                                           
             return ASRUtils::make_RealConstant_r16(al, loc,                                             \
                 quad_eval(ASRUtils::real_expr_get_r16(args[0])), t);                                    \
         }                                                                                               \
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {                                             \
+            /* Kind 10 stores a pointer in m_r. Fold in long double. */                                 \
+            if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
+            long double rv = ASRUtils::real_constant_get_r10(                                           \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                                          \
+            long double PI = 3.141592653589793238462643383279502884L;                                   \
+            return ASRUtils::make_RealConstant_r10(al, loc, std::stdeval(rv * PI), t);                  \
+        }                                                                                               \
         double rv = -1;                                                                                 \
         if( ASRUtils::extract_value(args[0], rv) ) {                                                    \
             double PI = 3.14159265358979323846;                                                         \
@@ -1232,6 +1240,14 @@ namespace math_func {                                                           
             if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
             return ASRUtils::make_RealConstant_r16(al, loc,                                             \
                 quad_eval(ASRUtils::real_expr_get_r16(args[0])), t);                                    \
+        }                                                                                               \
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {                                             \
+            /* Kind 10 stores a pointer in m_r. Fold in long double. */                                 \
+            if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
+            long double rv = ASRUtils::real_constant_get_r10(                                           \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                                          \
+            long double PI = 3.141592653589793238462643383279502884L;                                   \
+            return ASRUtils::make_RealConstant_r10(al, loc, std::stdeval(rv) / PI, t);                  \
         }                                                                                               \
         double rv = -1;                                                                                 \
         if( ASRUtils::extract_value(args[0], rv) ) {                                                    \

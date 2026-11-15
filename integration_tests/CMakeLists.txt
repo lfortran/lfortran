@@ -7977,6 +7977,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real_star_02 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
+    RUN(NAME real80_intrinsic_math_01 LABELS llvm) # sinpi etc. in parameters; GFortran does not have these intrinsics
     RUN(NAME complex10_arith_01 LABELS gfortran llvm)
     RUN(NAME complex10_array_01 LABELS gfortran llvm)
     RUN(NAME complex10_intrinsic_math_01 LABELS gfortran llvm)
