@@ -88,6 +88,9 @@ that leaves an inner loop can leave an enclosing loop as well.
 
 A DO WHILE loop is handled as a DO loop, with its condition, which calls no
 procedure, as the test that it runs at least once.
+
+The target of H may also be a component that only one variable reaches
+(`q%x`, see component_root), which then stands for the target.
 */
 
 namespace {
@@ -165,6 +168,31 @@ bool is_derived_type(ASR::expr_t* e) {
     ASR::ttype_t* t = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(e)));
     return ASR::is_a<ASR::StructType_t>(*t);
+}
+
+// The variable of which `e` is the whole or a component of a component...
+// that only that variable can reach: `e` is a variable, or a component of
+// such a designator that is a scalar of a derived type that is not
+// polymorphic and not a pointer, as `q%x` or `q%s%x`. Otherwise nullptr.
+// Anything that changes the allocation of `e` then changes the allocation of
+// a part of that variable.
+ASR::symbol_t* component_root(ASR::expr_t* e) {
+    if (ASR::is_a<ASR::Var_t>(*e)) {
+        return past_external(ASR::down_cast<ASR::Var_t>(e)->m_v);
+    }
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+        return nullptr;
+    }
+    ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+    ASR::ttype_t* base_type = ASRUtils::expr_type(base);
+    if (ASRUtils::is_array(base_type) || ASRUtils::is_pointer(base_type) ||
+            !ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::type_get_past_allocatable(base_type)) ||
+            ASRUtils::is_class_type(
+                ASRUtils::type_get_past_allocatable(base_type))) {
+        return nullptr;
+    }
+    return component_root(base);
 }
 
 // Whether an input/output statement may run a defined input/output
@@ -559,9 +587,13 @@ public:
     SymbolSet valued;
     bool calls = false;
 
+    // An inquiry about the allocation, shape or bounds of a variable or of
+    // a component that only it reaches (see component_root) reads only the
+    // allocation of a part of that variable.
     bool inquire(ASR::expr_t* v) {
-        if (ASR::is_a<ASR::Var_t>(*v)) {
-            inquired.insert(past_external(ASR::down_cast<ASR::Var_t>(v)->m_v));
+        ASR::symbol_t* root = component_root(v);
+        if (root != nullptr) {
+            inquired.insert(root);
             return true;
         }
         return false;
@@ -640,12 +672,16 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
             return false;
         }
         const ASR::alloc_arg_t& arg = r->m_args[0];
-        if (!ASR::is_a<ASR::Var_t>(*arg.m_a) || arg.m_type != nullptr ||
-                arg.m_sym_subclass != nullptr || arg.n_codims != 0) {
+        if (arg.m_type != nullptr || arg.m_sym_subclass != nullptr ||
+                arg.n_codims != 0) {
             return false;
         }
-        ASR::symbol_t* target = past_external(
-            ASR::down_cast<ASR::Var_t>(arg.m_a)->m_v);
+        // The target is a variable or a component that only it reaches,
+        // which stands for it below.
+        ASR::symbol_t* target = component_root(arg.m_a);
+        if (target == nullptr) {
+            return false;
+        }
         ASR::ttype_t* type = ASRUtils::expr_type(arg.m_a);
         if (!ASR::is_a<ASR::Variable_t>(*target) ||
                 !ASRUtils::is_allocatable(type) || !ASRUtils::is_array(type) ||

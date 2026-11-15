@@ -3742,6 +3742,8 @@ RUN(NAME realloc_lhs_hoist_03 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_hoist_04 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_hoist_07 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # component targets
 RUN(NAME realloc_lhs_hoist_06 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # DO WHILE loops
 RUN(NAME realloc_lhs_hoist_05 LABELS gfortran llvm
