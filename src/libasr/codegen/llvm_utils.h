@@ -461,6 +461,9 @@ class ASRToLLVMVisitor;
             llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
             void ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type);
+            // Stores a new heap string descriptor in the array descriptor; `keep_length` copies the old length.
+            void replace_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
+                llvm::Type* string_desc_type, bool keep_length);
             // Stores a new heap descriptor in `desc_ptr` if it is null; returns the descriptor.
             llvm::Value* ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,
                 llvm::Type* desc_type, llvm::Value* desc_ptr);

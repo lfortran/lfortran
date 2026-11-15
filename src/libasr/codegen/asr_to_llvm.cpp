@@ -790,6 +790,7 @@ public:
         int n_dims;
         uint64_t elem_size;
         bool local_str_desc;    // a missing string_descriptor may be a stack one
+        bool is_pointer;
     };
     std::vector<CFIArrayWriteback> pending_cfi_array_writebacks;
 
@@ -854,6 +855,15 @@ public:
         int cfi_attr;                // CFI attribute
     };
     std::vector<BindCStrideExit> bindc_stride_exits;
+    // A heap string descriptor given at entry to a character-array pointer
+    // dummy of a bind(C) procedure; freed at exit if the dummy still uses it.
+    struct BindCEntryStrDesc {
+        llvm::Value* desc_ptr_ptr;
+        llvm::Type* desc_type;
+        llvm::Type* el_type;
+        llvm::Value* str_desc;
+    };
+    std::vector<BindCEntryStrDesc> bindc_entry_str_descs;
     struct CharConsolidationWriteback {
         llvm::Value* original_descs_i8;
         llvm::Value* consolidated_desc;
@@ -2692,18 +2702,10 @@ public:
             llvm::Value* x_arr = tmp;
             // Allocating an associated pointer is not an error: it creates a
             // new target and breaks the previous association (F2023 9.7.1.4).
-            // Only an allocatable must not be allocated already. A
-            // character-array pointer is still checked: after `p => t` it
-            // shares the string descriptor of `t`, which allocating in place
-            // would overwrite.
+            // Only an allocatable must not be allocated already.
             ASR::ttype_t* alloc_arg_type = ASRUtils::expr_type(tmp_expr);
             bool is_pointer_arg = ASRUtils::is_pointer(alloc_arg_type);
-            bool shares_string_descriptor = is_pointer_arg
-                && ASRUtils::is_array(alloc_arg_type)
-                && ASRUtils::is_character(*alloc_arg_type)
-                && ASRUtils::extract_physical_type(alloc_arg_type)
-                    == ASR::array_physical_typeType::DescriptorArray;
-            bool check_allocated = !realloc && (!is_pointer_arg || shares_string_descriptor);
+            bool check_allocated = !realloc && !is_pointer_arg;
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
@@ -3139,6 +3141,8 @@ public:
                 auto do_array_alloc = [&]() {
                     ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(
                         ASRUtils::expr_type(tmp_expr));
+                    // The string descriptor of a pointer belongs to its target, so a new target needs a new one.
+                    bool new_string_descriptor = is_pointer_arg && !realloc;
                     // Only generate descriptor allocation check for struct members or in strict bounds checking mode
                     // For regular allocatable variables, the descriptor is always properly initialized on declaration
                     // For struct/derived type members, the descriptor may be NULL and needs initialization
@@ -3177,7 +3181,8 @@ public:
 
                                 if (is_struct_member || is_dummy_arg) {
                                     ptr_ = arr_descr->allocate_descriptor_on_heap(type);
-                                    if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
+                                    if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)
+                                            && !new_string_descriptor) {
                                         llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
                                         llvm::Value* str_desc = llvm_utils->allocate_string_descriptor_on_heap(
@@ -3199,7 +3204,14 @@ public:
                             type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
                         llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
-                        llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                        if (new_string_descriptor) {
+                            // An assumed-length dummy gets its length only from the string descriptor.
+                            llvm_utils->replace_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type,
+                                ASRUtils::get_string_type(array_type)->m_len_kind
+                                    == ASR::string_length_kindType::AssumedLength);
+                        } else {
+                            llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                        }
                     }
                     // A polymorphic array allocated with SOURCE= or MOLD= of a
                     // polymorphic array takes the dynamic type of the mold, which
@@ -3741,7 +3753,36 @@ public:
                     tmp = llvm_utils->CreateLoad2(
                         llvm_utils->string_descriptor->getPointerTo(), tmp);
                 }
-                llvm_utils->free_strings(tmp_expr, tmp);
+                if (ASRUtils::is_pointer(cur_type) && ASRUtils::is_array(cur_type)
+                        && ASRUtils::extract_physical_type(cur_type)
+                            == ASR::array_physical_typeType::DescriptorArray) {
+                    // The pointer's string descriptor belongs to its target (see visit_AllocateUtil).
+                    llvm::Value* desc = tmp;
+                    llvm::Value* data_ptr = arr_descr->get_pointer_to_data(tmp_expr,
+                        cur_type, desc, module.get());
+                    llvm::Type* str_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                        tmp_expr, ASRUtils::extract_type(cur_type), module.get());
+                    llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                        str_desc_type->getPointerTo(), data_ptr);
+                    // A pointer that was never associated has its declared string descriptor, with no data.
+                    llvm::Value* has_target = llvm_utils->CreateAlloca(
+                        llvm::Type::getInt1Ty(context), nullptr, "has_target");
+                    builder->CreateStore(llvm::ConstantInt::getFalse(context), has_target);
+                    llvm_utils->create_if_else(builder->CreateIsNotNull(str_desc), [&]() {
+                        builder->CreateStore(builder->CreateIsNotNull(llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr, llvm_utils->create_gep2(str_desc_type, str_desc, 0))),
+                            has_target);
+                    }, [](){});
+                    llvm_utils->create_if_else(llvm_utils->CreateLoad2(
+                            llvm::Type::getInt1Ty(context), has_target), [&]() {
+                        llvm_utils->free_strings(tmp_expr, desc);
+                        llvm_utils->lfortran_free_nocheck(str_desc);
+                        builder->CreateStore(llvm::ConstantPointerNull::get(
+                            str_desc_type->getPointerTo()), data_ptr);
+                    }, set_stat_not_allocated);
+                } else {
+                    llvm_utils->free_strings(tmp_expr, tmp);
+                }
             } else {
                 if (dims == 0 && !ASRUtils::is_assumed_rank_array(cur_type)) {
                     llvm::Type* llvm_data_type;
@@ -11710,6 +11751,7 @@ public:
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
         bindc_stride_exits.clear();
+        bindc_entry_str_descs.clear();
         if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
             F->addFnAttr("no-nans-fp-math", "true");
             F->addFnAttr("no-infs-fp-math", "true");
@@ -11776,6 +11818,18 @@ public:
                         desc_type->getPointerTo(), sym_val);
                     llvm::Value* internal_desc = arr_descr->cfi_to_internal(
                         desc_type, elem_llvm_type, cfi_ptr, n_dims, elem_size);
+                    if (ASRUtils::is_pointer(arg_type) && is_string_descriptor_type(elem_llvm_type)) {
+                        // DEALLOCATE frees the string descriptor of a pointer, so it must be on the heap.
+                        llvm::Value* base_addr_gep = llvm_utils->create_gep2(desc_type, internal_desc, 0);
+                        llvm::Value* heap_str_desc = llvm_utils->allocate_string_descriptor_on_heap(
+                            elem_llvm_type);
+                        builder->CreateStore(llvm_utils->CreateLoad2(elem_llvm_type,
+                            llvm_utils->CreateLoad2(elem_llvm_type->getPointerTo(), base_addr_gep)),
+                            heap_str_desc);
+                        builder->CreateStore(heap_str_desc, base_addr_gep);
+                        bindc_entry_str_descs.push_back({sym_val, desc_type, elem_llvm_type,
+                            heap_str_desc});
+                    }
                     builder->CreateStore(internal_desc, sym_val);
                     // For intent(out/inout), schedule writeback at function exit
                     ASR::intentType intent = arg->m_intent;
@@ -12150,6 +12204,15 @@ public:
                 llvm::Type::getInt8Ty(context)->getPointerTo());
             builder->CreateMemCpy(orig_cfi_i8, llvm::MaybeAlign(),
                 new_cfi_i8, llvm::MaybeAlign(), cfi_size);
+        }
+        for (auto& e : bindc_entry_str_descs) {
+            llvm::Value* internal_ptr = llvm_utils->CreateLoad2(
+                e.desc_type->getPointerTo(), e.desc_ptr_ptr);
+            llvm::Value* str_desc = llvm_utils->CreateLoad2(e.el_type->getPointerTo(),
+                llvm_utils->create_gep2(e.desc_type, internal_ptr, 0));
+            llvm_utils->create_if_else(builder->CreateICmpEQ(str_desc, e.str_desc), [&]() {
+                llvm_utils->lfortran_free_nocheck(e.str_desc);
+            }, [](){});
         }
     }
 
@@ -27798,7 +27861,7 @@ public:
                         // base_addr-replaced copy made for character arrays
                         pending_cfi_array_writebacks.push_back({orig_desc_ptr,
                             tmp, desc_type, elem_llvm_type, n_dims, elem_size,
-                            local_str_desc});
+                            local_str_desc, cfi_attr == 1});
                     }
                     if (is_type_star) {
                         llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
@@ -29617,7 +29680,30 @@ public:
     void apply_cfi_array_writebacks() {
         for (auto& wb : pending_cfi_array_writebacks) {
             if (is_string_descriptor_type(wb.el_type)) {
-                if (wb.local_str_desc) {
+                if (wb.is_pointer) {
+                    // A new target from C needs its own string descriptor (see visit_AllocateUtil).
+                    llvm::StructType* cfi_type = arr_descr->get_cfi_type(wb.el_type, wb.n_dims);
+                    llvm::Value* cfi_base = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                        llvm_utils->create_gep2(cfi_type,
+                            builder->CreateBitCast(wb.cfi_desc, cfi_type->getPointerTo()), 0));
+                    llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                        wb.internal_type, wb.internal_desc, 0);
+                    llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                        wb.el_type->getPointerTo(), base_addr_gep);
+                    llvm::Value* same_target = llvm_utils->CreateAlloca(
+                        llvm::Type::getInt1Ty(context), nullptr, "cfi_same_target");
+                    builder->CreateStore(llvm::ConstantInt::getFalse(context), same_target);
+                    llvm_utils->create_if_else(builder->CreateIsNotNull(str_desc), [&]() {
+                        llvm::Value* old_data = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                            llvm_utils->create_gep2(wb.el_type, str_desc, 0));
+                        builder->CreateStore(builder->CreateICmpEQ(old_data, cfi_base), same_target);
+                    }, [](){});
+                    llvm_utils->create_if_else(builder->CreateNot(llvm_utils->CreateLoad2(
+                            llvm::Type::getInt1Ty(context), same_target)), [&]() {
+                        builder->CreateStore(llvm_utils->allocate_string_descriptor_on_heap(
+                            wb.el_type), base_addr_gep);
+                    }, [](){});
+                } else if (wb.local_str_desc) {
                     // Use a stack string_descriptor, so it is not leaked
                     llvm::Value* base_addr_gep = llvm_utils->create_gep2(
                         wb.internal_type, wb.internal_desc, 0);

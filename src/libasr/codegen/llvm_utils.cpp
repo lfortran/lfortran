@@ -2234,6 +2234,21 @@ namespace LCompilers {
         }, [](){});
     }
 
+    void LLVMUtils::replace_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
+        llvm::Type* string_desc_type, bool keep_length) {
+        llvm::Value* data_ptr_ptr = arr_api->get_pointer_to_data(array_desc_type, array_desc);
+        llvm::Value* new_str_desc = allocate_string_descriptor_on_heap(string_desc_type);
+        if (keep_length) {
+            llvm::Value* old_str_desc = CreateLoad2(string_desc_type->getPointerTo(), data_ptr_ptr);
+            create_if_else(builder->CreateIsNotNull(old_str_desc), [&]() {
+                builder->CreateStore(
+                    CreateLoad2(llvm::Type::getInt64Ty(context), create_gep2(string_desc_type, old_str_desc, 1)),
+                    create_gep2(string_desc_type, new_str_desc, 1));
+            }, [](){});
+        }
+        builder->CreateStore(new_str_desc, data_ptr_ptr);
+    }
+
     llvm::Value* LLVMUtils::ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,
         llvm::Type* desc_type, llvm::Value* desc_ptr) {
         llvm::Value* desc = CreateLoad2(desc_type->getPointerTo(), desc_ptr);
