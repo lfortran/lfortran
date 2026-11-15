@@ -6,6 +6,11 @@ realloc_lhs_ext.f90, once per configuration, runs every kernel best-of-N,
 checks that the checksums agree across configurations and prints a
 GitHub-flavored Markdown table. See README.md in this directory.
 
+With --apps it builds realloc_lhs_apps.f90 instead, whose kernels come in
+pairs: an assignment as Fiats or Formal write it, and an explicit form
+(`<kernel>_x`) that does not rely on reallocation on assignment. The table
+then shows both forms and their ratio for each configuration.
+
 A configuration is "label=compiler flags...", for example
 
     "main=/path/to/main/lfortran --fast --realloc-lhs-arrays"
@@ -26,6 +31,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(HERE, "realloc_lhs.f90")
+APPS_SOURCE = os.path.join(HERE, "realloc_lhs_apps.f90")
 # Compiled separately (with -c) and linked, so that the compiler of SOURCE
 # cannot inline its procedures or see what they do.
 EXTRA_SOURCES = [os.path.join(HERE, "realloc_lhs_ext.f90")]
@@ -99,6 +105,28 @@ CASES = [
     ("ptrcond", 3, 50_000_000, False),
     ("exit2d", 3, 10_000_000, False),
     ("intabs", 3, 30_000_000, False),
+]
+
+
+# The kernels of realloc_lhs_apps.f90: (kernel, n, reps,
+# original_requires_realloc). Each also has an explicit form `<kernel>_x`,
+# which never requires reallocation. n is the element count the
+# application has (see README.md).
+APP_CASES = [
+    ("values", 4, 20_000_000, True),
+    ("values", 1, 20_000_000, True),
+    ("tensor", 4, 20_000_000, True),
+    ("batch", 5, 1_000_000, True),
+    ("batch", 34, 200_000, True),
+    ("inputs", 5, 3_000_000, True),
+    ("inputsc", 5, 3_000_000, True),
+    ("minibatches", 2, 1_000_000, True),
+    ("centers", 12, 5_000_000, True),
+    ("centers", 32, 3_000_000, True),
+    ("harvest", 40000, 5_000, False),
+    ("points", 30, 300_000, False),
+    ("deepcopy", 4, 20_000_000, False),
+    ("string", 32, 20_000_000, False),
 ]
 
 
@@ -179,12 +207,12 @@ def compiler_version(command):
     return lines[0] if lines else ""
 
 
-def padded_source(placement, path):
-    """Write to `path` a copy of SOURCE with a procedure of `placement`
+def padded_source(source, placement, path):
+    """Write to `path` a copy of `source` with a procedure of `placement`
     blocks of code before the kernels, which moves them to other addresses,
     and return `path`. The driver calls it for a kernel name no run uses, so
     that it is kept."""
-    with open(SOURCE) as f:
+    with open(source) as f:
         text = f.read()
     # Opaque calls, which the compiler cannot merge, about 8 bytes each.
     body = "call ext_tick(k)\n" * (5 * placement)
@@ -200,16 +228,17 @@ def padded_source(placement, path):
     return path
 
 
-def build(config, build_dir, index, placements):
+def build(config, build_dir, index, placements, source=SOURCE):
     # Each configuration and placement gets its own directory, since the
     # compilers write the module file into the current directory.
     config.exes = []
     for placement in range(placements):
         d = os.path.join(build_dir, f"{index}", f"p{placement}")
         os.makedirs(d, exist_ok=True)
-        exe = os.path.join(d, "realloc_lhs")
-        source = SOURCE if placement == 0 else padded_source(
-            placement, os.path.join(d, "realloc_lhs.f90"))
+        name = os.path.splitext(os.path.basename(source))[0]
+        exe = os.path.join(d, name)
+        main_source = source if placement == 0 else padded_source(
+            source, placement, os.path.join(d, name + ".f90"))
         objects = []
         commands = []
         for src in EXTRA_SOURCES:
@@ -217,7 +246,7 @@ def build(config, build_dir, index, placements):
                 d, os.path.splitext(os.path.basename(src))[0] + ".o")
             objects.append(obj)
             commands.append((config.command + ["-c", src, "-o", obj], obj))
-        commands.append((config.command + [source] + objects + ["-o", exe],
+        commands.append((config.command + [main_source] + objects + ["-o", exe],
                          exe))
         for cmd, output in commands:
             print(f"[build] {config.label}: "
@@ -310,22 +339,36 @@ def main():
                     help="also write the Markdown table to this file")
     ap.add_argument("--list", action="store_true",
                     help="list the kernels and exit")
+    ap.add_argument("--apps", action="store_true",
+                    help="run the paired kernels of realloc_lhs_apps.f90 "
+                         "(the original form of an assignment of Fiats or "
+                         "Formal and its explicit form) instead")
     args = ap.parse_args()
 
+    all_cases = CASES
+    if args.apps:
+        all_cases = []
+        for kernel, n, reps, req in APP_CASES:
+            all_cases.append((kernel, n, reps, req))
+            all_cases.append((kernel + "_x", n, reps, False))
     if args.list:
-        for kernel, n, reps, req in CASES:
+        for kernel, n, reps, req in all_cases:
             inner = inner_iterations(kernel, n)
             print(f"{kernel}:{n} reps={reps}"
                   + (f" x {inner} assignments" if inner > 1 else "")
                   + (" (requires realloc)" if req else ""))
         return 0
 
-    cases = CASES
+    cases = all_cases
     if args.kernels:
         wanted = [k.strip() for k in args.kernels.split(",") if k.strip()]
-        cases = [c for c in CASES
+        if args.apps:
+            wanted += [k.replace(":", "_x:", 1) if ":" in k else k + "_x"
+                       for k in wanted]
+        cases = [c for c in all_cases
                  if c[0] in wanted or f"{c[0]}:{c[1]}" in wanted]
-        known = {c[0] for c in CASES} | {f"{c[0]}:{c[1]}" for c in CASES}
+        known = {c[0] for c in all_cases} | {
+            f"{c[0]}:{c[1]}" for c in all_cases}
         unknown = [k for k in wanted if k not in known]
         if unknown:
             raise SystemExit(f"error: unknown kernels: {', '.join(unknown)}")
@@ -360,7 +403,8 @@ def main():
         build_dir = os.path.abspath(build_dir)
     try:
         for i, c in enumerate(configs):
-            build(c, build_dir, i, args.placements)
+            build(c, build_dir, i, args.placements,
+                  APPS_SOURCE if args.apps else SOURCE)
 
         # results[case index][config index] = best seconds, or None (n/a),
         # or an error string
@@ -424,6 +468,14 @@ def main():
                     f"{kernel}:{n}: checksum mismatch: {ref[0]}={ref[1]!r} "
                     f"{c.label}={s!r}")
 
+    if args.apps:
+        table = paired_table(cases, results, configs, labels, args, pin, cpu)
+        print(table, end="")
+        if args.output:
+            with open(args.output, "w") as f:
+                f.write(table)
+        return report_errors(errors)
+
     # The Markdown table.
     out = []
     out.append("| kernel | n | " + " | ".join(labels) + " |")
@@ -467,12 +519,80 @@ def main():
         with open(args.output, "w") as f:
             f.write(table)
 
+    return report_errors(errors)
+
+
+def report_errors(errors):
     if errors:
         print("\nERROR: the benchmark failed:", file=sys.stderr)
         for e in errors:
             print(f"  {e}", file=sys.stderr)
         return 1
     return 0
+
+
+def paired_table(cases, results, configs, labels, args, pin, cpu):
+    """The table of the paired kernels: for each configuration the original
+    form, the explicit form and original/explicit, or only the explicit form
+    for a configuration without reallocation on assignment."""
+    times = {}
+    for (kernel, n, reps, req), best in zip(cases, results):
+        per = reps * inner_iterations(kernel, n)
+        times[(kernel, n)] = [b * 1e9 / per if isinstance(b, float) else b
+                              for b in best]
+    head = ["kernel", "n"]
+    align = ["---", "---:"]
+    for c in configs:
+        if c.no_realloc:
+            head.append(f"{c.label} explicit")
+            align.append("---:")
+        else:
+            head += [f"{c.label} original", f"{c.label} explicit",
+                     f"{c.label} ratio"]
+            align += ["---:", "---:", "---:"]
+    out = ["| " + " | ".join(head) + " |", "| " + " | ".join(align) + " |"]
+
+    def cell(x):
+        if x is None:
+            return "n/a"
+        if isinstance(x, str):
+            return "**FAIL**"
+        return fmt_ns(x)
+
+    for kernel, n, reps, req in cases:
+        if kernel.endswith("_x"):
+            continue
+        orig = times[(kernel, n)]
+        expl = times.get((kernel + "_x", n), [None] * len(configs))
+        row = [kernel + (" *" if req else ""), str(n)]
+        for j, c in enumerate(configs):
+            if c.no_realloc:
+                row.append(cell(expl[j]))
+                continue
+            row += [cell(orig[j]), cell(expl[j])]
+            if isinstance(orig[j], float) and isinstance(expl[j], float) \
+                    and expl[j] > 0:
+                row.append(f"{orig[j] / expl[j]:.2f}")
+            else:
+                row.append("n/a")
+        out.append("| " + " | ".join(row) + " |")
+    out.append("")
+    out.append(f"Nanoseconds per iteration, best of {args.repeat}"
+               + (f" runs of each of {args.placements} placements"
+                  if args.placements > 1 else "")
+               + (f", pinned to CPU {cpu}" if pin else ", not pinned")
+               + ". original: the assignment as the application writes it; "
+               "explicit: the same work without relying on reallocation on "
+               "assignment (realloc_lhs_apps.f90); ratio: original/explicit. "
+               "Original forms marked * require reallocation on assignment "
+               "and are n/a without it.")
+    out.append("")
+    for c in configs:
+        version = f" ({c.version})" if c.version else ""
+        out.append(f"- {c.label}: `{c.spec()}`{version}")
+    out.append(f"- machine: {platform.machine()}, {platform.system()} "
+               f"{platform.release()}, {os.cpu_count()} CPUs")
+    return "\n".join(out) + "\n"
 
 
 if __name__ == "__main__":

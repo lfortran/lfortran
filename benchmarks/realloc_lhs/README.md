@@ -21,6 +21,8 @@ integration tests or CI.
   They are external procedures with interfaces in `realloc_lhs.f90`, not
   module procedures: LFortran compiles the procedures of a module into each
   object file that uses the module.
+- `realloc_lhs_apps.f90`: kernels taken from the hottest assignments of two
+  applications, Fiats and Formal, each in two forms (see below).
 - `run_benchmark.py`: builds the program once per configuration, runs every
   kernel, checks the checksums and prints a Markdown table (Python 3
   standard library only).
@@ -90,6 +92,51 @@ Except for the kernels marked *, the left-hand side already has the right
 shape, so they are also valid without reallocation on assignment and measure
 the overhead of the shape checks. The kernels marked * require reallocation;
 configurations that disable it show them as n/a.
+
+## Application kernels (`--apps`)
+
+`realloc_lhs_apps.f90` reproduces assignments that dominate the run time of
+Fiats (a neural-network library) and Formal (a mimetic differential-operator
+library), or whose cost the reallocation check affects most, as measured in
+their test suites. The types have the structure of the applications' (a
+tensor with an allocatable array of values, a pair of tensors, a
+mini-batch with an allocatable array of pairs), and `n` is the element count
+the applications have. Each kernel comes in two forms: the assignment as the
+application writes it, and an explicit form, `<kernel>_x`, that does the
+same work without relying on reallocation on assignment, so that the ratio
+of the two is the cost of reallocation on assignment for that statement:
+
+| kernel | application assignment | explicit form |
+| --- | --- | --- |
+| `values` | `tensor_values = self%values_`, the allocatable result of a pure accessor (Fiats `tensor_s.f90:17`), 1-4 elements | `allocate(r(size(c))); r(:) = c` |
+| `tensor` | `tensor%values_ = values`, a component of a constructor's result (`tensor_s.f90:9`) | the same |
+| `batch` | `mini_batch%input_output_pairs_ = input_output_pairs` and `my_input_output_pairs = self%input_output_pairs_` (`mini_batch_s.f90:9`, `:17`), arrays of pairs of tensors | the same |
+| `inputs` * | `inputs = input_output_pairs%inputs()` in the training loop (`neural_network_s.F90:772`), an elemental function over the pairs, into an allocated array whose shape changes twice every 4294 iterations, as in Fiats | a size test, then `inputs(:) = ...` |
+| `inputsc` * | the same, the shape never changes | the same |
+| `minibatches` * | `mini_batches = [(mini_batch_t(...), bin = 1, n)]` in the epoch loop, allocated by the first iteration | `allocate` before the loop, `mini_batches(:) = [...]` |
+| `centers` | `centers_extended = [first*f(1), matmul(...), [(dot_product(...), row = ...)], matmul(...), final*f(N)]`, the result of Formal's interpolator (`interpolator_1D_s.F90:96`), 12-32 elements | `allocate(c(n)); c(:) = [...]` |
+| `harvest` | `harvest = 2.*(harvest - 0.5)` (Fiats tests), 40000 elements, always conforming | `harvest(:) = ...` |
+| `points` | `d(1)%values_ = dx + dy`, a rank-2 component of an array element, always conforming (Formal `vector_2D_s.F90:141`) | `d(1)%values_(:,:) = ...` |
+| `deepcopy` | `my_inputs = self%inputs_`, a derived-type copy (Fiats `input_output_pair_s.f90:19`); no array switch affects it | the component copied by `allocate` and `(:)` |
+| `string` | `lhs%string_ = rhs` in a defined assignment (julienne `string_s.F90:581`), 32 characters; a deferred-length character, which no array switch affects | `allocate(character(len=len(rhs)) :: s); s(:) = rhs` |
+
+Kernels marked * are those whose original form requires reallocation on
+assignment beyond a first assignment in a function (all the others, except
+`harvest`, `points`, `deepcopy` and `string`, first assign an unallocated
+result or component, which also requires it).
+
+```bash
+pixi run -e llvm11 bench_realloc_lhs --apps --placements 4 \
+    "realloc=lfortran --fast --realloc-lhs-arrays" \
+    "no-realloc=lfortran --fast --no-realloc-lhs-arrays" \
+    "gfortran=gfortran -O3 -frealloc-lhs"
+```
+
+For each configuration with reallocation on assignment the table shows the
+original form, the explicit form and their ratio (original/explicit); for a
+configuration without it, only the explicit form. So the three numbers of a
+kernel are the original form with reallocation, the explicit form with
+reallocation and the explicit form without it.
 
 ## Running
 
