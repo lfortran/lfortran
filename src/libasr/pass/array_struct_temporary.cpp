@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/access_paths.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -3306,6 +3307,80 @@ bool may_read_target_storage(ASR::expr_t* x, ASR::symbol_t* root,
     return finder.found;
 }
 
+// Whether, with reallocation on assignment, the function reference `value`
+// can return its result straight into the allocatable assignment target
+// `target` of the scope `scope`, reallocated first to the shape of the
+// result (see is_current_expr_linked_to_target_then_return), as it does
+// without reallocation. That shape is known before the reference: the
+// result is an explicit-shape array. The reference must not access the
+// target, which the reallocation may have changed, nor see it defined
+// before the value is evaluated (F2018 10.2.1.3). So:
+// - the target is a whole variable that no pointer reaches (see
+//   get_unaliased_assignment_root), a local variable or a dummy argument of
+//   the procedure of the assignment, which contains no procedure. Only a
+//   procedure contained in that one could access the variable otherwise
+//   (see callee_may_access_target in subroutine_from_function), and no
+//   procedure may reference the actual argument of a dummy argument that
+//   the assignment defines otherwise (F2018 15.5.2.13);
+// - no actual argument references the target or a pointer (see
+//   may_read_target_storage), as written, before an actual is replaced;
+// - the result is an array of integer, real or complex numbers of the
+//   type of the target: the reallocation compares shapes only, not
+//   character lengths, and an element of a derived type would not get the
+//   default initialization of its components.
+bool returns_result_into_reallocated_target(ASR::expr_t* target,
+        ASR::expr_t* value, SymbolTable* scope,
+        const DummiesSharingActualType& dummies_sharing_actual) {
+    if( !ASR::is_a<ASR::Var_t>(*target) ||
+        !ASR::is_a<ASR::FunctionCall_t>(*value) ) {
+        return false;
+    }
+    ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(value);
+    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+    if( !ASRUtils::is_allocatable(target_type) ||
+        ASRUtils::is_elemental(call->m_name) ||
+        ASRUtils::is_allocatable_or_pointer(call->m_type) ||
+        !is_numeric_array_of_element_type(call->m_type, target_type) ||
+        !is_numeric_array_of_element_type(target_type, call->m_type) ||
+        ASRUtils::extract_n_dims_from_ttype(call->m_type) !=
+            ASRUtils::extract_n_dims_from_ttype(target_type) ) {
+        return false;
+    }
+    ASR::symbol_t* component = nullptr;
+    ASR::symbol_t* root = get_unaliased_assignment_root(target, component);
+    if( root == nullptr || component != nullptr ||
+        dummies_sharing_actual.count(root) > 0 ) {
+        return false;
+    }
+    ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(root);
+    SymbolTable* routine = AccessPaths::enclosing_routine(scope);
+    if( variable->m_storage != ASR::storage_typeType::Default ||
+        variable->m_intent == ASR::intentType::In ||
+        variable->n_codims > 0 || variable->m_is_volatile ||
+        variable->m_is_asynchronous ||
+        ASRUtils::has_scoped_variable_attribute(*variable, routine) ||
+        AccessPaths::reachable_elsewhere(root, routine) ) {
+        return false;
+    }
+    bool has_contained_procedure = false;
+    ASRUtils::for_each_symbol_in_scope_and_constructs(routine,
+        [&](ASR::symbol_t* symbol) {
+            has_contained_procedure |= ASR::is_a<ASR::Function_t>(*symbol) ||
+                ASR::is_a<ASR::Template_t>(*symbol);
+        });
+    if( has_contained_procedure ||
+        (call->m_dt && may_read_target_storage(call->m_dt, root, nullptr)) ) {
+        return false;
+    }
+    for( size_t i = 0; i < call->n_args; i++ ) {
+        if( call->m_args[i].m_value &&
+            may_read_target_storage(call->m_args[i].m_value, root, nullptr) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Whether a call of `fn` may read the storage of the assignment target
 // whose elements are reached only through `root` (see
 // get_unaliased_assignment_root). A dummy argument is checked by the caller
@@ -3595,6 +3670,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // The values computed into a target whose shape is already checked
     // against theirs (see make_matmul_result_shape_check)
     std::set<ASR::expr_t*> values_checked_against_target;
+
+    // The function references that return their result into the
+    // reallocated target of their assignment (see
+    // returns_result_into_reallocated_target)
+    std::set<ASR::expr_t*> results_into_reallocated_target;
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -4360,6 +4440,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             assignments_reading_target_in_place.insert(&xx.base);
             get_assignment_sections_read_in_place(xx.m_value, sections_read_in_place,
                 operations_read_in_place);
+        }
+        // Decided on the actual arguments as written, before they are
+        // replaced by temporaries and pointers to them
+        if( realloc_lhs && !inside_where && x.m_overloaded == nullptr &&
+            !x.m_move_allocation &&
+            returns_result_into_reallocated_target(xx.m_target, xx.m_value,
+                current_scope, dummies_sharing_actual) ) {
+            results_into_reallocated_target.insert(xx.m_value);
         }
         visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
@@ -5347,6 +5435,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // ArgSimplifier already checked (see check_target_shape)
     bool bounds_checking = false;
     const std::set<ASR::expr_t*>* values_checked_against_target = nullptr;
+    // The function references that ArgSimplifier found to return their
+    // result into the reallocated target of their assignment
+    const std::set<ASR::expr_t*>* results_into_reallocated_target = nullptr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -6084,8 +6175,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::expr_t* target = exprs_with_target[*current_expr].first;
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
-            if( (target_Type == targetType::OriginalTarget &&
-                 ((realloc_lhs && assignment_realloc_lhs) ||
+            // Reallocation on assignment returns the result into a
+            // temporary, which the target is reallocated to the shape of
+            // and assigned, unless the result can be returned into the
+            // reallocated target itself. A target that is not allocatable
+            // is not reallocated, nor is one of an assignment that does not
+            // reallocate (such as `x(:) = v`, see full_section_target.cpp).
+            bool reallocated_from_temporary = realloc_lhs && assignment_realloc_lhs &&
+                ASRUtils::is_allocatable(ASRUtils::get_past_array_physical_cast(target)) &&
+                !(results_into_reallocated_target != nullptr &&
+                  results_into_reallocated_target->count(*current_expr) > 0);
+            if( (target_Type == targetType::OriginalTarget && (reallocated_from_temporary ||
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&
@@ -6647,6 +6747,7 @@ class ReplaceExprWithTemporaryVisitor:
     ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation,
             const std::set<ASR::expr_t*>& sections_read_in_place,
+            const std::set<ASR::expr_t*>& results_into_reallocated_target,
             const DummiesSharingActualType& dummies_sharing_actual_,
             bool stack_arrays_ = false):
         al(al_), exprs_with_target(exprs_with_target_),
@@ -6656,6 +6757,7 @@ class ReplaceExprWithTemporaryVisitor:
         stack_arrays(stack_arrays_),
         dummies_sharing_actual(dummies_sharing_actual_) {
         replacer.sections_read_in_place = &sections_read_in_place;
+        replacer.results_into_reallocated_target = &results_into_reallocated_target;
         replacer.call_replacer_on_value = false;
         call_replacer_on_value = false;
     }
@@ -7949,7 +8051,8 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     b.visit_TranslationUnit(unit);
     ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place,
-        dummies_sharing_actual, pass_options.stack_arrays);
+        b.results_into_reallocated_target, dummies_sharing_actual,
+        pass_options.stack_arrays);
     c.assignments_reading_target_in_place = &b.assignments_reading_target_in_place;
     c.check_target_shapes(pass_options.bounds_checking, b.values_checked_against_target);
     c.visit_TranslationUnit(unit);
