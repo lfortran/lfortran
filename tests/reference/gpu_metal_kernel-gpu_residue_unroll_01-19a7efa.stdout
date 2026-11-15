@@ -224,34 +224,30 @@ kernel void __lfortran_gpu_kernel_1_23gpu_residue_unroll_01_m7project(
         int d__dc_gpu;
         int g__dc_gpu;
         if (((k_gpu - 1) >= 3)) {
-            if ((__gpu_lane == 0)) {
-                for (__gpu_residue_group_gpu = 1; __gpu_residue_group_gpu <= (k_gpu - 3); __gpu_residue_group_gpu += 4) {
-                    __gpu_residue_element_gpu = w_gpu[((int)((((__gpu_residue_group_gpu - 1) / 4) + 1)) - (__lb_w_0_gpu)) + (__dim_w_0_gpu * ((int)(n__dc_gpu) - (__lb_w_1_gpu)))];
-                    {
-                        int __packed_byte_value_gpu;
-                        __packed_byte_value_gpu = _lcompilers_ibits_i325_gpu_59(__gpu_residue_element_gpu, (8 * 0), 8);
-                        codes_gpu[((int)(__gpu_residue_group_gpu) - (1))] = ((int16_t)__packed_byte_value_gpu);
-                    }
-                    {
-                        int __packed_byte_value_gpu;
-                        __packed_byte_value_gpu = _lcompilers_ibits_i326_gpu_61(__gpu_residue_element_gpu, (8 * 1), 8);
-                        codes_gpu[((int)((__gpu_residue_group_gpu + 1)) - (1))] = ((int16_t)__packed_byte_value_gpu);
-                    }
-                    {
-                        int __packed_byte_value_gpu;
-                        __packed_byte_value_gpu = _lcompilers_ibits_i327_gpu_63(__gpu_residue_element_gpu, (8 * 2), 8);
-                        codes_gpu[((int)((__gpu_residue_group_gpu + 2)) - (1))] = ((int16_t)__packed_byte_value_gpu);
-                    }
-                    {
-                        int __packed_byte_value_gpu;
-                        __packed_byte_value_gpu = _lcompilers_ibits_i328_gpu_65(__gpu_residue_element_gpu, (8 * 3), 8);
-                        codes_gpu[((int)((__gpu_residue_group_gpu + 3)) - (1))] = ((int16_t)__packed_byte_value_gpu);
-                    }
+            for (__gpu_residue_group_gpu = (1 + (((int)__gpu_lane) * 4)); __gpu_residue_group_gpu <= (k_gpu - 3); __gpu_residue_group_gpu += (4 * ((int)__gpu_lanes_gpu))) {
+                __gpu_residue_element_gpu = w_gpu[((int)((((__gpu_residue_group_gpu - 1) / 4) + 1)) - (__lb_w_0_gpu)) + (__dim_w_0_gpu * ((int)(n__dc_gpu) - (__lb_w_1_gpu)))];
+                {
+                    int __packed_byte_value_gpu;
+                    __packed_byte_value_gpu = _lcompilers_ibits_i325_gpu_59(__gpu_residue_element_gpu, (8 * 0), 8);
+                    codes_gpu[((int)(__gpu_residue_group_gpu) - (1))] = ((int16_t)__packed_byte_value_gpu);
+                }
+                {
+                    int __packed_byte_value_gpu;
+                    __packed_byte_value_gpu = _lcompilers_ibits_i326_gpu_61(__gpu_residue_element_gpu, (8 * 1), 8);
+                    codes_gpu[((int)((__gpu_residue_group_gpu + 1)) - (1))] = ((int16_t)__packed_byte_value_gpu);
+                }
+                {
+                    int __packed_byte_value_gpu;
+                    __packed_byte_value_gpu = _lcompilers_ibits_i327_gpu_63(__gpu_residue_element_gpu, (8 * 2), 8);
+                    codes_gpu[((int)((__gpu_residue_group_gpu + 2)) - (1))] = ((int16_t)__packed_byte_value_gpu);
+                }
+                {
+                    int __packed_byte_value_gpu;
+                    __packed_byte_value_gpu = _lcompilers_ibits_i328_gpu_65(__gpu_residue_element_gpu, (8 * 3), 8);
+                    codes_gpu[((int)((__gpu_residue_group_gpu + 3)) - (1))] = ((int16_t)__packed_byte_value_gpu);
                 }
             }
             if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
-            __gpu_residue_group_gpu = simd_shuffle(__gpu_residue_group_gpu, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
-            __gpu_residue_element_gpu = simd_shuffle(__gpu_residue_element_gpu, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
             __gpu_loop_start_gpu = ((1 + ((((k_gpu - 1) + 1) / 4) * 4)) + (((int)__gpu_lane) * 1));
             __gpu_loop_end_gpu = k_gpu;
             d__dc_gpu = __gpu_loop_start_gpu;
