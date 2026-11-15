@@ -229,6 +229,10 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
     if (serialized_lm.files.empty() || serialized_lm.file_ends.empty()) {
         throw LCompilersException("load_serialised_asr: Modfile has no location information.");
     }
+    asr_binary = b.read_string();
+    if (b.read_int64() != asr_checksum(asr_binary)) {
+        throw LCompilersException("load_serialised_asr: Modfile checksum mismatch.");
+    }
 
     // Append the module's location information into the current LocationManager.
     // The serialized LocationManager was built with the module starting at 0,
@@ -244,11 +248,6 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
     // level of remapping via out_start/in_start).
     lm.files.push_back(adjusted_file);
     lm.file_ends.push_back(serialized_lm.file_ends[0] + offset);
-
-    asr_binary = b.read_string();
-    if (b.read_int64() != asr_checksum(asr_binary)) {
-        throw LCompilersException("load_serialised_asr: Modfile checksum mismatch.");
-    }
     return true;
 }
 

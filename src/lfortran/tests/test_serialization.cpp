@@ -386,6 +386,9 @@ end module
             = LCompilers::load_modfile(al, invalid, true, symtab, lm2, "m.mod");
         REQUIRE(!res.ok);
         CHECK(LCompilers::startswith(res.error.message, "file 'm.mod' is "));
+        // A rejected modfile adds no location information
+        CHECK(lm2.files.empty());
+        CHECK(lm2.file_ends.empty());
     }
 
     // Changing any byte of a valid modfile either still loads or gives an
