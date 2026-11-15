@@ -41,6 +41,7 @@
 
 namespace LCompilers {
 
+inline constexpr const char* c_parent_component = "_lfortran_parent";
 
 // Platform dependent fast unique hash:
 static inline uint64_t get_hash(ASR::asr_t *node)
@@ -172,7 +173,7 @@ public:
 
     int bracket_open;
 
-    SymbolTable* current_scope;
+    SymbolTable* current_scope = nullptr;
     bool is_string_concat_present;
 
     // The views of a common block in this translation unit, the CommonBlock
@@ -467,15 +468,26 @@ public:
         }
     }
 
-    // The elements of the array constant `a`, in array element order, as
-    // a C initializer list.
-    std::string array_constant_initializer(ASR::ArrayConstant_t *a) {
+    // The elements of the array constant `a` as a C initializer list.
+    // Module descriptors use last-subscript-fastest storage, unlike ASR constants.
+    std::string array_constant_initializer(ASR::ArrayConstant_t *a,
+            const std::vector<int64_t> &row_major_shape = {}) {
         Allocator al(1024);
         std::string r = "{";
         int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
         for (int64_t i = 0; i < n; i++) {
             if (i > 0) r += ", ";
-            self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, i));
+            int64_t index = i;
+            if (row_major_shape.size() > 1) {
+                int64_t remaining = i;
+                index = 0;
+                for (size_t dim = row_major_shape.size(); dim-- > 0;) {
+                    index = index * row_major_shape[dim] +
+                        remaining % row_major_shape[dim];
+                    remaining /= row_major_shape[dim];
+                }
+            }
+            self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, index));
             r += src;
         }
         return r + "}";
@@ -2791,7 +2803,31 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
-        member = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(x.m_m);
+        member = ASRUtils::symbol_name(symbol);
+        if (is_c) {
+            ASR::symbol_t* owner = ASR::is_a<ASR::Struct_t>(*symbol)
+                ? symbol : ASRUtils::get_asr_owner(symbol);
+            LCOMPILERS_ASSERT(owner && ASR::is_a<ASR::Struct_t>(*owner));
+            ASR::symbol_t* base = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(x.m_v));
+            LCOMPILERS_ASSERT(base && ASR::is_a<ASR::Struct_t>(*base));
+            ASR::Struct_t* type = ASR::down_cast<ASR::Struct_t>(base);
+            std::string path;
+            while (&type->base != owner) {
+                LCOMPILERS_ASSERT(type->m_parent);
+                path += std::string(c_parent_component) + ".";
+                type = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(type->m_parent));
+            }
+            if (ASR::is_a<ASR::Struct_t>(*symbol)) {
+                LCOMPILERS_ASSERT(!path.empty());
+                path.pop_back();
+                member = path;
+            } else {
+                member = path + member;
+            }
+        }
         bool designates_value = ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
             ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v);
