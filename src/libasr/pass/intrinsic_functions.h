@@ -5550,8 +5550,11 @@ namespace Nearest {
 
         body.push_back(al, b.If(b.Eq(args[0], b.f_t(0.0, arg_types[0])), {
             b.Assignment(ix, b.i_t(1, int_type)),
+            // the smallest negative subnormal: the sign bit and 1; the
+            // integer -1 would be all bits set, a NaN
             b.If(b.Lt(args[1], b.f_t(0.0, arg_types[1])), {
-                b.Assignment(ix, b.i_t(-1, int_type))
+                b.Assignment(ix, b.i_t(kind == 4 ? (int64_t) INT32_MIN + 1
+                    : INT64_MIN + 1, int_type))
             }, {}),
             b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, zero, nullptr, arg_types[0], nullptr))),
             b.Return(),
