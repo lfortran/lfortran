@@ -1786,30 +1786,19 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
  *    variants sind, cosd, tand, asind, acosd, atand
  * ======================================================================== */
 
-/* sin(r.hi + r.lo) for |r| <= ~pi/4 (Taylor series). */
-static lf_float128 f128_sin_kernel(f128_dw r) {
-    lf_float128 x = r.hi;
-    lf_float128 z = f_mul(x, x);
-    /* sin(x) = x - x*z*(1/3! - z/5! + ...),
-     * sin(x + lo) ~= sin(x) + lo*(1 - z/2) */
-    lf_float128 q = f128_poly(f_neg(z), F128_INV_FACT, 3, 31, 2);
-    lf_float128 t = f_mul(r.lo, f_sub(f128_one(), f128_scale(z, -1)));
-    t = f_sub(t, f_mul(f_mul(x, z), q));
-    return f_add(x, t);
+/* sin(r.hi + r.lo) for |r| <= ~pi/4, as a double-word:
+ * r (1 - u/3! + u^2/5! - ...) with u = r^2; the terms from u^5/11! on,
+ * below 2^-28 relative, are single-word. */
+static f128_dw f128_sin_dw(f128_dw r) {
+    f128_dw u = dw_neg(dw_mul(r, r));
+    return dw_mul(r, f128_fact_series_dw(u, 1, 9, 31, 2));
 }
 
-/* cos(r.hi + r.lo) for |r| <= ~pi/4 (Taylor series). */
-static lf_float128 f128_cos_kernel(f128_dw r) {
-    lf_float128 x = r.hi;
-    lf_float128 z = f_mul(x, x);
-    lf_float128 hz = f128_scale(z, -1);
-    lf_float128 w = f_sub(f128_one(), hz);
-    lf_float128 corr = f_sub(f_sub(f128_one(), w), hz);   /* exact */
-    /* cos(x) = 1 - z/2 + z^2*(1/4! - z/6! + ...),
-     * cos(x + lo) ~= cos(x) - lo*x */
-    lf_float128 q = f128_poly(f_neg(z), F128_INV_FACT, 4, 30, 2);
-    lf_float128 t = f_sub(f_mul(f_mul(z, z), q), f_mul(x, r.lo));
-    return f_add(w, f_add(corr, t));
+/* cos(r.hi + r.lo) for |r| <= ~pi/4, as a double-word:
+ * 1 - u/2! + u^2/4! - ... with u = r^2; the terms from u^6/12! on,
+ * below 2^-33 relative, are single-word. */
+static f128_dw f128_cos_dw(f128_dw r) {
+    return f128_fact_series_dw(dw_neg(dw_mul(r, r)), 0, 10, 30, 2);
 }
 
 /* The bit of a little-endian multiword integer, 0 for negative positions. */
@@ -1937,10 +1926,10 @@ lf_float128 lf_f128_sin(lf_float128 a) {
     if (p.is_zero) return a;
     f128_dw r;
     switch (f128_rem_pio2(a, &r)) {
-        case 0:  return f128_sin_kernel(r);
-        case 1:  return f128_cos_kernel(r);
-        case 2:  return f_neg(f128_sin_kernel(r));
-        default: return f_neg(f128_cos_kernel(r));
+        case 0:  return f128_sin_dw(r).hi;
+        case 1:  return f128_cos_dw(r).hi;
+        case 2:  return f_neg(f128_sin_dw(r).hi);
+        default: return f_neg(f128_cos_dw(r).hi);
     }
 }
 
@@ -1950,19 +1939,19 @@ lf_float128 lf_f128_cos(lf_float128 a) {
     if (p.is_zero) return f128_one();
     f128_dw r;
     switch (f128_rem_pio2(a, &r)) {
-        case 0:  return f128_cos_kernel(r);
-        case 1:  return f_neg(f128_sin_kernel(r));
-        case 2:  return f_neg(f128_cos_kernel(r));
-        default: return f128_sin_kernel(r);
+        case 0:  return f128_cos_dw(r).hi;
+        case 1:  return f_neg(f128_sin_dw(r).hi);
+        case 2:  return f_neg(f128_cos_dw(r).hi);
+        default: return f128_sin_dw(r).hi;
     }
 }
 
 /* tan for x = n*pi/2 + r */
 static lf_float128 f128_tan_reduced(int n, f128_dw r) {
-    lf_float128 s = f128_sin_kernel(r);
-    lf_float128 c = f128_cos_kernel(r);
-    if (n & 1) return f_neg(f_div(c, s));
-    return f_div(s, c);
+    f128_dw s = f128_sin_dw(r);
+    f128_dw c = f128_cos_dw(r);
+    if (n & 1) return f_neg(dw_div(c, s).hi);
+    return dw_div(s, c).hi;
 }
 
 lf_float128 lf_f128_tan(lf_float128 a) {
@@ -2186,10 +2175,10 @@ lf_float128 lf_f128_sind(lf_float128 a) {
     f128_dw r = f128_deg_to_rad(rd);
     lf_float128 s;
     switch (n) {
-        case 0:  s = f128_sin_kernel(r); break;
-        case 1:  s = f128_cos_kernel(r); break;
-        case 2:  s = f_neg(f128_sin_kernel(r)); break;
-        default: s = f_neg(f128_cos_kernel(r)); break;
+        case 0:  s = f128_sin_dw(r).hi; break;
+        case 1:  s = f128_cos_dw(r).hi; break;
+        case 2:  s = f_neg(f128_sin_dw(r).hi); break;
+        default: s = f_neg(f128_cos_dw(r).hi); break;
     }
     return f_sign(s, p.sign);
 }
@@ -2203,10 +2192,10 @@ lf_float128 lf_f128_cosd(lf_float128 a) {
     if ((n & 1) && f128_is_zero(rd)) return f128_make_zero(0);
     f128_dw r = f128_deg_to_rad(rd);
     switch (n) {
-        case 0:  return f128_cos_kernel(r);
-        case 1:  return f_neg(f128_sin_kernel(r));
-        case 2:  return f_neg(f128_cos_kernel(r));
-        default: return f128_sin_kernel(r);
+        case 0:  return f128_cos_dw(r).hi;
+        case 1:  return f_neg(f128_sin_dw(r).hi);
+        case 2:  return f_neg(f128_cos_dw(r).hi);
+        default: return f128_sin_dw(r).hi;
     }
 }
 
@@ -2549,29 +2538,10 @@ static f128_dw f128_log_gamma_dw(f128_dw x) {
 
 /* sin(πr) for 0 < r <= 1/2, as a double-word. */
 static f128_dw f128_sinpi_dw(lf_float128 r) {
-    lf_float128 zero = f128_make_zero(0);
-    lf_float128 one = f128_one();
-    int use_cos = f128_cmp_internal(r, f128_scale(one, -2)) > 0;
+    int use_cos = f128_cmp_internal(r, f128_scale(f128_one(), -2)) > 0;
     if (use_cos) r = f_sub(f128_half(), r);   /* exact */
     f128_dw t = dw_mul_q(dw_from_bits(F128_PI), r);
-    f128_dw u = dw_mul(t, t);
-    /* |t| <= π/4: sin t = t (1 - u/(2*3) (1 - u/(4*5) (1 - ...))) and
-     * cos t = 1 - u/(1*2) (1 - u/(3*4) (1 - ...)), u = t^2. The inner
-     * levels, below 2^-17 relative, are single-word. */
-    lf_float128 q = one;
-    f128_dw s = dw_make(one, zero);
-    for (int j = 16; j >= 1; j--) {
-        lf_float128 d = f_int(use_cos ? (2 * j - 1) * (2 * j)
-                                      : (2 * j) * (2 * j + 1));
-        if (j > 3) {
-            q = f_sub(one, f_div(f_mul(u.hi, q), d));
-            s = dw_make(q, zero);
-        } else {
-            s = dw_div(dw_mul(u, s), dw_make(d, zero));
-            s = dw_add(dw_make(one, zero), dw_neg(s));
-        }
-    }
-    return use_cos ? s : dw_mul(t, s);
+    return use_cos ? f128_cos_dw(t) : f128_sin_dw(t);
 }
 
 /* log|Γ(x)| for x < 0 not an integer, |x| >= 7.5e-37, as a double-word;
