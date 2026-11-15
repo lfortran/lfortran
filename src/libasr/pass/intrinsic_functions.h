@@ -1169,12 +1169,17 @@ create_math_bindc(Sind, sin, sinl, 2, sind, lf_f128_sind)
 create_math_bindc(Cosd, cos, cosl, 2, cosd, lf_f128_cosd)
 create_math_bindc(Tand, tan, tanl, 2, tand, lf_f128_tand)
 
-#define create_math_pi_input(math_func, stdeval, c_name, lcompilers_name)                               \
+#define create_math_pi_input(math_func, stdeval, c_name, lcompilers_name, quad_eval)                    \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
             diag::Diagnostics& /*diag*/) {                                                              \
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {                                             \
+            if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
+            return ASRUtils::make_RealConstant_r16(al, loc,                                             \
+                quad_eval(ASRUtils::real_expr_get_r16(args[0])), t);                                    \
+        }                                                                                               \
         double rv = -1;                                                                                 \
         if( ASRUtils::extract_value(args[0], rv) ) {                                                    \
             double PI = 3.14159265358979323846;                                                         \
@@ -1217,12 +1222,17 @@ namespace math_func {                                                           
     }                                                                                                   \
 } // namespace math_func
 
-#define create_math_pi_output(math_func, stdeval, c_name, lcompilers_name)                              \
+#define create_math_pi_output(math_func, stdeval, c_name, lcompilers_name, quad_eval)                   \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
             diag::Diagnostics& /*diag*/) {                                                              \
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {                                             \
+            if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
+            return ASRUtils::make_RealConstant_r16(al, loc,                                             \
+                quad_eval(ASRUtils::real_expr_get_r16(args[0])), t);                                    \
+        }                                                                                               \
         double rv = -1;                                                                                 \
         if( ASRUtils::extract_value(args[0], rv) ) {                                                    \
             double PI = 3.14159265358979323846;                                                         \
@@ -1263,12 +1273,12 @@ namespace math_func {                                                           
     }                                                                                                   \
 } // namespace math_func
 
-create_math_pi_input(Sinpi, sin, "sin", "sinpi")
-create_math_pi_input(Cospi, cos, "cos", "cospi")
-create_math_pi_input(Tanpi, tan, "tan", "tanpi")
-create_math_pi_output(Asinpi, asin, "asin", "asinpi")
-create_math_pi_output(Acospi, acos, "acos", "acospi")
-create_math_pi_output(Atanpi, atan, "atan", "atanpi")
+create_math_pi_input(Sinpi, sin, "sin", "sinpi", lf_f128_sinpi)
+create_math_pi_input(Cospi, cos, "cos", "cospi", lf_f128_cospi)
+create_math_pi_input(Tanpi, tan, "tan", "tanpi", lf_f128_tanpi)
+create_math_pi_output(Asinpi, asin, "asin", "asinpi", lf_f128_asinpi)
+create_math_pi_output(Acospi, acos, "acos", "acospi", lf_f128_acospi)
+create_math_pi_output(Atanpi, atan, "atan", "atanpi", lf_f128_atanpi)
 
 namespace Aimag {
 

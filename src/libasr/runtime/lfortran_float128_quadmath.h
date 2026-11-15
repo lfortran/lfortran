@@ -155,6 +155,13 @@ lf_float128 lf_f128_atand  (lf_float128 a);
 lf_float128 lf_f128_atan2d (lf_float128 y, lf_float128 x);
 /* atan2(y, x)/pi (Fortran 2023 atan2pi) */
 lf_float128 lf_f128_atan2pi(lf_float128 y, lf_float128 x);
+/* Trigonometric functions in half revolutions (Fortran 2023 sinpi, ...) */
+lf_float128 lf_f128_sinpi  (lf_float128 a);
+lf_float128 lf_f128_cospi  (lf_float128 a);
+lf_float128 lf_f128_tanpi  (lf_float128 a);
+lf_float128 lf_f128_asinpi (lf_float128 a);
+lf_float128 lf_f128_acospi (lf_float128 a);
+lf_float128 lf_f128_atanpi (lf_float128 a);
 
 #ifdef __cplusplus
 }
