@@ -1,0 +1,5 @@
+semantic error: `parameter` attribute conflicts with `save` attribute
+ --> tests/errors/parameter_save_statement_01.f90:3:10
+  |
+3 |     save n
+  |          ^ 
