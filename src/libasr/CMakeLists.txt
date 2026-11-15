@@ -63,6 +63,7 @@ set(SRC
     pass/param_to_const.cpp
     pass/for_all.cpp
     pass/while_else.cpp
+    pass/hoist_realloc.cpp
     pass/global_stmts.cpp
     pass/select_case.cpp
     pass/init_expr.cpp
