@@ -1,7 +1,7 @@
 program gpu_metal_363
 ! Expected to fail on the GPU backends with bounds checking on, built
-! without --realloc-lhs-arrays. The loop writes t(i) only for odd i, under
-! an `if`. Without the option an assignment does not allocate its left-hand
+! with --no-realloc-lhs-arrays. The loop writes t(i) only for odd i, under
+! an `if`. With the option an assignment does not allocate its left-hand
 ! side, so the launch reports that t(3)%v, which the loop writes, is not
 ! allocated. The even elements, which the loop does not write, are not
 ! checked.

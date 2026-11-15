@@ -7292,10 +7292,10 @@ RUN(NAME gpu_metal_356 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_372 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_357 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_360 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_361 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_361 LABELS gfortran llvm metal cuda EXTRA_ARGS --no-realloc-lhs-arrays)
 RUN(NAME gpu_metal_362 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_365 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_366 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_366 LABELS gfortran llvm metal cuda EXTRA_ARGS --no-realloc-lhs-arrays)
 RUN(NAME gpu_metal_371 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
@@ -7692,12 +7692,12 @@ RUN(NAME gpu_metal_369 LABELS llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_370 LABELS metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 # Expected run-time errors on the GPU backends only. gpu_metal_359 and
 # gpu_metal_363 are GPU-only because the llvm backend still allocates array
-# components in `t(i) = f(...)` without --realloc-lhs-arrays (#9738).
+# components in `t(i) = f(...)` with --no-realloc-lhs-arrays (#9738).
 # gpu_metal_375 is GPU-only for the same reason as gpu_metal_363 (#9738).
-RUN(NAME gpu_metal_375 FAIL NO_FAST LABELS metal cuda) # bounds checking reports a component written in both branches of an `if` that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda) # bounds checking reports a component that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_364 FAIL NO_FAST NO_STD_F23 LABELS llvm metal cuda) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays; --std=f23 allocates it on assignment
+RUN(NAME gpu_metal_375 FAIL NO_FAST LABELS metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component written in both branches of an `if` that is not allocated with --no-realloc-lhs-arrays
+RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component that is not allocated with --no-realloc-lhs-arrays
+RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component an `if` lets the loop write that is not allocated with --no-realloc-lhs-arrays
+RUN(NAME gpu_metal_364 FAIL NO_FAST LABELS llvm metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component the loop assigns an array to that is not allocated with --no-realloc-lhs-arrays
 RUN(NAME gpu_metal_377 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_377_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_385 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_385_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_395 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_395_mod.f90 EXTRA_ARGS --separate-compilation)

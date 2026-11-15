@@ -3788,10 +3788,12 @@ continue_compilation = true
 [[test]]
 filename = "../integration_tests/realloc_lhs_20.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/realloc_lhs_22.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
@@ -4652,6 +4654,7 @@ run = true
 [[test]]
 filename = "errors/matmul_unallocated_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_01.f90"
@@ -5797,6 +5800,7 @@ gpu_metal_kernel = true
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_02.f90"
@@ -5805,6 +5809,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_03.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_04.f90"
@@ -5826,6 +5831,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_08.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_09.f90"
@@ -5838,10 +5844,12 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_11.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_12.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_13.f90"
@@ -5858,6 +5866,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_16.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_17.f90"
@@ -5874,10 +5883,12 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_20.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_21.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_22.f90"
@@ -6724,14 +6735,17 @@ run = true
 [[test]]
 filename = "errors/array_shape_07.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_shape_08.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_shape_09.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "function_call1.f90"
@@ -7093,15 +7107,17 @@ options = "--infer"
 [[test]]
 filename = "errors/infer_realloc_disabled_01.f90"
 run = true
-options = "--infer"
+options = "--infer --no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/allocatable_component_reshape_unallocated_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "infer_first_assignment_01.f90"
@@ -7714,26 +7730,32 @@ asr = true
 [[test]]
 filename = "../integration_tests/derived_types_188.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_02.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_03.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_04.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_05.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/global_init_01.f90"

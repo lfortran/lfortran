@@ -1,6 +1,6 @@
 program gpu_metal_359
 ! Expected to fail on the GPU backends with bounds checking on, built
-! without --realloc-lhs-arrays. The kernel gives t(i)%v a size, but without
+! with --no-realloc-lhs-arrays. The kernel gives t(i)%v a size, but with
 ! the option an assignment does not allocate its left-hand side, so the
 ! launch reports that t(2)%v, which the loop writes, is not allocated,
 ! instead of allocating it.
