@@ -3,7 +3,7 @@ program gpu_metal_366
 ! component of its result gives the component the size of the changed value,
 ! not of the actual argument. Every written component is allocated before
 ! the loop with the size the loop gives it, so bounds checking reports
-! nothing, without --realloc-lhs-arrays.
+! nothing, with --no-realloc-lhs-arrays.
 implicit none
 type tt
     real, allocatable :: v(:)
