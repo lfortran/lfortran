@@ -29278,8 +29278,10 @@ public:
                     return unlimited_polymorphic_struct;
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
+                bool is_assumed_rank_arg = ASRUtils::is_assumed_rank_array(arg_type);
                 if (ASRUtils::is_array(arg_type) && 
-                    ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray) {
+                    (ASRUtils::extract_physical_type(arg_type) == ASR::array_physical_typeType::DescriptorArray ||
+                     is_assumed_rank_arg)) {
                     if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type))) {
                         return dt;
                     }
@@ -29315,12 +29317,21 @@ public:
                     int n_dims_copy = ASRUtils::extract_n_dims_from_ttype(arg_type);
                     llvm::DataLayout data_layout(module->getDataLayout());
                     int dim_des_size = (int)data_layout.getTypeAllocSize(arr_descr->get_dimension_descriptor_type());
+                    llvm::Value* dim_copy_bytes = llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context), dim_des_size * n_dims_copy);
+                    if (is_assumed_rank_arg) {
+                        // The rank of an assumed-rank actual is only known at run time.
+                        dim_copy_bytes = builder->CreateMul(
+                            builder->CreateSExtOrTrunc(arr_descr->get_rank(actual_array_type, dt, false),
+                                llvm::Type::getInt64Ty(context)),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), dim_des_size));
+                    }
                     builder->CreateMemCpy(
                         builder->CreateBitCast(target_dim_des_ptr, llvm_utils->i8_ptr),
                         llvm::MaybeAlign(8),
                         builder->CreateBitCast(actual_dim_des, llvm_utils->i8_ptr),
                         llvm::MaybeAlign(8),
-                        dim_des_size * n_dims_copy);
+                        dim_copy_bytes);
                     
                     // Copy rank and offset
                     llvm::Value* actual_offset = arr_descr->get_offset(actual_array_type, dt, true);
