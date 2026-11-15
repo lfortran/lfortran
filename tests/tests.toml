@@ -3794,6 +3794,12 @@ filename = "../integration_tests/realloc_lhs_22.f90"
 run = true
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_37.f90"
+fortran = true
+pass = "array_op"
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
