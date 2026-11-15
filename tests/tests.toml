@@ -5763,6 +5763,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_defer_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, a statement that adds two terms to a sum at once
+# (`t = t + a + b`) is a sum the lanes of an iteration share out, as two
+# statements that add each are.
+[[test]]
+filename = "../integration_tests/gpu_lanes_chain_01.f90"
+gpu_cuda_kernel = true
+
 # On an NVIDIA GPU, the launch whose lanes are as many as the iterations of the
 # loop over the words of a group runs a copy of the loop over the groups in
 # which each lane takes its one word without a loop around it.

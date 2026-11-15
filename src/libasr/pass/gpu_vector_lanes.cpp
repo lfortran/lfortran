@@ -2554,15 +2554,42 @@ private:
         } else {
             return false;
         }
+        // s + e1 + e2 ... (each + or - of the chain applied to what is
+        // left of it): `value` is the sum of s and of the terms, in this
+        // order, so a statement that adds several terms at once updates the
+        // accumulator as the statements that add each would in turn.
+        auto chain = [&](ASR::expr_t *e) {
+            while (!is_s(e)) {
+                ASR::expr_t *l = nullptr, *r = nullptr;
+                ASR::binopType o;
+                if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
+                    auto *x = ASR::down_cast<ASR::RealBinOp_t>(e);
+                    o = x->m_op; l = x->m_left; r = x->m_right;
+                } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+                    auto *x = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                    o = x->m_op; l = x->m_left; r = x->m_right;
+                } else {
+                    return false;
+                }
+                if ((o != ASR::binopType::Add && o != ASR::binopType::Sub)
+                        || mentions(r, s)) {
+                    return false;
+                }
+                e = l;
+            }
+            return true;
+        };
         switch (binop) {
             case ASR::binopType::Add:
                 op = ASR::reduction_opType::ReduceAdd;
-                return other(left, right, true);
+                return other(left, right, true)
+                    || (!mentions(right, s) && chain(left));
             // s - e: each lane takes away from what it starts with, the
             // others from zero, so the lanes add up what they hold.
             case ASR::binopType::Sub:
                 op = ASR::reduction_opType::ReduceAdd;
-                return other(left, right, false);
+                return other(left, right, false)
+                    || (!mentions(right, s) && chain(left));
             case ASR::binopType::Mul:
                 op = ASR::reduction_opType::ReduceMul;
                 return other(left, right, true);
