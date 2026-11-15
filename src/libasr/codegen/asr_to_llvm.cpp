@@ -11571,7 +11571,12 @@ public:
                         ASR::is_a<ASR::Complex_t>(*arg->m_type)) {
                         llvm::Type* internal_type = llvm_utils->getComplexType(
                             ASRUtils::extract_kind_from_ttype_t(arg->m_type));
-                        if (llvm_arg.getType() != internal_type) {
+                        if (llvm_arg.getType()->isPointerTy()) {
+                            // The C ABI passes it in memory (WebAssembly;
+                            // complex(8) on Windows): the argument points to
+                            // the value.
+                            llvm_sym = llvm_utils->CreateLoad2(internal_type, &llvm_arg);
+                        } else if (llvm_arg.getType() != internal_type) {
                             llvm::Value* arg_alloca = builder->CreateAlloca(
                                 llvm_arg.getType(), nullptr);
                             builder->CreateStore(&llvm_arg, arg_alloca);
