@@ -23502,9 +23502,11 @@ public:
                     }
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    // real, aimag and conjg fold complex(16) values exactly
+                    // real, aimag, conjg and merge fold complex(16) values
+                    // exactly
                     const bool exact_complex16_fold = (var_name == "real" ||
-                        var_name == "aimag" || var_name == "conjg");
+                        var_name == "aimag" || var_name == "conjg" ||
+                        var_name == "merge");
                     const bool are_all_args_evaluated {
                         ASRUtils::all_args_evaluated(args, true, exact_complex16_fold, true) };
                     if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {

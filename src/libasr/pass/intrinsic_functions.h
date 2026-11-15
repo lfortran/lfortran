@@ -420,11 +420,14 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
     return b.Call(new_symbol, new_args, return_type);
 }
 
+// `allow_complex16` is true when `eval_function` evaluates complex(16)
+// constants without rounding them to a double.
 static inline ASR::asr_t* create_UnaryFunction(Allocator& al, const Location& loc,
     Vec<ASR::expr_t*>& args, eval_intrinsic_function eval_function,
-    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag) {
+    int64_t intrinsic_id, int64_t overload_id, ASR::ttype_t* type, diag::Diagnostics& diag,
+    bool allow_complex16=false) {
     ASR::expr_t *value = nullptr;
-    if (ASRUtils::all_args_evaluated(args)) {
+    if (ASRUtils::all_args_evaluated(args, false, allow_complex16)) {
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 1);
         arg_values.push_back(al, ASRUtils::expr_value(args[0]));
         value = eval_function(al, loc, type, arg_values, diag);
@@ -841,6 +844,11 @@ namespace X {                                                                   
             diag::Diagnostics& /*diag*/) {                                      \
         LCOMPILERS_ASSERT(args.size() == 1);                                    \
         create_trig_eval_r10_##fold_r10(stdeval, al, loc, t, args)              \
+        lf_complex128 c16;                                                      \
+        if( ASRUtils::extract_complex_r16(args[0], c16) ) {                     \
+            return ASRUtils::make_ComplexConstant_c128(al, loc,                 \
+                lf_c128_##stdeval(c16), t);                                     \
+        }                                                                       \
         if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&                         \
                 ASRUtils::extract_kind_from_ttype_t(t) == 16 ) {                \
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_##stdeval(  \
@@ -894,6 +902,15 @@ namespace Log {
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
             diag::Diagnostics& diag) {
         LCOMPILERS_ASSERT(args.size() == 1);
+        lf_complex128 c16;
+        if( ASRUtils::extract_complex_r16(args[0], c16) ) {
+            lf_float128 zero = lf_f128_from_double(0.0);
+            if (lf_f128_eq(c16.re, zero) && lf_f128_eq(c16.im, zero)) {
+                append_error(diag, "Complex argument of `log` cannot be zero", loc);
+                return nullptr;
+            }
+            return ASRUtils::make_ComplexConstant_c128(al, loc, lf_c128_log(c16), t);
+        }
         if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&
                 ASRUtils::extract_kind_from_ttype_t(t) == 16 ) {
             lf_float128 val = ASRUtils::real_constant_get_r16(
@@ -1505,8 +1522,12 @@ namespace Abs {
 
     static ASR::expr_t *eval_Abs(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args, false, true));
         ASR::expr_t* arg = args[0];
+        lf_complex128 c16;
+        if (ASRUtils::extract_complex_r16(arg, c16)) {
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_c128_abs(c16), t);
+        }
         if (ASRUtils::is_real(*expr_type(arg))) {
             int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(arg));
             if (kind == 16) {
@@ -1567,7 +1588,7 @@ namespace Abs {
         // array_struct_temporary: TODO: Calculate type according to input arguments
         return UnaryIntrinsicFunction::create_UnaryFunction(al, loc, args, eval_Abs,
             static_cast<int64_t>(IntrinsicElementalFunctions::Abs), 0,
-            ASRUtils::type_get_past_allocatable(type), diag);
+            ASRUtils::type_get_past_allocatable(type), diag, true);
     }
 
     static inline ASR::expr_t* instantiate_Abs(Allocator &al, const Location &loc,
@@ -4091,6 +4112,11 @@ namespace Sqrt {
             }
             return b.f_t(std::sqrt(val), arg_type);
         } else {
+            lf_complex128 c16;
+            if( ASRUtils::extract_complex_r16(args[0], c16) ) {
+                return ASRUtils::make_ComplexConstant_c128(al, loc,
+                    lf_c128_sqrt(c16), arg_type);
+            }
             std::complex<double> crv;
             if( ASRUtils::extract_value(args[0], crv) ) {
                 std::complex<double> val = std::sqrt(crv);
@@ -6187,9 +6213,11 @@ namespace Cmplx {
                 !ASRUtils::is_array(expr_type(args[0])) && expr_value(args[0]) &&
                 ASR::is_a<ASR::ComplexConstant_t>(*expr_value(args[0]))) {
             ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(expr_value(args[0]));
-            // A conversion to complex(10) is left to run time.
-            if (ASRUtils::complex_constant_is_r16(cc) &&
-                    extract_kind_from_ttype_t(return_type) != 10) {
+            // A conversion to complex(10) is left to run time; one from or
+            // to complex(16) is folded here, the others below.
+            int return_kind = extract_kind_from_ttype_t(return_type);
+            if (return_kind == 16 ||
+                    (return_kind != 10 && ASRUtils::complex_constant_is_r16(cc))) {
                 m_value = ASRUtils::fold_complex_cast(al, loc, cc,
                     ASR::cast_kindType::ComplexToComplex, return_type);
             }
@@ -8652,7 +8680,11 @@ namespace Exp {
 
     static inline ASR::expr_t* eval_Exp(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
+        LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args, false, true));
+        lf_complex128 c16;
+        if( ASRUtils::extract_complex_r16(args[0], c16) ) {
+            return ASRUtils::make_ComplexConstant_c128(al, loc, lf_c128_exp(c16), t);
+        }
         if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&
                 ASRUtils::extract_kind_from_ttype_t(t) == 16 ) {
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_exp(
