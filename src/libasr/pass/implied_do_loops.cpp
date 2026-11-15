@@ -721,6 +721,13 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             target_len_value == constructor_len_value);
     }
 
+    bool is_assumed_length_string(ASR::ttype_t* type) {
+        ASR::ttype_t* elem = ASRUtils::extract_type(type);
+        return ASR::is_a<ASR::String_t>(*elem) &&
+            ASR::down_cast<ASR::String_t>(elem)->m_len_kind ==
+                ASR::string_length_kindType::AssumedLength;
+    }
+
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // The statements that evaluate a constructor are put in front of
         // the FORALL, where its indices are not defined. A constructor that
@@ -936,6 +943,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             resultvar2value[result_var] == &(x->base)) {
             is_assignment_value = true;
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        // A temporary cannot have an assumed length
+        if (is_result_var_fixed_size &&
+                is_assumed_length_string(ASRUtils::expr_type(result_var))) {
+            is_result_var_fixed_size = false;
         }
         bool is_named_constant = is_named_array_constant(x, is_assignment_value);
         ASR::ttype_t* result_type_ = nullptr;
