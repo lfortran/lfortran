@@ -11,6 +11,8 @@
 
 #include <libasr/asr_builder.h>
 
+#include <algorithm>
+#include <map>
 #include <vector>
 
 namespace LCompilers {
@@ -1078,6 +1080,204 @@ static bool value_has_target_shape(ASR::expr_t* target, ASR::expr_t* value) {
     return false;
 }
 
+// Finds a reference to a function that is not pure, which can change the
+// allocation of a variable. A pure function cannot (F2018 C1594).
+class ImpureCallFinder: public ASR::BaseWalkVisitor<ImpureCallFinder> {
+    public:
+
+    bool found = false;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::symbol_t* f = ASRUtils::symbol_get_past_external(x.m_name);
+        if (!ASR::is_a<ASR::Function_t>(*f) || !ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(f))->m_pure) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<ImpureCallFinder>::visit_FunctionCall(x);
+    }
+};
+
+/*
+What the statements of a body before one of its statements tell about the
+allocation of whole arrays: groups of arrays that have the same shape.
+
+An intrinsic assignment of an array to an allocatable array of the same group
+as an array that gives the value its shape needs no reallocation:
+
+    un = u              ! un and u have the same shape
+    un(2:n-1) = ...     ! keeps it
+    u = un              ! not reallocated
+
+The facts are taken through the statements of one body in order. A compound
+statement, a label (where other statements can jump to), a call, an
+assignment that calls a function that is not pure, and any other statement
+that is not understood below forgets all of them, so that they never cross a
+merge of control flow, and nothing they do not see changes the allocation of
+an array they know. A component is tracked only through nonpointer scalars
+from a variable without TARGET, which nothing else can then designate.
+*/
+class AllocationFacts {
+    std::vector<std::vector<ASR::expr_t*>> same_shape;
+
+    public:
+
+    // Whether `x` is a variable that is not an optional dummy, or a
+    // component of a nonpointer scalar that is one, without TARGET, or such
+    // a component in turn. An absent optional dummy has no shape.
+    static bool is_tracked(ASR::expr_t* x) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        if (ASR::is_a<ASR::Var_t>(*x)) {
+            ASR::Variable_t* v = get_variable(x);
+            return v != nullptr && !is_optional_dummy(v);
+        }
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+            return false;
+        }
+        ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
+        ASR::ttype_t* base_type = ASRUtils::expr_type(base);
+        if (ASRUtils::is_array(base_type) || ASRUtils::is_pointer(base_type)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Var_t>(*base)) {
+            ASR::Variable_t* v = get_variable(base);
+            return v != nullptr && !v->m_target_attr && !is_optional_dummy(v);
+        }
+        return is_tracked(base);
+    }
+
+    // Whether `v` is an optional dummy, which
+    // transform_optional_argument_functions has turned into a required one
+    // followed by its presence flag
+    static bool is_optional_dummy(ASR::Variable_t* v) {
+        if (v->m_presence == ASR::presenceType::Optional) {
+            return true;
+        }
+        ASR::asr_t* owner = v->m_parent_symtab->asr_owner;
+        if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            return false;
+        }
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(owner));
+        for (size_t i = 0; i + 1 < f->n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*f->m_args[i]) &&
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == &v->base) {
+                return is_presence_flag_argument(f->m_args[i + 1]);
+            }
+        }
+        return false;
+    }
+
+    static ASR::Variable_t* get_variable(ASR::expr_t* var) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(var)->m_v);
+        return ASR::is_a<ASR::Variable_t>(*sym)
+            ? ASR::down_cast<ASR::Variable_t>(sym) : nullptr;
+    }
+
+    // Whether `x` is `prefix` or a component of it
+    static bool designates_part_of(ASR::expr_t* x, ASR::expr_t* prefix) {
+        while (true) {
+            x = ASRUtils::get_past_array_physical_cast(x);
+            if (PassUtils::same_expression(x, prefix)) {
+                return true;
+            }
+            if (!ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+                return false;
+            }
+            x = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
+        }
+    }
+
+    static bool contains(const std::vector<ASR::expr_t*>& xs, ASR::expr_t* x) {
+        for (ASR::expr_t* y: xs) {
+            if (PassUtils::same_expression(y, x)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void clear() {
+        same_shape.clear();
+    }
+
+    bool have_same_shape(ASR::expr_t* x, ASR::expr_t* y) const {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        y = ASRUtils::get_past_array_physical_cast(y);
+        for (const std::vector<ASR::expr_t*>& group: same_shape) {
+            if (contains(group, x) && contains(group, y)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Forgets everything about `x` and its components, whose allocation
+    // can have changed
+    void forget(ASR::expr_t* x) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        auto is_part = [&](ASR::expr_t* y) {
+            return designates_part_of(y, x);
+        };
+        for (std::vector<ASR::expr_t*>& group: same_shape) {
+            group.erase(std::remove_if(group.begin(), group.end(), is_part),
+                group.end());
+        }
+        same_shape.erase(std::remove_if(same_shape.begin(), same_shape.end(),
+            [](const std::vector<ASR::expr_t*>& group) {
+                return group.size() < 2;
+            }), same_shape.end());
+    }
+
+    // Records that the tracked arrays `xs` have the same shape
+    void set_same_shape(const std::vector<ASR::expr_t*>& xs) {
+        std::vector<ASR::expr_t*> merged;
+        for (ASR::expr_t* x: xs) {
+            if (!contains(merged, x)) {
+                merged.push_back(x);
+            }
+        }
+        for (size_t i = 0; i < same_shape.size();) {
+            bool overlaps = false;
+            for (ASR::expr_t* x: same_shape[i]) {
+                if (contains(merged, x)) {
+                    overlaps = true;
+                    break;
+                }
+            }
+            if (overlaps) {
+                for (ASR::expr_t* x: same_shape[i]) {
+                    if (!contains(merged, x)) {
+                        merged.push_back(x);
+                    }
+                }
+                same_shape.erase(same_shape.begin() + i);
+            } else {
+                i++;
+            }
+        }
+        if (merged.size() >= 2) {
+            same_shape.push_back(merged);
+        }
+        limit_size();
+    }
+
+    private:
+
+    // Keeps the comparisons of a long body cheap
+    void limit_size() {
+        size_t n = 0;
+        for (const std::vector<ASR::expr_t*>& group: same_shape) {
+            n += group.size();
+        }
+        if (n > 256) {
+            clear();
+        }
+    }
+};
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -1090,6 +1290,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     bool remove_original_stmt;
     const LCompilers::PassOptions& pass_options;
     inline static std::set<const ASR::Assignment_t*> debug_inserted;
+    // What the statements before an intrinsic assignment of an array to an
+    // allocatable array tell about its target, see AllocationFacts
+    enum class KnownTarget { HasValueShape };
+    std::map<const ASR::Assignment_t*, KnownTarget> known_targets;
 
     public:
 
@@ -1243,6 +1447,132 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         remove_original_stmt = true;
     }
 
+    static bool calls_impure_function(const ASR::stmt_t& x) {
+        ImpureCallFinder finder;
+        finder.visit_stmt(x);
+        return finder.found;
+    }
+
+    // Records in `known_targets` what `facts` tell about the target of the
+    // assignment `x`, and updates them with its effect
+    void track_assignment(const ASR::Assignment_t& x, AllocationFacts& facts) {
+        if (x.m_overloaded != nullptr || x.m_move_allocation ||
+                calls_impure_function(x.base)) {
+            facts.clear();
+            return;
+        }
+        ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(x.m_target);
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        if (!ASRUtils::is_array(target_type)) {
+            // Assigning a derived type reallocates its allocatable components
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))) {
+                facts.forget(target);
+            }
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*target) ||
+                ASR::is_a<ASR::ArraySection_t>(*target)) {
+            // An element or a section keeps the allocation of its array
+            return;
+        }
+        if (!AllocationFacts::is_tracked(target)) {
+            if (ASR::is_a<ASR::Var_t>(*target) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                facts.forget(target);
+            } else {
+                facts.clear();
+            }
+            return;
+        }
+        ASR::expr_t* value = ASRUtils::get_past_array_broadcast(x.m_value);
+        if (!ASRUtils::is_allocatable(target_type) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(value))) {
+            // The shape of the target does not change
+            return;
+        }
+        if (!(realloc_lhs || x.m_realloc_lhs ||
+                should_auto_realloc_component_assignment(target))) {
+            // The target keeps its shape, which the value must have
+            // then, but a program can rely on the reallocation anyway
+            facts.forget(target);
+            return;
+        }
+        std::vector<ASR::expr_t*> operands;
+        collect_shape_operands(value, operands);
+        operands.erase(std::remove_if(operands.begin(), operands.end(),
+            [](ASR::expr_t* operand) {
+                return !AllocationFacts::is_tracked(operand);
+            }), operands.end());
+        for (ASR::expr_t* operand: operands) {
+            if (facts.have_same_shape(operand, target)) {
+                known_targets[&x] = KnownTarget::HasValueShape;
+                break;
+            }
+        }
+        if (!AllocationFacts::contains(operands, target)) {
+            facts.forget(target);
+            operands.push_back(target);
+        }
+        facts.set_same_shape(operands);
+    }
+
+    void track_deallocation(ASR::expr_t** vars, size_t n_vars,
+            AllocationFacts& facts) {
+        for (size_t i = 0; i < n_vars; i++) {
+            facts.forget(vars[i]);
+        }
+    }
+
+    // Updates `facts` with the effect of `x`, see AllocationFacts
+    void track_allocation(const ASR::stmt_t& x, AllocationFacts& facts) {
+        switch (x.type) {
+            case ASR::stmtType::Assignment: {
+                track_assignment(*ASR::down_cast<ASR::Assignment_t>(&x), facts);
+                return;
+            }
+            case ASR::stmtType::ExplicitDeallocate: {
+                if (calls_impure_function(x)) {
+                    break;
+                }
+                ASR::ExplicitDeallocate_t* d =
+                    ASR::down_cast<ASR::ExplicitDeallocate_t>(&x);
+                track_deallocation(d->m_vars, d->n_vars, facts);
+                return;
+            }
+            case ASR::stmtType::ImplicitDeallocate: {
+                if (calls_impure_function(x)) {
+                    break;
+                }
+                ASR::ImplicitDeallocate_t* d =
+                    ASR::down_cast<ASR::ImplicitDeallocate_t>(&x);
+                track_deallocation(d->m_vars, d->n_vars, facts);
+                return;
+            }
+            case ASR::stmtType::Allocate: {
+                if (calls_impure_function(x)) {
+                    break;
+                }
+                ASR::Allocate_t* a = ASR::down_cast<ASR::Allocate_t>(&x);
+                for (size_t i = 0; i < a->n_args; i++) {
+                    facts.forget(a->m_args[i].m_a);
+                }
+                return;
+            }
+            case ASR::stmtType::Associate: {
+                // A pointer assignment changes only the pointer
+                if (calls_impure_function(x)) {
+                    break;
+                }
+                facts.forget(ASR::down_cast<ASR::Associate_t>(&x)->m_target);
+                return;
+            }
+            default: {
+                break;
+            }
+        }
+        facts.clear();
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         bool remove_original_stmt_copy = remove_original_stmt;
         Vec<ASR::stmt_t*> body;
@@ -1252,10 +1582,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 parent_body->push_back(al, pass_result[j]);
             }
         }
+        AllocationFacts facts;
         for (size_t i = 0; i < n_body; i++) {
             pass_result.n = 0;
             pass_result.reserve(al, 1);
             remove_original_stmt = false;
+            track_allocation(*m_body[i], facts);
             Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
             parent_body = &body;
             visit_stmt(*m_body[i]);
@@ -2419,7 +2751,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     // Reallocates `target` to the shape of `value` if `realloc` holds.
-    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool realloc) {
+    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool realloc,
+            const ASR::Assignment_t* assignment = nullptr) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
         ASR::ttype_t* underlying_target_type = ASRUtils::expr_type(underlying_target);
@@ -2429,6 +2762,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return;
         }
         if (value_has_target_shape(underlying_target, value)) {
+            return;
+        }
+        auto known = known_targets.find(assignment);
+        if (known != known_targets.end() &&
+                known->second == KnownTarget::HasValueShape &&
+                is_reallocated_for_shape_only(underlying_target)) {
             return;
         }
         bool is_bitcast = ASR::is_a<ASR::BitCast_t>(*underlying_value);
@@ -3736,7 +4075,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
             bool per_assign_realloc = xx.m_realloc_lhs ||
                 should_auto_realloc_component_assignment(xx.m_target);
-            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
+            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc, &x);
         }
 
         if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
