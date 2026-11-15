@@ -5706,6 +5706,14 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_reduce_02.f90"
 gpu_metal_kernel = true
 
+# Accumulators updated under an `if` (a maximum written as `if (v > m) m = v`,
+# a count, a sum of the elements that pass a test), shared out between the
+# lanes of a warp and combined.
+[[test]]
+filename = "../integration_tests/gpu_lanes_reduce_03.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
 # A loop whose body is a block with locals, shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_blocks_02.f90"
