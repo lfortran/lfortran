@@ -7,12 +7,17 @@ integer(4), save :: scalar_calls = 0
 contains
 
 function array_value() result(r)
+    real(4), dimension(4), parameter :: __libasr_created__array_constant_ = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00, 4.00000000e+00]
+    integer(4) :: __libasr_index_0_
+    integer(4) :: __libasr_index_0_1
     real(4), dimension(4) :: r
     array_calls = array_calls + 1
-    r(1) = 1.00000000e+00
-    r(2) = 2.00000000e+00
-    r(3) = 3.00000000e+00
-    r(4) = 4.00000000e+00
+    __libasr_index_0_1 = lbound(__libasr_created__array_constant_, 1)
+    do __libasr_index_0_ = lbound(r, 1), ubound(r, 1)
+        r(__libasr_index_0_) = __libasr_created__array_constant_(__libasr_index_0_1)
+        __libasr_index_0_1 = __libasr_index_0_1 + 1
+    end do
 end function array_value
 
 subroutine e_exp(x, y)
@@ -148,6 +153,10 @@ use elemental_28_m, only: element_value
 use elemental_28_m, only: scalar_calls
 use elemental_28_m, only: scalar_value
 implicit none
+real(4), dimension(4), parameter :: __libasr_created__array_constant_ = [0.00000000e+00, 1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(6), parameter :: __libasr_created__array_constant_1 = [0.00000000e+00, 1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00, 4.00000000e+00, 5.00000000e+00]
 integer(4), dimension(4), parameter :: __libasr_created__array_reshape_array = [0, 3, 8, 15]
 real(4), dimension(4), parameter :: __libasr_created__array_reshape_array1 = [1.00000000e+00, 2.00000000e+00,&
          3.00000000e+00, 4.00000000e+00]
@@ -271,6 +280,10 @@ integer(4) :: __libasr_index_0_62
 integer(4) :: __libasr_index_0_63
 integer(4) :: __libasr_index_0_64
 integer(4) :: __libasr_index_0_65
+integer(4) :: __libasr_index_0_66
+integer(4) :: __libasr_index_0_67
+integer(4) :: __libasr_index_0_68
+integer(4) :: __libasr_index_0_69
 integer(4) :: __libasr_index_0_7
 integer(4) :: __libasr_index_0_8
 integer(4) :: __libasr_index_0_9
@@ -286,59 +299,60 @@ integer(4) :: i
 real(4), dimension(:), allocatable :: result
 real(4), dimension(4) :: x
 real(4), dimension(4) :: y
-x(1) = 0.00000000e+00
-x(2) = 1.00000000e+00
-x(3) = 2.00000000e+00
-x(4) = 3.00000000e+00
+__libasr_index_0_1 = lbound(__libasr_created__array_constant_, 1)
+do __libasr_index_0_ = lbound(x, 1), ubound(x, 1)
+    x(__libasr_index_0_) = __libasr_created__array_constant_(__libasr_index_0_1)
+    __libasr_index_0_1 = __libasr_index_0_1 + 1
+end do
 call e_exp(x, y)
 do i = 1, 4
     if (Abs(y(i) - (Exp(-x(i)))) > 9.99999997e-07) then
         error stop
     end if
 end do
-__libasr_index_0_1 = lbound(x, 1)
-do __libasr_index_0_ = lbound(__libasr_created__subroutine_call_e_max, 1),&
+__libasr_index_0_3 = lbound(x, 1)
+do __libasr_index_0_2 = lbound(__libasr_created__subroutine_call_e_max, 1),&
          ubound(__libasr_created__subroutine_call_e_max, 1)
-    __libasr_created__subroutine_call_e_max(__libasr_index_0_) = x(__libasr_index_0_1) - 1.00000000e+00
-    __libasr_index_0_1 = __libasr_index_0_1 + 1
+    __libasr_created__subroutine_call_e_max(__libasr_index_0_2) = x(__libasr_index_0_3) - 1.00000000e+00
+    __libasr_index_0_3 = __libasr_index_0_3 + 1
 end do
 call e_max(__libasr_created__subroutine_call_e_max, y, 1.00000001e-01)
-__libasr_index_0_3 = lbound(y, 1)
-__libasr_index_0_4 = lbound(__libasr_created_real_binop_right_, 1)
-do __libasr_index_0_2 = lbound(__libasr_created__intrinsic_elemental_function_Abs, 1),&
+__libasr_index_0_5 = lbound(y, 1)
+__libasr_index_0_6 = lbound(__libasr_created_real_binop_right_, 1)
+do __libasr_index_0_4 = lbound(__libasr_created__intrinsic_elemental_function_Abs, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs, 1)
-    __libasr_created__intrinsic_elemental_function_Abs(__libasr_index_0_2) = y(__libasr_index_0_3) - __libasr_created_re&
-        al_binop_right_(__libasr_index_0_4)
-    __libasr_index_0_3 = __libasr_index_0_3 + 1
-    __libasr_index_0_4 = __libasr_index_0_4 + 1
-end do
-__libasr_index_0_6 = lbound(__libasr_created__intrinsic_elemental_function_Abs, 1)
-do __libasr_index_0_5 = lbound(__libasr_created__intrinsic_array_function_Any, 1),&
-         ubound(__libasr_created__intrinsic_array_function_Any, 1)
-    __libasr_created__intrinsic_array_function_Any(__libasr_index_0_5) = Abs(__libasr_created__intrinsic_elemental_funct&
-        ion_Abs(__libasr_index_0_6)) > 9.99999997e-07
+    __libasr_created__intrinsic_elemental_function_Abs(__libasr_index_0_4) = y(__libasr_index_0_5) - __libasr_created_re&
+        al_binop_right_(__libasr_index_0_6)
+    __libasr_index_0_5 = __libasr_index_0_5 + 1
     __libasr_index_0_6 = __libasr_index_0_6 + 1
+end do
+__libasr_index_0_8 = lbound(__libasr_created__intrinsic_elemental_function_Abs, 1)
+do __libasr_index_0_7 = lbound(__libasr_created__intrinsic_array_function_Any, 1),&
+         ubound(__libasr_created__intrinsic_array_function_Any, 1)
+    __libasr_created__intrinsic_array_function_Any(__libasr_index_0_7) = Abs(__libasr_created__intrinsic_elemental_funct&
+        ion_Abs(__libasr_index_0_8)) > 9.99999997e-07
+    __libasr_index_0_8 = __libasr_index_0_8 + 1
 end do
 __libasr_created__intrinsic_array_function_Any9 = Any(__libasr_created__intrinsic_array_function_Any)
 if (__libasr_created__intrinsic_array_function_Any9) then
     error stop
 end if
 call e_sqrt(x, y, 1.00000000e+00)
-__libasr_index_0_8 = lbound(y, 1)
-__libasr_index_0_9 = lbound(__libasr_created_real_binop_right_1, 1)
-do __libasr_index_0_7 = lbound(__libasr_created__intrinsic_elemental_function_Abs1, 1),&
+__libasr_index_0_10 = lbound(y, 1)
+__libasr_index_0_11 = lbound(__libasr_created_real_binop_right_1, 1)
+do __libasr_index_0_9 = lbound(__libasr_created__intrinsic_elemental_function_Abs1, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs1, 1)
-    __libasr_created__intrinsic_elemental_function_Abs1(__libasr_index_0_7) = y(__libasr_index_0_8) - __libasr_created_r&
-        eal_binop_right_1(__libasr_index_0_9)
-    __libasr_index_0_8 = __libasr_index_0_8 + 1
-    __libasr_index_0_9 = __libasr_index_0_9 + 1
-end do
-__libasr_index_0_11 = lbound(__libasr_created__intrinsic_elemental_function_Abs1, 1)
-do __libasr_index_0_10 = lbound(__libasr_created__intrinsic_array_function_Any1, 1),&
-         ubound(__libasr_created__intrinsic_array_function_Any1, 1)
-    __libasr_created__intrinsic_array_function_Any1(__libasr_index_0_10) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs1(__libasr_index_0_11)) > 9.99999997e-07
+    __libasr_created__intrinsic_elemental_function_Abs1(__libasr_index_0_9) = y(__libasr_index_0_10) - __libasr_created_&
+        real_binop_right_1(__libasr_index_0_11)
+    __libasr_index_0_10 = __libasr_index_0_10 + 1
     __libasr_index_0_11 = __libasr_index_0_11 + 1
+end do
+__libasr_index_0_13 = lbound(__libasr_created__intrinsic_elemental_function_Abs1, 1)
+do __libasr_index_0_12 = lbound(__libasr_created__intrinsic_array_function_Any1, 1),&
+         ubound(__libasr_created__intrinsic_array_function_Any1, 1)
+    __libasr_created__intrinsic_array_function_Any1(__libasr_index_0_12) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs1(__libasr_index_0_13)) > 9.99999997e-07
+    __libasr_index_0_13 = __libasr_index_0_13 + 1
 end do
 __libasr_created__intrinsic_array_function_Any10 = Any(__libasr_created__intrinsic_array_function_Any1)
 if (__libasr_created__intrinsic_array_function_Any10) then
@@ -363,142 +377,142 @@ do i = 1, 4
     end if
 end do
 __libasr_created__scalar_operand_ = scalar_value()
-__libasr_index_0_13 = lbound(x, 1)
-do __libasr_index_0_12 = lbound(y, 1), ubound(y, 1)
-    y(__libasr_index_0_12) = Sqrt(x(__libasr_index_0_13) + __libasr_created__scalar_operand_)
-    __libasr_index_0_13 = __libasr_index_0_13 + 1
+__libasr_index_0_15 = lbound(x, 1)
+do __libasr_index_0_14 = lbound(y, 1), ubound(y, 1)
+    y(__libasr_index_0_14) = Sqrt(x(__libasr_index_0_15) + __libasr_created__scalar_operand_)
+    __libasr_index_0_15 = __libasr_index_0_15 + 1
 end do
 if (scalar_calls /= 1) then
     error stop
 end if
-__libasr_index_0_15 = lbound(y, 1)
-__libasr_index_0_16 = lbound(__libasr_created_real_binop_right_2, 1)
-do __libasr_index_0_14 = lbound(__libasr_created__intrinsic_elemental_function_Abs2, 1),&
+__libasr_index_0_17 = lbound(y, 1)
+__libasr_index_0_18 = lbound(__libasr_created_real_binop_right_2, 1)
+do __libasr_index_0_16 = lbound(__libasr_created__intrinsic_elemental_function_Abs2, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs2, 1)
-    __libasr_created__intrinsic_elemental_function_Abs2(__libasr_index_0_14) = y(__libasr_index_0_15) - __libasr_created&
-        _real_binop_right_2(__libasr_index_0_16)
-    __libasr_index_0_15 = __libasr_index_0_15 + 1
-    __libasr_index_0_16 = __libasr_index_0_16 + 1
-end do
-__libasr_index_0_18 = lbound(__libasr_created__intrinsic_elemental_function_Abs2, 1)
-do __libasr_index_0_17 = lbound(__libasr_created__intrinsic_array_function_Any2, 1),&
-         ubound(__libasr_created__intrinsic_array_function_Any2, 1)
-    __libasr_created__intrinsic_array_function_Any2(__libasr_index_0_17) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs2(__libasr_index_0_18)) > 9.99999997e-07
+    __libasr_created__intrinsic_elemental_function_Abs2(__libasr_index_0_16) = y(__libasr_index_0_17) - __libasr_created&
+        _real_binop_right_2(__libasr_index_0_18)
+    __libasr_index_0_17 = __libasr_index_0_17 + 1
     __libasr_index_0_18 = __libasr_index_0_18 + 1
+end do
+__libasr_index_0_20 = lbound(__libasr_created__intrinsic_elemental_function_Abs2, 1)
+do __libasr_index_0_19 = lbound(__libasr_created__intrinsic_array_function_Any2, 1),&
+         ubound(__libasr_created__intrinsic_array_function_Any2, 1)
+    __libasr_created__intrinsic_array_function_Any2(__libasr_index_0_19) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs2(__libasr_index_0_20)) > 9.99999997e-07
+    __libasr_index_0_20 = __libasr_index_0_20 + 1
 end do
 __libasr_created__intrinsic_array_function_Any11 = Any(__libasr_created__intrinsic_array_function_Any2)
 if (__libasr_created__intrinsic_array_function_Any11) then
     error stop
 end if
 __libasr_created_real_binop_left_ = array_value()
-__libasr_index_0_20 = lbound(__libasr_created_real_binop_left_, 1)
-do __libasr_index_0_19 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt, 1),&
+__libasr_index_0_22 = lbound(__libasr_created_real_binop_left_, 1)
+do __libasr_index_0_21 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Sqrt, 1)
-    __libasr_created__intrinsic_elemental_function_Sqrt(__libasr_index_0_19) = __libasr_created_real_binop_left_(__libas&
-        r_index_0_20) + 3.00000000e+00
-    __libasr_index_0_20 = __libasr_index_0_20 + 1
-end do
-__libasr_index_0_22 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt, 1)
-do __libasr_index_0_21 = lbound(y, 1), ubound(y, 1)
-    y(__libasr_index_0_21) = Sqrt(__libasr_created__intrinsic_elemental_function_Sqrt(__libasr_index_0_22))
+    __libasr_created__intrinsic_elemental_function_Sqrt(__libasr_index_0_21) = __libasr_created_real_binop_left_(__libas&
+        r_index_0_22) + 3.00000000e+00
     __libasr_index_0_22 = __libasr_index_0_22 + 1
+end do
+__libasr_index_0_24 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt, 1)
+do __libasr_index_0_23 = lbound(y, 1), ubound(y, 1)
+    y(__libasr_index_0_23) = Sqrt(__libasr_created__intrinsic_elemental_function_Sqrt(__libasr_index_0_24))
+    __libasr_index_0_24 = __libasr_index_0_24 + 1
 end do
 if (array_calls /= 1) then
     error stop
 end if
-__libasr_index_0_24 = lbound(y, 1)
-__libasr_index_0_25 = lbound(__libasr_created_real_binop_right_3, 1)
-do __libasr_index_0_23 = lbound(__libasr_created__intrinsic_elemental_function_Abs3, 1),&
+__libasr_index_0_26 = lbound(y, 1)
+__libasr_index_0_27 = lbound(__libasr_created_real_binop_right_3, 1)
+do __libasr_index_0_25 = lbound(__libasr_created__intrinsic_elemental_function_Abs3, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs3, 1)
-    __libasr_created__intrinsic_elemental_function_Abs3(__libasr_index_0_23) = y(__libasr_index_0_24) - __libasr_created&
-        _real_binop_right_3(__libasr_index_0_25)
-    __libasr_index_0_24 = __libasr_index_0_24 + 1
-    __libasr_index_0_25 = __libasr_index_0_25 + 1
-end do
-__libasr_index_0_27 = lbound(__libasr_created__intrinsic_elemental_function_Abs3, 1)
-do __libasr_index_0_26 = lbound(__libasr_created__intrinsic_array_function_Any3, 1),&
-         ubound(__libasr_created__intrinsic_array_function_Any3, 1)
-    __libasr_created__intrinsic_array_function_Any3(__libasr_index_0_26) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs3(__libasr_index_0_27)) > 9.99999997e-07
+    __libasr_created__intrinsic_elemental_function_Abs3(__libasr_index_0_25) = y(__libasr_index_0_26) - __libasr_created&
+        _real_binop_right_3(__libasr_index_0_27)
+    __libasr_index_0_26 = __libasr_index_0_26 + 1
     __libasr_index_0_27 = __libasr_index_0_27 + 1
+end do
+__libasr_index_0_29 = lbound(__libasr_created__intrinsic_elemental_function_Abs3, 1)
+do __libasr_index_0_28 = lbound(__libasr_created__intrinsic_array_function_Any3, 1),&
+         ubound(__libasr_created__intrinsic_array_function_Any3, 1)
+    __libasr_created__intrinsic_array_function_Any3(__libasr_index_0_28) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs3(__libasr_index_0_29)) > 9.99999997e-07
+    __libasr_index_0_29 = __libasr_index_0_29 + 1
 end do
 __libasr_created__intrinsic_array_function_Any12 = Any(__libasr_created__intrinsic_array_function_Any3)
 if (__libasr_created__intrinsic_array_function_Any12) then
     error stop
 end if
-__libasr_index_0_29 = lbound(x, 1)
-do __libasr_index_0_28 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt1, 1),&
+__libasr_index_0_31 = lbound(x, 1)
+do __libasr_index_0_30 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt1, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Sqrt1, 1)
-    __libasr_created__intrinsic_elemental_function_Sqrt1(__libasr_index_0_28) = element_value(x(__libasr_index_0_29)) + &
+    __libasr_created__intrinsic_elemental_function_Sqrt1(__libasr_index_0_30) = element_value(x(__libasr_index_0_31)) + &
         3.00000000e+00
-    __libasr_index_0_29 = __libasr_index_0_29 + 1
-end do
-__libasr_index_0_31 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt1, 1)
-do __libasr_index_0_30 = lbound(y, 1), ubound(y, 1)
-    y(__libasr_index_0_30) = Sqrt(__libasr_created__intrinsic_elemental_function_Sqrt1(__libasr_index_0_31))
     __libasr_index_0_31 = __libasr_index_0_31 + 1
+end do
+__libasr_index_0_33 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt1, 1)
+do __libasr_index_0_32 = lbound(y, 1), ubound(y, 1)
+    y(__libasr_index_0_32) = Sqrt(__libasr_created__intrinsic_elemental_function_Sqrt1(__libasr_index_0_33))
+    __libasr_index_0_33 = __libasr_index_0_33 + 1
 end do
 if (element_calls /= 4) then
     error stop
 end if
-__libasr_index_0_33 = lbound(y, 1)
-__libasr_index_0_34 = lbound(__libasr_created_real_binop_right_4, 1)
-do __libasr_index_0_32 = lbound(__libasr_created__intrinsic_elemental_function_Abs4, 1),&
+__libasr_index_0_35 = lbound(y, 1)
+__libasr_index_0_36 = lbound(__libasr_created_real_binop_right_4, 1)
+do __libasr_index_0_34 = lbound(__libasr_created__intrinsic_elemental_function_Abs4, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs4, 1)
-    __libasr_created__intrinsic_elemental_function_Abs4(__libasr_index_0_32) = y(__libasr_index_0_33) - __libasr_created&
-        _real_binop_right_4(__libasr_index_0_34)
-    __libasr_index_0_33 = __libasr_index_0_33 + 1
-    __libasr_index_0_34 = __libasr_index_0_34 + 1
-end do
-__libasr_index_0_36 = lbound(__libasr_created__intrinsic_elemental_function_Abs4, 1)
-do __libasr_index_0_35 = lbound(__libasr_created__intrinsic_array_function_Any4, 1),&
-         ubound(__libasr_created__intrinsic_array_function_Any4, 1)
-    __libasr_created__intrinsic_array_function_Any4(__libasr_index_0_35) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs4(__libasr_index_0_36)) > 9.99999997e-07
+    __libasr_created__intrinsic_elemental_function_Abs4(__libasr_index_0_34) = y(__libasr_index_0_35) - __libasr_created&
+        _real_binop_right_4(__libasr_index_0_36)
+    __libasr_index_0_35 = __libasr_index_0_35 + 1
     __libasr_index_0_36 = __libasr_index_0_36 + 1
+end do
+__libasr_index_0_38 = lbound(__libasr_created__intrinsic_elemental_function_Abs4, 1)
+do __libasr_index_0_37 = lbound(__libasr_created__intrinsic_array_function_Any4, 1),&
+         ubound(__libasr_created__intrinsic_array_function_Any4, 1)
+    __libasr_created__intrinsic_array_function_Any4(__libasr_index_0_37) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs4(__libasr_index_0_38)) > 9.99999997e-07
+    __libasr_index_0_38 = __libasr_index_0_38 + 1
 end do
 __libasr_created__intrinsic_array_function_Any13 = Any(__libasr_created__intrinsic_array_function_Any4)
 if (__libasr_created__intrinsic_array_function_Any13) then
     error stop
 end if
-a(1) = 0.00000000e+00
-a(2) = 1.00000000e+00
-a(3) = 2.00000000e+00
-a(4) = 3.00000000e+00
-a(5) = 4.00000000e+00
-a(6) = 5.00000000e+00
+__libasr_index_0_40 = lbound(__libasr_created__array_constant_1, 1)
+do __libasr_index_0_39 = lbound(a, 1), ubound(a, 1)
+    a(__libasr_index_0_39) = __libasr_created__array_constant_1(__libasr_index_0_40)
+    __libasr_index_0_40 = __libasr_index_0_40 + 1
+end do
 deallocate(__libasr_created_real_binop_left_1)
 allocate(__libasr_created_real_binop_left_1((5 - 1)/1 + 1))
 __libasr_created__array_section_pointer_ => a(1:5)
+reallocate(__libasr_created_real_binop_left_1(size(__libasr_created__array_section_pointer_, 1)))
 ! CheckBounds LHS = __libasr_created_real_binop_left_1, RHS = __libasr_created__array_section_pointer_, 
-__libasr_index_0_38 = lbound(__libasr_created__array_section_pointer_, 1)
-do __libasr_index_0_37 = lbound(__libasr_created_real_binop_left_1, 1), ubound(__libasr_created_real_binop_left_1, 1)
-    __libasr_created_real_binop_left_1(__libasr_index_0_37) = __libasr_created__array_section_pointer_(__libasr_index_0_&
-        38)
-    __libasr_index_0_38 = __libasr_index_0_38 + 1
+__libasr_index_0_42 = lbound(__libasr_created__array_section_pointer_, 1)
+do __libasr_index_0_41 = lbound(__libasr_created_real_binop_left_1, 1), ubound(__libasr_created_real_binop_left_1, 1)
+    __libasr_created_real_binop_left_1(__libasr_index_0_41) = __libasr_created__array_section_pointer_(__libasr_index_0_&
+        42)
+    __libasr_index_0_42 = __libasr_index_0_42 + 1
 end do
 ! CheckBounds LHS = a(2:6), RHS = __libasr_created_real_binop_left_1, 
-__libasr_index_0_40 = lbound(__libasr_created_real_binop_left_1, 1)
-do __libasr_index_0_39 = 2, 6
-    a(__libasr_index_0_39) = Sqrt(__libasr_created_real_binop_left_1(__libasr_index_0_40) + 1.00000000e+00)
-    __libasr_index_0_40 = __libasr_index_0_40 + 1
+__libasr_index_0_44 = lbound(__libasr_created_real_binop_left_1, 1)
+do __libasr_index_0_43 = 2, 6
+    a(__libasr_index_0_43) = Sqrt(__libasr_created_real_binop_left_1(__libasr_index_0_44) + 1.00000000e+00)
+    __libasr_index_0_44 = __libasr_index_0_44 + 1
 end do
-__libasr_index_0_42 = lbound(a, 1)
-__libasr_index_0_43 = lbound(__libasr_created_real_binop_right_5, 1)
-do __libasr_index_0_41 = lbound(__libasr_created__intrinsic_elemental_function_Abs5, 1),&
+__libasr_index_0_46 = lbound(a, 1)
+__libasr_index_0_47 = lbound(__libasr_created_real_binop_right_5, 1)
+do __libasr_index_0_45 = lbound(__libasr_created__intrinsic_elemental_function_Abs5, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs5, 1)
-    __libasr_created__intrinsic_elemental_function_Abs5(__libasr_index_0_41) = a(__libasr_index_0_42) - __libasr_created&
-        _real_binop_right_5(__libasr_index_0_43)
-    __libasr_index_0_42 = __libasr_index_0_42 + 1
-    __libasr_index_0_43 = __libasr_index_0_43 + 1
+    __libasr_created__intrinsic_elemental_function_Abs5(__libasr_index_0_45) = a(__libasr_index_0_46) - __libasr_created&
+        _real_binop_right_5(__libasr_index_0_47)
+    __libasr_index_0_46 = __libasr_index_0_46 + 1
+    __libasr_index_0_47 = __libasr_index_0_47 + 1
 end do
-__libasr_index_0_45 = lbound(__libasr_created__intrinsic_elemental_function_Abs5, 1)
-do __libasr_index_0_44 = lbound(__libasr_created__intrinsic_array_function_Any5, 1),&
+__libasr_index_0_49 = lbound(__libasr_created__intrinsic_elemental_function_Abs5, 1)
+do __libasr_index_0_48 = lbound(__libasr_created__intrinsic_array_function_Any5, 1),&
          ubound(__libasr_created__intrinsic_array_function_Any5, 1)
-    __libasr_created__intrinsic_array_function_Any5(__libasr_index_0_44) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs5(__libasr_index_0_45)) > 9.99999997e-07
-    __libasr_index_0_45 = __libasr_index_0_45 + 1
+    __libasr_created__intrinsic_array_function_Any5(__libasr_index_0_48) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs5(__libasr_index_0_49)) > 9.99999997e-07
+    __libasr_index_0_49 = __libasr_index_0_49 + 1
 end do
 __libasr_created__intrinsic_array_function_Any14 = Any(__libasr_created__intrinsic_array_function_Any5)
 if (__libasr_created__intrinsic_array_function_Any14) then
@@ -506,21 +520,21 @@ if (__libasr_created__intrinsic_array_function_Any14) then
 end if
 __libasr_created__subroutine_call_e_sqrt => x(4:1:-1)
 call e_sqrt(__libasr_created__subroutine_call_e_sqrt, y, 1.00000000e+00)
-__libasr_index_0_47 = lbound(y, 1)
-__libasr_index_0_48 = lbound(__libasr_created_real_binop_right_6, 1)
-do __libasr_index_0_46 = lbound(__libasr_created__intrinsic_elemental_function_Abs6, 1),&
+__libasr_index_0_51 = lbound(y, 1)
+__libasr_index_0_52 = lbound(__libasr_created_real_binop_right_6, 1)
+do __libasr_index_0_50 = lbound(__libasr_created__intrinsic_elemental_function_Abs6, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs6, 1)
-    __libasr_created__intrinsic_elemental_function_Abs6(__libasr_index_0_46) = y(__libasr_index_0_47) - __libasr_created&
-        _real_binop_right_6(__libasr_index_0_48)
-    __libasr_index_0_47 = __libasr_index_0_47 + 1
-    __libasr_index_0_48 = __libasr_index_0_48 + 1
+    __libasr_created__intrinsic_elemental_function_Abs6(__libasr_index_0_50) = y(__libasr_index_0_51) - __libasr_created&
+        _real_binop_right_6(__libasr_index_0_52)
+    __libasr_index_0_51 = __libasr_index_0_51 + 1
+    __libasr_index_0_52 = __libasr_index_0_52 + 1
 end do
-__libasr_index_0_50 = lbound(__libasr_created__intrinsic_elemental_function_Abs6, 1)
-do __libasr_index_0_49 = lbound(__libasr_created__intrinsic_array_function_Any6, 1),&
+__libasr_index_0_54 = lbound(__libasr_created__intrinsic_elemental_function_Abs6, 1)
+do __libasr_index_0_53 = lbound(__libasr_created__intrinsic_array_function_Any6, 1),&
          ubound(__libasr_created__intrinsic_array_function_Any6, 1)
-    __libasr_created__intrinsic_array_function_Any6(__libasr_index_0_49) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs6(__libasr_index_0_50)) > 9.99999997e-07
-    __libasr_index_0_50 = __libasr_index_0_50 + 1
+    __libasr_created__intrinsic_array_function_Any6(__libasr_index_0_53) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs6(__libasr_index_0_54)) > 9.99999997e-07
+    __libasr_index_0_54 = __libasr_index_0_54 + 1
 end do
 __libasr_created__intrinsic_array_function_Any15 = Any(__libasr_created__intrinsic_array_function_Any6)
 if (__libasr_created__intrinsic_array_function_Any15) then
@@ -535,15 +549,15 @@ __libasr_index_1_1 = lbound(b, 2)
 __libasr_index_1_2 = lbound(__libasr_created_real_binop_right_7, 2)
 do __libasr_index_1_ = lbound(__libasr_created__intrinsic_elemental_function_Abs7, 2),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs7, 2)
-    __libasr_index_0_52 = lbound(b, 1)
-    __libasr_index_0_53 = lbound(__libasr_created_real_binop_right_7, 1)
-    do __libasr_index_0_51 = lbound(__libasr_created__intrinsic_elemental_function_Abs7, 1),&
+    __libasr_index_0_56 = lbound(b, 1)
+    __libasr_index_0_57 = lbound(__libasr_created_real_binop_right_7, 1)
+    do __libasr_index_0_55 = lbound(__libasr_created__intrinsic_elemental_function_Abs7, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs7, 1)
-        __libasr_created__intrinsic_elemental_function_Abs7(__libasr_index_0_51,&
-         __libasr_index_1_) = b(__libasr_index_0_52,&
-         __libasr_index_1_1) - __libasr_created_real_binop_right_7(__libasr_index_0_53, __libasr_index_1_2)
-        __libasr_index_0_52 = __libasr_index_0_52 + 1
-        __libasr_index_0_53 = __libasr_index_0_53 + 1
+        __libasr_created__intrinsic_elemental_function_Abs7(__libasr_index_0_55,&
+         __libasr_index_1_) = b(__libasr_index_0_56,&
+         __libasr_index_1_1) - __libasr_created_real_binop_right_7(__libasr_index_0_57, __libasr_index_1_2)
+        __libasr_index_0_56 = __libasr_index_0_56 + 1
+        __libasr_index_0_57 = __libasr_index_0_57 + 1
     end do
     __libasr_index_1_1 = __libasr_index_1_1 + 1
     __libasr_index_1_2 = __libasr_index_1_2 + 1
@@ -551,13 +565,13 @@ end do
 __libasr_index_1_4 = lbound(__libasr_created__intrinsic_elemental_function_Abs7, 2)
 do __libasr_index_1_3 = lbound(__libasr_created__intrinsic_array_function_Any7, 2),&
          ubound(__libasr_created__intrinsic_array_function_Any7, 2)
-    __libasr_index_0_55 = lbound(__libasr_created__intrinsic_elemental_function_Abs7, 1)
-    do __libasr_index_0_54 = lbound(__libasr_created__intrinsic_array_function_Any7, 1),&
+    __libasr_index_0_59 = lbound(__libasr_created__intrinsic_elemental_function_Abs7, 1)
+    do __libasr_index_0_58 = lbound(__libasr_created__intrinsic_array_function_Any7, 1),&
          ubound(__libasr_created__intrinsic_array_function_Any7, 1)
-        __libasr_created__intrinsic_array_function_Any7(__libasr_index_0_54,&
-         __libasr_index_1_3) = Abs(__libasr_created__intrinsic_elemental_function_Abs7(__libasr_index_0_55,&
+        __libasr_created__intrinsic_array_function_Any7(__libasr_index_0_58,&
+         __libasr_index_1_3) = Abs(__libasr_created__intrinsic_elemental_function_Abs7(__libasr_index_0_59,&
          __libasr_index_1_4)) > 9.99999997e-07
-        __libasr_index_0_55 = __libasr_index_0_55 + 1
+        __libasr_index_0_59 = __libasr_index_0_59 + 1
     end do
     __libasr_index_1_4 = __libasr_index_1_4 + 1
 end do
@@ -565,37 +579,37 @@ __libasr_created__intrinsic_array_function_Any16 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any16) then
     error stop
 end if
-do __libasr_index_0_56 = lbound(y, 1), ubound(y, 1)
-    y(__libasr_index_0_56) = -1.00000000e+00
+do __libasr_index_0_60 = lbound(y, 1), ubound(y, 1)
+    y(__libasr_index_0_60) = -1.00000000e+00
 end do
-__libasr_index_0_58 = lbound(x, 1)
-do __libasr_index_0_57 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt2, 1),&
+__libasr_index_0_62 = lbound(x, 1)
+do __libasr_index_0_61 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt2, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Sqrt2, 1)
-    __libasr_created__intrinsic_elemental_function_Sqrt2(__libasr_index_0_57) = x(__libasr_index_0_58) - 1.00000000e+00
-    __libasr_index_0_58 = __libasr_index_0_58 + 1
+    __libasr_created__intrinsic_elemental_function_Sqrt2(__libasr_index_0_61) = x(__libasr_index_0_62) - 1.00000000e+00
+    __libasr_index_0_62 = __libasr_index_0_62 + 1
 end do
 where (x > 0.00000000e+00)
-    __libasr_index_0_60 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt2, 1)
-    do __libasr_index_0_59 = lbound(y, 1), ubound(y, 1)
-        y(__libasr_index_0_59) = Sqrt(__libasr_created__intrinsic_elemental_function_Sqrt2(__libasr_index_0_60))
-        __libasr_index_0_60 = __libasr_index_0_60 + 1
+    __libasr_index_0_64 = lbound(__libasr_created__intrinsic_elemental_function_Sqrt2, 1)
+    do __libasr_index_0_63 = lbound(y, 1), ubound(y, 1)
+        y(__libasr_index_0_63) = Sqrt(__libasr_created__intrinsic_elemental_function_Sqrt2(__libasr_index_0_64))
+        __libasr_index_0_64 = __libasr_index_0_64 + 1
     end do
 end where
-__libasr_index_0_62 = lbound(y, 1)
-__libasr_index_0_63 = lbound(__libasr_created_real_binop_right_8, 1)
-do __libasr_index_0_61 = lbound(__libasr_created__intrinsic_elemental_function_Abs8, 1),&
+__libasr_index_0_66 = lbound(y, 1)
+__libasr_index_0_67 = lbound(__libasr_created_real_binop_right_8, 1)
+do __libasr_index_0_65 = lbound(__libasr_created__intrinsic_elemental_function_Abs8, 1),&
          ubound(__libasr_created__intrinsic_elemental_function_Abs8, 1)
-    __libasr_created__intrinsic_elemental_function_Abs8(__libasr_index_0_61) = y(__libasr_index_0_62) - __libasr_created&
-        _real_binop_right_8(__libasr_index_0_63)
-    __libasr_index_0_62 = __libasr_index_0_62 + 1
-    __libasr_index_0_63 = __libasr_index_0_63 + 1
+    __libasr_created__intrinsic_elemental_function_Abs8(__libasr_index_0_65) = y(__libasr_index_0_66) - __libasr_created&
+        _real_binop_right_8(__libasr_index_0_67)
+    __libasr_index_0_66 = __libasr_index_0_66 + 1
+    __libasr_index_0_67 = __libasr_index_0_67 + 1
 end do
-__libasr_index_0_65 = lbound(__libasr_created__intrinsic_elemental_function_Abs8, 1)
-do __libasr_index_0_64 = lbound(__libasr_created__intrinsic_array_function_Any8, 1),&
+__libasr_index_0_69 = lbound(__libasr_created__intrinsic_elemental_function_Abs8, 1)
+do __libasr_index_0_68 = lbound(__libasr_created__intrinsic_array_function_Any8, 1),&
          ubound(__libasr_created__intrinsic_array_function_Any8, 1)
-    __libasr_created__intrinsic_array_function_Any8(__libasr_index_0_64) = Abs(__libasr_created__intrinsic_elemental_fun&
-        ction_Abs8(__libasr_index_0_65)) > 9.99999997e-07
-    __libasr_index_0_65 = __libasr_index_0_65 + 1
+    __libasr_created__intrinsic_array_function_Any8(__libasr_index_0_68) = Abs(__libasr_created__intrinsic_elemental_fun&
+        ction_Abs8(__libasr_index_0_69)) > 9.99999997e-07
+    __libasr_index_0_69 = __libasr_index_0_69 + 1
 end do
 __libasr_created__intrinsic_array_function_Any17 = Any(__libasr_created__intrinsic_array_function_Any8)
 if (__libasr_created__intrinsic_array_function_Any17) then
