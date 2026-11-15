@@ -3822,6 +3822,30 @@ pass = "array_op"
 options = "--realloc-lhs-arrays"
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_hoist_09.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_10.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_11.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_12.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/realloc_lhs_version_01.f90"
 fortran = true
 pass = "array_op,hoist_realloc"
