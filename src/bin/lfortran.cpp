@@ -3068,8 +3068,12 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, opts.connect,
-            std::vector<std::string>(argv + 1, argv + argc));
+        // The kernel's output is not a terminal: it colors what this
+        // prompt would.
+        std::vector<std::string> kernel_arguments(argv + 1, argv + argc);
+        kernel_arguments.push_back(compiler_options.use_colors
+            ? "--color=always" : "--color=never");
+        return prompt(opts.arg_v, opts.connect, kernel_arguments);
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;

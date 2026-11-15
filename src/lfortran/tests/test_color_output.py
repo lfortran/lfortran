@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Check when LFortran colors its diagnostics and AST/ASR output (#17829).
+
+By default (`--color=auto`) the output is colored only when it goes to a
+terminal and NO_COLOR (https://no-color.org) is not set to a non-empty value.
+`--color=always` and `--color=never` override that, and `--no-color` is the
+same as `--color=never`. The terminal cases need a pseudo-terminal, so they
+are skipped where there is none (Windows).
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+import tempfile
+
+try:
+    import pty
+except ImportError:
+    pty = None
+
+INVALID = """\
+program color_invalid
+implicit none
+print *, x
+end program
+"""
+
+VALID = """\
+program color_valid
+implicit none
+integer :: i
+i = 1
+print *, i
+end program
+"""
+
+ESCAPE = b"\x1b["
+
+
+def run(lfortran, cwd, args, no_color, terminal):
+    """Run `lfortran args` in `cwd` and return its stdout and stderr.
+
+    `no_color` is the value of NO_COLOR, or None to unset it. `terminal` names
+    the streams ("stdout", "stderr") connected to a pseudo-terminal; both
+    then share it, so the output of both is returned as stderr.
+    """
+    env = dict(os.environ)
+    env.pop("NO_COLOR", None)
+    if no_color is not None:
+        env["NO_COLOR"] = no_color
+    cmd = [lfortran] + args
+    if not terminal:
+        p = subprocess.run(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
+        return p.stdout, p.stderr
+    master, slave = pty.openpty()
+    streams = {
+        "stdout": slave if "stdout" in terminal else subprocess.PIPE,
+        "stderr": slave if "stderr" in terminal else subprocess.PIPE,
+    }
+    p = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+        **streams)
+    os.close(slave)
+    out = b""
+    while True:
+        try:
+            data = os.read(master, 4096)
+        except OSError:
+            break
+        if not data:
+            break
+        out += data
+    os.close(master)
+    stdout = p.stdout.read() if p.stdout else b""
+    stderr = p.stderr.read() if p.stderr else b""
+    p.wait(timeout=120)
+    if "stderr" in terminal:
+        stderr = out
+    else:
+        stdout = out
+    return stdout, stderr
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--lfortran", required=True)
+    parser.add_argument("--workdir", required=True)
+    args = parser.parse_args()
+    lfortran = os.path.abspath(args.lfortran)
+    os.makedirs(args.workdir, exist_ok=True)
+
+    # (arguments, NO_COLOR, streams on a terminal, checked stream, colored)
+    compile_ = ["invalid.f90"]
+    compile_only = ["-c", "invalid.f90", "-o", "invalid.o"]
+    show_ast = ["--show-ast", "valid.f90"]
+    fmt = ["fmt", "valid.f90"]
+    cases = [
+        (compile_, None, (), "stderr", False),
+        (compile_only, None, (), "stderr", False),
+        (["--color=auto"] + compile_, None, (), "stderr", False),
+        (["--color=always"] + compile_, None, (), "stderr", True),
+        (["--color=always"] + compile_, "1", (), "stderr", True),
+        (["--color=always", "--no-color"] + compile_, None, (), "stderr",
+            False),
+        (["--color=never"] + compile_, None, (), "stderr", False),
+        (show_ast, None, (), "stdout", False),
+        (["--color=always"] + show_ast, None, (), "stdout", True),
+        (fmt, None, (), "stdout", False),
+        (["--color=always"] + fmt, None, (), "stdout", True),
+    ]
+    if pty is not None:
+        tty = ("stderr",)
+        both = ("stdout", "stderr")
+        cases += [
+            (compile_, None, tty, "stderr", True),
+            (compile_only, None, tty, "stderr", True),
+            (compile_, "1", tty, "stderr", False),
+            (compile_only, "1", tty, "stderr", False),
+            (compile_, "", tty, "stderr", True),
+            (["--color=always"] + compile_, "1", tty, "stderr", True),
+            (["--no-color"] + compile_, None, tty, "stderr", False),
+            (["--color=never"] + compile_, None, tty, "stderr", False),
+            (show_ast, None, both, "stderr", True),
+            (show_ast, "1", both, "stderr", False),
+            # The AST goes to stdout, which is not a terminal.
+            (show_ast, None, tty, "stdout", False),
+            (fmt, None, ("stdout",), "stdout", True),
+            (fmt, "1", ("stdout",), "stdout", False),
+            (["fmt", "--no-color", "valid.f90"], None, ("stdout",), "stdout",
+                False),
+        ]
+
+    failures = []
+    with tempfile.TemporaryDirectory(dir=args.workdir) as cwd:
+        for name, source in [("invalid", INVALID), ("valid", VALID)]:
+            with open(os.path.join(cwd, name + ".f90"), "w") as f:
+                f.write(source)
+        for arguments, no_color, terminal, checked, colored in cases:
+            stdout, stderr = run(lfortran, cwd, arguments, no_color, terminal)
+            output = stdout if checked == "stdout" else stderr
+            description = "%s%s (%s on a terminal)" % (
+                "" if no_color is None else "NO_COLOR=%r " % no_color,
+                " ".join(["lfortran"] + arguments),
+                ", ".join(terminal) or "nothing")
+            if not output.strip():
+                failures.append("%s: wrote nothing to %s\nstdout: %r\n"
+                    "stderr: %r" % (description, checked, stdout, stderr))
+            elif (ESCAPE in output) != colored:
+                failures.append("%s: %s is %scolored:\n%r" % (description,
+                    checked, "not " if colored else "", output))
+    if failures:
+        sys.exit("\n".join(failures))
+    print("ok")
+
+
+if __name__ == "__main__":
+    main()

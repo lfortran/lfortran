@@ -37,7 +37,10 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-asr`: Show ASR for the given file and exit
 - `--with-intrinsic-mods`: Show intrinsic modules in ASR
 - `--show-ast-f90`: Show Fortran from AST for the given file and exit
-- `--no-color`: Turn off colored AST/ASR
+- `--color=WHEN`: Color diagnostics and AST/ASR: `auto` (the default) colors
+  only output to a terminal and not when the `NO_COLOR` environment variable
+  is set to a non-empty value, `always` or `never`
+- `--no-color`: Turn off colored diagnostics and AST/ASR (same as `--color=never`)
 - `--no-indent`: Turn off Indented print ASR/AST
 - `--tree`: Tree structure print ASR/AST
 - `--json`: Print ASR/AST Json format
