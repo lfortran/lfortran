@@ -2112,17 +2112,18 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
             append_error(diag, "`dim` should be a scalar integer type", loc);
             return nullptr;
-        } else if (!extract_value(expr_value(dim_expr), dim)) {
-            append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
-            return nullptr;
         }
-        if ( dim < 1 || dim > n_dims ) {
+        bool runtime_dim = !extract_value(expr_value(dim_expr), dim);
+        if ( !runtime_dim && (dim < 1 || dim > n_dims) ) {
             append_error(diag, "`dim` argument of `"+ intrinsic_name +"` is out of "
                 "array index range", loc);
             return nullptr;
         }
         if ( n_dims == 1 ) {
             return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+        } else if ( runtime_dim ) {
+            fill_dimensions_for_ArrIntrinsic(al, n_dims - 1, array, dim_expr,
+                diag, true, result_dims);
         } else {
             for ( int i = 1; i <= n_dims; i++ ) {
                 if ( i == dim ) {
@@ -2333,19 +2334,29 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
     } else {
         int dim = 0;
         extract_value(expr_value(m_args[1].m_value), dim);
+        int branch_dim = 0;
         b.generate_reduction_intrinsic_stmts_for_array_output(
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
             [=, &al, &body, &b, &result_kind, &index_kind] () {
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
                 if (overload_id != 3) {
-                    ASR::expr_t *lb = b.GetLBound(args[0], dim, index_kind);
+                    ASR::expr_t *lb = nullptr;
+                    if (dim > 0) {
+                        lb = b.GetLBound(args[0], dim, index_kind);
+                    } else {
+                        ASR::expr_t *dim_i32 = extract_kind_from_ttype_t(arg_types[1]) == 4
+                            ? args[1] : b.i2i_t(args[1], int32);
+                        lb = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, args[0], dim_i32,
+                            b.int_type(index_kind), ASR::arrayboundType::LBound, nullptr));
+                    }
                     if (result_kind != index_kind) {
                         lb = b.i2i_t(lb, type);
                     }
                     body.push_back(al, b.Assignment(result, lb));
                 }
-            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind] () {
+            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind, &branch_dim] () {
+                int dim = branch_dim;
                 ASR::expr_t *result_ref, *array_ref_02;
                 ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
                 bool condition = is_array(return_type);
@@ -2413,7 +2424,7 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 } else {
                     doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {}));
                 }
-            }, index_kind);
+            }, index_kind, &branch_dim);
     }
     body.push_back(al, b.Return());
     ASR::symbol_t *fn_sym = nullptr;
@@ -5319,6 +5330,7 @@ namespace FindLoc {
         ASR::expr_t* back = args[5];
         if (!array) return nullptr;
         if (!value) return nullptr;
+        if (!ASRUtils::expr_value(dim)) return nullptr;
         // complex(16) elements are compared as doubles
         if (ASRUtils::is_kind16_array_constant(ASRUtils::expr_value(array)) &&
                 is_complex(*expr_type(array))) return nullptr;
@@ -5594,17 +5606,18 @@ namespace FindLoc {
             if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
                 append_error(diag, "`dim` should be a scalar integer type", dim_expr->base.loc);
                 return nullptr;
-            } else if (!extract_value(expr_value(dim_expr), dim)) {
-                append_error(diag, "Runtime values for `dim` argument is not supported yet", dim_expr->base.loc);
-                return nullptr;
             }
-            if ( dim < 1 || dim > n_dims ) {
+            bool runtime_dim = !extract_value(expr_value(dim_expr), dim);
+            if ( !runtime_dim && (dim < 1 || dim > n_dims) ) {
                 append_error(diag, "`dim` argument of `findloc` is out of "
                     "array index range", dim_expr->base.loc);
                 return nullptr;
             }
             if ( n_dims == 1 ) {
                 return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+            } else if ( runtime_dim ) {
+                ArrIntrinsic::fill_dimensions_for_ArrIntrinsic(al, n_dims - 1, array,
+                    dim_expr, diag, true, result_dims);
             } else {
                 for ( int i = 1; i <= n_dims; i++ ) {
                     if ( i == dim ) {
