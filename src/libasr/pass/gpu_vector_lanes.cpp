@@ -1311,6 +1311,10 @@ public:
 
     bool failed = false;
     bool distributed = false;
+    // A loop of the kernel's own statements (not one inside a loop the
+    // lanes share out) was left alone as a reduction only for reading
+    // across the columns of an array (KernelInfo::scattered_reductions).
+    bool scattered_declined = false;
     // The lanes of an iteration the reductions it shares out can all use:
     // the fewest iterations of one of the loops in which only the inner
     // sum is shared out (inner_reductions_first), rounded down to a power
@@ -2318,8 +2322,11 @@ private:
                 }
                 std::vector<Accumulator> accumulators;
                 std::vector<Induction> counters;
-                if (reducible(ASR::down_cast<ASR::DoLoop_t>(s), frames,
+                declined_scattered = false;
+                if (!reducible(ASR::down_cast<ASR::DoLoop_t>(s), frames,
                         accumulators, counters)) {
+                    if (declined_scattered) scattered_declined = true;
+                } else {
                     if (k.inner_reductions_first
                             && inner_reduction(
                                 ASR::down_cast<ASR::DoLoop_t>(s)->m_body,
@@ -2501,6 +2508,10 @@ private:
     // The number of iterations of the loop inner_reduction found last.
     int64_t fixed_trips = 0;
 
+    // The last call of reducible() declined its loop only because it reads
+    // across columns.
+    bool declined_scattered = false;
+
     // Whether the number of iterations of `d` is the same in every run of
     // it: its bounds differ by a constant, and its step is a constant.
     bool constant_trips(ASR::DoLoop_t *d) {
@@ -2612,6 +2623,7 @@ private:
     bool reducible(ASR::DoLoop_t *d, std::vector<Frame> &frames,
             std::vector<Accumulator> &accumulators,
             std::vector<Induction> &counters) {
+        declined_scattered = false;
         if (!k.lane_reductions) return false;
         if (d->n_orelse > 0 || d->m_head.m_v == nullptr) return false;
         // The copies of the body of a loop unrolled by gpu_residue_unroll
@@ -2825,7 +2837,10 @@ private:
             for (size_t i = 0; i < d->n_body; i++) {
                 scattered.visit_stmt(*d->m_body[i]);
             }
-            if (scattered.found && !k.scattered_reductions) return false;
+            if (scattered.found && !k.scattered_reductions) {
+                declined_scattered = true;
+                return false;
+            }
         }
         return !accumulators.empty();
     }
@@ -3748,7 +3763,7 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     // the 55 radii of a pole of POT3D goes from 40 to a few microseconds.
     std::unique_ptr<LaneRewriter> second;
     LaneRewriter *chosen = &first;
-    if (!first.distributed && k.lane_reductions
+    if ((!first.distributed || first.scattered_declined) && k.lane_reductions
             && caps.lanes_scattered_iterations_max > 0) {
         first.restore();
         k.scattered_reductions = true;
