@@ -1897,13 +1897,13 @@ lf_float128 lf_f128_atan(lf_float128 a) {
     return f128_atan_dw(a).hi;
 }
 
-lf_float128 lf_f128_atan2(lf_float128 y, lf_float128 x) {
+/* atan2(y, x) as a double-word, for y and x not NaN. */
+static f128_dw f128_atan2_dw(lf_float128 y, lf_float128 x) {
     f128_parts px = f128_unpack(x), py = f128_unpack(y);
-    if (px.is_nan || py.is_nan) return f128_make_nan();
     f128_dw r;
     if (py.is_zero) {
         /* atan2(+-0, x) = +-0 for x > 0 or x = +0, +-pi otherwise */
-        if (!px.sign) return y;
+        if (!px.sign) return dw_make(y, f128_make_zero(0));
         r = f128_pi_dw();
     } else if (px.is_inf) {
         f128_dw pi = f128_pi_dw();
@@ -1922,7 +1922,12 @@ lf_float128 lf_f128_atan2(lf_float128 y, lf_float128 x) {
                            dw_make(lf_f128_abs(x), zero));
         if (px.sign) r = dw_add(f128_pi_dw(), dw_neg(r));
     }
-    return py.sign ? f_neg(r.hi) : r.hi;
+    return py.sign ? dw_neg(r) : r;
+}
+
+lf_float128 lf_f128_atan2(lf_float128 y, lf_float128 x) {
+    if (f128_is_nan(x) || f128_is_nan(y)) return f128_make_nan();
+    return f128_atan2_dw(y, x).hi;
 }
 
 /* 1 - a^2 as a double-word, for |a| < 1 */
@@ -2087,6 +2092,21 @@ lf_float128 lf_f128_atand(lf_float128 a) {
     f128_parts p = f128_unpack(a);
     if (p.is_nan || p.is_zero) return a;
     return f128_rad_to_deg(f128_atan_dw(a));
+}
+
+lf_float128 lf_f128_atan2d(lf_float128 y, lf_float128 x) {
+    if (f128_is_nan(x) || f128_is_nan(y)) return f128_make_nan();
+    f128_dw r = f128_atan2_dw(y, x);
+    if (f128_is_zero(r.hi)) return r.hi;
+    return f128_rad_to_deg(r);
+}
+
+/* atan2(y, x)/pi (Fortran 2023 atan2pi) */
+lf_float128 lf_f128_atan2pi(lf_float128 y, lf_float128 x) {
+    if (f128_is_nan(x) || f128_is_nan(y)) return f128_make_nan();
+    f128_dw r = f128_atan2_dw(y, x);
+    if (f128_is_zero(r.hi)) return r.hi;
+    return dw_div(r, f128_pi_dw()).hi;
 }
 
 /* ========================================================================

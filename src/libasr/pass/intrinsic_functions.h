@@ -1289,9 +1289,42 @@ namespace Aimag {
 } // namespace Aimag
 
 namespace Atan2 {
+    /* Folds atan2(y, x) of kind 10 and 16 constants, which extract_value
+       (double) does not read. `quad_eval` gives the kind 16 result; kind 10
+       folds in long double as atan2(y, x) * num / den. Returns nullptr for
+       other kinds and non-constant arguments. */
+    static inline ASR::expr_t *eval_atan2_r10_r16(Allocator &al,
+            const Location &loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+            lf_float128 (*quad_eval)(lf_float128, lf_float128),
+            long double num, long double den) {
+        if (!ASR::is_a<ASR::RealConstant_t>(*args[0]) ||
+                !ASR::is_a<ASR::RealConstant_t>(*args[1])) {
+            return nullptr;
+        }
+        int kind = ASRUtils::extract_kind_from_ttype_t(t);
+        if (kind == 16) {
+            return ASRUtils::make_RealConstant_r16(al, loc, quad_eval(
+                ASRUtils::real_expr_get_r16(args[0]),
+                ASRUtils::real_expr_get_r16(args[1])), t);
+        }
+        if (kind == 10) {
+            long double y = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            long double x = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            long double result = std::atan2(y, x) * num / den;
+            return ASRUtils::make_RealConstant_r10(al, loc, result, t);
+        }
+        return nullptr;
+    }
+
     static inline ASR::expr_t *eval_Atan2(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 2);
+        if (ASR::expr_t *r = eval_atan2_r10_r16(al, loc, t, args,
+                lf_f128_atan2, 1.0L, 1.0L)) {
+            return r;
+        }
         double rv = -1, rv2 = -1;
         if( ASRUtils::extract_value(args[0], rv) && ASRUtils::extract_value(args[1], rv2) ) {
             double val = std::atan2(rv,rv2);
@@ -1348,6 +1381,10 @@ namespace Atan2d {
     static inline ASR::expr_t *eval_Atan2d(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 2);
+        if (ASR::expr_t *r = Atan2::eval_atan2_r10_r16(al, loc, t, args,
+                lf_f128_atan2d, 180.0L, 3.141592653589793238462643383279502884L)) {
+            return r;
+        }
         double rv = -1, rv2 = -1;
         if( ASRUtils::extract_value(args[0], rv) && ASRUtils::extract_value(args[1], rv2) ) {
             double val = std::atan2(rv,rv2);
@@ -1410,6 +1447,10 @@ namespace Atan2pi {
     static inline ASR::expr_t *eval_Atan2pi(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(args.size() == 2);
+        if (ASR::expr_t *r = Atan2::eval_atan2_r10_r16(al, loc, t, args,
+                lf_f128_atan2pi, 1.0L, 3.141592653589793238462643383279502884L)) {
+            return r;
+        }
         double rv = -1, rv2 = -1;
         if( ASRUtils::extract_value(args[0], rv) && ASRUtils::extract_value(args[1], rv2) ) {
             double val = std::atan2(rv,rv2);

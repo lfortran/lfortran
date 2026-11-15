@@ -152,6 +152,9 @@ lf_float128 lf_f128_tand   (lf_float128 a);
 lf_float128 lf_f128_asind  (lf_float128 a);
 lf_float128 lf_f128_acosd  (lf_float128 a);
 lf_float128 lf_f128_atand  (lf_float128 a);
+lf_float128 lf_f128_atan2d (lf_float128 y, lf_float128 x);
+/* atan2(y, x)/pi (Fortran 2023 atan2pi) */
+lf_float128 lf_f128_atan2pi(lf_float128 y, lf_float128 x);
 
 #ifdef __cplusplus
 }

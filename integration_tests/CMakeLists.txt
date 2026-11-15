@@ -2305,6 +2305,7 @@ RUN(NAME intrinsics_519 LABELS gfortran llvm) # digits/maxexponent/minexponent o
 RUN(NAME real16_gamma_01 LABELS gfortran llvm) # real(16) gamma/log_gamma/erfc_scaled of non-constant arguments (#15736, #17463)
 RUN(NAME real16_bessel_01 LABELS gfortran llvm) # real(16) bessel_j0/j1/jn of non-constant arguments (#15736, #17463)
 RUN(NAME real16_bessel_02 LABELS gfortran llvm) # real(16) bessel_y0/y1/yn of non-constant arguments (#15736, #17463)
+RUN(NAME real16_atan2_01 LABELS gfortran llvm) # atan2/atan2d parameters of real(16) and x87 kind 10 (#17816)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
