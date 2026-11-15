@@ -15,6 +15,12 @@ integration tests or CI.
 - `realloc_lhs.f90`: the kernels and a driver, `realloc_lhs <kernel> <n>
   <reps>`, which prints the time of the `reps` iterations and a checksum.
   Standard Fortran; it also compiles with GFortran.
+- `realloc_lhs_ext.f90`: external procedures that some kernels call from
+  their loops. It is compiled separately (`-c`) and linked, so that the
+  compiler of `realloc_lhs.f90` can neither inline them nor see what they do.
+  They are external procedures with interfaces in `realloc_lhs.f90`, not
+  module procedures: LFortran compiles the procedures of a module into each
+  object file that uses the module.
 - `run_benchmark.py`: builds the program once per configuration, runs every
   kernel, checks the checksums and prints a Markdown table (Python 3
   standard library only).
@@ -45,6 +51,36 @@ large `n` (the arithmetic dominates).
 | `append` * | `x = [x, v]`, growing to `n` elements, then reset |
 | `local` * | `t = 2*a + 1` to an unallocated local inside a called routine |
 | `resize` * | `x = a(1:m) + 1` with `m` changing every iteration |
+
+The kernels below are written so that the compiler cannot remove the
+shape check from the loop by proving it unnecessary or by moving it before
+the loop, at least not without the transformation named in the last column:
+
+| kernel | assignment | why the check stays in the hot path |
+| --- | --- | --- |
+| `xadd`, `xadd2d`, `xadd3d` | `c = a + b` (rank 1, 2, 3) in a procedure of `realloc_lhs_ext.f90` called from the loop | a check per call: the callee cannot know the allocation of its allocatable dummies |
+| `xchain` | `t1 = a + b; t2 = t1*a; c = t2 - b` in an external procedure, with allocatable work arrays passed in | three checks per call |
+| `xchainalloc` | the same with local work arrays allocated with `allocate` | the work arrays are allocated, but the shape of `c` is not known |
+| `xchainlocal` * | the same with local work arrays that the assignments allocate | an allocation per work array and call |
+| `opaque` | an opaque call, then `c = a + b` | the call may stop the program before the assignment (versioning) |
+| `exit` | `if (s < 0) exit`, then `c = a + b` | the loop may leave before the assignment (versioning) |
+| `target` | `c = a + b` to a TARGET dummy | a pointer may observe the reallocation (versioning) |
+| `modvar` | `mc = a + b` to a module variable, with an opaque call in the loop | the call may change `mc` |
+| `internal` | `c = a + b` to host variables in an internal procedure called from the loop | a check per call of the internal procedure |
+| `saved` | `w = a + b` to a SAVE work array of a called procedure, allocated on the first call | a check per call |
+| `pairs` | `d = p(j)%r - p(i)%r` for all pairs of 16 particles (3-vectors) | the shape is read from `p(j)`, which changes in every iteration |
+| `pairsc` | `p(i)%d = p(j)%r - p(i)%r` | the target is a component of an array element |
+| `concur` | `p(i)%d = p(i)%r + dt*p(i)%v` in DO CONCURRENT | one target per iteration |
+| `jagged` | `out(i)%v = w(i)*rows(i)%v` over 16 rows | one target per iteration |
+| `while` | `c = a + b` in a DO WHILE loop | (DO WHILE loops) |
+| `cond` | `c = a + b` or `c = a - b` depending on the iteration | conditional assignments (versioning) |
+| `chain` | `t1 = a + b; t2 = t1*a; c = t2 - b` through local work arrays | each shape is read from the previous work array (chained hoisting) |
+| `datadep` | `c = a(1:k) + b(1:k)`, `k` read from data in every iteration | the shape depends on a value the loop changes |
+| `alternate` * | `c = a(1:k) + b(1:k)`, `k` alternating between n and n - 1 | a reallocation in every iteration |
+| `ctorv` | `c = [(2*a(j), j = 1, m)]` | the array constructor is a temporary of its own |
+
+For `pairs`, `pairsc`, `concur` and `jagged` the table shows the time per
+assignment (pair, particle or row), not per iteration of the outer loop.
 
 Except for the kernels marked *, the left-hand side already has the right
 shape, so they are also valid without reallocation on assignment and measure
@@ -94,7 +130,8 @@ hyperthread sibling), the small-`n` differences grew severalfold.
 ## Reading the table
 
 Each cell is nanoseconds per iteration of the kernel's loop (for `section`,
-one iteration does 16 assignments), the best of `-r` runs. Every column after
+one iteration does 16 assignments; for `pairs`, `pairsc`, `concur` and
+`jagged`, per assignment), the best of `-r` runs. Every column after
 the first also shows the change relative to the first configuration, so put
 the baseline first: `+50.0%` means 1.5 times slower than the baseline. A
 kernel the baseline cannot run (n/a) has no percentages. Below the table are
