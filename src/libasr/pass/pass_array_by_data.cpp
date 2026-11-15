@@ -261,6 +261,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 }
             }
             symbol_duplicator.fixup_local_type_declarations(new_symtab, x->m_symtab);
+            // The bodies of the copied BLOCK and ASSOCIATE (SELECT TYPE)
+            // scopes refer to the copied symbols, by scope and not by name:
+            // an associate name is also the name of its selector.
+            symbol_duplicator.fixup_nested_block_bodies(new_symtab, x->m_symtab);
             // The duplicated body's BlockCall statements still reference
             // Block symbols in the original symtab. Remap them to the
             // corresponding duplicated Blocks in new_symtab.

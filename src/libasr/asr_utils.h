@@ -3720,10 +3720,28 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
     public:
     SymbolTable* current_scope;
     bool use_resolve_symbol = false;
+    // The original of current_scope: a Var is mapped to the copy in the
+    // scope that corresponds to the scope of its symbol, so a name a nested
+    // block redeclares (the associate name of SELECT TYPE or ASSOCIATE,
+    // which is also the selector's name) still refers to the outer symbol.
+    SymbolTable* orig_scope = nullptr;
     ExprStmtWithScopeDuplicator(Allocator &al, SymbolTable* current_scope): BaseExprStmtDuplicator(al), current_scope(current_scope) {}
 
     ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
         std::string name = ASRUtils::symbol_name(x->m_v);
+        if (orig_scope) {
+            SymbolTable* owner = ASRUtils::symbol_parent_symtab(x->m_v);
+            SymbolTable* o = orig_scope;
+            SymbolTable* n = current_scope;
+            while (o && n && o != owner) {
+                o = o->parent;
+                n = n->parent;
+            }
+            if (o == owner && n) {
+                ASR::symbol_t* m_v = n->get_symbol(name);
+                if (m_v) return ASR::make_Var_t(al, x->base.base.loc, m_v);
+            }
+        }
         ASR::symbol_t* m_v = use_resolve_symbol
             ? current_scope->resolve_symbol(name)
             : current_scope->get_symbol(name);
@@ -3863,7 +3881,8 @@ class SymbolDuplicator {
     // unusable) if any statement could not be duplicated.
     bool reduplicate_body_in_scope(SymbolTable *new_symtab,
             ASR::stmt_t **orig_body, size_t orig_n_body,
-            Vec<ASR::stmt_t*> &new_body);
+            Vec<ASR::stmt_t*> &new_body,
+            SymbolTable *orig_symtab = nullptr);
 
     // Recursively re-duplicate AssociateBlock and Block bodies with
     // scope awareness. duplicate_AssociateBlock and duplicate_Block use
