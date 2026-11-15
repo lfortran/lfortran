@@ -249,6 +249,59 @@ namespace LCompilers {
                 member->m_value));
         }
 
+        // The lower bound of dimension `dim` of `arr`, read from its type when it is a constant there.
+        static ASR::expr_t* lower_bound_of(Allocator& al, ASR::expr_t* arr, int dim,
+            ASR::ttype_t* int_type) {
+            ASR::dimension_t* dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::expr_type(arr), dims);
+            int64_t lb = 0;
+            if( (size_t) dim <= n_dims && dims[dim - 1].m_start != nullptr &&
+                ASRUtils::extract_value(ASRUtils::expr_value(dims[dim - 1].m_start), lb) ) {
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr->base.loc,
+                    lb, int_type));
+            }
+            return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr->base.loc, arr,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr->base.loc, dim, int_type)),
+                int_type, ASR::arrayboundType::LBound, nullptr));
+        }
+
+        /*
+            `pts%x`, with `x` a scalar component, takes its shape from the array
+            `pts` but has lower bounds 1. Moves the subscripts `idx_vars` of
+            `expr` to `base`, the array it takes its shape from: subscript `i`
+            becomes `i - lbound(expr) + lbound(base)`.
+        */
+        static Vec<ASR::expr_t*> subscripts_in_base(Allocator& al,
+            Vec<ASR::expr_t*>& idx_vars, ASR::expr_t* expr, ASR::expr_t* base) {
+            Vec<ASR::expr_t*> base_idx;
+            base_idx.reserve(al, idx_vars.size());
+            for( size_t i = 0; i < idx_vars.size(); i++ ) {
+                ASR::expr_t* idx = idx_vars[i];
+                ASR::ttype_t* int_type = ASRUtils::expr_type(idx);
+                ASR::expr_t* expr_lb = lower_bound_of(al, expr, i + 1, int_type);
+                ASR::expr_t* base_lb = lower_bound_of(al, base, i + 1, int_type);
+                int64_t expr_lb_value = 0, base_lb_value = 0;
+                bool expr_lb_known = ASRUtils::extract_value(expr_lb, expr_lb_value);
+                bool base_lb_known = ASRUtils::extract_value(base_lb, base_lb_value);
+                if( expr_lb_known && base_lb_known ) {
+                    if( expr_lb_value != base_lb_value ) {
+                        idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, idx->base.loc,
+                            idx, ASR::binopType::Add, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, idx->base.loc, base_lb_value - expr_lb_value, int_type)),
+                            int_type, nullptr));
+                    }
+                } else {
+                    idx = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, idx->base.loc,
+                        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, idx->base.loc,
+                            idx, ASR::binopType::Sub, expr_lb, int_type, nullptr)),
+                        ASR::binopType::Add, base_lb, int_type, nullptr));
+                }
+                base_idx.push_back(al, idx);
+            }
+            return base_idx;
+        }
+
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr,
             Vec<ASR::expr_t*>& idx_vars, Allocator& al, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind, ASR::ttype_t* casted_type) {
@@ -265,8 +318,10 @@ namespace LCompilers {
                     ASRUtils::struct_base_lending_shape(item) != nullptr ) {
                     ASR::expr_t* base =
                         ASRUtils::get_struct_member_chain_array_part(item->m_v);
+                    Vec<ASR::expr_t*> base_idx = subscripts_in_base(al, idx_vars,
+                        arr_expr, base);
                     ASR::expr_t* member = rebuild_struct_member_chain(al, item->m_v,
-                        base, create_array_ref(base, idx_vars, al, current_scope,
+                        base, create_array_ref(base, base_idx, al, current_scope,
                             false, cast_kind, nullptr));
                     if( member != nullptr ) {
                         ASR::expr_t* array_ref = ASRUtils::EXPR(
@@ -284,16 +339,8 @@ namespace LCompilers {
                     }
                 }
             }
-            Vec<ASR::array_index_t> args;
-            args.reserve(al, 1);
-            for( size_t i = 0; i < idx_vars.size(); i++ ) {
-                ASR::array_index_t ai;
-                ai.loc = arr_expr->base.loc;
-                ai.m_left = nullptr;
-                ai.m_right = idx_vars[i];
-                ai.m_step = nullptr;
-                args.push_back(al, ai);
-            }
+            ASR::expr_t* indexed_expr = arr_expr;
+            bool indexes_shape_base = false;
             ASR::expr_t* array_ref = nullptr;
             ASR::expr_t* arr_expr_copy = arr_expr;
             ASR::expr_t** original_arr_expr =&arr_expr_copy;
@@ -325,6 +372,7 @@ namespace LCompilers {
                    !inherits_shape_from_base){
                     arr_expr = tmp->m_v;
                     array_ref_container_node = &(tmp->m_v);
+                    indexes_shape_base = !ASRUtils::is_array(ASRUtils::symbol_type(tmp->m_m));
                 } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
                     array_ref_container_node = &arr_expr;
                 } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
@@ -333,6 +381,18 @@ namespace LCompilers {
                 } else {
                     break;
                 }
+            }
+            Vec<ASR::expr_t*> base_idx = indexes_shape_base ?
+                subscripts_in_base(al, idx_vars, indexed_expr, arr_expr) : idx_vars;
+            Vec<ASR::array_index_t> args;
+            args.reserve(al, 1);
+            for( size_t i = 0; i < base_idx.size(); i++ ) {
+                ASR::array_index_t ai;
+                ai.loc = arr_expr->base.loc;
+                ai.m_left = nullptr;
+                ai.m_right = base_idx[i];
+                ai.m_step = nullptr;
+                args.push_back(al, ai);
             }
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
