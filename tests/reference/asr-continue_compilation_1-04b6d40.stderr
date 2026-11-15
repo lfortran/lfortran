@@ -5957,6 +5957,18 @@ semantic error: Incorrect number of arguments passed to the 'atanpi' intrinsic. 
 5039 |     cc1_ta_r = atanpi()  ! {Error} Incorrect number of arguments passed to the 'atanpi' intrinsic. It accepts at least 1 and at most 2 arguments.
      |                ^^^^^^^^ 
 
+semantic error: `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+    --> tests/errors/continue_compilation_1.f90:5053:24
+     |
+5053 |     print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+     |                        ^ `dim` is 0
+
+semantic error: `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+    --> tests/errors/continue_compilation_1.f90:5054:24
+     |
+5054 |     print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+     |                        ^^ `dim` is 16
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
