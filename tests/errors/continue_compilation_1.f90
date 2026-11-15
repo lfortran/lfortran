@@ -5038,3 +5038,10 @@ subroutine cc1_two_argument_atan_errors()
     cc1_ta_r = atand(1.0, 2.0, 3.0)  ! {Error} Incorrect number of arguments passed to the 'atand' intrinsic. It accepts at least 1 and at most 2 arguments.
     cc1_ta_r = atanpi()  ! {Error} Incorrect number of arguments passed to the 'atanpi' intrinsic. It accepts at least 1 and at most 2 arguments.
 end subroutine cc1_two_argument_atan_errors
+
+! `pack` `vector` and `unpack` `field` must match the type and kind of `array` and `vector`
+module cc1_pack_unpack_kind
+    implicit none
+    real(16), parameter :: cc1_puk_p(2) = pack([1.5_8, 2.5_8, 3.5_8], [.true., .false., .false.], [9.0_16, 8.0_16])  ! {Error} `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
+    real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
+end module
