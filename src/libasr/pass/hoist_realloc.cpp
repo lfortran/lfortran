@@ -91,6 +91,11 @@ procedure, as the test that it runs at least once.
 
 The target of H may also be a component that only one variable reaches
 (`q%x`, see component_root), which then stands for the target.
+
+The shape H gives may be computed by a function that reads only its
+arguments (see reads_only_its_arguments), such as the `count` of
+`c = pack(a, m)`, and a procedure does not change an INTENT(IN) dummy
+argument.
 */
 
 namespace {
@@ -210,6 +215,16 @@ public:
         ASR::BaseWalkVisitor<DerivedTypeFinder>::visit_expr(x);
     }
 };
+
+// Whether the dummy argument `arg` of a procedure has INTENT(IN).
+bool is_intent_in(ASR::expr_t* arg) {
+    if (!ASR::is_a<ASR::Var_t>(*arg)) {
+        return false;
+    }
+    ASR::symbol_t* s = past_external(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+    return ASR::is_a<ASR::Variable_t>(*s) &&
+        ASR::down_cast<ASR::Variable_t>(s)->m_intent == ASR::intentType::In;
+}
 
 // Whether the procedure `s` called as a function is declared pure.
 bool is_pure_function(ASR::symbol_t* s) {
@@ -428,6 +443,9 @@ public:
                     ASRUtils::is_allocatable(callee->m_args[i]) ||
                     ASRUtils::is_pointer(ASRUtils::expr_type(callee->m_args[i]))) {
                 clobber(arg);
+            } else if (is_intent_in(callee->m_args[i])) {
+                // An INTENT(IN) dummy argument that is neither allocatable
+                // nor a pointer is not changed (F2018 8.5.10).
             } else if (designator_root(arg) != nullptr) {
                 modify_value(arg);
             }
@@ -578,6 +596,109 @@ public:
     }
 };
 
+// Whether the function `f` computes its result from the values of its
+// arguments alone: its body references only its own variables (dummy
+// arguments, locals and result), changes no dummy argument, calls no
+// procedure and does no input/output. Such a function gives the same result
+// for the same argument values wherever it is called, and changes nothing
+// else.
+class SelfContainedChecker : public ASR::BaseWalkVisitor<SelfContainedChecker> {
+public:
+    const ASR::Function_t& f;
+    bool ok = true;
+
+    explicit SelfContainedChecker(const ASR::Function_t& f_) : f(f_) {}
+
+    bool is_own_local(ASR::symbol_t* s) {
+        s = past_external(s);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            return false;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
+        return v->m_parent_symtab == f.m_symtab &&
+            (v->m_intent == ASR::intentType::Local ||
+             v->m_intent == ASR::intentType::ReturnVar);
+    }
+
+    void visit_stmt(const ASR::stmt_t& x) {
+        switch (x.type) {
+            case ASR::stmtType::Assignment:
+            case ASR::stmtType::DoLoop:
+            case ASR::stmtType::WhileLoop:
+            case ASR::stmtType::If:
+            case ASR::stmtType::Exit:
+            case ASR::stmtType::Cycle:
+            case ASR::stmtType::Return:
+                break;
+            default:
+                ok = false;
+                return;
+        }
+        ASR::BaseWalkVisitor<SelfContainedChecker>::visit_stmt(x);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        ASR::symbol_t* root = designator_root(x.m_target);
+        if (root == nullptr || !is_own_local(root) || x.m_move_allocation ||
+                x.m_overloaded != nullptr) {
+            ok = false;
+            return;
+        }
+        ASR::BaseWalkVisitor<SelfContainedChecker>::visit_Assignment(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t& x) {
+        if (x.m_head.m_v == nullptr || designator_root(x.m_head.m_v) == nullptr ||
+                !is_own_local(designator_root(x.m_head.m_v))) {
+            ok = false;
+            return;
+        }
+        ASR::BaseWalkVisitor<SelfContainedChecker>::visit_DoLoop(x);
+    }
+
+    void visit_Var(const ASR::Var_t& x) {
+        ASR::symbol_t* s = past_external(x.m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s) ||
+                ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab != f.m_symtab) {
+            ok = false;
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+        ok = false;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& /*x*/) {
+        ok = false;
+    }
+};
+
+bool reads_only_its_arguments(const ASR::Function_t& f) {
+    if (f.m_return_var == nullptr || f.m_symtab == nullptr ||
+            ASRUtils::get_FunctionType(f)->m_deftype !=
+                ASR::deftypeType::Implementation) {
+        return false;
+    }
+    for (auto& item : f.m_symtab->get_scope()) {
+        // An internal procedure or a variable with an initializer, which
+        // could name another entity
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+            return false;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (v->m_symbolic_value != nullptr || v->m_value != nullptr ||
+                v->m_storage == ASR::storage_typeType::Save ||
+                ASRUtils::is_pointer(v->m_type) || v->m_target_attr) {
+            return false;
+        }
+    }
+    SelfContainedChecker c(f);
+    for (size_t i = 0; i < f.n_body && c.ok; i++) {
+        c.visit_stmt(*f.m_body[i]);
+    }
+    return c.ok;
+}
+
 // The variables an expression of a hoisted statement reads: those whose
 // allocation, shape or bounds only it inquires about, and those whose value
 // it reads.
@@ -627,8 +748,21 @@ public:
         }
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
-        calls = true;
+    // A function that computes its result from its arguments alone, such
+    // as the `count` of the size of `pack(a, m)`, reads only the values of
+    // its actual arguments.
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        ASR::symbol_t* f = past_external(x.m_name);
+        if (x.m_dt != nullptr || !ASR::is_a<ASR::Function_t>(*f) ||
+                !reads_only_its_arguments(*ASR::down_cast<ASR::Function_t>(f))) {
+            calls = true;
+            return;
+        }
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_value != nullptr) {
+                visit_expr(*x.m_args[i].m_value);
+            }
+        }
     }
 
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
