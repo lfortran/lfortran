@@ -43,6 +43,14 @@ include "color_missing.inc"
 end program
 """
 
+# Compiled with -g, ERROR STOP prints a stack trace.
+STACKTRACE = """\
+program color_stacktrace
+implicit none
+error stop 1
+end program
+"""
+
 ESCAPE = b"\x1b["
 
 
@@ -92,6 +100,45 @@ def run(cmd, cwd, no_color, terminal):
     else:
         stdout = out
     return stdout, stderr
+
+
+def check_stacktrace(lfortran, cwd):
+    """The stack trace of a program compiled with -g is colored when the
+    program's stderr is a terminal, so the object code does not depend on
+    where the compiler's output went."""
+    failures = []
+    compile_ = ["-g", "-c", "stacktrace.f90", "-o"]
+    for name, terminal in [("pipe.o", ()), ("terminal.o", ("stderr",))]:
+        run([lfortran] + compile_ + [name], cwd, None, terminal)
+    with open(os.path.join(cwd, "pipe.o"), "rb") as f:
+        pipe = f.read()
+    with open(os.path.join(cwd, "terminal.o"), "rb") as f:
+        terminal = f.read()
+    if pipe != terminal:
+        failures.append("lfortran %s: the object code depends on whether "
+            "stderr is a terminal" % " ".join(compile_))
+    for name, flags in [("colors", []), ("no_colors", ["--no-color"])]:
+        run([lfortran, "-g"] + flags + ["stacktrace.f90", "-o", name], cwd,
+            None, ())
+    _, plain = run([os.path.join(cwd, "colors")], cwd, None, ())
+    if b"color_stacktrace" not in plain and b"stacktrace.f90" not in plain:
+        # This build prints no stack trace.
+        return failures
+    cases = [
+        ("colors", None, (), False),
+        ("colors", None, ("stderr",), True),
+        ("colors", "1", ("stderr",), False),
+        ("no_colors", None, ("stderr",), False),
+    ]
+    for name, no_color, terminal, colored in cases:
+        _, stderr = run([os.path.join(cwd, name)], cwd, no_color, terminal)
+        if (ESCAPE in stderr) != colored:
+            failures.append("%s%s (%s on a terminal): the stack trace is "
+                "%scolored:\n%r" % (
+                "" if no_color is None else "NO_COLOR=%r " % no_color, name,
+                ", ".join(terminal) or "nothing",
+                "not " if colored else "", stderr))
+    return failures
 
 
 def main():
@@ -154,7 +201,7 @@ def main():
     failures = []
     with tempfile.TemporaryDirectory(dir=args.workdir) as cwd:
         for name, source in [("invalid", INVALID), ("valid", VALID),
-                ("include", MISSING_INCLUDE)]:
+                ("include", MISSING_INCLUDE), ("stacktrace", STACKTRACE)]:
             with open(os.path.join(cwd, name + ".f90"), "w") as f:
                 f.write(source)
         for arguments, no_color, terminal, checked, colored in cases:
@@ -171,6 +218,8 @@ def main():
             elif (ESCAPE in output) != colored:
                 failures.append("%s: %s is %scolored:\n%r" % (description,
                     checked, "not " if colored else "", output))
+        if pty is not None:
+            failures += check_stacktrace(lfortran, cwd)
     if failures:
         sys.exit("\n".join(failures))
     print("ok")

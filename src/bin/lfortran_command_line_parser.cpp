@@ -576,6 +576,9 @@ namespace LCompilers::CommandLineInterface {
         if (opts.arg_no_color) {
             opts.arg_color = "never";
         }
+        // Decided when the program runs, so that the object code does not
+        // depend on where the compiler's output goes.
+        compiler_options.use_stacktrace_colors = opts.arg_color != "never";
         if (kernel->parsed()) {
             // The kernel's client renders the colors: Jupyter, or the
             // prompt, which passes the `--color` it resolved.
