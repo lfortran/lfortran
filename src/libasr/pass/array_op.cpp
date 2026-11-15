@@ -1410,7 +1410,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 break;
             }
             if (!is_array_designator(operand) ||
-                    ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(operand)) != rank) {
+                    static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(operand))) != rank) {
                 continue;
             }
             size_t depth = loop_dependence(operand);
