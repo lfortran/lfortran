@@ -2330,7 +2330,8 @@ class MergebotTests(unittest.TestCase):
         args = dict(number=1, reason="validation evidence", reason_file=None,
                     expect="H", owner="worker", worktree=str(self.directory), base="main",
                     needs_review=False, verdict="same", allow_red_main=False,
-                    subject=None, body_file=None, draft=False, method="merge")
+                    subject=None, body_file=None, draft=False, method="merge",
+                    squash=False)
         args.update(overrides)
         return SimpleNamespace(**args)
 
@@ -2467,6 +2468,24 @@ class MergebotTests(unittest.TestCase):
             self.bot.cmd_complete(self.args(expect="B"))
         self.assertIsNone(self.fetch_facts(head="B")["approval_pending"])
         self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "B")
+
+    def test_completion_can_switch_to_squash_when_landed_changes_dropped_out(self):
+        self.bot.save_pr_state(1, {"label_id": "L", "approved_head": "H", "method": "merge",
+                                  "rebase": {"head": "B", "owner": "worker"}})
+        self.bot.cmd_lock(self.args())
+        info = self.info(head="B", rebase={"head": "B", "owner": "worker"},
+                         approval_pending="unfinished")
+        with patch.object(self.bot, "facts", return_value=info), \
+                patch.object(self.bot, "clean_head", return_value="B"), \
+                patch.object(self.bot, "cmd_reject") as reject, \
+                patch.object(self.bot, "comment") as comment:
+            with self.assertRaisesRegex(SystemExit, "equivalent rebase"):
+                self.bot.cmd_complete(self.args(expect="B", verdict="changed", squash=True))
+            reject.assert_not_called()
+            self.bot.cmd_complete(self.args(expect="B", squash=True))
+        state = self.bot.pr_state(1, "L")
+        self.assertEqual((state["approved_head"], state["method"]), ("B", "squash"))
+        self.assertIn("Switching to **squash**", comment.call_args.args[1])
 
     def test_completion_rejects_a_different_final_head(self):
         self.bot.cmd_lock(self.args())
