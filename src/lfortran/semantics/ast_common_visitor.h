@@ -30527,6 +30527,7 @@ public:
         // Find array in the returning tmp expression. If found set tmp type to that array type.
         bool array_found = false;
         ASR::ttype_t* array_type = nullptr; // will be set if only one single array is found. It'd be used to change the type of tmp.
+        bool array_is_whole = false;
         ASR::asr_t* tmp_copy = tmp;
         while(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp_copy)) ||
             (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp_copy)) &&
@@ -30552,6 +30553,7 @@ public:
                     }
                     array_found = true;
                     array_type = ASRUtils::duplicate_type(al,ASRUtils::symbol_type(tmp2->m_m));
+                    array_is_whole = (tmp_copy == tmp);
                 }
             }
             if(tmp2->m_v->type == ASR::exprType::Var){
@@ -30608,6 +30610,10 @@ public:
                     tmp2->m_type, dims.p, dims.size());
             }
             tmp_copy = (ASR::asr_t*)(tmp2->m_v);
+        }
+        // `s%arr` is a whole array and keeps its bounds; `pts%x` and `s%arr%x` start at 1.
+        if (array_type && !array_is_whole) {
+            set_lower_bounds_to_one(array_type);
         }
         if(array_type){
             if(ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp))){
@@ -30676,6 +30682,23 @@ public:
             // array-operation pass can lower it element-wise.
             set_array_type_of_intermediate_struct_members(
                 ASRUtils::EXPR(tmp), array_type);
+        }
+    }
+
+    // Sets each lower bound that the array type `t` gives to 1, keeping the extents.
+    void set_lower_bounds_to_one(ASR::ttype_t* t) {
+        ASR::ttype_t* array_type = ASRUtils::type_get_past_allocatable_pointer(t);
+        if (!ASR::is_a<ASR::Array_t>(*array_type)) {
+            return;
+        }
+        ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(array_type);
+        array->m_dims = ASRUtils::duplicate_dimensions(al, array->m_dims, array->n_dims);
+        for (size_t i = 0; i < array->n_dims; i++) {
+            ASR::expr_t* start = array->m_dims[i].m_start;
+            if (start != nullptr) {
+                array->m_dims[i].m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, start->base.loc, 1, ASRUtils::expr_type(start)));
+            }
         }
     }
 
