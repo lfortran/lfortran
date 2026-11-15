@@ -431,7 +431,7 @@
                                                     }
                                                 },
                                                 "overloaded": [],
-                                                "realloc_lhs": false,
+                                                "realloc_lhs": true,
                                                 "move_allocation": false,
                                                 "new_target": false,
                                                 "new_allocation": false

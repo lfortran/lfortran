@@ -45,14 +45,23 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
         float __gpu_call_result[2];
         int __gpu_sum_k;
         float __gpu_sum_res;
+        float __libasr_created__function_call_fixed_result[2];
         float __libasr_created__subroutine_from_function_[2];
         int __libasr_index_0_;
         int __libasr_index_0_1;
+        int __libasr_index_0_2;
+        int __libasr_index_0_3;
         fixed_result_device_t_gpu_52(i__dc, __libasr_created__subroutine_from_function_);
+        __libasr_index_0_3 = 1;
+        #pragma unroll 16
+        for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + 2 - 1); __libasr_index_0_2++) {
+            __libasr_created__function_call_fixed_result[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
+            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        }
         __libasr_index_0_1 = 1;
         #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
-            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
+            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_fixed_result[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
@@ -92,14 +101,23 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
         float __gpu_call_result[2];
         int __gpu_sum_k;
         float __gpu_sum_res;
+        float __libasr_created__function_call_reallocated_result[2];
         float __libasr_created__subroutine_from_function_[2];
         int __libasr_index_0_;
         int __libasr_index_0_1;
+        int __libasr_index_0_2;
+        int __libasr_index_0_3;
         reallocated_result_device_t_gpu_53(i__dc1, __libasr_created__subroutine_from_function_);
+        __libasr_index_0_3 = 1;
+        #pragma unroll 16
+        for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + 2 - 1); __libasr_index_0_2++) {
+            __libasr_created__function_call_reallocated_result[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
+            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        }
         __libasr_index_0_1 = 1;
         #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
-            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
+            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_reallocated_result[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;

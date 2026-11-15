@@ -50,6 +50,8 @@ program array_section_assign_11
 use array_section_assign_11_mod, only: shift
 use array_section_assign_11_mod, only: upd
 implicit none
+real(4), dimension(4), parameter :: __libasr_created__array_constant_ = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00,&
+         4.00000000e+00]
 logical(4), dimension(:), allocatable :: __libasr_created__intrinsic_array_function_Any
 logical(4) :: __libasr_created__intrinsic_array_function_Any1
 logical(4), dimension(:), allocatable :: __libasr_created__intrinsic_array_function_Any2
@@ -64,7 +66,7 @@ real(4), dimension(4), parameter :: __libasr_created_real_compare_right_1 = [4.0
 real(4), dimension(2, 4) :: a
 real(4), dimension(4) :: x
 a = 1.00000000e+00
-x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00, 4.00000000e+00]
+x = __libasr_created__array_constant_
 call upd(a, x, 1, 3)
 __libasr_created_real_compare_left_ => a(1, lbound(a, 2):ubound(a, 2))
 deallocate(__libasr_created__intrinsic_array_function_Any)

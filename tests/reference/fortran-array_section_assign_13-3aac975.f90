@@ -41,10 +41,12 @@ use array_section_assign_13_mod, only: sgd_t
 use array_section_assign_13_mod, only: shift
 use array_section_assign_13_mod, only: upd
 implicit none
+real(4), dimension(4), parameter :: __libasr_created__array_constant_ = [2.00000000e+00, 4.00000000e+00, 6.00000000e+00,&
+         8.00000000e+00]
 real(4), dimension(2), parameter :: __libasr_created__subroutine_call_upd = [1.00000000e+00, 1.00000000e+00]
 type(sgd_t) :: s
 allocate(s%velocity(4))
-s%velocity = [2.00000000e+00, 4.00000000e+00, 6.00000000e+00, 8.00000000e+00]
+s%velocity = __libasr_created__array_constant_
 s%start_index = 2
 call upd(s, __libasr_created__subroutine_call_upd)
 if (s%velocity(1) /= 2.00000000e+00 .or. s%velocity(2) /= 1.00000000e+00) then
