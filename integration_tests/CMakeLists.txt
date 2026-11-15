@@ -2309,6 +2309,7 @@ RUN(NAME real16_atan2_01 LABELS gfortran llvm) # atan2/atan2d parameters of real
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_atan_01 LABELS gfortran llvm) # two-argument atan(y, x) (#17824)
 RUN(NAME intrinsics_atan_02 LABELS llvm) # two-argument atand(y, x), atanpi(y, x) (#17824)  <--- GFortran does not have support for these
+RUN(NAME intrinsics_atan_03 LABELS gfortran llvm) # atan(y, x) parameters of real(16) (#17816, #17824)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character

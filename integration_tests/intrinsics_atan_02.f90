@@ -5,6 +5,8 @@ real(8), parameter :: tol = 1d-12
 real(8), parameter :: pd = atand(1d0, -1d0)
 real(8), parameter :: pp = atanpi(y=-1d0, x=-1d0)
 real(4), parameter :: ps = atand(1.0, 1.0)
+real(16), parameter :: qd = atand(-1.0_16, -1.0_16)
+real(16), parameter :: qp = atanpi(y=1.0_16, x=-1.0_16)
 real(8) :: y, x, a(3), b(3)
 real(4) :: ys, xs
 y = 1; x = -1
@@ -23,6 +25,8 @@ if (abs(atand(ys, xs) - 45.0) > 1e-5) error stop 10
 if (abs(atanpi(ys, xs) - 0.25) > 1e-6) error stop 11
 if (any(abs(atand(a, b) - [45d0, -45d0, 180d0]) > tol)) error stop 12
 if (any(abs(atanpi(a, b) - [0.25d0, -0.25d0, 1d0]) > tol)) error stop 13
+if (abs(qd + 135.0_16) > 1e-30_16) error stop 16
+if (abs(qp - 0.75_16) > 1e-30_16) error stop 17
 ! The one-argument forms are unchanged
 if (abs(atand(1d0) - 45d0) > tol) error stop 14
 if (abs(atanpi(1d0) - 0.25d0) > tol) error stop 15
