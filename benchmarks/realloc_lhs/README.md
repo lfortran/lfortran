@@ -133,9 +133,12 @@ pixi run -e llvm11 bench_realloc_lhs --apps --placements 4 \
 
 For each configuration with reallocation on assignment the table shows the
 original form, the explicit form and their ratio (original/explicit); for a
-configuration without it, only the explicit form. So the three numbers of a
-kernel are the original form with reallocation, the explicit form with
-reallocation and the explicit form without it.
+configuration without it, the explicit form and, where it is valid without
+reallocation (kernels not marked *), the original form. So a kernel shows
+the original form with reallocation, the explicit form with reallocation
+and the explicit form without it; when the original form is as fast without
+reallocation as with it, a difference between the two forms is not the
+cost of reallocation on assignment but of the forms themselves.
 
 ## Running
 

@@ -533,8 +533,9 @@ def report_errors(errors):
 
 def paired_table(cases, results, configs, labels, args, pin, cpu):
     """The table of the paired kernels: for each configuration the original
-    form, the explicit form and original/explicit, or only the explicit form
-    for a configuration without reallocation on assignment."""
+    form, the explicit form and original/explicit; for a configuration
+    without reallocation on assignment the two forms, the original one only
+    where it is valid without it."""
     times = {}
     for (kernel, n, reps, req), best in zip(cases, results):
         per = reps * inner_iterations(kernel, n)
@@ -544,8 +545,8 @@ def paired_table(cases, results, configs, labels, args, pin, cpu):
     align = ["---", "---:"]
     for c in configs:
         if c.no_realloc:
-            head.append(f"{c.label} explicit")
-            align.append("---:")
+            head += [f"{c.label} original", f"{c.label} explicit"]
+            align += ["---:", "---:"]
         else:
             head += [f"{c.label} original", f"{c.label} explicit",
                      f"{c.label} ratio"]
@@ -567,7 +568,7 @@ def paired_table(cases, results, configs, labels, args, pin, cpu):
         row = [kernel + (" *" if req else ""), str(n)]
         for j, c in enumerate(configs):
             if c.no_realloc:
-                row.append(cell(expl[j]))
+                row += [cell(orig[j]), cell(expl[j])]
                 continue
             row += [cell(orig[j]), cell(expl[j])]
             if isinstance(orig[j], float) and isinstance(expl[j], float) \
