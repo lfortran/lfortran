@@ -482,11 +482,105 @@ static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &
 
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id);
+
+// With `dim` and an array of rank > 1 the result is an array: each element
+// is the reduction of a rank-1 section of `array` (and of an array `mask`)
+// along `dim`, in column-major order of the other dimensions. Every section
+// is folded by the evaluation without `dim`, so all types and kinds, masks
+// and zero-size sections are folded the same way as there. Returns nullptr
+// when any section is left to run time.
+static inline ASR::expr_t *eval_ArrIntrinsic_along_dim(Allocator & al,
+    const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    if (args.size() < 2 || !args[0] || !ASR::is_a<ASR::ArrayConstant_t>(*args[0]) ||
+            !args[1] || !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(args[0]);
+    int64_t dim = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+    ASR::expr_t *mask = args.size() > 2 ? args[2] : nullptr;
+    ASR::ArrayConstant_t *mask_array = nullptr;
+    if (mask) {
+        if (ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+            mask_array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
+        } else if (!ASR::is_a<ASR::LogicalConstant_t>(*mask)) {
+            return nullptr;
+        }
+    }
+    ASR::dimension_t *dims = nullptr;
+    int rank = checked_integer_cast<int>(
+        ASRUtils::extract_dimensions_from_ttype(a->m_type, dims));
+    if (dim < 1 || dim > rank ||
+            rank != (int) ASRUtils::extract_n_dims_from_ttype(t) + 1) {
+        return nullptr;
+    }
+    // `stride` is the distance between consecutive elements of a section and
+    // `extent` the number of elements in it
+    std::vector<int64_t> result_extents;
+    int64_t stride = 1, extent = 0, size = 1, result_size = 1;
+    for (int i = 0; i < rank; i++) {
+        int64_t length = -1;
+        if (!dims[i].m_length || !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[i].m_length), length) || length < 0) {
+            return nullptr;
+        }
+        size *= length;
+        if (i + 1 < dim) {
+            stride *= length;
+        }
+        if (i + 1 == dim) {
+            extent = length;
+        } else {
+            result_extents.push_back(length);
+            result_size *= length;
+        }
+    }
+    if (size != ASRUtils::get_fixed_size_of_array(a->m_type) || (mask_array &&
+            size != ASRUtils::get_fixed_size_of_array(mask_array->m_type))) {
+        return nullptr;
+    }
+    ASRBuilder b(al, loc);
+    ASR::ttype_t *element_type = ASRUtils::extract_type(t);
+    ASR::ttype_t *array_element_type = ASRUtils::extract_type(a->m_type);
+    std::vector<ASR::expr_t*> results;
+    for (int64_t r = 0; r < result_size; r++) {
+        int64_t first = r % stride + (r / stride) * stride * extent;
+        std::vector<ASR::expr_t*> section, mask_section;
+        for (int64_t k = 0; k < extent; k++) {
+            section.push_back(ASRUtils::fetch_ArrayConstant_value(al, a, first + k * stride));
+            if (mask_array) {
+                mask_section.push_back(ASRUtils::fetch_ArrayConstant_value(al,
+                    mask_array, first + k * stride));
+            }
+        }
+        Vec<ASR::expr_t*> section_args; section_args.reserve(al, 2);
+        section_args.push_back(al, b.ArrayConstant(section, array_element_type, false));
+        if (mask_array) {
+            section_args.push_back(al, b.ArrayConstant(mask_section,
+                ASRUtils::extract_type(mask_array->m_type), false));
+        } else if (mask) {
+            section_args.push_back(al, mask);
+        }
+        ASR::expr_t *value = eval_ArrIntrinsic(al, loc, element_type, section_args,
+            diag, intrinsic_func_id);
+        if (!value) return nullptr;
+        results.push_back(value);
+    }
+    return b.ArrayConstant(results, element_type, false,
+        b.Array(result_extents, element_type));
+}
+
+static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
+    const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     ASRBuilder b(al, loc);
     if (args.size() < 1) return nullptr;
     ASR::expr_t* array = args[0];
     if (!array) return nullptr;
+    if (ASRUtils::is_array(t)) {
+        return eval_ArrIntrinsic_along_dim(al, loc, t, args, diag, intrinsic_func_id);
+    }
     ASR::expr_t* value = nullptr, *args_value0 = nullptr;
     ASR::ArrayConstant_t *a = nullptr;
     size_t size = 0;
@@ -728,7 +822,6 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             return value;
         }
         case ASRUtils::IntrinsicArrayFunctions::Iany: {
-            if (ASRUtils::is_array(t)) return nullptr;
             if (mask) mask_data = (bool*)(mask->m_data);
             int64_t result = 0;
             switch (kind) {
@@ -741,7 +834,6 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, result, t));
         }
         case ASRUtils::IntrinsicArrayFunctions::Iall: {
-            if (ASRUtils::is_array(t)) return nullptr;
             if (mask) mask_data = (bool*)(mask->m_data);
             int64_t result = -1;
             switch (kind) {
@@ -1035,6 +1127,11 @@ static inline ASR::asr_t* create_ArrIntrinsic(
     }
     if (can_eval_compile_time) {
         value = eval_ArrIntrinsic(al, loc, return_type, arg_values, diag, intrinsic_func_id);
+        if (value && ASRUtils::is_array(return_type)) {
+            // The folded value has the extents of the result, which are
+            // deferred in `return_type`
+            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
+        }
     }
 
     Vec<ASR::expr_t*> arr_intrinsic_args;

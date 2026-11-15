@@ -5357,6 +5357,7 @@ RUN(NAME do_loop_mlir_01 LABELS gfortran llvm mlir)
 RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c cpp mlir EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
 RUN(NAME intrinsic_reduction_dim_02 LABELS gfortran llvm)
+RUN(NAME intrinsic_reduction_dim_03 LABELS gfortran llvm) # sum/product/maxval/minval/iany/iall/iparity with dim of a constant array (#15391, #14667)
 
 
 RUN(NAME array_op_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm) #TODO: fix mlir, commented in PR: #6060
