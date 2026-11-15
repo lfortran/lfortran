@@ -85,6 +85,9 @@ only when all of the following hold, so that the program does the same:
 Every other statement, and every statement this analysis does not know,
 keeps H in the loop. Loops are processed innermost first, so that a ReAlloc
 that leaves an inner loop can leave an enclosing loop as well.
+
+A DO WHILE loop is handled as a DO loop, with its condition, which calls no
+procedure, as the test that it runs at least once.
 */
 
 namespace {
@@ -1061,18 +1064,17 @@ public:
         return true;
     }
 
-    // The statements of the body of `x` that move before it, removed from
-    // its body, or none.
+    // The statements of the body of the DO loop `x` that move before it,
+    // removed from its body, or none.
     std::vector<ASR::stmt_t*> hoist_from(ASR::DoLoop_t& x) {
-        std::vector<ASR::stmt_t*> hoisted;
         const ASR::do_loop_head_t& head = x.m_head;
         if (x.n_orelse != 0 || head.m_v == nullptr || head.m_start == nullptr ||
                 head.m_end == nullptr) {
-            return hoisted;
+            return {};
         }
         ASR::symbol_t* loop_var = designator_root(head.m_v);
         if (loop_var == nullptr) {
-            return hoisted;
+            return {};
         }
         SourceCollector head_sources;
         head_sources.visit_expr(*head.m_start);
@@ -1081,41 +1083,50 @@ public:
             head_sources.visit_expr(*head.m_increment);
         }
         if (head_sources.calls) {
-            return hoisted;
+            return {};
         }
         SymbolSet head_vars = head_sources.inquired;
         head_vars.insert(head_sources.valued.begin(), head_sources.valued.end());
+        return hoist_from_body(x.m_body, x.n_body, head_vars, loop_var);
+    }
 
-        std::vector<Hoistable> candidates(x.n_body);
-        std::vector<bool> is_candidate(x.n_body, false);
+    // The statements of the loop body `m_body` that move before the loop,
+    // removed from it, or none. `head_vars` are the variables that the
+    // head of the loop reads, `loop_var` its loop variable or nullptr.
+    std::vector<ASR::stmt_t*> hoist_from_body(ASR::stmt_t**& m_body,
+            size_t& n_body, const SymbolSet& head_vars,
+            ASR::symbol_t* loop_var) {
+        std::vector<ASR::stmt_t*> hoisted;
+        std::vector<Hoistable> candidates(n_body);
+        std::vector<bool> is_candidate(n_body, false);
         bool any = false;
-        for (size_t i = 0; i < x.n_body; i++) {
-            is_candidate[i] = analyze_hoistable(x.m_body[i], candidates[i]);
+        for (size_t i = 0; i < n_body; i++) {
+            is_candidate[i] = analyze_hoistable(m_body[i], candidates[i]);
             any = any || is_candidate[i];
         }
         if (!any) {
             return hoisted;
         }
-        std::vector<Effects> effects(x.n_body);
-        for (size_t i = 0; i < x.n_body; i++) {
+        std::vector<Effects> effects(n_body);
+        for (size_t i = 0; i < n_body; i++) {
             EffectsCollector c(effects[i]);
-            c.visit_stmt(*x.m_body[i]);
+            c.visit_stmt(*m_body[i]);
         }
         // The section pointers of the body, with the statement that
         // associates each.
         std::map<ASR::symbol_t*, std::pair<size_t, ASR::ArraySection_t*>> sections;
-        for (size_t i = 0; i < x.n_body; i++) {
-            if (!ASR::is_a<ASR::Associate_t>(*x.m_body[i])) {
+        for (size_t i = 0; i < n_body; i++) {
+            if (!ASR::is_a<ASR::Associate_t>(*m_body[i])) {
                 continue;
             }
-            ASR::Associate_t* a = ASR::down_cast<ASR::Associate_t>(x.m_body[i]);
+            ASR::Associate_t* a = ASR::down_cast<ASR::Associate_t>(m_body[i]);
             if (ASR::is_a<ASR::Var_t>(*a->m_target) &&
                     ASR::is_a<ASR::ArraySection_t>(*a->m_value) &&
                     a->m_form == ASR::pointer_bounds_formType::NoPointerBounds &&
                     ASRUtils::is_pointer(ASRUtils::expr_type(a->m_target))) {
                 ASR::symbol_t* p = designator_root(a->m_target);
                 size_t associations = 0;
-                for (size_t j = 0; j < x.n_body; j++) {
+                for (size_t j = 0; j < n_body; j++) {
                     associations += effects[j].alloc_modified.count(p);
                 }
                 if (associations == 1) {
@@ -1123,9 +1134,9 @@ public:
                 }
             }
         }
-        std::vector<ASR::stmt_t*> hoistable(x.m_body, x.m_body + x.n_body);
-        std::vector<bool> hoist(x.n_body, false);
-        for (size_t k = 0; k < x.n_body; k++) {
+        std::vector<ASR::stmt_t*> hoistable(m_body, m_body + n_body);
+        std::vector<bool> hoist(n_body, false);
+        for (size_t k = 0; k < n_body; k++) {
             if (!is_candidate[k]) {
                 continue;
             }
@@ -1135,7 +1146,7 @@ public:
             // that an earlier one reallocates, as in `t1 = a + b; t2 = 2*t1`,
             // can move too.
             Effects others, before;
-            for (size_t j = 0; j < x.n_body; j++) {
+            for (size_t j = 0; j < n_body; j++) {
                 if (j == k || (j < k && hoist[j])) {
                     continue;
                 }
@@ -1144,7 +1155,9 @@ public:
                     before.merge(effects[j]);
                 }
             }
-            others.value_modified.insert(loop_var);
+            if (loop_var != nullptr) {
+                others.value_modified.insert(loop_var);
+            }
             hoist[k] = can_hoist(candidates[k], others, before, head_vars);
             if (hoist[k]) {
                 continue;
@@ -1159,7 +1172,7 @@ public:
                     before_k[section.first] = section.second.second;
                 }
             }
-            ASR::stmt_t* resolved = resolve_sections(al, x.m_body[k], before_k);
+            ASR::stmt_t* resolved = resolve_sections(al, m_body[k], before_k);
             Hoistable h;
             if (resolved != nullptr && analyze_hoistable(resolved, h) &&
                     can_hoist(h, others, before, head_vars)) {
@@ -1168,17 +1181,17 @@ public:
             }
         }
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, x.n_body);
-        for (size_t i = 0; i < x.n_body; i++) {
+        body.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
             if (hoist[i]) {
                 hoisted.push_back(hoistable[i]);
             } else {
-                body.push_back(al, x.m_body[i]);
+                body.push_back(al, m_body[i]);
             }
         }
         if (!hoisted.empty()) {
-            x.m_body = body.p;
-            x.n_body = body.size();
+            m_body = body.p;
+            n_body = body.size();
         }
         return hoisted;
     }
@@ -1337,6 +1350,41 @@ public:
             pass_result.push_back(al, b.If(runs_at_least_once(x, step),
                 hoisted, {}));
         }
+        pass_result.push_back(al, &xx.base);
+    }
+
+    // A DO WHILE loop runs its body at least once when its condition holds
+    // before it. The condition calls no procedure that could change
+    // anything (as for the bounds of a DO loop) and does not read what the
+    // hoisted statements reallocate, so it can be evaluated once more, in
+    // front of them.
+    void visit_WhileLoop(const ASR::WhileLoop_t& x) {
+        ASR::WhileLoop_t& xx = const_cast<ASR::WhileLoop_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
+        if (scope.symtab == nullptr) {
+            return;
+        }
+        remove_redundant_reallocations(xx.m_body, xx.n_body);
+        if (xx.n_orelse != 0) {
+            return;
+        }
+        SourceCollector test_sources;
+        test_sources.visit_expr(*x.m_test);
+        if (test_sources.calls) {
+            return;
+        }
+        SymbolSet test_vars = test_sources.inquired;
+        test_vars.insert(test_sources.valued.begin(), test_sources.valued.end());
+        std::vector<ASR::stmt_t*> hoisted = hoist_from_body(xx.m_body,
+            xx.n_body, test_vars, nullptr);
+        if (hoisted.empty()) {
+            return;
+        }
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASRUtils::ASRBuilder b(al, x.base.base.loc);
+        pass_result.reserve(al, 2);
+        pass_result.push_back(al, b.If(d.duplicate_expr(x.m_test), hoisted, {}));
         pass_result.push_back(al, &xx.base);
     }
 };
