@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_reduce_03-8954d2e",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_reduce_03.f90",
+    "infile_hash": "15793d3d61dce9deb3baf9305557e09108dce0babb93251e2a7ee2a0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_reduce_03-8954d2e.stdout",
+    "stdout_hash": "fdf43e2f88af3a6be26356ec4cc4ccb2215965cde6eadcdfa69bc60c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

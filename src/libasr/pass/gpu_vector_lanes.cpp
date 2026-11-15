@@ -233,6 +233,84 @@ bool same_expr(ASR::expr_t *a, ASR::expr_t *b) {
     }
 }
 
+// Whether two expressions of a loop body are the same, written the same way,
+// with the operations and calls of values (same_expr, and the arithmetic, the
+// intrinsic functions and the calls of functions on them).
+bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
+    if (a == b) return true;
+    if (a == nullptr || b == nullptr || a->type != b->type) return false;
+    switch (a->type) {
+        case ASR::exprType::RealBinOp: {
+            auto *x = ASR::down_cast<ASR::RealBinOp_t>(a);
+            auto *y = ASR::down_cast<ASR::RealBinOp_t>(b);
+            return x->m_op == y->m_op && same_value(x->m_left, y->m_left)
+                && same_value(x->m_right, y->m_right);
+        }
+        case ASR::exprType::RealUnaryMinus:
+            return same_value(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(a)->m_arg,
+                ASR::down_cast<ASR::RealUnaryMinus_t>(b)->m_arg);
+        case ASR::exprType::IntegerBinOp: {
+            auto *x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
+            auto *y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
+            return x->m_op == y->m_op && same_value(x->m_left, y->m_left)
+                && same_value(x->m_right, y->m_right);
+        }
+        case ASR::exprType::Cast: {
+            auto *x = ASR::down_cast<ASR::Cast_t>(a);
+            auto *y = ASR::down_cast<ASR::Cast_t>(b);
+            return x->m_kind == y->m_kind && same_value(x->m_arg, y->m_arg)
+                && ASRUtils::check_equal_type(x->m_type, y->m_type, nullptr,
+                    nullptr);
+        }
+        case ASR::exprType::IntrinsicElementalFunction: {
+            auto *x = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a);
+            auto *y = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(b);
+            if (x->m_intrinsic_id != y->m_intrinsic_id
+                    || x->n_args != y->n_args) {
+                return false;
+            }
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!same_value(x->m_args[i], y->m_args[i])) return false;
+            }
+            return true;
+        }
+        case ASR::exprType::FunctionCall: {
+            auto *x = ASR::down_cast<ASR::FunctionCall_t>(a);
+            auto *y = ASR::down_cast<ASR::FunctionCall_t>(b);
+            if (ASRUtils::symbol_get_past_external(x->m_name)
+                    != ASRUtils::symbol_get_past_external(y->m_name)
+                    || x->n_args != y->n_args) {
+                return false;
+            }
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!same_value(x->m_args[i].m_value,
+                        y->m_args[i].m_value)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case ASR::exprType::ArrayItem: {
+            auto *x = ASR::down_cast<ASR::ArrayItem_t>(a);
+            auto *y = ASR::down_cast<ASR::ArrayItem_t>(b);
+            if (x->n_args != y->n_args || !same_expr(x->m_v, y->m_v)) {
+                return false;
+            }
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (!same_value(x->m_args[i].m_right, y->m_args[i].m_right)
+                        || x->m_args[i].m_left || y->m_args[i].m_left
+                        || x->m_args[i].m_step || y->m_args[i].m_step) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        default:
+            return same_expr(a, b);
+    }
+}
+
 // The variable a designator starts from, or nullptr.
 ASR::symbol_t* root_of(ASR::expr_t *e) {
     while (true) {
@@ -2528,6 +2606,54 @@ private:
             && end.plus(start, -1).is_constant();
     }
 
+    // A statement of a loop body that assigns the private scalar `s`: an
+    // update `s = value`, which may only happen in some iterations
+    // (`conditional`), or `if (e > s) s = e` (`compared`), a maximum or
+    // minimum of operation `op`.
+    struct Update {
+        ASR::Assignment_t *assignment;
+        bool conditional;
+        bool compared;
+        ASR::reduction_opType op;
+    };
+
+    // Whether `test` is `value > s`, `s < value`, `value >= s` or `s <=
+    // value` (`op` is then a maximum), or the same with the order reversed
+    // (a minimum), and `value` does not name `s`.
+    bool comparison(ASR::symbol_t *s, ASR::expr_t *test, ASR::expr_t *value,
+            ASR::reduction_opType &op) {
+        ASR::expr_t *left = nullptr, *right = nullptr;
+        ASR::cmpopType cmp;
+        if (ASR::is_a<ASR::RealCompare_t>(*test)) {
+            auto *c = ASR::down_cast<ASR::RealCompare_t>(test);
+            left = c->m_left; right = c->m_right; cmp = c->m_op;
+        } else if (ASR::is_a<ASR::IntegerCompare_t>(*test)) {
+            auto *c = ASR::down_cast<ASR::IntegerCompare_t>(test);
+            left = c->m_left; right = c->m_right; cmp = c->m_op;
+        } else {
+            return false;
+        }
+        auto is_s = [&](ASR::expr_t *e) {
+            return ASR::is_a<ASR::Var_t>(*e) && root_of(e) == s;
+        };
+        bool greater = cmp == ASR::cmpopType::Gt || cmp == ASR::cmpopType::GtE;
+        bool less = cmp == ASR::cmpopType::Lt || cmp == ASR::cmpopType::LtE;
+        if (!greater && !less) return false;
+        if (mentions(value, s)) return false;
+        // The value on the larger side is the new maximum.
+        ASR::expr_t *larger = greater ? left : right;
+        ASR::expr_t *smaller = greater ? right : left;
+        if (is_s(smaller) && same_value(larger, value)) {
+            op = ASR::reduction_opType::ReduceMAX;
+            return true;
+        }
+        if (is_s(larger) && same_value(smaller, value)) {
+            op = ASR::reduction_opType::ReduceMIN;
+            return true;
+        }
+        return false;
+    }
+
     // The accumulator and operation of `value`, the value assigned to the
     // private scalar `s`, when it is s + e, e + s, s - e, s * e, e * s,
     // max(s, e), max(e, s), min(s, e) or min(e, s) with an `e` that does
@@ -2740,10 +2866,10 @@ private:
             }
             // Its updates, statements of the body itself; nothing inside
             // the statements of the body assigns it.
-            std::vector<ASR::Assignment_t*> updates;
+            std::vector<Update> updates;
             bool read = false;
             if (!collect_updates(d->m_body, d->n_body, s, updates, read,
-                    blocks_hold_updates)) {
+                    blocks_hold_updates, false)) {
                 return false;
             }
             ASR::ttype_t *t = ASRUtils::symbol_type(s);
@@ -2751,9 +2877,12 @@ private:
             if (read) {
                 Induction c{s, 0, !dead_after(frames, s)};
                 if (!ASRUtils::is_integer(*t)) return false;
-                for (ASR::Assignment_t *a : updates) {
+                for (const Update &u : updates) {
                     int64_t step = 0;
-                    if (!increment(s, a->m_value, step)) return false;
+                    if (u.conditional || u.compared
+                            || !increment(s, u.assignment->m_value, step)) {
+                        return false;
+                    }
                     c.step += step;
                 }
                 if (c.live && !bounds_kept) return false;
@@ -2769,8 +2898,10 @@ private:
             // it once per element it takes, all by the same operation.
             Accumulator acc{s, ASR::reduction_opType::ReduceAdd};
             for (size_t i = 0; i < updates.size(); i++) {
-                ASR::reduction_opType op;
-                if (!accumulation(s, updates[i]->m_value, op)
+                ASR::reduction_opType op = updates[i].op;
+                if ((!updates[i].compared
+                        && !accumulation(s, updates[i].assignment->m_value,
+                            op))
                         || (i > 0 && op != acc.op)) {
                     return false;
                 }
@@ -2850,15 +2981,43 @@ private:
     // their own), in `updates`; `read` is set when anything else names `s`. False when
     // `s` is assigned anywhere else.
     bool collect_updates(ASR::stmt_t **body, size_t n_body,
-            ASR::symbol_t *s, std::vector<ASR::Assignment_t*> &updates,
-            bool &read, bool blocks) {
+            ASR::symbol_t *s, std::vector<Update> &updates,
+            bool &read, bool blocks, bool conditional) {
         for (size_t i = 0; i < n_body; i++) {
             ASR::stmt_t *x = body[i];
             if (ASR::is_a<ASR::Assignment_t>(*x)) {
                 auto *a = ASR::down_cast<ASR::Assignment_t>(x);
                 if (ASR::is_a<ASR::Var_t>(*a->m_target)
                         && root_of(a->m_target) == s) {
-                    updates.push_back(a);
+                    updates.push_back({a, conditional, false,
+                        ASR::reduction_opType::ReduceAdd});
+                    continue;
+                }
+            }
+            if (ASR::is_a<ASR::If_t>(*x)) {
+                auto *f = ASR::down_cast<ASR::If_t>(x);
+                // `if (e > s) s = e`: a maximum (a minimum for `<`).
+                ASR::reduction_opType op;
+                ASR::Assignment_t *a = nullptr;
+                if (f->n_orelse == 0 && f->n_body == 1
+                        && ASR::is_a<ASR::Assignment_t>(*f->m_body[0])) {
+                    a = ASR::down_cast<ASR::Assignment_t>(f->m_body[0]);
+                }
+                if (a && ASR::is_a<ASR::Var_t>(*a->m_target)
+                        && root_of(a->m_target) == s
+                        && comparison(s, f->m_test, a->m_value, op)) {
+                    updates.push_back({a, conditional, true, op});
+                    continue;
+                }
+                // `if (c) s = s + e`: the accumulation happens in some
+                // iterations only, which every lane's partial sum allows.
+                if (!mentions(f->m_test, s)) {
+                    if (!collect_updates(f->m_body, f->n_body, s, updates,
+                                read, blocks, true)
+                            || !collect_updates(f->m_orelse, f->n_orelse, s,
+                                updates, read, blocks, true)) {
+                        return false;
+                    }
                     continue;
                 }
             }
@@ -2867,7 +3026,7 @@ private:
                     ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::BlockCall_t>(x)->m_m));
                 if (!collect_updates(block->m_body, block->n_body, s,
-                        updates, read, blocks)) {
+                        updates, read, blocks, conditional)) {
                     return false;
                 }
                 continue;

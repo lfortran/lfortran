@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_lanes_reduce_03-8e15909",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_reduce_03.f90",
+    "infile_hash": "15793d3d61dce9deb3baf9305557e09108dce0babb93251e2a7ee2a0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_lanes_reduce_03-8e15909.stdout",
+    "stdout_hash": "975cc64f7d0e6aefb0e4af46f2e3801bab4f14a17964ae01f4499be0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
