@@ -340,15 +340,29 @@ private:
         return "";
     }
 
+    // The remedy a runtime error suggests when an assignment needs its
+    // allocatable target allocated, or reallocated to another shape. Only
+    // the opt-out of reallocation on assignment leaves that to the user.
+    std::string realloc_lhs_remedy(const std::string &action) {
+        if (compiler_options.po.realloc_lhs_arrays) {
+            return "";
+        }
+        return " Remove the '--no-realloc-lhs-arrays' option to " + action
+            + " automatically on assignment.";
+    }
+
     void generate_unallocated_array_runtime_error(llvm::Value* is_not_allocated,
                                                   ASR::expr_t* target_expr) {
         std::string target_expr_name = get_expr_name_for_runtime_message(target_expr);
+        std::string message = target_expr_name.empty() ? "Array is not allocated."
+            : "Array '%s' is not allocated.";
+        message += " Allocate it explicitly." + realloc_lhs_remedy("allocate it");
         if (!target_expr_name.empty()) {
             llvm::Value* target_expr_name_llvm = llvm_utils->get_runtime_error_string(
                 target_expr_name);
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
-                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                message,
                 {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
                 infile,
                 location_manager,
@@ -356,7 +370,7 @@ private:
         } else {
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
-                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                message,
                 {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
                 infile,
                 location_manager);
@@ -16923,8 +16937,7 @@ public:
         if (is_allocatable_descriptor_target) {
             // Only a target that can actually be reallocated is told
             // about the option that would reallocate it.
-            message += " Use '--realloc-lhs-arrays' option to"
-                " reallocate LHS automatically.";
+            message += realloc_lhs_remedy("reallocate the left hand side");
         }
         for (size_t i = 0; i < x.n_checks; i++) {
             const ASR::array_extent_check_t &check = x.m_checks[i];
