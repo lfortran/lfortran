@@ -2874,18 +2874,10 @@ public:
             llvm::Value* x_arr = tmp;
             // Allocating an associated pointer is not an error: it creates a
             // new target and breaks the previous association (F2023 9.7.1.4).
-            // Only an allocatable must not be allocated already. A
-            // character-array pointer is still checked: after `p => t` it
-            // shares the string descriptor of `t`, which allocating in place
-            // would overwrite.
+            // Only an allocatable must not be allocated already.
             ASR::ttype_t* alloc_arg_type = ASRUtils::expr_type(tmp_expr);
             bool is_pointer_arg = ASRUtils::is_pointer(alloc_arg_type);
-            bool shares_string_descriptor = is_pointer_arg
-                && ASRUtils::is_array(alloc_arg_type)
-                && ASRUtils::is_character(*alloc_arg_type)
-                && ASRUtils::extract_physical_type(alloc_arg_type)
-                    == ASR::array_physical_typeType::DescriptorArray;
-            bool check_allocated = !realloc && (!is_pointer_arg || shares_string_descriptor);
+            bool check_allocated = !realloc && !is_pointer_arg;
             ASR::ttype_t* curr_arg_m_a_type = ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(
                 ASRUtils::expr_type(tmp_expr)));
