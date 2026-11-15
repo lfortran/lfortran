@@ -3565,6 +3565,11 @@ filename = "../integration_tests/loop_fusion_04.f90"
 pass = "loop_fusion"
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_hoist_02.f90"
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/functions_05.f90"
 asr = true
 pass_with_llvm = true
