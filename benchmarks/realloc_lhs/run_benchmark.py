@@ -70,6 +70,7 @@ CASES = [
 # require reallocation.
 NO_REALLOC_FLAGS = (
     "--disable-realloc-lhs-arrays",
+    "--no-realloc-lhs-arrays",
     "-fno-realloc-lhs",
     "-nostandard-realloc-lhs",
     "norealloc_lhs",

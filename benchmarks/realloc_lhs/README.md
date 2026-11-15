@@ -105,3 +105,10 @@ The script exits with an error, after printing the table, if a run fails
 configurations (beyond a relative tolerance, `--rtol`, default 1e-9, as
 `--fast` allows reassociation). A difference means a miscompilation, not
 noise.
+
+A difference in a single kernel can also come from where the linker happens
+to place its loop rather than from the generated code: `pack` at `n` = 1000
+has measured 263 ns and 464 ns for identical machine code at two addresses.
+Before reading such a difference as a regression, compare the code
+(`--show-llvm`, `--show-asm`) or shift the placement, for example by adding
+an unrelated procedure that the driver calls.
