@@ -697,6 +697,30 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return false;
     }
 
+    // Whether the constructor gives its elements a string length that may
+    // differ from the string length of the target.
+    bool string_length_may_differ(ASR::ttype_t* target_type,
+            ASR::ttype_t* constructor_type) {
+        ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
+        ASR::ttype_t* constructor_elem = ASRUtils::extract_type(constructor_type);
+        if (!ASR::is_a<ASR::String_t>(*target_elem) ||
+                !ASR::is_a<ASR::String_t>(*constructor_elem)) {
+            return false;
+        }
+        ASR::expr_t* target_len = ASR::down_cast<ASR::String_t>(target_elem)->m_len;
+        ASR::expr_t* constructor_len =
+            ASR::down_cast<ASR::String_t>(constructor_elem)->m_len;
+        if (constructor_len == nullptr) {
+            return false;
+        }
+        int64_t target_len_value = -1, constructor_len_value = -1;
+        return !(target_len &&
+            ASRUtils::extract_value(ASRUtils::expr_value(target_len), target_len_value) &&
+            ASRUtils::extract_value(ASRUtils::expr_value(constructor_len),
+                constructor_len_value) &&
+            target_len_value == constructor_len_value);
+    }
+
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // The statements that evaluate a constructor are put in front of
         // the FORALL, where its indices are not defined. A constructor that
@@ -736,6 +760,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        if (is_result_var_fixed_size && string_length_may_differ(
+                ASRUtils::expr_type(result_var), x->m_type)) {
+            is_result_var_fixed_size = false;
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
