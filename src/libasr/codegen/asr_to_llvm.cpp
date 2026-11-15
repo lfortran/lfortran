@@ -30119,6 +30119,7 @@ public:
             args = convert_call_args(x, false);
             tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
                 callee, args);
+            apply_call_writebacks(func);
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -30166,6 +30167,7 @@ public:
                 callee = builder->CreateBitCast(callee, fntype->getPointerTo());
             }
             tmp = builder->CreateCall(fntype, callee, args);
+            apply_call_writebacks(func);
             return ;
         }
 
@@ -30286,6 +30288,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -30300,6 +30303,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -30343,9 +30347,16 @@ public:
                     fc.struct_llvm_type, fc.layout);
             }
             pending_flat_copybacks.clear();
-            apply_cfi_array_writebacks();
-            apply_scalar_writebacks();
+            apply_call_writebacks(s);
         }
+    }
+
+    // Runs after every call whose arguments convert_call_args lowered.
+    void apply_call_writebacks(const ASR::Function_t* callee) {
+        if (ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC) {
+            apply_cfi_array_writebacks();
+        }
+        apply_scalar_writebacks();
     }
 
     void apply_scalar_writebacks() {
@@ -30710,6 +30721,7 @@ public:
             vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         builder->CreateCall(fnTy, fn, args);
+        apply_call_writebacks(func);
         return;
     }
 
@@ -30786,6 +30798,7 @@ public:
             vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         tmp = builder->CreateCall(fnTy, fn, args);
+        apply_call_writebacks(func);
         if (func->m_return_var) {
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
@@ -30838,6 +30851,7 @@ public:
             args = convert_call_args(x, false);
             tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
                 callee, args);
+            apply_call_writebacks(func);
             wrap_string_function_result(x.m_type);
             return;
         }
@@ -30863,6 +30877,7 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
             tmp = builder->CreateCall(fntype, callee, args);
+            apply_call_writebacks(func);
             wrap_string_function_result(x.m_type);
             return ;
         }
@@ -30964,6 +30979,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -30974,6 +30990,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -31001,11 +31018,10 @@ public:
                 } else {
                     tmp = builder->CreateCall(fn, args);
                 }
-                apply_cfi_array_writebacks();
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
-            apply_scalar_writebacks();
+            apply_call_writebacks(s);
         }
         wrap_string_function_result(x.m_type);
         // Convert complex return value from platform ABI to internal representation
