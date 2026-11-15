@@ -10,6 +10,7 @@ are skipped where there is none (Windows).
 
 import argparse
 import os
+import select
 import subprocess
 import sys
 import tempfile
@@ -35,11 +36,18 @@ print *, i
 end program
 """
 
+# The prescanner reports the missing include file.
+MISSING_INCLUDE = """\
+program color_include
+include "color_missing.inc"
+end program
+"""
+
 ESCAPE = b"\x1b["
 
 
-def run(lfortran, cwd, args, no_color, terminal):
-    """Run `lfortran args` in `cwd` and return its stdout and stderr.
+def run(cmd, cwd, no_color, terminal):
+    """Run `cmd` in `cwd` and return its stdout and stderr.
 
     `no_color` is the value of NO_COLOR, or None to unset it. `terminal` names
     the streams ("stdout", "stderr") connected to a pseudo-terminal; both
@@ -49,7 +57,6 @@ def run(lfortran, cwd, args, no_color, terminal):
     env.pop("NO_COLOR", None)
     if no_color is not None:
         env["NO_COLOR"] = no_color
-    cmd = [lfortran] + args
     if not terminal:
         p = subprocess.run(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
@@ -62,8 +69,13 @@ def run(lfortran, cwd, args, no_color, terminal):
     p = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
         **streams)
     os.close(slave)
+    # The outputs are small, so a pipe cannot fill up while the terminal is
+    # read; a hung compiler still fails the test instead of blocking it.
     out = b""
     while True:
+        if not select.select([master], [], [], 120)[0]:
+            p.kill()
+            break
         try:
             data = os.read(master, 4096)
         except OSError:
@@ -95,6 +107,8 @@ def main():
     compile_only = ["-c", "invalid.f90", "-o", "invalid.o"]
     show_ast = ["--show-ast", "valid.f90"]
     fmt = ["fmt", "valid.f90"]
+    show_prescan = ["--show-prescan", "include.f90"]
+    show_tokens = ["--show-tokens", "include.f90"]
     cases = [
         (compile_, None, (), "stderr", False),
         (compile_only, None, (), "stderr", False),
@@ -107,6 +121,10 @@ def main():
         (show_ast, None, (), "stdout", False),
         (["--color=always"] + show_ast, None, (), "stdout", True),
         (fmt, None, (), "stdout", False),
+        (show_prescan, None, (), "stderr", False),
+        (show_tokens, None, (), "stderr", False),
+        (["--color=always"] + show_prescan, None, (), "stderr", True),
+        (["--color=always"] + show_tokens, None, (), "stderr", True),
         (["--color=always"] + fmt, None, (), "stdout", True),
     ]
     if pty is not None:
@@ -125,6 +143,8 @@ def main():
             (show_ast, "1", both, "stderr", False),
             # The AST goes to stdout, which is not a terminal.
             (show_ast, None, tty, "stdout", False),
+            (["--no-color"] + show_prescan, None, both, "stderr", False),
+            (["--no-color"] + show_tokens, None, both, "stderr", False),
             (fmt, None, ("stdout",), "stdout", True),
             (fmt, "1", ("stdout",), "stdout", False),
             (["fmt", "--no-color", "valid.f90"], None, ("stdout",), "stdout",
@@ -133,11 +153,13 @@ def main():
 
     failures = []
     with tempfile.TemporaryDirectory(dir=args.workdir) as cwd:
-        for name, source in [("invalid", INVALID), ("valid", VALID)]:
+        for name, source in [("invalid", INVALID), ("valid", VALID),
+                ("include", MISSING_INCLUDE)]:
             with open(os.path.join(cwd, name + ".f90"), "w") as f:
                 f.write(source)
         for arguments, no_color, terminal, checked, colored in cases:
-            stdout, stderr = run(lfortran, cwd, arguments, no_color, terminal)
+            stdout, stderr = run([lfortran] + arguments, cwd, no_color,
+                terminal)
             output = stdout if checked == "stdout" else stderr
             description = "%s%s (%s on a terminal)" % (
                 "" if no_color is None else "NO_COLOR=%r " % no_color,

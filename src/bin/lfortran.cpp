@@ -545,7 +545,7 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
         compiler_options.fixed_form, compiler_options.openmp, include_dirs,
         diagnostics);
     if (!prescan_res.ok) {
-        std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
+        std::cerr << diagnostics.render(lm, compiler_options);
         return 1;
     }
     std::cout << prescan_res.result << std::endl;
@@ -577,7 +577,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
             compiler_options.fixed_form, compiler_options.openmp, include_dirs,
             diagnostics);
         if (!prescan_res.ok) {
-            std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
+            std::cerr << diagnostics.render(lm, compiler_options);
             return 1;
         }
         input = prescan_res.result;
