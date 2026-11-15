@@ -95,6 +95,10 @@ CASES = [
     ("datadep", 3, 50_000_000, False),
     ("alternate", 3, 10_000_000, True),
     ("ctorv", 3, 30_000_000, False),
+    ("charcond", 3, 20_000_000, False),
+    ("ptrcond", 3, 50_000_000, False),
+    ("exit2d", 3, 10_000_000, False),
+    ("intabs", 3, 30_000_000, False),
 ]
 
 
@@ -140,7 +144,7 @@ class Config:
         self.no_realloc = any(t in NO_REALLOC_FLAGS for t in self.command)
         self.explicit = self.no_realloc or any(
             t in REALLOC_FLAGS for t in self.command)
-        self.exe = None
+        self.exes = []
         self.version = ""
 
     def spec(self):
@@ -175,35 +179,61 @@ def compiler_version(command):
     return lines[0] if lines else ""
 
 
-def build(config, build_dir, index):
-    # Each configuration gets its own directory, since the compilers write
-    # the module file into the current directory.
-    d = os.path.join(build_dir, f"{index}")
-    os.makedirs(d, exist_ok=True)
-    exe = os.path.join(d, "realloc_lhs")
-    objects = []
-    commands = []
-    for src in EXTRA_SOURCES:
-        obj = os.path.join(
-            d, os.path.splitext(os.path.basename(src))[0] + ".o")
-        objects.append(obj)
-        commands.append((config.command + ["-c", src, "-o", obj], obj))
-    commands.append((config.command + [SOURCE] + objects + ["-o", exe], exe))
-    for cmd, output in commands:
-        print(f"[build] {config.label}: "
-              f"{' '.join(shlex.quote(t) for t in cmd)}", file=sys.stderr)
-        p = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
-        if p.returncode != 0 or not os.path.exists(output):
-            sys.stderr.write(p.stdout + p.stderr)
-            raise SystemExit(f"error: building configuration "
-                             f"{config.label!r} failed")
-    config.exe = exe
+def padded_source(placement, path):
+    """Write to `path` a copy of SOURCE with a procedure of `placement`
+    blocks of code before the kernels, which moves them to other addresses,
+    and return `path`. The driver calls it for a kernel name no run uses, so
+    that it is kept."""
+    with open(SOURCE) as f:
+        text = f.read()
+    # Opaque calls, which the compiler cannot merge, about 8 bytes each.
+    body = "call ext_tick(k)\n" * (5 * placement)
+    padding = ("\ncontains\n\nsubroutine aaa_placement_padding(k)\n"
+               "integer, intent(inout) :: k\n" + body +
+               "end subroutine\n")
+    text = text.replace("\ncontains\n", padding, 1)
+    case = ('case ("aaa_placement_padding")\n'
+            '    call aaa_placement_padding(n)\ncase default\n')
+    text = text.replace("case default\n", case, 1)
+    with open(path, "w") as f:
+        f.write(text)
+    return path
+
+
+def build(config, build_dir, index, placements):
+    # Each configuration and placement gets its own directory, since the
+    # compilers write the module file into the current directory.
+    config.exes = []
+    for placement in range(placements):
+        d = os.path.join(build_dir, f"{index}", f"p{placement}")
+        os.makedirs(d, exist_ok=True)
+        exe = os.path.join(d, "realloc_lhs")
+        source = SOURCE if placement == 0 else padded_source(
+            placement, os.path.join(d, "realloc_lhs.f90"))
+        objects = []
+        commands = []
+        for src in EXTRA_SOURCES:
+            obj = os.path.join(
+                d, os.path.splitext(os.path.basename(src))[0] + ".o")
+            objects.append(obj)
+            commands.append((config.command + ["-c", src, "-o", obj], obj))
+        commands.append((config.command + [source] + objects + ["-o", exe],
+                         exe))
+        for cmd, output in commands:
+            print(f"[build] {config.label}: "
+                  f"{' '.join(shlex.quote(t) for t in cmd)}", file=sys.stderr)
+            p = subprocess.run(cmd, cwd=d, capture_output=True, text=True)
+            if p.returncode != 0 or not os.path.exists(output):
+                sys.stderr.write(p.stdout + p.stderr)
+                raise SystemExit(f"error: building configuration "
+                                 f"{config.label!r} failed")
+        config.exes.append(exe)
     config.version = compiler_version(config.command)
 
 
-def run_once(config, pin, kernel, n, reps):
+def run_once(exe, pin, kernel, n, reps):
     """Return (seconds, checksum) or an error string."""
-    cmd = pin + [config.exe, kernel, str(n), str(reps)]
+    cmd = pin + [exe, kernel, str(n), str(reps)]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     except subprocess.TimeoutExpired:
@@ -263,6 +293,13 @@ def main():
                          "last CPU this process may use)")
     ap.add_argument("--no-pin", action="store_true",
                     help="do not pin the runs with taskset")
+    ap.add_argument("--placements", type=int, default=1,
+                    help="build every configuration this many times, with "
+                         "the kernels at different addresses (padding "
+                         "code before them), and report the best time over "
+                         "all of them, so that a lucky or unlucky placement "
+                         "of a loop does not decide a comparison (default: "
+                         "1)")
     ap.add_argument("--rtol", type=float, default=1e-9,
                     help="relative tolerance of the checksum comparison "
                          "(default: 1e-9)")
@@ -323,7 +360,7 @@ def main():
         build_dir = os.path.abspath(build_dir)
     try:
         for i, c in enumerate(configs):
-            build(c, build_dir, i)
+            build(c, build_dir, i, args.placements)
 
         # results[case index][config index] = best seconds, or None (n/a),
         # or an error string
@@ -339,20 +376,21 @@ def main():
                 for j, c in enumerate(configs):
                     if req and c.no_realloc:
                         continue
-                    if isinstance(best[j], str):
-                        continue
-                    r = run_once(c, pin, kernel, n, reps)
-                    if isinstance(r, str):
-                        best[j] = r
-                        continue
-                    t, s = r
-                    if sums[j] is not None and s != sums[j]:
-                        best[j] = f"checksum changed between runs: " \
-                                  f"{sums[j]!r} vs {s!r}"
-                        continue
-                    sums[j] = s
-                    if best[j] is None or t < best[j]:
-                        best[j] = t
+                    for exe in c.exes:
+                        if isinstance(best[j], str):
+                            break
+                        r = run_once(exe, pin, kernel, n, reps)
+                        if isinstance(r, str):
+                            best[j] = r
+                            break
+                        t, s = r
+                        if sums[j] is not None and s != sums[j]:
+                            best[j] = f"checksum changed between runs: " \
+                                      f"{sums[j]!r} vs {s!r}"
+                            break
+                        sums[j] = s
+                        if best[j] is None or t < best[j]:
+                            best[j] = t
             results.append(best)
             checksums.append(sums)
             per = reps * inner_iterations(kernel, n)
@@ -410,6 +448,8 @@ def main():
     out.append("")
     out.append(f"Nanoseconds per iteration (per assignment for pairs, "
                f"pairsc, concur and jagged), best of {args.repeat}"
+               + (f" runs of each of {args.placements} placements"
+                  if args.placements > 1 else "")
                + (f", pinned to CPU {cpu}" if pin else ", not pinned")
                + f"; percentages relative to {labels[0]}. "
                "Kernels marked * require reallocation on assignment and are "
