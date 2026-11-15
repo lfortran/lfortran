@@ -3633,6 +3633,8 @@ RUN(NAME realloc_lhs_func_result_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_func_result_02 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_03 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_func_result_04 LABELS llvm
     EXTRA_ARGS --realloc-lhs-arrays) # GFortran returns the result into a variable the function reads
 
