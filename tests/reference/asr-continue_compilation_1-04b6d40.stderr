@@ -5867,6 +5867,30 @@ semantic error: assumed-rank array 'x' cannot be used as the base of a component
 4983 |             k = x%v  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
      |                 ^^^ 
 
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:4998:18
+     |
+4998 |         allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                  ^^^^ Array specification required in allocate statement
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:5005:22
+     |
+5005 |             allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                      ^^^^ Array specification required in allocate statement
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:5015:22
+     |
+5015 |             allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                      ^^^^ Array specification required in allocate statement
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:5021:18
+     |
+5021 |         allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                  ^^^^ Array specification required in allocate statement
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

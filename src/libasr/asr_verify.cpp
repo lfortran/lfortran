@@ -40,6 +40,42 @@ bool valid_name(const char *s) {
     return true;
 }
 
+// Finds the rank of the `select rank` block whose body is `block` and whose
+// selector is `selector`; `rank` stays -1 if `block` is not such a block.
+class SelectRankBlockFinder : public BaseWalkVisitor<SelectRankBlockFinder>
+{
+public:
+    const ASR::symbol_t *selector;
+    const ASR::symbol_t *block;
+    int64_t rank = -1;
+
+    SelectRankBlockFinder(const ASR::symbol_t *selector,
+        const ASR::symbol_t *block) : selector(selector), block(block) {}
+
+    void visit_SelectRank(const SelectRank_t &x) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_selector) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_selector)->m_v) == selector) {
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (!ASR::is_a<ASR::RankExpr_t>(*x.m_body[i])) {
+                    continue;
+                }
+                ASR::RankExpr_t *rank_expr = ASR::down_cast<ASR::RankExpr_t>(x.m_body[i]);
+                for (size_t j = 0; j < rank_expr->n_body; j++) {
+                    if (ASR::is_a<ASR::BlockCall_t>(*rank_expr->m_body[j]) &&
+                            ASR::down_cast<ASR::BlockCall_t>(
+                                rank_expr->m_body[j])->m_m == block &&
+                            ASR::is_a<ASR::IntegerConstant_t>(*rank_expr->m_rank)) {
+                        rank = ASR::down_cast<ASR::IntegerConstant_t>(
+                            rank_expr->m_rank)->m_n;
+                    }
+                }
+            }
+        }
+        BaseWalkVisitor<SelectRankBlockFinder>::visit_SelectRank(x);
+    }
+};
+
 class VerifyVisitor : public BaseWalkVisitor<VerifyVisitor>
 {
 private:
@@ -5848,6 +5884,55 @@ public:
     }
 
 
+    // True for an assumed-rank selector inside its `rank (0)` block, where it
+    // is a scalar. The innermost `select rank` block of the selector decides.
+    // Inside a procedure, only `Block` (`block` and the blocks of `select
+    // rank` and `select type`) and `AssociateBlock` (`associate`) own a
+    // scope, so the walk stops at any other owner.
+    bool is_rank_zero_selector(ASR::expr_t *expr) {
+        if (!ASR::is_a<ASR::Var_t>(*expr) ||
+                !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return false;
+        }
+        ASR::symbol_t *selector = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        for (SymbolTable *s = current_symtab; s && s->parent && s->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*s->asr_owner); s = s->parent) {
+            ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+            if (ASR::is_a<ASR::AssociateBlock_t>(*block)) {
+                continue;
+            }
+            if (!ASR::is_a<ASR::Block_t>(*block) || !s->parent->asr_owner ||
+                    !ASR::is_a<ASR::symbol_t>(*s->parent->asr_owner)) {
+                return false;
+            }
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(s->parent->asr_owner);
+            ASR::stmt_t **body = nullptr;
+            size_t n_body = 0;
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                body = ASR::down_cast<ASR::Function_t>(owner)->m_body;
+                n_body = ASR::down_cast<ASR::Function_t>(owner)->n_body;
+            } else if (ASR::is_a<ASR::Program_t>(*owner)) {
+                body = ASR::down_cast<ASR::Program_t>(owner)->m_body;
+                n_body = ASR::down_cast<ASR::Program_t>(owner)->n_body;
+            } else if (ASR::is_a<ASR::Block_t>(*owner)) {
+                body = ASR::down_cast<ASR::Block_t>(owner)->m_body;
+                n_body = ASR::down_cast<ASR::Block_t>(owner)->n_body;
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->m_body;
+                n_body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->n_body;
+            }
+            SelectRankBlockFinder finder(selector, block);
+            for (size_t i = 0; i < n_body; i++) {
+                finder.visit_stmt(*body[i]);
+            }
+            if (finder.rank != -1) {
+                return finder.rank == 0;
+            }
+        }
+        return false;
+    }
+
     void visit_Allocate(const Allocate_t &x) {
         if(check_external){
             for( size_t i = 0; i < x.n_args; i++ ) {
@@ -5884,7 +5969,8 @@ public:
 
             if( x.m_source == nullptr ) {
                 for( size_t i = 0; i < x.n_args; i++ ) {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) &&
+                            !is_rank_zero_selector(x.m_args[i].m_a) ) {
                         require(x.m_args[i].n_dims > 0,
                             "Allocate for arrays should have dimensions specified, "
                             "found only array variable with no dimensions");

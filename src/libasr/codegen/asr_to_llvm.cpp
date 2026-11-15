@@ -794,6 +794,18 @@ public:
     };
     std::vector<CFIArrayWriteback> pending_cfi_array_writebacks;
 
+    // A scalar passed in a temporary descriptor to an allocatable or pointer assumed-rank dummy.
+    struct ScalarWriteback {
+        llvm::Value* scalar_slot;
+        llvm::Value* desc;
+        llvm::Type* desc_type;
+        llvm::Type* el_type;
+        // The slot holding `desc` that a Fortran dummy receives; the callee
+        // may null it (nullify) or point it to another descriptor.
+        llvm::Value* desc_slot = nullptr;
+    };
+    std::vector<ScalarWriteback> pending_scalar_writebacks;
+
     int64_t ptr_loads;
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
@@ -2881,8 +2893,10 @@ public:
             if (n_dims == 0 && curr_arg.n_dims > 0) {
                 n_dims = curr_arg.n_dims;
             }
+            // A rank-0 assumed-rank array is still allocated through its descriptor.
+            bool is_assumed_rank = ASRUtils::is_assumed_rank_array(curr_arg_m_a_type);
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
-            if( n_dims == 0 ) {
+            if( n_dims == 0 && !is_assumed_rank ) {
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
                     llvm::Value* amount_to_allocate{};
@@ -26953,6 +26967,7 @@ public:
         if (convert_call_args_depth == 1) {
             pending_flat_copybacks.clear();
             pending_cfi_array_writebacks.clear();
+            pending_scalar_writebacks.clear();
             reset_call_arg_alloca_pool();
         }
         for (size_t i=0; i<x.n_args; i++) {
@@ -27885,6 +27900,13 @@ public:
                         llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
                         llvm::Value* raw_ptr = builder->CreateBitCast(scalar_ptr, expected_ptr_type);
                         builder->CreateStore(raw_ptr, data_ptr);
+                        if (LLVM::is_llvm_pointer(*scalar_type) &&
+                                ASRUtils::is_allocatable_or_pointer(orig_arg->m_type) &&
+                                !ASRUtils::is_character(*elem_asr_type) &&
+                                !ASRUtils::is_class_type(elem_asr_type)) {
+                            pending_scalar_writebacks.push_back({
+                                tmp, descriptor, descriptor_type, scalar_llvm_type});
+                        }
                     }
                 } else if (ASRUtils::is_unlimited_polymorphic_type(orig_arg->m_type)) {
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
@@ -27979,6 +28001,12 @@ public:
                         llvm::Type* elem_llvm_type = llvm_utils->get_el_type(
                             x.m_args[i].m_value, elem_asr_type, module.get());
                         raw_ptr = llvm_utils->CreateLoad2(elem_llvm_type->getPointerTo(), tmp);
+                        if (ASRUtils::is_allocatable_or_pointer(orig_arg->m_type) &&
+                                !ASRUtils::is_character(*elem_asr_type) &&
+                                !ASRUtils::is_class_type(elem_asr_type)) {
+                            pending_scalar_writebacks.push_back({
+                                tmp, descriptor, descriptor_type, elem_llvm_type});
+                        }
                     }
                     llvm::Type* expected_ptr_type = descriptor_type->getStructElementType(0);
                     raw_ptr = builder->CreateBitCast(raw_ptr, expected_ptr_type);
@@ -28075,6 +28103,10 @@ public:
                     builder->CreateStore(
                         builder->CreateBitCast(tmp, expected_desc_type),
                         desc_slot);
+                    if (!pending_scalar_writebacks.empty() &&
+                            pending_scalar_writebacks.back().desc == scalar_assumed_rank_desc) {
+                        pending_scalar_writebacks.back().desc_slot = desc_slot;
+                    }
                     tmp = desc_slot;
                 }
                 tmp = builder->CreateBitCast(tmp,
@@ -28436,8 +28468,12 @@ public:
                     tmp = arr_descr->internal_to_cfi(
                         desc_type, tmp, elem_llvm_type, n_dims, elem_size_val,
                         cfi_type_code, cfi_attr, assumed_rank_actual);
+                    // A scalar in a fresh rank-0 descriptor gets its base_addr
+                    // back too; apply_scalar_writebacks then copies it to the scalar.
+                    bool is_scalar_in_desc = already_has_assumed_rank_desc &&
+                        !is_character_array;
                     if (cfi_attr != 0 && !is_type_star &&
-                            ASRUtils::is_array(actual_type) &&
+                            (ASRUtils::is_array(actual_type) || is_scalar_in_desc) &&
                             orig_arg->m_intent != ASR::intentType::In) {
                         // A local of this scope (or of the main program)
                         // lives as long as this stack frame
@@ -30083,6 +30119,7 @@ public:
             args = convert_call_args(x, false);
             tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
                 callee, args);
+            apply_call_writebacks(func);
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -30130,6 +30167,7 @@ public:
                 callee = builder->CreateBitCast(callee, fntype->getPointerTo());
             }
             tmp = builder->CreateCall(fntype, callee, args);
+            apply_call_writebacks(func);
             return ;
         }
 
@@ -30250,6 +30288,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -30264,6 +30303,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -30307,8 +30347,46 @@ public:
                     fc.struct_llvm_type, fc.layout);
             }
             pending_flat_copybacks.clear();
+            apply_call_writebacks(s);
+        }
+    }
+
+    // Runs after every call whose arguments convert_call_args lowered.
+    void apply_call_writebacks(const ASR::Function_t* callee) {
+        if (ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC) {
             apply_cfi_array_writebacks();
         }
+        apply_scalar_writebacks();
+    }
+
+    void apply_scalar_writebacks() {
+        // A call inside the arguments of another call leaves them to the outer call.
+        if (convert_call_args_depth != 0) return;
+        for (auto& wb : pending_scalar_writebacks) {
+            auto write_back = [&](llvm::Value* desc) {
+                llvm::Value* data = llvm_utils->CreateLoad2(
+                    wb.desc_type->getStructElementType(0),
+                    arr_descr->get_pointer_to_data(wb.desc_type, desc));
+                builder->CreateStore(builder->CreateBitCast(data,
+                    wb.el_type->getPointerTo()), wb.scalar_slot);
+            };
+            if (wb.desc_slot) {
+                llvm::Value* desc = builder->CreateBitCast(
+                    llvm_utils->CreateLoad2(wb.desc_type->getPointerTo(),
+                        builder->CreateBitCast(wb.desc_slot,
+                            wb.desc_type->getPointerTo()->getPointerTo())),
+                    wb.desc_type->getPointerTo());
+                llvm_utils->create_if_else(builder->CreateIsNull(desc), [&]() {
+                    builder->CreateStore(llvm::ConstantPointerNull::get(
+                        wb.el_type->getPointerTo()), wb.scalar_slot);
+                }, [&]() {
+                    write_back(desc);
+                });
+            } else {
+                write_back(wb.desc);
+            }
+        }
+        pending_scalar_writebacks.clear();
     }
 
     // Character array elements are a string_descriptor struct ({i8*, i64})
@@ -30643,6 +30721,7 @@ public:
             vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         builder->CreateCall(fnTy, fn, args);
+        apply_call_writebacks(func);
         return;
     }
 
@@ -30719,6 +30798,7 @@ public:
             vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         tmp = builder->CreateCall(fnTy, fn, args);
+        apply_call_writebacks(func);
         if (func->m_return_var) {
             ASR::ttype_t* ret_ty = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
             if (ASR::is_a<ASR::Complex_t>(*ret_ty)) {
@@ -30771,6 +30851,7 @@ public:
             args = convert_call_args(x, false);
             tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
                 callee, args);
+            apply_call_writebacks(func);
             wrap_string_function_result(x.m_type);
             return;
         }
@@ -30796,6 +30877,7 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
             tmp = builder->CreateCall(fntype, callee, args);
+            apply_call_writebacks(func);
             wrap_string_function_result(x.m_type);
             return ;
         }
@@ -30897,6 +30979,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
             // This is the case were a function pointer ( procedure variable ) is associated and used
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
@@ -30907,6 +30990,7 @@ public:
             args = convert_call_args(x, is_method /* skip_self */);
 
             tmp = builder->CreateCall(fntype, fn, args);
+            apply_call_writebacks(s);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -30934,10 +31018,10 @@ public:
                 } else {
                     tmp = builder->CreateCall(fn, args);
                 }
-                apply_cfi_array_writebacks();
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
+            apply_call_writebacks(s);
         }
         wrap_string_function_result(x.m_type);
         // Convert complex return value from platform ABI to internal representation

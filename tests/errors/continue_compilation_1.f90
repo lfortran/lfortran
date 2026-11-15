@@ -4984,3 +4984,40 @@ contains
         end select
     end subroutine
 end module
+
+! Only the selector of a `rank (0)` block may be allocated without bounds
+module cc1_select_rank_allocate
+    implicit none
+contains
+    subroutine cc1_sra_after_end_select(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        select rank (slot)
+        rank (0)
+            allocate(slot)
+        end select
+        allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    end subroutine
+
+    subroutine cc1_sra_rank_1(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        select rank (slot)
+        rank (1)
+            allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+        end select
+    end subroutine
+
+    subroutine cc1_sra_rank_default(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        select rank (slot)
+        rank (0)
+            allocate(slot)
+        rank default
+            allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+        end select
+    end subroutine
+
+    subroutine cc1_sra_other_procedure(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    end subroutine
+end module
