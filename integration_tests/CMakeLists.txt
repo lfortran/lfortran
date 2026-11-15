@@ -3760,6 +3760,8 @@ RUN(NAME realloc_lhs_hoist_06 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # DO WHILE loops
 RUN(NAME realloc_lhs_hoist_05 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # chained work arrays
+RUN(NAME realloc_lhs_hoist_13 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # allocations of unallocated arrays, see tests/tests.toml
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)

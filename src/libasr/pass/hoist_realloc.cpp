@@ -94,6 +94,12 @@ procedure, as the test that it runs at least once.
 The target of H may also be a component that only one variable reaches
 (`q%x`, see component_root), which then stands for the target.
 
+H may also allocate an unallocated array, as a work array that keeps its
+allocation between calls is allocated, `if (.not. allocated(w))
+allocate(w(n))`. It does nothing once `w` is allocated, whatever shape the
+loop gives it then, so the statements of the body may reallocate `w`, as
+`w = a + b` does, when none of them can deallocate it.
+
 The shape H gives may be computed by a function that reads only its
 arguments (see reads_only_its_arguments), such as the `count` of
 `c = pack(a, m)`, and a procedure does not change an INTENT(IN) dummy
@@ -277,6 +283,10 @@ struct Effects {
     // Variables whose allocation status, shape, bounds or pointer
     // association may change.
     SymbolSet alloc_modified;
+    // Variables that may be left unallocated or disassociated, a subset of
+    // alloc_modified: an assignment, ALLOCATE or ReAlloc leaves an
+    // allocatable array of an intrinsic type allocated.
+    SymbolSet deallocated;
     // Variables any part of whose value may change, a superset of
     // alloc_modified.
     SymbolSet value_modified;
@@ -296,6 +306,7 @@ struct Effects {
 
     void merge(const Effects& o) {
         alloc_modified.insert(o.alloc_modified.begin(), o.alloc_modified.end());
+        deallocated.insert(o.deallocated.begin(), o.deallocated.end());
         value_modified.insert(o.value_modified.begin(), o.value_modified.end());
         referenced.insert(o.referenced.begin(), o.referenced.end());
         calls = calls || o.calls;
@@ -346,12 +357,21 @@ public:
         e.value_modified.insert(root);
     }
 
+    void deallocate(ASR::expr_t* x) {
+        modify_allocation(x);
+        ASR::symbol_t* root = x == nullptr ? nullptr : designator_root(x);
+        if (root != nullptr) {
+            e.deallocated.insert(root);
+        }
+    }
+
     // Every variable in `x` may be changed in any way, as by a procedure
     // that takes `x` as an actual argument.
     void clobber(ASR::expr_t* x) {
         SymbolSet vars;
         collect_vars(x, vars);
         e.alloc_modified.insert(vars.begin(), vars.end());
+        e.deallocated.insert(vars.begin(), vars.end());
         e.value_modified.insert(vars.begin(), vars.end());
     }
 
@@ -403,17 +423,21 @@ public:
                 ASR::is_a<ASR::StringSection_t>(*x.m_target)) &&
                 !is_derived_type(x.m_target)) {
             modify_value(x.m_target);
+        } else if (is_derived_type(x.m_target)) {
+            // The allocatable components of a derived type take the
+            // allocation of those of the value.
+            deallocate(x.m_target);
         } else {
             modify_allocation(x.m_target);
         }
         if (x.m_move_allocation) {
-            modify_allocation(x.m_value);
+            deallocate(x.m_value);
         }
         ASR::BaseWalkVisitor<EffectsCollector>::visit_Assignment(x);
     }
 
     void visit_Associate(const ASR::Associate_t& x) {
-        modify_allocation(x.m_target);
+        deallocate(x.m_target);
         ASR::BaseWalkVisitor<EffectsCollector>::visit_Associate(x);
     }
 
@@ -438,7 +462,7 @@ public:
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
         for (size_t i = 0; i < x.n_vars; i++) {
-            modify_allocation(x.m_vars[i]);
+            deallocate(x.m_vars[i]);
         }
         modify_value(x.m_stat);
         modify_value(x.m_errmsg);
@@ -447,14 +471,14 @@ public:
 
     void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t& x) {
         for (size_t i = 0; i < x.n_vars; i++) {
-            modify_allocation(x.m_vars[i]);
+            deallocate(x.m_vars[i]);
         }
         ASR::BaseWalkVisitor<EffectsCollector>::visit_ImplicitDeallocate(x);
     }
 
     void visit_Nullify(const ASR::Nullify_t& x) {
         for (size_t i = 0; i < x.n_vars; i++) {
-            modify_allocation(x.m_vars[i]);
+            deallocate(x.m_vars[i]);
         }
         ASR::BaseWalkVisitor<EffectsCollector>::visit_Nullify(x);
     }
@@ -890,6 +914,11 @@ struct Hoistable {
     SymbolSet whole_targets;
     SymbolSet inquired;
     SymbolSet valued;
+    // An allocation of an unallocated variable, `if (.not. allocated(v))
+    // allocate(v(n))`, which does nothing once `v` is allocated, whatever
+    // shape an assignment or a reallocation gives it then: only a
+    // deallocation lets it run again.
+    bool allocates_once = false;
 };
 
 
@@ -907,6 +936,66 @@ bool is_reallocatable_element_type(ASR::ttype_t* type) {
         default:
             return false;
     }
+}
+
+// Whether `x` is `if (.not. allocated(v)) allocate(v(dims))` for an
+// allocatable array variable `v`, and what it allocates and reads.
+bool analyze_allocation_once(const ASR::If_t& x, Hoistable& h) {
+    if (x.n_orelse != 0 || x.n_body != 1 ||
+            !ASR::is_a<ASR::LogicalNot_t>(*x.m_test) ||
+            !ASR::is_a<ASR::Allocate_t>(*x.m_body[0])) {
+        return false;
+    }
+    ASR::expr_t* test = ASR::down_cast<ASR::LogicalNot_t>(x.m_test)->m_arg;
+    if (!ASR::is_a<ASR::IntrinsicImpureFunction_t>(*test)) {
+        return false;
+    }
+    ASR::IntrinsicImpureFunction_t* allocated =
+        ASR::down_cast<ASR::IntrinsicImpureFunction_t>(test);
+    ASR::Allocate_t* a = ASR::down_cast<ASR::Allocate_t>(x.m_body[0]);
+    if (allocated->m_impure_intrinsic_id != static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated) ||
+            allocated->n_args != 1 || a->n_args != 1 || a->m_stat != nullptr ||
+            a->m_errmsg != nullptr || a->m_source != nullptr) {
+        return false;
+    }
+    const ASR::alloc_arg_t& arg = a->m_args[0];
+    ASR::expr_t* v = ASRUtils::get_past_array_physical_cast(allocated->m_args[0]);
+    if (arg.m_type != nullptr || arg.m_sym_subclass != nullptr ||
+            arg.n_codims != 0 || !ASR::is_a<ASR::Var_t>(*v) ||
+            !ASR::is_a<ASR::Var_t>(*arg.m_a) ||
+            past_external(ASR::down_cast<ASR::Var_t>(v)->m_v) !=
+                past_external(ASR::down_cast<ASR::Var_t>(arg.m_a)->m_v)) {
+        return false;
+    }
+    ASR::symbol_t* target = past_external(ASR::down_cast<ASR::Var_t>(v)->m_v);
+    ASR::ttype_t* type = ASRUtils::expr_type(arg.m_a);
+    if (!ASR::is_a<ASR::Variable_t>(*target) ||
+            !ASRUtils::is_allocatable(type) || !ASRUtils::is_array(type) ||
+            !is_reallocatable_element_type(type)) {
+        return false;
+    }
+    SourceCollector c;
+    for (size_t i = 0; i < arg.n_dims; i++) {
+        if (arg.m_dims[i].m_start) {
+            c.visit_expr(*arg.m_dims[i].m_start);
+        }
+        if (arg.m_dims[i].m_length) {
+            c.visit_expr(*arg.m_dims[i].m_length);
+        }
+    }
+    if (arg.m_len_expr) {
+        c.visit_expr(*arg.m_len_expr);
+    }
+    if (c.calls || c.valued.count(target) > 0 || c.inquired.count(target) > 0) {
+        return false;
+    }
+    h.targets.insert(target);
+    h.whole_targets.insert(target);
+    h.inquired = c.inquired;
+    h.valued = c.valued;
+    h.allocates_once = true;
+    return true;
 }
 
 bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
@@ -960,6 +1049,10 @@ bool analyze_hoistable(ASR::stmt_t* s, Hoistable& h) {
         }
         h.inquired = c.inquired;
         h.valued = c.valued;
+        return true;
+    }
+    if (ASR::is_a<ASR::If_t>(*s) && analyze_allocation_once(
+            *ASR::down_cast<ASR::If_t>(s), h)) {
         return true;
     }
     if (ASR::is_a<ASR::If_t>(*s)) {
@@ -1328,7 +1421,8 @@ public:
                 before.reads_through_call ||
                 intersects(h.targets, head.parts) ||
                 intersects(h.whole_targets, head.whole) ||
-                intersects(h.targets, others.alloc_modified) ||
+                intersects(h.targets, h.allocates_once
+                    ? others.deallocated : others.alloc_modified) ||
                 intersects(h.inquired, others.alloc_modified) ||
                 intersects(h.valued, others.value_modified) ||
                 intersects(h.targets, before.referenced)) {
