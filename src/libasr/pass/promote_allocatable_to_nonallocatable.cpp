@@ -212,6 +212,27 @@ static ASR::dimension_t* device_allocation_dims(Allocator& al,
     return dims;
 }
 
+// Whether `type` is a fixed-size array with a lower bound not known at
+// compile time, as an allocation `allocate(a(lbound(b, 1):))` of the size of
+// a fixed-size `b` gives. Such an array is stored inline, so its lower
+// bounds have to be constant too.
+static bool has_run_time_lower_bound(ASR::ttype_t* type) {
+    if( ASRUtils::extract_physical_type(type) !=
+            ASR::array_physical_typeType::FixedSizeArray ) {
+        return false;
+    }
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    for( size_t i = 0; i < n_dims; i++ ) {
+        int64_t start = 0;
+        if( dims[i].m_start == nullptr || !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[i].m_start), start) ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled> {
     public:
 
@@ -605,9 +626,15 @@ class PromoteAllocatableToNonAllocatable:
                             str->m_len = alloc_arg.m_len_expr;
                             str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
                         }
-                    alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
-                    array_type, alloc_arg.m_dims, alloc_arg.n_dims);
-                    promoted_symbols.insert(ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
+                    ASR::ttype_t* promoted_type = ASRUtils::make_Array_t_util(al,
+                        x.base.base.loc, array_type, alloc_arg.m_dims,
+                        alloc_arg.n_dims);
+                    if( has_run_time_lower_bound(promoted_type) ) {
+                        x_args.push_back(al, alloc_arg);
+                    } else {
+                        alloc_variable->m_type = promoted_type;
+                        promoted_symbols.insert(ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
+                    }
                 } else if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ||
                            ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ) {
                     x_args.push_back(al, alloc_arg);
