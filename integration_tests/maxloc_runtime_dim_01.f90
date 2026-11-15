@@ -21,7 +21,7 @@ program maxloc_runtime_dim_01
     integer :: grid(2, 3), a(2, 3, 2), v(5), i, k, one
     integer(8) :: k8
     integer :: pos(2), r22(2, 2), r23(2, 3)
-    integer, allocatable :: p(:)
+    integer, allocatable :: p(:), z(:, :)
     logical :: m(2, 3)
     real :: x(2, 3)
 
@@ -72,5 +72,14 @@ program maxloc_runtime_dim_01
     if (any(row_max(grid, one) /= [2, 1, 2])) error stop 20
     call find7(grid, k, pos)
     if (any(pos /= [2, 0])) error stop 21
+
+    ! the reduced dimension has no elements: the position is 0
+    i = 0
+    allocate(z(i, 3))
+    if (any(maxloc(z, dim=one) /= 0)) error stop 22
+    if (any(minloc(z, dim=one) /= 0)) error stop 23
+    if (any(maxloc(z, dim=1) /= 0)) error stop 24
+    if (any(minloc(z, dim=1, back=.true.) /= 0)) error stop 25
+    if (size(maxloc(z, dim=k)) /= 0) error stop 26
     print *, "ok"
 end program
