@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'x'. Tried to match size 2 of dimension 1 of LHS with size 3 of dimension 1 of RHS. Remove the '--no-realloc-lhs-arrays' option to reallocate the left hand side automatically on assignment.
+ --> tests/errors/realloc_lhs_disabled_01.f90:8:5
+  |
+8 |     x = [1, 2, 3]
+  |     ^ LHS size is 2
+  |
+8 |     x = [1, 2, 3]
+  |         ^^^^^^^^^ RHS size is 3
