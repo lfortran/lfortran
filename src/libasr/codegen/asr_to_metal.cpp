@@ -3,9 +3,30 @@
 
 namespace LCompilers {
 
+class MetalIntrinsicScanner : public ASR::BaseWalkVisitor<MetalIntrinsicScanner> {
+public:
+    bool needs_dp4a = false;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        auto *symbol = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*symbol)) {
+            const auto *type = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(symbol));
+            if (type->m_deftype != ASR::deftypeType::Implementation &&
+                    type->m_bindc_name &&
+                    std::string(type->m_bindc_name) == "__dp4a") {
+                needs_dp4a = true;
+            }
+        }
+        ASR::BaseWalkVisitor<MetalIntrinsicScanner>::visit_FunctionCall(x);
+    }
+};
+
 // Metal Shading Language. The spellings the shared device code generator
 // asks a dialect for; everything else it derives from the ASR itself.
 struct MetalDialect {
+    bool needs_dp4a = false;
+
     std::string addr_space(ASR::memory_spaceType space) const {
         switch (space) {
             case ASR::memory_spaceType::Global: return "device";
@@ -34,6 +55,17 @@ struct MetalDialect {
     void emit_prologue(std::stringstream &src) const {
         src << "#include <metal_stdlib>\n";
         src << "using namespace metal;\n\n";
+        if (needs_dp4a) {
+            // CUDA's packed signed-byte dot product, including accumulator wraparound.
+            src << "inline int __dp4a(int a, int b, int c) {\n"
+                   "    int4 x = int4(as_type<char4>(a));\n"
+                   "    int4 y = int4(as_type<char4>(b));\n"
+                   "    int4 products = x * y;\n"
+                   "    uint result = as_type<uint>(c) + uint(products.x)\n"
+                   "        + uint(products.y) + uint(products.z) + uint(products.w);\n"
+                   "    return as_type<int>(result);\n"
+                   "}\n\n";
+        }
     }
 
     std::string device_fn_qualifier() const {
@@ -191,7 +223,9 @@ struct MetalDialect {
 Result<std::string> asr_to_metal(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co)
 {
-    ASRToGpuCVisitor<MetalDialect> v(co);
+    MetalIntrinsicScanner scanner;
+    scanner.visit_TranslationUnit(asr);
+    ASRToGpuCVisitor<MetalDialect> v(co, MetalDialect{scanner.needs_dp4a});
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {
