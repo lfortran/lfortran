@@ -342,6 +342,15 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         }
     }
 
+    void visit_CoarrayRef(const ASR::CoarrayRef_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_CoarrayRef(x);
+        ASR::CoarrayRef_t& xx = const_cast<ASR::CoarrayRef_t&>(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_var)) &&
+             ASRUtils::is_array(x.m_type)) {
+            xx.m_type = ASRUtils::extract_type(xx.m_type);
+        }
+    }
+
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ArrayItem(x);
         // The shape of `w%u(2)` is the shape of its base `w`. Once the base
