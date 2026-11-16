@@ -15,6 +15,9 @@ real(dp), parameter :: fd(7) = [sind(360000000000030.0_dp), &
     cosd(360000000000120.0_dp), cosd(1152921504606850560.0_dp), &
     tand(360000000000135.0_dp), sind(3610.0_dp), &
     cosd(10000000017.0_dp), tand(1234567.5_dp)]
+! Odd multiples of 45 degrees: +-sqrt(1/2)
+real(sp), parameter :: fo4(4) = [sind(45.0_sp), cosd(45.0_sp), &
+    sind(-135.0_sp), cosd(16560135.0_sp)]
 real(sp) :: x, nzero4, pinf_4, ninf_4
 real(dp) :: nzero8, pinf_8, ninf_8
 integer :: n
@@ -91,6 +94,19 @@ if (.not. same8(fd(4), -1.0_dp)) error stop 34
 call near8(fd(5), 0.17364817766693036_dp)
 call near8(fd(6), 0.4539904997395468_dp)
 call near8(fd(7), -1.3032253728412058_dp)
+
+! Odd multiples of 45 degrees are sqrt(1/2) correctly rounded, with the
+! sign of the octant
+call octant4(45.0_sp, 1.0_sp, 1.0_sp)
+call octant4(135.0_sp, 1.0_sp, -1.0_sp)
+call octant4(225.0_sp, -1.0_sp, -1.0_sp)
+call octant4(-315.0_sp, 1.0_sp, 1.0_sp)
+call octant4(16560045.0_sp, 1.0_sp, 1.0_sp)
+call octant4(-16560135.0_sp, -1.0_sp, -1.0_sp)
+if (.not. same4(fo4(1), sqrt(0.5_sp))) error stop 41
+if (.not. same4(fo4(2), sqrt(0.5_sp))) error stop 42
+if (.not. same4(fo4(3), -sqrt(0.5_sp))) error stop 43
+if (.not. same4(fo4(4), -sqrt(0.5_sp))) error stop 44
 print *, "ok"
 
 contains
@@ -143,6 +159,15 @@ contains
         if (iand(which, 4) /= 0) then
             if (.not. same8(tand(a), t)) error stop 7
         end if
+    end subroutine
+
+    ! sind(a) and cosd(a) are sg*sqrt(1/2) and cg*sqrt(1/2)
+    subroutine octant4(a, sg, cg)
+        real(sp), intent(in) :: a, sg, cg
+        real(sp) :: h
+        h = sqrt(0.5_sp)
+        if (.not. same4(sind(a), sg*h)) error stop 10
+        if (.not. same4(cosd(a), cg*h)) error stop 11
     end subroutine
 
     ! Within one ulp of the correctly rounded reference value

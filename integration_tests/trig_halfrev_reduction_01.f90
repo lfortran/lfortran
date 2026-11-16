@@ -31,6 +31,10 @@ real(dp), parameter :: fq8(6) = [sinpi(q8), cospi(q8), tanpi(q8), &
     sinpi(-q8), cospi(-q8), tanpi(-q8)]
 real(qp), parameter :: fq16(6) = [sinpi(q16), cospi(q16), tanpi(q16), &
     sinpi(-q16), cospi(-q16), tanpi(-q16)]
+! Odd multiples of 45 degrees and of a quarter turn: +-sqrt(1/2)
+real(dp), parameter :: fo8(8) = [sind(45.0_dp), cosd(45.0_dp), &
+    sind(-135.0_dp), cosd(-135.0_dp), sinpi(0.25_dp), cospi(0.25_dp), &
+    sinpi(-0.75_dp), cospi(-0.75_dp)]
 real(sp) :: nzero4, pinf_4, ninf_4
 real(dp) :: nzero8, pinf_8, ninf_8
 real(qp) :: nzero16, pinf_16, ninf_16
@@ -135,6 +139,29 @@ call quarter16(sinpi(id16(-q16)), cospi(id16(-q16)), tanpi(id16(-q16)), &
     -1.0_qp)
 call quarter16(fq16(1), fq16(2), fq16(3), 1.0_qp)
 call quarter16(fq16(4), fq16(5), fq16(6), -1.0_qp)
+
+! Odd multiples of 45 degrees and of a quarter turn are sqrt(1/2) correctly
+! rounded, with the sign of the octant, in degrees and in half turns alike
+! (GFortran's sind(45.0_dp) is one ulp low, so these real(8) degree checks
+! are here rather than in trig_degree_reduction_01).
+call octant8(45.0_dp, 1.0_dp, 1.0_dp)
+call octant8(135.0_dp, 1.0_dp, -1.0_dp)
+call octant8(225.0_dp, -1.0_dp, -1.0_dp)
+call octant8(315.0_dp, -1.0_dp, 1.0_dp)
+call octant8(-45.0_dp, -1.0_dp, 1.0_dp)
+call octant8(-225.0_dp, 1.0_dp, -1.0_dp)
+call octant8(360000000000045.0_dp, 1.0_dp, 1.0_dp)
+call octant8(180000000000225.0_dp, -1.0_dp, -1.0_dp)
+call octant8(1000000.25_dp*180, 1.0_dp, 1.0_dp)
+call octant8(-1000000.75_dp*180, -1.0_dp, -1.0_dp)
+if (.not. same8(fo8(1), sqrt(0.5_dp))) error stop 61
+if (.not. same8(fo8(2), sqrt(0.5_dp))) error stop 62
+if (.not. same8(fo8(3), -sqrt(0.5_dp))) error stop 63
+if (.not. same8(fo8(4), -sqrt(0.5_dp))) error stop 64
+if (.not. same8(fo8(5), sqrt(0.5_dp))) error stop 65
+if (.not. same8(fo8(6), sqrt(0.5_dp))) error stop 66
+if (.not. same8(fo8(7), -sqrt(0.5_dp))) error stop 67
+if (.not. same8(fo8(8), -sqrt(0.5_dp))) error stop 68
 print *, "ok"
 
 contains
@@ -212,6 +239,18 @@ contains
         if (iand(which, 4) /= 0) then
             if (.not. same16(tanpi(a), t)) error stop 12
         end if
+    end subroutine
+
+    ! sind and cosd of a degrees, and sinpi and cospi of a/180 half turns,
+    ! are sg*sqrt(1/2) and cg*sqrt(1/2).
+    subroutine octant8(a, sg, cg)
+        real(dp), intent(in) :: a, sg, cg
+        real(dp) :: h
+        h = sqrt(0.5_dp)
+        if (.not. same8(sind(a), sg*h)) error stop 18
+        if (.not. same8(cosd(a), cg*h)) error stop 18
+        if (.not. same8(sinpi(a/180), sg*h)) error stop 19
+        if (.not. same8(cospi(a/180), cg*h)) error stop 19
     end subroutine
 
     ! sinpi, cospi and tanpi of sg*nearest(0.25, -1.0): sin(pi*x) < cos(pi*x)

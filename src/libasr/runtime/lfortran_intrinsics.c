@@ -7631,7 +7631,8 @@ LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_
 //
 // sind, cosd and tand reduce their argument exactly: |x| = 90*n + r with r
 // in [-45, 45] and no rounding error, so that every exact point is exact
-// (sind(n*360 + 30) = 0.5, cosd(90) = 0, tand(45) = 1, ...) and large
+// (sind(n*360 + 30) = 0.5, cosd(90) = 0, tand(45) = 1, ...), sind and cosd
+// of an odd multiple of 45 are sqrt(1/2) correctly rounded, and large
 // arguments keep their accuracy. r*pi/180 is formed as a double-word
 // bh + bl, and the libm function of bh is corrected by bl. The signs of
 // zero and infinity follow the binary128 lf_f128_sind, lf_f128_cosd and
@@ -7642,6 +7643,9 @@ LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_
 // pi/180 = TRIG_D2R_HI + TRIG_D2R_LO to about 2^-108 relative
 static const double TRIG_D2R_HI = 0.017453292519943295;
 static const double TRIG_D2R_LO = 2.9486522708701687e-19;
+
+// sqrt(1/2) correctly rounded: sin and cos of 45 degrees and a quarter turn
+static const double TRIG_SQRT1_2 = 0.7071067811865476;
 
 // sin(bh + bl) for |bh| <= ~pi/4 and |bl| <= ~ulp(bh): the bl correction
 // uses a short series for cos(bh).
@@ -7688,21 +7692,26 @@ static void trig_deg_to_rad(double r, double *bh, double *bl)
     *bl = fma(r, TRIG_D2R_HI, -*bh) + r * TRIG_D2R_LO;
 }
 
-// sin of r degrees, |r| <= ~45; exact for r = 0 and r = +-30
+// sin of r degrees, |r| <= ~45; exact for r = 0 and r = +-30, correctly
+// rounded for r = +-45
 static double trig_sin_deg(double r)
 {
     if (r == 0.0) return r;
     if (r == 30.0) return 0.5;
     if (r == -30.0) return -0.5;
+    if (r == 45.0) return TRIG_SQRT1_2;
+    if (r == -45.0) return -TRIG_SQRT1_2;
     double bh, bl;
     trig_deg_to_rad(r, &bh, &bl);
     return trig_sin_dw(bh, bl);
 }
 
-// cos of r degrees, |r| <= ~45; exact for r = 0
+// cos of r degrees, |r| <= ~45; exact for r = 0, correctly rounded for
+// r = +-45
 static double trig_cos_deg(double r)
 {
     if (r == 0.0) return 1.0;
+    if (r == 45.0 || r == -45.0) return TRIG_SQRT1_2;
     double bh, bl;
     trig_deg_to_rad(r, &bh, &bl);
     return trig_cos_dw(bh, bl);
@@ -7812,20 +7821,38 @@ static void trig_halfrev_to_rad(double r, double *bh, double *bl)
     *bl = fma(r, TRIG_PI_HI, -*bh) + r * TRIG_PI_LO;
 }
 
+// sin of r half turns, |r| <= 1/4; correctly rounded for r = +-1/4
+static double trig_sin_halfrev(double r)
+{
+    if (r == 0.25) return TRIG_SQRT1_2;
+    if (r == -0.25) return -TRIG_SQRT1_2;
+    double bh, bl;
+    trig_halfrev_to_rad(r, &bh, &bl);
+    return trig_sin_dw(bh, bl);
+}
+
+// cos of r half turns, |r| <= 1/4; correctly rounded for r = +-1/4
+static double trig_cos_halfrev(double r)
+{
+    if (r == 0.25 || r == -0.25) return TRIG_SQRT1_2;
+    double bh, bl;
+    trig_halfrev_to_rad(r, &bh, &bl);
+    return trig_cos_dw(bh, bl);
+}
+
 LFORTRAN_API double _lfortran_dsinpi(double x)
 {
     if (isnan(x) || isinf(x)) return x - x;
     if (x == 0.0) return x;
-    double r, bh, bl, s;
+    double r, s;
     int n = trig_rem_half(fabs(x), &r);
     // sin(pi*k) is exactly 0, with the sign of x.
     if ((n & 1) == 0 && r == 0.0) return signbit(x) ? -0.0 : 0.0;
-    trig_halfrev_to_rad(r, &bh, &bl);
     switch (n) {
-        case 0:  s = trig_sin_dw(bh, bl); break;
-        case 1:  s = trig_cos_dw(bh, bl); break;
-        case 2:  s = -trig_sin_dw(bh, bl); break;
-        default: s = -trig_cos_dw(bh, bl); break;
+        case 0:  s = trig_sin_halfrev(r); break;
+        case 1:  s = trig_cos_halfrev(r); break;
+        case 2:  s = -trig_sin_halfrev(r); break;
+        default: s = -trig_cos_halfrev(r); break;
     }
     return signbit(x) ? -s : s;
 }
@@ -7838,16 +7865,15 @@ LFORTRAN_API float _lfortran_ssinpi(float x)
 LFORTRAN_API double _lfortran_dcospi(double x)
 {
     if (isnan(x) || isinf(x)) return x - x;
-    double r, bh, bl;
+    double r;
     int n = trig_rem_half(fabs(x), &r);
     // cos(pi*(k + 1/2)) is exactly +0.
     if ((n & 1) && r == 0.0) return 0.0;
-    trig_halfrev_to_rad(r, &bh, &bl);
     switch (n) {
-        case 0:  return trig_cos_dw(bh, bl);
-        case 1:  return -trig_sin_dw(bh, bl);
-        case 2:  return -trig_cos_dw(bh, bl);
-        default: return trig_sin_dw(bh, bl);
+        case 0:  return trig_cos_halfrev(r);
+        case 1:  return -trig_sin_halfrev(r);
+        case 2:  return -trig_cos_halfrev(r);
+        default: return trig_sin_halfrev(r);
     }
 }
 
