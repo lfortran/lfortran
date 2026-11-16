@@ -8017,3 +8017,10 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_wide_loads_hoist_01.f90"
 gpu_cuda_kernel = true
+
+# A q8 product of four rows per iteration runs an iteration on the 64 lanes
+# of a block (`__launch_bounds__(64, ...)`, lanes named as a constant); one of
+# two rows on the 32 lanes of a warp.
+[[test]]
+filename = "../integration_tests/gpu_wide_rows_01.f90"
+gpu_cuda_kernel = true

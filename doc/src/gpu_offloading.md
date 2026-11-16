@@ -1544,6 +1544,17 @@ A load moves only when nothing in the body assigns its array or, before it,
 a variable its subscripts read, and nothing leaves the body early (an
 `exit`, a `cycle`, a stop).
 
+A kernel whose loop reads four or more rows of one array side by side
+(`gpu_wide_rows_per_iteration`) gives each iteration the 64 lanes of a block
+of its own instead (`lanes_wide`), as a hand-written product gives a block
+to several rows: twice the lanes keep twice the loads of each row in flight
+with no more registers. Every launch of it has those lanes, so the kernel
+names them as a constant, and its launch bound is for blocks of 64 threads.
+On an H200 a q8 product of 34816 by 5120, four rows per iteration, took
+54.7 us with a warp per iteration and takes 51.6 us with 64 lanes (with the
+combinations of their sums batched, below). With two rows, a warp is faster
+(5120 by 17408: 38.5 us, against 46.8 us with 64 lanes).
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a

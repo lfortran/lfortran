@@ -20,6 +20,12 @@ namespace LCompilers {
     // its threads have in flight together.
     int64_t gpu_wide_vectors_per_iteration(const ASR::Function_t &kernel);
 
+    // The most rows of one array (elements that differ in a subscript after
+    // the first) an iteration of a loop of the kernel reads 16 bytes of,
+    // counted before the pass makes the vectors (gpu_vector_lanes.cpp sizes
+    // the lanes of a kernel by it).
+    int64_t gpu_wide_rows_per_iteration(const ASR::Function_t &kernel);
+
     void pass_gpu_wide_loads(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options);
 

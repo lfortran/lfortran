@@ -91,7 +91,7 @@ struct MetalDialect {
     // capabilities give), and the threads of a threadgroup fill its
     // SIMD-groups in order.
     void emit_lane_prologue(std::stringstream &src, const std::string &indent,
-            const std::string &lanes) const {
+            const std::string &lanes, int64_t /*fixed_lanes*/ = 0) const {
         src << indent << "uint __thread_id = __gpu_grid_thread / (uint)"
             << lanes << ";\n";
         src << indent << "int __gpu_lane = (int)(__gpu_grid_thread % (uint)"

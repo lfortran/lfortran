@@ -172,7 +172,13 @@ struct CudaDialect {
     void emit_lane_thread_params(std::stringstream & /*src*/,
             bool /*has_prev*/) const {}
     void emit_lane_prologue(std::stringstream &src, const std::string &indent,
-            const std::string &lanes) const {
+            const std::string &lanes, int64_t fixed_lanes = 0) const {
+        // A kernel that every launch gives the same lanes (fixed_lanes,
+        // gpu_vector_lanes.cpp) names them as a constant: its loops step
+        // by a constant, which nvcc turns into constant address increments.
+        if (fixed_lanes > 0) {
+            src << indent << lanes << " = " << fixed_lanes << ";\n";
+        }
         src << indent << "int __gpu_lanes_n = " << lanes << ";\n";
         src << indent << "unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? "
             "0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << "

@@ -65,9 +65,10 @@ print *, y(1)
 end program
 """
 
-# Four rows per iteration: the lanes read a vector of words of each row and
-# the four vectors of `x` the rows share, 8 vectors, which need the registers
-# of three blocks of 256 threads per multiprocessor.
+# Four rows per iteration: an iteration runs on the 64 lanes of a block of
+# its own, which read a vector of words of each row and the four vectors of
+# `x` the rows share, 8 vectors, which need the registers of 14 blocks of 64
+# threads per multiprocessor.
 SOURCE_ROWS = """\
 module gpu_launch_bounds_rows_m
 implicit none
@@ -150,8 +151,10 @@ def main():
         source = Path(tmp) / "rows.f90"
         source.write_text(SOURCE_ROWS)
         out = kernel_source(sys.argv[1], source)
-    # Three blocks of 256 threads per multiprocessor.
-    assert "__global__ void __launch_bounds__(256, 3)" in out, out
+    # Fourteen blocks of 64 threads per multiprocessor, with the lanes
+    # named as a constant.
+    assert "__global__ void __launch_bounds__(64, 14)" in out, out
+    assert "__gpu_lanes = 64;" in out, out
     print("ok")
 
 

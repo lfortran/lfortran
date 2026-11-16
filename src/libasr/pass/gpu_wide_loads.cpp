@@ -854,6 +854,136 @@ private:
 
 } // namespace
 
+// The rows of one array that the statements of a loop read runs of elements
+// side by side in (as Scan finds them): the runs that differ in a subscript
+// after the first.
+class Runs {
+public:
+    int64_t most = 0;
+    std::set<const ASR::Function_t*> active;
+
+    void body(ASR::stmt_t **stmts, size_t n, std::set<std::string> &keys) {
+        for (size_t i = 0; i < n; i++) stmt(stmts[i], keys);
+    }
+
+private:
+    void loop(ASR::stmt_t **stmts, size_t n) {
+        std::set<std::string> keys;
+        body(stmts, n, keys);
+        most = std::max(most, rows(keys));
+    }
+
+public:
+    // `keys` are "array|later subscripts": the most rows of one array.
+    static int64_t rows(const std::set<std::string> &keys) {
+        std::map<std::string, int64_t> per_array;
+        int64_t m = 0;
+        for (const std::string &k : keys) {
+            m = std::max(m, ++per_array[k.substr(0, k.find('|'))]);
+        }
+        return m;
+    }
+
+private:
+
+    void expr(ASR::expr_t *e, std::set<std::string> &keys) {
+        if (e == nullptr) return;
+        Collector c;
+        c.current_expr = &e;
+        c.replace_expr(e);
+        for (auto &entry : c.groups) {
+            std::map<int64_t, Candidate*> by_offset;
+            for (Candidate &l : entry.second) by_offset[l.offset] = &l;
+            int width = vector_width(entry.second[0].item->m_type);
+            for (auto &first : by_offset) {
+                bool run = true;
+                for (int j = 0; j < width; j++) {
+                    if (!by_offset.count(first.first + j)) run = false;
+                }
+                if (!run) continue;
+                ASR::ArrayItem_t *item = first.second->item;
+                if (!ASR::is_a<ASR::Var_t>(*item->m_v)) continue;
+                std::string key = std::to_string(reinterpret_cast<uintptr_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(item->m_v)->m_v))) + "|";
+                for (size_t i = 1; i < item->n_args; i++) {
+                    key += "#" + (item->m_args[i].m_right
+                        ? gpu_affine_key(item->m_args[i].m_right)
+                        : std::string());
+                }
+                keys.insert(key);
+            }
+        }
+        struct Calls : public ASR::BaseWalkVisitor<Calls> {
+            std::vector<const ASR::Function_t*> callees;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+                if (ASR::is_a<ASR::Function_t>(*s)) {
+                    callees.push_back(ASR::down_cast<ASR::Function_t>(s));
+                }
+                BaseWalkVisitor::visit_FunctionCall(x);
+            }
+        } calls;
+        calls.visit_expr(*e);
+        for (const ASR::Function_t *f : calls.callees) {
+            if (!ASRUtils::is_device_only_function(*f)
+                    || !active.insert(f).second) {
+                continue;
+            }
+            body(f->m_body, f->n_body, keys);
+            active.erase(f);
+        }
+    }
+
+    void stmt(ASR::stmt_t *s, std::set<std::string> &keys) {
+        switch (s->type) {
+            case ASR::stmtType::Assignment:
+                expr(ASR::down_cast<ASR::Assignment_t>(s)->m_value, keys);
+                return;
+            case ASR::stmtType::If: {
+                ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                expr(x->m_test, keys);
+                body(x->m_body, x->n_body, keys);
+                body(x->m_orelse, x->n_orelse, keys);
+                return;
+            }
+            case ASR::stmtType::BlockCall: {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (!ASR::is_a<ASR::Block_t>(*b)) return;
+                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                body(blk->m_body, blk->n_body, keys);
+                return;
+            }
+            case ASR::stmtType::DoLoop: {
+                ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
+                loop(x->m_body, x->n_body);
+                return;
+            }
+            case ASR::stmtType::DoConcurrentLoop: {
+                ASR::DoConcurrentLoop_t *x =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                body(x->m_body, x->n_body, keys);
+                return;
+            }
+            case ASR::stmtType::WhileLoop: {
+                ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                loop(x->m_body, x->n_body);
+                return;
+            }
+            default:
+                return;
+        }
+    }
+};
+
+int64_t gpu_wide_rows_per_iteration(const ASR::Function_t &kernel) {
+    Runs r;
+    std::set<std::string> keys;
+    r.body(kernel.m_body, kernel.n_body, keys);
+    return std::max(r.most, Runs::rows(keys));
+}
+
 int64_t gpu_wide_vectors_per_iteration(const ASR::Function_t &kernel) {
     Vectors v;
     int64_t outside = v.body(kernel.m_body, kernel.n_body);
