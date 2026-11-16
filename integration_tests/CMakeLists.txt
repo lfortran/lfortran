@@ -1502,6 +1502,7 @@ RUN(NAME real16_parameter_matmul_01 LABELS gfortran llvm)
 RUN(NAME real16_parameter_maxloc_01 LABELS gfortran llvm)
 RUN(NAME real16_parameter_findloc_01 LABELS llvm) # not gfortran: GFortran 15.3 folds findloc of a PARAMETER array with a numeric value to 0
 RUN(NAME real16_parameter_norm2_01 LABELS gfortran llvm)
+RUN(NAME norm2_dim_real16_01 LABELS gfortran llvm) # norm2 with DIM of non-constant real(16) arrays (#17873)
 RUN(NAME real16_parameter_spread_01 LABELS gfortran llvm)
 RUN(NAME real16_parameter_cshift_01 LABELS gfortran llvm)
 RUN(NAME complex16_cmplx_kind_const_01 LABELS gfortran llvm)
@@ -7991,6 +7992,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME complex10_unformatted_01 LABELS gfortran llvm)
     RUN(NAME complex10_parameter_array_01 LABELS gfortran llvm)
     RUN(NAME complex10_storage_size_01 LABELS gfortran llvm)
+    RUN(NAME norm2_dim_real10_01 LABELS gfortran llvm) # norm2 with DIM of non-constant real(10) arrays (#17873)
     # The value check waits on #17031.
     RUN(NAME separate_compilation_73 LABELS gfortran llvm
         EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)
