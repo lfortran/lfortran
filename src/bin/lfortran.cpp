@@ -3401,16 +3401,18 @@ int main_app(int argc, char *argv[]) {
 int main(int argc, char *argv[])
 {
     // Remove the intermediate files however main() returns, also after an
-    // exception from main_app() is caught below, or say where they are kept
+    // exception from main_app() is caught below
     struct RemoveTempDir {
-        ~RemoveTempDir() {
-            if (temp_dir.created() && temp_dir.kept()) {
-                std::cerr << "lfortran: temporary files kept in "
-                    << temp_dir.path() << std::endl;
-            }
-            temp_dir.remove();
-        }
+        ~RemoveTempDir() { temp_dir.remove(); }
     } remove_temp_dir;
+    // Say where they are kept when the process exits, also by exit(), as
+    // the stacktrace printer of a crash does
+    atexit([]() {
+        if (temp_dir.created() && temp_dir.kept()) {
+            std::cerr << "lfortran: temporary files kept in "
+                << temp_dir.path() << std::endl;
+        }
+    });
     LCompilers::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LCompilers::print_stack_on_segfault();
