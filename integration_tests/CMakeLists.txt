@@ -1711,6 +1711,7 @@ RUN(NAME submodule_58 LABELS gfortran llvm)
 RUN(NAME submodule_59 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a submodule ends with it
 RUN(NAME submodule_60 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a separate module procedure
 RUN(NAME submodule_61 LABELS gfortran llvm) # private binding to a separate module procedure declared in a named generic interface (#5393)
+RUN(NAME submodule_same_file_smod_01 LABELS gfortran llvm INCLUDE_PATH submodule_same_file_smod_01) # a same-file submodule is not read from a foreign .smod (#17845)
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_14 LABELS gfortran llvm)

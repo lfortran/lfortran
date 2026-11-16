@@ -2392,6 +2392,17 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
         for (auto &file : std::filesystem::directory_iterator(path)) {
             std::string submod_filename = file.path().filename().string();
             if (startswith(submod_filename, smod_prefix) && endswith(submod_filename, ".smod")) {
+                // A submodule compiled in this translation unit is used as
+                // is; its .smod on disk may be stale or from another compiler.
+                std::string submod_name = submod_filename.substr(smod_prefix.size(),
+                    submod_filename.size() - smod_prefix.size() - std::string(".smod").size());
+                ASR::symbol_t *submod_sym = symtab.get_symbol(submod_name);
+                if (submod_sym && ASR::is_a<ASR::Module_t>(*submod_sym)) {
+                    char *submod_parent = ASR::down_cast<ASR::Module_t>(submod_sym)->m_parent_module;
+                    if (submod_parent && parent_module_name == submod_parent) {
+                        continue;
+                    }
+                }
                 std::string submodfile;
                 if (read_file(file.path().string(), submodfile) && !submodfile.empty()) {
                     Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false, symtab, lm);
