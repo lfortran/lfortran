@@ -145,7 +145,8 @@ suggested split:
 ```
 
 The comment must contain the head SHA (the script checks this). Do not
-paste logs or diffs into it.
+paste logs or diffs into it, and do not sign it: `apply` appends the
+signature.
 
 ## Rules
 

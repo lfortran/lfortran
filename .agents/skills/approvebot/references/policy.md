@@ -182,7 +182,11 @@ cancelled its tiny real part.
   algorithm, as in glibc and libquadmath. An algorithm invented for the PR
   does not fit.
 - For arguments where main was already right, the new result agrees to the
-  kind's precision, and the test checks such moderate arguments too.
+  kind's precision, and the test checks such moderate arguments too. The
+  published algorithm's own special cases for infinite, NaN or signed-zero
+  arguments may come with it, in place of rule 3, as long as every such
+  result the test checks is one GFortran shares (#18002 adopts glibc's
+  limits for infinite arguments).
 - The expected values come from an independent reference (a high-precision
   evaluation or the identity), not from LFortran's output, with a tolerance
   near the kind's precision. The test covers both the run-time and the
