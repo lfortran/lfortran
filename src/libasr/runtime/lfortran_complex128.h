@@ -210,20 +210,23 @@ static inline lf_float128 lf_c128_log1p(lf_float128 u) {
     if (lf_f128_isinf(w)) {
         return w;
     }
-    return lf_f128_div(lf_f128_mul(lf_f128_log(w), u), lf_f128_sub(w, one));
+    return lf_f128_mul(lf_f128_log(w), lf_f128_div(u, lf_f128_sub(w, one)));
 }
 
-// The inverse functions follow C99 Annex G: the sign of a zero real or
-// imaginary part selects the side of a branch cut and is kept in the result.
-// On the real and imaginary axes they are computed exactly from the real
-// functions. Elsewhere they use the formulas of Kahan, "Branch Cuts for
-// Complex Elementary Functions" (1987), in terms of s = sqrt(1 - z) and
-// t = sqrt(1 + z), which do not cancel.
+// The inverse functions place their branch cuts as C99 Annex G does: the
+// sign of a zero real or imaginary part selects the side of a cut and is kept
+// in the result. On the real and imaginary axes they are computed exactly
+// from the real functions. Elsewhere they use the formulas of Kahan, "Branch
+// Cuts for Complex Elementary Functions" (1987), in terms of s = sqrt(1 - z)
+// and t = sqrt(1 + z), which do not cancel. For a NaN and a finite part they
+// return the Annex G values. atanh and atan also handle infinite and huge
+// parts as Annex G does; asin, acos, asinh and acosh do not yet (their
+// square roots overflow for parts near the overflow threshold).
 
 static inline lf_complex128 lf_c128_asin(lf_complex128 z) {
     lf_float128 zero = lf_f128_from_double(0.0);
     lf_float128 one = lf_f128_from_double(1.0);
-    if (lf_f128_eq(z.im, zero)) {
+    if (lf_f128_eq(z.im, zero) && !lf_f128_isnan(z.re)) {
         lf_float128 ax = lf_f128_abs(z.re);
         if (lf_f128_cmp(ax, one) <= 0) {
             return lf_c128_make(lf_f128_asin(z.re), z.im);
@@ -250,7 +253,7 @@ static inline lf_complex128 lf_c128_asin(lf_complex128 z) {
 static inline lf_complex128 lf_c128_acos(lf_complex128 z) {
     lf_float128 zero = lf_f128_from_double(0.0);
     lf_float128 one = lf_f128_from_double(1.0);
-    if (lf_f128_eq(z.im, zero)) {
+    if (lf_f128_eq(z.im, zero) && !lf_f128_isnan(z.re)) {
         lf_float128 ax = lf_f128_abs(z.re);
         if (lf_f128_cmp(ax, one) <= 0) {
             return lf_c128_make(lf_f128_acos(z.re), lf_f128_neg(z.im));
@@ -283,7 +286,7 @@ static inline lf_complex128 lf_c128_asinh(lf_complex128 z) {
 static inline lf_complex128 lf_c128_acosh(lf_complex128 z) {
     lf_float128 zero = lf_f128_from_double(0.0);
     lf_float128 one = lf_f128_from_double(1.0);
-    if (lf_f128_eq(z.im, zero)) {
+    if (lf_f128_eq(z.im, zero) && !lf_f128_isnan(z.re)) {
         lf_float128 ax = lf_f128_abs(z.re);
         if (lf_f128_cmp(ax, one) <= 0) {
             return lf_c128_make(zero,
@@ -313,7 +316,21 @@ static inline lf_complex128 lf_c128_acosh(lf_complex128 z) {
 static inline lf_complex128 lf_c128_atanh(lf_complex128 z) {
     lf_float128 zero = lf_f128_from_double(0.0);
     lf_float128 one = lf_f128_from_double(1.0);
+    lf_float128 half_pi = lf_f128_acos(zero);
     lf_float128 x = lf_f128_abs(z.re), y = lf_f128_abs(z.im);
+    if (lf_f128_isnan(x) || lf_f128_isnan(y)) {
+        // Annex G: atanh(+-Inf + i NaN) = +-0 + i NaN,
+        // atanh(NaN +- i Inf) = +-0 +- i pi/2, atanh(+-0 + i NaN) = +-0 + i NaN
+        if (lf_f128_isinf(y)) {
+            return lf_c128_make(lf_c128_copysign(zero, z.re),
+                lf_c128_copysign(half_pi, z.im));
+        }
+        if (lf_f128_isinf(x) || lf_f128_eq(x, zero)) {
+            return lf_c128_make(lf_c128_copysign(zero, z.re),
+                lf_f128_add(y, y));
+        }
+        return lf_c128_make(lf_f128_add(x, y), lf_f128_add(x, y));
+    }
     if (lf_f128_eq(y, zero) && lf_f128_cmp(x, one) < 0) {
         return lf_c128_make(lf_f128_atanh(z.re), z.im);
     }
@@ -321,17 +338,52 @@ static inline lf_complex128 lf_c128_atanh(lf_complex128 z) {
         return lf_c128_make(z.re, lf_f128_atan(z.im));
     }
     // atanh is odd and atanh(conj(z)) = conj(atanh(z)): evaluate it at
-    // (|x|, |y|) as log1p(4 x / ((1 - x)^2 + y^2)) / 4
-    // + i atan2(2 y, (1 - x)(1 + x) - y^2) / 2 and restore the signs.
-    lf_float128 omx = lf_f128_sub(one, x);
-    lf_float128 x4 = lf_f128_mul(lf_f128_from_double(4.0), x);
-    lf_float128 re = lf_f128_mul(lf_f128_from_double(0.25),
-        lf_c128_log1p(lf_f128_div(x4,
+    // (|x|, |y|) and restore the signs.
+    lf_float128 quarter = lf_f128_from_double(0.25);
+    lf_float128 half = lf_f128_from_double(0.5);
+    // big = 1e2400: below it the squares do not overflow, and above it
+    // atanh(z) = Re(1/z) + i pi/2 to working precision.
+    lf_float128 big = lf_f128_from_double(1.0e300);
+    big = lf_f128_mul(big, big);
+    big = lf_f128_mul(big, big);
+    big = lf_f128_mul(big, big);
+    lf_float128 re, im;
+    if (lf_f128_cmp(x, big) > 0 || lf_f128_cmp(y, big) > 0) {
+        if (lf_f128_isinf(x) || lf_f128_isinf(y)) {
+            re = zero;
+        } else if (lf_f128_cmp(x, y) >= 0) {
+            // Re(1/z) = (1/x) / (1 + (y/x)^2)
+            lf_float128 r = lf_f128_div(y, x);
+            re = lf_f128_div(lf_f128_div(one, x),
+                lf_f128_add(one, lf_f128_mul(r, r)));
+        } else {
+            // Re(1/z) = (x/y) / y / (1 + (x/y)^2)
+            lf_float128 r = lf_f128_div(x, y);
+            re = lf_f128_div(lf_f128_div(r, y),
+                lf_f128_add(one, lf_f128_mul(r, r)));
+        }
+        im = half_pi;
+    } else if (lf_f128_eq(x, one) && !lf_f128_eq(y, zero)
+            && lf_f128_cmp(y, one) < 0) {
+        // (log(4 + y^2) - 2 log y) / 4 + i atan2(2 y, -y^2) / 2, where the
+        // general formula would form 4 / y^2, which overflows for tiny y
+        re = lf_f128_mul(quarter, lf_f128_sub(
+            lf_f128_log(lf_f128_add(lf_f128_from_double(4.0),
+                lf_f128_mul(y, y))),
+            lf_f128_mul(lf_f128_from_double(2.0), lf_f128_log(y))));
+        im = lf_f128_mul(half, lf_f128_atan2(lf_f128_add(y, y),
+            lf_f128_neg(lf_f128_mul(y, y))));
+    } else {
+        // log1p(4 x / ((1 - x)^2 + y^2)) / 4
+        // + i atan2(2 y, (1 - x)(1 + x) - y^2) / 2
+        lf_float128 omx = lf_f128_sub(one, x);
+        lf_float128 x4 = lf_f128_mul(lf_f128_from_double(4.0), x);
+        re = lf_f128_mul(quarter, lf_c128_log1p(lf_f128_div(x4,
             lf_f128_add(lf_f128_mul(omx, omx), lf_f128_mul(y, y)))));
-    lf_float128 im = lf_f128_mul(lf_f128_from_double(0.5),
-        lf_f128_atan2(lf_f128_add(y, y),
+        im = lf_f128_mul(half, lf_f128_atan2(lf_f128_add(y, y),
             lf_f128_sub(lf_f128_mul(omx, lf_f128_add(one, x)),
                 lf_f128_mul(y, y))));
+    }
     return lf_c128_make(lf_c128_copysign(re, z.re),
         lf_c128_copysign(im, z.im));
 }
