@@ -332,3 +332,4 @@ kernel void __lfortran_gpu_kernel_0_17gpu_dp4a_idiom_01(
     r7_gpu[((int)(i__dc_gpu) - (1))] = dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], a_gpu[((int)(i__dc_gpu) - (1))], c_gpu[((int)(i__dc_gpu) - (1))]);
     r8_gpu[((int)(i__dc_gpu) - (1))] = (dp4a_gpu_22(b_gpu[((int)(i__dc_gpu) - (1))], a_gpu[((int)(i__dc_gpu) - (1))], 0) - dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], b_gpu[((int)(i__dc_gpu) - (1))], 0));
 }
+
