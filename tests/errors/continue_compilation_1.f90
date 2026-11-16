@@ -5053,3 +5053,23 @@ subroutine cc1_assumed_rank_bound_dim(c)
     print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
     print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
 end subroutine
+
+! Diagnostics for a specific intrinsic name it, not the generic intrinsic
+! that it is mapped to.
+subroutine cc1_specific_intrinsic_name_errors()
+    double precision :: cc1_sn_y, cc1_sn_x, cc1_sn_d
+    integer :: cc1_sn_i
+    complex :: cc1_sn_z
+    cc1_sn_y = 1; cc1_sn_x = 1; cc1_sn_z = (1.0, 2.0)
+    cc1_sn_d = datan(cc1_sn_y, cc1_sn_x)  ! {Error} Incorrect number of arguments passed to the 'datan' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_d = dsin(1d0, 2d0)  ! {Error} Incorrect number of arguments passed to the 'dsin' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_d = dabs(1d0, 2d0)  ! {Error} Incorrect number of arguments passed to the 'dabs' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_d = dsqrt(1d0, 2d0)  ! {Error} Incorrect number of arguments passed to the 'dsqrt' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_d = dexp(1d0, 2d0)  ! {Error} Incorrect number of arguments passed to the 'dexp' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_i = iabs(1, 2)  ! {Error} Incorrect number of arguments passed to the 'iabs' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_d = dsin()  ! {Error} Incorrect number of arguments passed to the 'dsin' intrinsic. It accepts exactly 1 arguments.
+    cc1_sn_d = dmod(p=2d0)  ! {Error} Incorrect number of arguments passed to the 'dmod' intrinsic. It accepts exactly 2 arguments.
+    cc1_sn_d = dsin(y=1d0)  ! {Error} No matching signature found for intrinsic dsin
+    cc1_sn_d = dsign(1d0, a=2d0)  ! {Error} No matching signature found for intrinsic dsign
+    cc1_sn_d = realpart(cc1_sn_z, [4, 4])  ! {Error} `kind` argument of `realpart` intrinsic must be a scalar
+end subroutine
