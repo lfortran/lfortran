@@ -429,9 +429,13 @@ TMPDIR=$HOME/tmp lfortran a.f90 b.f90 -o prog
 ```
 
 The directory is removed with everything in it when the compiler finishes,
-also after an error, and when it is interrupted (`Ctrl+C`, `SIGTERM`,
-`SIGHUP`) or crashes. To inspect the intermediate files, use `--save-temps`:
-the directory is kept and its path is printed to standard error:
+also after an error, and when it is ended by a signal that it can catch: an
+interrupt (`Ctrl+C`, `Ctrl+\`, `SIGTERM`, `SIGHUP`, `SIGPIPE`), a crash
+(`SIGSEGV`, `SIGBUS`, `SIGILL`, `SIGFPE`, `SIGABRT`) or a resource limit
+(`SIGXCPU`, `SIGXFSZ`); on Windows, also when the console is closed or
+`Ctrl+C` or `Ctrl+Break` is pressed. To inspect the intermediate files, use
+`--save-temps`: the directory is kept and its path is printed to standard
+error:
 
 ```console
 $ lfortran --save-temps a.f90 b.f90 -o prog
@@ -439,10 +443,10 @@ lfortran: temporary files kept in /tmp/lfortran-node1-12345-a1B2c3
 ```
 
 A compiler that is killed with `SIGKILL` (for example by a job scheduler or
-the out-of-memory killer) cannot remove its directory. `lfortran --clean-temp`
-removes the directories in `TMPDIR` that belong to you, were created on the
-same host, and whose compiler process no longer exists, and prints each
-removed directory. Directories of compilers that are still running, of other
+the out-of-memory killer), or a machine that loses power, cannot remove the
+directory. `lfortran --clean-temp` removes the directories in `TMPDIR` that
+belong to you, were created on the same host, and whose compiler process no
+longer exists, and prints each removed directory. Directories of compilers that are still running, of other
 users and of other hosts are left alone.
 
 ## Differences from other compilers

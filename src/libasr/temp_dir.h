@@ -36,8 +36,9 @@ public:
     // Remove the directory and its contents, unless kept. Never throws.
     void remove() noexcept;
     // Also remove the directory, unless kept, when the process is ended by
-    // a signal (SIGHUP, SIGINT, SIGPIPE, SIGTERM, or a crash: SIGABRT,
-    // SIGBUS, SIGSEGV) or, on Windows, by a console control event. The
+    // a signal (SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM, a crash: SIGABRT,
+    // SIGBUS, SIGFPE, SIGILL, SIGSEGV, or a limit: SIGXCPU, SIGXFSZ) or, on
+    // Windows, by a console control event. SIGKILL cannot be caught. The
     // handlers are installed when the directory is created, so a process
     // that never creates it keeps its signal handling. Signals that were
     // ignored stay ignored. Only one TempDir can do this.

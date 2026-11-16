@@ -244,7 +244,9 @@ EOF
     # Opening a FIFO without a writer blocks the compiler on the second
     # file, after the object of the first one is in the temporary directory
     mkfifo blocked.f90
-    for sig in INT TERM HUP; do
+    # No core files of the signals that dump one
+    ulimit -c 0
+    for sig in INT TERM HUP QUIT ILL FPE XCPU XFSZ; do
         # Job control: a background job of a script ignores SIGINT otherwise
         set -m
         TMPDIR=$PWD/tmp $FC m.f90 blocked.f90 -o i.out &

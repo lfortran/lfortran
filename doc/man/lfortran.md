@@ -114,8 +114,11 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 
 - `TMPDIR`: Directory for the private temporary directory
   `lfortran-<host>-<pid>-XXXXXX` of the intermediate files of an invocation
-  (default `/tmp`). The directory is removed when the compiler finishes, fails,
-  is interrupted or crashes, unless `--save-temps` is given.
+  (default `/tmp`). The directory is removed when the compiler finishes or
+  fails, and when it is ended by a signal that it can catch (an interrupt such
+  as `SIGINT`, `SIGQUIT`, `SIGTERM` or `SIGHUP`, a crash, or `SIGXCPU` or
+  `SIGXFSZ`), unless `--save-temps` is given. After `SIGKILL` or a power loss,
+  `--clean-temp` removes it.
 
 # SUBCOMMANDS
 

@@ -425,8 +425,11 @@ BOOL WINAPI remove_temp_dir_on_console_event(DWORD) {
     return FALSE;
 }
 #else
+// Interrupts, crashes, and the limits of the CPU time and the file size
 constexpr int temp_dir_signals[] = {
-    SIGHUP, SIGINT, SIGPIPE, SIGTERM, SIGABRT, SIGBUS, SIGSEGV
+    SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM,
+    SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGSEGV,
+    SIGXCPU, SIGXFSZ
 };
 constexpr size_t n_temp_dir_signals
     = sizeof(temp_dir_signals) / sizeof(temp_dir_signals[0]);
