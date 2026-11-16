@@ -140,12 +140,58 @@ static inline lf_complex128 lf_c128_cosh(lf_complex128 z) {
         lf_f128_mul(lf_f128_sinh(z.re), lf_f128_sin(z.im)));
 }
 
-static inline lf_complex128 lf_c128_tan(lf_complex128 z) {
-    return lf_c128_div(lf_c128_sin(z), lf_c128_cos(z));
+static inline lf_complex128 lf_c128_tanh(lf_complex128 z) {
+    // The C99 ctanh algorithm (as in glibc and libquadmath). With
+    // den = sinh(x)^2 + cos(y)^2,
+    //   tanh(x + i y) = (sinh(x) cosh(x) + i sin(y) cos(y)) / den,
+    // which does not cancel. Where sinh(x)^2 would overflow,
+    //   tanh(x + i y) = sign(x) + 4 i sin(y) cos(y) exp(-2|x|)
+    // to binary128 precision.
+    lf_float128 zero = lf_f128_from_double(0.0);
+    lf_float128 one = lf_f128_from_double(1.0);
+    lf_float128 x = z.re, y = z.im;
+    if (lf_f128_isinf(x)) {
+        lf_float128 re = lf_f128_signbit(x) ? lf_f128_neg(one) : one;
+        lf_float128 im = y;
+        if (!lf_f128_isinf(y) && !lf_f128_isnan(y)
+                && lf_f128_cmp(lf_f128_abs(y), one) > 0) {
+            im = lf_f128_mul(lf_f128_sin(y), lf_f128_cos(y));
+        }
+        return lf_c128_make(re,
+            lf_f128_signbit(im) ? lf_f128_neg(zero) : zero);
+    }
+    if (lf_f128_isnan(x) || lf_f128_isinf(y) || lf_f128_isnan(y)) {
+        if (lf_f128_eq(y, zero)) {
+            return z;
+        }
+        lf_float128 nan = lf_f128_div(zero, zero);
+        return lf_c128_make(lf_f128_eq(x, zero) ? x : nan, nan);
+    }
+    lf_float128 sin_y = lf_f128_sin(y), cos_y = lf_f128_cos(y);
+    // floor((MAX_EXP - 1) log(2) / 2) for binary128
+    lf_float128 t = lf_f128_from_double(5677.0);
+    lf_float128 ax = lf_f128_abs(x);
+    if (lf_f128_cmp(ax, t) > 0) {
+        lf_float128 exp_2t = lf_f128_exp(lf_f128_add(t, t));
+        lf_float128 im = lf_f128_div(lf_f128_mul(lf_f128_from_double(4.0),
+            lf_f128_mul(sin_y, cos_y)), exp_2t);
+        ax = lf_f128_sub(ax, t);
+        im = lf_f128_div(im, lf_f128_cmp(ax, t) > 0 ? exp_2t
+            : lf_f128_exp(lf_f128_add(ax, ax)));
+        return lf_c128_make(lf_f128_signbit(x) ? lf_f128_neg(one) : one, im);
+    }
+    lf_float128 sinh_x = lf_f128_sinh(x);
+    lf_float128 den = lf_f128_add(lf_f128_mul(sinh_x, sinh_x),
+        lf_f128_mul(cos_y, cos_y));
+    return lf_c128_make(
+        lf_f128_div(lf_f128_mul(sinh_x, lf_f128_cosh(x)), den),
+        lf_f128_div(lf_f128_mul(sin_y, cos_y), den));
 }
 
-static inline lf_complex128 lf_c128_tanh(lf_complex128 z) {
-    return lf_c128_div(lf_c128_sinh(z), lf_c128_cosh(z));
+static inline lf_complex128 lf_c128_tan(lf_complex128 z) {
+    // tan(z) = -i tanh(i z)
+    lf_complex128 r = lf_c128_tanh(lf_c128_mul_i(z));
+    return lf_c128_make(r.im, lf_f128_neg(r.re));
 }
 
 static inline lf_complex128 lf_c128_asinh(lf_complex128 z) {

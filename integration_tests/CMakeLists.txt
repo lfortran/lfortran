@@ -1508,6 +1508,7 @@ RUN(NAME cshift_eoshift_shift_overflow_01 LABELS gfortran llvm) # cshift/eoshift
 RUN(NAME complex16_cmplx_kind_const_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_02 LABELS gfortran llvm)
+RUN(NAME complex16_tanh_overflow_01 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
