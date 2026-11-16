@@ -2287,6 +2287,11 @@ RUN(NAME intrinsics_470 LABELS gfortran llvm) # index with character(kind=4) arg
 RUN(NAME intrinsics_471 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_max
 RUN(NAME intrinsics_472 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_min
 RUN(NAME intrinsics_473 LABELS gfortran llvm) # maxloc/minloc with compile-time mask evaluation on 2D arrays
+RUN(NAME maxloc_runtime_mask_01 LABELS gfortran llvm) # maxloc/minloc with a run-time mask on PARAMETER arrays are not folded
+RUN(NAME maxloc_rank2_fold_01 LABELS gfortran llvm) # maxloc/minloc of rank-2 constant arrays in PARAMETERs (#17876)
+RUN(NAME spread_rank2_fold_01 LABELS gfortran llvm) # spread of rank-2 and rank-3 constant arrays in PARAMETERs (#17876)
+RUN(NAME spread_rank2_fold_02 LABELS llvm) # interior-dim spread of constants in PARAMETERs (#17876); no gfortran label: GFortran 15.3 mis-folds it
+RUN(NAME spread_rank2_fold_03 LABELS gfortran llvm) # large spread of a rank-2 constant runs at run time and compiles quickly (#17876)
 RUN(NAME intrinsics_474 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_broadcast
 RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits of I
 RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent
