@@ -226,6 +226,14 @@ EOF
         ls -lR "sp ace"
         exit 1
     fi
+    # Sources named like the files of the link
+    cp m.f90 lfortran_gpu_cuda_0.f90
+    cp p.f90 lfortran_gpu_kernel_0.f90
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu lfortran_gpu_cuda_0.f90 g.f90 -o g2.out
+    ./g2.out
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu m.f90 lfortran_gpu_kernel_0.f90 -o g3.out
+    ./g3.out
+    tmp_is_empty
     # A plain -c compile does not need the temporary directory
     TMPDIR=$PWD/missing $FC -c m.f90 -o m.o
     [ -f m.o ]
@@ -263,6 +271,34 @@ EOF
         [ $status -eq $((128 + $(kill -l $sig))) ]
         tmp_is_empty
     done
+    # Also the files of the link, in their subdirectory: a device compiler
+    # that blocks after it has compiled the GPU runtime
+    mkfifo cxx_blocked
+    cat > slow_cxx <<'EOF'
+#!/bin/sh
+c++ "$@" || exit
+case "$*" in
+    *lfortran_gpu_cuda_0.o*) cat "$(dirname "$0")/cxx_blocked" > /dev/null ;;
+esac
+EOF
+    chmod +x slow_cxx
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu --device-compiler=$PWD/slow_cxx \
+        m.f90 g.f90 -o g4.out &
+    pid=$!
+    for i in $(seq 600); do
+        if compgen -G "tmp/lfortran-*/link/lfortran_gpu_cuda_0.o" > /dev/null; then
+            break
+        fi
+        sleep 0.1
+    done
+    compgen -G "tmp/lfortran-*/link/lfortran_gpu_cuda_0.o"
+    kill -TERM $pid
+    status=0
+    wait $pid || status=$?
+    # Let the device compiler finish
+    echo > cxx_blocked
+    [ $status -eq $((128 + $(kill -l TERM))) ]
+    tmp_is_empty
 
     echo "Testing --clean-temp"
     # The host name as the compiler puts it into the directory name

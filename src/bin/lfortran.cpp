@@ -124,6 +124,10 @@ enum Backend {
 // an exception, when the process exits, or when it is ended by a signal.
 constexpr const char *TEMP_DIR_PREFIX = "lfortran";
 LCompilers::TempDir temp_dir(TEMP_DIR_PREFIX);
+// The subdirectory of the files of a link, apart from the files named after
+// the source files (`<name>.o`, `<name>.o.c`, ...): no source file can then
+// replace one of them
+constexpr const char *TEMP_LINK_DIR = "link";
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique symbols during separate compilation.
@@ -2212,7 +2216,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::string metal_runtime_src = runtime_library_dir
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj
-                    = temp_dir.file("lfortran_gpu_metal.o");
+                    = temp_dir.file(TEMP_LINK_DIR, "lfortran_gpu_metal.o");
                 // Use the clang of the linker path: the first clang on PATH
                 // (e.g. LLVM's clang in a Conda environment) may not know the
                 // macOS SDK and its Metal framework.
@@ -2291,10 +2295,10 @@ int link_executable(const std::vector<std::string> &infiles,
                     if (!seen_cuda_fragments.insert(cuda_source).second) {
                         continue;
                     }
-                    std::string cuda_kernel_src = temp_dir.file(
+                    std::string cuda_kernel_src = temp_dir.file(TEMP_LINK_DIR,
                         "lfortran_gpu_kernel_"
                         + std::to_string(cuda_kernel_index) + ".cu");
-                    std::string cuda_kernel_obj = temp_dir.file(
+                    std::string cuda_kernel_obj = temp_dir.file(TEMP_LINK_DIR,
                         "lfortran_gpu_kernel_"
                         + std::to_string(cuda_kernel_index) + ".o");
                     {
@@ -2368,7 +2372,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 std::vector<std::string> cuda_runtime_objs;
                 for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
-                    std::string cuda_runtime_obj = temp_dir.file(
+                    std::string cuda_runtime_obj = temp_dir.file(TEMP_LINK_DIR,
                         "lfortran_gpu_cuda_" + std::to_string(i) + ".o");
                     std::string cuda_rt_cmd = cuda_rt_cmd_base + " -o "
                         + quote_path(cuda_runtime_obj) + " "

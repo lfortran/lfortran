@@ -29,6 +29,10 @@ public:
     const std::string &path();
     // The path of the file `name` in the directory, which is created
     std::string file(const std::string &name);
+    // The path of the file `name` in the subdirectory `subdir` of the
+    // directory, which are created. The signal handlers remove the files
+    // of up to three subdirectories.
+    std::string file(const std::string &subdir, const std::string &name);
     bool created() const { return !path_.empty(); }
     // Keep the directory instead of removing it
     void keep(bool keep) { keep_ = keep; }

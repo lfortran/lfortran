@@ -673,6 +673,21 @@ std::string TempDir::file(const std::string &name) {
     return (std::filesystem::path(path()) / name).string();
 }
 
+std::string TempDir::file(const std::string &subdir, const std::string &name) {
+    std::filesystem::path dir = std::filesystem::path(path()) / subdir;
+    BlockTempDirSignals block_signals;
+    std::error_code ec;
+    [[maybe_unused]] bool created = std::filesystem::create_directory(dir, ec);
+    if (ec) {
+        throw TempDirError("cannot create the temporary directory '"
+            + dir.string() + "': " + ec.message());
+    }
+#ifndef _WIN32
+    if (created && signal_temp_dir == this) open_signal_dir(dir.string());
+#endif
+    return (dir / name).string();
+}
+
 void TempDir::remove() noexcept {
     if (path_.empty() || keep_) return;
     BlockTempDirSignals block_signals;
