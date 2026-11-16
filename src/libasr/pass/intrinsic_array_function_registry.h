@@ -3046,7 +3046,11 @@ namespace Spread {
             ASR::ttype_t* arr_type = expr_type(args[0]);
             std::vector<ASR::expr_t *> m_eles;
             ASR::expr_t *value = nullptr;
-            if (is_kind16_real_or_complex(arr_type)) {
+            if (is_kind16_real_or_complex(arr_type) ||
+                    ASR::is_a<ASR::StructType_t>(*extract_type(arr_type))) {
+                // Copying the element constants keeps real(16) and
+                // complex(16) elements exact and handles derived-type
+                // (`StructConstant`) elements
                 std::vector<ASR::expr_t*> elements = constant_elements(al, args[0], array_size);
                 if (dim_val == 1) {
                     for (size_t i = 0; i < array_size; i++) {
@@ -3197,6 +3201,8 @@ namespace Spread {
                         m_eles.push_back(value);
                     }
                 }
+            } else {
+                return nullptr;
             }
             return b.ArrayConstant(m_eles, extract_type(type), false, type);
         }
@@ -3313,7 +3319,9 @@ namespace Spread {
         int overload_id = 2;
         bool skip_compile_time_eval = false;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
-            ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
+            ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ||
+            ASR::is_a<ASR::Complex_t>(*type_source) ||
+            (ASR::is_a<ASR::StructType_t>(*type_source) && !ASRUtils::is_class_type(type_source)) ){
             // Case : When Scalar is passed as source in Spread()
             is_scalar = true;
             Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
