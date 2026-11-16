@@ -217,12 +217,12 @@ public:
     }
 
     std::string read_string() {
-        size_t n = read_int64();
-        if (pos+n > s.size()) {
+        uint64_t n = read_int64();
+        if (n > s.size() - pos) {
             throw LCompilersException("read_string: String is too short for deserialization.");
         }
-        std::string r = std::string(&s[pos], n);
-        pos += n;
+        std::string r = std::string(&s[pos], static_cast<size_t>(n));
+        pos += static_cast<size_t>(n);
         return r;
     }
 
@@ -375,12 +375,12 @@ public:
     }
 
     std::string read_string() {
-        size_t n = read_int64();
-        if (pos+n > s.size()) {
+        uint64_t n = read_int64();
+        if (n > s.size() - pos) {
             throw LCompilersException("read_string: String is too short for deserialization.");
         }
-        std::string r = std::string(&s[pos], n);
-        pos += n;
+        std::string r = std::string(&s[pos], static_cast<size_t>(n));
+        pos += static_cast<size_t>(n);
         if (s[pos] != ' ') {
             throw LCompilersException("read_string: Space expected.");
         }
