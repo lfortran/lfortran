@@ -4164,6 +4164,30 @@ public:
         arg.m_value = n;
         args.push_back(al, arg);
         auto &launch = const_cast<ASR::GpuKernelLaunch_t&>(x);
+        // An iteration of a kernel that reads vectors of 16 bytes is a warp
+        // that streams a whole row, and the launch has few of them: blocks
+        // of `threads_per_block` would share them out unevenly between the
+        // multiprocessors (the 320 blocks of 8 warps of a matrix-vector
+        // product of 5120 rows, two rows per iteration, are three on some
+        // of the 132 of an H200 and two on the others, which then wait).
+        // Its launches with a warp per iteration start blocks of
+        // wide_block_iterations warps instead: 43 us became 38 us.
+        int64_t block_threads = 0;
+        if (wide_kernels.count(&kernel)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    x.m_block_size), block_threads)
+                && block_threads > wide_block_iterations*lanes
+                && block_threads % (wide_block_iterations*lanes) == 0) {
+            ASR::ttype_t *bt = ASRUtils::expr_type(x.m_block_size);
+            ASR::expr_t *block = b.Variable(current_scope,
+                current_scope->get_unique_name("__gpu_block_threads"),
+                ASRUtils::duplicate_type(al, bt), ASR::intentType::Local);
+            pass_result.push_back(al, b.Assignment(block, x.m_block_size));
+            pass_result.push_back(al, b.If(b.Eq(n, b.i32(lanes)),
+                {b.Assignment(block, b.i_t(wide_block_iterations*lanes, bt))},
+                {}));
+            launch.m_block_size = block;
+        }
         launch.m_args = args.p;
         launch.n_args = args.n;
         pass_result.push_back(al, &launch.base);
@@ -4189,6 +4213,8 @@ private:
     // The most iterations of a launch of such a kernel that get lanes:
     // 32 lanes of them stay within the 32-bit thread index.
     static constexpr int64_t wide_iterations_max = int64_t(1) << 24;
+    // The iterations, a warp each, of a block of a launch of such a kernel.
+    static constexpr int64_t wide_block_iterations = 2;
     // A loop of fewer iterations than this many per thread of a block does
     // not get a block of lanes.
     static constexpr int64_t short_loop_threads = 8;

@@ -1511,6 +1511,14 @@ blocks: 61 us, where six blocks spilled its registers and took 92 us. One
 that takes a row per iteration reads 5 and gets five blocks, and two rows
 (6 vectors) get four.
 
+An iteration of such a kernel is a warp that streams a whole row, and its
+launches have few iterations, so a launch with a warp per iteration starts
+blocks of two warps rather than of `threads_per_block` threads
+(`wide_block_iterations` in `gpu_vector_lanes.cpp`): the 320 blocks of 8
+warps of a product of 5120 rows, two per iteration, fell three on some of
+the 132 multiprocessors of an H200 and two on the others, which then waited
+for them (43 us; 38 us with blocks of two warps).
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a
