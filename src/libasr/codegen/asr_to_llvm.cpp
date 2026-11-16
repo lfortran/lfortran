@@ -26809,7 +26809,12 @@ public:
             fmt += " %.*s";
             visit_expr_load_wrapper(stop_code, 0);
             llvm::Value* stop_code_str = tmp; tmp = nullptr;
-            args.push_back(llvm_utils->get_string_length(ASRUtils::get_string_type(stop_code), stop_code_str));
+            // printf takes the precision of %.*s as int; a 64-bit length is
+            // read wrongly where varargs are not passed in 64-bit slots
+            // (WebAssembly).
+            args.push_back(builder->CreateTrunc(llvm_utils->get_string_length(
+                ASRUtils::get_string_type(stop_code), stop_code_str),
+                llvm::Type::getInt32Ty(context)));
             args.push_back(llvm_utils->get_string_data  (ASRUtils::get_string_type(stop_code), stop_code_str));
         } else if (stop_code){
             throw LCompilersException(
