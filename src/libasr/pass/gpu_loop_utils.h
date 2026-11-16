@@ -179,6 +179,12 @@ public:
     // call was, in the same order. Off by default, since the loop
     // transformations reorder what they inline across iterations.
     bool allow_stops = false;
+    // Whether a call of a function whose body is one assignment of its
+    // result, with nothing to bind its dummies to but the actual arguments
+    // themselves, is replaced by the value assigned (in terms of the actual
+    // arguments) rather than by a variable that a statement before it
+    // assigns: `s = s + f(a, i)` stays one statement. Off by default.
+    bool substitute_expressions = false;
     // Removes every symbol `run` added (after a failure).
     void rollback();
     std::vector<std::pair<SymbolTable*, std::string>> added;

@@ -69,6 +69,9 @@ struct Candidate {
     ASR::expr_t **slot;
     ASR::ArrayItem_t *item;
     int64_t offset;
+    // Whether `offset` counts from the first lower bound of the array (the
+    // subscript adds it: `a(lbound(a, 1) + e)`), not from 0.
+    bool from_lower = false;
 };
 
 // The elements the expression reads for certain, as the places that hold
@@ -165,12 +168,46 @@ private:
         builder.invariant_variable = [](ASR::symbol_t *) { return true; };
         GpuAffine first;
         if (!builder.affine(x->m_args[0].m_right, first)) return;
+        // A subscript that adds the array's own first lower bound, as the
+        // element of an array dummy inlined in a kernel does (GpuInliner:
+        // `a(i + (lbound(a, 1) - 1))`), reads the element that many places
+        // from the start of the array, whatever the lower bound is.
+        // The lower bound is `lbound(a, 1)`, or, once the bounds of the
+        // kernel's arrays are its parameters, what the type of `a` declares.
+        ASR::dimension_t *dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::symbol_type(array), dims);
+        std::string declared_lower = n_dims > 0 && dims[0].m_start
+            ? gpu_affine_key(dims[0].m_start) : std::string();
+        auto first_lower = [&](const std::string &key, ASR::expr_t *e) {
+            if (!declared_lower.empty() && key == declared_lower) return true;
+            if (!ASR::is_a<ASR::ArrayBound_t>(*e)) return false;
+            ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+            int64_t dim = 0;
+            return b->m_bound == ASR::arrayboundType::LBound
+                && ASR::is_a<ASR::Var_t>(*b->m_v)
+                && ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(b->m_v)->m_v) == array
+                && b->m_dim && ASRUtils::extract_value(
+                    ASRUtils::expr_value(b->m_dim), dim) && dim == 1;
+        };
+        bool from_lower = false;
+        for (auto it = first.terms.begin(); it != first.terms.end(); ++it) {
+            auto atom = builder.atoms.find(it->first);
+            if (it->second == 1 && atom != builder.atoms.end()
+                    && first_lower(it->first, atom->second)) {
+                first.terms.erase(it);
+                from_lower = true;
+                break;
+            }
+        }
         // The first subscript moves by whole vectors.
         int width = vector_width(x->m_type);
         for (auto &term : first.terms) {
             if (term.second % width != 0) return;
         }
-        std::string key = std::to_string(reinterpret_cast<uintptr_t>(array));
+        std::string key = std::to_string(reinterpret_cast<uintptr_t>(array))
+            + (from_lower ? "@lower" : "");
         for (auto &term : first.terms) {
             key += "|" + term.first + "*" + std::to_string(term.second);
         }
@@ -179,7 +216,7 @@ private:
             if (k.empty()) return;
             key += "#" + k;
         }
-        groups[key].push_back(Candidate{slot, x, first.constant});
+        groups[key].push_back(Candidate{slot, x, first.constant, from_lower});
         arrays[key] = array;
     }
 };
@@ -189,10 +226,12 @@ private:
 // multiple of 16 bytes, when the array itself does: the first lower bound
 // and the extents of the dimensions before the last, which the elements
 // of the other subscripts are that many apart in, are multiples of it.
-// False when they never are; `condition` is null when they always are.
+// Where `from_lower`, `start` counts from the first lower bound, which
+// then does not matter. False when they never are; `condition` is null
+// when they always are.
 bool alignment_condition(Allocator &al, const Location &loc,
         ASR::expr_t *array, size_t n_subscripts, int64_t start, int width,
-        ASR::expr_t *&condition) {
+        bool from_lower, ASR::expr_t *&condition) {
     ASRUtils::ASRBuilder b(al, loc);
     ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
     ASR::dimension_t *dims = nullptr;
@@ -204,7 +243,9 @@ bool alignment_condition(Allocator &al, const Location &loc,
     };
     ASR::expr_t *lower = b.ArrayLBound(array, 1);
     int64_t l = 0;
-    if (ASRUtils::extract_value(ASRUtils::expr_value(lower), l)) {
+    if (from_lower) {
+        if ((start % width + width) % width != 0) return false;
+    } else if (ASRUtils::extract_value(ASRUtils::expr_value(lower), l)) {
         if (((start - l) % width + width) % width != 0) return false;
     } else {
         require(b.Eq(b.And(b.Sub(b.i32(start), lower), b.i32(width - 1)),
@@ -284,7 +325,8 @@ private:
                 Location loc = start->base.base.loc;
                 ASR::expr_t *aligned = nullptr;
                 if (!alignment_condition(al, loc, start->m_v,
-                        start->n_args, o, width, aligned)) {
+                        start->n_args, o, width, by_offset[o][0]->from_lower,
+                        aligned)) {
                     continue;
                 }
                 Vec<ASR::expr_t*> targets;

@@ -50,16 +50,41 @@ evaluated, and its function
 * is one GpuInliner can inline (gpu_function_inlinable): pure, with a body
   and a scalar result, scalar and assumed-shape array dummies, scalar
   locals, and no RETURN, STOP, input/output or subroutine call;
-* runs a loop, which is what the kernel gains by it; a function without
-  one costs nothing as a call of its own (the device compiler inlines it);
-* is small: its statements, those of its loops included, cost at most
-  inline_max_cost (gpu_stmts_cost).
+* runs a loop, which is what the kernel gains by it, and is small: its
+  statements, those of its loops included, cost at most inline_max_cost
+  (gpu_stmts_cost);
+* or is one expression of its arguments, an array among them
+  (array_expression): its body assigns its result once, it has no other
+  locals, the call's scalar actual arguments can be written where their
+  dummies are read, and the expression costs at most inline_expr_max_cost.
+
+A function of neither kind costs nothing as a call of its own (the device
+compiler inlines it). One of the second kind does: the elements it reads
+of its array dummies are hidden from the kernel's passes, behind pointers
+the device compiler cannot tell apart and whose alignment it tests on
+every call. A pure helper of a quantized matrix-vector product,
+
+    pure real function qdot(w, s, x, n, c)
+        integer(int32), intent(in) :: w(:, :)
+        real, intent(in) :: s(:), x(:)
+        integer, intent(in) :: n, c
+        qdot = s(n)*(dot4(w(4*c-3, n), x(16*c-15), ...) + ...)
+    end function
+
+called as `a1 = a1 + qdot(w, s, x, n, c)` in the loop over the chunks of a
+row, becomes `a1 = a1 + s(n)*(dot4(w(4*c-3, n), ...) + ...)`, with the
+elements of the actual arguments in place of the dummies'
+(GpuInliner::substitute_expressions): a reduction the lanes of an iteration
+share out (gpu_vector_lanes), in one statement that reads the four words of
+`w` and the elements of `x` side by side, as vectors (gpu_wide_loads).
+
 Calls the inlined body makes are inlined in turn when they are calls such
 as these. A statement whose picked calls cannot all be inlined, say because
 an actual argument is an expression rather than an array, stays as it was.
 
 The function's statements run where the call did, in the same order, so the
-transformation is exact.
+transformation is exact; the expression of a function of the second kind is
+evaluated where the call was, as the call would have evaluated it.
 
 The pass runs once the array operations of device code are loops
 (array_op), while the intrinsics of the inlined bodies are still
@@ -111,14 +136,56 @@ bool has_loop(ASR::stmt_t **body, size_t n) {
     return false;
 }
 
+// The most the value of a function that is one expression of its array
+// dummies may cost for its calls to be inlined.
+constexpr int64_t inline_expr_max_cost = 1024;
+
+// Whether `fn` is one expression of its arguments, an array among them:
+// its body is one assignment of its result, it has no other locals, and
+// every scalar actual argument of `call` can be written where the dummy is
+// read (gpu_expr_duplicable), so the call inlines as that expression
+// (GpuInliner::substitute_expressions).
+bool array_expression(ASR::Function_t *fn, ASR::FunctionCall_t *call) {
+    if (fn->n_body != 1 || !ASR::is_a<ASR::Assignment_t>(*fn->m_body[0])) {
+        return false;
+    }
+    ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(fn->m_body[0]);
+    if (!ASR::is_a<ASR::Var_t>(*a->m_target) || !ASR::is_a<ASR::Var_t>(
+                *fn->m_return_var)
+            || ASR::down_cast<ASR::Var_t>(a->m_target)->m_v
+                != ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v) {
+        return false;
+    }
+    for (auto &item : fn->m_symtab->get_scope()) {
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+        if (v->m_intent == ASR::intentType::Local
+                && v->m_storage != ASR::storage_typeType::Parameter) {
+            return false;
+        }
+    }
+    bool arrays = false;
+    for (size_t i = 0; i < call->n_args; i++) {
+        ASR::expr_t *actual = call->m_args[i].m_value;
+        if (actual == nullptr) return false;
+        if (ASRUtils::is_array(ASRUtils::expr_type(actual))) {
+            arrays = true;
+        } else if (!gpu_expr_duplicable(actual)) {
+            return false;
+        }
+    }
+    return arrays && gpu_expr_cost(a->m_value) <= inline_expr_max_cost;
+}
+
 // Whether the calls of `fn` are inlined.
 bool picked(ASR::FunctionCall_t *call) {
     ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
     if (!ASR::is_a<ASR::Function_t>(*f)) return false;
     ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
-    return gpu_function_inlinable(fn)
-        && has_loop(fn->m_body, fn->n_body)
-        && cost_with_loops(fn->m_body, fn->n_body) <= inline_max_cost;
+    if (!gpu_function_inlinable(fn)) return false;
+    if (has_loop(fn->m_body, fn->n_body)) {
+        return cost_with_loops(fn->m_body, fn->n_body) <= inline_max_cost;
+    }
+    return array_expression(fn, call);
 }
 
 // The most a subroutine's statements may cost for its calls to be inlined.
@@ -247,6 +314,7 @@ private:
         dup.duplicate_body(&s, 1, copy);
         GpuInliner inl(al, picked, offset_kind);
         inl.select_sub = picked_sub;
+        inl.substitute_expressions = true;
         ASR::stmt_t **cp = copy.p;
         size_t cn = copy.n;
         if (!dup.ok || !inl.run(scope, cp, cn) || cn != 1) {
@@ -270,6 +338,7 @@ private:
         Vec<ASR::stmt_t*> copy;
         dup.duplicate_body(&s, 1, copy);
         GpuInliner inl(al, picked, offset_kind);
+        inl.substitute_expressions = true;
         ASR::stmt_t **cp = copy.p;
         size_t cn = copy.n;
         if (!dup.ok || !inl.run(scope, cp, cn) || cn != 1) {

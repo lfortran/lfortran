@@ -1656,9 +1656,43 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
     Vec<ASR::stmt_t*> post;
     post.reserve(al, 1);
     ASR::symbol_t *result = nullptr;
+    size_t n_pre = pre.n;
     if (!inline_body(fn, call->m_args, call->n_args, call->base.base.loc,
             block, pre, post, &result)) {
         return nullptr;
+    }
+    // `result = e` alone, with every dummy bound to its actual argument:
+    // the call is `e`, evaluated where the call was.
+    if (substitute_expressions && pre.n == n_pre + 1
+            && ASR::is_a<ASR::Assignment_t>(*pre.p[n_pre])) {
+        ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(
+            pre.p[n_pre]);
+        // The function has no locals but its result (and named
+        // constants), so the value names none of the new variables.
+        bool no_locals = true;
+        for (auto &item : fn->m_symtab->get_scope()) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_intent == ASR::intentType::Local
+                    && v->m_storage != ASR::storage_typeType::Parameter
+                    && item.second != ASR::down_cast<ASR::Var_t>(
+                        fn->m_return_var)->m_v) {
+                no_locals = false;
+            }
+        }
+        if (no_locals && !a->m_overloaded
+                && ASR::is_a<ASR::Var_t>(*a->m_target)
+                && ASR::down_cast<ASR::Var_t>(a->m_target)->m_v == result) {
+            std::string name = ASRUtils::symbol_name(result);
+            for (auto it = added.begin(); it != added.end(); ++it) {
+                if (it->first == block && it->second == name) {
+                    added.erase(it);
+                    break;
+                }
+            }
+            block->erase_symbol(name);
+            pre.n = n_pre;
+            return a->m_value;
+        }
     }
     ASRUtils::ASRBuilder b(al, call->base.base.loc);
     return b.Var(result);
@@ -1998,6 +2032,19 @@ bool GpuInliner::inline_stmt(SymbolTable *scope, ASR::stmt_t *&s) {
         }
         default:
             break;
+    }
+    if (blk && pre.n == 0 && inner->get_scope().empty()) {
+        // Every call was replaced by its value (substitute_expressions):
+        // the statement needs no BLOCK.
+        std::string name = blk->m_name;
+        for (auto it = added.begin(); it != added.end(); ++it) {
+            if (it->first == scope && it->second == name) {
+                added.erase(it);
+                break;
+            }
+        }
+        scope->erase_symbol(name);
+        blk = nullptr;
     }
     if (blk) {
         pre.push_back(al, s);

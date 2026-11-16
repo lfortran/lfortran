@@ -73,12 +73,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_11_20gpu
     }
 }
 
-__device__ inline float dflux_gpu_55(float* f, int __1f, int i) {
-    float r{};
-    r = (f[((int)(i) - (1))] - f[((int)((i - 1)) - (1))]);
-    return r;
-}
-
 struct __ScalarArgs___lfortran_gpu_kernel_12_20gpu_kernel_source_24 {
     int __dim_flux_0;
     int __lb_flux_0;
@@ -91,7 +85,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_12_20gpu
     float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_12_20gpu_kernel_source_24 __scalar_args)
 {
-    int __dim_flux_0 = __scalar_args.__dim_flux_0;
+    int __lb_flux_0 = __scalar_args.__lb_flux_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __flat_idx;
     int i__dc1;
@@ -100,7 +94,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_12_20gpu
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + 3);
-    q[((int)(i__dc1) - (__lb_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_55(flux, __dim_flux_0, i__dc1)));
+    q[((int)(i__dc1) - (__lb_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * (flux[((int)((i__dc1 + (((int)__lb_flux_0) - 1))) - (__lb_flux_0))] - flux[((int)(((i__dc1 - 1) + (((int)__lb_flux_0) - 1))) - (__lb_flux_0))])));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_24 {
@@ -288,12 +282,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_6_20gpu_
     }
 }
 
-__device__ inline float dflux_gpu_36(float* f, int __1f, int i) {
-    float r{};
-    r = (f[((int)(i) - (1))] - f[((int)((i - 1)) - (1))]);
-    return r;
-}
-
 struct __ScalarArgs___lfortran_gpu_kernel_7_20gpu_kernel_source_24 {
     int __gpu_skew_hi4;
     int __gpu_skew_lo4;
@@ -310,7 +298,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_7_20gpu_
     float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_7_20gpu_kernel_source_24 __scalar_args)
 {
-    int __dim_flux_0 = __scalar_args.__dim_flux_0;
+    int __lb_flux_0 = __scalar_args.__lb_flux_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -321,7 +309,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_7_20gpu_
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + __loop_start_0);
-    q[((int)(i__dc1) - (__lb_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * dflux_gpu_36(flux, __dim_flux_0, i__dc1)));
+    q[((int)(i__dc1) - (__lb_q_0))] = (q[((int)(i__dc1) - (__lb_q_0))] + (  1.00000001490116119e-01f * (flux[((int)((i__dc1 + (((int)__lb_flux_0) - 1))) - (__lb_flux_0))] - flux[((int)(((i__dc1 - 1) + (((int)__lb_flux_0) - 1))) - (__lb_flux_0))])));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_8_20gpu_kernel_source_24 {

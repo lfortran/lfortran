@@ -1423,7 +1423,16 @@ runs a loop, such as `sum_squares(x(:, m))` returning `sum(x**2)`, is
 inlined first (`gpu_inline_loop_calls`, using the inliner of the loop
 transformations, `GpuInliner`): its loop is then one of the kernel's, and
 the lanes share it and combine its sum. An RMS norm of a 5120-element row
-computes its sum of squares this way.
+computes its sum of squares this way. A call of a small pure function that
+is one expression of its arguments, an array among them -- the dot product
+of one chunk of a row of a quantized matrix with the vector,
+`a1 = a1 + qdot(w, s, x, n, c)` -- is replaced by that expression, written
+with the elements of the actual arguments: the loop over the chunks is then
+a reduction the lanes share, and its statement reads the words and the
+elements of the vector side by side, as vectors (`gpu_wide_loads`). As a
+call of its own, its reads are behind pointers that the device compiler
+cannot tell apart, and a 4-row q8 product of 34816 by 5120 took 324 us on an
+H200 instead of 92 us.
 
 A loop shared out between the lanes steps by the lanes, so each lane runs a
 loop of its own with one load after another. On Metal such a loop is
@@ -1468,7 +1477,10 @@ otherwise moves by multiples of that number, reads them from new variables,
 which a `GpuWideLoad` before the statement assigns: from the 16 bytes at the
 first element when they start at a multiple of 16, one by one when they do
 not (the test depends on the address of the array and on its lower bound and
-extents only, and the device code tests it once per kernel). A warp then reads
+extents only, and the device code tests it once per kernel). A subscript
+that adds the lower bound of the array, as the element of an array dummy
+of an inlined function does (`a(i + (lbound(a, 1) - 1))`), counts from the
+start of the array whatever its lower bound is. A warp then reads
 512 contiguous bytes per instruction, with a quarter or an eighth of the
 instructions of the loads of single elements: the codes and activations of
 a lane of a quantized matrix-vector product read at 1.2 to 1.8 times the
