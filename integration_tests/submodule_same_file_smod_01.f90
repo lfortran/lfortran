@@ -1,7 +1,9 @@
-! The module, its submodule and the program are in one file, so the
-! submodule must be taken from this translation unit. The include
-! directory holds a foreign file named like the submodule's .smod
-! (submodule_same_file_smod_01_m@submodule_same_file_smod_01_s.smod),
+! The module, its submodules and the program are in one file, so the
+! submodules must be taken from this translation unit. The include
+! directory holds foreign files named like the submodules' .smod files
+! (submodule_same_file_smod_01_m@submodule_same_file_smod_01_s.smod and,
+! as GFortran names a nested submodule after its ancestor module,
+! submodule_same_file_smod_01_m@submodule_same_file_smod_01_s2.smod),
 ! which must not be read.
 module submodule_same_file_smod_01_m
     implicit none
@@ -24,7 +26,11 @@ contains
         integer :: y
         y = 2*x
     end function
+end submodule
 
+submodule (submodule_same_file_smod_01_m:submodule_same_file_smod_01_s) submodule_same_file_smod_01_s2
+    implicit none
+contains
     module subroutine add_one(x)
         integer, intent(inout) :: x
         x = x + 1
