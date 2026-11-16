@@ -1,5 +1,11 @@
 # Two-week study behind the draft
 
+This is the research behind policy version 1 (the `classify-pr-risk` draft,
+with labels `low-risk` and `needs-review`). Its category IDs (D1, T1, T2, C1,
+C2, C3) are still those of [policy.md](policy.md). Version 2 replaced the
+GitHub procedure and the synthetic evaluations mentioned below with
+`scripts/approvebot.py` and the maintainer-judged `evals/cases.jsonl`.
+
 ## Conclusion
 
 There are useful low-risk patterns, but **small + tested + merged is not an
@@ -144,7 +150,7 @@ changed by this work.
 **Before eventual merging**, add independent current-head/base validation,
 trusted decision provenance, invalidation on updates, and combined-change CI
 or a correctly configured queue. A label is mutable metadata, not a
-commit-bound certificate. See [GitHub details](github.md).
+commit-bound certificate.
 
 ## Splitting that actually helps
 
