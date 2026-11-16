@@ -3642,32 +3642,6 @@ namespace Eoshift {
             }, nullptr);
     }
 
-    // The BOUNDARY used when `eoshift` is called without one: the zero of the
-    // element type and kind of `array` (blanks for character)
-    static inline ASR::expr_t* default_boundary(ASRBuilder& b,
-            ASR::ttype_t* element_type) {
-        if (is_integer(*element_type)) {
-            return b.i_t(0, element_type);
-        } else if (is_real(*element_type)) {
-            return b.f_t(0.0, element_type);
-        } else if (is_complex(*element_type)) {
-            return b.complex_t(0.0, 0.0, element_type);
-        } else if (is_logical(*element_type)) {
-            return b.bool_t(false, element_type);
-        } else if (is_character(*element_type)) {
-            // A constant length gets blanks of that length, which
-            // `eval_Eoshift` can fold into the result. Otherwise a single
-            // blank, which blank-pads to the length of every element it is
-            // assigned to.
-            int64_t len = ASRUtils::get_fixed_string_len(element_type);
-            if (len >= 0) {
-                return b.StringConstant(std::string(len, ' '), element_type);
-            }
-            return b.StringBlank(ASRUtils::get_string_type(element_type)->m_kind);
-        }
-        return nullptr;
-    }
-
     static inline ASR::asr_t* create_Eoshift(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t *array = args[0], *shift = args[1], *boundary = args[2], *dim = args[3];
@@ -3731,7 +3705,20 @@ namespace Eoshift {
             final_boundary = boundary;
         }
         else{
-            final_boundary = default_boundary(b, ASRUtils::extract_type(type_array));
+            // The zero of the element type and kind (blanks for character)
+            ASR::ttype_t *element_type = ASRUtils::extract_type(type_array);
+            if (is_character(*element_type)
+                    && ASRUtils::get_fixed_string_len(element_type) < 0) {
+                // A length that is not constant gets a single blank, which
+                // blank-pads to the length of every element it is assigned to
+                final_boundary = b.StringBlank(
+                    ASRUtils::get_string_type(element_type)->m_kind);
+            } else {
+                // Blanks of the constant length for character, which
+                // `eval_Eoshift` can fold into the result
+                final_boundary = ASRUtils::get_constant_zero_with_given_type(
+                    al, element_type);
+            }
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 4);
         m_args.push_back(al, array); m_args.push_back(al, shift); m_args.push_back(al, final_boundary);
