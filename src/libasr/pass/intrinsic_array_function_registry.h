@@ -7348,7 +7348,11 @@ namespace Pack {
         }
         fill_func_arg("mask", duplicate_type_with_empty_dims(al, arg_types[1]));
         if (overload_id == 3) {
-            fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[2]));
+            if (is_struct_type_arg) {
+                fill_func_arg_struct_type("vector", duplicate_type_with_empty_dims(al, arg_types[2]), m_args[0].m_value);
+            } else {
+                fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[2]));
+            }
         }
         ASR::ttype_t* ret_type = return_type;
         if (overload_id == 2) {
