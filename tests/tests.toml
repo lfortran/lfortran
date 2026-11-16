@@ -5826,10 +5826,11 @@ gpu_cuda_kernel = true
 
 # The portable integer dot product of four signed bytes (written with
 # shifta and shiftl), as a function, nested, and in a loop, becomes the
-# dp4a instruction of an NVIDIA GPU; near misses stay plain arithmetic.
+# CUDA dp4a instruction or Metal vector arithmetic; near misses stay arithmetic.
 [[test]]
 filename = "../integration_tests/gpu_dp4a_idiom_01.f90"
 gpu_cuda_kernel = true
+gpu_metal_kernel = true
 
 # A sum that reads across columns followed by a loop that updates the array
 # from it, in one iteration: the sum is shared out for a launch of few

@@ -26,7 +26,8 @@ NVIDIA GPU has one instruction for it, `__dp4a(a, b, c)`, which gives the same
 result (and wraps where the sum overflows, as the hardware add does). A
 program that wants it need not call a CUDA function: it writes the sum above,
 and this pass, which runs for `--gpu=cuda` on an NVIDIA GPU, turns each
-occurrence into a call of `__dp4a`.
+occurrence into a call of `__dp4a`. Metal uses the same interface, implemented
+by its device code generator with signed-byte vector casts and arithmetic.
 
 The sum is matched on the ASR while shifta and shiftl are still intrinsic
 functions, which is before any function is inlined or lowered, so that it is
@@ -214,8 +215,7 @@ public:
     Dp4aReplacer(Allocator &al_, ASR::symbol_t *&dp4a_, SymbolTable *global_)
         : al(al_), dp4a(dp4a_), global(global_) {}
 
-    // The interface of `__dp4a(a, b, c)`, which the code generator writes
-    // as a call of the instruction.
+    // The device dot-product interface: a CUDA instruction or a Metal helper.
     ASR::symbol_t *function(const Location &loc) {
         if (dp4a != nullptr) return dp4a;
         const std::string name = "__dp4a";
@@ -337,10 +337,11 @@ public:
 
 void pass_gpu_dp4a(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
-    // Only NVIDIA hardware has the instruction: neither HIP, nor the CPU
-    // emulation of the device code, nor Metal does.
-    if (gpu_device_selected(pass_options) != GpuDevice::Cuda
-            || !pass_options.gpu_cuda_warps) {
+    // Metal lowers the operation to vector arithmetic. CUDA requires native
+    // hardware; its CPU emulation and HIP keep the portable arithmetic.
+    const GpuDevice device = gpu_device_selected(pass_options);
+    if (device != GpuDevice::Metal &&
+            (device != GpuDevice::Cuda || !pass_options.gpu_cuda_warps)) {
         return;
     }
     ASR::symbol_t *dp4a = nullptr;
