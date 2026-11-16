@@ -3642,6 +3642,24 @@ namespace Eoshift {
             }, nullptr);
     }
 
+    // The BOUNDARY used when `eoshift` is called without one: the zero of the
+    // element type and kind of `array` (blanks for character)
+    static inline ASR::expr_t* default_boundary(ASRBuilder& b,
+            ASR::ttype_t* element_type) {
+        if (is_integer(*element_type)) {
+            return b.i_t(0, element_type);
+        } else if (is_real(*element_type)) {
+            return b.f_t(0.0, element_type);
+        } else if (is_complex(*element_type)) {
+            return b.complex_t(0.0, 0.0, element_type);
+        } else if (is_logical(*element_type)) {
+            return b.bool_t(false, element_type);
+        } else if (is_character(*element_type)) {
+            return b.StringConstant("  ", element_type);
+        }
+        return nullptr;
+    }
+
     static inline ASR::asr_t* create_Eoshift(Allocator& al, const Location& loc,
             Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t *array = args[0], *shift = args[1], *boundary = args[2], *dim = args[3];
@@ -3705,16 +3723,7 @@ namespace Eoshift {
             final_boundary = boundary;
         }
         else{
-            ASR::ttype_t *boundary_type = ASRUtils::extract_type(type_array);
-            if(is_integer(*type_array))
-                final_boundary = b.i_t(0, boundary_type);
-            else if(is_real(*type_array))
-                final_boundary = b.f_t(0.0, boundary_type);
-            else if(is_logical(*type_array))
-                final_boundary = b.bool_t(false, boundary_type);
-            else if(is_character(*type_array)){
-                final_boundary = b.StringConstant("  ", boundary_type);
-            }
+            final_boundary = default_boundary(b, ASRUtils::extract_type(type_array));
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 4);
         m_args.push_back(al, array); m_args.push_back(al, shift); m_args.push_back(al, final_boundary);
