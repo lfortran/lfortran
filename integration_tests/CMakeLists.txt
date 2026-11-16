@@ -3657,6 +3657,14 @@ RUN(NAME realloc_lhs_32 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # same shape is not reallocated (#15956)
 RUN(NAME realloc_lhs_33 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocatable function result defined by intrinsic assignment from an array expression (#3299)
+RUN(NAME realloc_lhs_func_result_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_02 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_03 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_04 LABELS llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # GFortran returns the result into a variable the function reads
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
