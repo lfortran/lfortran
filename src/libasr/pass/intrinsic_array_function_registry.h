@@ -3705,15 +3705,19 @@ namespace Eoshift {
             final_boundary = boundary;
         }
         else{
-            ASR::ttype_t *boundary_type = ASRUtils::extract_type(type_array);
-            if(is_integer(*type_array))
-                final_boundary = b.i_t(0, boundary_type);
-            else if(is_real(*type_array))
-                final_boundary = b.f_t(0.0, boundary_type);
-            else if(is_logical(*type_array))
-                final_boundary = b.bool_t(false, boundary_type);
-            else if(is_character(*type_array)){
-                final_boundary = b.StringConstant("  ", boundary_type);
+            // The zero of the element type and kind (blanks for character)
+            ASR::ttype_t *element_type = ASRUtils::extract_type(type_array);
+            if (is_character(*element_type)
+                    && ASRUtils::get_fixed_string_len(element_type) < 0) {
+                // A length that is not constant gets a single blank, which
+                // blank-pads to the length of every element it is assigned to
+                final_boundary = b.StringBlank(
+                    ASRUtils::get_string_type(element_type)->m_kind);
+            } else {
+                // Blanks of the constant length for character, which
+                // `eval_Eoshift` can fold into the result
+                final_boundary = ASRUtils::get_constant_zero_with_given_type(
+                    al, element_type);
             }
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 4);
