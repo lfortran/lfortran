@@ -121,7 +121,7 @@ enum Backend {
 // objects of a multi-file build, generated C, C++ and Fortran sources, and
 // the GPU kernels and runtime of a link. It is created when first needed and
 // removed with everything in it when main() returns, also after an error or
-// an exception, or when the process exits.
+// an exception, when the process exits, or when it is ended by a signal.
 LCompilers::TempDir temp_dir("lfortran");
 
 // The unique compilation ID for this invocation of the compiler.
@@ -3385,6 +3385,8 @@ int main(int argc, char *argv[])
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LCompilers::print_stack_on_segfault();
 #endif
+    // After print_stack_on_segfault(), whose handlers a crash then reaches
+    temp_dir.remove_on_signal();
     try {
         return main_app(argc, argv);
     } catch(const LCompilers::LCompilersException &e) {

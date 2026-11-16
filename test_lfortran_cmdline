@@ -223,6 +223,28 @@ EOF
     [ -f m_c.o ]
     TMPDIR=$PWD/missing $FC --backend=cpp -c m.f90 -o m_cpp.o
     [ -f m_cpp.o ]
+
+    echo "Testing that an interrupted compiler removes its temporary directory"
+    # Opening a FIFO without a writer blocks the compiler on the second
+    # file, after the object of the first one is in the temporary directory
+    mkfifo blocked.f90
+    for sig in INT TERM HUP; do
+        # Job control: a background job of a script ignores SIGINT otherwise
+        set -m
+        TMPDIR=$PWD/tmp $FC m.f90 blocked.f90 -o i.out &
+        pid=$!
+        set +m
+        for i in $(seq 600); do
+            if compgen -G "tmp/lfortran-*/m.o" > /dev/null; then break; fi
+            sleep 0.1
+        done
+        compgen -G "tmp/lfortran-*/m.o"
+        kill -$sig $pid
+        status=0
+        wait $pid || status=$?
+        [ $status -eq $((128 + $(kill -l $sig))) ]
+        tmp_is_empty
+    done
 fi
 
 cd $(mktemp -d)

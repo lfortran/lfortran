@@ -2,6 +2,8 @@
 #define NOMINMAX
 #include <windows.h>
 #else
+#include <dirent.h>
+#include <signal.h>
 #include <unistd.h>
 #endif
 
@@ -404,11 +406,98 @@ std::string temp_dir_host_name() {
     return host.empty() ? "host" : host;
 }
 
+// The directory that the signal handlers remove
+TempDir *signal_temp_dir = nullptr;
+
+#ifdef _WIN32
+// Runs in a new thread when the console is closed or Ctrl+C or Ctrl+Break
+// is pressed; returning FALSE lets the default handler end the process
+BOOL WINAPI remove_temp_dir_on_console_event(DWORD) {
+    TempDir *dir = signal_temp_dir;
+    if (dir) dir->remove_in_signal_handler();
+    return FALSE;
+}
+#else
+constexpr int temp_dir_signals[] = {
+    SIGHUP, SIGINT, SIGPIPE, SIGTERM, SIGABRT, SIGBUS, SIGSEGV
+};
+constexpr size_t n_temp_dir_signals
+    = sizeof(temp_dir_signals) / sizeof(temp_dir_signals[0]);
+struct sigaction previous_signal_actions[n_temp_dir_signals];
+
+void temp_dir_signal_set(sigset_t *set) {
+    sigemptyset(set);
+    for (int sig : temp_dir_signals) sigaddset(set, sig);
+}
+
+void remove_temp_dir_on_signal(int sig) {
+    int saved_errno = errno;
+    TempDir *dir = signal_temp_dir;
+    if (dir) dir->remove_in_signal_handler();
+    // Hand the signal to the previous handler, which is the default action
+    // (the process ends with the status of the signal, 128+sig in a shell)
+    // or, for a crash, the stacktrace printer. It is blocked here, so it is
+    // delivered when this handler returns.
+    for (size_t i = 0; i < n_temp_dir_signals; i++) {
+        if (temp_dir_signals[i] == sig) {
+            sigaction(sig, &previous_signal_actions[i], nullptr);
+        }
+    }
+    raise(sig);
+    errno = saved_errno;
+}
+#endif
+
+// Holds the signals of the handlers while it exists, so that they see the
+// directory either before it is created or removed, or after
+class BlockTempDirSignals {
+public:
+#ifdef _WIN32
+    BlockTempDirSignals() {}
+#else
+    BlockTempDirSignals() {
+        sigset_t signals;
+        temp_dir_signal_set(&signals);
+        sigprocmask(SIG_BLOCK, &signals, &previous_mask_);
+    }
+    ~BlockTempDirSignals() { sigprocmask(SIG_SETMASK, &previous_mask_, nullptr); }
+private:
+    sigset_t previous_mask_;
+#endif
+};
+
+void install_temp_dir_signal_handlers(TempDir *dir) {
+    if (signal_temp_dir) return;
+    signal_temp_dir = dir;
+#ifdef _WIN32
+    SetConsoleCtrlHandler(remove_temp_dir_on_console_event, TRUE);
+#else
+    struct sigaction action {};
+    action.sa_handler = remove_temp_dir_on_signal;
+    // One handler at a time
+    temp_dir_signal_set(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+    for (size_t i = 0; i < n_temp_dir_signals; i++) {
+        int sig = temp_dir_signals[i];
+        if (sigaction(sig, nullptr, &previous_signal_actions[i]) != 0) continue;
+        // E.g. SIGINT in a background job, SIGHUP under nohup
+        if (previous_signal_actions[i].sa_handler == SIG_IGN) continue;
+        sigaction(sig, &action, nullptr);
+    }
+#endif
+}
+
 } // namespace
+
+TempDir::~TempDir() {
+    remove();
+    if (signal_temp_dir == this) signal_temp_dir = nullptr;
+}
 
 const std::string &TempDir::path() {
     if (!path_.empty()) return path_;
     std::filesystem::path base = system_temp_dir();
+    BlockTempDirSignals block_signals;
 #ifdef _WIN32
     std::string name = prefix_ + "-" + temp_dir_host_name() + "-"
         + std::to_string(GetCurrentProcessId()) + "-";
@@ -439,6 +528,7 @@ const std::string &TempDir::path() {
     if (path_.size() < sizeof(c_path_)) {
         std::memcpy(c_path_, path_.c_str(), path_.size() + 1);
     }
+    if (remove_on_signal_) install_temp_dir_signal_handlers(this);
     return path_;
 }
 
@@ -448,13 +538,49 @@ std::string TempDir::file(const std::string &name) {
 
 void TempDir::remove() noexcept {
     if (path_.empty() || keep_) return;
-    c_path_[0] = '\0';
+    BlockTempDirSignals block_signals;
     try {
         std::error_code ec;
         std::filesystem::remove_all(path_, ec);
     } catch (...) {
     }
+    c_path_[0] = '\0';
     path_.clear();
+}
+
+void TempDir::remove_in_signal_handler() noexcept {
+    if (keep_ || c_path_[0] == '\0') return;
+#ifdef _WIN32
+    try {
+        std::error_code ec;
+        std::filesystem::remove_all(c_path_, ec);
+    } catch (...) {
+    }
+#else
+    // The directory holds only files. opendir() is not async-signal-safe
+    // (it allocates), but the process ends right after this, as in the GCC
+    // driver, which also deletes its temporary files from signal handlers.
+    char file[sizeof(c_path_) + sizeof(dirent::d_name) + 1];
+    size_t n = std::strlen(c_path_);
+    std::memcpy(file, c_path_, n);
+    file[n++] = '/';
+    if (DIR *dir = opendir(c_path_)) {
+        while (struct dirent *entry = readdir(dir)) {
+            const char *name = entry->d_name;
+            if (name[0] == '.' && (name[1] == '\0'
+                    || (name[1] == '.' && name[2] == '\0'))) {
+                continue;
+            }
+            size_t m = std::strlen(name);
+            if (n + m >= sizeof(file)) continue;
+            std::memcpy(file + n, name, m + 1);
+            unlink(file);
+        }
+        closedir(dir);
+    }
+    rmdir(c_path_);
+#endif
+    c_path_[0] = '\0';
 }
 
 
