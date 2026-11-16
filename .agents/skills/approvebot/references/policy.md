@@ -113,7 +113,9 @@ kind allows do not count toward it, but they are still read.
 6. **No new mechanism.** No new helper, class, flag, table, pass, traversal,
    state, ownership or allocation rule, and no copied algorithm. The fix
    reuses what the code base already has, used the same way elsewhere. C4's
-   replacement of one numerical formula is the only exception.
+   replacement of one numerical formula is the only exception. A visit or
+   replace method of C3's "simple visitor or replacer method" shape is not
+   a new traversal.
 7. **No changes to existing reference outputs**, except the diagnostic
    references that C2 allows.
 8. **Name the precedent.** For C3, the verdict comment names the sibling
@@ -157,6 +159,7 @@ These shapes fit. The descriptions come from approved PRs:
 | Apply a common guard | An existing step is wrapped in a check that the same phase already uses many times for the same decision (for example `LLVM::is_llvm_pointer`, used about 180 times in `asr_to_llvm.cpp`). Every old case still meets the guard. | #17349: `visit_PointerAssociated` loads the descriptor only for a pointer target. |
 | Walk the children first | A pass that crashed on a nested construct now calls the base walker on the construct's bodies before lowering it, as the pass's other visitors do. A workaround that this makes dead, such as a second walk over the whole unit, may be removed when the PR says why. | #16941: `SelectCaseVisitor::visit_Select` walks the case bodies first, so nested SELECT CASE of any depth is lowered in one walk; the second walk is removed. |
 | Check a value before use | The generated code tests a value before it reads it (a null descriptor or data pointer, `present`, "is allocated", zero size) with a check that the same code already makes for the same kind of value. The checked state is legal Fortran (a nullified pointer, an unallocated component, an absent optional), and the check gives the answer the standard asks for in that state. When the check passes, the old code runs unchanged. It never fits when the value should not be null there: then the code that produced it is the bug. | #15967: `get_is_allocated_flag` checks the string descriptor for null before reading its data, as it already checks the array descriptor and the polymorphic wrapper. |
+| Simple visitor or replacer method | An existing ASR visitor, walker or replacer gets a new or fixed `visit_X` or `replace_X` method that only replaces one node with one built by existing helpers, or only records or forwards what it visits, like the sibling methods in the same class. It adds no state. Compared with the base method it overrides (generated in `asr.h`), every child is visited exactly once: not twice (a base call plus a hand-written visit of the same child), not again in a loop, and not skipped. A replacer saves, restores and writes back `current_expr` like its siblings. | No example yet. |
 | Lower-case a Fortran name | An identifier that is stored or looked up as written is lower-cased with the existing `to_lower`, as a sibling construct already does. This never applies to strings, `bind(c, name=)`, file names or link names. | #17358: SELECT TYPE and SELECT RANK lower-case the associate name, like `visit_AssociateBlock`. |
 
 **Tests:** the new integration test asserts the corrected value, not only
@@ -285,7 +288,7 @@ to fit:
 | Surface | Examples |
 | --- | --- |
 | Representation and compatibility | ASR/AST schema, module or `.smod` files, ABI, array or string layout, calling conventions, runtime signatures, linkage, symbol identity across units (for example #17986). |
-| Lifetime and state | Ownership, allocation and deallocation, finalization, aliasing, caches, visitor or global state (for example #17978). |
+| Lifetime and state | Ownership, allocation and deallocation, finalization, aliasing, caches, visitor or global state (for example #17978). Saving and restoring `current_expr` in C3's "simple visitor or replacer method" shape is not new state. |
 | Concurrency and devices | Synchronization, asynchronous execution, GPU memory, and host and device transfers. |
 | Optimization and work | Pass order, the pipeline, fast-math assumptions, new whole-tree scans, new algorithms (other than C4's formula), and more generated code (for example #17493), other than C3's "check a value before use". |
 | Weakened evidence | Removed or relaxed assertions, skips or expected failures, removed backend labels, changed references without an independent reason, disabled verification. |
