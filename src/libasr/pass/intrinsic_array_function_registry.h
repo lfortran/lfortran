@@ -2775,7 +2775,7 @@ namespace Cshift {
         std::vector<ASR::expr_t *> m_eles;
         if (is_integer(*arr_type)) {
             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                int ele = 0;
+                int64_t ele = 0;
                 if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                     m_eles.push_back(b.i_t(ele, arr_type));
                 }
@@ -3560,7 +3560,7 @@ namespace Eoshift {
         std::vector<ASR::expr_t *> m_eles;
         if (is_integer(*arr_type)) {
             for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
-                int ele = 0;
+                int64_t ele = 0;
                 if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                     m_eles.push_back(b.i_t(ele, arr_type));
                 }
