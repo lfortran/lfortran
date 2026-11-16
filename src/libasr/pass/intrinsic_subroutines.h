@@ -240,12 +240,19 @@ namespace RandomSeed {
         if (!is_real(*arg_types[0])) {
             fill_func_arg_sub("size", arg_types[0], Out);
             ASR::ttype_t* size_type = ASRUtils::extract_type(arg_types[0]);
-            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 1, size_type);
+            // The runtime's int64_t _lfortran_random_seed(unsigned): targets
+            // that check signatures at link time (WebAssembly) need them.
+            ASR::symbol_t *s_1 = b.create_c_func_subroutines_with_return_type(
+                c_func_name_1, fn_symtab, 1, {int32}, int64);
             fn_symtab->add_symbol(c_func_name_1, s_1);
             dep.push_back(al, s2c(al, c_func_name_1));
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al, b.i32(8));
-            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, size_type)));
+            ASR::expr_t* n = b.Call(s_1, call_args, int64);
+            if (ASRUtils::extract_kind_from_ttype_t(size_type) != 8) {
+                n = b.i2i_t(n, size_type);
+            }
+            body.push_back(al, b.Assignment(args[0], n));
         } else {
             fill_func_arg_sub("size", real32, In);
         }
