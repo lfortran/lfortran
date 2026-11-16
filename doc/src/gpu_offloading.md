@@ -1308,7 +1308,10 @@ time instead of 2.73 ms.
 A real power with a constant integer exponent from 0 to 8 in device code,
 such as `x**2`, is written as the products the host computes it with
 (`gpu_integer_powers`): `x*x`, `x*(x*x)`, `(x*x)*(x*x)` and so on, with `x`
-evaluated once, into a variable of its own unless it is one already. The
+evaluated once, into a variable of its own unless it is one already, a
+constant, or an element of an array, which is read in each factor (so that
+the elements a statement reads side by side are still read as one vector,
+see Lanes). The
 device's `pow` takes a logarithm and an exponential under fast math, which
 is slower and not always exact (a product of powers of two came out
 inexact on an Apple M1), where `x*x` is the correctly rounded square the
