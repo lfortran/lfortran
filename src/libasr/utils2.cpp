@@ -3,14 +3,20 @@
 #include <windows.h>
 #else
 #include <dirent.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 #endif
 
 #include <cctype>
 #include <cerrno>
 #include <cfloat>
+#include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -426,6 +432,65 @@ constexpr size_t n_temp_dir_signals
     = sizeof(temp_dir_signals) / sizeof(temp_dir_signals[0]);
 struct sigaction previous_signal_actions[n_temp_dir_signals];
 
+// The directory of the signal handlers and its subdirectories, opened when
+// they are created: the handlers cannot open them, opendir() allocates
+constexpr size_t max_signal_dirs = 4;
+DIR *signal_dirs[max_signal_dirs] = {};
+
+void open_signal_dir(const std::string &path) {
+    for (DIR *&dir : signal_dirs) {
+        if (!dir) {
+            dir = opendir(path.c_str());
+            return;
+        }
+    }
+}
+
+void close_signal_dirs() {
+    for (DIR *&dir : signal_dirs) {
+        if (dir) closedir(dir);
+        dir = nullptr;
+    }
+}
+
+// Removes the files and the empty subdirectories in the open directory
+// `dir`, without allocating: in a signal handler
+void remove_entries_in_signal_handler(DIR *dir) {
+    int fd = dirfd(dir);
+    auto remove_entry = [fd](const char *name) {
+        if (name[0] == '.' && (name[1] == '\0'
+                || (name[1] == '.' && name[2] == '\0'))) {
+            return;
+        }
+        if (unlinkat(fd, name, 0) != 0) unlinkat(fd, name, AT_REMOVEDIR);
+    };
+#ifdef __linux__
+    // The getdents64 system call reads the entries into this buffer.
+    // The layout of an entry is the kernel's struct linux_dirent64.
+    struct LinuxDirent64 {
+        std::uint64_t d_ino;
+        std::int64_t d_off;
+        unsigned short d_reclen;
+        unsigned char d_type;
+        char d_name[1];
+    };
+    alignas(LinuxDirent64) char buffer[4096];
+    long n;
+    while ((n = syscall(SYS_getdents64, fd, buffer, sizeof(buffer))) > 0) {
+        for (long pos = 0; pos < n;) {
+            unsigned short reclen;
+            std::memcpy(&reclen, buffer + pos + offsetof(LinuxDirent64, d_reclen),
+                sizeof(reclen));
+            remove_entry(buffer + pos + offsetof(LinuxDirent64, d_name));
+            pos += reclen;
+        }
+    }
+#else
+    // readdir() of an open directory reads into the buffer of its DIR
+    while (struct dirent *entry = readdir(dir)) remove_entry(entry->d_name);
+#endif
+}
+
 void temp_dir_signal_set(sigset_t *set) {
     sigemptyset(set);
     for (int sig : temp_dir_signals) sigaddset(set, sig);
@@ -595,6 +660,9 @@ const std::string &TempDir::path() {
         std::memcpy(c_path_, path_.c_str(), path_.size() + 1);
     }
     if (remove_on_signal_) install_temp_dir_signal_handlers(this);
+#ifndef _WIN32
+    if (signal_temp_dir == this) open_signal_dir(path_);
+#endif
     return path_;
 }
 
@@ -605,6 +673,9 @@ std::string TempDir::file(const std::string &name) {
 void TempDir::remove() noexcept {
     if (path_.empty() || keep_) return;
     BlockTempDirSignals block_signals;
+#ifndef _WIN32
+    if (signal_temp_dir == this) close_signal_dirs();
+#endif
     try {
         std::error_code ec;
         std::filesystem::remove_all(path_, ec);
@@ -623,26 +694,12 @@ void TempDir::remove_in_signal_handler() noexcept {
     } catch (...) {
     }
 #else
-    // The directory holds only files. opendir() is not async-signal-safe
-    // (it allocates), but the process ends right after this, as in the GCC
-    // driver, which also deletes its temporary files from signal handlers.
-    char file[sizeof(c_path_) + sizeof(dirent::d_name) + 1];
-    size_t n = std::strlen(c_path_);
-    std::memcpy(file, c_path_, n);
-    file[n++] = '/';
-    if (DIR *dir = opendir(c_path_)) {
-        while (struct dirent *entry = readdir(dir)) {
-            const char *name = entry->d_name;
-            if (name[0] == '.' && (name[1] == '\0'
-                    || (name[1] == '.' && name[2] == '\0'))) {
-                continue;
-            }
-            size_t m = std::strlen(name);
-            if (n + m >= sizeof(file)) continue;
-            std::memcpy(file + n, name, m + 1);
-            unlink(file);
+    // Without allocating: the signal may have interrupted malloc() or free().
+    // The subdirectories, opened after the directory, first.
+    if (signal_temp_dir == this) {
+        for (size_t i = max_signal_dirs; i-- > 0;) {
+            if (signal_dirs[i]) remove_entries_in_signal_handler(signal_dirs[i]);
         }
-        closedir(dir);
     }
     rmdir(c_path_);
 #endif
