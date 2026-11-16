@@ -98,6 +98,12 @@ struct MetalDialect {
             << lanes << ");\n";
     }
 
+    // Consecutive combinations over the lanes of a threadgroup each take
+    // their own barrier (asr_to_gpu_c.h, emit_stmts).
+    bool batched_block_reduce() const {
+        return false;
+    }
+
     std::string lane_index() const { return "__gpu_lane"; }
     // The prologue renames the grid position, so a kernel with lanes reads
     // it under its usual name.

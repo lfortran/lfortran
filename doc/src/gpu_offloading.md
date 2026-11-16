@@ -1555,6 +1555,13 @@ On an H200 a q8 product of 34816 by 5120, four rows per iteration, took
 combinations of their sums batched, below). With two rows, a warp is faster
 (5120 by 17408: 38.5 us, against 46.8 us with 64 lanes).
 
+Where an iteration has the lanes of a whole block, consecutive statements
+that each combine what the lanes hold (the sums of the rows of such a
+product) meet in shared memory together, behind one barrier rather than one
+each (`emit_stmts` in `asr_to_gpu_c.h`): a block of 64 threads that sums 4
+rows of 5120 columns spent a third of its time waiting at the barriers of 5
+combinations.
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a

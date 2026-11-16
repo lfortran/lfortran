@@ -201,8 +201,27 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_26gpu_
                 s = (s + (st[((int)(j) - (__lb_st_0)) + (__dim_st_0 * ((int)(v__dc) - (__lb_st_1))) + ((__dim_st_0 * __dim_st_1) * ((int)(h__dc) - (__lb_st_2)))] * q[((int)(j) - (__lb_q_0))]));
                 m = max(m, st[((int)(j) - (__lb_st_0)) + (__dim_st_0 * ((int)(v__dc) - (__lb_st_1))) + ((__dim_st_0 * __dim_st_1) * ((int)(h__dc) - (__lb_st_2)))]);
             }
-            m = __lfortran_lane_reduce_block<3>(m, __gpu_lanes_n, __gpu_lane_mask);
-            s = __lfortran_lane_reduce_block<0>(s, __gpu_lanes_n, __gpu_lane_mask);
+            if (__gpu_lanes_n > 32) {
+                m = __lfortran_lane_reduce<3>(m, 32, 0xffffffffu);
+                s = __lfortran_lane_reduce<0>(s, 32, 0xffffffffu);
+                __shared__ float __lfortran_partial0_0[32];
+                __shared__ float __lfortran_partial0_1[32];
+                if ((threadIdx.x & 31u) == 0) {
+                    __lfortran_partial0_0[threadIdx.x >> 5] = m;
+                    __lfortran_partial0_1[threadIdx.x >> 5] = s;
+                }
+                __syncthreads();
+                m = __lfortran_partial0_0[0];
+                s = __lfortran_partial0_1[0];
+                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                    m = __lfortran_lane_combine<3>(m, __lfortran_partial0_0[__i]);
+                    s = __lfortran_lane_combine<0>(s, __lfortran_partial0_1[__i]);
+                }
+                __syncthreads();
+            } else {
+                m = __lfortran_lane_reduce<3>(m, __gpu_lanes_n, __gpu_lane_mask);
+                s = __lfortran_lane_reduce<0>(s, __gpu_lanes_n, __gpu_lane_mask);
+            }
         } else {
             #pragma unroll 16
             for (j = 1; j <= 128; j++) {

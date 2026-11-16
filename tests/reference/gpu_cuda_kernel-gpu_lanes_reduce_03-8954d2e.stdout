@@ -171,10 +171,39 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_
                     total = (total + a[((int)(k) - (1)) + (1003 * ((int)(j__dc) - (1)))]);
                 }
             }
-            count = __lfortran_lane_reduce_block<0>(count, __gpu_lanes_n, __gpu_lane_mask);
-            hi = __lfortran_lane_reduce_block<3>(hi, __gpu_lanes_n, __gpu_lane_mask);
-            lo = __lfortran_lane_reduce_block<2>(lo, __gpu_lanes_n, __gpu_lane_mask);
-            total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+            if (__gpu_lanes_n > 32) {
+                count = __lfortran_lane_reduce<0>(count, 32, 0xffffffffu);
+                hi = __lfortran_lane_reduce<3>(hi, 32, 0xffffffffu);
+                lo = __lfortran_lane_reduce<2>(lo, 32, 0xffffffffu);
+                total = __lfortran_lane_reduce<0>(total, 32, 0xffffffffu);
+                __shared__ int __lfortran_partial0_0[32];
+                __shared__ float __lfortran_partial0_1[32];
+                __shared__ float __lfortran_partial0_2[32];
+                __shared__ float __lfortran_partial0_3[32];
+                if ((threadIdx.x & 31u) == 0) {
+                    __lfortran_partial0_0[threadIdx.x >> 5] = count;
+                    __lfortran_partial0_1[threadIdx.x >> 5] = hi;
+                    __lfortran_partial0_2[threadIdx.x >> 5] = lo;
+                    __lfortran_partial0_3[threadIdx.x >> 5] = total;
+                }
+                __syncthreads();
+                count = __lfortran_partial0_0[0];
+                hi = __lfortran_partial0_1[0];
+                lo = __lfortran_partial0_2[0];
+                total = __lfortran_partial0_3[0];
+                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                    count = __lfortran_lane_combine<0>(count, __lfortran_partial0_0[__i]);
+                    hi = __lfortran_lane_combine<3>(hi, __lfortran_partial0_1[__i]);
+                    lo = __lfortran_lane_combine<2>(lo, __lfortran_partial0_2[__i]);
+                    total = __lfortran_lane_combine<0>(total, __lfortran_partial0_3[__i]);
+                }
+                __syncthreads();
+            } else {
+                count = __lfortran_lane_reduce<0>(count, __gpu_lanes_n, __gpu_lane_mask);
+                hi = __lfortran_lane_reduce<3>(hi, __gpu_lanes_n, __gpu_lane_mask);
+                lo = __lfortran_lane_reduce<2>(lo, __gpu_lanes_n, __gpu_lane_mask);
+                total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+            }
         } else {
             #pragma unroll 16
             for (k = 1; k <= (__gpu_residue_first - 1); k++) {
@@ -230,10 +259,39 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_
                     count = (count + 1);
                 }
             }
-            count = __lfortran_lane_reduce_block<0>(count, __gpu_lanes_n, __gpu_lane_mask);
-            hi = __lfortran_lane_reduce_block<3>(hi, __gpu_lanes_n, __gpu_lane_mask);
-            lo = __lfortran_lane_reduce_block<2>(lo, __gpu_lanes_n, __gpu_lane_mask);
-            total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+            if (__gpu_lanes_n > 32) {
+                count = __lfortran_lane_reduce<0>(count, 32, 0xffffffffu);
+                hi = __lfortran_lane_reduce<3>(hi, 32, 0xffffffffu);
+                lo = __lfortran_lane_reduce<2>(lo, 32, 0xffffffffu);
+                total = __lfortran_lane_reduce<0>(total, 32, 0xffffffffu);
+                __shared__ int __lfortran_partial1_0[32];
+                __shared__ float __lfortran_partial1_1[32];
+                __shared__ float __lfortran_partial1_2[32];
+                __shared__ float __lfortran_partial1_3[32];
+                if ((threadIdx.x & 31u) == 0) {
+                    __lfortran_partial1_0[threadIdx.x >> 5] = count;
+                    __lfortran_partial1_1[threadIdx.x >> 5] = hi;
+                    __lfortran_partial1_2[threadIdx.x >> 5] = lo;
+                    __lfortran_partial1_3[threadIdx.x >> 5] = total;
+                }
+                __syncthreads();
+                count = __lfortran_partial1_0[0];
+                hi = __lfortran_partial1_1[0];
+                lo = __lfortran_partial1_2[0];
+                total = __lfortran_partial1_3[0];
+                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                    count = __lfortran_lane_combine<0>(count, __lfortran_partial1_0[__i]);
+                    hi = __lfortran_lane_combine<3>(hi, __lfortran_partial1_1[__i]);
+                    lo = __lfortran_lane_combine<2>(lo, __lfortran_partial1_2[__i]);
+                    total = __lfortran_lane_combine<0>(total, __lfortran_partial1_3[__i]);
+                }
+                __syncthreads();
+            } else {
+                count = __lfortran_lane_reduce<0>(count, __gpu_lanes_n, __gpu_lane_mask);
+                hi = __lfortran_lane_reduce<3>(hi, __gpu_lanes_n, __gpu_lane_mask);
+                lo = __lfortran_lane_reduce<2>(lo, __gpu_lanes_n, __gpu_lane_mask);
+                total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+            }
             __gpu_residue_group = __gpu_lane_after;
         } else {
             for (__gpu_residue_group = __gpu_residue_first; __gpu_residue_group <= (n - 2); __gpu_residue_group += 3) {
@@ -291,10 +349,39 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_
                     total = (total + a[((int)(k) - (1)) + (1003 * ((int)(j__dc) - (1)))]);
                 }
             }
-            count = __lfortran_lane_reduce_block<0>(count, __gpu_lanes_n, __gpu_lane_mask);
-            hi = __lfortran_lane_reduce_block<3>(hi, __gpu_lanes_n, __gpu_lane_mask);
-            lo = __lfortran_lane_reduce_block<2>(lo, __gpu_lanes_n, __gpu_lane_mask);
-            total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+            if (__gpu_lanes_n > 32) {
+                count = __lfortran_lane_reduce<0>(count, 32, 0xffffffffu);
+                hi = __lfortran_lane_reduce<3>(hi, 32, 0xffffffffu);
+                lo = __lfortran_lane_reduce<2>(lo, 32, 0xffffffffu);
+                total = __lfortran_lane_reduce<0>(total, 32, 0xffffffffu);
+                __shared__ int __lfortran_partial2_0[32];
+                __shared__ float __lfortran_partial2_1[32];
+                __shared__ float __lfortran_partial2_2[32];
+                __shared__ float __lfortran_partial2_3[32];
+                if ((threadIdx.x & 31u) == 0) {
+                    __lfortran_partial2_0[threadIdx.x >> 5] = count;
+                    __lfortran_partial2_1[threadIdx.x >> 5] = hi;
+                    __lfortran_partial2_2[threadIdx.x >> 5] = lo;
+                    __lfortran_partial2_3[threadIdx.x >> 5] = total;
+                }
+                __syncthreads();
+                count = __lfortran_partial2_0[0];
+                hi = __lfortran_partial2_1[0];
+                lo = __lfortran_partial2_2[0];
+                total = __lfortran_partial2_3[0];
+                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                    count = __lfortran_lane_combine<0>(count, __lfortran_partial2_0[__i]);
+                    hi = __lfortran_lane_combine<3>(hi, __lfortran_partial2_1[__i]);
+                    lo = __lfortran_lane_combine<2>(lo, __lfortran_partial2_2[__i]);
+                    total = __lfortran_lane_combine<0>(total, __lfortran_partial2_3[__i]);
+                }
+                __syncthreads();
+            } else {
+                count = __lfortran_lane_reduce<0>(count, __gpu_lanes_n, __gpu_lane_mask);
+                hi = __lfortran_lane_reduce<3>(hi, __gpu_lanes_n, __gpu_lane_mask);
+                lo = __lfortran_lane_reduce<2>(lo, __gpu_lanes_n, __gpu_lane_mask);
+                total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+            }
         } else {
             #pragma unroll 16
             for (k = __gpu_residue_group; k <= n; k++) {

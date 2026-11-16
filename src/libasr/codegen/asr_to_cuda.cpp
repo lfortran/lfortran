@@ -219,6 +219,12 @@ struct CudaDialect {
             + ", " + (has_lanes ? "__gpu_lanes_n, __gpu_lane_mask"
                 : "32, 0xffffffffu") + ")";
     }
+    // Whether consecutive combinations over the lanes of a whole block
+    // share one barrier (emit_stmts): not in the CPU emulation or on HIP,
+    // whose blocks have no lanes of more than a warp.
+    bool batched_block_reduce() const {
+        return !emulate_cpu && !hip;
+    }
     // `targets` are assigned the elements that start at `source` (`a[i]`),
     // read with __lfortran_wide_load in the prologue of the kernel source.
     std::string wide_load(const std::string &indent,
