@@ -232,6 +232,27 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-cpu
             )
             set_tests_properties(test_gpu_launch_geometry_cpu PROPERTIES TIMEOUT 180)
+            add_test(
+                NAME test_gpu_overlap
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_overlap.py
+                    $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_gpu_overlap PROPERTIES TIMEOUT 180)
+            add_test(
+                NAME test_gpu_launch_bounds
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_bounds.py
+                    $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_gpu_launch_bounds PROPERTIES TIMEOUT 180)
+            add_test(
+                NAME test_gpu_lanes_short
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_lanes_short.py
+                    $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_gpu_lanes_short PROPERTIES TIMEOUT 180)
             if (APPLE)
                 add_test(
                     NAME test_gpu_launch_geometry_metal
@@ -325,6 +346,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --lfortran $<TARGET_FILE:lfortran>
                 --workdir ${PROJECT_BINARY_DIR}/continue-compilation-output
                 ${CONTINUE_COMPILATION_OUTPUT_ARGS}
+        )
+        # Diagnostics and AST/ASR are colored only on a terminal, unless
+        # NO_COLOR or --color says otherwise.
+        add_test(
+            NAME test_color_output
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_CURRENT_SOURCE_DIR}/test_color_output.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --workdir ${PROJECT_BINARY_DIR}/color-output
         )
         add_test(
             NAME test_asr_llvm_constructor_coverage

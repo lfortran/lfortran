@@ -1630,8 +1630,26 @@ namespace LCompilers {
         }
 
         // Shallow copies source array descriptor to destination descriptor
+        void SimpleCMODescriptor::copy_scalar_metadata(
+                llvm::Type* src_ty, llvm::Value* src,
+                llvm::Type* dest_ty, llvm::Value* dest) {
+            llvm::StructType* src_desc = llvm::cast<llvm::StructType>(src_ty);
+            [[maybe_unused]] llvm::StructType* dest_desc = llvm::cast<llvm::StructType>(dest_ty);
+            for (int field : {FIELD_ELEM_LEN, FIELD_VERSION, FIELD_TYPE,
+                              FIELD_ATTRIBUTE, FIELD_EXTRA}) {
+                llvm::Type* field_ty = src_desc->getElementType(field);
+                LCOMPILERS_ASSERT(field_ty == dest_desc->getElementType(field));
+                llvm::Value* src_field = llvm_utils->create_gep2(src_ty, src, field);
+                llvm::Value* dest_field = llvm_utils->create_gep2(dest_ty, dest, field);
+                builder->CreateStore(llvm_utils->CreateLoad2(field_ty, src_field),
+                    dest_field);
+            }
+        }
+
+        // Copies the data of `src` into `dest`, and its dimensions too when `copy_dims` (an i1) is true
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-            llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory) {
+            llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory,
+            llvm::Value* copy_dims) {
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
@@ -1650,39 +1668,40 @@ namespace LCompilers {
             builder->CreateMemCpy(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr), llvm::MaybeAlign(),
                                   llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
                                   num_elements);
+            llvm_utils->create_if_else(copy_dims, [&]() {
+                llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src);
+                llvm::Value* n_dims = this->get_rank(src_ty, src, false);
+                llvm::Value* dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest_ty, dest);
+                llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+                llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+                llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
-            llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src);
-            llvm::Value* n_dims = this->get_rank(src_ty, src, false);
-            llvm::Value* dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest_ty, dest);
-            llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-            llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-            llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+                // Loop to copy `dimension_descriptor` from src to dest
+                llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
+                // head
+                llvm_utils->start_new_block(loophead);
+                llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
+                builder->CreateCondBr(cond, loopbody, loopend);
 
-            // Loop to copy `dimension_descriptor` from src to dest
-            llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
-            // head
-            llvm_utils->start_new_block(loophead);
-            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
-            builder->CreateCondBr(cond, loopbody, loopend);
+                // body
+                llvm_utils->start_new_block(loopbody);
+                llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
+                llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
+                llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
+                builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
+                                        src_dim_val, llvm::MaybeAlign(),
+                                        llvm::ConstantInt::get(
+                                        context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+                r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                builder->CreateStore(r_val, r);
+                builder->CreateBr(loophead);
 
-            // body
-            llvm_utils->start_new_block(loopbody);
-            llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
-            llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
-            llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
-            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
-                                    src_dim_val, llvm::MaybeAlign(),
-                                    llvm::ConstantInt::get(
-                                    context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
-            r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            builder->CreateStore(r_val, r);
-            builder->CreateBr(loophead);
+                // end
+                llvm_utils->start_new_block(loopend);
 
-            // end
-            llvm_utils->start_new_block(loopend);
-
-            this->set_rank(dest_ty, dest, n_dims);
+                this->set_rank(dest_ty, dest, n_dims);
+            }, []() {});
         }
 
         // Copy destination's descriptor to the source descriptor
@@ -1879,7 +1898,7 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::internal_to_cfi(
                 llvm::Type* internal_type, llvm::Value* internal_desc,
                 llvm::Type* el_type, int n_dims, llvm::Value* elem_size_val,
-                int8_t type_code, int cfi_attr) {
+                int8_t type_code, int cfi_attr, bool assumed_rank) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
             llvm::Value* cfi = llvm_utils->CreateAlloca(cfi_type);
 
@@ -1943,24 +1962,34 @@ namespace LCompilers {
             dst_dim_arr = llvm_utils->create_gep2(
                 llvm::ArrayType::get(dim_des, n_dims), dst_dim_arr, 0);
             for (int r = 0; r < n_dims; r++) {
-                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(dim_des, src_dim_arr, r);
-                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(dim_des, dst_dim_arr, r);
-                // lower_bound
-                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
-                builder->CreateStore(lb,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
-                // extent
-                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
-                builder->CreateStore(ext,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
-                // stride: convert elements → bytes
-                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
-                stride = builder->CreateMul(stride, elem_size_val);
-                builder->CreateStore(stride,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+                auto copy_dim = [&]() {
+                    llvm::Value* src_dim = llvm_utils->create_ptr_gep2(dim_des, src_dim_arr, r);
+                    llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(dim_des, dst_dim_arr, r);
+                    // lower_bound
+                    llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                    builder->CreateStore(lb,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                    // extent
+                    llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                    builder->CreateStore(ext,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                    // stride: convert elements → bytes
+                    llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                    stride = builder->CreateMul(stride, elem_size_val);
+                    builder->CreateStore(stride,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+                };
+                if (assumed_rank) {
+                    llvm_utils->create_if_else(
+                        builder->CreateICmpULT(
+                            llvm::ConstantInt::get(rank->getType(), r), rank),
+                        copy_dim, [](){});
+                } else {
+                    copy_dim();
+                }
             }
 
             return cfi;
@@ -2017,27 +2046,41 @@ namespace LCompilers {
                 llvm::ArrayType::get(dim_des, n_dims), src_dim_arr, 0);
             llvm::Value* dst_dim_arr =
                 get_pointer_to_dimension_descriptor_array(internal_type, internal);
+            // An assumed-rank view has 15 slots, but its actual descriptor
+            // can hold fewer; copy only dimensions in the runtime rank.
+            llvm::Value* rank = n_dims == 15 ? llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context),
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_RANK)) : nullptr;
             for (int r = 0; r < n_dims; r++) {
-                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
-                    dim_des, src_dim_arr, r);
-                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
-                    dim_des, dst_dim_arr, r);
-                // lower_bound
-                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
-                builder->CreateStore(lb,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
-                // extent
-                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
-                builder->CreateStore(ext,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
-                // stride: convert bytes → elements
-                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
-                stride = builder->CreateSDiv(stride, elem_size_val);
-                builder->CreateStore(stride,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+                auto copy_dim = [&]() {
+                    llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
+                        dim_des, src_dim_arr, r);
+                    llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
+                        dim_des, dst_dim_arr, r);
+                    // lower_bound
+                    llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                    builder->CreateStore(lb,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                    // extent
+                    llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                    builder->CreateStore(ext,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                    // stride: convert bytes → elements
+                    llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                    stride = builder->CreateSDiv(stride, elem_size_val);
+                    builder->CreateStore(stride,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+                };
+                if (rank) {
+                    llvm_utils->create_if_else(builder->CreateICmpULT(
+                        llvm::ConstantInt::get(rank->getType(), r), rank),
+                        copy_dim, [](){});
+                } else {
+                    copy_dim();
+                }
             }
 
             // Characters: wrap the CFI data in a string_descriptor
@@ -2094,24 +2137,36 @@ namespace LCompilers {
                 llvm::ArrayType::get(dim_des, n_dims), src_dim_arr, 0);
             llvm::Value* dst_dim_arr =
                 get_pointer_to_dimension_descriptor_array(internal_type, internal_desc);
+            llvm::Value* rank = n_dims == 15 ? llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context),
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_RANK)) : nullptr;
             for (int r = 0; r < n_dims; r++) {
-                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
-                    dim_des, src_dim_arr, r);
-                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
-                    dim_des, dst_dim_arr, r);
-                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
-                builder->CreateStore(lb,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
-                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
-                builder->CreateStore(ext,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
-                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
-                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
-                stride = builder->CreateSDiv(stride, divisor);
-                builder->CreateStore(stride,
-                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+                auto copy_dim = [&]() {
+                    llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
+                        dim_des, src_dim_arr, r);
+                    llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
+                        dim_des, dst_dim_arr, r);
+                    llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                    builder->CreateStore(lb,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                    llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                    builder->CreateStore(ext,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                    llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                        llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                    stride = builder->CreateSDiv(stride, divisor);
+                    builder->CreateStore(stride,
+                        llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+                };
+                if (rank) {
+                    llvm_utils->create_if_else(builder->CreateICmpULT(
+                        llvm::ConstantInt::get(rank->getType(), r), rank),
+                        copy_dim, [](){});
+                } else {
+                    copy_dim();
+                }
             }
         }
 
@@ -2137,10 +2192,10 @@ namespace LCompilers {
                 }
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
                 int kind = ASR::down_cast<ASR::Real_t>(val_type)->m_kind;
-                return kind == 4 ? 4 : (kind == 16 ? 14 : 5);
+                return kind == 4 ? 4 : (kind == 16 ? 14 : (kind == 10 ? 16 : 5));
             } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
                 int kind = ASR::down_cast<ASR::Complex_t>(val_type)->m_kind;
-                return kind == 4 ? 6 : (kind == 16 ? 15 : 7);
+                return kind == 4 ? 6 : (kind == 16 ? 15 : (kind == 10 ? 17 : 7));
             }
             throw CodeGenError("Not implemented: read into allocatable targets for dtype "
                 + ASRUtils::type_to_str_python_expr(val_type, val_expr));

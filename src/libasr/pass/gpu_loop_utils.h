@@ -169,6 +169,9 @@ public:
     GpuInliner(Allocator &al_,
         std::function<bool(ASR::FunctionCall_t*)> select_, int offset_kind_)
         : al(al_), select(select_), offset_kind(offset_kind_) {}
+    // Picks the calls of subroutines that are inlined where they stand as
+    // statements (see gpu_subroutine_inlinable); none when empty.
+    std::function<bool(ASR::SubroutineCall_t*)> select_sub;
     // Inlines in place; false when a picked call cannot be inlined.
     bool run(SymbolTable *scope, ASR::stmt_t **&body, size_t &n_body);
     // Whether a function whose body holds a STOP or ERROR STOP may be
@@ -190,6 +193,14 @@ private:
     bool inline_stmt(SymbolTable *scope, ASR::stmt_t *&s);
     ASR::expr_t *inline_call(ASR::FunctionCall_t *call, SymbolTable *block,
         Vec<ASR::stmt_t*> &pre);
+    // Replaces the call statement `s` by a BLOCK that runs the body of the
+    // subroutine; false when it cannot be inlined.
+    bool inline_subroutine(ASR::SubroutineCall_t *call, SymbolTable *scope,
+        ASR::stmt_t *&s);
+    bool inline_body(ASR::Function_t *fn, ASR::call_arg_t *args,
+        size_t n_args, const Location &loc, SymbolTable *block,
+        Vec<ASR::stmt_t*> &pre, Vec<ASR::stmt_t*> &post,
+        ASR::symbol_t **result);
     friend class GpuCallReplacer;
 };
 
@@ -198,6 +209,12 @@ private:
 // locals without initialization, and no RETURN, input/output or subroutine
 // call, nor a STOP or ERROR STOP unless `allow_stops`.
 bool gpu_function_inlinable(ASR::Function_t *fn, bool allow_stops = false);
+
+// Whether calls of the subroutine `fn` can be inlined as statements: a pure
+// subroutine with a body whose dummies are scalars (of any intent) and
+// assumed-shape arrays, with the same locals and body as an inlinable
+// function.
+bool gpu_subroutine_inlinable(ASR::Function_t *fn, bool allow_stops = false);
 
 // Whether a function names no variable but its own dummy arguments and
 // locals (named constants aside) and calls only procedures that do the

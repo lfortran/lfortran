@@ -1478,17 +1478,23 @@ bool assumed_shape(ASR::ttype_t *t) {
 
 } // namespace
 
-bool gpu_function_inlinable(ASR::Function_t *fn, bool allow_stops) {
+namespace {
+
+bool inlinable(ASR::Function_t *fn, bool allow_stops, bool subroutine) {
     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
     if (ft->m_deftype != ASR::deftypeType::Implementation
             || ft->m_abi != ASR::abiType::Source) {
         return false;
     }
     if (!ft->m_pure && !ft->m_elemental) return false;
-    if (fn->m_return_var == nullptr || fn->n_body == 0) return false;
-    if (!scalar_value_type(ASRUtils::expr_type(fn->m_return_var))
-            || ASRUtils::is_array(ASRUtils::expr_type(fn->m_return_var))) {
-        return false;
+    if (subroutine) {
+        if (fn->m_return_var != nullptr || fn->n_body == 0) return false;
+    } else {
+        if (fn->m_return_var == nullptr || fn->n_body == 0) return false;
+        if (!scalar_value_type(ASRUtils::expr_type(fn->m_return_var))
+                || ASRUtils::is_array(ASRUtils::expr_type(fn->m_return_var))) {
+            return false;
+        }
     }
     std::set<ASR::symbol_t*> args;
     for (size_t i = 0; i < fn->n_args; i++) {
@@ -1529,6 +1535,16 @@ bool gpu_function_inlinable(ASR::Function_t *fn, bool allow_stops) {
     check.allow_stops = allow_stops;
     for (size_t i = 0; i < fn->n_body; i++) check.visit_stmt(*fn->m_body[i]);
     return check.ok;
+}
+
+} // namespace
+
+bool gpu_function_inlinable(ASR::Function_t *fn, bool allow_stops) {
+    return inlinable(fn, allow_stops, false);
+}
+
+bool gpu_subroutine_inlinable(ASR::Function_t *fn, bool allow_stops) {
+    return inlinable(fn, allow_stops, true);
 }
 
 namespace {
@@ -1637,7 +1653,63 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
             || call->m_dt != nullptr) {
         return nullptr;
     }
-    Location loc = call->base.base.loc;
+    Vec<ASR::stmt_t*> post;
+    post.reserve(al, 1);
+    ASR::symbol_t *result = nullptr;
+    if (!inline_body(fn, call->m_args, call->n_args, call->base.base.loc,
+            block, pre, post, &result)) {
+        return nullptr;
+    }
+    ASRUtils::ASRBuilder b(al, call->base.base.loc);
+    return b.Var(result);
+}
+
+bool GpuInliner::inline_subroutine(ASR::SubroutineCall_t *call,
+        SymbolTable *scope, ASR::stmt_t *&s) {
+    ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
+    if (!ASR::is_a<ASR::Function_t>(*f)) return false;
+    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
+    if (!gpu_subroutine_inlinable(fn, allow_stops)
+            || fn->n_args != call->n_args
+            || call->m_dt != nullptr) {
+        return false;
+    }
+    SymbolTable *symtab = al.make_new<SymbolTable>(scope);
+    std::string name = unique_block_name(scope, "__gpu_inline");
+    ASR::asr_t *blk = ASR::make_Block_t(al, s->base.loc, symtab,
+        s2c(al, name), nullptr, 0);
+    symtab->asr_owner = blk;
+    scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(blk));
+    added.push_back({scope, name});
+    Vec<ASR::stmt_t*> pre, post;
+    pre.reserve(al, 8);
+    post.reserve(al, 2);
+    if (!inline_body(fn, call->m_args, call->n_args, call->base.base.loc,
+            symtab, pre, post, nullptr)) {
+        return false;
+    }
+    for (size_t i = 0; i < post.n; i++) pre.push_back(al, post.p[i]);
+    ASR::Block_t *bp = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::symbol_t>(blk));
+    bp->m_body = pre.p;
+    bp->n_body = pre.n;
+    s = ASRUtils::STMT(ASR::make_BlockCall_t(al, s->base.loc, -1,
+        ASR::down_cast<ASR::symbol_t>(blk)));
+    return true;
+}
+
+// Binds the dummies of `fn` to the actual arguments, copies its body into
+// the BLOCK scope `block` (its locals become variables of the block) and
+// appends it to `pre`, after the assignments that bind a dummy that needs a
+// variable of its own. A dummy of a subroutine that the body may assign
+// and that is not intent(in) is copied back into its actual argument by
+// the statements appended to `post`. A function's result variable is
+// returned in `result`.
+bool GpuInliner::inline_body(ASR::Function_t *fn, ASR::call_arg_t *args,
+        size_t n_args, const Location &loc, SymbolTable *block,
+        Vec<ASR::stmt_t*> &pre, Vec<ASR::stmt_t*> &post,
+        ASR::symbol_t **result) {
+    if (n_args != fn->n_args) return false;
     ASRUtils::ASRBuilder b(al, loc);
     GpuDuplicator dup(al, block);
     dup.added = &added;
@@ -1654,8 +1726,8 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
     for (size_t i = 0; i < fn->n_args; i++) {
         ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
         ASR::Variable_t *dv = ASR::down_cast<ASR::Variable_t>(dummy);
-        ASR::expr_t *actual = call->m_args[i].m_value;
-        if (actual == nullptr) return nullptr;
+        ASR::expr_t *actual = args[i].m_value;
+        if (actual == nullptr) return false;
         if (ASRUtils::is_array(dv->m_type)) {
             // A change of the descriptor of the actual is not one of its
             // elements.
@@ -1663,11 +1735,11 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
                 actual = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                     actual)->m_arg;
             }
-            if (gpu_array_key(actual).empty()) return nullptr;
+            if (gpu_array_key(actual).empty()) return false;
             ASR::ttype_t *at = ASRUtils::expr_type(actual);
             if (!ASRUtils::is_array(at) || ASRUtils::extract_n_dims_from_ttype(
                     at) != ASRUtils::extract_n_dims_from_ttype(dv->m_type)) {
-                return nullptr;
+                return false;
             }
             GpuDuplicator::ArrayActual aa;
             aa.actual = actual;
@@ -1714,11 +1786,24 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
             dup.value_map[dummy] = actual;
         } else {
             ASR::symbol_t *t = new_var(dummy, dv->m_name);
-            pre.push_back(al, b.Assignment(b.Var(t), actual));
+            if (!(fn->m_return_var == nullptr
+                    && dv->m_intent == ASR::intentType::Out)) {
+                pre.push_back(al, b.Assignment(b.Var(t), actual));
+            }
             dup.symbol_map[dummy] = t;
+            if (fn->m_return_var == nullptr
+                    && dv->m_intent != ASR::intentType::In) {
+                // A scalar a subroutine assigns goes back to its actual.
+                if (!ASR::is_a<ASR::Var_t>(*actual)
+                        && !ASR::is_a<ASR::ArrayItem_t>(*actual)) {
+                    return false;
+                }
+                post.push_back(al, b.Assignment(actual, b.Var(t)));
+            }
         }
     }
-    ASR::symbol_t *result = ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v;
+    ASR::symbol_t *result_var = fn->m_return_var
+        ? ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v : nullptr;
     for (auto &item : fn->m_symtab->get_scope()) {
         ASR::symbol_t *s = item.second;
         if (dup.value_map.count(s) || dup.array_map.count(s)
@@ -1727,7 +1812,7 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
         }
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
         if (v->m_storage == ASR::storage_typeType::Parameter) {
-            if (v->m_value == nullptr) return nullptr;
+            if (v->m_value == nullptr) return false;
             dup.value_map[s] = v->m_value;
             continue;
         }
@@ -1735,7 +1820,7 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
     }
     Vec<ASR::stmt_t*> body;
     dup.duplicate_body(fn->m_body, fn->n_body, body);
-    if (!dup.ok) return nullptr;
+    if (!dup.ok) return false;
     // Every variable and procedure the copied body names has to be one the
     // caller's scope reaches by its name.
     std::set<ASR::symbol_t*> syms;
@@ -1748,7 +1833,7 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
         ASR::symbol_t *r = block->resolve_symbol(ASRUtils::symbol_name(s));
         if (r == nullptr || ASRUtils::symbol_get_past_external(r)
                 != ASRUtils::symbol_get_past_external(s)) {
-            return nullptr;
+            return false;
         }
     }
     struct Calls : public ASR::BaseWalkVisitor<Calls> {
@@ -1766,21 +1851,23 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
     } calls;
     calls.scope = block;
     for (size_t i = 0; i < body.n; i++) calls.visit_stmt(*body[i]);
-    if (!calls.ok) return nullptr;
+    if (!calls.ok) return false;
     // The calls the copied body makes are inlined too, when picked.
     depth++;
     if (depth > 8) {
         depth--;
-        return nullptr;
+        return false;
     }
     ASR::stmt_t **bp = body.p;
     size_t bn = body.n;
     bool ok = inline_stmts(block, bp, bn);
     depth--;
-    if (!ok) return nullptr;
+    if (!ok) return false;
     for (size_t i = 0; i < bn; i++) pre.push_back(al, bp[i]);
-    return b.Var(dup.symbol_map[result]);
+    if (result) *result = dup.symbol_map[result_var];
+    return true;
 }
+
 
 bool GpuInliner::inline_stmt(SymbolTable *scope, ASR::stmt_t *&s) {
     // The expressions the statement itself evaluates.
@@ -1817,6 +1904,13 @@ bool GpuInliner::inline_stmt(SymbolTable *scope, ASR::stmt_t *&s) {
             if (!ASR::is_a<ASR::Block_t>(*bs)) return true;
             ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(bs);
             return inline_stmts(blk->m_symtab, blk->m_body, blk->n_body);
+        }
+        case ASR::stmtType::SubroutineCall: {
+            ASR::SubroutineCall_t *c = ASR::down_cast<ASR::SubroutineCall_t>(s);
+            if (select_sub && select_sub(c)) {
+                return inline_subroutine(c, scope, s);
+            }
+            return true;
         }
         default: {
             // A statement of another kind must not hold a picked call.

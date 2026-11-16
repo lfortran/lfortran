@@ -278,6 +278,7 @@ static int input_scan(FILE *file, const char *format, ...)
 /* ---- real(16) / binary128 support ---- */
 #include "lfortran_float128_quadmath.h"
 #include "lfortran_float128.c"
+#include "lfortran_complex128.h"
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
 /* ----------------------------------------------------- */
@@ -3660,24 +3661,38 @@ static inline bool logical_value_from_ptr(void *arg, Primitive_Types t) {
 // https://github.com/lfortran/lfortran/issues/13935).
 #if defined(__APPLE__) && defined(__aarch64__)
 enum { REAL10_SIZE = 16 };
+typedef lf_float128 real10_storage_t;
 static inline long double load_real10(const void *p) {
     lf_float128 v;
     memcpy(&v, p, sizeof(v));
     return lf_f128_to_double(v);
 }
+static inline void store_real10_storage(void *p, long double v) {
+    lf_float128 q = lf_f128_from_double((double)v);
+    memcpy(p, &q, sizeof(q));
+}
 #elif defined(__APPLE__)
 enum { REAL10_SIZE = sizeof(double) };
+typedef double real10_storage_t;
 static inline long double load_real10(const void *p) {
     double v;
     memcpy(&v, p, sizeof(v));
     return v;
 }
+static inline void store_real10_storage(void *p, long double v) {
+    double d = (double)v;
+    memcpy(p, &d, sizeof(d));
+}
 #else
 enum { REAL10_SIZE = sizeof(long double) };
+typedef long double real10_storage_t;
 static inline long double load_real10(const void *p) {
     long double v;
     memcpy(&v, p, sizeof(v));
     return v;
+}
+static inline void store_real10_storage(void *p, long double v) {
+    memcpy(p, &v, sizeof(v));
 }
 #endif
 
@@ -4798,8 +4813,20 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result, int decimal
             break;
         }
         case FLOAT_80_TYPE: {
-            format_long_double_fortran(result, load_real10(arg));
-            apply_decimal_edit_mode(result, decimal_mode);
+            if (s_info->current_arg_info.is_complex) {
+                char real_str[256], imag_str[256];
+                format_long_double_fortran(real_str, load_real10(arg));
+                move_to_next_element(s_info, false);
+                format_long_double_fortran(imag_str,
+                    load_real10(s_info->current_arg_info.current_arg));
+                apply_decimal_edit_mode(real_str, decimal_mode);
+                apply_decimal_edit_mode(imag_str, decimal_mode);
+                sprintf(result, "(%s%c%s)", real_str,
+                    decimal_mode == 1 ? ';' : ',', imag_str);
+            } else {
+                format_long_double_fortran(result, load_real10(arg));
+                apply_decimal_edit_mode(result, decimal_mode);
+            }
             break;
         }
         default :
@@ -4881,7 +4908,8 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
             size_to_allocate = (s_info->current_arg_info.current_string_len
                                     * (s_info->current_arg_info.current_string_kind > 1 ? 4 : 1)
                                  + default_spacing_len + 1) * sizeof(char);
-        } else if (s_info->current_element_type == FLOAT_128_TYPE &&
+        } else if ((s_info->current_element_type == FLOAT_128_TYPE ||
+                s_info->current_element_type == FLOAT_80_TYPE) &&
                 s_info->current_arg_info.is_complex) {
             // Two binary128 values, each at most 45 characters (sign, 36
             // significant digits, decimal point, exponent such as E-4932),
@@ -6907,18 +6935,169 @@ LFORTRAN_API void _lfortran_complex_pow_int_64(struct _lfortran_complex_64* a,
     *result = res;
 }
 
+// complex(10) -------------------------------------------------------------
+//
+// A complex(10) value is two real(10) numbers in the memory format that the
+// compiler uses for kind 10 (see load_real10). Like complex(16), every routine
+// takes and returns it through pointers. The arithmetic is carried out in
+// long double.
+
+#ifndef _MSC_VER
+
+struct _lfortran_complex_80 {
+    real10_storage_t re, im;
+};
+
+static long double complex c80_get(const struct _lfortran_complex_80 *p) {
+    return CMPLXL(load_real10(&p->re), load_real10(&p->im));
+}
+
+static void c80_put(struct _lfortran_complex_80 *p, long double complex z) {
+    store_real10_storage(&p->re, creall(z));
+    store_real10_storage(&p->im, cimagl(z));
+}
+
+static void c80_put_parts(struct _lfortran_complex_80 *p, long double re,
+        long double im) {
+    store_real10_storage(&p->re, re);
+    store_real10_storage(&p->im, im);
+}
+
+LFORTRAN_API void _lfortran_complex_add_80(struct _lfortran_complex_80* a,
+        struct _lfortran_complex_80* b, struct _lfortran_complex_80 *result)
+{
+    long double complex x = c80_get(a), y = c80_get(b);
+    c80_put_parts(result, creall(x) + creall(y), cimagl(x) + cimagl(y));
+}
+
+LFORTRAN_API void _lfortran_complex_sub_80(struct _lfortran_complex_80* a,
+        struct _lfortran_complex_80* b, struct _lfortran_complex_80 *result)
+{
+    long double complex x = c80_get(a), y = c80_get(b);
+    c80_put_parts(result, creall(x) - creall(y), cimagl(x) - cimagl(y));
+}
+
+LFORTRAN_API void _lfortran_complex_mul_80(struct _lfortran_complex_80* a,
+        struct _lfortran_complex_80* b, struct _lfortran_complex_80 *result)
+{
+    long double complex x = c80_get(a), y = c80_get(b);
+    long double p = creall(x), q = cimagl(x), r = creall(y), s = cimagl(y);
+    c80_put_parts(result, p*r - q*s, p*s + q*r);
+}
+
+LFORTRAN_API void _lfortran_complex_div_80(struct _lfortran_complex_80* a,
+        struct _lfortran_complex_80* b, struct _lfortran_complex_80 *result)
+{
+    // Smith's algorithm, as for the lower precisions.
+    long double complex x = c80_get(a), y = c80_get(b);
+    long double p = creall(x), q = cimagl(x), r = creall(y), s = cimagl(y);
+    if (fabsl(r) >= fabsl(s)) {
+        long double ratio = s / r;
+        long double denom = r + s * ratio;
+        c80_put_parts(result, (p + q * ratio) / denom, (q - p * ratio) / denom);
+    } else {
+        long double ratio = r / s;
+        long double denom = s + r * ratio;
+        c80_put_parts(result, (p * ratio + q) / denom, (q * ratio - p) / denom);
+    }
+}
+
+LFORTRAN_API void _lfortran_complex_pow_80(struct _lfortran_complex_80* a,
+        struct _lfortran_complex_80* b, struct _lfortran_complex_80 *result)
+{
+    c80_put(result, cpowl(c80_get(a), c80_get(b)));
+}
+
+// The same algorithm as for the lower precisions.
+LFORTRAN_API void _lfortran_complex_pow_int_80(struct _lfortran_complex_80* a,
+        int64_t n, struct _lfortran_complex_80 *result)
+{
+    struct _lfortran_complex_80 base = *a, res;
+    uint64_t u = n < 0 ? 0 - (uint64_t)n : (uint64_t)n;
+    if (n == 0) {
+        c80_put_parts(result, 1, 0);
+        return;
+    }
+    while ((u & 1) == 0) {
+        _lfortran_complex_mul_80(&base, &base, &base);
+        u >>= 1;
+    }
+    res = base;
+    u >>= 1;
+    while (u != 0) {
+        _lfortran_complex_mul_80(&base, &base, &base);
+        if (u & 1) {
+            _lfortran_complex_mul_80(&res, &base, &res);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        struct _lfortran_complex_80 one;
+        c80_put_parts(&one, 1, 0);
+        _lfortran_complex_div_80(&one, &res, &res);
+    }
+    *result = res;
+}
+
+LFORTRAN_API void _lfortran_c80_abs(struct _lfortran_complex_80 *x,
+        real10_storage_t *result)
+{
+    long double complex z = c80_get(x);
+    store_real10_storage(result, hypotl(creall(z), cimagl(z)));
+}
+
+LFORTRAN_API void _lfortran_c80_phase(struct _lfortran_complex_80 *x,
+        real10_storage_t *result)
+{
+    long double complex z = c80_get(x);
+    store_real10_storage(result, atan2l(cimagl(z), creall(z)));
+}
+
+LFORTRAN_API void _lfortran_c80_sqrt(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, csqrtl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_exp(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, cexpl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_log(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, clogl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_sin(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, csinl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_cos(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, ccosl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_tan(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, ctanl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_sinh(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, csinhl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_cosh(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, ccoshl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_tanh(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, ctanhl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_asin(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, casinl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_acos(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, cacosl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_atan(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, catanl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_asinh(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, casinhl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_acosh(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, cacoshl(c80_get(x))); }
+LFORTRAN_API void _lfortran_c80_atanh(struct _lfortran_complex_80 *x,
+        struct _lfortran_complex_80 *result) { c80_put(result, catanhl(c80_get(x))); }
+
+#endif
+
 // complex(16) -------------------------------------------------------------
 //
 // A complex(16) value is two binary128 numbers. Every routine takes and
 // returns it through pointers, so the interface does not depend on how a
-// platform passes a pair of binary128 values by value. The arithmetic uses
-// the soft-float routines of lfortran_float128.c.
+// platform passes a pair of binary128 values by value. The arithmetic is
+// that of lfortran_complex128.h, with which the compiler also folds
+// complex(16) constant expressions, on the soft-float routines of
+// lfortran_float128.c.
 
 struct _lfortran_complex_128 {
     lf_float128 re, im;
 };
-
-static lf_float128 c128_real(double v) { return lf_f128_from_double(v); }
 
 static struct _lfortran_complex_128 c128_make(lf_float128 re, lf_float128 im) {
     struct _lfortran_complex_128 r;
@@ -6927,242 +7106,54 @@ static struct _lfortran_complex_128 c128_make(lf_float128 re, lf_float128 im) {
     return r;
 }
 
-static struct _lfortran_complex_128 c128_add(struct _lfortran_complex_128 a,
-        struct _lfortran_complex_128 b) {
-    return c128_make(lf_f128_add(a.re, b.re), lf_f128_add(a.im, b.im));
+static lf_complex128 c128_get(const struct _lfortran_complex_128 *p) {
+    return lf_c128_make(p->re, p->im);
 }
 
-static struct _lfortran_complex_128 c128_sub(struct _lfortran_complex_128 a,
-        struct _lfortran_complex_128 b) {
-    return c128_make(lf_f128_sub(a.re, b.re), lf_f128_sub(a.im, b.im));
-}
-
-static struct _lfortran_complex_128 c128_mul(struct _lfortran_complex_128 a,
-        struct _lfortran_complex_128 b) {
-    return c128_make(
-        lf_f128_sub(lf_f128_mul(a.re, b.re), lf_f128_mul(a.im, b.im)),
-        lf_f128_add(lf_f128_mul(a.re, b.im), lf_f128_mul(a.im, b.re)));
-}
-
-static struct _lfortran_complex_128 c128_div(struct _lfortran_complex_128 a,
-        struct _lfortran_complex_128 b) {
-    // Smith's algorithm, as for the lower precisions.
-    lf_float128 zero = c128_real(0.0);
-    if (lf_f128_cmp(lf_f128_abs(b.re), lf_f128_abs(b.im)) >= 0) {
-        if (lf_f128_eq(b.re, zero) && lf_f128_eq(b.im, zero)) {
-            return c128_make(lf_f128_div(a.re, zero), lf_f128_div(a.im, zero));
-        }
-        lf_float128 ratio = lf_f128_div(b.im, b.re);
-        lf_float128 denom = lf_f128_add(b.re, lf_f128_mul(b.im, ratio));
-        return c128_make(
-            lf_f128_div(lf_f128_add(a.re, lf_f128_mul(a.im, ratio)), denom),
-            lf_f128_div(lf_f128_sub(a.im, lf_f128_mul(a.re, ratio)), denom));
-    }
-    lf_float128 ratio = lf_f128_div(b.re, b.im);
-    lf_float128 denom = lf_f128_add(lf_f128_mul(b.re, ratio), b.im);
-    return c128_make(
-        lf_f128_div(lf_f128_add(lf_f128_mul(a.re, ratio), a.im), denom),
-        lf_f128_div(lf_f128_sub(lf_f128_mul(a.im, ratio), a.re), denom));
-}
-
-static lf_float128 c128_abs(struct _lfortran_complex_128 z) {
-    lf_float128 zero = c128_real(0.0);
-    lf_float128 x = lf_f128_abs(z.re), y = lf_f128_abs(z.im);
-    if (lf_f128_isinf(x) || lf_f128_isinf(y)) {
-        return lf_f128_div(c128_real(1.0), zero);
-    }
-    if (lf_f128_isnan(x) || lf_f128_isnan(y)) {
-        return lf_f128_div(zero, zero);
-    }
-    if (lf_f128_cmp(x, y) < 0) {
-        lf_float128 t = x;
-        x = y;
-        y = t;
-    }
-    if (lf_f128_eq(x, zero)) {
-        return zero;
-    }
-    // Scale by the larger part so that the squares do not overflow.
-    lf_float128 r = lf_f128_div(y, x);
-    return lf_f128_mul(x, lf_f128_sqrt(
-        lf_f128_add(c128_real(1.0), lf_f128_mul(r, r))));
-}
-
-static struct _lfortran_complex_128 c128_neg(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_neg(z.re), lf_f128_neg(z.im));
-}
-
-static struct _lfortran_complex_128 c128_mul_i(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_neg(z.im), z.re);
-}
-
-static struct _lfortran_complex_128 c128_sqrt(struct _lfortran_complex_128 z) {
-    lf_float128 zero = c128_real(0.0), half = c128_real(0.5);
-    if (lf_f128_eq(z.re, zero) && lf_f128_eq(z.im, zero)) {
-        return c128_make(zero, z.im);
-    }
-    lf_float128 t = lf_f128_sqrt(lf_f128_mul(half,
-        lf_f128_add(c128_abs(z), lf_f128_abs(z.re))));
-    lf_float128 two_t = lf_f128_add(t, t);
-    if (lf_f128_signbit(z.re) == 0) {
-        return c128_make(t, lf_f128_div(z.im, two_t));
-    }
-    lf_float128 re = lf_f128_div(lf_f128_abs(z.im), two_t);
-    return c128_make(re, lf_f128_signbit(z.im) ? lf_f128_neg(t) : t);
-}
-
-static struct _lfortran_complex_128 c128_exp(struct _lfortran_complex_128 z) {
-    lf_float128 e = lf_f128_exp(z.re);
-    return c128_make(lf_f128_mul(e, lf_f128_cos(z.im)),
-        lf_f128_mul(e, lf_f128_sin(z.im)));
-}
-
-static struct _lfortran_complex_128 c128_log(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_log(c128_abs(z)), lf_f128_atan2(z.im, z.re));
-}
-
-static struct _lfortran_complex_128 c128_sin(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_mul(lf_f128_sin(z.re), lf_f128_cosh(z.im)),
-        lf_f128_mul(lf_f128_cos(z.re), lf_f128_sinh(z.im)));
-}
-
-static struct _lfortran_complex_128 c128_cos(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_mul(lf_f128_cos(z.re), lf_f128_cosh(z.im)),
-        lf_f128_neg(lf_f128_mul(lf_f128_sin(z.re), lf_f128_sinh(z.im))));
-}
-
-static struct _lfortran_complex_128 c128_sinh(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_mul(lf_f128_sinh(z.re), lf_f128_cos(z.im)),
-        lf_f128_mul(lf_f128_cosh(z.re), lf_f128_sin(z.im)));
-}
-
-static struct _lfortran_complex_128 c128_cosh(struct _lfortran_complex_128 z) {
-    return c128_make(lf_f128_mul(lf_f128_cosh(z.re), lf_f128_cos(z.im)),
-        lf_f128_mul(lf_f128_sinh(z.re), lf_f128_sin(z.im)));
-}
-
-static struct _lfortran_complex_128 c128_tan(struct _lfortran_complex_128 z) {
-    return c128_div(c128_sin(z), c128_cos(z));
-}
-
-static struct _lfortran_complex_128 c128_tanh(struct _lfortran_complex_128 z) {
-    return c128_div(c128_sinh(z), c128_cosh(z));
-}
-
-static struct _lfortran_complex_128 c128_asinh(struct _lfortran_complex_128 z) {
-    // log(z + sqrt(z*z + 1))
-    struct _lfortran_complex_128 one = c128_make(c128_real(1.0), c128_real(0.0));
-    return c128_log(c128_add(z, c128_sqrt(c128_add(c128_mul(z, z), one))));
-}
-
-static struct _lfortran_complex_128 c128_asin(struct _lfortran_complex_128 z) {
-    // asin(z) = -i asinh(i z)
-    struct _lfortran_complex_128 r = c128_asinh(c128_mul_i(z));
-    return c128_make(r.im, lf_f128_neg(r.re));
-}
-
-static struct _lfortran_complex_128 c128_acos(struct _lfortran_complex_128 z) {
-    // acos(z) = pi/2 - asin(z)
-    lf_float128 half_pi = lf_float128_from_str("1.57079632679489661923132169163975144");
-    struct _lfortran_complex_128 a = c128_asin(z);
-    return c128_make(lf_f128_sub(half_pi, a.re), lf_f128_neg(a.im));
-}
-
-static struct _lfortran_complex_128 c128_acosh(struct _lfortran_complex_128 z) {
-    // log(z + sqrt(z + 1) sqrt(z - 1))
-    struct _lfortran_complex_128 one = c128_make(c128_real(1.0), c128_real(0.0));
-    return c128_log(c128_add(z, c128_mul(c128_sqrt(c128_add(z, one)),
-        c128_sqrt(c128_sub(z, one)))));
-}
-
-static struct _lfortran_complex_128 c128_atanh(struct _lfortran_complex_128 z) {
-    // (log(1 + z) - log(1 - z)) / 2
-    struct _lfortran_complex_128 one = c128_make(c128_real(1.0), c128_real(0.0));
-    struct _lfortran_complex_128 d = c128_sub(c128_log(c128_add(one, z)),
-        c128_log(c128_sub(one, z)));
-    lf_float128 half = c128_real(0.5);
-    return c128_make(lf_f128_mul(half, d.re), lf_f128_mul(half, d.im));
-}
-
-static struct _lfortran_complex_128 c128_atan(struct _lfortran_complex_128 z) {
-    // atan(z) = -i atanh(i z)
-    struct _lfortran_complex_128 r = c128_atanh(c128_mul_i(z));
-    return c128_make(r.im, lf_f128_neg(r.re));
-}
-
-static struct _lfortran_complex_128 c128_pow(struct _lfortran_complex_128 a,
-        struct _lfortran_complex_128 b) {
-    lf_float128 zero = c128_real(0.0);
-    if (lf_f128_eq(a.re, zero) && lf_f128_eq(a.im, zero)) {
-        if (lf_f128_eq(b.re, zero) && lf_f128_eq(b.im, zero)) {
-            return c128_make(c128_real(1.0), zero);
-        }
-        return c128_make(zero, zero);
-    }
-    return c128_exp(c128_mul(b, c128_log(a)));
-}
-
-static struct _lfortran_complex_128 c128_pow_int(struct _lfortran_complex_128 a,
-        int64_t n) {
-    struct _lfortran_complex_128 result = c128_make(c128_real(1.0), c128_real(0.0));
-    if (n == 0) {
-        return result;
-    }
-    uint64_t u = n < 0 ? (uint64_t)0 - (uint64_t)n : (uint64_t)n;
-    struct _lfortran_complex_128 base = a;
-    while (u != 0) {
-        if (u & 1) {
-            result = c128_mul(result, base);
-        }
-        base = c128_mul(base, base);
-        u >>= 1;
-    }
-    if (n < 0) {
-        result = c128_div(c128_make(c128_real(1.0), c128_real(0.0)), result);
-    }
-    return result;
+static void c128_put(struct _lfortran_complex_128 *p, lf_complex128 z) {
+    *p = c128_make(z.re, z.im);
 }
 
 LFORTRAN_API void _lfortran_complex_add_128(struct _lfortran_complex_128* a,
         struct _lfortran_complex_128* b, struct _lfortran_complex_128 *result)
 {
-    *result = c128_add(*a, *b);
+    c128_put(result, lf_c128_add(c128_get(a), c128_get(b)));
 }
 
 LFORTRAN_API void _lfortran_complex_sub_128(struct _lfortran_complex_128* a,
         struct _lfortran_complex_128* b, struct _lfortran_complex_128 *result)
 {
-    *result = c128_sub(*a, *b);
+    c128_put(result, lf_c128_sub(c128_get(a), c128_get(b)));
 }
 
 LFORTRAN_API void _lfortran_complex_mul_128(struct _lfortran_complex_128* a,
         struct _lfortran_complex_128* b, struct _lfortran_complex_128 *result)
 {
-    *result = c128_mul(*a, *b);
+    c128_put(result, lf_c128_mul(c128_get(a), c128_get(b)));
 }
 
 LFORTRAN_API void _lfortran_complex_div_128(struct _lfortran_complex_128* a,
         struct _lfortran_complex_128* b, struct _lfortran_complex_128 *result)
 {
-    *result = c128_div(*a, *b);
+    c128_put(result, lf_c128_div(c128_get(a), c128_get(b)));
 }
 
 LFORTRAN_API void _lfortran_complex_pow_128(struct _lfortran_complex_128* a,
         struct _lfortran_complex_128* b, struct _lfortran_complex_128 *result)
 {
-    *result = c128_pow(*a, *b);
+    c128_put(result, lf_c128_pow(c128_get(a), c128_get(b)));
 }
 
 LFORTRAN_API void _lfortran_complex_pow_int_128(struct _lfortran_complex_128* a,
         int64_t n, struct _lfortran_complex_128 *result)
 {
-    *result = c128_pow_int(*a, n);
+    c128_put(result, lf_c128_pow_int(c128_get(a), n));
 }
 
 LFORTRAN_API void _lfortran_c128_abs(struct _lfortran_complex_128 *x,
         lf_float128 *result)
 {
-    *result = c128_abs(*x);
+    *result = lf_c128_abs(c128_get(x));
 }
 
 LFORTRAN_API void _lfortran_c128_phase(struct _lfortran_complex_128 *x,
@@ -7172,35 +7163,35 @@ LFORTRAN_API void _lfortran_c128_phase(struct _lfortran_complex_128 *x,
 }
 
 LFORTRAN_API void _lfortran_c128_sqrt(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_sqrt(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_sqrt(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_exp(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_exp(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_exp(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_log(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_log(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_log(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_sin(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_sin(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_sin(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_cos(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_cos(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_cos(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_tan(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_tan(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_tan(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_sinh(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_sinh(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_sinh(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_cosh(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_cosh(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_cosh(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_tanh(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_tanh(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_tanh(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_asin(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_asin(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_asin(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_acos(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_acos(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_acos(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_atan(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_atan(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_atan(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_asinh(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_asinh(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_asinh(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_acosh(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_acosh(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_acosh(c128_get(x))); }
 LFORTRAN_API void _lfortran_c128_atanh(struct _lfortran_complex_128 *x,
-        struct _lfortran_complex_128 *result) { *result = c128_atanh(*x); }
+        struct _lfortran_complex_128 *result) { c128_put(result, lf_c128_atanh(c128_get(x))); }
 
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
@@ -7325,6 +7316,128 @@ LFORTRAN_API int32_t _lfortran_exponent_f80(const void *x)
         bit++;
     }
     return bit - 16444;
+}
+
+// Fortran model intrinsics of binary128 (kind 16) values. All of them take
+// the argument by reference and return through `result`.
+
+static int f128_biased_exponent(lf_float128 v)
+{
+    return (((int) v.bytes[15] & 0x7f) << 8) | (int) v.bytes[14];
+}
+
+// Split a finite, non-zero v as f * 2**e with 0.5 <= |f| < 1.
+static void f128_frexp(lf_float128 v, lf_float128 *f, int *e)
+{
+    int biased = f128_biased_exponent(v);
+    int extra = 0;
+    if (biased == 0) {
+        v = f128_scale(v, 112);
+        biased = f128_biased_exponent(v);
+        extra = 112;
+    }
+    *e = biased - 16382 - extra;
+    *f = f128_scale(v, -(*e + extra));
+}
+
+static int f128_is_finite_nonzero(lf_float128 v)
+{
+    return f128_biased_exponent(v) != 0x7fff && !f128_is_zero(v);
+}
+
+LFORTRAN_API void _lfortran_exponent_f128(const lf_float128 *x, int32_t *result)
+{
+    lf_float128 f;
+    int e;
+    if (f128_biased_exponent(*x) == 0x7fff) {
+        *result = 2147483647;
+    } else if (f128_is_zero(*x)) {
+        *result = 0;
+    } else {
+        f128_frexp(*x, &f, &e);
+        *result = e;
+    }
+}
+
+LFORTRAN_API void _lfortran_fraction_f128(const lf_float128 *x, lf_float128 *result)
+{
+    int e;
+    if (f128_is_finite_nonzero(*x)) {
+        f128_frexp(*x, result, &e);
+    } else {
+        *result = *x;
+    }
+}
+
+LFORTRAN_API void _lfortran_set_exponent_f128(const lf_float128 *x,
+        const int64_t *i, lf_float128 *result)
+{
+    lf_float128 f;
+    int e;
+    if (f128_is_finite_nonzero(*x)) {
+        f128_frexp(*x, &f, &e);
+        // 2**40000 overflows and 2**-40000 underflows to zero anyway
+        int32_t n = *i > 40000 ? 40000 : (*i < -40000 ? -40000 : (int32_t) *i);
+        *result = f128_scale(f, n);
+    } else {
+        *result = *x;
+    }
+}
+
+LFORTRAN_API void _lfortran_rrspacing_f128(const lf_float128 *x, lf_float128 *result)
+{
+    lf_float128 f;
+    int e;
+    if (f128_is_finite_nonzero(*x)) {
+        f128_frexp(*x, &f, &e);
+        *result = f128_scale(lf_f128_abs(f), 113);
+    } else {
+        *result = lf_f128_abs(*x);
+    }
+}
+
+LFORTRAN_API void _lfortran_spacing_f128(const lf_float128 *x, lf_float128 *result)
+{
+    lf_float128 f;
+    int e = -16269;
+    if (f128_biased_exponent(*x) == 0x7fff) {
+        *result = *x;
+        return;
+    }
+    if (!f128_is_zero(*x)) {
+        f128_frexp(*x, &f, &e);
+    }
+    // tiny(x) = 2**(-16382) is the result when 2**(e - 113) is not normal
+    e -= 113;
+    *result = f128_scale(f128_one(), e < -16382 ? -16382 : e);
+}
+
+LFORTRAN_API void _lfortran_nearest_f128(const lf_float128 *x,
+        const lf_float128 *s, lf_float128 *result)
+{
+    lf_float128 r = *x;
+    int i;
+    int up = !lf_f128_signbit(*s);
+    int negative = (x->bytes[15] & 0x80) != 0;
+    if (f128_biased_exponent(*x) == 0x7fff || f128_is_zero(*s)) {
+        *result = *x;
+        return;
+    }
+    if (f128_is_zero(*x)) {
+        memset(r.bytes, 0, sizeof(r.bytes));
+        r.bytes[0] = 1;
+        r.bytes[15] = up ? 0 : 0x80;
+        *result = r;
+        return;
+    }
+    for (i = 0; i < 16; i++) {
+        if (up == negative) {
+            if (r.bytes[i]-- != 0) break;
+        } else {
+            if (++r.bytes[i] != 0) break;
+        }
+    }
+    *result = r;
 }
 
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x)
@@ -15257,10 +15370,12 @@ static bool is_formatted_read_l_item(int32_t type_code)
     return is_formatted_read_logical(type_code) || is_formatted_read_integer(type_code);
 }
 
-// Type codes 14 (real(16)) and 15 (complex(16)) are binary128 items.
+// Type codes 14 (real(16)) and 15 (complex(16)) are binary128 items, and
+// 16 (real(10)) and 17 (complex(10)) items of the storage of kind 10 (see
+// load_real10).
 static bool is_formatted_read_complex(int32_t type_code)
 {
-    return type_code == 6 || type_code == 7 || type_code == 15;
+    return type_code == 6 || type_code == 7 || type_code == 15 || type_code == 17;
 }
 
 // Items that the numeric edits (F/E/D/G and B/O/Z) read one number per
@@ -15268,7 +15383,7 @@ static bool is_formatted_read_complex(int32_t type_code)
 static bool is_formatted_read_numeric(int32_t type_code)
 {
     return is_formatted_read_integer(type_code)
-        || type_code == 4 || type_code == 5 || type_code == 14
+        || type_code == 4 || type_code == 5 || type_code == 14 || type_code == 16
         || is_formatted_read_complex(type_code);
 }
 
@@ -15284,6 +15399,7 @@ static size_t formatted_read_component_size(int32_t type_code)
         case 4: case 6: return sizeof(float);
         case 5: case 7: return sizeof(double);
         case 14: case 15: return sizeof(lf_float128);
+        case 16: case 17: return REAL10_SIZE;
         default: return 0;
     }
 }
@@ -15458,6 +15574,14 @@ static bool parse_real_from_buffer(char* buffer, int field_len,
                 lf_f128_from_double((double)total_scale)));
         }
         *((lf_float128*)real_ptr) = v128;
+        return true;
+    }
+    if (type_code == 16) {
+        long double v10 = strtold(buffer, NULL);
+        if (total_scale != 0) {
+            v10 = v10 / powl(10.0L, (long double)total_scale);
+        }
+        store_real10_storage(real_ptr, v10);
         return true;
     }
     double v = strtod(buffer, NULL);
@@ -15958,7 +16082,7 @@ static bool start_array_read(ArrayReadCont *arr_cont, bool (*accepts)(int32_t),
     size_t component_sz = formatted_read_component_size(elem_tc);
     *arr_cont = (ArrayReadCont){0};
     arr_cont->data_ptr = data_ptr;
-    arr_cont->elem_tc = is_complex ? ((elem_tc == 6) ? 4 : (elem_tc == 15) ? 14 : 5) : elem_tc;
+    arr_cont->elem_tc = is_complex ? ((elem_tc == 6) ? 4 : (elem_tc == 15) ? 14 : (elem_tc == 17) ? 16 : 5) : elem_tc;
     arr_cont->n_elems = n_elems;
     arr_cont->rank = rank;
     arr_cont->extents = extents;
@@ -16449,10 +16573,11 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     }
     int32_t type_code = t.type_code;
     void* real_ptr = t.ptr;
-    bool is_complex = (type_code == 6 || type_code == 7 || type_code == 15);
+    bool is_complex = is_formatted_read_complex(type_code);
     if (type_code == 6) type_code = 4;
     if (type_code == 7) type_code = 5;
     if (type_code == 15) type_code = 14;
+    if (type_code == 17) type_code = 16;
 
     if (!read_and_parse_real_field(inputSource, real_ptr, type_code,
             read_width, advance_no,
@@ -16463,6 +16588,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (is_complex) {
         void* imag_ptr = (type_code == 4) ? (void*)((float*)real_ptr + 1)
             : (type_code == 14) ? (void*)((lf_float128*)real_ptr + 1)
+            : (type_code == 16) ? (void*)((char*)real_ptr + REAL10_SIZE)
             : (void*)((double*)real_ptr + 1);
         if (!read_and_parse_real_field(inputSource, imag_ptr, type_code,
                 read_width, advance_no,
@@ -19014,6 +19140,174 @@ LFORTRAN_API void _lfortran_string_read_c128_array(char *str, int64_t len, char 
     }
 }
 
+// Reading complex(10) ---------------------------------------------------------
+//
+// Text input of a complex(10) value is read as a complex(16) value and rounded
+// to the extended precision, which is exact except for the rare tie in the
+// second rounding. Unformatted input copies the bytes of the items, which are
+// as large as complex(16) ones where the storage of kind 10 is the x87 long
+// double.
+
+#ifndef _MSC_VER
+
+static long double f128_to_long_double(lf_float128 v) {
+#if LDBL_MANT_DIG == 64
+    uint64_t lo, hi;
+    memcpy(&lo, v.bytes, sizeof(lo));
+    memcpy(&hi, v.bytes + 8, sizeof(hi));
+    uint64_t sign = hi >> 63;
+    uint64_t exponent = (hi >> 48) & 0x7FFF;
+    uint64_t frac_hi = hi & 0xFFFFFFFFFFFFULL;
+    uint64_t mant = 0;
+    if (exponent == 0x7FFF) {
+        if ((frac_hi | lo) != 0) {
+            mant = (3ULL << 62) | (frac_hi << 14) | (lo >> 50);
+        } else {
+            mant = 1ULL << 63;
+        }
+    } else {
+        // The 63 fraction bits kept, and the 49 below them to round away.
+        uint64_t kept = (frac_hi << 15) | (lo >> 49);
+        uint64_t rest = lo & ((1ULL << 49) - 1);
+        if (exponent == 0) {
+            mant = kept;
+        } else {
+            mant = (1ULL << 63) | kept;
+        }
+        uint64_t half = 1ULL << 48;
+        if (rest > half || (rest == half && (mant & 1))) {
+            mant++;
+            if (mant == 0) {
+                mant = 1ULL << 63;
+                exponent++;
+            } else if (exponent == 0 && (mant >> 63)) {
+                exponent = 1;
+            }
+        }
+        if (exponent == 0x7FFF) {
+            mant = 1ULL << 63;
+        }
+    }
+    uint16_t sign_exponent = (uint16_t)((sign << 15) | exponent);
+    long double out = 0;
+    memcpy(&out, &mant, sizeof(mant));
+    memcpy((char*)&out + 8, &sign_exponent, sizeof(sign_exponent));
+    return out;
+#else
+    return (long double)lf_f128_to_double(v);
+#endif
+}
+
+static lf_float128 long_double_to_f128(long double v) {
+#if LDBL_MANT_DIG == 64
+    uint64_t mant;
+    uint16_t sign_exponent;
+    memcpy(&mant, &v, sizeof(mant));
+    memcpy(&sign_exponent, (const char*)&v + 8, sizeof(sign_exponent));
+    uint64_t sign = sign_exponent >> 15;
+    uint64_t exponent = sign_exponent & 0x7FFF;
+    uint64_t fraction = mant & 0x7FFFFFFFFFFFFFFFULL;
+    if (exponent == 0 && (mant >> 63)) {
+        exponent = 1;
+    }
+    uint64_t lo = fraction << 49;
+    uint64_t hi = (sign << 63) | (exponent << 48) | (fraction >> 15);
+    lf_float128 out;
+    memcpy(out.bytes, &lo, sizeof(lo));
+    memcpy(out.bytes + 8, &hi, sizeof(hi));
+    return out;
+#else
+    return lf_f128_from_double((double)v);
+#endif
+}
+
+static bool unit_is_unformatted(int32_t unit_num) {
+    if (unit_num == -1) return false;
+    bool unit_file_bin = false;
+    int access_id;
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
+        &access_id, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL,
+        NULL, NULL, NULL);
+    return filep && unit_file_bin;
+}
+
+static struct _lfortran_complex_128 c80_to_c128(const struct _lfortran_complex_80 *c) {
+    return c128_make(long_double_to_f128(load_real10(&c->re)),
+        long_double_to_f128(load_real10(&c->im)));
+}
+
+static void c128_to_c80(struct _lfortran_complex_80 *c, struct _lfortran_complex_128 v) {
+    store_real10_storage(&c->re, f128_to_long_double(v.re));
+    store_real10_storage(&c->im, f128_to_long_double(v.im));
+}
+
+LFORTRAN_API void _lfortran_read_complex_float80(struct _lfortran_complex_80 *p, int32_t unit_num, int32_t *iostat)
+{
+    if (unit_is_unformatted(unit_num)) {
+        if (sizeof(struct _lfortran_complex_80) != sizeof(struct _lfortran_complex_128)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Unformatted read of complex(10) is not supported.\n");
+            exit(1);
+        }
+        _lfortran_read_complex_float128((struct _lfortran_complex_128*)p, unit_num, iostat);
+        return;
+    }
+    struct _lfortran_complex_128 value = c80_to_c128(p);
+    _lfortran_read_complex_float128(&value, unit_num, iostat);
+    c128_to_c80(p, value);
+}
+
+LFORTRAN_API void _lfortran_read_array_complex_float80(struct _lfortran_complex_80 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
+{
+    if (unit_is_unformatted(unit_num)) {
+        if (sizeof(struct _lfortran_complex_80) != sizeof(struct _lfortran_complex_128)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Unformatted read of complex(10) is not supported.\n");
+            exit(1);
+        }
+        _lfortran_read_array_complex_float128((struct _lfortran_complex_128*)p,
+            array_size, stride, unit_num, iostat);
+        return;
+    }
+    int64_t n = array_size;
+    struct _lfortran_complex_128 *values = (struct _lfortran_complex_128*)
+        internal_malloc((size_t)(n > 0 ? n : 1) * sizeof(struct _lfortran_complex_128));
+    for (int64_t i = 0; i < n; i++) {
+        values[i] = c80_to_c128(&p[i * (int64_t)stride]);
+    }
+    _lfortran_read_array_complex_float128(values, array_size, 1, unit_num, iostat);
+    for (int64_t i = 0; i < n; i++) {
+        c128_to_c80(&p[i * (int64_t)stride], values[i]);
+    }
+    internal_free(values);
+}
+
+LFORTRAN_API void _lfortran_string_read_c80(char *str, int64_t len, char *format, struct _lfortran_complex_80 *c, int32_t *iostat, int64_t *offset) {
+    struct _lfortran_complex_128 value = c80_to_c128(c);
+    _lfortran_string_read_c128(str, len, format, &value, iostat, offset);
+    c128_to_c80(c, value);
+}
+
+LFORTRAN_API void _lfortran_string_read_c80_array(char *str, int64_t len, char *format,
+        struct _lfortran_complex_80 *arr, int64_t array_size, int64_t stride,
+        int32_t *iostat, int64_t *offset) {
+    int64_t n = array_size;
+    struct _lfortran_complex_128 *values = (struct _lfortran_complex_128*)
+        internal_malloc((size_t)(n > 0 ? n : 1) * sizeof(struct _lfortran_complex_128));
+    for (int64_t i = 0; i < n; i++) {
+        values[i] = c80_to_c128(&arr[i * stride]);
+    }
+    _lfortran_string_read_c128_array(str, len, format, values, array_size, 1,
+        iostat, offset);
+    for (int64_t i = 0; i < n; i++) {
+        c128_to_c80(&arr[i * stride], values[i]);
+    }
+    internal_free(values);
+}
+
+#endif
+
 LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format,
         char *arr, int64_t elem_len, int64_t array_size, int64_t stride, int64_t *offset) {
     (void)format;
@@ -19755,6 +20049,12 @@ static inline void print_stacktrace_raw_addresses(struct Stacktrace *d, bool use
 
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_RUNTIME_STACKTRACE
+    // Color only a terminal, unless NO_COLOR is set (https://no-color.org).
+    if (use_colors) {
+        const char *no_color = getenv("NO_COLOR");
+        use_colors = isatty(lfortran_fileno(stderr))
+            && (no_color == NULL || no_color[0] == '\0');
+    }
     source_filename = filename;
     struct Stacktrace d = get_stacktrace_addresses();
     get_local_address(&d);

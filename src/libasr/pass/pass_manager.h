@@ -73,6 +73,7 @@
 #include <libasr/pass/gpu_residue_unroll.h>
 #include <libasr/pass/gpu_inline_loop_calls.h>
 #include <libasr/pass/gpu_integer_powers.h>
+#include <libasr/pass/gpu_dp4a.h>
 #include <libasr/pass/gpu_device_guard_fold.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_time_skew.h>
@@ -163,6 +164,7 @@ namespace LCompilers {
             {"gpu_launch_sync", &pass_gpu_launch_sync},
             {"gpu_sequential_unroll", &pass_gpu_sequential_unroll},
             {"gpu_integer_powers", &pass_gpu_integer_powers},
+            {"gpu_dp4a", &pass_gpu_dp4a},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
             {"gpu_private_map_forwarding", &pass_gpu_private_map_forwarding},
             {"gpu_private_reduction_fusion", &pass_gpu_private_reduction_fusion},
@@ -431,6 +433,10 @@ namespace LCompilers {
                 // loop is inlined, so that gpu_vector_lanes sees the loop
                 // and can share it between the lanes of an iteration.
                 "gpu_inline_loop_calls",
+                // The portable sum of four byte products becomes the dp4a
+                // instruction of an NVIDIA GPU, while shifta and shiftl are
+                // still intrinsics and no call is inlined or lowered.
+                "gpu_dp4a",
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",

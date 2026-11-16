@@ -345,7 +345,11 @@ namespace LCompilers {
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type,
-                                bool reserve_memory) = 0;
+                                bool reserve_memory, llvm::Value* copy_dims) = 0;
+
+                virtual
+                void copy_scalar_metadata(llvm::Type* src_ty, llvm::Value* src,
+                    llvm::Type* dest_ty, llvm::Value* dest) = 0;
 
                 virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -392,7 +396,7 @@ namespace LCompilers {
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
                     llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
-                    int8_t type_code, int cfi_attr) = 0;
+                    int8_t type_code, int cfi_attr, bool assumed_rank) = 0;
 
                 virtual
                 llvm::Value* cfi_to_internal(
@@ -648,7 +652,11 @@ namespace LCompilers {
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
                                 llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type,
-                                bool reserve_memory);
+                                bool reserve_memory, llvm::Value* copy_dims);
+
+                virtual
+                void copy_scalar_metadata(llvm::Type* src_ty, llvm::Value* src,
+                    llvm::Type* dest_ty, llvm::Value* dest);
 
                 virtual
                 void copy_array_move_allocation(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -695,7 +703,7 @@ namespace LCompilers {
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
                     llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
-                    int8_t type_code, int cfi_attr);
+                    int8_t type_code, int cfi_attr, bool assumed_rank);
 
                 // Convert a CFI descriptor to an internal descriptor:
                 // sets offset=0, converts byte strides to element strides.

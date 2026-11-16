@@ -2289,6 +2289,33 @@ public:
         {"dmod", {"mod", {"real8", "real8"}}},
     };
 
+    // Generic intrinsics whose two-argument form is another intrinsic:
+    // atan(y, x) is atan2(y, x) (Fortran 2008), atand(y, x) and atanpi(y, x)
+    // are atan2d(y, x) and atan2pi(y, x) (Fortran 2023).
+    std::map<std::string, std::string> two_argument_intrinsic_mapping = {
+        {"atan", "atan2"},
+        {"atand", "atan2d"},
+        {"atanpi", "atan2pi"},
+    };
+
+    // The two-argument forms of atan, atand and atanpi take real y and x.
+    // Report a mismatch here, naming the intrinsic as referenced, instead
+    // of in the intrinsic it is mapped to.
+    void check_two_argument_intrinsic_args(const std::string& intrinsic_name,
+            const Vec<ASR::expr_t*>& args, const Location& loc) {
+        LCOMPILERS_ASSERT(args.size() == 2 && args[0] && args[1]);
+        ASR::ttype_t* y_type = ASRUtils::expr_type(args[0]);
+        ASR::ttype_t* x_type = ASRUtils::expr_type(args[1]);
+        if (!ASRUtils::is_real(*y_type) || !ASRUtils::is_real(*x_type)) {
+            diag.add(Diagnostic("arguments 'y' and 'x' of the '" +
+                intrinsic_name + "' intrinsic must be real, found " +
+                ASRUtils::type_to_str_with_kind(y_type, args[0]) + " and " +
+                ASRUtils::type_to_str_with_kind(x_type, args[1]),
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     // The specific intrinsic functions of Fortran 2018, Table 16.2, that
     // `intrinsic_mapping` does not have (most of them have their generic
     // name), with their generic function and the types of their arguments.
@@ -4335,12 +4362,22 @@ public:
     // `len` asks about a property of its designator rather than reading it,
     // and 10.1.11 p2 (7) permits it, so the designator inquired about is not
     // walked into; anything else in the inquiry still is.
+    //
+    // The ac-do-variable of an array constructor implied-do loop has the
+    // scope of the implied-do (19.4), so reading it in the values is not
+    // reading a local. Such an implied-do loop is not supported yet in a
+    // specification expression, so the first one whose ac-do-variable is a
+    // local of the scoping unit is found separately, for its own diagnostic.
     class SpecificationExprLocalFinder :
             public ASR::BaseWalkVisitor<SpecificationExprLocalFinder> {
         public:
             CommonVisitor &v;
             ASR::symbol_t *local_sym = nullptr;
             Location local_loc = {};
+            const ASR::ImpliedDoLoop_t *implied_do_loop = nullptr;
+            // The ac-do-variables of the implied-do loops whose values are
+            // being walked.
+            std::vector<ASR::symbol_t*> ac_do_variables;
 
             SpecificationExprLocalFinder(CommonVisitor &v_) : v{v_} {}
 
@@ -4348,10 +4385,36 @@ public:
                 if (local_sym != nullptr) {
                     return;
                 }
+                if (std::find(ac_do_variables.begin(), ac_do_variables.end(),
+                        x.m_v) != ac_do_variables.end()) {
+                    return;
+                }
                 if (v.is_local_of_current_scoping_unit(x.m_v)) {
                     local_sym = x.m_v;
                     local_loc = x.base.base.loc;
                 }
+            }
+
+            // The implied-do control is outside the scope of the
+            // ac-do-variable, and is walked like any other primary.
+            void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+                this->visit_expr(*x.m_start);
+                this->visit_expr(*x.m_end);
+                if (x.m_increment) {
+                    this->visit_expr(*x.m_increment);
+                }
+                ASR::symbol_t *ac_do_variable = ASR::is_a<ASR::Var_t>(*x.m_var)
+                    ? ASR::down_cast<ASR::Var_t>(x.m_var)->m_v : nullptr;
+                if (implied_do_loop == nullptr &&
+                        v.is_local_of_current_scoping_unit(ac_do_variable)) {
+                    implied_do_loop = &x;
+                }
+                ac_do_variables.push_back(ac_do_variable);
+                for (size_t i = 0; i < x.n_values; i++) {
+                    this->visit_expr(*x.m_values[i]);
+                }
+                this->visit_ttype(*x.m_type);
+                ac_do_variables.pop_back();
             }
 
             void visit_ArraySize(const ASR::ArraySize_t &x) {
@@ -4424,7 +4487,9 @@ public:
     }
 
     // Rejects `e`, the array bound or character length just built for
-    // `context`, when it reads a local of the scoping unit being compiled.
+    // `context`, when it reads a local of the scoping unit being compiled,
+    // or when it has an array constructor implied-do loop whose
+    // ac-do-variable is such a local, which is not supported yet.
     // The context is passed in rather than read from
     // `restricted_expr_context`, because a character length is checked once
     // its `RestrictedExprScope` has already been left.
@@ -4441,12 +4506,23 @@ public:
         }
         SpecificationExprLocalFinder finder(*this);
         finder.visit_expr(*e);
+        std::string what = (context == RestrictedExprContext::CharacterLength)
+            ? "a character length" : "an array bound";
         if (finder.local_sym == nullptr) {
+            // LBOUND and UBOUND without DIM of an assumed-rank array are
+            // also built as one, `[(ubound(c, i), i = 1, rank(c))]`.
+            if (finder.implied_do_loop != nullptr) {
+                diag.add(Diagnostic(
+                    "an array constructor with an implied-do loop in a "
+                    "specification expression is not supported yet",
+                    Level::Error, Stage::Semantic, {
+                        Label("an implied-do loop is evaluated here to give "
+                            + what, {finder.implied_do_loop->base.base.loc})}));
+                throw SemanticAbort();
+            }
             return;
         }
         std::string name = ASRUtils::symbol_name(finder.local_sym);
-        std::string what = (context == RestrictedExprContext::CharacterLength)
-            ? "a character length" : "an array bound";
         diag.add(Diagnostic(
             "the variable '" + name + "' is local to this scoping unit, so it "
             "cannot appear in a specification expression",
@@ -14809,14 +14885,18 @@ public:
                 throw SemanticAbort();
             }
             type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
-            type = ASRUtils::make_Array_t_util(
-                al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            if (is_assumed_rank) {
+                type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
+            } else {
+                type = ASRUtils::make_Array_t_util(
+                    al, loc, type, dims.p, dims.size(), abi, is_argument, ASR::array_physical_typeType::DescriptorArray, false, is_dimension_star);
+            }
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 16) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 10 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Complex",
                     Level::Error, Stage::Semantic, {
@@ -15031,7 +15111,9 @@ public:
                         type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     } else {
                         type = ASRUtils::make_Array_t_util(
-                            al, loc, type, dims.p, dims.size(), abi, is_argument);
+                            al, loc, type, dims.p, dims.size(), abi, is_argument,
+                            ASR::array_physical_typeType::DescriptorArray, false,
+                            is_dimension_star);
                     }
                     if (is_pointer) {
                         type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
@@ -17201,6 +17283,57 @@ public:
         return kind;
     }
 
+    // The compile-time value of the substring `(start:end:step)` of a string
+    // whose compile-time value is `string_value`, or nullptr if the substring
+    // is not known at compile time. Substring bounds are character positions.
+    // For kind > 1 the value holds UTF-8, so whole characters are sliced.
+    ASR::expr_t* fold_substring_value(const Location& loc,
+            ASR::expr_t* string_value, ASR::expr_t* start, ASR::expr_t* end,
+            ASR::expr_t* step) {
+        if (string_value == nullptr ||
+                !ASR::is_a<ASR::StringConstant_t>(*string_value)) {
+            return nullptr;
+        }
+        ASR::StringConstant_t* string_constant =
+            ASR::down_cast<ASR::StringConstant_t>(string_value);
+        ASR::String_t* string_type =
+            ASRUtils::get_string_type(string_constant->m_type);
+        int64_t start_value = 0, end_value = 0, step_value = 0, string_len = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(start), start_value) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(end), end_value) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(step), step_value) ||
+                !ASRUtils::extract_value(string_type->m_len, string_len) ||
+                step_value != 1) {
+            return nullptr;
+        }
+        // A substring whose end is before its start has zero length, whatever
+        // its bounds are. Any other out of bounds substring is not folded.
+        int64_t substring_len = 0;
+        if (start_value <= end_value) {
+            if (start_value < 1 || end_value > string_len) {
+                return nullptr;
+            }
+            substring_len = end_value - start_value + 1;
+        }
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            string_constant->m_s, string_type->m_kind);
+        // A value shorter than the length of its type is blank padded
+        characters.resize(string_len, " ");
+        std::string substring;
+        for (int64_t i = start_value; i <= end_value; i++) {
+            substring += characters[i - 1];
+        }
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            compiler_options.po.default_integer_kind));
+        ASR::ttype_t* substring_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            string_type->m_kind,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, substring_len,
+                int_type)),
+            ASR::ExpressionLength, ASR::DescriptorString));
+        return ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, substring), substring_type));
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -17540,8 +17673,14 @@ public:
                 step = ASRUtils::EXPR(tmp);
                 step = CastingUtil::perform_casting(step, int_type, al, loc);
 
+                // `arr_ref_val` is the value of the element, which is not the
+                // value of its substring
+                ASR::expr_t* section_value = fold_substring_value(loc,
+                    arr_ref_val, l, r, step);
                 ASR::ttype_t *string_tt;
-                {
+                if (section_value) {
+                    string_tt = ASRUtils::expr_type(section_value);
+                } else {
                     ASRUtils::ASRBuilder b(al, loc);
                     string_tt = ASRUtils::TYPE(ASR::make_String_t(
                         al, loc, ASRUtils::extract_kind_from_ttype_t(root_v_type),
@@ -17550,7 +17689,7 @@ public:
                         ASR::DescriptorString));
                 }
                 return ASR::make_StringSection_t(al, loc, array_item, l,
-                        r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
+                        r, ASRUtils::EXPR(tmp), string_tt, section_value);
             } else {
                 ASR::ttype_t* final_type;
                 if (is_arg_array) {
@@ -18261,7 +18400,7 @@ public:
             if (expr == nullptr) {
                 ArrayConstructorScope array_constructor_scope(*this);
                 this->visit_expr(*x.m_args[i]);
-                expr = ASRUtils::EXPR(tmp);
+                expr = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
             }
 
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
@@ -18383,7 +18522,44 @@ public:
             } else {
                 n_elements += 1;
             }
-            body.push_back(al, expr);
+            // The data of a constant array holds no real(10) or complex(10)
+            // elements: such a constant array, and such an implied do loop
+            // evaluated at compile time, are an
+            // ArrayConstructor of the constant elements, which stands for
+            // the array in a larger one.
+            std::function<bool(ASR::expr_t*)> push_constant_elements =
+                    [&](ASR::expr_t* element) -> bool {
+                ASR::expr_t* element_value = ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ?
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element)->m_value :
+                    ASRUtils::expr_value(element);
+                if (element_value == nullptr && ASR::is_a<ASR::Var_t>(*element)) {
+                    ASR::symbol_t* element_sym = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(element)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*element_sym) &&
+                            ASR::down_cast<ASR::Variable_t>(element_sym)->m_storage == ASR::storage_typeType::Parameter) {
+                        element_value = ASR::down_cast<ASR::Variable_t>(element_sym)->m_symbolic_value;
+                    }
+                }
+                if (element_value == nullptr ||
+                        !ASR::is_a<ASR::ArrayConstructor_t>(*element_value)) {
+                    return false;
+                }
+                ASR::ArrayConstructor_t* values = ASR::down_cast<ASR::ArrayConstructor_t>(element_value);
+                ASR::ttype_t* values_type = ASRUtils::extract_type(values->m_type);
+                if (!(ASRUtils::is_real(*values_type) || ASRUtils::is_complex(*values_type)) ||
+                        ASRUtils::extract_kind_from_ttype_t(values_type) != 10) {
+                    return false;
+                }
+                for (size_t k = 0; k < values->n_args; k++) {
+                    if (!push_constant_elements(values->m_args[k])) {
+                        body.push_back(al, values->m_args[k]);
+                    }
+                }
+                return true;
+            };
+            if (!push_constant_elements(expr)) {
+                body.push_back(al, expr);
+            }
         }
 
         ASR::dimension_t dim;
@@ -20255,6 +20431,9 @@ public:
                     throw SemanticAbort();
                 }
                 ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                if (dt_struct_n_args == 0) {
+                    v_var = &resolve_selector_object(ASRUtils::EXPR(v_var), loc)->base;
+                }
                 make_ArrayItem_from_struct_m_args(
                     dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
                 // Wrap with Cast if this variable needs select type casting
@@ -20648,14 +20827,8 @@ public:
         return member;
     }
 
-    // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
-    template <typename T>
-    bool handle_intrinsic_node_args(const T& x,
-        Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
-        size_t min_args, size_t max_args, const std::string& intrinsic_name,
-        bool raise_error=true) {
-        // raise_error is used only when the error is not related to number of arguments
-        size_t total_args = x.n_args + x.n_keywords;
+    void check_intrinsic_arg_count(const Location& loc, size_t total_args,
+        size_t min_args, size_t max_args, const std::string& intrinsic_name) {
         if( !(total_args <= max_args && total_args >= min_args) ) {
             if (min_args == max_args) {
                 diag.add(diag::Diagnostic(
@@ -20664,7 +20837,7 @@ public:
                     "It accepts exactly " + std::to_string(min_args) +
                     " arguments.",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
+                        diag::Label("", {loc})}));
                     throw SemanticAbort();
             } else {
                 diag.add(diag::Diagnostic(
@@ -20673,10 +20846,21 @@ public:
                     "It accepts at least " + std::to_string(min_args) +
                     " and at most " + std::to_string(max_args) + " arguments.",
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.base.base.loc})}));
+                        diag::Label("", {loc})}));
                     throw SemanticAbort();
             }
         }
+    }
+
+    // TODO: Use Vec<expr_t*> instead of std::vector<expr_t*> for performance
+    template <typename T>
+    bool handle_intrinsic_node_args(const T& x,
+        Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
+        size_t min_args, size_t max_args, const std::string& intrinsic_name,
+        bool raise_error=true) {
+        // raise_error is used only when the error is not related to number of arguments
+        check_intrinsic_arg_count(x.base.base.loc, x.n_args + x.n_keywords,
+            min_args, max_args, intrinsic_name);
         args.reserve(al, max_args);
 
         for( size_t i = 0; i < max_args; i++ ) {
@@ -20830,6 +21014,42 @@ public:
         return ASRUtils::make_ArraySize_t_util(al, loc, v, dim, type, nullptr, false);
     }
 
+    // The rank of an assumed-rank array is known only when the program runs,
+    // so the bounds of all its dimensions are the array constructor
+    // `[(lbound(v, i), i = 1, rank(v))]` (or `ubound`).
+    ASR::asr_t* make_assumed_rank_bounds(const Location& loc, ASR::expr_t* v,
+            ASR::ttype_t* type, ASR::arrayboundType bound) {
+        // `rank` and a dimension of an array descriptor are integer(4).
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t* dim_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            declare_implicit_variable2(loc,
+                current_scope->get_unique_name("lfortran_implied_do_dim"),
+                ASRUtils::intent_local, int_type)));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, int_type));
+        Vec<ASR::expr_t*> values;
+        values.reserve(al, 1);
+        values.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, v,
+            dim_var, type, bound, nullptr)));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(al, loc,
+            values.p, values.size(), dim_var, one,
+            ASRUtils::EXPR(ASR::make_ArrayRank_t(al, loc, v, int_type, nullptr)),
+            nullptr, type, nullptr)));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = one;
+        dim.m_length = nullptr;
+        dims.push_back(al, dim);
+        ASR::ttype_t* result_type = ASRUtils::duplicate_type(al, type, &dims,
+            ASR::array_physical_typeType::DescriptorArray, true);
+        return ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p,
+            args.size(), result_type, ASR::arraystorageType::ColMajor);
+    }
+
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -20847,6 +21067,9 @@ public:
             ASRUtils::is_pointer(ASRUtils::expr_type(v_Var));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
+            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var))) {
+                return make_assumed_rank_bounds(x.base.base.loc, v_Var, type, bound);
+            }
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
             // For assumed-size arrays (UnboundedPointerArray), ubound requires DIM
             ASR::ttype_t* v_Var_type = ASRUtils::type_get_past_allocatable_pointer(
@@ -20889,7 +21112,24 @@ public:
             ASR::dimension_t* v_Var_dims = nullptr;
             int64_t v_Var_n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(v_Var), v_Var_dims);
-            if( const_dim > v_Var_n_dims || const_dim < 1) {
+            // The rank of an assumed-rank array is known only when the
+            // program runs, so DIM is not checked against its declared
+            // rank (0), and its bounds are not known here. The rank of an
+            // array is at most 15, so DIM is checked against that.
+            bool is_assumed_rank = ASRUtils::is_assumed_rank_array(
+                ASRUtils::expr_type(v_Var));
+            constexpr int64_t max_rank = 15;
+            if( is_assumed_rank && (const_dim < 1 || const_dim > max_rank) ) {
+                diag.add(Diagnostic(
+                    "`dim` argument of `" + bound_name + "` must be between 1 "
+                    "and " + std::to_string(max_rank) + " for an assumed-rank "
+                    "array",
+                    Level::Error, Stage::Semantic, {
+                        Label("`dim` is " + std::to_string(const_dim),
+                            {dim->base.loc})}));
+                throw SemanticAbort();
+            }
+            if( !is_assumed_rank && (const_dim > v_Var_n_dims || const_dim < 1) ) {
                 diag.add(Diagnostic(
                     "Dimension " + std::to_string(const_dim) +
                     " is invalid. Rank of the array, " +
@@ -20914,7 +21154,8 @@ public:
                 throw SemanticAbort();
             }
             const_dim = const_dim - 1;
-            if( v_Var_dims[const_dim].m_start && v_Var_dims[const_dim].m_length ) {
+            if( !is_assumed_rank && v_Var_dims[const_dim].m_start &&
+                v_Var_dims[const_dim].m_length ) {
                 ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
                 ASR::expr_t* v_Var_length = ASRUtils::expr_value(v_Var_dims[const_dim].m_length);
                 if( bound == ASR::arrayboundType::LBound &&
@@ -22872,7 +23113,7 @@ public:
         }
         ASRUtils::set_kind_to_ttype_t(ret_type, max_ret_kind);
 
-        if (max_ret_kind != 16 && ASRUtils::all_args_evaluated(args)) {
+        if (!ASRUtils::is_wide_float_kind(max_ret_kind) && ASRUtils::all_args_evaluated(args)) {
             double re, im;
             ASRUtils::extract_value(ASRUtils::expr_value(args[0]), re);
             ASRUtils::extract_value(ASRUtils::expr_value(args[1]), im);
@@ -22885,7 +23126,7 @@ public:
         ASR::expr_t* re = CastingUtil::perform_casting(args[0], expected_arg_type, al, loc);
         ASR::expr_t* im = CastingUtil::perform_casting(args[1], expected_arg_type, al, loc);
 
-        if (max_ret_kind == 16 && ASRUtils::all_args_evaluated(args)) {
+        if (ASRUtils::is_wide_float_kind(max_ret_kind) && ASRUtils::all_args_evaluated(args)) {
             value = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al, loc, re, im,
                 ret_type, nullptr));
         }
@@ -23363,9 +23604,23 @@ public:
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
+            // The two-argument form of atan, atand and atanpi is mapped to
+            // another intrinsic, but diagnostics name the one referenced.
+            std::string diag_var_name;
             if (is_specific_type_intrinsic) {
                 specific_var_name = var_name;
                 var_name = intrinsic_mapping[var_name].first;
+            } else if (two_argument_intrinsic_mapping.count(var_name)) {
+                size_t total_args = x.n_args + x.n_keywords;
+                check_intrinsic_arg_count(x.base.base.loc, total_args, 1, 2,
+                    var_name);
+                if (total_args == 2) {
+                    diag_var_name = var_name;
+                    var_name = two_argument_intrinsic_mapping[var_name];
+                }
+            }
+            if (diag_var_name.empty()) {
+                diag_var_name = var_name;
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
@@ -23375,12 +23630,16 @@ public:
                 signature_matched = handle_intrinsic_node_args(
                     x, args, signature.kwarg_names,
                     signature.positional_args, signature.max_args,
-                    var_name, false);
+                    diag_var_name, false);
                 check_specific_type_intrinsics(specific_var_name, args, x.base.base.loc);
                 if( !signature_matched ) {
-                    diag.add(Diagnostic("No matching signature found for intrinsic " + var_name,
+                    diag.add(Diagnostic("No matching signature found for intrinsic " + diag_var_name,
                                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
+                }
+                if (diag_var_name != var_name) {
+                    check_two_argument_intrinsic_args(diag_var_name, args,
+                        x.base.base.loc);
                 }
                 {
                     auto dim_it = std::find(signature.kwarg_names.begin(), signature.kwarg_names.end(), "dim");
@@ -23399,9 +23658,11 @@ public:
                     }
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    // real, aimag and conjg fold complex(16) values exactly
+                    // real, aimag, conjg and merge fold complex(16) values
+                    // exactly
                     const bool exact_complex16_fold = (var_name == "real" ||
-                        var_name == "aimag" || var_name == "conjg");
+                        var_name == "aimag" || var_name == "conjg" ||
+                        var_name == "merge");
                     const bool are_all_args_evaluated {
                         ASRUtils::all_args_evaluated(args, true, exact_complex16_fold, true) };
                     if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
@@ -25630,9 +25891,11 @@ public:
         try {
             if constexpr (std::is_same_v<T, ASR::expr_t*>) {
                 ASR::ttype_t* element_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
-                if ((ASRUtils::is_real(*element_type) || ASRUtils::is_complex(*element_type)) &&
-                        ASRUtils::extract_kind_from_ttype_t(element_type) == 16) {
-                    // A real(16) or complex(16) value is kept as the constant it evaluates to.
+                int element_kind = ASRUtils::extract_kind_from_ttype_t(element_type);
+                if ((ASRUtils::is_real(*element_type) && element_kind == 10) ||
+                        ((ASRUtils::is_real(*element_type) || ASRUtils::is_complex(*element_type)) &&
+                        element_kind == 16)) {
+                    // A real(10), real(16) or complex(16) value is kept as the constant it evaluates to.
                     visitor.value = nullptr;
                     visitor.visit_expr(*expr);
                     if (visitor.value == nullptr ||
@@ -25919,6 +26182,10 @@ public:
         }
         // check compiletime evaluation possibility
         bool is_compiletime = is_compiletime_implied_do_loop(idl, loop_vars);
+        // The data of a constant array holds no real(10) or complex(10)
+        // elements: the values of such a loop are kept as constant elements.
+        bool is_kind10_loop = (ASRUtils::is_real(*type) || ASRUtils::is_complex(*type)) &&
+                ASRUtils::extract_kind_from_ttype_t(type) == 10;
 
         if (is_compiletime && idl_nesting_level == 1) {
             std::vector<int64_t> loop_indices; // fill it with all zero
@@ -25931,7 +26198,28 @@ public:
             idl_not_evaluated = false;
             // TODO: handle multiple types
             // populate compiletime array
-            if (ASRUtils::is_integer(*type)) {
+            if (is_kind10_loop) {
+                Vec<ASR::expr_t*> array; array.reserve(al, 1);
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                bool all_constant = !idl_not_evaluated;
+                for (int i = 0; all_constant && i < itr; i++) {
+                    all_constant = array.p[i] != nullptr;
+                }
+                if (all_constant) {
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+                    ASR::dimension_t dim; dim.loc = x.base.base.loc;
+                    ASR::ttype_t* int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, int4));
+                    dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, itr, int4));
+                    dims.push_back(al, dim);
+                    ASR::ttype_t* array_type = ASRUtils::TYPE(ASR::make_Array_t(al, x.base.base.loc,
+                        ASRUtils::extract_type(type), dims.p, dims.n,
+                        ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                    idl->m_value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
+                        x.base.base.loc, array.p, itr, array_type, ASR::arraystorageType::ColMajor));
+                    tmp = (ASR::asr_t*) idl;
+                }
+            } else if (ASRUtils::is_integer(*type)) {
                 Vec<int> array; array.reserve(al, 1);
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
                 data = &array.p[0];
@@ -26096,7 +26384,9 @@ public:
                     ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v1);
                     tmp = create_ArrayRef(x.base.base.loc, x.m_member[0].m_args, x.m_member[0].n_args, nullptr, 0, nullptr, v1, f2);
                 } else {
-                    tmp = resolve_variable(x.base.base.loc, to_lower(x.m_member[0].m_name));
+                    tmp = &resolve_selector_object(ASRUtils::EXPR(resolve_variable(
+                        x.base.base.loc, to_lower(x.m_member[0].m_name))),
+                        x.base.base.loc)->base;
                 }
             } else {
                 // To use the following function, Don't use last member and use it as id instead.
@@ -27006,8 +27296,8 @@ public:
                 ASR::expr_t* element = visit_BinOp_helper(ASRUtils::fetch_ArrayConstant_value(al, left_array, i),
                                 ASRUtils::fetch_ArrayConstant_value(al, right_array, i), op, loc, ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, left_array, i)));
                 if (element == nullptr) {
-                    // An element that cannot be folded, e.g. a complex(16)
-                    // division, leaves the array to be evaluated at run time
+                    // An element that cannot be folded leaves the array
+                    // to be evaluated at run time
                     return nullptr;
                 }
                 values.push_back(al, element);
@@ -28143,9 +28433,9 @@ public:
 
     void visit_BoolOp(const AST::BoolOp_t &x) {
         this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
+        ASR::expr_t *left = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        ASR::expr_t *right = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag, boolop2str[x.m_op], current_scope, current_function_dependencies, current_module_dependencies);
     }
 
@@ -28248,6 +28538,29 @@ public:
         return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
             expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
             ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+    }
+
+    // `base` is the object of a component reference or a type-bound
+    // procedure call, e.g. `x` in `x%v`. In a `rank (0)` block the selector
+    // is a scalar object; an assumed rank array outside of a rank block
+    // cannot be such a base (C838).
+    ASR::expr_t* resolve_selector_object(ASR::expr_t* base, const Location& loc) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(base)) ||
+                !ASR::is_a<ASR::Var_t>(*base)) {
+            return base;
+        }
+        ASR::expr_t* selector = cast_assumed_rank_selector(base);
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(selector))) {
+            diag.add(Diagnostic("assumed-rank array '" + std::string(
+                ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(base)->m_v)) +
+                "' cannot be used as the base of a component or binding reference",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        if (ASRUtils::is_array(ASRUtils::expr_type(selector))) {
+            return base;
+        }
+        return selector;
     }
 
     // An assumed rank array that is not the selector of an enclosing
@@ -28365,11 +28678,11 @@ public:
     void visit_ConditionalExpr(const AST::ConditionalExpr_t &x) {
         reject_conditional_expr_in_restricted_context(x.base.base.loc);
         this->visit_expr(*x.m_test);
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_body);
-        ASR::expr_t *body = ASRUtils::EXPR(tmp);
+        ASR::expr_t *body = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         this->visit_expr(*x.m_orelse);
-        ASR::expr_t *orelse = ASRUtils::EXPR(tmp);
+        ASR::expr_t *orelse = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         ensure_not_assumed_rank(test, "Conditional expression", x.base.base.loc);
         ensure_not_assumed_rank(body, "Conditional expression", x.base.base.loc);
         ensure_not_assumed_rank(orelse, "Conditional expression", x.base.base.loc);
@@ -29344,7 +29657,8 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                 complex_kind));
         ASR::expr_t *value = nullptr;
-        if (re_value && im_value && complex_kind != 16) {
+        // A ComplexConstant holds no complex(10) value: see below.
+        if (re_value && im_value && complex_kind != 16 && complex_kind != 10) {
             double re_double;
             if (ASR::is_a<ASR::RealConstant_t>(*re_value)) {
                 re_double = ASR::down_cast<ASR::RealConstant_t>(re_value)->m_r;
@@ -29381,6 +29695,17 @@ public:
                         ASR::down_cast<ASR::RealConstant_t>(re16_value)),
                     ASRUtils::real_constant_get_r16(
                         ASR::down_cast<ASR::RealConstant_t>(im16_value)), type);
+            }
+        } else if (complex_kind == 10) {
+            // A ComplexConstant holds no complex(10) value. A constant such
+            // value is instead a constructor from the two real(10)
+            // constants: it is its own compile-time value.
+            ASR::ttype_t *part_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, complex_kind));
+            re = CastingUtil::perform_casting(re, part_type, al, x.base.base.loc);
+            im = CastingUtil::perform_casting(im, part_type, al, x.base.base.loc);
+            if (ASRUtils::expr_value(re) && ASRUtils::expr_value(im)) {
+                value = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
+                    x.base.base.loc, re, im, type, nullptr));
             }
         }
         tmp = ASR::make_ComplexConstructor_t(al, x.base.base.loc,

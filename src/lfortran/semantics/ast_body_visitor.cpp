@@ -2068,7 +2068,8 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
+                if( !ASRUtils::is_variable(a_iostat) ||
+                    !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
                         diag.add(Diagnostic(
                             "`iostat` must be a variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {
@@ -2088,7 +2089,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
-                if( a_iomsg->type != ASR::exprType::Var ||
+                if( !ASRUtils::is_variable(a_iomsg) ||
                     (!ASRUtils::is_character(*a_iomsg_type)) ) {
                         diag.add(Diagnostic(
                             "`iomsg` must be of type, String or StringPointer",
@@ -2097,6 +2098,14 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     diag.add(Diagnostic(
@@ -2209,7 +2218,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( a_iostat->type != ASR::exprType::Var ||
+                if( !ASRUtils::is_variable(a_iostat) ||
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
                         diag.add(Diagnostic(
                             "`iostat` must be a variable of type, Integer "
@@ -2231,10 +2240,18 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
                 ASR::ttype_t *a_iomsg_type = ASRUtils::expr_type(a_iomsg);
-                if (a_iomsg->type != ASR::exprType::Var ||
+                if (!ASRUtils::is_variable(a_iomsg) ||
                     !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
                     diag.add(Diagnostic(
                         "`iomsg` must be a variable of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be scalar",
                         Level::Error, Stage::Semantic, {
                             Label("", {x.base.base.loc})
                         }));
@@ -6048,7 +6065,8 @@ public:
         } else {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if(alloc_args_vec.p[i].m_a && ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
-                    alloc_args_vec.p[i].n_dims == 0) {
+                    alloc_args_vec.p[i].n_dims == 0 &&
+                    !is_rank_zero_selector(alloc_args_vec.p[i].m_a)) {
                     diag.add(Diagnostic(
                         "Allocate for arrays should have dimensions specified, "
                         "found only array variable with no dimensions",
@@ -6059,6 +6077,17 @@ public:
                 }
             }
         }
+    }
+
+    // True for the selector inside its `rank (0)` block, where it is a scalar.
+    bool is_rank_zero_selector(ASR::expr_t* expr) {
+        if (!ASR::is_a<ASR::Var_t>(*expr) ||
+                !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return false;
+        }
+        auto it = assumed_rank_arrays.find(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v));
+        return it != assumed_rank_arrays.end() && it->second == 0;
     }
 
     ASR::symbol_t* get_allocate_expr_sym(ASR::expr_t* v) {
@@ -6352,6 +6381,27 @@ public:
                 array_var_name = selector_variable->m_name;
             }
         }
+        // The rank of the selector is only known inside the construct, so its
+        // `assumed_rank_arrays` entry is restored to the enclosing one at
+        // `end select`, also when the construct is abandoned by an error.
+        struct AssumedRankEntryRestorer {
+            std::map<std::string, int> &ranks;
+            std::string name;
+            bool had_entry;
+            int rank;
+            ~AssumedRankEntryRestorer() {
+                if (had_entry) {
+                    ranks[name] = rank;
+                } else {
+                    ranks.erase(name);
+                }
+            }
+        };
+        auto previous_entry = assumed_rank_arrays.find(array_var_name);
+        bool had_previous_entry = previous_entry != assumed_rank_arrays.end();
+        AssumedRankEntryRestorer restore_rank_entry{assumed_rank_arrays,
+            array_var_name, had_previous_entry,
+            had_previous_entry ? previous_entry->second : 0};
         ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
         if( !ASR::is_a<ASR::Array_t>(*selector_type)) {
             // Throw error if selector is not an array
@@ -9143,16 +9193,23 @@ public:
                         // ASRUtils::set_ArrayConstant_value(ac, arg, i);
                         args.push_back(al, arg);
                     }
-                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
-                            args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format))));
-                    value = ASRUtils::EXPR((ASR::asr_t*) ac);
-                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                    if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(ac->m_type)));
-                        array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
+                    ASR::expr_t* constructor = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
+                            args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format));
+                    if (ASRUtils::expr_value(constructor) == nullptr) {
+                        // The elements cannot be stored as the data of an
+                        // ArrayConstant (real(10), complex(10)).
+                        value = constructor;
+                    } else {
+                        ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
+                        value = ASRUtils::EXPR((ASR::asr_t*) ac);
+                        LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
+                        if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_pointer(
+                                    ASRUtils::type_get_past_allocatable(ac->m_type)));
+                            array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
+                        }
                     }
                 } else {
                     if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
@@ -10171,7 +10228,7 @@ public:
         if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
-            v_expr = ASRUtils::EXPR(tmp);
+            v_expr = resolve_selector_object(ASRUtils::EXPR(tmp), x.base.base.loc);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
@@ -11133,7 +11190,7 @@ public:
         all_blocks_nesting++;
         all_loops_blocks_nesting++;
         visit_expr(*x.m_test);
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         ASR::ttype_t *test_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(test));
         if (!ASR::is_a<ASR::Logical_t>(*test_type)) {
             diag.add(diag::Diagnostic("Expected logical expression in if statement, but recieved " +
@@ -11319,7 +11376,7 @@ public:
             CurrentBodyScope body_scope(*this, &test_stmts, current_scope);
             visit_expr(*x.m_test);
         }
-        ASR::expr_t *test = ASRUtils::EXPR(tmp);
+        ASR::expr_t *test = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body + test_stmts.size() + 1);
         if (test_stmts.size() > 0) {

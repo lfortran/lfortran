@@ -545,7 +545,7 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
         compiler_options.fixed_form, compiler_options.openmp, include_dirs,
         diagnostics);
     if (!prescan_res.ok) {
-        std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
+        std::cerr << diagnostics.render(lm, compiler_options);
         return 1;
     }
     std::cout << prescan_res.result << std::endl;
@@ -577,7 +577,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
             compiler_options.fixed_form, compiler_options.openmp, include_dirs,
             diagnostics);
         if (!prescan_res.ok) {
-            std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
+            std::cerr << diagnostics.render(lm, compiler_options);
             return 1;
         }
         input = prescan_res.result;
@@ -2363,6 +2363,11 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (compiler_options.gpu_lazy_init) {
                     cuda_rt_cmd_base += " -DLFORTRAN_GPU_LAZY_INIT";
                 }
+                if (compiler_options.gpu_overlap && !emulate_cpu && !hip
+                        && LCompilers::gpu_overlap_arch_ok(
+                            compiler_options.gpu_arch)) {
+                    cuda_rt_cmd_base += " -DLFORTRAN_GPU_OVERLAP";
+                }
                 std::vector<std::string> cuda_runtime_objs;
                 for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
                     std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
@@ -3063,8 +3068,12 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, opts.connect,
-            std::vector<std::string>(argv + 1, argv + argc));
+        // The kernel's output is not a terminal: it colors what this
+        // prompt would.
+        std::vector<std::string> kernel_arguments(argv + 1, argv + argc);
+        kernel_arguments.push_back(compiler_options.use_colors
+            ? "--color=always" : "--color=never");
+        return prompt(opts.arg_v, opts.connect, kernel_arguments);
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;

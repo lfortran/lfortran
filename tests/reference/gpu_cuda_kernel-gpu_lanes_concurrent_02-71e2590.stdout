@@ -1,0 +1,233 @@
+#include <stdint.h>
+
+// The lanes of an iteration are consecutive threads of a warp, or,
+// with more than 32 of them, all the threads of a block.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_combine(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
+// The lanes are the warps of a block: each combines its own lanes,
+// and every lane then folds the partial results of the warps in the
+// same order.
+template <int op, typename T>
+__device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, 32));
+    }
+    __shared__ T partial[32];
+    if ((threadIdx.x & 31u) == 0) partial[threadIdx.x >> 5] = v;
+    __syncthreads();
+    T r = partial[0];
+    for (int i = 1; i < (lanes >> 5); i++) {
+        r = __lfortran_lane_combine<op>(r, partial[i]);
+    }
+    __syncthreads();
+    return r;
+}
+
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
+    if (lanes == 32 || lanes == 16) {
+        // The common sizes, with the shuffles unrolled.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            if (offset < lanes) {
+                v = __lfortran_lane_combine<op>(v,
+                    __shfl_xor_sync(mask, v, offset, lanes));
+            }
+        }
+        return v;
+    }
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(mask, v, offset, lanes));
+    }
+    return v;
+}
+
+// For a kernel whose iterations may have the lanes of a block. Its
+// barriers keep the other kernels from reordering their loads, so
+// the others do not call these.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce_block(T v, int lanes, unsigned mask) {
+    if (lanes > 32) return __lfortran_block_reduce<op>(v, lanes);
+    return __lfortran_lane_reduce<op>(v, lanes, mask);
+}
+
+__device__ __noinline__ void __lfortran_block_barrier() {
+    __syncthreads();
+}
+
+// Waits for the other lanes of the iteration.
+__device__ inline void __lfortran_lane_barrier(int lanes, unsigned mask) {
+    if (lanes > 1) __syncwarp(mask);
+}
+
+__device__ inline void __lfortran_lane_barrier_block(int lanes, unsigned mask) {
+    if (lanes > 32) __lfortran_block_barrier();
+    else if (lanes > 1) __syncwarp(mask);
+}
+
+template <typename T>
+__device__ __noinline__ T __lfortran_block_broadcast(T v, int lanes) {
+    __shared__ T first;
+    if ((threadIdx.x % (unsigned)lanes) == 0) first = v;
+    __syncthreads();
+    T r = first;
+    __syncthreads();
+    return r;
+}
+
+// The value of the first lane of the iteration, in every lane.
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast(T v, int lanes, unsigned mask) {
+    return lanes > 1 ? __shfl_sync(mask, v, 0, lanes) : v;
+}
+
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast_block(T v, int lanes, unsigned mask) {
+    if (lanes > 32) return __lfortran_block_broadcast(v, lanes);
+    return __lfortran_lane_broadcast(v, lanes, mask);
+}
+
+__device__ inline int _lcompilers_optimization_modulo_i32_gpu_26(int a, int p) {
+    int _lcompilers_optimization_modulo_i32{};
+    _lcompilers_optimization_modulo_i32 = ((a) % (((int)p)));
+    if (((int)((_lcompilers_optimization_modulo_i32 != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32 < 0) && (((int)p) > 0))) || ((int)((_lcompilers_optimization_modulo_i32 > 0) && (((int)p) < 0)))))))) {
+        _lcompilers_optimization_modulo_i32 = (_lcompilers_optimization_modulo_i32 + ((int)p));
+    }
+    return _lcompilers_optimization_modulo_i32;
+}
+
+__device__ inline int _lcompilers_optimization_modulo_i321_gpu_28(int a, int p) {
+    int _lcompilers_optimization_modulo_i321{};
+    _lcompilers_optimization_modulo_i321 = ((a) % (((int)p)));
+    if (((int)((_lcompilers_optimization_modulo_i321 != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i321 < 0) && (((int)p) > 0))) || ((int)((_lcompilers_optimization_modulo_i321 > 0) && (((int)p) < 0)))))))) {
+        _lcompilers_optimization_modulo_i321 = (_lcompilers_optimization_modulo_i321 + ((int)p));
+    }
+    return _lcompilers_optimization_modulo_i321;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0_25gpu_lanes_concurrent_02_m9conv_norm {
+    int heads;
+    int kdh;
+    int __dim_qk_0;
+    int __lb_qk_0;
+    int __dim_qk_1;
+    int __lb_qk_1;
+    int __dim_qn_0;
+    int __lb_qn_0;
+    int __dim_qn_1;
+    int __lb_qn_1;
+    int __dim_state_0;
+    int __lb_state_0;
+    int __dim_state_1;
+    int __lb_state_1;
+    int __dim_w_0;
+    int __lb_w_0;
+    int __dim_w_1;
+    int __lb_w_1;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_25gpu_lanes_concurrent_02_m9conv_norm(
+    float* __restrict__ qk,
+    float* __restrict__ qn,
+    float* __restrict__ state,
+    float* __restrict__ w,
+    float* __restrict__ x,
+    __ScalarArgs___lfortran_gpu_kernel_0_25gpu_lanes_concurrent_02_m9conv_norm __scalar_args)
+{
+    int heads = __scalar_args.heads;
+    int kdh = __scalar_args.kdh;
+    int __dim_qk_0 = __scalar_args.__dim_qk_0;
+    int __lb_qk_0 = __scalar_args.__lb_qk_0;
+    int __lb_qk_1 = __scalar_args.__lb_qk_1;
+    int __dim_qn_0 = __scalar_args.__dim_qn_0;
+    int __lb_qn_0 = __scalar_args.__lb_qn_0;
+    int __lb_qn_1 = __scalar_args.__lb_qn_1;
+    int __dim_state_0 = __scalar_args.__dim_state_0;
+    int __lb_state_0 = __scalar_args.__lb_state_0;
+    int __lb_state_1 = __scalar_args.__lb_state_1;
+    int __dim_w_0 = __scalar_args.__dim_w_0;
+    int __lb_w_0 = __scalar_args.__lb_w_0;
+    int __lb_w_1 = __scalar_args.__lb_w_1;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+    int __flat_idx;
+    int blk__dc;
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+    blk__dc = (__flat_idx + 1);
+    {
+        float __gpu_power_base;
+        int col;
+        int i__dc;
+        int i__dc1;
+        int i__dc2;
+        float rrms;
+        float ss;
+        col = ((((blk__dc - 1) / 2) + 1) + (_lcompilers_optimization_modulo_i321_gpu_28((blk__dc - 1), 2) * (heads / 2)));
+        for (i__dc = (1 + (((int)__gpu_lane) * 1)); i__dc <= kdh; i__dc += (1 * ((int)__gpu_lanes))) {
+            {
+                float acc;
+                int c;
+                int r;
+                c = (((blk__dc - 1) * kdh) + i__dc);
+                acc = (((w[((int)(1) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))]) + (w[((int)(2) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))])) + (w[((int)(3) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * x[((int)(c) - (__lb_x_0))]));
+                r = _lcompilers_optimization_modulo_i32_gpu_26(((i__dc * 5) - 5), kdh);
+                qk[((int)((r + 1)) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] = acc;
+                state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))] = state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))];
+                state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))] = x[((int)(c) - (__lb_x_0))];
+            }
+        }
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+        ss = ((float)0);
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                ss =   0.00000000000000000e+00f;
+            }
+            i__dc1 = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_0 = kdh >= i__dc1 ? (kdh - i__dc1) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            #pragma unroll 16
+            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i__dc1 += (1 * ((int)__gpu_lanes))) {
+                __gpu_power_base = qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))];
+                ss = (ss + (__gpu_power_base * __gpu_power_base));
+            }
+            ss = __lfortran_lane_reduce_block<0>(ss, __gpu_lanes_n, __gpu_lane_mask);
+        } else {
+            #pragma unroll 16
+            for (i__dc1 = 1; i__dc1 <= kdh; i__dc1++) {
+                __gpu_power_base = qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))];
+                ss = (ss + (__gpu_power_base * __gpu_power_base));
+            }
+        }
+        rrms = (((float)1) / sqrt(((ss / ((float)kdh)) +   9.99999997475242708e-07f)));
+        i__dc2 = (1 + (((int)__gpu_lane) * 1));
+        const int __lfortran_trips_1 = kdh >= i__dc2 ? (kdh - i__dc2) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+        #pragma unroll 16
+        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i__dc2 += (1 * ((int)__gpu_lanes))) {
+            qn[((int)(i__dc2) - (__lb_qn_0)) + (__dim_qn_0 * ((int)(col) - (__lb_qn_1)))] = (qk[((int)(i__dc2) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * rrms);
+        }
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+    }
+}
+

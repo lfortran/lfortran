@@ -10,6 +10,8 @@ target_include_directories(test_gpu_cuda_api_state PRIVATE
 add_test(NAME test_gpu_cuda_api_state COMMAND test_gpu_cuda_api_state)
 add_test(NAME test_gpu_cuda_api_state_read_only
     COMMAND test_gpu_cuda_api_state read-only)
+add_test(NAME test_gpu_cuda_api_state_small_reads
+    COMMAND test_gpu_cuda_api_state small-reads)
 add_test(NAME test_gpu_cuda_api_state_resident
     COMMAND test_gpu_cuda_api_state resident)
 add_test(NAME test_gpu_cuda_api_state_discard
@@ -22,6 +24,12 @@ add_test(NAME test_gpu_cuda_api_state_discard_fill
     COMMAND test_gpu_cuda_api_state discard-fill)
 add_test(NAME test_gpu_cuda_api_state_read_once
     COMMAND test_gpu_cuda_api_state read-once)
+# These count the copies of buffers of a few hundred bytes at every launch,
+# which the cache of small reads would not make.
+set_tests_properties(test_gpu_cuda_api_state_read_only
+    test_gpu_cuda_api_state_discard_read_only
+    test_gpu_cuda_api_state_read_once PROPERTIES
+    ENVIRONMENT "LFORTRAN_GPU_SMALL_READS=0")
 add_test(NAME test_gpu_cuda_api_state_keep_reads
     COMMAND test_gpu_cuda_api_state keep-reads)
 add_test(NAME test_gpu_cuda_api_state_keep_across_waits

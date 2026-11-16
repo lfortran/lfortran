@@ -3385,7 +3385,7 @@ end function
 module cc1_complex_star
 implicit none
     complex*64 :: cc1_cs_z64  ! {Error} Kind 32 is not supported for Complex
-    complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+    complex*24 :: cc1_cs_z24  ! {Error} Kind 12 is not supported for Complex
     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
 end module cc1_complex_star
@@ -4892,4 +4892,164 @@ subroutine cc1_continuation_ampersand_location()
     i = 1 + &
         & 2
     i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+end subroutine
+
+module cc1_io_named_constant
+    type :: cc1_io_nc_t
+        integer :: i
+        character(len=8) :: s
+    end type
+    character(len=*), parameter :: cc1_io_nc_c = "abcdef"
+    integer, parameter :: cc1_io_nc_a(2) = [1, 2]
+    type(cc1_io_nc_t), parameter :: cc1_io_nc_k = cc1_io_nc_t(1, "abc")
+contains
+    subroutine cc1_io_nc_sub()
+        integer :: ios, u
+        open(newunit=u, file="x", iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} Non-variable expression for `iomsg`
+        write(*, *, iostat=cc1_io_nc_k%i) 1  ! {Error} Non-variable expression for `iostat`
+        read(*, *, iostat=ios, iomsg=cc1_io_nc_k%s) u  ! {Error} Non-variable expression for `iomsg`
+        close(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be of type, String or StringPointer
+        backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be a variable of type Character
+        backspace(unit=99, iostat=cc1_io_nc_k%i)  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+        backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_k%s)  ! {Error} `iomsg` must be a variable of type Character
+        backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+    end subroutine
+end module
+
+module cc1_io_iomsg_scalar
+    type :: cc1_io_scalar_t
+        character(len=64) :: msgs(2)
+    end type
+contains
+    subroutine cc1_io_scalar_sub()
+        character(len=64) :: msgs(3)
+        type(cc1_io_scalar_t) :: x
+        integer :: ios
+        close(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+        close(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+        close(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+    end subroutine
+end module
+
+module cc1_close_iostat_variable
+    integer, parameter :: cc1_close_iostat_fixed = 1
+contains
+    subroutine cc1_close_iostat_sub()
+        integer :: ios
+        close(unit=99, iostat=ios + 1)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+        close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+    end subroutine
+end module
+
+! The rank of a `select rank` selector is not known after `end select`
+subroutine cc1_select_rank_logical_after_end_select(x)
+    logical, intent(in) :: x(..)
+    select rank (x)
+    rank (0)
+        print *, x
+    end select
+    if (x) print *, "x"  ! {Error} Expected logical expression in if statement
+end subroutine
+
+! An assumed-rank array is not a scalar object outside a `rank (0)` block
+module cc1_select_rank_component_base
+    implicit none
+    type :: cc1_sr_t
+        integer :: v = 0
+    end type
+contains
+    subroutine cc1_sr_after_end_select(x)
+        type(cc1_sr_t), intent(inout) :: x(..)
+        select rank (x)
+        rank (0)
+            x%v = 1
+        end select
+        x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    end subroutine
+
+    subroutine cc1_sr_no_select_rank(x)
+        type(cc1_sr_t), intent(inout) :: x(..)
+        x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    end subroutine
+
+    subroutine cc1_sr_rank_default(x)
+        type(cc1_sr_t), intent(inout) :: x(..)
+        integer :: k
+        select rank (x)
+        rank default
+            k = x%v  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+        end select
+    end subroutine
+end module
+
+! Only the selector of a `rank (0)` block may be allocated without bounds
+module cc1_select_rank_allocate
+    implicit none
+contains
+    subroutine cc1_sra_after_end_select(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        select rank (slot)
+        rank (0)
+            allocate(slot)
+        end select
+        allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    end subroutine
+
+    subroutine cc1_sra_rank_1(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        select rank (slot)
+        rank (1)
+            allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+        end select
+    end subroutine
+
+    subroutine cc1_sra_rank_default(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        select rank (slot)
+        rank (0)
+            allocate(slot)
+        rank default
+            allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+        end select
+    end subroutine
+
+    subroutine cc1_sra_other_procedure(slot)
+        integer, allocatable, intent(inout) :: slot(..)
+        allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    end subroutine
+end module
+
+! Diagnostics for atan, atand and atanpi name them, not the atan2, atan2d and
+! atan2pi intrinsics that their two-argument forms are.
+subroutine cc1_two_argument_atan_errors()
+    complex :: cc1_ta_z
+    real :: cc1_ta_r
+    cc1_ta_z = (1.0, 0.0)
+    cc1_ta_r = atan(cc1_ta_z, cc1_ta_z)  ! {Error} arguments 'y' and 'x' of the 'atan' intrinsic must be real, found complex(4) and complex(4)
+    cc1_ta_r = atand(1, 2.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must be real, found integer(4) and real(4)
+    cc1_ta_r = atanpi(cc1_ta_r, cc1_ta_z)  ! {Error} arguments 'y' and 'x' of the 'atanpi' intrinsic must be real, found real(4) and complex(4)
+    cc1_ta_r = atan(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atan
+    cc1_ta_r = atand(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atand
+    cc1_ta_r = atanpi(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atanpi
+    cc1_ta_r = atan()  ! {Error} Incorrect number of arguments passed to the 'atan' intrinsic. It accepts at least 1 and at most 2 arguments.
+    cc1_ta_r = atand(1.0, 2.0, 3.0)  ! {Error} Incorrect number of arguments passed to the 'atand' intrinsic. It accepts at least 1 and at most 2 arguments.
+    cc1_ta_r = atanpi()  ! {Error} Incorrect number of arguments passed to the 'atanpi' intrinsic. It accepts at least 1 and at most 2 arguments.
+end subroutine cc1_two_argument_atan_errors
+
+! `pack` `vector` and `unpack` `field` must match the type and kind of `array` and `vector`
+module cc1_pack_unpack_kind
+    implicit none
+    real(16), parameter :: cc1_puk_p(2) = pack([1.5_8, 2.5_8, 3.5_8], [.true., .false., .false.], [9.0_16, 8.0_16])  ! {Error} `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
+    real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
+end module
+
+! The rank of an array is at most 15, so DIM of LBOUND and UBOUND of an
+! assumed-rank array must be between 1 and 15.
+subroutine cc1_assumed_rank_bound_dim(c)
+    real, intent(in) :: c(..)
+    print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+    print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
 end subroutine

@@ -154,6 +154,20 @@ namespace LCompilers::CastingUtil {
         } else {
             dest = ASRUtils::extract_type(dest);
         }
+        if (cast_kind == ASR::cast_kindType::RealToComplex) {
+            // Convert the real to the kind of the complex parts first.
+            int src_kind = ASRUtils::extract_kind_from_ttype_t(src);
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest);
+            if (src_kind != dest_kind && (src_kind == 10 || dest_kind == 10)) {
+                ASR::ttype_t* part_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, dest_kind));
+                if (ASRUtils::is_array(src)) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(src, m_dims);
+                    part_type = ASRUtils::make_Array_t_util(al, loc, part_type, m_dims, n_dims);
+                }
+                expr = perform_casting(expr, part_type, al, loc);
+            }
+        }
         return ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, loc, expr, cast_kind, dest));
     }
 }

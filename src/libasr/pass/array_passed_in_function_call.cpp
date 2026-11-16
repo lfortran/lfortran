@@ -203,7 +203,8 @@ public:
              ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
             if ( !((cast->m_new == ASR::array_physical_typeType::PointerArray ||
-                     cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                     cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray ||
+                     cast->m_new == ASR::array_physical_typeType::StringArraySinglePointer) &&
                     (cast->m_old == ASR::array_physical_typeType::DescriptorArray ||
                      cast->m_old == ASR::array_physical_typeType::AssumedRankArray)) ) {
                 return false;
@@ -1126,14 +1127,14 @@ public:
     }
 
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
-        size_t x_n_args, const std::string& name_hint, std::vector<bool> is_arg_intent_out = {}, bool is_func_bind_c = false,
+        size_t x_n_args, const std::string& name_hint, std::vector<bool> is_arg_intent_out = {},
         std::vector<bool> is_arg_contiguous_dummy = {}) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             ASR::expr_t* arg_expr = x_m_args[i].m_value;
             if ( arg_expr &&
-                 ((!is_func_bind_c && is_descriptor_array_casted_to_pointer_to_data(arg_expr)) ||
+                 (is_descriptor_array_casted_to_pointer_to_data(arg_expr) ||
                   (i < is_arg_contiguous_dummy.size() && is_arg_contiguous_dummy[i] &&
                    is_discontiguous_actual_of_contiguous_dummy(arg_expr))) &&
                  !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(arg_expr))
@@ -1318,6 +1319,12 @@ public:
     void visit_Call(const T& x, const std::string& name_hint) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*callee) ) {
+            // A type-bound call goes through the dummies of the procedure
+            // bound to the name.
+            callee = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)->m_proc);
+        }
         bool is_procedure_variable = ASR::is_a<ASR::Variable_t>(*callee) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
                 ASR::down_cast<ASR::Variable_t>(callee)->m_type));
@@ -1327,7 +1334,6 @@ public:
             // example the call-site interface of an implicit-interface call).
             // Without an interface every argument may be modified.
             ASR::Function_t* func = ASRUtils::get_function(callee);
-            bool is_func_bind_c = ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC;
             std::vector<bool> is_arg_intent_out(x.n_args, func == nullptr);
             // CONTIGUOUS assumed-shape and assumed-rank dummies, which take
             // an array descriptor of contiguous data.
@@ -1348,7 +1354,7 @@ public:
                         ASR::array_physical_typeType::AssumedRankArray);
             }
             traverse_call_args(x_m_args, x.m_args, x.n_args,
-                name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c,
+                name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out,
                 is_arg_contiguous_dummy);
         } else {
             traverse_call_args(x_m_args, x.m_args, x.n_args,

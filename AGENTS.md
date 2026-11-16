@@ -87,15 +87,17 @@ GitHub's auto-merge button or a merge queue. Run it from a Claude Code
 session in the main checkout on the maintainer's machine with
 `/loop 15m /mergebot`, not with `/schedule` or other cloud routines.
 
-The trusted `Mergebot events` workflow captures the label's exact head, even
-when conflicts prevent CI from starting. The label approves that head plus
-mergebot's explicitly completed, equivalent rebases; comments cannot authorize
-heads, and pending rebase journals or locks block merging. Any other push to
-the PR removes the label, as does a CI failure caused by
-the PR (which also turns the PR back into a draft) or a rebase that changes
-what the PR does; a maintainer re-reviews and applies it again. A comment on
-the PR can ask mergebot to squash-merge instead of merging. Agents other than
-mergebot do not push to labeled PRs, merge them, or apply the label.
+The label approves the head the PR had when it was applied, plus mergebot's
+explicitly completed, equivalent rebases. Mergebot proves that head from
+GitHub's server timestamps (Quick runs and force-pushes, never commit dates)
+and journals it locally, with no workflow or runner of its own; a head it
+cannot prove loses the label. Comments cannot authorize heads, and pending
+rebase journals or locks block merging. Any other push to the PR removes the
+label, as does a CI failure caused by the PR (which also turns the PR back
+into a draft) or a rebase that changes what the PR does; a maintainer
+re-reviews and applies it again. A comment on the PR can ask mergebot to
+squash-merge instead of merging. Agents other than mergebot do not push to
+labeled PRs, merge them, or apply the label.
 
 Mergebot prioritizes throughput: keep merging green PRs while main CI is
 pending, accepting that their combination can break main. Stop merging once

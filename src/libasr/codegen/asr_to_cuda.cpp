@@ -21,11 +21,31 @@ struct CudaDialect {
     // The integer kind element offsets are computed in
     // (GpuDeviceCapabilities::offset_kind).
     int element_offset_kind = 4;
+    // `--gpu-overlap`: every kernel waits for the grid before it in the
+    // stream first thing (see emit_kernel_entry).
+    bool overlap = false;
 
     CudaDialect(bool emit_registrar_, bool emulate_cpu_, bool hip_,
-            int offset_kind_)
+            int offset_kind_, bool overlap_ = false)
         : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_),
-          hip(hip_), element_offset_kind(offset_kind_) {}
+          hip(hip_), element_offset_kind(offset_kind_), overlap(overlap_) {}
+
+    // The runtime launches with programmatic stream serialization, so a
+    // kernel may start (its blocks being resident) before the previous grid
+    // of the stream has finished and flushed its writes. The kernel does
+    // not touch memory until `griddepcontrol.wait` returns, which waits for
+    // that grid to complete; it is a no-op if the kernel was launched
+    // without a predecessor or without the attribute. The grid never
+    // triggers its dependents early, so they launch when its blocks exit.
+    // The memory clobber keeps the compiler from moving a load above it.
+    void emit_kernel_entry(std::stringstream &src,
+            const std::string &indent) const {
+        if (!overlap || emulate_cpu || hip) return;
+        src << "#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900\n"
+            << indent << "asm volatile(\"griddepcontrol.wait;\" ::: "
+            << "\"memory\");\n"
+            << "#endif\n";
+    }
 
     // CUDA has one flat address space for global memory, so a pointer into it
     // needs no qualifier at all; only the two special spaces are named.
@@ -88,12 +108,24 @@ struct CudaDialect {
     // sparse matrix-vector product lost a quarter of its speed with the
     // bound). The CPU emulation's host compiler knows no such attribute, and
     // HIP, tuned on AMD GPUs without it, is left as it was.
+    //
+    // A kernel whose lanes read vectors of 16 bytes (`lane_vectors`) is held
+    // to the registers that let three quarters of the threads of a
+    // multiprocessor (1536 of 2048) run, six blocks of 256. It needs the
+    // loads of its iterations in flight, which a bound that lets ptxas
+    // cut the registers to run all 2048 does not leave it, and the
+    // many threads that hide them, which one block per multiprocessor
+    // would not.
     std::string kernel_qualifier(int64_t threads_per_block,
-            bool few_blocks) const {
+            bool few_blocks, bool lane_vectors = false) const {
         if (emulate_cpu || hip) return "extern \"C\" __global__ void ";
+        std::string min_blocks = few_blocks ? ", 1"
+            : lane_vectors && threads_per_block > 0
+                && threads_per_block <= 1536
+                ? ", " + std::to_string(1536 / threads_per_block)
+                : std::string();
         return "extern \"C\" __global__ void __launch_bounds__("
-            + std::to_string(threads_per_block)
-            + (few_blocks ? ", 1" : "") + ") ";
+            + std::to_string(threads_per_block) + min_blocks + ") ";
     }
 
     // A kernel parameter is bound by position, not to a named buffer slot.
@@ -171,12 +203,18 @@ struct CudaDialect {
     std::string wide_load(const std::string &indent,
             const std::vector<std::string> &targets,
             const std::string &source, const std::string &array,
-            const std::string &aligned) const {
-        std::string out = indent + "__lfortran_wide_load((" + aligned
-            + ") && (reinterpret_cast<size_t>(" + array
-            + ") & 15u) == 0, &(" + source + ")";
+            const std::string &aligned, bool assume) const {
+        std::string out = indent + "__lfortran_wide_load("
+            + (assume ? std::string("true") : wide_aligned(array, aligned))
+            + ", &(" + source + ")";
         for (const std::string &t : targets) out += ", " + t;
         return out + ");\n";
+    }
+    // Whether `array` starts at a multiple of 16 bytes and `aligned` holds.
+    std::string wide_aligned(const std::string &array,
+            const std::string &aligned) const {
+        return "((" + aligned + ") && (reinterpret_cast<size_t>(" + array
+            + ") & 15u) == 0)";
     }
     std::string wide_load_helper() const {
         return
@@ -318,13 +356,19 @@ struct CudaDialect {
             : std::string(deep ? "#pragma unroll 64" : "#pragma unroll 16");
     }
     // A loop whose iterations read vectors of 16 bytes (gpu_wide_loads.cpp)
-    // has the loads of 16 elements in each already: unrolled by 8, a loop
+    // has the loads of 16 elements in each already: unrolled by 2, a loop
     // of a quantized matrix-vector product keeps its loads in flight with
-    // 48 registers, where by 16 it takes 128 and the SM runs a quarter of
-    // the warps.
-    std::string unroll_wide_pragma() const {
+    // few registers; by 4 it takes 64 and the SM runs a third fewer warps
+    // (the product of 17408 rows takes 15% longer).
+    // A kernel whose lanes read such vectors (`lane_vectors`) does not
+    // unroll it: its lanes have the next vectors to load in flight with the
+    // registers of the bound of kernel_qualifier, which an unrolled loop
+    // takes for its copies (a quantized matrix-vector product read 3%
+    // faster over its launches, together with the bound).
+    std::string unroll_wide_pragma(bool lane_vectors = false) const {
         return emulate_cpu || hip ? std::string()
-            : std::string("#pragma unroll 8");
+            : std::string(lane_vectors ? "#pragma unroll 1"
+                                       : "#pragma unroll 2");
     }
     // A loop that combines the values of the lanes of an iteration in each
     // of its iterations is unrolled by four: the shuffles of one iteration
@@ -462,7 +506,8 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
 {
     ASRToGpuCVisitor<CudaDialect> v(co,
         CudaDialect(emit_registrar, co.gpu_cpu_emulation, co.gpu_hip,
-            gpu_device_capabilities(co.po).offset_kind));
+            gpu_device_capabilities(co.po).offset_kind,
+            co.gpu_overlap && gpu_overlap_arch_ok(co.gpu_arch)));
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

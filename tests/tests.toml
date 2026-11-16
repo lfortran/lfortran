@@ -5706,6 +5706,14 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_reduce_02.f90"
 gpu_metal_kernel = true
 
+# Accumulators updated under an `if` (a maximum written as `if (v > m) m = v`,
+# a count, a sum of the elements that pass a test), shared out between the
+# lanes of a warp and combined.
+[[test]]
+filename = "../integration_tests/gpu_lanes_reduce_03.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
 # A loop whose body is a block with locals, shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_blocks_02.f90"
@@ -5730,6 +5738,13 @@ filename = "../integration_tests/gpu_inline_loop_calls_01.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
+# A kernel's calls of small pure subroutines in a loop are inlined, so that
+# the lanes of an iteration share the loop instead of running it on the first
+# lane.
+[[test]]
+filename = "../integration_tests/gpu_inline_loop_subroutine_01.f90"
+gpu_cuda_kernel = true
+
 # Nested `do concurrent` loops shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_nested_01.f90"
@@ -5740,6 +5755,20 @@ gpu_metal_kernel = true
 # and in an iteration with automatic arrays.
 [[test]]
 filename = "../integration_tests/gpu_lanes_independent_01.f90"
+gpu_cuda_kernel = true
+
+# On an NVIDIA GPU, the phases of attention in one kernel: the `do concurrent`
+# loops inside the iteration of a head are shared out between its lanes, also
+# where a plain loop with a sum is inside them.
+[[test]]
+filename = "../integration_tests/gpu_lanes_concurrent_01.f90"
+gpu_cuda_kernel = true
+
+# On an NVIDIA GPU, a nested `do concurrent` that assigns at subscripts that do
+# not tell its iterations apart by themselves (a modulo, a division) is shared
+# out between the lanes all the same.
+[[test]]
+filename = "../integration_tests/gpu_lanes_concurrent_02.f90"
 gpu_cuda_kernel = true
 
 # On an NVIDIA GPU, the sum over the codes of a group of a quantized
@@ -5754,6 +5783,13 @@ gpu_cuda_kernel = true
 # once, after the loop over the groups.
 [[test]]
 filename = "../integration_tests/gpu_lanes_defer_01.f90"
+gpu_cuda_kernel = true
+
+# On an NVIDIA GPU, a statement that adds two terms to a sum at once
+# (`t = t + a + b`) is a sum the lanes of an iteration share out, as two
+# statements that add each are.
+[[test]]
+filename = "../integration_tests/gpu_lanes_chain_01.f90"
 gpu_cuda_kernel = true
 
 # On an NVIDIA GPU, the launch whose lanes are as many as the iterations of the
@@ -5786,6 +5822,20 @@ gpu_cuda_kernel = true
 # of an iteration only for a launch of few iterations.
 [[test]]
 filename = "../integration_tests/gpu_lanes_scattered_01.f90"
+gpu_cuda_kernel = true
+
+# The portable integer dot product of four signed bytes (written with
+# shifta and shiftl), as a function, nested, and in a loop, becomes the
+# dp4a instruction of an NVIDIA GPU; near misses stay plain arithmetic.
+[[test]]
+filename = "../integration_tests/gpu_dp4a_idiom_01.f90"
+gpu_cuda_kernel = true
+
+# A sum that reads across columns followed by a loop that updates the array
+# from it, in one iteration: the sum is shared out for a launch of few
+# iterations only, and not repeated on every lane.
+[[test]]
+filename = "../integration_tests/gpu_lanes_scattered_02.f90"
 gpu_cuda_kernel = true
 
 # A loop in one branch of an `if` inside a loop, shared out between the

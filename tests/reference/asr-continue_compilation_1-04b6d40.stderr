@@ -1466,10 +1466,10 @@ semantic error: Kind 32 is not supported for Complex
 3387 |     complex*64 :: cc1_cs_z64  ! {Error} Kind 32 is not supported for Complex
      |     ^^^^^^^^^^ 
 
-semantic error: Kind 10 is not supported for Complex
+semantic error: Kind 12 is not supported for Complex
     --> tests/errors/continue_compilation_1.f90:3388:5
      |
-3388 |     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+3388 |     complex*24 :: cc1_cs_z24  ! {Error} Kind 12 is not supported for Complex
      |     ^^^^^^^^^^ 
 
 semantic error: Kind 3 is not supported for Complex
@@ -2107,6 +2107,18 @@ semantic error: Template argument t has not been declared in template specificat
      |
 4885 |        end template
      | ...^^^^^^^^^^^^^^^^^ 
+
+semantic error: `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
+    --> tests/errors/continue_compilation_1.f90:5045:99
+     |
+5045 |     real(16), parameter :: cc1_puk_p(2) = pack([1.5_8, 2.5_8, 3.5_8], [.true., .false., .false.], [9.0_16, 8.0_16])  ! {Error} `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
+     |                                                                                                   ^^^^^^^^^^^^^^^^ 
+
+semantic error: `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
+    --> tests/errors/continue_compilation_1.f90:5046:95
+     |
+5046 |     real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
+     |                                                                                               ^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -3538,7 +3550,7 @@ semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension ind
 905 |         x = norm2([1.0, 2.0], dim=2)
     |                                   ^ 
 
-semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
+semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 10, 16
    --> tests/errors/continue_compilation_1.f90:918:27
     |
 918 |         print *, real(1., 666)
@@ -5746,6 +5758,216 @@ semantic error: Type mismatch in assignment, the types must be compatible
      |
 4894 |     i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
      |     ^   ^^^ type mismatch (integer and string)
+
+semantic error: Non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:4908:9
+     |
+4908 |         open(newunit=u, file="x", iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} Non-variable expression for `iomsg`
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression for `iostat`
+    --> tests/errors/continue_compilation_1.f90:4909:9
+     |
+4909 |         write(*, *, iostat=cc1_io_nc_k%i) 1  ! {Error} Non-variable expression for `iostat`
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:4910:9
+     |
+4910 |         read(*, *, iostat=ios, iomsg=cc1_io_nc_k%s) u  ! {Error} Non-variable expression for `iomsg`
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be of type, String or StringPointer
+    --> tests/errors/continue_compilation_1.f90:4911:9
+     |
+4911 |         close(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be of type, String or StringPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be a variable of type Character
+    --> tests/errors/continue_compilation_1.f90:4912:9
+     |
+4912 |         backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be a variable of type Character
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer  or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4913:9
+     |
+4913 |         backspace(unit=99, iostat=cc1_io_nc_k%i)  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be a variable of type Character
+    --> tests/errors/continue_compilation_1.f90:4914:9
+     |
+4914 |         backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_k%s)  ! {Error} `iomsg` must be a variable of type Character
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer  or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4915:9
+     |
+4915 |         backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4928:9
+     |
+4928 |         close(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4929:9
+     |
+4929 |         close(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4930:9
+     |
+4930 |         close(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4931:9
+     |
+4931 |         backspace(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4932:9
+     |
+4932 |         backspace(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4933:9
+     |
+4933 |         backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4942:9
+     |
+4942 |         close(unit=99, iostat=ios + 1)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4943:9
+     |
+4943 |         close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Expected logical expression in if statement, but recieved logical(4) instead
+    --> tests/errors/continue_compilation_1.f90:4954:9
+     |
+4954 |     if (x) print *, "x"  ! {Error} Expected logical expression in if statement
+     |         ^ logical(4) expression, expected logical
+
+semantic error: assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    --> tests/errors/continue_compilation_1.f90:4970:9
+     |
+4970 |         x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+     |         ^^^ 
+
+semantic error: assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    --> tests/errors/continue_compilation_1.f90:4975:9
+     |
+4975 |         x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+     |         ^^^ 
+
+semantic error: assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    --> tests/errors/continue_compilation_1.f90:4983:17
+     |
+4983 |             k = x%v  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+     |                 ^^^ 
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:4998:18
+     |
+4998 |         allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                  ^^^^ Array specification required in allocate statement
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:5005:22
+     |
+5005 |             allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                      ^^^^ Array specification required in allocate statement
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:5015:22
+     |
+5015 |             allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                      ^^^^ Array specification required in allocate statement
+
+semantic error: Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+    --> tests/errors/continue_compilation_1.f90:5021:18
+     |
+5021 |         allocate(slot)  ! {Error} Allocate for arrays should have dimensions specified, found only array variable with no dimensions
+     |                  ^^^^ Array specification required in allocate statement
+
+semantic error: arguments 'y' and 'x' of the 'atan' intrinsic must be real, found complex(4) and complex(4)
+    --> tests/errors/continue_compilation_1.f90:5031:16
+     |
+5031 |     cc1_ta_r = atan(cc1_ta_z, cc1_ta_z)  ! {Error} arguments 'y' and 'x' of the 'atan' intrinsic must be real, found complex(4) and complex(4)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments 'y' and 'x' of the 'atand' intrinsic must be real, found integer(4) and real(4)
+    --> tests/errors/continue_compilation_1.f90:5032:16
+     |
+5032 |     cc1_ta_r = atand(1, 2.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must be real, found integer(4) and real(4)
+     |                ^^^^^^^^^^^^^ 
+
+semantic error: arguments 'y' and 'x' of the 'atanpi' intrinsic must be real, found real(4) and complex(4)
+    --> tests/errors/continue_compilation_1.f90:5033:16
+     |
+5033 |     cc1_ta_r = atanpi(cc1_ta_r, cc1_ta_z)  ! {Error} arguments 'y' and 'x' of the 'atanpi' intrinsic must be real, found real(4) and complex(4)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: No matching signature found for intrinsic atan
+    --> tests/errors/continue_compilation_1.f90:5034:16
+     |
+5034 |     cc1_ta_r = atan(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atan
+     |                ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: No matching signature found for intrinsic atand
+    --> tests/errors/continue_compilation_1.f90:5035:16
+     |
+5035 |     cc1_ta_r = atand(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atand
+     |                ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: No matching signature found for intrinsic atanpi
+    --> tests/errors/continue_compilation_1.f90:5036:16
+     |
+5036 |     cc1_ta_r = atanpi(y=1.0, z=2.0)  ! {Error} No matching signature found for intrinsic atanpi
+     |                ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'atan' intrinsic. It accepts at least 1 and at most 2 arguments.
+    --> tests/errors/continue_compilation_1.f90:5037:16
+     |
+5037 |     cc1_ta_r = atan()  ! {Error} Incorrect number of arguments passed to the 'atan' intrinsic. It accepts at least 1 and at most 2 arguments.
+     |                ^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'atand' intrinsic. It accepts at least 1 and at most 2 arguments.
+    --> tests/errors/continue_compilation_1.f90:5038:16
+     |
+5038 |     cc1_ta_r = atand(1.0, 2.0, 3.0)  ! {Error} Incorrect number of arguments passed to the 'atand' intrinsic. It accepts at least 1 and at most 2 arguments.
+     |                ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Incorrect number of arguments passed to the 'atanpi' intrinsic. It accepts at least 1 and at most 2 arguments.
+    --> tests/errors/continue_compilation_1.f90:5039:16
+     |
+5039 |     cc1_ta_r = atanpi()  ! {Error} Incorrect number of arguments passed to the 'atanpi' intrinsic. It accepts at least 1 and at most 2 arguments.
+     |                ^^^^^^^^ 
+
+semantic error: `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+    --> tests/errors/continue_compilation_1.f90:5053:24
+     |
+5053 |     print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+     |                        ^ `dim` is 0
+
+semantic error: `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+    --> tests/errors/continue_compilation_1.f90:5054:24
+     |
+5054 |     print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+     |                        ^^ `dim` is 16
 
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9

@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_chain_01-b958bf8",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_chain_01.f90",
+    "infile_hash": "3ac8b446810fd3c2b9aa48d43ec4c81a715bdf350fa5ffba2b1a4ffd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_chain_01-b958bf8.stdout",
+    "stdout_hash": "6d80e20e3bac051dc74c8d826756c0881b1fce7cdd2f9f24f3d53f27",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

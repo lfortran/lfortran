@@ -1,0 +1,233 @@
+/*
+ * lfortran_complex128.h
+ *
+ * complex(16) arithmetic and elementary functions on pairs of binary128
+ * numbers, written against the lf_float128 API of
+ * lfortran_float128_quadmath.h.
+ *
+ * The runtime (lfortran_intrinsics.c) computes complex(16) operations with
+ * these functions and the compiler folds complex(16) constant expressions
+ * with them, so that a folded constant equals the value computed at run time.
+ */
+
+#ifndef LFORTRAN_COMPLEX128_H
+#define LFORTRAN_COMPLEX128_H
+
+#include <stdint.h>
+#include "lfortran_float128_quadmath.h"
+
+typedef struct {
+    lf_float128 re, im;
+} lf_complex128;
+
+static inline lf_complex128 lf_c128_make(lf_float128 re, lf_float128 im) {
+    lf_complex128 r;
+    r.re = re;
+    r.im = im;
+    return r;
+}
+
+static inline lf_complex128 lf_c128_from_double(double re, double im) {
+    return lf_c128_make(lf_f128_from_double(re), lf_f128_from_double(im));
+}
+
+static inline lf_complex128 lf_c128_add(lf_complex128 a, lf_complex128 b) {
+    return lf_c128_make(lf_f128_add(a.re, b.re), lf_f128_add(a.im, b.im));
+}
+
+static inline lf_complex128 lf_c128_sub(lf_complex128 a, lf_complex128 b) {
+    return lf_c128_make(lf_f128_sub(a.re, b.re), lf_f128_sub(a.im, b.im));
+}
+
+static inline lf_complex128 lf_c128_mul(lf_complex128 a, lf_complex128 b) {
+    return lf_c128_make(
+        lf_f128_sub(lf_f128_mul(a.re, b.re), lf_f128_mul(a.im, b.im)),
+        lf_f128_add(lf_f128_mul(a.re, b.im), lf_f128_mul(a.im, b.re)));
+}
+
+static inline lf_complex128 lf_c128_div(lf_complex128 a, lf_complex128 b) {
+    // Smith's algorithm, as for the lower precisions.
+    lf_float128 zero = lf_f128_from_double(0.0);
+    if (lf_f128_cmp(lf_f128_abs(b.re), lf_f128_abs(b.im)) >= 0) {
+        if (lf_f128_eq(b.re, zero) && lf_f128_eq(b.im, zero)) {
+            return lf_c128_make(lf_f128_div(a.re, zero),
+                lf_f128_div(a.im, zero));
+        }
+        lf_float128 ratio = lf_f128_div(b.im, b.re);
+        lf_float128 denom = lf_f128_add(b.re, lf_f128_mul(b.im, ratio));
+        return lf_c128_make(
+            lf_f128_div(lf_f128_add(a.re, lf_f128_mul(a.im, ratio)), denom),
+            lf_f128_div(lf_f128_sub(a.im, lf_f128_mul(a.re, ratio)), denom));
+    }
+    lf_float128 ratio = lf_f128_div(b.re, b.im);
+    lf_float128 denom = lf_f128_add(lf_f128_mul(b.re, ratio), b.im);
+    return lf_c128_make(
+        lf_f128_div(lf_f128_add(lf_f128_mul(a.re, ratio), a.im), denom),
+        lf_f128_div(lf_f128_sub(lf_f128_mul(a.im, ratio), a.re), denom));
+}
+
+static inline lf_float128 lf_c128_abs(lf_complex128 z) {
+    lf_float128 zero = lf_f128_from_double(0.0);
+    lf_float128 x = lf_f128_abs(z.re), y = lf_f128_abs(z.im);
+    if (lf_f128_isinf(x) || lf_f128_isinf(y)) {
+        return lf_f128_div(lf_f128_from_double(1.0), zero);
+    }
+    if (lf_f128_isnan(x) || lf_f128_isnan(y)) {
+        return lf_f128_div(zero, zero);
+    }
+    if (lf_f128_cmp(x, y) < 0) {
+        lf_float128 t = x;
+        x = y;
+        y = t;
+    }
+    if (lf_f128_eq(x, zero)) {
+        return zero;
+    }
+    // Scale by the larger part so that the squares do not overflow.
+    lf_float128 r = lf_f128_div(y, x);
+    return lf_f128_mul(x, lf_f128_sqrt(
+        lf_f128_add(lf_f128_from_double(1.0), lf_f128_mul(r, r))));
+}
+
+static inline lf_complex128 lf_c128_mul_i(lf_complex128 z) {
+    return lf_c128_make(lf_f128_neg(z.im), z.re);
+}
+
+static inline lf_complex128 lf_c128_sqrt(lf_complex128 z) {
+    lf_float128 zero = lf_f128_from_double(0.0);
+    lf_float128 half = lf_f128_from_double(0.5);
+    if (lf_f128_eq(z.re, zero) && lf_f128_eq(z.im, zero)) {
+        return lf_c128_make(zero, z.im);
+    }
+    lf_float128 t = lf_f128_sqrt(lf_f128_mul(half,
+        lf_f128_add(lf_c128_abs(z), lf_f128_abs(z.re))));
+    lf_float128 two_t = lf_f128_add(t, t);
+    if (lf_f128_signbit(z.re) == 0) {
+        return lf_c128_make(t, lf_f128_div(z.im, two_t));
+    }
+    lf_float128 re = lf_f128_div(lf_f128_abs(z.im), two_t);
+    return lf_c128_make(re, lf_f128_signbit(z.im) ? lf_f128_neg(t) : t);
+}
+
+static inline lf_complex128 lf_c128_exp(lf_complex128 z) {
+    lf_float128 e = lf_f128_exp(z.re);
+    return lf_c128_make(lf_f128_mul(e, lf_f128_cos(z.im)),
+        lf_f128_mul(e, lf_f128_sin(z.im)));
+}
+
+static inline lf_complex128 lf_c128_log(lf_complex128 z) {
+    return lf_c128_make(lf_f128_log(lf_c128_abs(z)),
+        lf_f128_atan2(z.im, z.re));
+}
+
+static inline lf_complex128 lf_c128_sin(lf_complex128 z) {
+    return lf_c128_make(lf_f128_mul(lf_f128_sin(z.re), lf_f128_cosh(z.im)),
+        lf_f128_mul(lf_f128_cos(z.re), lf_f128_sinh(z.im)));
+}
+
+static inline lf_complex128 lf_c128_cos(lf_complex128 z) {
+    return lf_c128_make(lf_f128_mul(lf_f128_cos(z.re), lf_f128_cosh(z.im)),
+        lf_f128_neg(lf_f128_mul(lf_f128_sin(z.re), lf_f128_sinh(z.im))));
+}
+
+static inline lf_complex128 lf_c128_sinh(lf_complex128 z) {
+    return lf_c128_make(lf_f128_mul(lf_f128_sinh(z.re), lf_f128_cos(z.im)),
+        lf_f128_mul(lf_f128_cosh(z.re), lf_f128_sin(z.im)));
+}
+
+static inline lf_complex128 lf_c128_cosh(lf_complex128 z) {
+    return lf_c128_make(lf_f128_mul(lf_f128_cosh(z.re), lf_f128_cos(z.im)),
+        lf_f128_mul(lf_f128_sinh(z.re), lf_f128_sin(z.im)));
+}
+
+static inline lf_complex128 lf_c128_tan(lf_complex128 z) {
+    return lf_c128_div(lf_c128_sin(z), lf_c128_cos(z));
+}
+
+static inline lf_complex128 lf_c128_tanh(lf_complex128 z) {
+    return lf_c128_div(lf_c128_sinh(z), lf_c128_cosh(z));
+}
+
+static inline lf_complex128 lf_c128_asinh(lf_complex128 z) {
+    // log(z + sqrt(z*z + 1))
+    lf_complex128 one = lf_c128_from_double(1.0, 0.0);
+    return lf_c128_log(lf_c128_add(z,
+        lf_c128_sqrt(lf_c128_add(lf_c128_mul(z, z), one))));
+}
+
+static inline lf_complex128 lf_c128_asin(lf_complex128 z) {
+    // asin(z) = -i asinh(i z)
+    lf_complex128 r = lf_c128_asinh(lf_c128_mul_i(z));
+    return lf_c128_make(r.im, lf_f128_neg(r.re));
+}
+
+static inline lf_complex128 lf_c128_acos(lf_complex128 z) {
+    // acos(z) = pi/2 - asin(z)
+    lf_float128 half_pi = lf_float128_from_str(
+        "1.57079632679489661923132169163975144");
+    lf_complex128 a = lf_c128_asin(z);
+    return lf_c128_make(lf_f128_sub(half_pi, a.re), lf_f128_neg(a.im));
+}
+
+static inline lf_complex128 lf_c128_acosh(lf_complex128 z) {
+    // log(z + sqrt(z + 1) sqrt(z - 1))
+    lf_complex128 one = lf_c128_from_double(1.0, 0.0);
+    return lf_c128_log(lf_c128_add(z, lf_c128_mul(
+        lf_c128_sqrt(lf_c128_add(z, one)), lf_c128_sqrt(lf_c128_sub(z, one)))));
+}
+
+static inline lf_complex128 lf_c128_atanh(lf_complex128 z) {
+    // (log(1 + z) - log(1 - z)) / 2
+    lf_complex128 one = lf_c128_from_double(1.0, 0.0);
+    lf_complex128 d = lf_c128_sub(lf_c128_log(lf_c128_add(one, z)),
+        lf_c128_log(lf_c128_sub(one, z)));
+    lf_float128 half = lf_f128_from_double(0.5);
+    return lf_c128_make(lf_f128_mul(half, d.re), lf_f128_mul(half, d.im));
+}
+
+static inline lf_complex128 lf_c128_atan(lf_complex128 z) {
+    // atan(z) = -i atanh(i z)
+    lf_complex128 r = lf_c128_atanh(lf_c128_mul_i(z));
+    return lf_c128_make(r.im, lf_f128_neg(r.re));
+}
+
+static inline lf_complex128 lf_c128_pow(lf_complex128 a, lf_complex128 b) {
+    lf_float128 zero = lf_f128_from_double(0.0);
+    if (lf_f128_eq(a.re, zero) && lf_f128_eq(a.im, zero)) {
+        if (lf_f128_eq(b.re, zero) && lf_f128_eq(b.im, zero)) {
+            return lf_c128_from_double(1.0, 0.0);
+        }
+        return lf_c128_make(zero, zero);
+    }
+    return lf_c128_exp(lf_c128_mul(b, lf_c128_log(a)));
+}
+
+// a**n by repeated multiplication (binary exponentiation); a negative `n`
+// gives 1/a**(-n). This is the algorithm of the lower precisions, with which
+// the compiler also unrolls a constant exponent.
+static inline lf_complex128 lf_c128_pow_int(lf_complex128 a, int64_t n) {
+    if (n == 0) {
+        return lf_c128_from_double(1.0, 0.0);
+    }
+    uint64_t u = n < 0 ? (uint64_t)0 - (uint64_t)n : (uint64_t)n;
+    lf_complex128 base = a;
+    while ((u & 1) == 0) {
+        base = lf_c128_mul(base, base);
+        u >>= 1;
+    }
+    lf_complex128 result = base;
+    u >>= 1;
+    while (u != 0) {
+        base = lf_c128_mul(base, base);
+        if (u & 1) {
+            result = lf_c128_mul(result, base);
+        }
+        u >>= 1;
+    }
+    if (n < 0) {
+        result = lf_c128_div(lf_c128_from_double(1.0, 0.0), result);
+    }
+    return result;
+}
+
+#endif /* LFORTRAN_COMPLEX128_H */

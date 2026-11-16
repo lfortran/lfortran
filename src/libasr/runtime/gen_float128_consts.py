@@ -3,8 +3,10 @@
 Section K of lfortran_float128.c starts with a block of constants and tables
 (from "pi/2 = PIO2_1 + PIO2_2 + PIO2_3" through F128_TWO_OVER_PI_BITS). This
 script prints that block. It uses only the Python standard library: exact
-rational arithmetic (fractions), 140-digit decimal logarithms (decimal) and
-integer arithmetic for the bits of 2/pi. Every value is rounded to nearest
+rational arithmetic (fractions), 140-digit decimal logarithms, exponentials
+and square roots (decimal; e.g. 2^(j/32) and 2/sqrt(pi)), Euler-Maclaurin
+sums with exact Bernoulli numbers (Euler's constant and zeta(k)) and integer
+arithmetic for the bits of 2/pi. Every value is rounded to nearest
 (ties to even) to binary128; a {hi, lo} pair holds the rounded value and the
 rounded remainder. The script is not run by the build. To regenerate the
 block, run
@@ -100,6 +102,7 @@ const_dw("F128_LOG2E", "1/log(2)", 1/ln2)
 const_dw("F128_LOG10E", "1/log(10)", 1/ln10)
 const_dw("F128_D2R", "pi/180", pi/180)
 const_dw("F128_R2D", "180/pi", 180/pi)
+const_dw("F128_TWO_OVER_SQRT_PI", "2/sqrt(pi)", dec_to_fr(2 / pi_d.sqrt()))
 out.append("/* log(1 + i/64) for i = -16..32, as {hi, lo} pairs */")
 out.append("static const uint64_t F128_LOG_TABLE[49][2][2] = {")
 for i in range(-16, 33):
@@ -120,10 +123,58 @@ out.append("static const uint64_t F128_INV_FACT[32][2] = {")
 for k in range(32):
     out.append("    %s," % cw(rn(Fr(1, math.factorial(k)))))
 out.append("};")
+out.append("/* 2^(j/32) for j = 0..31, as {hi, lo} pairs */")
+out.append("static const uint64_t F128_EXP2_TABLE[32][2][2] = {")
+for j in range(32):
+    h, l = dw(dec_to_fr((D(j) / 32 * D(2).ln()).exp()) if j else Fr(1))
+    out.append("    {%s, %s}," % (cw(h), cw(l)))
+out.append("};")
+out.append("/* 1/k! for k = 0..12, as {hi, lo} pairs */")
+out.append("static const uint64_t F128_INV_FACT_DW[13][2][2] = {")
+for k in range(13):
+    h, l = dw(Fr(1, math.factorial(k)))
+    out.append("    {%s, %s}," % (cw(h), cw(l)))
+out.append("};")
 out.append("/* 1/(2k+1) for k = 0..31 */")
 out.append("static const uint64_t F128_INV_ODD[32][2] = {")
 for k in range(32):
     out.append("    %s," % cw(rn(Fr(1, 2*k + 1))))
+out.append("};")
+
+# Gamma: Bernoulli numbers B_0..B_80 (exact), Euler's constant and zeta(k)
+# by the Euler-Maclaurin summation formula (truncation error below 1e-60).
+B = [Fr(1)] + [Fr(0)] * 80
+for m in range(1, 81):
+    B[m] = -sum(Fr(math.comb(m + 1, j)) * B[j] for j in range(m)) / (m + 1)
+NE = 200
+euler = sum(Fr(1, n) for n in range(1, NE)) - dec_to_fr(D(NE).ln()) + Fr(1, 2*NE)
+euler += sum(B[2*j] / (2*j * Fr(NE)**(2*j)) for j in range(1, 41))
+assert abs(euler - Fr(D("0.57721566490153286060651209008240243104215933593992"))) < Fr(1, 10**49)
+def zeta(s, N=50):
+    z = sum(Fr(1, n**s) for n in range(1, N)) + Fr(1, (s - 1) * N**(s - 1)) + Fr(1, 2 * N**s)
+    rise = Fr(s)
+    for j in range(1, 31):
+        z += B[2*j] / math.factorial(2*j) * rise / Fr(N)**(s + 2*j - 1)
+        rise *= (s + 2*j - 1) * (s + 2*j)
+    return z
+assert abs(zeta(2) - pi**2 / 6) < Fr(1, 10**60)
+assert abs(zeta(4) - pi**4 / 90) < Fr(1, 10**60)
+const_dw("F128_HALF_LN_2PI", "log(2 pi)/2", dec_to_fr((2*pi_d).ln() / 2))
+const_dw("F128_EULER", "Euler's constant", euler)
+out.append("/* B_2k / (2k (2k-1)) for k = 2..16, the Stirling series of log Gamma */")
+out.append("static const uint64_t F128_STIRLING[15][2] = {")
+for k in range(2, 17):
+    out.append("    %s," % cw(rn(B[2*k] / (2*k * (2*k - 1)))))
+out.append("};")
+out.append("/* (-1)^k zeta(k)/k for k = 2..16, the Taylor coefficients of log Gamma(1+e) */")
+out.append("static const uint64_t F128_LGAMMA1_TAYLOR[15][2] = {")
+for k in range(2, 17):
+    out.append("    %s," % cw(rn((-1)**k * zeta(k) / k)))
+out.append("};")
+out.append("/* (-1)^k (zeta(k) - 1)/k for k = 2..16, those of log Gamma(2+e) */")
+out.append("static const uint64_t F128_LGAMMA2_TAYLOR[15][2] = {")
+for k in range(2, 17):
+    out.append("    %s," % cw(rn((-1)**k * (zeta(k) - 1) / k)))
 out.append("};")
 
 # 2/pi bits, integer Machin

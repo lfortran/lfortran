@@ -41,9 +41,11 @@ struct MetalDialect {
     }
 
     std::string kernel_qualifier(int64_t /*threads_per_block*/,
-            bool /*few_blocks*/) const {
+            bool /*few_blocks*/, bool = false) const {
         return "kernel void ";
     }
+
+    void emit_kernel_entry(std::stringstream &, const std::string &) const {}
 
     // Every kernel parameter is bound to an explicit buffer slot.
     std::string buffer_attr(int index) const {
@@ -100,18 +102,21 @@ struct MetalDialect {
         return std::string(names[op]) + "(" + value + ")";
     }
     std::string lane_reduce_helper() const { return ""; }
-    std::string unroll_wide_pragma() const { return unroll_pragma(); }
+    std::string unroll_wide_pragma(bool = false) const { return unroll_pragma(); }
     // Reached only on a device that has wide loads (gpu_wide_loads.cpp).
     std::string wide_load(const std::string &indent,
             const std::vector<std::string> &targets,
             const std::string &source, const std::string &/*array*/,
-            const std::string &/*aligned*/) const {
+            const std::string &/*aligned*/, bool /*assume*/) const {
         std::string out;
         for (size_t i = 0; i < targets.size(); i++) {
             out += indent + targets[i] + " = (&(" + source + "))["
                 + std::to_string(i) + "];\n";
         }
         return out;
+    }
+    std::string wide_aligned(const std::string &, const std::string &) const {
+        return "true";
     }
     std::string wide_load_helper() const { return ""; }
 

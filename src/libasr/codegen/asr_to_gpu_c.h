@@ -811,20 +811,25 @@ public:
             ASRUtils::extract_kind_from_ttype_t(type) < 4;
     }
 
-    // min/max of two arguments, each spelled with the result's device type
-    // when that is narrower than int.
+    // min/max of any number of arguments (folded from the left), each
+    // spelled with the result's device type when that is narrower than int.
     void emit_min_max(const char *name, ASR::ttype_t *type,
-            ASR::expr_t *a, ASR::expr_t *b) {
+            const std::vector<ASR::expr_t*> &args) {
         std::string open = "", close = "";
         if (type && is_narrow_integer(type)) {
             open = "((" + gpu_type(type) + ")(";
             close = "))";
         }
-        src << name << "(" << open;
-        if (a) visit_expr(a);
-        src << close << ", " << open;
-        if (b) visit_expr(b);
-        src << close << ")";
+        if (args.empty()) return;
+        for (size_t i = 1; i < args.size(); i++) src << name << "(";
+        src << open;
+        if (args[0]) visit_expr(args[0]);
+        src << close;
+        for (size_t i = 1; i < args.size(); i++) {
+            src << ", " << open;
+            if (args[i]) visit_expr(args[i]);
+            src << close << ")";
+        }
     }
 
     // The unsigned integer type of the same width as gpu_type(type), for an
@@ -4091,6 +4096,65 @@ public:
         dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
+    // Whether the vectors the GpuWideLoad statements in `body` read all
+    // start at a multiple of 16 bytes, as a C condition; empty when the
+    // body has none.
+    std::string wide_loads_aligned(ASR::stmt_t **body, size_t n_body) {
+        class Found : public ASR::BaseWalkVisitor<Found> {
+        public:
+            std::vector<const ASR::GpuWideLoad_t*> loads;
+            void visit_GpuWideLoad(const ASR::GpuWideLoad_t &x) {
+                loads.push_back(&x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        } found;
+        for (size_t i = 0; i < n_body; i++) found.visit_stmt(*body[i]);
+        std::set<std::string> seen;
+        std::string out;
+        for (const ASR::GpuWideLoad_t *w : found.loads) {
+            std::string c = dialect.wide_aligned(expr_str(w->m_array),
+                w->m_aligned ? expr_str(w->m_aligned) : "true");
+            if (!seen.insert(c).second) continue;
+            out += (out.empty() ? "" : " && ") + c;
+        }
+        return out;
+    }
+
+    // Writes a counted loop, a `do` statement.
+    void emit_do_loop(ASR::stmt_t *stmt) {
+        ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+        if (dl->n_orelse > 0) {
+            // Only internal lowerings create a loop-else, and none
+            // of them runs on device code.
+            throw CodeGenError("gpu offload: a DO loop with an "
+                "else block reached the device code generator",
+                stmt->base.loc);
+        }
+        GpuLoopFrame frame = begin_loop(dl->m_name, dl->m_body,
+            dl->n_body);
+        std::set<ASR::symbol_t*> written = loop_written(
+            dl->m_body, dl->n_body);
+        if (dl->m_head.m_v != nullptr) {
+            written.insert(gpu_designator_base(dl->m_head.m_v).root);
+        }
+        bool wide = holds_wide_load(dl->m_body, dl->n_body);
+        // The loop over the chunks of a row is unrolled whatever the size
+        // of its body: it reads vectors, and each iteration is long.
+        emit_counted_for(dl->m_head, written, stmt->base.loc,
+            small_innermost_loop(dl->m_body, dl->n_body) || wide,
+            holds_lane_reduce(dl->m_body, dl->n_body), wide);
+        emit_loop_body(frame, dl->m_body, dl->n_body);
+    }
+
+    bool wide_versioned = false;
+    bool wide_assume_aligned = false;
+
     // Opens a loop: one that an exit or a cycle of its own leaves from a
     // loop inside it gets the variable that says which one did.
     GpuLoopFrame begin_loop(const char *name, ASR::stmt_t **body,
@@ -4193,6 +4257,8 @@ public:
     // Whether the kernel being written streams down rows of a matrix
     // (streams_strided_rows).
     bool kernel_streams_strided_rows = false;
+    // Whether the kernel has lanes that read vectors of 16 bytes.
+    bool kernel_lane_vectors = false;
 
     // Whether the kernel being written runs each iteration on lanes.
     bool kernel_has_lanes() const {
@@ -4462,7 +4528,7 @@ public:
             src << get_indent() << "const " << type_name << " " << trips
                 << " = " << end << " >= " << v << " ? (" << end << " - " << v
                 << ") / " << inc << " + 1 : 0;\n";
-            src << get_indent() << (wide ? dialect.unroll_wide_pragma()
+            src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
                 : dialect.unroll_pragma(deep)) << "\n";
             src << get_indent() << "for (" << type_name << " " << count
                 << " = 0; " << count << " < " << trips << "; " << count
@@ -4470,7 +4536,7 @@ public:
             return;
         }
         if (pragma) {
-            src << get_indent() << (wide ? dialect.unroll_wide_pragma()
+            src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
                 : dialect.unroll_pragma(deep)) << "\n";
         } else if (unroll_few && !dialect.unroll_few_pragma().empty()) {
             src << get_indent() << dialect.unroll_few_pragma() << "\n";
@@ -5176,7 +5242,8 @@ public:
                 }
                 src << dialect.wide_load(get_indent(), targets,
                     expr_str(w->m_source), expr_str(w->m_array),
-                    w->m_aligned ? expr_str(w->m_aligned) : "true");
+                    w->m_aligned ? expr_str(w->m_aligned) : "true",
+                    wide_assume_aligned);
                 break;
             }
             case ASR::stmtType::GpuLaneBarrier: {
@@ -5210,25 +5277,29 @@ public:
             }
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
-                if (dl->n_orelse > 0) {
-                    // Only internal lowerings create a loop-else, and none
-                    // of them runs on device code.
-                    throw CodeGenError("gpu offload: a DO loop with an "
-                        "else block reached the device code generator",
-                        stmt->base.loc);
+                std::string aligned = wide_versioned ? std::string()
+                    : wide_loads_aligned(dl->m_body, dl->n_body);
+                if (aligned.empty()) {
+                    emit_do_loop(stmt);
+                    break;
                 }
-                GpuLoopFrame frame = begin_loop(dl->m_name, dl->m_body,
-                    dl->n_body);
-                std::set<ASR::symbol_t*> written = loop_written(
-                    dl->m_body, dl->n_body);
-                if (dl->m_head.m_v != nullptr) {
-                    written.insert(gpu_designator_base(dl->m_head.m_v).root);
-                }
-                emit_counted_for(dl->m_head, written, stmt->base.loc,
-                    small_innermost_loop(dl->m_body, dl->n_body),
-                    holds_lane_reduce(dl->m_body, dl->n_body),
-                    holds_wide_load(dl->m_body, dl->n_body));
-                emit_loop_body(frame, dl->m_body, dl->n_body);
+                // The loop twice: where every vector it reads starts at a
+                // multiple of 16 bytes (a test of values that no iteration
+                // changes), the vectors are read without testing each, and
+                // where one does not, as the statement says.
+                wide_versioned = true;
+                src << get_indent() << "if (" << aligned << ") {\n";
+                indent_level++;
+                wide_assume_aligned = true;
+                emit_do_loop(stmt);
+                wide_assume_aligned = false;
+                indent_level--;
+                src << get_indent() << "} else {\n";
+                indent_level++;
+                emit_do_loop(stmt);
+                indent_level--;
+                src << get_indent() << "}\n";
+                wide_versioned = false;
                 break;
             }
             case ASR::stmtType::DoConcurrentLoop: {
@@ -5964,8 +6035,15 @@ public:
                         visit_expr(fc->m_args[0].m_value);
                     }
                     src << ")";
-                } else if (fn_name.find("_lcompilers_int_") == 0 ||
-                           fn_name.find("_lcompilers_nint_") == 0) {
+                } else if (fn_name.find("_lcompilers_nint_") == 0) {
+                    // Rounds half away from zero, as Fortran does.
+                    std::string target = gpu_type(fc->m_type);
+                    src << "((" << target << ")round(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value) {
+                        visit_expr(fc->m_args[0].m_value);
+                    }
+                    src << "))";
+                } else if (fn_name.find("_lcompilers_int_") == 0) {
                     std::string target = gpu_type(fc->m_type);
                     src << "((" << target << ")";
                     if (fc->n_args > 0 && fc->m_args[0].m_value) {
@@ -6031,14 +6109,20 @@ public:
                     }
                 } else if (fn_name.find("_lcompilers_min_") == 0 ||
                            fn_name.find("_lcompilers_min0_") == 0) {
-                    emit_min_max("min", fc->m_type,
-                        fc->n_args > 0 ? fc->m_args[0].m_value : nullptr,
-                        fc->n_args > 1 ? fc->m_args[1].m_value : nullptr);
+                    {
+                        std::vector<ASR::expr_t*> margs;
+                        for (size_t i = 0; i < fc->n_args; i++)
+                            margs.push_back(fc->m_args[i].m_value);
+                        emit_min_max("min", fc->m_type, margs);
+                    }
                 } else if (fn_name.find("_lcompilers_max_") == 0 ||
                            fn_name.find("_lcompilers_max0_") == 0) {
-                    emit_min_max("max", fc->m_type,
-                        fc->n_args > 0 ? fc->m_args[0].m_value : nullptr,
-                        fc->n_args > 1 ? fc->m_args[1].m_value : nullptr);
+                    {
+                        std::vector<ASR::expr_t*> margs;
+                        for (size_t i = 0; i < fc->n_args; i++)
+                            margs.push_back(fc->m_args[i].m_value);
+                        emit_min_max("max", fc->m_type, margs);
+                    }
                 } else if (fn_name.find("_lcompilers_merge_") == 0) {
                     // merge(tsource, fsource, mask) -> (mask ? tsource : fsource)
                     src << "(";
@@ -6762,9 +6846,11 @@ public:
                 src << ")";
             }
         } else if (id == static_cast<int64_t>(IEF::Min)) {
-            emit_min_max("min", f->m_type, f->m_args[0], f->m_args[1]);
+            emit_min_max("min", f->m_type,
+                std::vector<ASR::expr_t*>(f->m_args, f->m_args + f->n_args));
         } else if (id == static_cast<int64_t>(IEF::Max)) {
-            emit_min_max("max", f->m_type, f->m_args[0], f->m_args[1]);
+            emit_min_max("max", f->m_type,
+                std::vector<ASR::expr_t*>(f->m_args, f->m_args + f->n_args));
         } else if (id == static_cast<int64_t>(IEF::Real)) {
             // Real cast: just emit the argument with a float cast
             src << "((" << gpu_type(f->m_type) << ")(";

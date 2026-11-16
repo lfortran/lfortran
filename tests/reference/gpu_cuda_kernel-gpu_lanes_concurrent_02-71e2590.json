@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_concurrent_02-71e2590",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_concurrent_02.f90",
+    "infile_hash": "63a44c1a981747d841e729d6b69f4f05a2c7987fc51eb8b4adca3571",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_concurrent_02-71e2590.stdout",
+    "stdout_hash": "137e820597b7cc91b4c22f156ff5007b92f3402b2d9c793539539a45",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
