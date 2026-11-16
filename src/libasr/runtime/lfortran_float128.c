@@ -2708,6 +2708,240 @@ static f128_dw f128_sinpi_dw(lf_float128 r) {
     return use_cos ? f128_cos_dw(t) : f128_sin_dw(t);
 }
 
+/* log(1 + a) for |a| < 1/2, as a double-word. f128_log1p_dw rounds 1 + a,
+ * which leaves an error of about a^2/2 (absolute, not relative to a), so
+ * tiny a uses the series. */
+static f128_dw f128_log1p_small_dw(f128_dw a) {
+    if (fabs(f_dbl(a.hi)) >= 1e-12) return f128_log1p_dw(a);
+    /* a - a^2/2 + a^3/3 - a^4/4; a^5/5 < 2^-150 a */
+    f128_dw a2 = dw_mul(a, a);
+    lf_float128 t = f_mul(a2.hi, f_sub(f_div(a.hi, f_int(3)),
+                                       f128_scale(a2.hi, -2)));
+    return dw_add(a, dw_add(dw_neg(dw_scale(a2, -1)),
+                            dw_make(t, f128_make_zero(0))));
+}
+
+/* The zeros x0 of log|Γ(x)| on the negative axis, in decreasing order: in
+ * each interval (-k-1, -k), k = 2..29, the zero near -k and then the one
+ * near -k-1 (about 1/k! and 1/(k+1)! from the integer). Each x0 is given as
+ * three binary128 words w0 = RN(x0), w1 = RN(x0 - w0), w2 = RN(x0 - w0 - w1)
+ * (round to nearest even), each as {high, low} 64-bit halves of its bit
+ * pattern, so that w0 + w1 + w2 is within 2^-340 of x0 relatively. They
+ * were computed with mpmath at 600 bits by Newton's method on
+ * t -> log|Γ(m + t)| (derivative ψ), m the nearest integer, starting from
+ * t = -1/k! and t = 1/(k+1)! (from -2.4570247382208 and -2.7476826467274
+ * for k = 2) until |dt| < 2^-580 |t|. The zero near -30 (1.2 ulp from it)
+ * and those beyond, fewer than 8 ulp from the integer, are left out: the
+ * binary128 numbers next to them have |log|Γ(x)|| >= 0.2, where the
+ * reflection formula is accurate. gen_float128_consts.py does not print
+ * this table. */
+static const uint64_t F128_LGAMMA_NEG_ZEROS[55][3][2] = {
+    {{0xC0003A7FC9600F86ULL, 0xC155F64F98AF8D04ULL},
+     {0x3F8EDA7996FF64CBULL, 0x0C694573ED657502ULL}, {0xBF1CDABEFEE80324ULL, 0x9432507A9A308567ULL}},
+    {{0xC0005FB410A1BD90ULL, 0x0CBCCAD25A320F57ULL},
+     {0xBF8E7E960169053FULL, 0x2C3C850A67CD5A09ULL}, {0xBF1CA19091CA6DAAULL, 0xD3315682EFEC8147ULL}},
+    {{0xC0009260DBC9E59AULL, 0xF7DC5F34CD69ECDDULL},
+     {0xBF8D951532DFEB18ULL, 0x38FC5B675E1030B8ULL}, {0x3F1A1143E19EFE21ULL, 0x874C52E1B6E311A0ULL}},
+    {{0xC000FA471547C2FEULL, 0x50B86A2B094891B6ULL},
+     {0xBF8E86414910FA39ULL, 0x698E230514EBAAEBULL}, {0xBF1AE43A3EE3C43BULL, 0xA397E9CF393137DEULL}},
+    {{0xC0010284E7859958ULL, 0x0C30E7C2C3786045ULL},
+     {0x3F8F53E84029416EULL, 0x1242006B2B3D1CF0ULL}, {0x3F1C5F0FD648CC70ULL, 0x38652CD97CEC886EULL}},
+    {{0xC0013F7577A6EEAFULL, 0xCD44342A901DA621ULL},
+     {0xBF8F01D7D7812528ULL, 0x6F78D1E501F14966ULL}, {0xBF1DE510C2CB930EULL, 0xA8FFE507CD160F2BULL}},
+    {{0xC0014086A57F0B6DULL, 0x90CA9315B9654E53ULL},
+     {0xBF8FECC6AF0430D4ULL, 0xFE5746FA7233356FULL}, {0xBF1B64C22D23EB5DULL, 0xDC7E145CB6D07187ULL}},
+    {{0xC0017FE92F591F40ULL, 0xD5F753B58B2F4C7BULL},
+     {0xBF8FF8E3F8E5DEBAULL, 0x2D67DBD70DD96CE1ULL}, {0x3F1B6800D68D45B4ULL, 0x64F6F6E6E3CFB00FULL}},
+    {{0xC0018016B25897C8ULL, 0xCED81F0B65B458E1ULL},
+     {0xBF8FCB86AC569340ULL, 0xCF1E5F24DF7AAB7BULL}, {0x3F1A5DEABB49E4AAULL, 0xE36CCAC224153FAFULL}},
+    {{0xC001BFFCBF76B86EULL, 0xFFCF589AD9708FF5ULL},
+     {0x3F8FE0BFCFF5C457ULL, 0xEBCF4D3AD9674167ULL}, {0xBF1B047C36197D46ULL, 0xB5A898E718F6AD45ULL}},
+    {{0xC001C0033FDEDFE1ULL, 0xEB7D120B736E61E1ULL},
+     {0x3F8F54D99E35A74DULL, 0x6407B80292DF199FULL}, {0x3F1D0AA41AA7E718ULL, 0xC7E8EDA9ECCCDB1FULL}},
+    {{0xC001FFFF97F8159CULL, 0xF0F2A7A0AD48AC33ULL},
+     {0x3F8F62D177C832E0ULL, 0xEB42C2FAFFD1B145ULL}, {0x3F1DFAE23D4661B2ULL, 0x738F59F0562E3DD0ULL}},
+    {{0xC002000034028B3FULL, 0x93EC19679D839D91ULL},
+     {0x3F9044CC41AD6393ULL, 0xBFBDE77B3E23F8C4ULL}, {0xBF1D68D43841E790ULL, 0x4556235F558E7276ULL}},
+    {{0xC0021FFFFA3884BDULL, 0x01FF90C9D2AE924BULL},
+     {0xBF8FE7E20210E7F8ULL, 0x1CF781B44E9D2B02ULL}, {0x3F1C7B66E971821AULL, 0x8BB57D521EB1EAD7ULL}},
+    {{0xC002200005C7768FULL, 0xB0DADB087FDB86A4ULL},
+     {0x3F900A4297B09D0BULL, 0x148BA8E955BA8FBFULL}, {0xBF1E8CCF4C71B64DULL, 0x6805B7CBA6B0E208ULL}},
+    {{0xC0023FFFFF6C0D7BULL, 0xFB9A0C55CEF4A0A9ULL},
+     {0x3F8CCB168A486617ULL, 0x47818E3803F550D0ULL}, {0xBF1ADBB826F4C09BULL, 0x2119F185DE1E90F5ULL}},
+    {{0xC00240000093F277ULL, 0x7324F68BB2BC2A88ULL},
+     {0xBF8FE03086DB9146ULL, 0xA9287BD4F2172D5AULL}, {0x3F1C87E534305724ULL, 0x83E4CCB77D4E87D0ULL}},
+    {{0xC0025FFFFFF28CDDULL, 0x3E366DB59A55B7A3ULL},
+     {0xBF8EA0B49C8B00C5ULL, 0xE7F2A68B49B3936CULL}, {0x3F1C173558CA2F4FULL, 0x9B901ED9BDC437EBULL}},
+    {{0xC0026000000D7322ULL, 0xA62BB2CB4DFFD482ULL},
+     {0x3F8FB415C6FFF233ULL, 0xE7B7FDC3A094246FULL}, {0xBF1D1771E84384AFULL, 0x2B0CC11B3083CD99ULL}},
+    {{0xC0027FFFFFFEE112ULL, 0x70E70FBC835987A8ULL},
+     {0x3F90B43A13E31B9DULL, 0xEBA5081837085147ULL}, {0x3F1EFF6041AAA13CULL, 0x2ABB9245D08C2837ULL}},
+    {{0xC002800000011EEDULL, 0x8EE62ACF81E04A1EULL},
+     {0xBF90C3C906FAB3ACULL, 0x19C2C8C87589477BULL}, {0xBF1E55F88391DB4EULL, 0x17F319A29581894EULL}},
+    {{0xC0029FFFFFFFE9EDULL, 0xB9EC2FF2F4BFF8EBULL},
+     {0x3F8C55B96BB79975ULL, 0x77168D2176A8AE9DULL}, {0xBF1AC5309A19C727ULL, 0xB478E5E19FBD93CDULL}},
+    {{0xC002A00000001612ULL, 0x461380CD07BA3720ULL},
+     {0xBF90F1B8042BD0AEULL, 0x0CD62D308EF4B445ULL}, {0xBF1E608FC88782C3ULL, 0xBA0844C0790AFFF2ULL}},
+    {{0xC002BFFFFFFFFE6CULL, 0x68B573C30947C13AULL},
+     {0xBF8F176DC48E47F6ULL, 0x2D917973DD44E553ULL}, {0x3F1D99F4E4F86558ULL, 0x385C0F38F0B4A320ULL}},
+    {{0xC002C00000000193ULL, 0x974A8BD29CEBD8AEULL},
+     {0xBF8F8F753E2501E7ULL, 0x57A17CF2ECBEEB89ULL}, {0x3F1DF7B9524F74E1ULL, 0x9BCF6DEF97BC02B5ULL}},
+    {{0xC002DFFFFFFFFFE5ULL, 0x180C18CC09DE606EULL},
+     {0xBF8FF89D37357C9EULL, 0x3DC17C6C6E63BECAULL}, {0xBF1B6DE35D34BFC8ULL, 0x0383B5BBF139FC5BULL}},
+    {{0xC002E0000000001AULL, 0xE7F3E7337A1C841FULL},
+     {0xBF8D7A7B8C6C2E24ULL, 0x1D13F038FEF00412ULL}, {0x3F1BC584EF816B83ULL, 0x1041E2AB47A5C660ULL}},
+    {{0xC002FFFFFFFFFFFEULL, 0x5180C18CC43EA25DULL},
+     {0x3F8EA365DD93B2C1ULL, 0x7B35B8B7CBEBF4A0ULL}, {0xBF1BEFD4593C2D5AULL, 0x044C4870A884D86DULL}},
+    {{0xC003000000000000ULL, 0xD73F9F399DA1424CULL},
+     {0x3F8DB11B83A20C17ULL, 0x4A003C39053141AAULL}, {0xBF1BB4AA7268112FULL, 0x745A946417998989ULL}},
+    {{0xC0030FFFFFFFFFFFULL, 0xF3569C47E7A93E1CULL},
+     {0xBF911A8228B8022AULL, 0x663AEAEE021FBE8BULL}, {0x3F1FCC2C19D69C79ULL, 0xD02377B28D0BC5A4ULL}},
+    {{0xC003100000000000ULL, 0x0CA963B818568887ULL},
+     {0xBF91B2968E993B05ULL, 0x76C2A572BCB27FEDULL}, {0x3F1E42FBEA0FCAD4ULL, 0x3F9BB71EBD2C6B01ULL}},
+    {{0xC0031FFFFFFFFFFFULL, 0xFF4BEC3CE234132DULL},
+     {0xBF8E1656E4C30F90ULL, 0x8397259AA443C888ULL}, {0x3F1C87D583DDD519ULL, 0xE6A9ECD95B301012ULL}},
+    {{0xC003200000000000ULL, 0x00B413C31DCBECA5ULL},
+     {0x3F90E268029A25B6ULL, 0x687391889014A55EULL}, {0xBF1D6B790B7DE8DAULL, 0x195BBC2624F2F797ULL}},
+    {{0xC0032FFFFFFFFFFFULL, 0xFFF685B25CBF5F54ULL},
+     {0xBF9173B64CB8E121ULL, 0x7DF74A5AE3E90512ULL}, {0x3F1FBB30733B7ADAULL, 0xB31465C3A526F272ULL}},
+    {{0xC003300000000000ULL, 0x00097A4DA340A0ACULL},
+     {0x3F91F92138383FF8ULL, 0xE3501BAFAF844BE2ULL}, {0xBF1C89B2A72535A2ULL, 0x226552EB69E5D0ABULL}},
+    {{0xC0033FFFFFFFFFFFULL, 0xFFFF86AF516FF7F7ULL},
+     {0xBF91AF59F9C8355EULL, 0x15140ADF6DD785C6ULL}, {0xBF19386E90AEDF9CULL, 0xD798A85025F9DFF4ULL}},
+    {{0xC003400000000000ULL, 0x00007950AE900809ULL},
+     {0x3F91AFB0CCDD72B0ULL, 0x0976701CC5A31764ULL}, {0x3F1DFE453CFC396BULL, 0xABDE08938E29F324ULL}},
+    {{0xC0034FFFFFFFFFFFULL, 0xFFFFFA391C4248C3ULL},
+     {0x3F91718C08AD8AD5ULL, 0x212E8D194936D81CULL}, {0xBF1D1FD7AD7EAE7DULL, 0x2B696CAAEE03FA32ULL}},
+    {{0xC003500000000000ULL, 0x000005C6E3BDB73DULL},
+     {0xBF91718BD57B54C8ULL, 0xAC9A1717A69479AAULL}, {0xBF1FD9121DE92B52ULL, 0xA1E1D001DABDADE2ULL}},
+    {{0xC0035FFFFFFFFFFFULL, 0xFFFFFFBCC71A4920ULL},
+     {0xBF8FEB5AEB96C74DULL, 0x7AD25E060528FB50ULL}, {0x3F1DF07C7E4A6A49ULL, 0x6FF0B53AB94E4870ULL}},
+    {{0xC003600000000000ULL, 0x0000004338E5B6E0ULL},
+     {0x3F8FEB5AEC04B2F2ULL, 0xEB663E4E3D8A018CULL}, {0xBF1D160171952AE0ULL, 0xF6EEA5B52C7B3F4EULL}},
+    {{0xC0036FFFFFFFFFFFULL, 0xFFFFFFFD13C97D9DULL},
+     {0xBF90C7E626846B7FULL, 0x2D52B5582183E73FULL}, {0xBF1C8EC95892670CULL, 0x36DF8A8AA39A38E7ULL}},
+    {{0xC003700000000000ULL, 0x00000002EC368263ULL},
+     {0x3F90C7E626848677ULL, 0x17AE85B4D4CE1A9EULL}, {0x3F1DFF9805F83281ULL, 0x0961AFF995475BEDULL}},
+    {{0xC0037FFFFFFFFFFFULL, 0xFFFFFFFFE0D30FE7ULL},
+     {0x3F91CBD5DF3292D3ULL, 0x232C77050006B17BULL}, {0x3F1D6D342D02CA7BULL, 0x10274385F2CA73E4ULL}},
+    {{0xC003800000000000ULL, 0x000000001F2CF019ULL},
+     {0xBF91CBD5DF3292CDULL, 0x10B8D7C0102CEE7AULL}, {0xBF1FB689C614DD1EULL, 0xB0F655197829FECFULL}},
+    {{0xC0038FFFFFFFFFFFULL, 0xFFFFFFFFFEC0C332ULL},
+     {0xBF9074D02B958DDAULL, 0xDCAF9A35496B3D30ULL}, {0xBF1ECDAAAB3A0262ULL, 0x60E55DC0770B2203ULL}},
+    {{0xC003900000000000ULL, 0x00000000013F3CCEULL},
+     {0x3F9074D02B958DDAULL, 0xE1B8EED9AB0B82D0ULL}, {0x3F1E8D250056575DULL, 0x30E890589B298D7DULL}},
+    {{0xC0039FFFFFFFFFFFULL, 0xFFFFFFFFFFF3B8BDULL},
+     {0xBF8BCAD8D32E386FULL, 0xD783E97296D63DCBULL}, {0xBF190F261EDB9A49ULL, 0x1AACF551C91B2440ULL}},
+    {{0xC003A00000000000ULL, 0x00000000000C4743ULL},
+     {0x3F8BCAD8D32E386FULL, 0xD7C1AB8C1FE34C0EULL}, {0x3F198800E60650C0ULL, 0x7911EFE891A51E01ULL}},
+    {{0xC003AFFFFFFFFFFFULL, 0xFFFFFFFFFFFF8B95ULL},
+     {0xBF90C7A4662B9BEAULL, 0xCBCE1CEDC0362A03ULL}, {0x3F1B48D1A24092B6ULL, 0xD1A1C61A87B50D93ULL}},
+    {{0xC003B00000000000ULL, 0x000000000000746BULL},
+     {0x3F90C7A4662B9BEAULL, 0xCBCE1D9D35ED037BULL}, {0x3F1DBE680DE86113ULL, 0x5F3C5DC4EF40F799ULL}},
+    {{0xC003BFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFBD8ULL},
+     {0x3F918A2635085D37ULL, 0x3C5C51C36323180AULL}, {0xBF1A49B63D463F01ULL, 0xC10F51CA42694501ULL}},
+    {{0xC003C00000000000ULL, 0x0000000000000428ULL},
+     {0xBF918A2635085D37ULL, 0x3C5C51C3462E904BULL}, {0x3F1F8B3BE8B44E92ULL, 0x00DD25F8F182A7BFULL}},
+    {{0xC003CFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFDBULL},
+     {0xBF913033A5E53A94ULL, 0x2A0E78C44C82F7A5ULL}, {0x3F1D1B5D561B23DBULL, 0xAC1EB96F3A25D605ULL}},
+    {{0xC003D00000000000ULL, 0x0000000000000025ULL},
+     {0x3F913033A5E53A94ULL, 0x2A0E78C44C8BDF3EULL}, {0xBF1F52E620BA5EBDULL, 0xB35A4F38A1EF3C54ULL}},
+};
+
+/* The index in F128_LGAMMA_NEG_ZEROS of the zero next to x = m + r on the
+ * same side of the integer m, or -1. */
+static int f128_lgamma_neg_zero_index(lf_float128 m, lf_float128 r) {
+    double md = f_dbl(m);
+    int n = (int)(sizeof F128_LGAMMA_NEG_ZEROS
+                  / sizeof F128_LGAMMA_NEG_ZEROS[0]);
+    /* the zeros next to -k, k = 2..29, are those with indices < n */
+    if (md > -2.0 || md < -29.0) return -1;
+    int k = (int)(-md);
+    int i = f128_sign(r) ? 2 * (k - 2) : 2 * k - 5;
+    return i < n ? i : -1;
+}
+
+/* log|Γ(x)| for x close to the zero x0 = w[0] + w[1] + w[2] of it on the
+ * negative axis, as a double-word, with r0 = x0 - m the offset from the
+ * nearest integer m. With d = x - x0 (w[2] matters when x is the binary128
+ * number nearest to x0),
+ * log|Γ(x)| = log|Γ(x)| - log|Γ(x0)| = A + B, where by the reflection
+ * formula
+ *   A = -log(sin(πx) / sin(πx0)) = -log1p(cot(πx0) sin(πd) - 2 sin^2(πd/2)),
+ *   B = log Γ(y) - log Γ(y + h),  y = 1 - x0, h = -d.
+ * With z = y + n >= 40 and the Stirling series S,
+ *   log Γ(y + h) - log Γ(y) = S(z + h) - S(z) - log prod_{k<n} (1 + h/(y+k)),
+ *   S(z + h) - S(z) = (z - 1/2) log1p(h/z) + h (log(z + h) - 1)
+ *                     + sum_m c_m (u^m - v^m),
+ * with u = 1/(z + h), v = 1/z and u^m - v^m = (u - v) sum_{j<m} u^j v^(m-1-j),
+ * u - v = -h / (z (z + h)). Every term is a multiple of d computed without
+ * cancellation, so the result keeps its relative accuracy however small
+ * it is, unlike the reflection formula, whose error is about 2^-140
+ * relative to log Γ(1 - x). */
+static f128_dw f128_log_gamma_near_zero_dw(lf_float128 x,
+                                           const uint64_t w[3][2],
+                                           f128_dw r0) {
+    lf_float128 zero = f128_make_zero(0);
+    lf_float128 one_q = f128_one();
+    f128_dw one = dw_make(one_q, zero);
+    f128_dw pi = dw_from_bits(F128_PI);
+    f128_dw x0 = dw_from_bits(w);
+    /* x - x0.hi is exact, x and x0.hi being within a factor of 2 */
+    f128_dw d = two_sum(f_sub(x, x0.hi), f_neg(x0.lo));
+    d = dw_add(d, dw_make(f_neg(f128_bits(w[2])), zero));
+
+    /* cot(πx0) = cot(πr0) = ±cos(πa) / sin(πa), a = |r0| < 1/2 */
+    int r0_neg = f128_sign(r0.hi);
+    f128_dw a = r0_neg ? dw_neg(r0) : r0;
+    int swap = f_dbl(a.hi) > 0.25;
+    if (swap) a = dw_add(dw_make(f128_half(), zero), dw_neg(a));
+    f128_dw pa = dw_mul(pi, a);
+    f128_dw s = f128_sin_dw(pa), c = f128_cos_dw(pa);
+    f128_dw cot = swap ? dw_div(s, c) : dw_div(c, s);
+    if (r0_neg) cot = dw_neg(cot);
+
+    f128_dw pd = dw_mul(pi, d);
+    f128_dw s1 = f128_sin_dw(pd);
+    f128_dw s2 = f128_sin_dw(dw_scale(pd, -1));
+    f128_dw sm1 = dw_add(dw_mul(cot, s1),
+                         dw_neg(dw_scale(dw_mul(s2, s2), 1)));
+    f128_dw sum_a = dw_neg(f128_log1p_small_dw(sm1));
+
+    f128_dw h = dw_neg(d);
+    /* z = y = 1 - x0, then shifted up to 40 */
+    f128_dw z = dw_add(two_sum(one_q, f_neg(x0.hi)),
+                       dw_make(f_neg(x0.lo), zero));
+    /* e = prod_k (1 + h/(y+k)) - 1; all the factors are on the same side
+     * of 1 */
+    f128_dw e = dw_make(zero, zero);
+    while (f_dbl(z.hi) < 40.0) {
+        f128_dw q = dw_div(h, z);
+        e = dw_add(e, dw_add(q, dw_mul(e, q)));
+        z = dw_add(z, one);
+    }
+    f128_dw zh = dw_add(z, h);
+    f128_dw t1 = dw_mul(dw_add(z, dw_make(f_neg(f128_half()), zero)),
+                        f128_log1p_small_dw(dw_div(h, z)));
+    f128_dw t2 = dw_mul(h, dw_add(f128_log_dw2(zh), dw_neg(one)));
+    /* sum_m c_m g_m with g_m = sum_{j<m} u^j v^(m-1-j): c_1 = 1/12, then
+     * F128_STIRLING for m = 3, 5, ..., 31; g_{m+1} = v g_m + u^m */
+    lf_float128 u = f_div(one_q, zh.hi), v = f_div(one_q, z.hi);
+    lf_float128 g = one_q, um = one_q;
+    lf_float128 cg = f_div(one_q, f_int(12));
+    for (int i = 0; i < 15; i++) {
+        for (int k = 0; k < 2; k++) {
+            um = f_mul(um, u);
+            g = f_add(f_mul(v, g), um);
+        }
+        cg = f_add(cg, f_mul(f128_bits(F128_STIRLING[i]), g));
+    }
+    f128_dw uv = dw_div(h, dw_mul(z, zh));   /* v - u */
+    f128_dw t3 = dw_neg(dw_mul_q(uv, cg));
+    f128_dw sum_b = dw_add(f128_log1p_small_dw(e),
+                           dw_neg(dw_add(t1, dw_add(t2, t3))));
+    return dw_add(sum_a, sum_b);
+}
+
 /* log|Γ(x)| for x < 0 not an integer, |x| >= 7.5e-37, as a double-word;
  * sets *neg when Γ(x) < 0. */
 static f128_dw f128_log_gamma_neg_dw(lf_float128 x, int *neg) {
@@ -2718,6 +2952,19 @@ static f128_dw f128_log_gamma_neg_dw(lf_float128 x, int *neg) {
     f128_parts pm = f128_unpack(m);
     int m_odd = !pm.is_zero && f128_integer_kind(pm) == 1;
     *neg = m_odd != f128_sign(r);
+    /* Within |x0 - m|/16 of a zero x0 the reflection formula below loses
+     * its relative accuracy. */
+    int iz = f128_lgamma_neg_zero_index(m, r);
+    if (iz >= 0) {
+        const uint64_t (*z)[2] = F128_LGAMMA_NEG_ZEROS[iz];
+        f128_dw x0 = dw_from_bits(z);
+        /* x0.hi - m is exact; w2 matters when r0 is tiny */
+        f128_dw r0 = fast_two_sum(f_sub(x0.hi, m), x0.lo);
+        r0 = dw_add(r0, dw_make(f128_bits(z[2]), f128_make_zero(0)));
+        if (fabs(f_dbl(f_sub(x, x0.hi))) < fabs(f_dbl(r0.hi)) / 16) {
+            return f128_log_gamma_near_zero_dw(x, z, r0);
+        }
+    }
     /* log|Γ(x)| = log(π / |sin(πx)|) - log Γ(1 - x) */
     f128_dw q = dw_div(dw_from_bits(F128_PI),
                        f128_sinpi_dw(lf_f128_abs(r)));
