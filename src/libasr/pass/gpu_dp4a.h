@@ -7,8 +7,7 @@
 namespace LCompilers {
 
     // Writes the portable integer dot product of four signed bytes in device
-    // code as a call of the `__dp4a` instruction of an NVIDIA GPU. See
-    // gpu_dp4a.cpp.
+    // code as a CUDA instruction or Metal vector arithmetic. See gpu_dp4a.cpp.
     void pass_gpu_dp4a(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options);
 

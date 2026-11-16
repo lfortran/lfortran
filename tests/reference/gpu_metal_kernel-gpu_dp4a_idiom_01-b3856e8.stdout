@@ -1,0 +1,334 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline int __dp4a(int a, int b, int c) {
+    int4 x = int4(as_type<char4>(a));
+    int4 y = int4(as_type<char4>(b));
+    int4 products = x * y;
+    uint result = as_type<uint>(c) + uint(products.x)
+        + uint(products.y) + uint(products.z) + uint(products.w);
+    return as_type<int>(result);
+}
+
+inline int dp4a_gpu_22(int a_gpu, int b_gpu, int c_gpu) {
+    int r_gpu{};
+    r_gpu = __dp4a(a_gpu, b_gpu, c_gpu);
+    return r_gpu;
+}
+
+inline int _lcompilers_ieor_i32_gpu_25(int x_gpu, int y_gpu) {
+    int _lcompilers_ieor_i32_gpu{};
+    _lcompilers_ieor_i32_gpu = (x_gpu ^ y_gpu);
+    return _lcompilers_ieor_i32_gpu;
+}
+
+inline int _lcompilers_rshift_i32_gpu_26(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i32_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i32_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i32_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i32_gpu;
+}
+
+inline int _lcompilers_rshift_i321_gpu_27(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i321_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i321_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i321_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i321_gpu;
+}
+
+inline int _lcompilers_rshift_i322_gpu_28(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i322_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i322_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i322_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i322_gpu;
+}
+
+inline int _lcompilers_rshift_i323_gpu_29(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i323_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i323_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i323_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i323_gpu;
+}
+
+inline int _lcompilers_rshift_i324_gpu_30(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i324_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i324_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i324_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i324_gpu;
+}
+
+inline int _lcompilers_rshift_i325_gpu_31(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i325_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i325_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i325_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i325_gpu;
+}
+
+inline int _lcompilers_rshift_i326_gpu_32(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i326_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i326_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i326_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i326_gpu;
+}
+
+inline int _lcompilers_rshift_i327_gpu_33(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i327_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i327_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i327_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i327_gpu;
+}
+
+inline int _lcompilers_shiftl_i32_gpu_34(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i32_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i32_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i32_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i32_gpu;
+}
+
+inline int _lcompilers_shiftl_i321_gpu_35(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i321_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i321_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i321_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i321_gpu;
+}
+
+inline int _lcompilers_shiftl_i322_gpu_36(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i322_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i322_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i322_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i322_gpu;
+}
+
+inline int _lcompilers_shiftl_i323_gpu_37(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i323_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i323_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i323_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i323_gpu;
+}
+
+inline int _lcompilers_shiftl_i324_gpu_38(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i324_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i324_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i324_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i324_gpu;
+}
+
+inline int _lcompilers_shiftl_i325_gpu_39(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i325_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i325_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i325_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i325_gpu;
+}
+
+inline int _lcompilers_rshift_i328_gpu_40(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i328_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i328_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i328_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i328_gpu;
+}
+
+inline int _lcompilers_rshift_i329_gpu_41(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i329_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i329_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i329_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i329_gpu;
+}
+
+inline int _lcompilers_rshift_i3210_gpu_42(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i3210_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i3210_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i3210_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i3210_gpu;
+}
+
+inline int _lcompilers_rshift_i3211_gpu_43(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i3211_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i3211_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i3211_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i3211_gpu;
+}
+
+inline int _lcompilers_rshift_i3212_gpu_44(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i3212_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i3212_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i3212_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i3212_gpu;
+}
+
+inline int _lcompilers_rshift_i3213_gpu_45(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i3213_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i3213_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i3213_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i3213_gpu;
+}
+
+inline int _lcompilers_rshift_i3214_gpu_46(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i3214_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i3214_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i3214_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i3214_gpu;
+}
+
+inline int _lcompilers_rshift_i3215_gpu_47(int x_gpu, int y_gpu) {
+    int _lcompilers_rshift_i3215_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_rshift_i3215_gpu = (x_gpu >> 31);
+    } else {
+        _lcompilers_rshift_i3215_gpu = (x_gpu >> ((int)y_gpu));
+    }
+    return _lcompilers_rshift_i3215_gpu;
+}
+
+inline int _lcompilers_shiftl_i326_gpu_48(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i326_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i326_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i326_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i326_gpu;
+}
+
+inline int _lcompilers_shiftl_i327_gpu_49(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i327_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i327_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i327_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i327_gpu;
+}
+
+inline int _lcompilers_shiftl_i328_gpu_50(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i328_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i328_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i328_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i328_gpu;
+}
+
+inline int _lcompilers_shiftl_i329_gpu_51(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i329_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i329_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i329_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i329_gpu;
+}
+
+inline int _lcompilers_shiftl_i3210_gpu_52(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i3210_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i3210_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i3210_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i3210_gpu;
+}
+
+inline int _lcompilers_shiftl_i3211_gpu_53(int x_gpu, int y_gpu) {
+    int _lcompilers_shiftl_i3211_gpu{};
+    if ((((int)y_gpu) >= 32)) {
+        _lcompilers_shiftl_i3211_gpu = 0;
+    } else {
+        _lcompilers_shiftl_i3211_gpu = (x_gpu << ((int)y_gpu));
+    }
+    return _lcompilers_shiftl_i3211_gpu;
+}
+
+kernel void __lfortran_gpu_kernel_0_17gpu_dp4a_idiom_01(
+    device int* a_gpu [[buffer(0)]],
+    device int* b_gpu [[buffer(1)]],
+    device int* c_gpu [[buffer(2)]],
+    device int* r1_gpu [[buffer(3)]],
+    device int* r2_gpu [[buffer(4)]],
+    device int* r3_gpu [[buffer(5)]],
+    device int* r4_gpu [[buffer(6)]],
+    device int* r5_gpu [[buffer(7)]],
+    device int* r6_gpu [[buffer(8)]],
+    device int* r7_gpu [[buffer(9)]],
+    device int* r8_gpu [[buffer(10)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx_gpu;
+    int i__dc_gpu;
+    if ((((0 * 0) + __thread_id) >= 8)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc_gpu = (__flat_idx_gpu + 1);
+    r1_gpu[((int)(i__dc_gpu) - (1))] = dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], b_gpu[((int)(i__dc_gpu) - (1))], c_gpu[((int)(i__dc_gpu) - (1))]);
+    r2_gpu[((int)(i__dc_gpu) - (1))] = dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], b_gpu[((int)(i__dc_gpu) - (1))], dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], b_gpu[((int)(i__dc_gpu) - (1))], 0));
+    r3_gpu[((int)(i__dc_gpu) - (1))] = __dp4a(a_gpu[((int)(i__dc_gpu) - (1))], b_gpu[((int)(i__dc_gpu) - (1))], c_gpu[((int)(i__dc_gpu) - (1))]);
+    r4_gpu[((int)(i__dc_gpu) - (1))] = (__dp4a(_lcompilers_ieor_i32_gpu_25(a_gpu[((int)(i__dc_gpu) - (1))], 5), (b_gpu[((int)(i__dc_gpu) - (1))] + 0), (c_gpu[((int)(i__dc_gpu) - (1))] + 1)) + (i__dc_gpu - i__dc_gpu));
+    r5_gpu[((int)(i__dc_gpu) - (1))] = ((((c_gpu[((int)(i__dc_gpu) - (1))] + (_lcompilers_rshift_i32_gpu_26(_lcompilers_shiftl_i32_gpu_34(a_gpu[((int)(i__dc_gpu) - (1))], 24), 24) * _lcompilers_rshift_i321_gpu_27(_lcompilers_shiftl_i321_gpu_35(b_gpu[((int)(i__dc_gpu) - (1))], 24), 24))) + (_lcompilers_rshift_i322_gpu_28(_lcompilers_shiftl_i322_gpu_36(b_gpu[((int)(i__dc_gpu) - (1))], 16), 24) * _lcompilers_rshift_i323_gpu_29(_lcompilers_shiftl_i323_gpu_37(a_gpu[((int)(i__dc_gpu) - (1))], 16), 24))) + (_lcompilers_rshift_i324_gpu_30(_lcompilers_shiftl_i324_gpu_38(a_gpu[((int)(i__dc_gpu) - (1))], 8), 24) * _lcompilers_rshift_i325_gpu_31(_lcompilers_shiftl_i325_gpu_39(a_gpu[((int)(i__dc_gpu) - (1))], 8), 24))) + (_lcompilers_rshift_i326_gpu_32(a_gpu[((int)(i__dc_gpu) - (1))], 24) * _lcompilers_rshift_i327_gpu_33(b_gpu[((int)(i__dc_gpu) - (1))], 24)));
+    r6_gpu[((int)(i__dc_gpu) - (1))] = ((((c_gpu[((int)(i__dc_gpu) - (1))] + (_lcompilers_rshift_i328_gpu_40(_lcompilers_shiftl_i326_gpu_48(a_gpu[((int)(i__dc_gpu) - (1))], 24), 24) * _lcompilers_rshift_i329_gpu_41(_lcompilers_shiftl_i327_gpu_49(b_gpu[((int)(i__dc_gpu) - (1))], 24), 24))) + (_lcompilers_rshift_i3210_gpu_42(_lcompilers_shiftl_i328_gpu_50(a_gpu[((int)(i__dc_gpu) - (1))], 16), 24) * _lcompilers_rshift_i3211_gpu_43(_lcompilers_shiftl_i329_gpu_51(b_gpu[((int)(i__dc_gpu) - (1))], 16), 24))) + (_lcompilers_rshift_i3212_gpu_44(_lcompilers_shiftl_i3210_gpu_52(a_gpu[((int)(i__dc_gpu) - (1))], 16), 24) * _lcompilers_rshift_i3213_gpu_45(_lcompilers_shiftl_i3211_gpu_53(b_gpu[((int)(i__dc_gpu) - (1))], 16), 24))) + (_lcompilers_rshift_i3214_gpu_46(a_gpu[((int)(i__dc_gpu) - (1))], 24) * _lcompilers_rshift_i3215_gpu_47(b_gpu[((int)(i__dc_gpu) - (1))], 24)));
+    r7_gpu[((int)(i__dc_gpu) - (1))] = dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], a_gpu[((int)(i__dc_gpu) - (1))], c_gpu[((int)(i__dc_gpu) - (1))]);
+    r8_gpu[((int)(i__dc_gpu) - (1))] = (dp4a_gpu_22(b_gpu[((int)(i__dc_gpu) - (1))], a_gpu[((int)(i__dc_gpu) - (1))], 0) - dp4a_gpu_22(a_gpu[((int)(i__dc_gpu) - (1))], b_gpu[((int)(i__dc_gpu) - (1))], 0));
+}

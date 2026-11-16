@@ -6,6 +6,8 @@ namespace LCompilers {
 // Metal Shading Language. The spellings the shared device code generator
 // asks a dialect for; everything else it derives from the ASR itself.
 struct MetalDialect {
+    bool needs_dp4a = false;
+
     std::string addr_space(ASR::memory_spaceType space) const {
         switch (space) {
             case ASR::memory_spaceType::Global: return "device";
@@ -34,6 +36,17 @@ struct MetalDialect {
     void emit_prologue(std::stringstream &src) const {
         src << "#include <metal_stdlib>\n";
         src << "using namespace metal;\n\n";
+        if (needs_dp4a) {
+            // Unsigned accumulation preserves the CUDA operation's wrapping.
+            src << "inline int __dp4a(int a, int b, int c) {\n"
+                   "    int4 x = int4(as_type<char4>(a));\n"
+                   "    int4 y = int4(as_type<char4>(b));\n"
+                   "    int4 products = x * y;\n"
+                   "    uint result = as_type<uint>(c) + uint(products.x)\n"
+                   "        + uint(products.y) + uint(products.z) + uint(products.w);\n"
+                   "    return as_type<int>(result);\n"
+                   "}\n\n";
+        }
     }
 
     std::string device_fn_qualifier() const {
@@ -191,7 +204,10 @@ struct MetalDialect {
 Result<std::string> asr_to_metal(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co)
 {
-    ASRToGpuCVisitor<MetalDialect> v(co);
+    MetalDialect dialect;
+    // The idiom pass creates this global interface only after a match.
+    dialect.needs_dp4a = asr.m_symtab->get_symbol("__dp4a") != nullptr;
+    ASRToGpuCVisitor<MetalDialect> v(co, dialect);
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

@@ -3,8 +3,8 @@ module gpu_dp4a_idiom_01_mod
     implicit none
 contains
 
-    ! The portable form of a packed dot product of four signed bytes. The CUDA
-    ! backend runs it with the dp4a instruction; it must give the same result.
+    ! The portable form of a packed dot product of four signed bytes. GPU
+    ! instruction/vector lowering must give the same result as the byte loop.
     pure elemental function dp4a(a, b, c) result(r)
         integer(int32), intent(in) :: a, b, c
         integer(int32) :: r
