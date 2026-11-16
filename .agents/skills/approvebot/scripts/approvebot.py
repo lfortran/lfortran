@@ -426,7 +426,9 @@ def cmd_main(args):
     sha = fetch()
     record = read_json(state_dir() / "main.json", {})
     if not (worktree / ".git").exists():
-        git("worktree", "add", "-q", "--detach", str(worktree), sha)
+        # --force: if `.approvebot/` was deleted, git still registers the old
+        # worktree there and refuses to add it again.
+        git("worktree", "add", "-q", "--force", "--detach", str(worktree), sha)
         mode = "build"
     else:
         require_clean(worktree)
