@@ -15922,10 +15922,11 @@ ASR::symbol_t* SymbolDuplicator::duplicate_AssociateBlock(ASR::AssociateBlock_t*
 
 bool SymbolDuplicator::reduplicate_body_in_scope(SymbolTable *new_symtab,
         ASR::stmt_t **orig_body, size_t orig_n_body,
-        Vec<ASR::stmt_t*> &new_body) {
+        Vec<ASR::stmt_t*> &new_body, SymbolTable *orig_symtab) {
     new_body.reserve(al, orig_n_body);
     ASRUtils::ExprStmtWithScopeDuplicator body_dup(al, new_symtab);
     body_dup.use_resolve_symbol = true;
+    body_dup.orig_scope = orig_symtab;
     body_dup.allow_procedure_calls = true;
     body_dup.allow_reshape = true;
     for (size_t i = 0; i < orig_n_body; i++) {
@@ -16067,7 +16068,7 @@ void SymbolDuplicator::fixup_nested_block_bodies(SymbolTable *new_scope,
                 orig_ab->m_symtab);
             Vec<ASR::stmt_t*> ab_body;
             if (reduplicate_body_in_scope(new_ab->m_symtab,
-                    orig_ab->m_body, orig_ab->n_body, ab_body)) {
+                    orig_ab->m_body, orig_ab->n_body, ab_body, orig_ab->m_symtab)) {
                 new_ab->m_body = ab_body.p;
                 new_ab->n_body = ab_body.n;
             }
@@ -16082,7 +16083,7 @@ void SymbolDuplicator::fixup_nested_block_bodies(SymbolTable *new_scope,
             Vec<ASR::stmt_t*> block_body;
             if (reduplicate_body_in_scope(new_block->m_symtab,
                     orig_block->m_body, orig_block->n_body,
-                    block_body)) {
+                    block_body, orig_block->m_symtab)) {
                 new_block->m_body = block_body.p;
                 new_block->n_body = block_body.n;
             }
