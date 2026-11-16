@@ -3,6 +3,9 @@ program maxval_negative_fold_01
     ! from the first selected element: all-negative arrays give their largest
     ! element, not tiny, and nothing selected gives -huge (MAXVAL) or +huge
     ! (MINVAL) for every real kind (#16143). Integers stay -huge-1 and huge.
+    ! NaN elements are skipped and an all-NaN selection gives NaN, like
+    ! GFortran's run-time library. Inf is not tested: GFortran itself folds
+    ! MAXVAL/MINVAL of Inf parameter arrays to -huge/+huge.
     implicit none
     real, parameter :: p(2) = [-1., -2.]
     real, parameter :: pm = maxval(p, mask=p > 0.)
@@ -75,10 +78,44 @@ program maxval_negative_fold_01
     integer, parameter :: ei_1(3) = maxval(bi, dim=1, mask=m2)
     integer, parameter :: fi_1(3) = minval(bi, dim=1, mask=m2)
 
+    ! quiet NaN
+    real, parameter :: qn4 = transfer(2143289344, 1.)
+    real, parameter :: na4(3) = [qn4, -2., -3.], nm4(3) = [-2., qn4, -3.]
+    real, parameter :: nn4(2) = [qn4, qn4]
+    real, parameter :: nb4(2,3) = reshape([qn4, -1., qn4, qn4, -2., -3.], [2, 3])
+    real, parameter :: xn4(8) = [maxval(na4), minval(na4), &
+        maxval(nm4), minval(nm4), &
+        maxval(na4, mask=[.false., .true., .true.]), &
+        maxval(nm4, mask=[.true., .true., .false.]), &
+        minval(nm4, mask=[.false., .true., .true.]), maxval(na4, dim=1)]
+    real, parameter :: zn4(3) = [maxval(nn4), minval(nn4), &
+        maxval(na4, mask=[.true., .false., .false.])]
+    real, parameter :: cn4_1(3) = maxval(nb4, dim=1), cn4_2(2) = maxval(nb4, dim=2)
+    real, parameter :: dn4_1(3) = minval(nb4, dim=1), dn4_2(2) = minval(nb4, dim=2)
+
+    real(8), parameter :: qn8 = transfer(9221120237041090560_8, 1._8)
+    real(8), parameter :: na8(3) = [qn8, -2._8, -3._8], nm8(3) = [-2._8, qn8, -3._8]
+    real(8), parameter :: nn8(2) = [qn8, qn8]
+    real(8), parameter :: nb8(2,3) = reshape([qn8, -1._8, qn8, qn8, -2._8, &
+        -3._8], [2, 3])
+    real(8), parameter :: xn8(8) = [maxval(na8), minval(na8), &
+        maxval(nm8), minval(nm8), &
+        maxval(na8, mask=[.false., .true., .true.]), &
+        maxval(nm8, mask=[.true., .true., .false.]), &
+        minval(nm8, mask=[.false., .true., .true.]), maxval(na8, dim=1)]
+    real(8), parameter :: zn8(3) = [maxval(nn8), minval(nn8), &
+        maxval(na8, mask=[.true., .false., .false.])]
+    real(8), parameter :: cn8_1(3) = maxval(nb8, dim=1), cn8_2(2) = maxval(nb8, dim=2)
+    real(8), parameter :: dn8_1(3) = minval(nb8, dim=1), dn8_2(2) = minval(nb8, dim=2)
+
     real :: big4
     real(8) :: big8
     real(16) :: big16
     integer :: bigi
+    ! NaN results are checked from their bits: --fast assumes no NaN, so
+    ! x /= x may be folded to .false. there
+    real :: r4, v4(3)
+    real(8) :: r8, v8(3)
 
     big4 = huge(1.0)
     big8 = huge(1.0_8)
@@ -159,5 +196,69 @@ program maxval_negative_fold_01
     if (maxval(ai) /= -1 .or. maxval(ai, mask=.false.) /= -bigi - 1) error stop 74
     if (any(maxval(bi, dim=2, mask=m2) /= [-4, -5])) error stop 75
 
+    ! real(4) with NaN: parameter initializers
+    if (any(xn4 /= [-2., -3., -2., -3., -2., -2., -3., -2.])) error stop 80
+    v4 = zn4
+    if (.not. (nan4(v4(1)) .and. nan4(v4(2)) .and. nan4(v4(3)))) error stop 81
+    v4 = cn4_1
+    if (v4(1) /= -1. .or. .not. nan4(v4(2)) .or. v4(3) /= -2.) error stop 82
+    if (any(cn4_2 /= [-2., -1.])) error stop 83
+    v4 = dn4_1
+    if (v4(1) /= -1. .or. .not. nan4(v4(2)) .or. v4(3) /= -3.) error stop 84
+    if (any(dn4_2 /= [-2., -3.])) error stop 85
+    ! real(4) with NaN used directly in expressions
+    if (maxval(na4) /= -2. .or. minval(na4) /= -3.) error stop 86
+    if (maxval(nm4) /= -2. .or. minval(nm4) /= -3.) error stop 87
+    if (maxval(na4, mask=na4 < -2.5) /= -3.) error stop 88
+    r4 = maxval(nn4)
+    if (.not. nan4(r4)) error stop 89
+    r4 = minval(na4, mask=[.true., .false., .false.])
+    if (.not. nan4(r4)) error stop 90
+    v4 = minval(nb4, dim=1)
+    if (v4(1) /= -1. .or. .not. nan4(v4(2)) .or. v4(3) /= -3.) error stop 93
+    if (any(maxval(nb4, dim=2) /= [-2., -1.])) error stop 91
+    if (any(minval(nb4, dim=2) /= [-2., -3.])) error stop 92
+
+    ! real(8) with NaN: parameter initializers
+    if (any(xn8 /= [-2._8, -3._8, -2._8, -3._8, -2._8, -2._8, -3._8, -2._8])) error stop 100
+    v8 = zn8
+    if (.not. (nan8(v8(1)) .and. nan8(v8(2)) .and. nan8(v8(3)))) error stop 101
+    v8 = cn8_1
+    if (v8(1) /= -1._8 .or. .not. nan8(v8(2)) .or. v8(3) /= -2._8) error stop 102
+    if (any(cn8_2 /= [-2._8, -1._8])) error stop 103
+    v8 = dn8_1
+    if (v8(1) /= -1._8 .or. .not. nan8(v8(2)) .or. v8(3) /= -3._8) error stop 104
+    if (any(dn8_2 /= [-2._8, -3._8])) error stop 105
+    ! real(8) with NaN used directly in expressions
+    if (maxval(na8) /= -2._8 .or. minval(na8) /= -3._8) error stop 106
+    if (maxval(nm8) /= -2._8 .or. minval(nm8) /= -3._8) error stop 107
+    if (maxval(na8, mask=na8 < -2.5_8) /= -3._8) error stop 108
+    r8 = maxval(nn8)
+    if (.not. nan8(r8)) error stop 109
+    r8 = minval(na8, mask=[.true., .false., .false.])
+    if (.not. nan8(r8)) error stop 110
+    v8 = minval(nb8, dim=1)
+    if (v8(1) /= -1._8 .or. .not. nan8(v8(2)) .or. v8(3) /= -3._8) error stop 113
+    if (any(maxval(nb8, dim=2) /= [-2._8, -1._8])) error stop 111
+    if (any(minval(nb8, dim=2) /= [-2._8, -3._8])) error stop 112
+
     print *, "ok"
+
+contains
+
+    logical function nan4(x)
+        real, intent(in) :: x
+        integer :: i
+        i = transfer(x, i)
+        nan4 = iand(i, 2139095040) == 2139095040 .and. iand(i, 8388607) /= 0
+    end function
+
+    logical function nan8(x)
+        real(8), intent(in) :: x
+        integer(8) :: i
+        i = transfer(x, i)
+        nan8 = iand(i, 9218868437227405312_8) == 9218868437227405312_8 .and. &
+            iand(i, 4503599627370495_8) /= 0
+    end function
+
 end program
