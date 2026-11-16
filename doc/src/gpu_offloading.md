@@ -1472,9 +1472,9 @@ every lane, gets lanes up to `lanes_column_iterations_max` iterations
 (`huge(0)/32` on Metal): one lane per iteration would read 32 columns at
 once there, a few elements at a time, while the lanes read one column
 together. Every row of a quantized matrix-vector product, and every row of a
-gated-delta state update, is such an iteration. On an NVIDIA GPU only reduction loops are shared out
-(`lane_independent_loops` is off), and a kernel with workspaces or that
-takes memory from the device heap keeps one lane per iteration. The kernel takes
+gated-delta state update, is such an iteration. On an NVIDIA GPU a kernel
+with workspaces or that takes memory from the device heap keeps one lane
+per iteration. The kernel takes
 the lanes as its last parameter (`gpu_kernel_layout.lanes`); its thread
 index then numbers the iterations, the host starts `lanes` threads per
 iteration, and a workspace slice belongs to an iteration, shared by its
@@ -1497,8 +1497,9 @@ instructions of the loads of single elements: the codes and activations of
 a lane of a quantized matrix-vector product read at 1.2 to 1.8 times the
 speed. Such a kernel needs no more lanes than a warp to keep the memory busy,
 so it does not get the lanes of a block (`gpu_reads_wide` in
-`gpu_wide_loads.cpp`), and its loops are unrolled eight times, where a loop
-of single elements is unrolled sixteen times.
+`gpu_wide_loads.cpp`), and its loops are unrolled twice (not at all where
+its lanes share them: `unroll_wide_pragma` in `asr_to_cuda.cpp`), where a
+loop of single elements is unrolled sixteen times.
 
 The lanes of such a kernel need the vectors an iteration of their loop reads
 in flight together, each in 4 registers and about as many for what is
