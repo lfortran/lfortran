@@ -80,23 +80,30 @@ examples use `--jobs 8`.
    `python3 $BOT retract N --reason "new head <sha>"` (or
    `--reason "CI failed on <sha>"`). The next iteration classifies the new
    head.
-4. **Main build.** If anything is to be classified, run
-   `python3 $BOT main --jobs 8`. It fetches main, and runs `rebuild`, or
-   `build` when generator inputs changed. A fresh build takes a long time,
-   so run it in the background and wait for it to finish. If it fails,
-   report that and classify nothing; do not work around it.
-5. **Classify.** Take at most five `classify` PRs per iteration, oldest
-   first, one at a time:
+4. **Screen every `classify` PR**, oldest first, one at a time. Screening
+   has no cap, because it needs no build:
    1. `python3 $BOT facts N > .approvebot/work/N-facts.json`.
-   2. **Screen.** If the facts already settle `needs-review`, skip
-      `check-main`. That is the case for a `control` area, production over
-      the budget of every kind that its scope allows, an out-of-scope
-      purpose (perf, refactor, CI, build, docs, GPU, a series, a bundle,
-      a processor-dependent result), or changes requested.
-   3. Otherwise run `python3 $BOT check-main N --jobs 8 > .approvebot/work/N-main.json`.
+   2. If the facts already settle `needs-review`, apply that verdict now
+      (step 6, item 3). That is the case for a `control` area, production
+      over the budget of every kind that its scope allows, an out-of-scope
+      purpose (perf, refactor, CI, build, docs, GPU, a series, a bundle, a
+      processor-dependent result), or changes requested.
+   3. Otherwise the PR is a candidate: it needs `check-main` and a judge.
+5. **Main build.** Only if there are candidates, run
+   `python3 $BOT main --jobs 8` in the background. It fetches the latest
+   main and runs `rebuild` (a few minutes), or `build` when generator
+   inputs changed or there is no build yet. **Wait for it in this
+   iteration**, then go on to step 6 in the same iteration: never end an
+   iteration with candidates waiting for a build that is running or has
+   finished, since the next iteration is 30 minutes away. If the build
+   fails, report that and leave the candidates for the next iteration; do
+   not work around it.
+6. **Check and judge** at most five candidates per iteration, oldest
+   first, one at a time. The rest wait for the next iteration.
+   1. `python3 $BOT check-main N --jobs 8 > .approvebot/work/N-main.json`.
       Only one `check-main` may run at a time: they share the main worktree.
       If it stops midway, run `python3 $BOT restore`.
-   4. **Judge in a fresh subagent.** Give it this skill's directory, the
+   2. **Judge in a fresh subagent.** Give it this skill's directory, the
       PR number and head, the two JSON files, and the main worktree
       `.approvebot/main` to read source in (read only). It follows the
       policy and returns JSON:
@@ -107,7 +114,7 @@ examples use `--jobs 8`.
       `review`. Judge every head afresh, even one that `cases.jsonl`
       already records: the cases are for replaying policy changes, not a
       cache of verdicts.
-   5. Write the comment to a file and apply it:
+   3. Write the comment to a file and apply it:
       ```bash
       python3 $BOT apply N --verdict approved|review --head <sha> \
           --scope S1 --kind C3 --comment-file .approvebot/work/N-comment.md
@@ -115,9 +122,9 @@ examples use `--jobs 8`.
       The script refuses if the head moved, a required check failed, a human
       labeled the PR, or `auto-merge` appeared. In that case, skip the PR
       this iteration.
-6. **Calibration.** Run `python3 $BOT feedback`. If there are uncaptured
+7. **Calibration.** Run `python3 $BOT feedback`. If there are uncaptured
    disagreements, follow [calibration.md](references/calibration.md).
-7. **Report.** One line per PR acted on, giving its verdict or action.
+8. **Report.** One line per PR acted on, giving its verdict or action.
    Also report failures, and every calibration PR you opened or updated.
 
 ## The verdict comment
