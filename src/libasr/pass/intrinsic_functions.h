@@ -6,7 +6,6 @@
 #include <libasr/runtime/lfortran_trig.h>
 #include <math.h>
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -1098,62 +1097,11 @@ namespace HostBessel {
     }
 } // namespace HostBessel
 
-// The binary128 value of a host long double, exactly: its significand (at
-// most 113 bits) is the sum of at most three doubles.
-static inline lf_float128 long_double_to_f128(long double v) {
-    if (v == 0 || std::isnan(v) || std::isinf(v)) {
-        return lf_f128_from_double(static_cast<double>(v));
-    }
-    int e;
-    long double m = std::frexp(v, &e);
-    lf_float128 r = lf_f128_from_double(0.0);
-    for (int i = 0; i < 3; i++) {
-        double d = static_cast<double>(m);
-        r = lf_f128_add(r, lf_f128_from_double(d));
-        m -= d;
-    }
-    // r * 2^e, exact in steps of at most 2^512 towards the result
-    for (; e > 512; e -= 512) {
-        r = lf_f128_mul(r, lf_f128_from_double(std::ldexp(1.0, 512)));
-    }
-    for (; e < -512; e += 512) {
-        r = lf_f128_mul(r, lf_f128_from_double(std::ldexp(1.0, -512)));
-    }
-    return lf_f128_mul(r, lf_f128_from_double(std::ldexp(1.0, e)));
-}
-
-// A binary128 value rounded to the host long double. Scaled into the double
-// range, the value is the exact sum d1 + d2 + d3 of three doubles, with
-// d2 + d3 exact in a 64-bit significand, so it rounds once for x87.
-static inline long double f128_to_long_double(lf_float128 q) {
-    lf_float128 zero = lf_f128_from_double(0.0);
-    if (lf_f128_isnan(q) || lf_f128_isinf(q) || lf_f128_eq(q, zero)) {
-        return static_cast<long double>(lf_f128_to_double(q));
-    }
-    int e = 0;
-    while (std::fabs(lf_f128_to_double(q)) < std::ldexp(1.0, -512)) {
-        q = lf_f128_mul(q, lf_f128_from_double(std::ldexp(1.0, 512)));
-        e -= 512;
-    }
-    while (std::fabs(lf_f128_to_double(q)) > std::ldexp(1.0, 512)) {
-        q = lf_f128_mul(q, lf_f128_from_double(std::ldexp(1.0, -512)));
-        e += 512;
-    }
-    double d[3];
-    for (int i = 0; i < 3; i++) {
-        d[i] = lf_f128_to_double(q);
-        q = lf_f128_sub(q, lf_f128_from_double(d[i]));
-    }
-    long double v = static_cast<long double>(d[0])
-        + (static_cast<long double>(d[1]) + d[2]);
-    return std::ldexp(v, e);
-}
-
 // Folds a trigonometric function whose run-time implementation reduces its
 // argument exactly (sind, cosd, tand, sinpi, cospi, tanpi): real(4) and
 // real(8) call the run-time functions themselves, so that folding and run
-// time agree bit for bit; real(10) and real(16) use the binary128
-// implementation.
+// time agree bit for bit with the same libm; real(10) and real(16) use the
+// binary128 implementation.
 static inline ASR::expr_t *eval_trig_exact_reduction(Allocator &al,
         const Location &loc, ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
         float (*sp_fn)(float), double (*dp_fn)(double),
@@ -1168,9 +1116,10 @@ static inline ASR::expr_t *eval_trig_exact_reduction(Allocator &al,
     }
     if (kind == 10) {
         // Kind 10 stores a pointer in m_r.
-        lf_float128 x = long_double_to_f128(ASRUtils::real_constant_get_r10(c));
+        lf_float128 x = lf_f128_from_long_double(
+            ASRUtils::real_constant_get_r10(c));
         return ASRUtils::make_RealConstant_r10(al, loc,
-            f128_to_long_double(qp_fn(x)), t);
+            lf_f128_to_long_double(qp_fn(x)), t);
     }
     if (kind == 4) {
         return ASRUtils::make_RealConstant_util(al, loc,
@@ -6138,58 +6087,6 @@ namespace Poppar {
 
 namespace Real {
 
-    // Exact widening of a kind-10 payload (host long double) to binary128.
-    // x87 extended and binary128 share exponent bias 16383, so the 63
-    // fraction bits move to binary128 fraction bits [111:49]. Rounding
-    // through double turns 1 + 2^-63 into 1.
-    static lf_float128 widen_long_double_to_f128(long double value) {
-        constexpr int digits = std::numeric_limits<long double>::digits;
-        static_assert(digits == 53 || digits == 64 || digits == 113,
-            "unsupported long double format");
-        if constexpr (digits == 53) {
-            return lf_f128_from_double(static_cast<double>(value));
-        } else if constexpr (digits == 113) {
-            lf_float128 out;
-            std::memcpy(out.bytes, &value, 16);
-            return out;
-        } else {
-            // Kind-10 payloads are a little-endian 80-bit image. binary128
-            // bytes in lf_float128 are little-endian as well.
-            unsigned char raw[10] = {};
-            std::memcpy(raw, &value, 10);
-            uint64_t significand = 0;
-            uint16_t exponent_and_sign = 0;
-            std::memcpy(&significand, raw, 8);
-            std::memcpy(&exponent_and_sign, raw + 8, 2);
-            const int sign = (exponent_and_sign >> 15) & 1;
-            const uint32_t exponent = exponent_and_sign & 0x7FFFu;
-            const uint64_t fraction63 = significand & 0x7FFFFFFFFFFFFFFFULL;
-            uint64_t lo = 0;
-            uint64_t hi = static_cast<uint64_t>(sign) << 63;
-            if (exponent == 0x7FFFu) {
-                hi |= 0x7FFFULL << 48;
-                if (significand != 0x8000000000000000ULL) {
-                    hi |= 1ULL << 47;
-                }
-            } else if (exponent == 0 && significand == 0) {
-                // signed zero
-            } else if ((significand & 0x8000000000000000ULL) != 0) {
-                // Normal, or a pseudo-denormal (exponent 0 with the integer
-                // bit set), which is the minimum binary128 normal.
-                const uint32_t biased = exponent == 0 ? 1u : exponent;
-                lo = fraction63 << 49;
-                hi |= (static_cast<uint64_t>(biased) << 48) | (fraction63 >> 15);
-            } else {
-                lo = significand << 49;
-                hi |= significand >> 15;
-            }
-            lf_float128 out;
-            std::memcpy(out.bytes, &lo, 8);
-            std::memcpy(out.bytes + 8, &hi, 8);
-            return out;
-        }
-    }
-
     static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
@@ -6217,7 +6114,7 @@ namespace Real {
                 }
                 if (dest_kind == 16) {
                     return ASRUtils::make_RealConstant_r16(al, loc,
-                        widen_long_double_to_f128(v), t1);
+                        lf_f128_from_long_double(v), t1);
                 }
                 return ASRUtils::make_RealConstant_util(al, loc,
                     static_cast<double>(v), t1);

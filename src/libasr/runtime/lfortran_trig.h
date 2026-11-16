@@ -4,7 +4,8 @@
  * Trigonometric functions of the runtime (lfortran_intrinsics.c) with an
  * exact argument reduction. The compiler folds constant expressions with
  * these same functions, so that a folded value agrees bit for bit with the
- * value computed at run time.
+ * value computed at run time with the same libm (with a different target
+ * libm, values away from the exact points can differ by an ulp).
  */
 
 #ifndef LFORTRAN_TRIG_H

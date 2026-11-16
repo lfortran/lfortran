@@ -19372,77 +19372,6 @@ LFORTRAN_API void _lfortran_string_read_c128_array(char *str, int64_t len, char 
 
 #ifndef _MSC_VER
 
-static long double f128_to_long_double(lf_float128 v) {
-#if LDBL_MANT_DIG == 64
-    uint64_t lo, hi;
-    memcpy(&lo, v.bytes, sizeof(lo));
-    memcpy(&hi, v.bytes + 8, sizeof(hi));
-    uint64_t sign = hi >> 63;
-    uint64_t exponent = (hi >> 48) & 0x7FFF;
-    uint64_t frac_hi = hi & 0xFFFFFFFFFFFFULL;
-    uint64_t mant = 0;
-    if (exponent == 0x7FFF) {
-        if ((frac_hi | lo) != 0) {
-            mant = (3ULL << 62) | (frac_hi << 14) | (lo >> 50);
-        } else {
-            mant = 1ULL << 63;
-        }
-    } else {
-        // The 63 fraction bits kept, and the 49 below them to round away.
-        uint64_t kept = (frac_hi << 15) | (lo >> 49);
-        uint64_t rest = lo & ((1ULL << 49) - 1);
-        if (exponent == 0) {
-            mant = kept;
-        } else {
-            mant = (1ULL << 63) | kept;
-        }
-        uint64_t half = 1ULL << 48;
-        if (rest > half || (rest == half && (mant & 1))) {
-            mant++;
-            if (mant == 0) {
-                mant = 1ULL << 63;
-                exponent++;
-            } else if (exponent == 0 && (mant >> 63)) {
-                exponent = 1;
-            }
-        }
-        if (exponent == 0x7FFF) {
-            mant = 1ULL << 63;
-        }
-    }
-    uint16_t sign_exponent = (uint16_t)((sign << 15) | exponent);
-    long double out = 0;
-    memcpy(&out, &mant, sizeof(mant));
-    memcpy((char*)&out + 8, &sign_exponent, sizeof(sign_exponent));
-    return out;
-#else
-    return (long double)lf_f128_to_double(v);
-#endif
-}
-
-static lf_float128 long_double_to_f128(long double v) {
-#if LDBL_MANT_DIG == 64
-    uint64_t mant;
-    uint16_t sign_exponent;
-    memcpy(&mant, &v, sizeof(mant));
-    memcpy(&sign_exponent, (const char*)&v + 8, sizeof(sign_exponent));
-    uint64_t sign = sign_exponent >> 15;
-    uint64_t exponent = sign_exponent & 0x7FFF;
-    uint64_t fraction = mant & 0x7FFFFFFFFFFFFFFFULL;
-    if (exponent == 0 && (mant >> 63)) {
-        exponent = 1;
-    }
-    uint64_t lo = fraction << 49;
-    uint64_t hi = (sign << 63) | (exponent << 48) | (fraction >> 15);
-    lf_float128 out;
-    memcpy(out.bytes, &lo, sizeof(lo));
-    memcpy(out.bytes + 8, &hi, sizeof(hi));
-    return out;
-#else
-    return lf_f128_from_double((double)v);
-#endif
-}
-
 static bool unit_is_unformatted(int32_t unit_num) {
     if (unit_num == -1) return false;
     bool unit_file_bin = false;
@@ -19455,13 +19384,13 @@ static bool unit_is_unformatted(int32_t unit_num) {
 }
 
 static struct _lfortran_complex_128 c80_to_c128(const struct _lfortran_complex_80 *c) {
-    return c128_make(long_double_to_f128(load_real10(&c->re)),
-        long_double_to_f128(load_real10(&c->im)));
+    return c128_make(lf_f128_from_long_double(load_real10(&c->re)),
+        lf_f128_from_long_double(load_real10(&c->im)));
 }
 
 static void c128_to_c80(struct _lfortran_complex_80 *c, struct _lfortran_complex_128 v) {
-    store_real10_storage(&c->re, f128_to_long_double(v.re));
-    store_real10_storage(&c->im, f128_to_long_double(v.im));
+    store_real10_storage(&c->re, lf_f128_to_long_double(v.re));
+    store_real10_storage(&c->im, lf_f128_to_long_double(v.im));
 }
 
 LFORTRAN_API void _lfortran_read_complex_float80(struct _lfortran_complex_80 *p, int32_t unit_num, int32_t *iostat)

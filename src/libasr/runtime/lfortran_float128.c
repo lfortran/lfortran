@@ -3944,6 +3944,103 @@ int lf_f128_eq(lf_float128 a, lf_float128 b) {
 #endif /* LFORTRAN_HAVE_REAL128 */
 
 /* ========================================================================
+ * Q2. Host long double <-> binary128 (kind 10 <-> kind 16)
+ *
+ * A kind-10 value is a host long double: the x87 extended format (64-bit
+ * significand), a double (53) or binary128 itself (113). Widening is
+ * exact; narrowing rounds once, to nearest even, subnormals included.
+ * x87 extended and binary128 share the exponent bias and range, so the x87
+ * conversions only move and round the significand.
+ * ======================================================================== */
+
+lf_float128 lf_f128_from_long_double(long double v) {
+#if LDBL_MANT_DIG == 64
+    uint64_t mant;
+    uint16_t sign_exponent;
+    memcpy(&mant, &v, sizeof(mant));
+    memcpy(&sign_exponent, (const char*)&v + 8, sizeof(sign_exponent));
+    uint64_t exponent = sign_exponent & 0x7FFF;
+    uint64_t fraction = mant & 0x7FFFFFFFFFFFFFFFULL;
+    uint64_t hi = (uint64_t)(sign_exponent >> 15) << 63;
+    uint64_t lo = fraction << 49;
+    if (exponent == 0x7FFF) {
+        /* Inf, or a NaN, which stays a (quiet) NaN */
+        hi |= (0x7FFFULL << 48) | (fraction >> 15);
+        if (fraction != 0) hi |= 1ULL << 47;
+    } else {
+        /* A pseudo-denormal (exponent 0 with the integer bit set) is the
+         * minimum normal. */
+        if (exponent == 0 && (mant >> 63)) exponent = 1;
+        hi |= (exponent << 48) | (fraction >> 15);
+    }
+    lf_float128 out;
+    memcpy(out.bytes, &lo, sizeof(lo));
+    memcpy(out.bytes + 8, &hi, sizeof(hi));
+    return out;
+#elif LDBL_MANT_DIG == 113
+    lf_float128 out;
+    memcpy(out.bytes, &v, sizeof(out.bytes));
+    return out;
+#else
+    /* Exact for a 53-bit long double */
+    return lf_f128_from_double((double)v);
+#endif
+}
+
+long double lf_f128_to_long_double(lf_float128 v) {
+#if LDBL_MANT_DIG == 64
+    uint64_t lo, hi;
+    memcpy(&lo, v.bytes, sizeof(lo));
+    memcpy(&hi, v.bytes + 8, sizeof(hi));
+    uint64_t sign = hi >> 63;
+    uint64_t exponent = (hi >> 48) & 0x7FFF;
+    uint64_t frac_hi = hi & 0xFFFFFFFFFFFFULL;
+    uint64_t mant = 0;
+    if (exponent == 0x7FFF) {
+        if ((frac_hi | lo) != 0) {
+            mant = (3ULL << 62) | (frac_hi << 14) | (lo >> 50);
+        } else {
+            mant = 1ULL << 63;
+        }
+    } else {
+        /* The 63 fraction bits kept, and the 49 below them to round away. */
+        uint64_t kept = (frac_hi << 15) | (lo >> 49);
+        uint64_t rest = lo & ((1ULL << 49) - 1);
+        if (exponent == 0) {
+            mant = kept;
+        } else {
+            mant = (1ULL << 63) | kept;
+        }
+        uint64_t half = 1ULL << 48;
+        if (rest > half || (rest == half && (mant & 1))) {
+            mant++;
+            if (mant == 0) {
+                mant = 1ULL << 63;
+                exponent++;
+            } else if (exponent == 0 && (mant >> 63)) {
+                exponent = 1;
+            }
+        }
+        if (exponent == 0x7FFF) {
+            mant = 1ULL << 63;
+        }
+    }
+    uint16_t sign_exponent = (uint16_t)((sign << 15) | exponent);
+    long double out = 0;
+    memcpy(&out, &mant, sizeof(mant));
+    memcpy((char*)&out + 8, &sign_exponent, sizeof(sign_exponent));
+    return out;
+#elif LDBL_MANT_DIG == 113
+    long double out;
+    memcpy(&out, v.bytes, sizeof(v.bytes));
+    return out;
+#else
+    /* Rounds once for a 53-bit long double */
+    return (long double)lf_f128_to_double(v);
+#endif
+}
+
+/* ========================================================================
  * R. format_float128_fortran — Fortran print formatting for real(16)
  *
  * Output: [-]d.dddddddddddddddddddddddddddddddddE+eee  (34 sig digits)
