@@ -3953,7 +3953,8 @@ int lf_f128_eq(lf_float128 a, lf_float128 b) {
  * Q2. Host long double <-> binary128 (kind 10 <-> kind 16)
  *
  * A kind-10 value is a host long double: the x87 extended format (64-bit
- * significand), a double (53) or binary128 itself (113). Widening is
+ * significand), a double (53) or binary128 itself (113); other formats,
+ * such as IBM double-double, are rejected at compile time. Widening is
  * exact; narrowing rounds once, to nearest even, subnormals included.
  * x87 extended and binary128 share the exponent bias and range, so the x87
  * conversions only move and round the significand.
@@ -3987,9 +3988,11 @@ lf_float128 lf_f128_from_long_double(long double v) {
     lf_float128 out;
     memcpy(out.bytes, &v, sizeof(out.bytes));
     return out;
-#else
+#elif LDBL_MANT_DIG == 53
     /* Exact for a 53-bit long double */
     return lf_f128_from_double((double)v);
+#else
+#error "unsupported long double format"
 #endif
 }
 
@@ -4040,9 +4043,11 @@ long double lf_f128_to_long_double(lf_float128 v) {
     long double out;
     memcpy(&out, v.bytes, sizeof(v.bytes));
     return out;
-#else
+#elif LDBL_MANT_DIG == 53
     /* Rounds once for a 53-bit long double */
     return (long double)lf_f128_to_double(v);
+#else
+#error "unsupported long double format"
 #endif
 }
 
