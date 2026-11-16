@@ -2780,5 +2780,118 @@ class MergebotTests(unittest.TestCase):
         self.assertRegex("Co-authored-by: A <a@b.c>", self.bot.TRAILER)
 
 
+class ApprovebotTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "approvebot", ROOT / ".agents/skills/approvebot/scripts/approvebot.py")
+        cls.bot = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.bot)
+
+    def pr(self, **overrides):
+        pr = {"number": 1, "head": "H", "draft": False, "labels": []}
+        pr.update(overrides)
+        return pr
+
+    def entry(self, **overrides):
+        entry = {"head": "H", "label": self.bot.APPROVED, "kind": "C3"}
+        entry.update(overrides)
+        return entry
+
+    def test_areas(self):
+        area = self.bot.area
+        self.assertEqual(area("src/libasr/pass/intrinsic_array_function_registry.h"),
+                         "production")
+        self.assertEqual(area("src/lfortran/tests/test_gpu.cpp"), "test")
+        self.assertEqual(area("src/libasr/asdl_cpp.py"), "control")
+        self.assertEqual(area("integration_tests/pack_01.f90"), "test")
+        self.assertEqual(area("integration_tests/CMakeLists.txt"), "registration")
+        self.assertEqual(area("tests/tests.toml"), "registration")
+        self.assertEqual(area("tests/reference/asr-x-1.stderr"), "reference")
+        self.assertEqual(area(".agents/skills/approvebot/SKILL.md"), "control")
+        self.assertEqual(area("src/CMakeLists.txt"), "control")
+        self.assertEqual(area("doc/src/installation.md"), "docs")
+        self.assertEqual(area("examples/nbody/ANALYSIS.md"), "docs")
+        summary = self.bot.summarize_files([
+            {"path": "src/a.cpp", "additions": 3, "deletions": 1},
+            {"path": "src/b.cpp", "additions": 2, "deletions": 0}])
+        self.assertEqual(summary["production"]["lines"], 6)
+        self.assertEqual(summary["production"]["files"], 2)
+
+    def test_registrations(self):
+        diff = "\n".join([
+            "+++ b/integration_tests/CMakeLists.txt",
+            " RUN(NAME old_01 LABELS gfortran llvm)",
+            "+RUN(NAME new_01 LABELS gfortran llvm) # pack (#15051)",
+            "+RUN(NAME new_02 LABELS llvm EXTRA_ARGS --fast -DFOO NO_STD_F23)",
+            "+RUN(NAME new_03 LABELS gfortran llvm NO_FAST_MATH GFORTRAN_ARGS -fno-range-check)",
+            "+RUN(NAME new_04 LABELS gfortran llvm",
+            "-RUN(NAME gone_01 LABELS gfortran llvm)",
+        ])
+        entries, warnings = self.bot.registrations(diff)
+        self.assertEqual([e["name"] for e in entries], ["new_01", "new_02", "new_03"])
+        self.assertEqual(entries[0]["labels"], ["gfortran", "llvm"])
+        self.assertEqual(entries[0]["options"], [])
+        self.assertEqual(entries[1]["labels"], ["llvm"])
+        self.assertEqual(entries[1]["options"], ["EXTRA_ARGS", "NO_STD_F23"])
+        self.assertEqual(entries[2]["options"], ["NO_FAST_MATH", "GFORTRAN_ARGS"])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("multi-line", warnings[0])
+
+    def test_next_action(self):
+        bot = self.bot
+        self.assertEqual(bot.next_action(self.pr(), None, "success"), "classify")
+        self.assertEqual(bot.next_action(self.pr(), None, "pending"), "classify")
+        self.assertEqual(bot.next_action(self.pr(), None, "failure"), "skip: CI failed")
+        self.assertEqual(bot.next_action(self.pr(draft=True), None, None), "skip: draft")
+        self.assertTrue(bot.next_action(self.pr(labels=[bot.AUTO_MERGE]), None, None)
+                        .startswith("hands-off"))
+        self.assertTrue(bot.next_action(self.pr(labels=[bot.REVIEW]), None, "success")
+                        .startswith("hands-off"))
+        labeled = self.pr(labels=[bot.APPROVED])
+        self.assertEqual(bot.next_action(labeled, self.entry(), None), "done")
+        self.assertEqual(bot.next_action(labeled, self.entry(), "pending"), "done")
+        # The head failed CI after its verdict.
+        self.assertEqual(bot.next_action(labeled, self.entry(), "failure"), "retract")
+        self.assertEqual(bot.next_action(self.pr(head="H2", labels=[bot.APPROVED]),
+                                         self.entry(), None), "retract")
+        self.assertEqual(bot.next_action(self.pr(), self.entry(retracted="t"), "success"),
+                         "classify")
+        # The maintainer disagreed, or took the PR over with auto-merge.
+        self.assertEqual(bot.next_action(self.pr(labels=[bot.REVIEW]), self.entry(), None),
+                         "ack")
+        merged = self.pr(labels=[bot.APPROVED, bot.AUTO_MERGE])
+        self.assertEqual(bot.next_action(merged, self.entry(), None), "ack")
+        self.assertEqual(bot.next_action(merged, self.entry(acked="t"), None), "done")
+        rebased = self.pr(head="H2", labels=[bot.APPROVED, bot.AUTO_MERGE])
+        self.assertTrue(bot.next_action(rebased, self.entry(acked="t"), None)
+                        .startswith("hands-off"))
+
+    def test_human_action_and_outcome(self):
+        bot = self.bot
+        approved, review = self.entry(), self.entry(label=bot.REVIEW)
+        self.assertIsNone(bot.human_action(approved, [bot.APPROVED], "OPEN"))
+        action = bot.human_action(approved, [bot.APPROVED, bot.AUTO_MERGE], "OPEN")
+        self.assertEqual((action, bot.outcome(approved, action)), ("auto-merge", "agree"))
+        action = bot.human_action(review, [bot.REVIEW, bot.AUTO_MERGE], "OPEN")
+        self.assertEqual(bot.outcome(review, action), "disagree")
+        action = bot.human_action(approved, [bot.REVIEW], "OPEN")
+        self.assertEqual((action, bot.outcome(approved, action)),
+                         ("relabeled to needs-review", "disagree"))
+        action = bot.human_action(approved, [], "OPEN")
+        self.assertEqual(action, "removed bot-approved")
+        self.assertEqual(bot.outcome(approved, bot.human_action(approved, [], "MERGED")),
+                         "agree")
+        self.assertEqual(bot.outcome(approved, bot.human_action(approved, [], "CLOSED")),
+                         "disagree")
+        self.assertEqual(bot.outcome(review, bot.human_action(review, [], "CLOSED")),
+                         "agree")
+        self.assertEqual(bot.outcome(review, bot.human_action(review, [], "MERGED")),
+                         "agree")
+        # Merged by mergebot after the maintainer applied auto-merge.
+        action = bot.human_action(review, [bot.REVIEW, bot.AUTO_MERGE], "MERGED")
+        self.assertEqual((action, bot.outcome(review, action)), ("auto-merge", "disagree"))
+
+
 if __name__ == "__main__":
     unittest.main()

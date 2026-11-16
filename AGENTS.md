@@ -106,6 +106,18 @@ that pause while main CI confirms or rules out the suspicion; rerunning a
 known failure must not temporarily reopen merging. A successful main run
 on the affected head or a newer run clears the failure/suspicion.
 
+## Verdict Labels (approvebot)
+
+When the user asks to run approvebot or to classify PRs as `bot-approved` or
+`needs-review`, load and follow [approvebot](.agents/skills/approvebot/SKILL.md).
+It runs like mergebot, from a dedicated checkout with `/loop 30m /approvebot`,
+and classifies only the maintainer's own non-draft PRs whose CI has not failed. Each verdict
+belongs to one head, comes with a signed comment, and carries no authority:
+the maintainer reviews both labels and applies `auto-merge` themselves.
+Approvebot never applies `auto-merge`, approves, merges, or pushes to PRs.
+It turns the maintainer's disagreements into draft calibration PRs for its
+own policy, which only the maintainer merges.
+
 ## Project Structure & Module Organization
 - `src/`: core sources
   - `libasr/`: ASR + utilities, passes, verification, backends
@@ -140,6 +152,7 @@ Available skills:
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 | `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
 | `mergebot` | Babysit `auto-merge`-labeled PRs: keep them rebased, wait for CI, and merge or squash-merge them; remove the label when anyone else pushes or the PR fails |
+| `approvebot` | Label the maintainer's ready PRs `bot-approved` (in scope, a listed narrow kind, test proven to fail on main) or `needs-review`, with a signed reason; learn from the maintainer's reactions through calibration PRs; never applies `auto-merge` |
 | `make-release` | Release the green tip of `main`: tag with generated notes, verify the tarball, update the conda-forge feedstock (patches upstreamed afterwards) and lfortran-conda-testing, and turn regressions into issues and fix PRs |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,

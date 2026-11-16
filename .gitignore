@@ -245,6 +245,8 @@ doc/man/lfortran.1
 /.release/
 # mergebot state: pause flag, locks, worktree pool, notes, and messages.
 /.mergebot/
+# approvebot state: journal, feedback ledger, and its worktree and build of main.
+/.approvebot/
 /mre_*.f90
 /re_*.f90
 /test_ref
