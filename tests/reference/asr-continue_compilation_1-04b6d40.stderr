@@ -6119,6 +6119,258 @@ semantic error: `value` argument of `findloc` must be a scalar of integer, real,
 5107 |     print *, findloc(cc1_ftc_r, [1, 2])  ! {Error} `value` argument of `findloc` must be a scalar of integer, real, logical, character or complex type
      |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5129:11
+     |
+5129 |     write(cc1_ifnc_s, '(i3)') 42  ! {Error} internal file must be a variable, not a named constant
+     |           ^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5130:16
+     |
+5130 |     write(unit=cc1_ifnc_s, fmt='(i3)') 42  ! {Error} internal file must be a variable, not a named constant
+     |                ^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5131:10
+     |
+5131 |     read(cc1_ifnc_s, *) cc1_ifnc_i  ! {Error} internal file must be a variable, not a named constant
+     |          ^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5132:15
+     |
+5132 |     read(unit=cc1_ifnc_s, fmt=*) cc1_ifnc_i  ! {Error} internal file must be a variable, not a named constant
+     |               ^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5133:10
+     |
+5133 |     read(cc1_ifnc_s(1:2), *) cc1_ifnc_i  ! {Error} internal file must be a variable, not a named constant
+     |          ^^^^^^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5134:11
+     |
+5134 |     write(cc1_ifnc_a(1), *) 1  ! {Error} internal file must be a variable, not a named constant
+     |           ^^^^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5135:10
+     |
+5135 |     read(cc1_ifnc_a, *) cc1_ifnc_i  ! {Error} internal file must be a variable, not a named constant
+     |          ^^^^^^^^^^ 
+
+semantic error: internal file must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5136:11
+     |
+5136 |     write(cc1_ifnc_p%c, *) 1  ! {Error} internal file must be a variable, not a named constant
+     |           ^^^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5152:16
+     |
+5152 |     read(*, *) cc1_rinc_n  ! {Error} input item must be a variable, not a named constant
+     |                ^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5153:16
+     |
+5153 |     read(*, *) cc1_rinc_a(1)  ! {Error} input item must be a variable, not a named constant
+     |                ^^^^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5154:16
+     |
+5154 |     read(*, *) cc1_rinc_a  ! {Error} input item must be a variable, not a named constant
+     |                ^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5155:16
+     |
+5155 |     read(*, *) cc1_rinc_c(1:2)  ! {Error} input item must be a variable, not a named constant
+     |                ^^^^^^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5156:16
+     |
+5156 |     read(*, *) cc1_rinc_c  ! {Error} input item must be a variable, not a named constant
+     |                ^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5157:16
+     |
+5157 |     read(*, *) cc1_rinc_p%i  ! {Error} input item must be a variable, not a named constant
+     |                ^^^^^^^^^^^^ 
+
+semantic error: input item must be a variable, not a named constant
+    --> tests/errors/continue_compilation_1.f90:5158:32
+     |
+5158 |     read(*, *) cc1_rinc_x(1), (cc1_rinc_a(cc1_rinc_j), cc1_rinc_j = 1, 2)  ! {Error} input item must be a variable, not a named constant
+     |                                ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: implied-do variable cannot be a named constant
+    --> tests/errors/continue_compilation_1.f90:5159:16
+     |
+5159 |     read(*, *) (cc1_rinc_x(cc1_rinc_n), cc1_rinc_n = 1, 3)  ! {Error} implied-do variable cannot be a named constant
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: implied-do variable cannot be a named constant
+    --> tests/errors/continue_compilation_1.f90:5160:17
+     |
+5160 |     write(*, *) (cc1_rinc_x(cc1_rinc_n), cc1_rinc_n = 1, 3)  ! {Error} implied-do variable cannot be a named constant
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: implied-do variable cannot be a named constant
+    --> tests/errors/continue_compilation_1.f90:5161:14
+     |
+5161 |     print *, (cc1_rinc_x(cc1_rinc_n), cc1_rinc_n = 1, 3)  ! {Error} implied-do variable cannot be a named constant
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `size`
+    --> tests/errors/continue_compilation_1.f90:5173:39
+     |
+5173 |     read(*, '(a)', advance='no', size=cc1_iosnc_n) cc1_iosnc_c  ! {Error} non-variable expression for `size`
+     |                                       ^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `iostat`
+    --> tests/errors/continue_compilation_1.f90:5174:23
+     |
+5174 |     rewind(10, iostat=cc1_iosnc_n)  ! {Error} non-variable expression for `iostat`
+     |                       ^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:5175:22
+     |
+5175 |     rewind(10, iomsg=cc1_iosnc_m)  ! {Error} non-variable expression for `iomsg`
+     |                      ^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `iostat`
+    --> tests/errors/continue_compilation_1.f90:5176:22
+     |
+5176 |     flush(10, iostat=cc1_iosnc_n)  ! {Error} non-variable expression for `iostat`
+     |                      ^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:5177:21
+     |
+5177 |     flush(10, iomsg=cc1_iosnc_m)  ! {Error} non-variable expression for `iomsg`
+     |                     ^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `iostat`
+    --> tests/errors/continue_compilation_1.f90:5178:24
+     |
+5178 |     endfile(10, iostat=cc1_iosnc_n)  ! {Error} non-variable expression for `iostat`
+     |                        ^^^^^^^^^^^ 
+
+semantic error: non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:5179:23
+     |
+5179 |     endfile(10, iomsg=cc1_iosnc_m)  ! {Error} non-variable expression for `iomsg`
+     |                       ^^^^^^^^^^^ 
+
+semantic error: exist in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5189:23
+     |
+5189 |     inquire(10, exist=cc1_inqnc_l)  ! {Error} exist in inquire must be a definable variable
+     |                       ^^^^^^^^^^^ 
+
+semantic error: opened in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5190:36
+     |
+5190 |     inquire(file="cc1.txt", opened=cc1_inqnc_l)  ! {Error} opened in inquire must be a definable variable
+     |                                    ^^^^^^^^^^^ 
+
+semantic error: named in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5191:23
+     |
+5191 |     inquire(10, named=cc1_inqnc_l)  ! {Error} named in inquire must be a definable variable
+     |                       ^^^^^^^^^^^ 
+
+semantic error: pending in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5192:25
+     |
+5192 |     inquire(10, pending=cc1_inqnc_l)  ! {Error} pending in inquire must be a definable variable
+     |                         ^^^^^^^^^^^ 
+
+semantic error: number in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5193:24
+     |
+5193 |     inquire(10, number=cc1_inqnc_n)  ! {Error} number in inquire must be a definable variable
+     |                        ^^^^^^^^^^^ 
+
+semantic error: recl in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5194:22
+     |
+5194 |     inquire(10, recl=cc1_inqnc_n)  ! {Error} recl in inquire must be a definable variable
+     |                      ^^^^^^^^^^^ 
+
+semantic error: nextrec in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5195:25
+     |
+5195 |     inquire(10, nextrec=cc1_inqnc_n)  ! {Error} nextrec in inquire must be a definable variable
+     |                         ^^^^^^^^^^^ 
+
+semantic error: iostat in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5196:24
+     |
+5196 |     inquire(10, iostat=cc1_inqnc_n)  ! {Error} iostat in inquire must be a definable variable
+     |                        ^^^^^^^^^^^ 
+
+semantic error: iomsg in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5197:23
+     |
+5197 |     inquire(10, iomsg=cc1_inqnc_s)  ! {Error} iomsg in inquire must be a definable variable
+     |                       ^^^^^^^^^^^ 
+
+semantic error: name in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5198:22
+     |
+5198 |     inquire(10, name=cc1_inqnc_s)  ! {Error} name in inquire must be a definable variable
+     |                      ^^^^^^^^^^^ 
+
+semantic error: access in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5199:24
+     |
+5199 |     inquire(10, access=cc1_inqnc_a(1))  ! {Error} access in inquire must be a definable variable
+     |                        ^^^^^^^^^^^^^^ 
+
+semantic error: form in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5200:22
+     |
+5200 |     inquire(10, form=cc1_inqnc_s(1:5))  ! {Error} form in inquire must be a definable variable
+     |                      ^^^^^^^^^^^^^^^^ 
+
+semantic error: action in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5201:24
+     |
+5201 |     inquire(10, action=cc1_inqnc_s)  ! {Error} action in inquire must be a definable variable
+     |                        ^^^^^^^^^^^ 
+
+semantic error: position in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5202:26
+     |
+5202 |     inquire(10, position=cc1_inqnc_s)  ! {Error} position in inquire must be a definable variable
+     |                          ^^^^^^^^^^^ 
+
+semantic error: encoding in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5203:26
+     |
+5203 |     inquire(10, encoding=cc1_inqnc_s)  ! {Error} encoding in inquire must be a definable variable
+     |                          ^^^^^^^^^^^ 
+
+semantic error: round in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5204:23
+     |
+5204 |     inquire(10, round=cc1_inqnc_s)  ! {Error} round in inquire must be a definable variable
+     |                       ^^^^^^^^^^^ 
+
+semantic error: iolength in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:5205:22
+     |
+5205 |     inquire(iolength=cc1_inqnc_n) 1.0  ! {Error} iolength in inquire must be a definable variable
+     |                      ^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
