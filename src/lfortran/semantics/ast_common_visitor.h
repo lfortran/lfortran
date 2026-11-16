@@ -2316,6 +2316,17 @@ public:
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }
+        if (ASRUtils::extract_kind_from_ttype_t(y_type) !=
+                ASRUtils::extract_kind_from_ttype_t(x_type)) {
+            diag.add(Diagnostic("arguments 'y' and 'x' of the '" +
+                intrinsic_name + "' intrinsic must have the same kind, found " +
+                ASRUtils::type_to_str_with_kind(
+                    ASRUtils::extract_type(y_type), args[0]) + " and " +
+                ASRUtils::type_to_str_with_kind(
+                    ASRUtils::extract_type(x_type), args[1]),
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
     }
 
     // The specific intrinsic functions of Fortran 2018, Table 16.2, that

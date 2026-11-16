@@ -2120,6 +2120,12 @@ semantic error: `vector` and `field` arguments of `unpack` must have the same ty
 5046 |     real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
      |                                                                                               ^^^ 
 
+semantic error: arguments of the 'atan2pi' intrinsic must have the same type and kind, found real(4) and real(8)
+    --> tests/errors/continue_compilation_1.f90:5082:39
+     |
+5082 |     real(8), parameter :: cc1_a2k_p = atan2pi(1.0, 1.0d0)  ! {Error} arguments of the 'atan2pi' intrinsic must have the same type and kind, found real(4) and real(8)
+     |                                       ^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -6034,6 +6040,36 @@ semantic error: `kind` argument of `realpart` intrinsic must be a scalar
      |
 5074 |     cc1_sn_d = realpart(cc1_sn_z, [4, 4])  ! {Error} `kind` argument of `realpart` intrinsic must be a scalar
      |                                   ^^^^^^ 
+
+semantic error: arguments of the 'atan2' intrinsic must have the same type and kind, found real(8) and real(4)
+    --> tests/errors/continue_compilation_1.f90:5085:17
+     |
+5085 |     cc1_a2k_r = atan2(cc1_a2k_y, cc1_a2k_x)  ! {Error} arguments of the 'atan2' intrinsic must have the same type and kind, found real(8) and real(4)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments of the 'atan2' intrinsic must have the same type and kind, found real(4) and real(8)
+    --> tests/errors/continue_compilation_1.f90:5086:17
+     |
+5086 |     cc1_a2k_r = atan2(1.0, 1.0d0)  ! {Error} arguments of the 'atan2' intrinsic must have the same type and kind, found real(4) and real(8)
+     |                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments of the 'atan2d' intrinsic must have the same type and kind, found real(4) and real(8)
+    --> tests/errors/continue_compilation_1.f90:5087:17
+     |
+5087 |     cc1_a2k_r = atan2d(cc1_a2k_x, cc1_a2k_y)  ! {Error} arguments of the 'atan2d' intrinsic must have the same type and kind, found real(4) and real(8)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments 'y' and 'x' of the 'atan' intrinsic must have the same kind, found real(8) and real(4)
+    --> tests/errors/continue_compilation_1.f90:5088:17
+     |
+5088 |     cc1_a2k_r = atan(cc1_a2k_y, cc1_a2k_x)  ! {Error} arguments 'y' and 'x' of the 'atan' intrinsic must have the same kind, found real(8) and real(4)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: arguments 'y' and 'x' of the 'atand' intrinsic must have the same kind, found real(8) and real(4)
+    --> tests/errors/continue_compilation_1.f90:5089:17
+     |
+5089 |     cc1_a2k_r = atand(1.0d0, 1.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must have the same kind, found real(8) and real(4)
+     |                 ^^^^^^^^^^^^^^^^^ 
 
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9

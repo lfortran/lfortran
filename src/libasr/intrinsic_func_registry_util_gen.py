@@ -132,13 +132,15 @@ intrinsic_funcs_args = {
     "Atan2": [
         {
             "args": [("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_type_arg": 2
         }
     ],
     "Atan2d": [
         {
             "args": [("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_type_arg": 2
         }
     ],
     "Fix": [
@@ -425,7 +427,8 @@ intrinsic_funcs_args = {
     "Atan2pi": [
         {
             "args": [("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": 0,
+            "same_type_arg": 2
         }
     ],
     "BesselJ0": [
