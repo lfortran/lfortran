@@ -1942,6 +1942,7 @@ RUN(NAME unpack_allocatable_mask_01 LABELS gfortran llvm) # unpack with a run-ti
 RUN(NAME unpack_allocatable_mask_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # unpack assigned to an unallocated array (#17270)
 RUN(NAME unpack_parameter_01 LABELS gfortran llvm) # unpack of integer(1), integer(2) and character constants in a parameter (#17827)
 RUN(NAME unpack_parameter_02 LABELS gfortran llvm) # unpack with a rank-2 mask folded to the shape of the mask (#17310)
+RUN(NAME pack_char_param_fold_01 LABELS gfortran llvm) # pack of constant character arrays in parameters (#15051)
 RUN(NAME intrinsics_150 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskr
 RUN(NAME intrinsics_151 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
 RUN(NAME intrinsics_152 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_real_kind
