@@ -2798,6 +2798,11 @@ namespace Cshift {
                 str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                 m_eles.push_back(b.StringConstant(str, arr_type));
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(arr_type))) {
+            m_eles = constant_elements(al, args[0],
+                ASRUtils::get_fixed_size_of_array(arr->m_type));
+        } else {
+            return nullptr;
         }
         int shift = 0;
         int n = checked_integer_cast<int>(m_eles.size());
@@ -3597,6 +3602,14 @@ namespace Eoshift {
             if(is_logical(*boundary_type)){
                 final_boundary = b.StringConstant(str, arr_type);
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(arr_type))) {
+            // A derived-type `array` always has a `boundary` (there is no
+            // default one); use its `StructConstant` value
+            m_eles = constant_elements(al, args[0],
+                ASRUtils::get_fixed_size_of_array(arr->m_type));
+            final_boundary = ASRUtils::expr_value(args[2]);
+        } else {
+            return nullptr;
         }
         int shift = 0;
         if (extract_value(expr_value(args[1]), shift)) {
