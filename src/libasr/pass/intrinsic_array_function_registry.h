@@ -3063,7 +3063,7 @@ namespace Spread {
                 if (dim_val == 1) {
                     for (size_t i = 0; i < array_size; i++) {
                         std::vector<ASR::expr_t *> res;
-                        int ele = 0;
+                        int64_t ele = 0;
                         if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                             for (int64_t j = 0; j < ncopies; j++) {
                                 res.push_back(b.i_t(ele, arr_type));
@@ -3076,7 +3076,7 @@ namespace Spread {
                 } else if (dim_val == 2) {
                     for (int64_t j = 0; j < ncopies; j++) {
                         std::vector<ASR::expr_t *> res;
-                        int ele = 0;
+                        int64_t ele = 0;
                         for (size_t i = 0; i < array_size; i++) {
                             if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                                 res.push_back(b.i_t(ele, arr_type));
