@@ -62,6 +62,8 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--show-stacktrace`: Show internal stacktrace on compiler errors
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)
 - `--time-report`: Show compilation time report
+- `--save-temps`: Keep the temporary directory of the intermediate files and print its path
+- `--clean-temp`: Remove the temporary directories of compiler runs that were killed (whose process no longer exists) on this host and exit
 - `--static`: Create a static executable
 - `--no-warnings`: Turn off all warnings
 - `--no-style-suggestions`: Turn off style suggestions
@@ -107,6 +109,13 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
   the original statement, and their storage is reclaimed at statement exit.
   User-declared allocatables and allocatable or pointer function results retain
   their allocation semantics.
+
+# ENVIRONMENT
+
+- `TMPDIR`: Directory for the private temporary directory
+  `lfortran-<host>-<pid>-XXXXXX` of the intermediate files of an invocation
+  (default `/tmp`). The directory is removed when the compiler finishes, fails,
+  is interrupted or crashes, unless `--save-temps` is given.
 
 # SUBCOMMANDS
 
