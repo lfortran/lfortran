@@ -1,4 +1,4 @@
-program coarray_02
+program coarrays_02
     implicit none
     integer :: a(5)[*] = 0
     integer :: i

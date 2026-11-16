@@ -1,4 +1,4 @@
-program coarray_01
+program coarrays_01
 implicit none
 integer :: x[*]
 integer :: y(3)[*]
@@ -20,4 +20,4 @@ sync all
 if (num_images() /= 1) error stop
 
 print *, "ok"
-end program coarray_01
+end program coarrays_01

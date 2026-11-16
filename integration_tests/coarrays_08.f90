@@ -1,4 +1,4 @@
-program coarray_03
+program coarrays_08
     implicit none
     integer :: a(5)[*], b(5)
     character(len=3) :: s(2)[*], c(2)
