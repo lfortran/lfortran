@@ -44,6 +44,20 @@ inlined, alike:
 Anything else is left as it is. In particular only integer(4) is matched, and
 a, b and c are compared node for node, so an operand that merely evaluates
 to the same value is not recognized as the same.
+
+On an NVIDIA GPU (not on Metal, which has no such instruction), the pass
+also writes a byte of an integer(4) placed in the low byte of a constant
+whose low byte is zero,
+
+    ior(iand(shiftr(w, 8*k), 255), c)      (k = 0, 1, 2, 3)
+
+with `iand(w, 255)`, `shiftr(w, 24)` or `ibits(w, 8*k, 8)` for the byte, as
+one call of `__byte_perm(w, c, s)`, which picks each byte of its result from
+the eight bytes of its first two operands: byte k of w for the lowest
+(`s = 0x7650 + k`), the bytes of c for the others. A dequantization reads a
+byte as a real this way (`transfer(ior(byte, 1258291200), 0.0)` is
+2**23 + byte), and the instruction does in one what the shift and the mask
+do in two (the two operands of ior may be in either order).
 */
 
 namespace {
@@ -206,21 +220,91 @@ void flatten(ASR::expr_t *e, std::vector<ASR::expr_t*> &terms) {
     terms.push_back(e);
 }
 
+// A constant integer(4) operand: its value.
+bool int4_constant(ASR::expr_t *e, int64_t &v) {
+    return is_int4(ASRUtils::expr_type(e))
+        && ASRUtils::extract_value(ASRUtils::expr_value(e), v);
+}
+
+// Byte k of an integer(4) x in the low byte of an integer(4) whose other
+// bits are zero: `iand(x, 255)`, `iand(shiftr(x, 8*k), 255)` (or shifta),
+// `shiftr(x, 24)` or `ibits(x, 8*k, 8)`.
+bool low_byte(ASR::expr_t *e, ASR::expr_t *&x, int &k) {
+    if (e == nullptr || !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)
+            || !is_int4(ASRUtils::expr_type(e))) {
+        return false;
+    }
+    ASR::IntrinsicElementalFunction_t *f =
+        ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+    int64_t amount = 0;
+    if (f->m_intrinsic_id == static_cast<int64_t>(IEF::Iand)
+            && f->n_args == 2) {
+        for (int side = 0; side < 2; side++) {
+            int64_t mask = 0;
+            ASR::expr_t *a = f->m_args[1 - side];
+            if (!int4_constant(f->m_args[side], mask) || mask != 255
+                    || !is_int4(ASRUtils::expr_type(a))) {
+                continue;
+            }
+            ASR::expr_t *inner = nullptr;
+            if ((shift_call(a, IEF::Shiftr, inner, amount)
+                        || shift_call(a, IEF::Rshift, inner, amount))
+                    && (amount == 0 || amount == 8 || amount == 16
+                        || amount == 24)) {
+                x = inner;
+                k = static_cast<int>(amount / 8);
+            } else {
+                x = a;
+                k = 0;
+            }
+            return true;
+        }
+        return false;
+    }
+    if (shift_call(e, IEF::Shiftr, x, amount) && amount == 24) {
+        k = 3;
+        return true;
+    }
+    if (f->m_intrinsic_id == static_cast<int64_t>(IEF::Ibits)
+            && f->n_args == 3 && is_int4(ASRUtils::expr_type(f->m_args[0]))) {
+        int64_t pos = 0, len = 0;
+        if (int4_constant(f->m_args[1], pos)
+                && int4_constant(f->m_args[2], len) && len == 8
+                && (pos == 0 || pos == 8 || pos == 16 || pos == 24)) {
+            x = f->m_args[0];
+            k = static_cast<int>(pos / 8);
+            return true;
+        }
+    }
+    return false;
+}
+
 class Dp4aReplacer : public ASR::BaseExprReplacer<Dp4aReplacer> {
 public:
     Allocator &al;
     ASR::symbol_t *&dp4a;
+    ASR::symbol_t *&byte_perm;
     SymbolTable *global;
 
-    Dp4aReplacer(Allocator &al_, ASR::symbol_t *&dp4a_, SymbolTable *global_)
-        : al(al_), dp4a(dp4a_), global(global_) {}
+    // Whether the device has `__byte_perm`: an NVIDIA GPU, not Metal.
+    bool has_byte_perm = false;
+
+    Dp4aReplacer(Allocator &al_, ASR::symbol_t *&dp4a_,
+            ASR::symbol_t *&byte_perm_, SymbolTable *global_)
+        : al(al_), dp4a(dp4a_), byte_perm(byte_perm_), global(global_) {}
 
     // The device dot-product interface: a CUDA instruction or a Metal helper.
     ASR::symbol_t *function(const Location &loc) {
-        if (dp4a != nullptr) return dp4a;
-        const std::string name = "__dp4a";
+        return interface(loc, "__dp4a", dp4a);
+    }
+
+    // The interface of the instruction `name` of three integer(4) operands
+    // and an integer(4) result, added to the global scope once.
+    ASR::symbol_t *interface(const Location &loc, const std::string &name,
+            ASR::symbol_t *&cached) {
+        if (cached != nullptr) return cached;
         if (ASR::symbol_t *existing = global->get_symbol(name)) {
-            return dp4a = existing;
+            return cached = existing;
         }
         ASRUtils::ASRBuilder b(al, loc);
         SymbolTable *fn_symtab = al.make_new<SymbolTable>(global);
@@ -239,9 +323,48 @@ public:
             return_var, ASR::abiType::BindC, ASR::accessType::Public,
             ASR::deftypeType::Interface, s2c(al, name), false, true, false,
             false, false, nullptr, 0, false, false, false, nullptr);
-        dp4a = ASR::down_cast<ASR::symbol_t>(fn);
-        global->add_symbol(name, dp4a);
-        return dp4a;
+        cached = ASR::down_cast<ASR::symbol_t>(fn);
+        global->add_symbol(name, cached);
+        return cached;
+    }
+
+    // `ior(byte k of w, c)` with a constant c whose low byte is zero:
+    // `__byte_perm(w, c, 0x7650 + k)`.
+    void replace_IntrinsicElementalFunction(
+            ASR::IntrinsicElementalFunction_t *x) {
+        ASR::BaseExprReplacer<Dp4aReplacer>::
+            replace_IntrinsicElementalFunction(x);
+        if (!has_byte_perm
+                || x->m_intrinsic_id != static_cast<int64_t>(IEF::Ior)
+                || x->n_args != 2 || x->m_value != nullptr
+                || !is_int4(x->m_type)) {
+            return;
+        }
+        for (int side = 0; side < 2; side++) {
+            int64_t c = 0;
+            ASR::expr_t *w = nullptr;
+            int k = 0;
+            if (!int4_constant(x->m_args[1 - side], c) || (c & 255) != 0
+                    || !low_byte(x->m_args[side], w, k)) {
+                continue;
+            }
+            Location loc = x->base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, 3);
+            for (ASR::expr_t *e : {w, x->m_args[1 - side],
+                    b.i32(0x7650 + k)}) {
+                ASR::call_arg_t arg;
+                arg.loc = loc;
+                arg.m_value = e;
+                args.push_back(al, arg);
+            }
+            ASR::symbol_t *fn = interface(loc, "__byte_perm", byte_perm);
+            *current_expr = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                fn, nullptr, args.p, args.n,
+                ASRUtils::duplicate_type(al, x->m_type), nullptr, nullptr));
+            return;
+        }
     }
 
     void replace_IntegerBinOp(ASR::IntegerBinOp_t *x) {
@@ -324,12 +447,22 @@ public:
 class Dp4aVisitor : public ASR::CallReplacerOnExpressionsVisitor<Dp4aVisitor> {
 public:
     Dp4aReplacer replacer;
-    Dp4aVisitor(Allocator &al, ASR::symbol_t *&dp4a, SymbolTable *global)
-        : replacer(al, dp4a, global) {}
+    Dp4aVisitor(Allocator &al, ASR::symbol_t *&dp4a,
+            ASR::symbol_t *&byte_perm, SymbolTable *global)
+        : replacer(al, dp4a, byte_perm, global) {}
 
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    // The statements of a BLOCK of the body, such as the body of an
+    // iteration of a `do concurrent` with locals of its own.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!ASR::is_a<ASR::Block_t>(*s)) return;
+        ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(s);
+        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
     }
 };
 
@@ -344,8 +477,9 @@ void pass_gpu_dp4a(Allocator &al, ASR::TranslationUnit_t &unit,
             (device != GpuDevice::Cuda || !pass_options.gpu_cuda_warps)) {
         return;
     }
-    ASR::symbol_t *dp4a = nullptr;
-    Dp4aVisitor visitor(al, dp4a, unit.m_symtab);
+    ASR::symbol_t *dp4a = nullptr, *byte_perm = nullptr;
+    Dp4aVisitor visitor(al, dp4a, byte_perm, unit.m_symtab);
+    visitor.replacer.has_byte_perm = device == GpuDevice::Cuda;
     std::function<void(SymbolTable*)> visit = [&](SymbolTable *scope) {
         // The visit can add `__dp4a` to the scope that is being walked.
         std::vector<ASR::symbol_t*> symbols;
@@ -367,7 +501,7 @@ void pass_gpu_dp4a(Allocator &al, ASR::TranslationUnit_t &unit,
         }
     };
     visit(unit.m_symtab);
-    if (dp4a != nullptr) {
+    if (dp4a != nullptr || byte_perm != nullptr) {
         PassUtils::UpdateDependenciesVisitor update(al);
         update.visit_TranslationUnit(unit);
     }

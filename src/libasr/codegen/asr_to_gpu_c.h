@@ -6136,6 +6136,17 @@ public:
                     if (fc->n_args > 1 && fc->m_args[1].m_value)
                         visit_expr(fc->m_args[1].m_value);
                     src << ")";
+                } else if (fn_name == "__byte_perm") {
+                    // The instruction of gpu_dp4a.cpp, whose operands and
+                    // result are unsigned: the integer(4) it stands for is
+                    // signed.
+                    src << "((int)__byte_perm((unsigned)(";
+                    visit_expr(fc->m_args[0].m_value);
+                    src << "), (unsigned)(";
+                    visit_expr(fc->m_args[1].m_value);
+                    src << "), ";
+                    visit_expr(fc->m_args[2].m_value);
+                    src << "))";
                 } else {
                     // User-defined function call — emit as fn(args)
                     // Resolve to actual function name

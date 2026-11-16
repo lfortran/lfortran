@@ -1340,6 +1340,14 @@ is added to `c`. The four left shifts must be 24, 16, 8 and 0 (a shift by
 position are left as they are. HIP, Metal and the CPU emulation (`cuda_cpu`)
 do not have the instruction and compile the arithmetic.
 
+The same pass writes a byte of an `integer(4)` placed in the low byte of a
+constant whose low byte is zero, `ior(iand(shiftr(w, 8*k), 255), c)` (or
+`iand(w, 255)`, `shiftr(w, 24)`, `ibits(w, 8*k, 8)` for the byte, with the
+operands of `ior` in either order), as one `__byte_perm(w, c, 0x7650 + k)`,
+which takes the low byte from w and the others from c: one instruction for
+the shift and the mask. A q8 dequantization reads a byte as a real this way,
+`transfer(ior(byte, 1258291200), 0.0) - 8388608.0`.
+
 ### Loads in flight
 
 A GPU hides the latency of memory with many threads, each waiting for a
