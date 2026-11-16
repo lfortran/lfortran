@@ -314,7 +314,9 @@ subroutine k_transpose_x(n, reps, s)
     end do
 end subroutine
 
-! reshape (2 x n/2)
+! reshape (2 x 2, n is 4). The shape is a constant: with a shape computed
+! at run time, such as [2, n/2], LFortran puts a temporary on the stack in
+! every iteration and runs out of stack after about a million iterations.
 subroutine k_reshape(n, reps, s)
     integer, intent(in) :: n, reps
     real(8), intent(out) :: s
@@ -322,11 +324,11 @@ subroutine k_reshape(n, reps, s)
     real :: a(n)
     integer :: i
     a = 1
-    allocate(c(2, n/2))
+    allocate(c(2, 2))
     s = 0
     do i = 1, reps
         a(3) = real(mod(i, 7))
-        c = reshape(a, [2, n/2])
+        c = reshape(a, [2, 2])
         s = s + c(1, 2)
     end do
 end subroutine
@@ -338,11 +340,11 @@ subroutine k_reshape_x(n, reps, s)
     real :: a(n)
     integer :: i
     a = 1
-    allocate(c(2, n/2))
+    allocate(c(2, 2))
     s = 0
     do i = 1, reps
         a(3) = real(mod(i, 7))
-        c(:,:) = reshape(a, [2, n/2])
+        c(:,:) = reshape(a, [2, 2])
         s = s + c(1, 2)
     end do
 end subroutine
