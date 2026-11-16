@@ -2800,10 +2800,9 @@ namespace Cshift {
             }
         }
         int shift = 0;
-        if (extract_value(expr_value(args[1]), shift)) {
-            if (shift < 0) {
-                shift = checked_integer_cast<int>(m_eles.size()) + shift;
-            }
+        int n = checked_integer_cast<int>(m_eles.size());
+        if (n > 0 && extract_value(expr_value(args[1]), shift)) {
+            shift = (shift % n + n) % n;
             std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
         }
         return b.ArrayConstant(m_eles, extract_type(type), false);
@@ -3591,6 +3590,8 @@ namespace Eoshift {
         }
         int shift = 0;
         if (extract_value(expr_value(args[1]), shift)) {
+            int n = checked_integer_cast<int>(m_eles.size());
+            shift = std::max(-n, std::min(shift, n));
             if (shift < 0) {
                 std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
                 for(int j = 0; j < (-1*shift); j++) {
