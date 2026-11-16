@@ -1087,6 +1087,25 @@ def add_verify_return_type_src(func_name):
             ret_type_cond_in_msg += " or "
     src += 2 * indent + f'ASRUtils::require_impl({ret_type_cond}, "Unexpected return type, {func_name} expects `{ret_type_cond_in_msg}` as return type", x.base.base.loc, diagnostics);\n'
 
+# Fortran names of the intrinsics whose name is not their lowercased
+# registry name
+intrinsic_fortran_name = {
+    "Mergebits": "merge_bits",
+}
+
+def add_create_func_same_type_src(func_name, no_of_args):
+    global src
+    name = intrinsic_fortran_name.get(func_name, func_name.lower())
+    for i in range(1, no_of_args):
+        type0 = "ASRUtils::extract_type(arg_type0)"
+        typei = f"ASRUtils::extract_type(arg_type{i})"
+        src += 3 * indent + f"if (!ASRUtils::check_equal_type({type0}, {typei}, args[0], args[{i}])) " + "{\n"
+        src += 4 * indent + f"append_error(diag, \"arguments of the '{name}' intrinsic must have the same type and kind, found \" + "\
+            f"ASRUtils::type_to_str_with_kind({type0}, args[0]) + \" and \" + "\
+            f"ASRUtils::type_to_str_with_kind({typei}, args[{i}]), loc);\n"
+        src += 4 * indent + "return nullptr;\n"
+        src += 3 * indent + "}\n"
+
 def add_create_func_arg_type_src(func_name):
     global src
     arg_infos = intrinsic_funcs_args[func_name]
@@ -1108,11 +1127,7 @@ def add_create_func_arg_type_src(func_name):
         src += 4 * indent + f'return nullptr;\n'
         src += 3 * indent + '}\n'
         if same_type_arg:
-            condition = compute_type_condition(same_type_arg)
-            src += 3 * indent + f'if(!({condition}))' + ' {\n'
-            src += 4 * indent + f'append_error(diag, "Type and kind of the relevant arguments of {func_name} must be the same", loc);\n'
-            src += 4 * indent + f'return nullptr;\n'
-            src += 3 * indent + '}\n'
+            add_create_func_same_type_src(func_name, same_type_arg)
         kind_validation_info = arg_info.get("kind_validation", [])
         if kind_validation_info != []:
             src += 3 * indent + "int kind = 0;\n"

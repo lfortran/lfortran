@@ -1,4 +1,4 @@
-semantic error: Type and kind of the relevant arguments of Ior must be the same
+semantic error: arguments of the 'ior' intrinsic must have the same type and kind, found integer(4) and integer(8)
  --> tests/errors/intrinsics8.f90:4:14
   |
 4 |     print *, ior(x, y)
