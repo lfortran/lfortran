@@ -273,6 +273,28 @@ EOF
     # Nothing to remove
     TMPDIR=$PWD/stale $FC --clean-temp > out.txt
     [ ! -s out.txt ]
+
+    echo "Testing --save-temps"
+    TMPDIR=$PWD/tmp $FC --save-temps m.f90 p.f90 -o s.out 2> err.txt
+    ./s.out
+    kept=$(sed -n 's/^lfortran: temporary files kept in //p' err.txt)
+    [ "$(dirname "$kept")" == "$PWD/tmp" ]
+    [ -f "$kept/m.o" ]
+    [ -f "$kept/p.o" ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Also after an error
+    if TMPDIR=$PWD/tmp $FC --save-temps m.f90 e.f90 -o s.out 2> err.txt; then
+        exit 1
+    fi
+    kept=$(sed -n 's/^lfortran: temporary files kept in //p' err.txt)
+    [ -f "$kept/m.o" ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Nothing to keep: nothing is printed
+    TMPDIR=$PWD/tmp $FC --save-temps -c m.f90 -o s.o 2> err.txt
+    if grep "temporary files kept" err.txt; then exit 1; fi
+    tmp_is_empty
 fi
 
 cd $(mktemp -d)

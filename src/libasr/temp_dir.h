@@ -32,6 +32,7 @@ public:
     bool created() const { return !path_.empty(); }
     // Keep the directory instead of removing it
     void keep(bool keep) { keep_ = keep; }
+    bool kept() const { return keep_; }
     // Remove the directory and its contents, unless kept. Never throws.
     void remove() noexcept;
     // Also remove the directory, unless kept, when the process is ended by

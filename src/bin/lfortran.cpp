@@ -2949,6 +2949,7 @@ int main_app(int argc, char *argv[]) {
 #endif
         return 0;
     }
+    temp_dir.keep(opts.save_temps);
     if (opts.clean_temp) {
         for (const std::string &dir : LCompilers::TempDir::remove_stale(TEMP_DIR_PREFIX)) {
             std::cout << "removed " << dir << std::endl;
@@ -3384,9 +3385,15 @@ int main_app(int argc, char *argv[]) {
 int main(int argc, char *argv[])
 {
     // Remove the intermediate files however main() returns, also after an
-    // exception from main_app() is caught below
+    // exception from main_app() is caught below, or say where they are kept
     struct RemoveTempDir {
-        ~RemoveTempDir() { temp_dir.remove(); }
+        ~RemoveTempDir() {
+            if (temp_dir.created() && temp_dir.kept()) {
+                std::cerr << "lfortran: temporary files kept in "
+                    << temp_dir.path() << std::endl;
+            }
+            temp_dir.remove();
+        }
     } remove_temp_dir;
     LCompilers::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
