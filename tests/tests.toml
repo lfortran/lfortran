@@ -8011,3 +8011,9 @@ run = true
 [[test]]
 filename = "../integration_tests/gpu_lanes_const_trips_01.f90"
 gpu_cuda_kernel = true
+
+# The vectors and the scalar elements a loop of a wide-load kernel reads for
+# certain, read at the start of its body; not past an `exit`.
+[[test]]
+filename = "../integration_tests/gpu_wide_loads_hoist_01.f90"
+gpu_cuda_kernel = true

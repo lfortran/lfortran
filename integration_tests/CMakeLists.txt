@@ -7099,6 +7099,7 @@ RUN(NAME gpu_lanes_parts_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_reduction_warp_slots_01 LABELS gfortran llvm cuda NO_FAST_MATH)
 RUN(NAME gpu_lanes_columns_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_wide_loads_01 LABELS gfortran llvm cuda)
+RUN(NAME gpu_wide_loads_hoist_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_launch_bounds_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that

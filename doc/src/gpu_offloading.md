@@ -1534,6 +1534,16 @@ warps of a product of 5120 rows, two per iteration, fell three on some of
 the 132 multiprocessors of an H200 and two on the others, which then waited
 for them (43 us; 38 us with blocks of two warps).
 
+The vectors a statement of a loop reads are read at the start of the loop's
+body (`hoist` in `gpu_wide_loads.cpp`), ahead of the arithmetic of the
+statements before it, together with the other elements its statements read
+for certain (the scale of a row of a quantized product), into variables of
+their own: nvcc keeps a load where it is under a tight register bound, and
+the last rows of a 4-row product were read halfway through the iteration.
+A load moves only when nothing in the body assigns its array or, before it,
+a variable its subscripts read, and nothing leaves the body early (an
+`exit`, a `cycle`, a stop).
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a
