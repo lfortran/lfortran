@@ -1489,6 +1489,20 @@ so it does not get the lanes of a block (`gpu_reads_wide` in
 `gpu_wide_loads.cpp`), and its loops are unrolled eight times, where a loop
 of single elements is unrolled sixteen times.
 
+The lanes of such a kernel need the vectors an iteration of their loop reads
+in flight together, each in 4 registers and about as many for what is
+decoded from it. So the kernel is declared
+`__launch_bounds__(threads_per_block, blocks)`, with as many blocks per
+multiprocessor as leave each thread `8 + 8*vectors` of its 65536 registers,
+at most six blocks of 256 (`kernel_qualifier` in `asr_to_cuda.cpp`; the
+vectors are counted once per element they start at, by
+`gpu_wide_vectors_per_iteration`). A q8 matrix-vector product of 34816 by
+5120 on an H200 that takes four rows per iteration reads 8 vectors (four
+rows of words and the vector's four, which the rows share) and gets three
+blocks: 61 us, where six blocks spilled its registers and took 92 us. One
+that takes a row per iteration reads 5 and gets five blocks, and two rows
+(6 vectors) get four.
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a

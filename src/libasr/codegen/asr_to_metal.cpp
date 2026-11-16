@@ -54,7 +54,7 @@ struct MetalDialect {
     }
 
     std::string kernel_qualifier(int64_t /*threads_per_block*/,
-            bool /*few_blocks*/, bool = false) const {
+            bool /*few_blocks*/, int64_t = 0) const {
         return "kernel void ";
     }
 

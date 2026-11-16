@@ -7,6 +7,7 @@
 #include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -502,7 +503,136 @@ private:
     }
 };
 
+// The vectors of 16 bytes that an iteration of a loop of device code
+// reads (its GpuWideLoad statements, and those of the device functions it
+// calls, one set per call), counted once per element they start at: the
+// statements of a matrix-vector product that takes several rows of a matrix
+// per iteration each read the same vectors of `x`.
+class Vectors {
+public:
+    // The most an iteration of one loop reads.
+    int64_t most = 0;
+    std::set<const ASR::Function_t*> active;
+
+    // What the statements read outside the loops they hold, whose
+    // iterations are counted by themselves.
+    int64_t body(ASR::stmt_t **stmts, size_t n) {
+        std::set<std::string> keys;
+        int64_t other = 0;
+        for (size_t i = 0; i < n; i++) stmt(stmts[i], keys, other);
+        return static_cast<int64_t>(keys.size()) + other;
+    }
+
+private:
+    void loop(ASR::stmt_t **stmts, size_t n) {
+        most = std::max(most, body(stmts, n));
+    }
+
+    void calls(ASR::expr_t *e, int64_t &other) {
+        if (e == nullptr) return;
+        struct Calls : public ASR::BaseWalkVisitor<Calls> {
+            std::vector<const ASR::Function_t*> callees;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+                if (ASR::is_a<ASR::Function_t>(*s)) {
+                    callees.push_back(ASR::down_cast<ASR::Function_t>(s));
+                }
+                BaseWalkVisitor::visit_FunctionCall(x);
+            }
+        } c;
+        c.visit_expr(*e);
+        for (const ASR::Function_t *f : c.callees) {
+            if (!ASRUtils::is_device_only_function(*f)
+                    || !active.insert(f).second) {
+                continue;
+            }
+            other += body(f->m_body, f->n_body);
+            active.erase(f);
+        }
+    }
+
+    void stmt(ASR::stmt_t *s, std::set<std::string> &keys, int64_t &other) {
+        switch (s->type) {
+            case ASR::stmtType::GpuWideLoad: {
+                ASR::GpuWideLoad_t *w = ASR::down_cast<ASR::GpuWideLoad_t>(s);
+                std::string key;
+                if (ASR::is_a<ASR::ArrayItem_t>(*w->m_source)) {
+                    ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(
+                        w->m_source);
+                    if (ASR::is_a<ASR::Var_t>(*item->m_v)) {
+                        key = std::to_string(reinterpret_cast<uintptr_t>(
+                            ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(
+                                    item->m_v)->m_v)));
+                        for (size_t i = 0; i < item->n_args && !key.empty();
+                                i++) {
+                            std::string k = item->m_args[i].m_right
+                                ? gpu_affine_key(item->m_args[i].m_right)
+                                : std::string();
+                            key = k.empty() ? std::string() : key + "#" + k;
+                        }
+                    }
+                }
+                if (key.empty()) {
+                    other++;
+                } else {
+                    keys.insert(key);
+                }
+                return;
+            }
+            case ASR::stmtType::Assignment:
+                calls(ASR::down_cast<ASR::Assignment_t>(s)->m_value, other);
+                return;
+            case ASR::stmtType::If: {
+                ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                calls(x->m_test, other);
+                for (size_t i = 0; i < x->n_body; i++) {
+                    stmt(x->m_body[i], keys, other);
+                }
+                for (size_t i = 0; i < x->n_orelse; i++) {
+                    stmt(x->m_orelse[i], keys, other);
+                }
+                return;
+            }
+            case ASR::stmtType::BlockCall: {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (!ASR::is_a<ASR::Block_t>(*b)) return;
+                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                for (size_t i = 0; i < blk->n_body; i++) {
+                    stmt(blk->m_body[i], keys, other);
+                }
+                return;
+            }
+            case ASR::stmtType::DoLoop: {
+                ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
+                loop(x->m_body, x->n_body);
+                return;
+            }
+            case ASR::stmtType::DoConcurrentLoop: {
+                ASR::DoConcurrentLoop_t *x =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                loop(x->m_body, x->n_body);
+                return;
+            }
+            case ASR::stmtType::WhileLoop: {
+                ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                loop(x->m_body, x->n_body);
+                return;
+            }
+            default:
+                return;
+        }
+    }
+};
+
 } // namespace
+
+int64_t gpu_wide_vectors_per_iteration(const ASR::Function_t &kernel) {
+    Vectors v;
+    int64_t outside = v.body(kernel.m_body, kernel.n_body);
+    return std::max(outside, v.most);
+}
 
 bool gpu_reads_wide(const ASR::Function_t &kernel,
         const GpuDeviceCapabilities &caps) {

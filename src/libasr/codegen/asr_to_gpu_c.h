@@ -8,6 +8,7 @@
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_designator.h>
+#include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/codegen/gpu_symbol_map.h>
 #include <libasr/codegen/c_utils.h>
 #include <libasr/codegen/c_loop_control.h>

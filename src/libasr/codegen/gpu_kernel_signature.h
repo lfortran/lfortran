@@ -46,7 +46,9 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         && holds_wide_load(kernel.m_body, kernel.n_body);
     src << dialect.kernel_qualifier(
             gpu_device_capabilities(co.po).threads_per_block,
-            streams_rows, kernel_lane_vectors)
+            streams_rows, kernel_lane_vectors
+                ? std::max<int64_t>(1, gpu_wide_vectors_per_iteration(kernel))
+                : 0)
         << name << "(\n";
     kernel_params.clear();
     int slot = 0;

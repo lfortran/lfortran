@@ -109,21 +109,36 @@ struct CudaDialect {
     // bound). The CPU emulation's host compiler knows no such attribute, and
     // HIP, tuned on AMD GPUs without it, is left as it was.
     //
-    // A kernel whose lanes read vectors of 16 bytes (`lane_vectors`) is held
-    // to the registers that let three quarters of the threads of a
-    // multiprocessor (1536 of 2048) run, six blocks of 256. It needs the
-    // loads of its iterations in flight, which a bound that lets ptxas
-    // cut the registers to run all 2048 does not leave it, and the
-    // many threads that hide them, which one block per multiprocessor
-    // would not.
+    // A kernel whose lanes read vectors of 16 bytes (`lane_vectors`, the
+    // most vectors an iteration of one of its loops reads) is held to the
+    // registers that let as many of its blocks share a multiprocessor as
+    // keep those loads in flight together: each vector lands in 4
+    // registers and is decoded into about as many more, and the addresses,
+    // counters and accumulators take about 8, so a thread needs
+    // 8 + 8*vectors of the 65536 registers of a multiprocessor. That is at
+    // most the 1536 of its 2048 threads, six blocks of 256: a bound that
+    // lets ptxas cut the registers to run all 2048 leaves the loads too few
+    // registers, and one block per multiprocessor too few threads to hide
+    // them. On an H200, a q8 matrix-vector product of 34816 by 5120 that
+    // takes 1, 2 or 4 rows per iteration (5, 6 or 8 vectors) runs fastest
+    // with 4 to 6, 4 and 3 blocks (5, 4 and 3 here), the 4-row one in
+    // 61 us with 3 blocks and 92 us with 6, where ptxas spills registers to
+    // fit 40; one that reads 4 vectors (two chunks of a row per iteration)
+    // keeps six.
     std::string kernel_qualifier(int64_t threads_per_block,
-            bool few_blocks, bool lane_vectors = false) const {
+            bool few_blocks, int64_t lane_vectors = 0) const {
         if (emulate_cpu || hip) return "extern \"C\" __global__ void ";
-        std::string min_blocks = few_blocks ? ", 1"
-            : lane_vectors && threads_per_block > 0
-                && threads_per_block <= 1536
-                ? ", " + std::to_string(1536 / threads_per_block)
-                : std::string();
+        std::string min_blocks;
+        if (few_blocks) {
+            min_blocks = ", 1";
+        } else if (lane_vectors > 0 && threads_per_block > 0
+                && threads_per_block <= 1536) {
+            int64_t registers = 8 + 8*lane_vectors;
+            int64_t blocks = std::max<int64_t>(1, std::min<int64_t>(
+                1536 / threads_per_block,
+                65536 / (threads_per_block*registers)));
+            min_blocks = ", " + std::to_string(blocks);
+        }
         return "extern \"C\" __global__ void __launch_bounds__("
             + std::to_string(threads_per_block) + min_blocks + ") ";
     }
