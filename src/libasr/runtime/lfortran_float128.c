@@ -1784,8 +1784,9 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
 }
 
 /* ========================================================================
- * L. Math: sin, cos, tan, asin, acos, atan, atan2 and their degree
- *    variants sind, cosd, tand, asind, acosd, atand
+ * L. Math: sin, cos, tan, asin, acos, atan, atan2, their degree
+ *    variants sind, cosd, tand, asind, acosd, atand and their half
+ *    revolution variants sinpi, cospi, tanpi, asinpi, acospi, atanpi
  * ======================================================================== */
 
 /* sin(r.hi + r.lo) for |r| <= ~pi/4, as a double-word:
@@ -2254,6 +2255,106 @@ lf_float128 lf_f128_atan2pi(lf_float128 y, lf_float128 x) {
     f128_dw r = f128_atan2_dw(y, x);
     if (f128_is_zero(r.hi)) return r.hi;
     return dw_div(r, f128_pi_dw()).hi;
+}
+
+/* |a| = n/2 + r with r in [-1/4, 1/4] exactly, for finite a; returns
+ * n mod 4. */
+static int f128_rem_half(lf_float128 a, lf_float128 *r) {
+    f128_parts p = f128_unpack(a);
+    lf_float128 ax = lf_f128_abs(a);
+    /* 2^113 and above are even integers */
+    if (p.is_zero || p.exp >= 113) { *r = f128_make_zero(0); return 0; }
+    /* ax mod 2, exact */
+    ax = f_sub(ax, f128_scale(lf_f128_floor(f128_scale(ax, -1)), 1));
+    int64_t n = __fixtfdi_lf_impl(lf_f128_floor(f_add(f128_scale(ax, 1),
+                                                      f128_half())));
+    *r = f_sub(ax, f128_scale(f_int(n), -1));   /* exact */
+    return (int)(n & 3);
+}
+
+/* r * pi as a double-word */
+static f128_dw f128_halfrev_to_rad(lf_float128 r) {
+    return dw_mul_q(f128_pi_dw(), r);
+}
+
+lf_float128 lf_f128_sinpi(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_inf) return f128_make_nan();
+    if (p.is_zero) return a;
+    lf_float128 rh;
+    int n = f128_rem_half(a, &rh);
+    /* sin(pi*k) is exactly 0, with the sign of a (IEEE 754 sinPi). */
+    if (!(n & 1) && f128_is_zero(rh)) return f128_make_zero(p.sign);
+    f128_dw r = f128_halfrev_to_rad(rh);
+    lf_float128 s;
+    switch (n) {
+        case 0:  s = f128_sin_dw(r).hi; break;
+        case 1:  s = f128_cos_dw(r).hi; break;
+        case 2:  s = f_neg(f128_sin_dw(r).hi); break;
+        default: s = f_neg(f128_cos_dw(r).hi); break;
+    }
+    return f_sign(s, p.sign);
+}
+
+lf_float128 lf_f128_cospi(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_inf) return f128_make_nan();
+    lf_float128 rh;
+    int n = f128_rem_half(a, &rh);
+    /* cos(pi*(k + 1/2)) is exactly +0 (IEEE 754 cosPi). */
+    if ((n & 1) && f128_is_zero(rh)) return f128_make_zero(0);
+    f128_dw r = f128_halfrev_to_rad(rh);
+    switch (n) {
+        case 0:  return f128_cos_dw(r).hi;
+        case 1:  return f_neg(f128_sin_dw(r).hi);
+        case 2:  return f_neg(f128_cos_dw(r).hi);
+        default: return f128_sin_dw(r).hi;
+    }
+}
+
+lf_float128 lf_f128_tanpi(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_inf) return f128_make_nan();
+    if (p.is_zero) return a;
+    lf_float128 rh;
+    int n = f128_rem_half(a, &rh);
+    if (f128_is_zero(rh)) {
+        /* tan(pi*k) is +0 for even k and -0 for odd k, times the sign of
+         * a; tan(pi*(k + 1/2)) is +inf for even k and -inf for odd k
+         * (IEEE 754 tanPi). */
+        if (n & 1) return f128_make_inf(p.sign ^ (n == 3));
+        return f128_make_zero(p.sign ^ (n == 2));
+    }
+    /* tan(pi*(k/2 + 1/4)) is exactly +-1. */
+    if (f128_cmp_internal(lf_f128_abs(rh), f128_scale(f128_half(), -1)) == 0) {
+        return f_sign(f128_one(), p.sign ^ f128_unpack(rh).sign ^ (n & 1));
+    }
+    return f_sign(f128_tan_reduced(n, f128_halfrev_to_rad(rh)), p.sign);
+}
+
+/* r / pi */
+static lf_float128 f128_rad_to_halfrev(f128_dw r) {
+    return dw_div(r, f128_pi_dw()).hi;
+}
+
+lf_float128 lf_f128_asinpi(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_zero) return a;
+    if (f128_cmp_internal(lf_f128_abs(a), f128_one()) > 0) return f128_make_nan();
+    return f128_rad_to_halfrev(f128_asin_dw(a));
+}
+
+lf_float128 lf_f128_acospi(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan) return a;
+    if (f128_cmp_internal(lf_f128_abs(a), f128_one()) > 0) return f128_make_nan();
+    return f128_rad_to_halfrev(f128_acos_dw(a));
+}
+
+lf_float128 lf_f128_atanpi(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_zero) return a;
+    return f128_rad_to_halfrev(f128_atan_dw(a));
 }
 
 /* ========================================================================

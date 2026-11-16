@@ -7937,6 +7937,7 @@ RUN(NAME real128_intrinsic_inquiry_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_math_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME real128_intrinsic_math_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME real128_intrinsic_math_03 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23) # exp2 is an LFortran extension, an external procedure with --std=f23
+RUN(NAME real128_intrinsic_math_04 LABELS llvm llvm_wasm llvm_wasm_emcc) # sinpi etc. in parameters; GFortran does not have these intrinsics
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_real_02 LABELS gfortran llvm NO_FAST_MATH) # real(8) overflow to +Infinity; --fast sets no-infs (#15792)
 RUN(NAME real128_intrinsic_sqrt_01 LABELS gfortran llvm)
@@ -7977,6 +7978,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real_star_02 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
+    RUN(NAME real80_intrinsic_math_01 LABELS llvm) # sinpi etc. in parameters; GFortran does not have these intrinsics
     RUN(NAME complex10_arith_01 LABELS gfortran llvm)
     RUN(NAME complex10_array_01 LABELS gfortran llvm)
     RUN(NAME complex10_intrinsic_math_01 LABELS gfortran llvm)
