@@ -1,8 +1,10 @@
 #include <algorithm>
+#include <set>
 
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_offload_preflight.h>
+#include <libasr/pass/pass_utils.h>
 
 namespace LCompilers {
 
@@ -316,15 +318,147 @@ bool gpu_kernel_workspace_extents_resolvable(const ASR::Function_t &kernel,
             arguments, unresolved_name);
 }
 
+// Whether `length` is `size(x, dim)` of the array designator `x`, or
+// `size(x)` of a rank-one `x`: the extent of dimension `dim` of `x`.
+static bool gpu_is_size_of(ASR::expr_t *length, ASR::expr_t *x, int64_t dim) {
+    if (!length || !ASR::is_a<ASR::ArraySize_t>(*length)) return false;
+    ASR::ArraySize_t *size = ASR::down_cast<ASR::ArraySize_t>(length);
+    if (!PassUtils::same_expression(
+            ASRUtils::get_past_array_physical_cast(size->m_v),
+            ASRUtils::get_past_array_physical_cast(x))) {
+        return false;
+    }
+    if (!size->m_dim) {
+        return dim == 1 && ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::expr_type(x)) == 1;
+    }
+    int64_t size_dim = 0;
+    return try_eval_int_constant(size->m_dim, size_dim) && size_dim == dim;
+}
+
+// Whether dimension `dim` (one-based) of the array `value` has the extent
+// `length` whenever both are evaluated with the same values of the variables
+// they read. Only what can be told from the expressions themselves is
+// accepted: an elementwise operation conforms with each of its array
+// operands; the extent of a designator `x` is `size(x, dim)`, or a constant
+// its type gives; and a section range `x(lbound(x, d):ubound(x, d))` or
+// `x(1:n)` has the extent `size(x, d)` or `n`. Expressions are compared with
+// PassUtils::same_expression, which never equates a function reference, so
+// nothing whose value could differ between two evaluations is accepted.
+static bool gpu_extent_is(ASR::expr_t *value, int64_t dim,
+        ASR::expr_t *length) {
+    ASR::expr_t *v = ASRUtils::get_past_array_physical_cast(value);
+    while (ASR::expr_t *operand = gpu_elementwise_shape_source(v)) {
+        if (operand == v) break;
+        v = ASRUtils::get_past_array_physical_cast(operand);
+    }
+    if (!v) return false;
+    if (ASR::is_a<ASR::Var_t>(*v) ||
+            ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+        if (gpu_is_size_of(length, v, dim)) return true;
+        // A constant extent of the type; one written over a variable may
+        // no longer have the value it had when the array got its shape.
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(v));
+        if (!ASR::is_a<ASR::Array_t>(*t)) return false;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+        int64_t declared = 0, given = 0;
+        return dim <= (int64_t)arr->n_dims
+            && try_eval_int_constant(arr->m_dims[dim - 1].m_length, declared)
+            && try_eval_int_constant(length, given) && declared == given;
+    }
+    if (!ASR::is_a<ASR::ArraySection_t>(*v)) return false;
+    ASR::ArraySection_t *sec = ASR::down_cast<ASR::ArraySection_t>(v);
+    // The ranges of the section are its dimensions, in order.
+    int64_t seen = 0;
+    for (size_t i = 0; i < sec->n_args; i++) {
+        ASR::array_index_t &ix = sec->m_args[i];
+        if (!ix.m_left && !ix.m_step) continue;
+        if (++seen != dim) continue;
+        int64_t step = 1;
+        if (!ix.m_left || !ix.m_right || (ix.m_step &&
+                (!try_eval_int_constant(ix.m_step, step) || step != 1))) {
+            return false;
+        }
+        int64_t first = 0;
+        if (try_eval_int_constant(ix.m_left, first) && first == 1) {
+            return PassUtils::same_expression(ix.m_right, length);
+        }
+        if (!ASR::is_a<ASR::ArrayBound_t>(*ix.m_left) ||
+                !ASR::is_a<ASR::ArrayBound_t>(*ix.m_right)) {
+            return false;
+        }
+        ASR::ArrayBound_t *lo = ASR::down_cast<ASR::ArrayBound_t>(ix.m_left);
+        ASR::ArrayBound_t *hi = ASR::down_cast<ASR::ArrayBound_t>(ix.m_right);
+        int64_t d = 0;
+        return lo->m_bound == ASR::arrayboundType::LBound
+            && hi->m_bound == ASR::arrayboundType::UBound
+            && PassUtils::same_expression(lo->m_v, sec->m_v)
+            && PassUtils::same_expression(hi->m_v, sec->m_v)
+            && PassUtils::same_expression(lo->m_dim, hi->m_dim)
+            && lo->m_dim && try_eval_int_constant(lo->m_dim, d)
+            && d == (int64_t)i + 1
+            && gpu_is_size_of(length, sec->m_v, d);
+    }
+    return false;
+}
+
+// Whether the assignment `stmt`, which follows `alloc` immediately, keeps
+// the allocation `alloc` gave its target: the target is allocated (an
+// ALLOCATE without STAT= succeeds or stops the program) and the value has
+// the shape it was allocated with, so the assignment does not reallocate it
+// (F2018 10.2.1.3). Nothing runs between the two, so the extents read the
+// same values in both.
+static bool gpu_assignment_keeps_allocation(const ASR::Allocate_t &alloc,
+        const ASR::alloc_arg_t &arg, ASR::stmt_t *stmt) {
+    if (alloc.m_stat || alloc.m_errmsg || alloc.m_source) return false;
+    if (arg.n_dims == 0 || arg.m_len_expr || arg.m_sym_subclass ||
+            arg.m_type) {
+        return false;
+    }
+    if (!ASR::is_a<ASR::Assignment_t>(*stmt)) return false;
+    const ASR::Assignment_t &a = *ASR::down_cast<ASR::Assignment_t>(stmt);
+    if (a.m_overloaded || a.m_move_allocation) return false;
+    if (!PassUtils::same_expression(
+            ASRUtils::get_past_array_physical_cast(a.m_target),
+            ASRUtils::get_past_array_physical_cast(arg.m_a))) {
+        return false;
+    }
+    // A character or polymorphic target may also be reallocated for a
+    // different length or dynamic type.
+    ASR::ttype_t *target_type = ASRUtils::expr_type(a.m_target);
+    if (ASRUtils::is_character(*target_type) ||
+            ASRUtils::is_class_type(ASRUtils::extract_type(target_type))) {
+        return false;
+    }
+    ASR::expr_t *value = ASRUtils::get_past_array_physical_cast(a.m_value);
+    if (!ASRUtils::is_array(ASRUtils::expr_type(value)) ||
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value))
+                != (int)arg.n_dims) {
+        return false;
+    }
+    for (size_t d = 0; d < arg.n_dims; d++) {
+        if (!gpu_extent_is(value, (int64_t)d + 1, arg.m_dims[d].m_length)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // An out-of-line result becomes a caller-owned buffer. An unconditional
 // allocation may establish its shape, but every other allocation must
-// agree: selecting one branch or the last allocation is not sound.
+// agree: selecting one branch or the last allocation is not sound. An
+// assignment that would reallocate the result is another allocation, except
+// one that keeps the shape the allocation just before it gave the result:
+// `allocate(v(size(a))); v = a`.
 class GpuResultAllocationChecker :
         public ASRUtils::BlockBodyWalkVisitor<GpuResultAllocationChecker> {
     ASR::symbol_t *result;
     size_t depth = 0;
     size_t allocations = 0;
     std::vector<int64_t> buffer_shape;
+    // Assignments to the result that keep its allocation.
+    std::set<const ASR::stmt_t*> keep_allocation;
 
     bool is_result(ASR::expr_t *target) const {
         target = ASRUtils::get_past_array_physical_cast(target);
@@ -372,6 +506,17 @@ public:
 
     GpuResultAllocationChecker(ASR::symbol_t *result,
             ASR::stmt_t **body, size_t n_body) : result(result) {
+        for (size_t i = 0; i + 1 < n_body; i++) {
+            if (!ASR::is_a<ASR::Allocate_t>(*body[i])) continue;
+            ASR::Allocate_t *alloc = ASR::down_cast<ASR::Allocate_t>(body[i]);
+            for (size_t j = 0; j < alloc->n_args; j++) {
+                if (is_result(alloc->m_args[j].m_a) &&
+                        gpu_assignment_keeps_allocation(*alloc,
+                            alloc->m_args[j], body[i + 1])) {
+                    keep_allocation.insert(body[i + 1]);
+                }
+            }
+        }
         // The out-of-line call path propagates an explicit top-level
         // allocation to the caller's result buffer.
         for (size_t i = 0; i < n_body; i++) {
@@ -401,6 +546,7 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (!is_result(x.m_target)) return;
+        if (keep_allocation.count(&x.base)) return;
         ASR::expr_t *value = ASRUtils::get_past_array_physical_cast(x.m_value);
         // Scalar broadcast changes the elements, not the allocation.
         if ((x.m_realloc_lhs || x.m_move_allocation) &&

@@ -39,6 +39,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_167_m3run {
     int __loop_end_0;
     int __workspace_extent;
     int __workspace_extent1;
+    int __workspace_extent2;
 };
 
 extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_metal_167_m3run(
@@ -48,7 +49,8 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_
     float* __restrict__ z,
     __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_167_m3run __scalar_args,
     float* __restrict__ __workspace_5,
-    float* __restrict__ __workspace_6)
+    float* __restrict__ __workspace_6,
+    float* __restrict__ __workspace_7)
 {
     int __dim_a_0 = __scalar_args.__dim_a_0;
     int __dim_a_1 = __scalar_args.__dim_a_1;
@@ -56,6 +58,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __workspace_extent1 = __scalar_args.__workspace_extent1;
+    int __workspace_extent2 = __scalar_args.__workspace_extent2;
     int __flat_idx;
     int i__dc;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
@@ -64,17 +67,26 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     {
+        float* __libasr_created__function_call_get_vals = ((__workspace_extent) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent1) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        float* y = ((__workspace_extent1) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
+        int __libasr_index_0_2;
+        int __libasr_index_0_3;
+        float* y = ((__workspace_extent2) > 0) ? (__workspace_7 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent2) : nullptr;
         __libasr_created__result_metadata_ = __dim_a_0;
         get_vals_gpu_19(a, __dim_a_0, __dim_a_1, i__dc, __libasr_created__subroutine_from_function_);
+        __libasr_index_0_3 = 1;
+        #pragma unroll 16
+        for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + __dim_a_0 - 1); __libasr_index_0_2++) {
+            __libasr_created__function_call_get_vals[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
+            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        }
         __libasr_index_0_1 = 1;
         #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + __dim_a_0 - 1); __libasr_index_0_++) {
-            y[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
+            y[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_get_vals[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         d[((int)(i__dc) - (__lb_d_0))] = (y[((int)(1) - (1))] * f_gpu_18(self.act, z[((int)(1) - (1))]));

@@ -3475,8 +3475,25 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         handle_alloc_realloc(x);
     }
 
+    // An array is allocated again only when it is not allocated or has
+    // another shape (F2018 10.2.1.3); otherwise it keeps its bounds.
     void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        LCOMPILERS_ASSERT(x.n_args == 1);
+        ASR::expr_t* target = x.m_args[0].m_a;
+        if (!ASR::is_a<ASR::Var_t>(*target) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(target))) {
+            handle_alloc_realloc(x);
+            return;
+        }
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        self().visit_expr(*target);
+        std::string condition = "!" + src + "->is_allocated";
+        self().visit_expr(*x.m_shape_differs);
+        condition += " || (" + src + ")";
+        indentation_level++;
         handle_alloc_realloc(x);
+        indentation_level--;
+        src = indent + "if (" + condition + ") {\n" + src + indent + "}\n";
     }
 
 

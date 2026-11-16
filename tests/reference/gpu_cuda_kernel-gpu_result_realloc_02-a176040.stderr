@@ -1,0 +1,39 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the allocatable array result of 'other_extent' has no single allocation the gpu can use
+  --> tests/../integration_tests/gpu_result_realloc_02.f90:63:1 - 67:6
+   |
+63 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+67 |    end do
+   | ...^^^^^^ the allocatable array result of 'other_extent' has no single allocation the gpu can use
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the allocatable array result of 'other_dimension' has no single allocation the gpu can use
+  --> tests/../integration_tests/gpu_result_realloc_02.f90:68:1 - 72:6
+   |
+68 |    do concurrent (i = 1:3)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+72 |    end do
+   | ...^^^^^^ the allocatable array result of 'other_dimension' has no single allocation the gpu can use
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the allocatable array result of 'shifted' has no single allocation the gpu can use
+  --> tests/../integration_tests/gpu_result_realloc_02.f90:73:1 - 77:6
+   |
+73 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+77 |    end do
+   | ...^^^^^^ the allocatable array result of 'shifted' has no single allocation the gpu can use
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the allocatable array result of 'changed' has no single allocation the gpu can use
+  --> tests/../integration_tests/gpu_result_realloc_02.f90:78:1 - 82:6
+   |
+78 |    do concurrent (i = 1:4)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+82 |    end do
+   | ...^^^^^^ the allocatable array result of 'changed' has no single allocation the gpu can use

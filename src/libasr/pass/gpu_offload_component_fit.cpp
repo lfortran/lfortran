@@ -1646,9 +1646,9 @@ class GpuComponentFit {
             ASRUtils::getStructInstanceMember_t(al, write.loc,
                 (ASR::asr_t*)element, nullptr, write.component, scope));
         std::vector<ASR::stmt_t*> fit;
-        // Without --realloc-lhs-arrays each write is checked against the
-        // size it gives, as bounds checking checks each assignment. With it,
-        // the kernel cannot reallocate between two writes of an iteration,
+        // With --no-realloc-lhs-arrays each write is checked against the
+        // size it gives, as bounds checking checks each assignment. With
+        // reallocation on assignment, the kernel cannot reallocate between two writes of an iteration,
         // so the host allocates only when the iteration gives one size.
         if (sized && (!realloc || w.one_size)) {
             std::vector<ASR::expr_t*> extents;
@@ -1721,8 +1721,8 @@ class GpuComponentFit {
     }
 
     // Allocates `component` with `extents`, first deallocating it when it
-    // is allocated with other extents, as an assignment with
-    // --realloc-lhs-arrays does.
+    // is allocated with other extents, as an assignment that reallocates
+    // its left hand side does.
     std::vector<ASR::stmt_t*> allocate_to_fit(const Location &loc,
             ASR::expr_t *component, const std::vector<ASR::expr_t*> &extents) {
         ASRUtils::ASRBuilder b(al, loc);
@@ -1761,7 +1761,7 @@ class GpuComponentFit {
         return stmts;
     }
 
-    // With --realloc-lhs-arrays the write would allocate `component`, but
+    // Reallocation on assignment would make the write allocate `component`, but
     // its size cannot be told before the loop runs, so the program has to
     // have allocated it.
     ASR::stmt_t* require_allocated(const Location &loc, ASR::expr_t *component,
@@ -1888,8 +1888,8 @@ public:
 // before the launch. The host gets it ready from the loop as the source
 // wrote it: it replays the loop's iterations, the `if` and `select case`
 // tests and the scalar assignments the writes depend on, and at each write
-// allocates the component to the size the write gives it (with
-// --realloc-lhs-arrays) or, with bounds checking, checks that it has that
+// allocates the component to the size the write gives it (reallocation on
+// assignment) or, with bounds checking, checks that it has that
 // size. What the replay cannot evaluate before the loop runs it does not
 // guess; see doc/src/gpu_offloading.md. Returns the block that does it, which
 // the launch names, or nullptr when there is nothing to do.

@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_result_realloc_01-15d810b",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_result_realloc_01.f90",
+    "infile_hash": "1a6e318441278bb722508ab4bb8f0ba65c8347f7e57bb822024e3f90",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_result_realloc_01-15d810b.stdout",
+    "stdout_hash": "ebfe7e84f2543a2662e4cd1d62da4b035c6fcf72a3a5e69fb13d8d51",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

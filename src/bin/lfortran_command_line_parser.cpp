@@ -446,8 +446,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
         app.add_flag("--no-fast-math", compiler_options.po.no_fast_math, "Disable fast-math optimizations (preserve NaN/Inf semantics)")->group(group_miscellaneous_options);
-        app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
-        app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
+        app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate allocatable arrays on assignment (default, accepted for compatibility)")->group(group_miscellaneous_options);
+        app.add_flag("--no-realloc-lhs-arrays,--disable-realloc-lhs-arrays", disable_realloc_lhs, "Do not reallocate allocatable arrays on assignment; the left hand side must already be allocated with the shape of the right hand side")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.po.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
@@ -534,7 +534,6 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.implicit_interface = true;
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
-            compiler_options.po.realloc_lhs_arrays = true;
             compiler_options.std_f23_conformance = true;
         } else if (opts.arg_standard == "legacy") {
             // f23

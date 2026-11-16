@@ -191,6 +191,9 @@ public:
     std::vector<SPath> read;
     // Whether the element reads the target other than element for element.
     bool aliases_target = false;
+    // Whether the value reads the whole target as an operand, which gives
+    // the value the shape of the target.
+    bool reads_whole_target = false;
 
     // nullptr when the value cannot be written element by element.
     ASR::expr_t* element(ASR::expr_t *e) {
@@ -224,6 +227,7 @@ public:
                 if (overlap(p, target) && p != target) {
                     aliases_target = true;
                 }
+                if (p == target) reads_whole_target = true;
                 read.push_back(p);
                 std::vector<ASR::expr_t*> subscripts;
                 for (int d = 0; d < rank; d++) {
@@ -569,7 +573,6 @@ private:
                 && !ASR::is_a<ASR::Logical_t>(*element)) {
             return nullptr;
         }
-        if (ASRUtils::is_allocatable(type) && a.m_realloc_lhs) return nullptr;
         if (!ASR::is_a<ASR::Var_t>(*target)
                 && !ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
             return nullptr;
@@ -605,6 +608,21 @@ private:
         if (value == nullptr || writer.aliases_target) {
             remove_indices(scope, index);
             return nullptr;
+        }
+        // Reallocation on assignment may change the shape of an allocatable
+        // target, which only the host can do. It does not when the value has
+        // the shape of the target: a scalar broadcast to it, or an elemental
+        // expression with the whole target as an operand, which has to
+        // conform to it (F2018 10.2.1.3).
+        if (ASRUtils::is_allocatable(type) && a.m_realloc_lhs) {
+            ASR::expr_t *whole = ASRUtils::get_past_array_physical_cast(
+                a.m_value);
+            if (ASRUtils::is_array(ASRUtils::expr_type(whole))
+                    && !ASR::is_a<ASR::ArrayBroadcast_t>(*whole)
+                    && !writer.reads_whole_target) {
+                remove_indices(scope, index);
+                return nullptr;
+            }
         }
         bool touches = false;
         std::vector<SPath> named = writer.read;
