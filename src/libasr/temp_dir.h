@@ -1,6 +1,8 @@
 #ifndef LIBASR_TEMP_DIR_H
 #define LIBASR_TEMP_DIR_H
 
+#include <csignal>
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -37,6 +39,10 @@ public:
     // Keep the directory instead of removing it
     void keep(bool keep) { keep_ = keep; }
     bool kept() const { return keep_; }
+    // If the directory was created and is kept, write `<prefix>: temporary
+    // files kept in <directory>` to standard error, once. It does not
+    // allocate, so the signal handlers call it too.
+    void report_kept() noexcept;
     // Remove the directory and its contents, unless kept. Never throws.
     void remove() noexcept;
     // Also remove the directory, unless kept, when the process is ended by
@@ -47,7 +53,8 @@ public:
     // that never creates it keeps its signal handling. Signals that were
     // ignored stay ignored. Only one TempDir can do this.
     void remove_on_signal() { remove_on_signal_ = true; }
-    // Remove the directory from a signal handler, without allocating
+    // Remove the directory from a signal handler, without allocating; or,
+    // if it is kept, report_kept()
     void remove_in_signal_handler() noexcept;
     // The directory once created, else "", in a buffer that never moves,
     // for a signal handler that cannot allocate
@@ -67,6 +74,10 @@ private:
     bool keep_ = false;
     bool remove_on_signal_ = false;
     char c_path_[4096] = {};
+    // The message of report_kept(), made when the directory is created
+    char kept_message_[4200] = {};
+    std::size_t kept_message_size_ = 0;
+    volatile std::sig_atomic_t kept_reported_ = 0;
 };
 
 } // namespace LCompilers

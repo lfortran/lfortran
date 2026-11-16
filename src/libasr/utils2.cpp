@@ -17,6 +17,7 @@
 #include <cfloat>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -662,6 +663,11 @@ const std::string &TempDir::path() {
     if (path_.size() < sizeof(c_path_)) {
         std::memcpy(c_path_, path_.c_str(), path_.size() + 1);
     }
+    std::string message = prefix_ + ": temporary files kept in " + path_ + "\n";
+    if (message.size() <= sizeof(kept_message_)) {
+        std::memcpy(kept_message_, message.data(), message.size());
+        kept_message_size_ = message.size();
+    }
     if (remove_on_signal_) install_temp_dir_signal_handlers(this);
 #ifndef _WIN32
     if (signal_temp_dir == this) open_signal_dir(path_);
@@ -700,11 +706,38 @@ void TempDir::remove() noexcept {
     } catch (...) {
     }
     c_path_[0] = '\0';
+    kept_message_size_ = 0;
     path_.clear();
 }
 
+void TempDir::report_kept() noexcept {
+    if (!keep_ || kept_message_size_ == 0 || kept_reported_) return;
+    kept_reported_ = 1;
+#ifdef _WIN32
+    std::fwrite(kept_message_, 1, kept_message_size_, stderr);
+    std::fflush(stderr);
+#else
+    // write() is async-signal-safe
+    for (std::size_t done = 0; done < kept_message_size_;) {
+        ssize_t n = write(STDERR_FILENO, kept_message_ + done,
+            kept_message_size_ - done);
+        if (n > 0) {
+            done += static_cast<std::size_t>(n);
+        } else if (n < 0 && errno == EINTR) {
+            continue;
+        } else {
+            break;
+        }
+    }
+#endif
+}
+
 void TempDir::remove_in_signal_handler() noexcept {
-    if (keep_ || c_path_[0] == '\0') return;
+    if (keep_) {
+        report_kept();
+        return;
+    }
+    if (c_path_[0] == '\0') return;
 #ifdef _WIN32
     try {
         std::error_code ec;

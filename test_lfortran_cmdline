@@ -378,10 +378,26 @@ EOF
     wait $pid || status=$?
     kept=$(compgen -G "$PWD/tmp/lfortran-*")
     [ -f "$kept/m.o" ]
-    # Without the stacktrace printer the signal ends the compiler
-    if [ $status -eq 1 ]; then
-        grep "temporary files kept in $kept" err.txt
-    fi
+    # Once, whether the stacktrace printer exits or the signal ends it
+    [ "$(grep -c "temporary files kept in $kept\$" err.txt)" -eq 1 ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Also when a signal ends the compiler
+    set -m
+    TMPDIR=$PWD/tmp $FC --save-temps m.f90 blocked.f90 -o s.out 2> err.txt &
+    pid=$!
+    set +m
+    for i in $(seq 600); do
+        if compgen -G "tmp/lfortran-*/m.o" > /dev/null; then break; fi
+        sleep 0.1
+    done
+    kill -INT $pid
+    status=0
+    wait $pid || status=$?
+    [ $status -eq $((128 + $(kill -l INT))) ]
+    kept=$(compgen -G "$PWD/tmp/lfortran-*")
+    [ -f "$kept/m.o" ]
+    [ "$(grep -c "^lfortran: temporary files kept in $kept\$" err.txt)" -eq 1 ]
     rm -r "$kept"
     tmp_is_empty
     # Nothing to keep: nothing is printed

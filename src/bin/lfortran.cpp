@@ -3424,13 +3424,9 @@ int main(int argc, char *argv[])
         ~RemoveTempDir() { temp_dir.remove(); }
     } remove_temp_dir;
     // Say where they are kept when the process exits, also by exit(), as
-    // the stacktrace printer of a crash does
-    atexit([]() {
-        if (temp_dir.created() && temp_dir.kept()) {
-            std::cerr << "lfortran: temporary files kept in "
-                << temp_dir.path() << std::endl;
-        }
-    });
+    // the stacktrace printer of a crash does; the signal handlers say it
+    // when a signal ends the process
+    atexit([]() { temp_dir.report_kept(); });
     LCompilers::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LCompilers::print_stack_on_segfault();
