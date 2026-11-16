@@ -2308,6 +2308,7 @@ RUN(NAME intrinsics_497 LABELS gfortran llvm) # spread with ncopies from size() 
 RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_bits/max/min/ibset/btest of integer(8)
 RUN(NAME intrinsics_499 LABELS gfortran llvm fortran) # spread of a scalar source, printed by the Fortran backend
 RUN(NAME spread_scalar_struct_01 LABELS gfortran llvm) # spread of a scalar complex or derived-type source (#13597)
+RUN(NAME spread_scalar_char_param_01 LABELS gfortran llvm) # spread of a scalar character constant in initialization expressions
 RUN(NAME intrinsics_502 LABELS gfortran llvm) # pack/count with a negated complex comparison of array sections (#15926)
 RUN(NAME intrinsics_503 LABELS gfortran llvm) # ibset constant folding at signed-kind boundaries
 RUN(NAME intrinsics_504 LABELS gfortran llvm) # ishft/shiftl/shiftr/shifta with |shift| == bit_size (#16451)

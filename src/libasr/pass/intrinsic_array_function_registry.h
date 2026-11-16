@@ -3317,7 +3317,6 @@ namespace Spread {
 
         ASRBuilder b(al, loc);
         int overload_id = 2;
-        bool skip_compile_time_eval = false;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
             ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ||
             ASR::is_a<ASR::Complex_t>(*type_source) ||
@@ -3327,7 +3326,10 @@ namespace Spread {
             Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
             m_eles.push_back(al, source);
             if (ASR::is_a<ASR::String_t>(*type_source)) {
-                skip_compile_time_eval = true;
+                // A constant source gets the constant's length, so that the
+                // `[source]` wrapper and the folded result have a fixed
+                // element length (the source's own length can be a run-time
+                // expression, e.g. for `trim("ab ")`).
                 ASR::expr_t* source_value = ASRUtils::expr_value(source);
                 if (source_value && ASR::is_a<ASR::StringConstant_t>(*source_value)) {
                     ASR::String_t* source_string = ASR::down_cast<ASR::String_t>(type_source);
@@ -3406,7 +3408,7 @@ namespace Spread {
         m_args.push_back(al, source); m_args.push_back(al, dim);
         m_args.push_back(al, ncopies);
         ASR::expr_t *value = nullptr;
-        if (all_args_evaluated(m_args, false, false, true) && !skip_compile_time_eval) {
+        if (all_args_evaluated(m_args, false, false, true)) {
             value = eval_Spread(al, loc, ret_type, m_args, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
