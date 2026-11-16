@@ -3655,7 +3655,15 @@ namespace Eoshift {
         } else if (is_logical(*element_type)) {
             return b.bool_t(false, element_type);
         } else if (is_character(*element_type)) {
-            return b.StringConstant("  ", element_type);
+            // A constant length gets blanks of that length, which
+            // `eval_Eoshift` can fold into the result. Otherwise a single
+            // blank, which blank-pads to the length of every element it is
+            // assigned to.
+            int64_t len = ASRUtils::get_fixed_string_len(element_type);
+            if (len >= 0) {
+                return b.StringConstant(std::string(len, ' '), element_type);
+            }
+            return b.StringBlank(ASRUtils::get_string_type(element_type)->m_kind);
         }
         return nullptr;
     }
