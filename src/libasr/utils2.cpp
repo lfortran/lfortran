@@ -1,9 +1,15 @@
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
+#else
+#include <unistd.h>
 #endif
 
+#include <cctype>
+#include <cerrno>
 #include <cfloat>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -13,6 +19,7 @@
 #include <libasr/exception.h>
 #include <libasr/utils.h>
 #include <libasr/string_utils.h>
+#include <libasr/temp_dir.h>
 
 namespace LCompilers {
 
@@ -363,5 +370,92 @@ int initialize()
     return 0;
 #endif
 }
+
+std::string TempDir::system_temp_dir() {
+#ifdef _WIN32
+    char buffer[MAX_PATH + 1];
+    DWORD len = GetTempPathA(sizeof(buffer), buffer);
+    if (len > 0 && len < sizeof(buffer)) return std::string(buffer, len);
+    return ".";
+#else
+    const char *tmp = std::getenv("TMPDIR");
+    if (tmp && *tmp) return tmp;
+    return "/tmp";
+#endif
+}
+
+namespace {
+
+// The name of this machine, as it can appear in a file name
+std::string temp_dir_host_name() {
+    char name[256] = {};
+#ifdef _WIN32
+    DWORD size = sizeof(name);
+    if (!GetComputerNameA(name, &size)) return "host";
+#else
+    if (gethostname(name, sizeof(name) - 1) != 0) return "host";
+#endif
+    std::string host;
+    for (const char *c = name; *c && host.size() < 64; c++) {
+        bool ok = std::isalnum(static_cast<unsigned char>(*c))
+            || *c == '.' || *c == '-' || *c == '_';
+        host += ok ? *c : '_';
+    }
+    return host.empty() ? "host" : host;
+}
+
+} // namespace
+
+const std::string &TempDir::path() {
+    if (!path_.empty()) return path_;
+    std::filesystem::path base = system_temp_dir();
+#ifdef _WIN32
+    std::string name = prefix_ + "-" + temp_dir_host_name() + "-"
+        + std::to_string(GetCurrentProcessId()) + "-";
+    // The user's temporary directory is already private on Windows
+    std::error_code ec;
+    for (int i = 0; i < 100 && path_.empty(); i++) {
+        std::filesystem::path dir = base / (name + get_unique_ID().substr(0, 6));
+        if (std::filesystem::create_directory(dir, ec)) {
+            path_ = dir.string();
+        } else if (ec) {
+            break;
+        }
+    }
+    if (path_.empty()) {
+        throw TempDirError("cannot create a temporary directory in '"
+            + base.string() + "': " + (ec ? ec.message() : "it exists"));
+    }
+#else
+    // mkdtemp() creates the directory with mode 0700 and a unique name
+    std::string name = (base / (prefix_ + "-" + temp_dir_host_name() + "-"
+        + std::to_string(getpid()) + "-XXXXXX")).string();
+    if (!mkdtemp(&name[0])) {
+        throw TempDirError("cannot create a temporary directory in '"
+            + base.string() + "': " + std::strerror(errno));
+    }
+    path_ = name;
+#endif
+    if (path_.size() < sizeof(c_path_)) {
+        std::memcpy(c_path_, path_.c_str(), path_.size() + 1);
+    }
+    return path_;
+}
+
+std::string TempDir::file(const std::string &name) {
+    return (std::filesystem::path(path()) / name).string();
+}
+
+void TempDir::remove() noexcept {
+    if (path_.empty() || keep_) return;
+    c_path_[0] = '\0';
+    try {
+        std::error_code ec;
+        std::filesystem::remove_all(path_, ec);
+    } catch (...) {
+    }
+    path_.clear();
+}
+
 
 } // namespace LCompilers

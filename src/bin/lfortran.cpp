@@ -1,4 +1,5 @@
 #include "libasr/utils.h"
+#include <libasr/temp_dir.h>
 #include <chrono>
 #include <iostream>
 #include <stdio.h>
@@ -116,23 +117,15 @@ enum Backend {
     llvm, c, cpp, x86, wasm, fortran, mlir
 };
 
-std::string get_system_temp_dir()
-{
-    #ifdef _WIN32
-    char buffer[MAX_PATH];
-    DWORD len = GetTempPathA(MAX_PATH, buffer);
-    return std::string(buffer, len);
-    #else
-    const char* tmp = getenv("TMPDIR");
-    if (tmp) return tmp;
-    return "/tmp";
-    #endif
-}
-
-std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
+// The private directory of the intermediate files of this invocation: the
+// objects of a multi-file build, generated C, C++ and Fortran sources, and
+// the GPU kernels and runtime of a link. It is created when first needed and
+// removed with everything in it when main() returns, also after an error or
+// an exception, or when the process exits.
+LCompilers::TempDir temp_dir("lfortran");
 
 // The unique compilation ID for this invocation of the compiler.
-// Used in naming unique intermediate object files during both compilation modes.
+// Used in naming unique symbols during separate compilation.
 const std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
 
 void print_one_component(std::string component) {
@@ -1750,7 +1743,8 @@ int compile_to_object_file_cpp(const std::string &infile,
                 out << " ";
             }
         } else {
-            std::string outfile_empty = outfile + ".empty.c";
+            std::string outfile_empty = temp_dir.file(
+                std::filesystem::path(outfile).filename().string() + ".empty.c");
             {
                 std::ofstream out;
                 out.open(outfile_empty);
@@ -1793,7 +1787,8 @@ int compile_to_object_file_cpp(const std::string &infile,
     if (assembly) {
         throw LCompilers::LCompilersException("Not implemented");
     } else {
-        std::string cppfile = outfile + ".tmp.cpp";
+        std::string cppfile = temp_dir.file(
+            std::filesystem::path(outfile).filename().string() + ".cpp");
         {
             std::ofstream out;
             out.open(cppfile);
@@ -1881,7 +1876,8 @@ int compile_to_object_file_c(const std::string &infile,
                 out << " ";
             }
         } else {
-            std::string outfile_empty = outfile + ".empty.c";
+            std::string outfile_empty = temp_dir.file(
+                std::filesystem::path(outfile).filename().string() + ".empty.c");
             {
                 std::ofstream out;
                 out.open(outfile_empty);
@@ -1924,7 +1920,8 @@ int compile_to_object_file_c(const std::string &infile,
     if (assembly) {
         throw LCompilers::LCompilersException("Not implemented");
     } else {
-        std::string cfile = outfile + ".tmp.c";
+        std::string cfile = temp_dir.file(
+            std::filesystem::path(outfile).filename().string() + ".c");
         {
             std::ofstream out;
             out.open(cfile);
@@ -1968,7 +1965,8 @@ int compile_to_binary_fortran(const std::string &infile,
         return 1;
     }
 
-    std::string in_file = outfile + ".tmp.f90";
+    std::string in_file = temp_dir.file(
+        std::filesystem::path(outfile).filename().string() + ".f90");
     {
         std::ofstream out;
         out.open(in_file);
@@ -2214,8 +2212,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 // Compile the Metal runtime and link it
                 std::string metal_runtime_src = runtime_library_dir
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
-                std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
+                std::string metal_runtime_obj
+                    = temp_dir.file("lfortran_gpu_metal.o");
                 // Use the clang of the linker path: the first clang on PATH
                 // (e.g. LLVM's clang in a Conda environment) may not know the
                 // macOS SDK and its Metal framework.
@@ -2294,12 +2292,12 @@ int link_executable(const std::vector<std::string> &infiles,
                     if (!seen_cuda_fragments.insert(cuda_source).second) {
                         continue;
                     }
-                    std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
-                        + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID
-                        + "_" + std::to_string(cuda_kernel_index) + ".cu";
-                    std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
-                        + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID
-                        + "_" + std::to_string(cuda_kernel_index) + ".o";
+                    std::string cuda_kernel_src = temp_dir.file(
+                        "lfortran_gpu_kernel_"
+                        + std::to_string(cuda_kernel_index) + ".cu");
+                    std::string cuda_kernel_obj = temp_dir.file(
+                        "lfortran_gpu_kernel_"
+                        + std::to_string(cuda_kernel_index) + ".o");
                     {
                         std::ofstream cu_out(cuda_kernel_src);
                         cu_out << cuda_source;
@@ -2370,9 +2368,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 std::vector<std::string> cuda_runtime_objs;
                 for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
-                    std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
-                        + "/lfortran_gpu_cuda_" + LCOMPILERS_UNIQUE_ID
-                        + "_" + std::to_string(i) + ".o";
+                    std::string cuda_runtime_obj = temp_dir.file(
+                        "lfortran_gpu_cuda_" + std::to_string(i) + ".o");
                     std::string cuda_rt_cmd = cuda_rt_cmd_base + " -o "
                         + cuda_runtime_obj + " " + cuda_runtime_srcs[i];
                     int cuda_err = system(cuda_rt_cmd.c_str());
@@ -3277,19 +3274,21 @@ int main_app(int argc, char *argv[]) {
 
     int err_ = 0;
     std::vector<std::string> object_files;
-    // we need this separate vector to store temporary object files as some object files passed as arguments
-    // are considered as it is and we do not want to delete them
-    std::vector<std::string> temp_object_files;
     bool found_main = false;
     bool any_fortran_src = false;
     bool any_asr_src = false;
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
-        std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
-                                .filename().replace_extension(".tmp_" + LCOMPILERS_UNIQUE_ID + ".o")).string();
-        temp_object_files.push_back(tmp_o);
+        // The object of a source file goes to the temporary directory, which
+        // is removed with it after the link
+        auto temp_object_file = [&]() {
+            return temp_dir.file(std::filesystem::path(arg_file).filename()
+                .replace_extension(".o").string());
+        };
+        std::string tmp_o;
         if (opts.from_asr && arg_file == opts.arg_file) {
             any_asr_src = true;
+            tmp_o = temp_object_file();
 #ifdef HAVE_LFORTRAN_LLVM
             err = compile_src_to_object_file(arg_file, tmp_o,
                 compiler_options.time_report, false, compiler_options,
@@ -3306,6 +3305,9 @@ int main_app(int argc, char *argv[]) {
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
                         compiler_options.time_report, compiler_options);
+            }
+            if (backend != Backend::wasm) {
+                tmp_o = temp_object_file();
             }
             if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
@@ -3341,6 +3343,7 @@ int main_app(int argc, char *argv[]) {
         } else if (endswith(arg_file, ".ll")) {
             // this way we can execute LLVM IR files directly
 #ifdef HAVE_LFORTRAN_LLVM
+            tmp_o = temp_object_file();
             err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
             if (err) return err;
 #else
@@ -3364,9 +3367,6 @@ int main_app(int argc, char *argv[]) {
             std::cerr << "semantic error: no main program found; "
                 "cannot build an executable. To compile this file as a "
                 "library, use the `-c` option." << std::endl;
-            for (const std::string &filename : temp_object_files) {
-                std::remove(filename.c_str());
-            }
             return 1;
         }
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
@@ -3374,10 +3374,6 @@ int main_app(int argc, char *argv[]) {
                 opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags,
                 opts.emscripten_settings, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
-        
-        for (const std::string &filename : temp_object_files) {
-            std::remove(filename.c_str());
-        }
         if (compiler_options.time_report) {
             int64_t total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
             std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
@@ -3392,6 +3388,11 @@ int main_app(int argc, char *argv[]) {
 
 int main(int argc, char *argv[])
 {
+    // Remove the intermediate files however main() returns, also after an
+    // exception from main_app() is caught below
+    struct RemoveTempDir {
+        ~RemoveTempDir() { temp_dir.remove(); }
+    } remove_temp_dir;
     LCompilers::initialize();
 #if defined(HAVE_LFORTRAN_STACKTRACE)
     LCompilers::print_stack_on_segfault();
@@ -3411,6 +3412,9 @@ int main(int argc, char *argv[])
         get_local_info(d);
         std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
         std::cerr << e.name() + ": " << e.msg() << std::endl;
+        return 1;
+    } catch(const LCompilers::TempDirError &e) {
+        std::cerr << "error: " << e.what() << std::endl;
         return 1;
     } catch(const std::runtime_error &e) {
         std::cerr << "runtime_error: " << e.what() << std::endl;

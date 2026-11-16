@@ -146,6 +146,77 @@ if [[ $FC == "lfortran" ]]; then
         ! $FC --backend=$backend $f -o missing/out 2> err.txt
         grep "cannot write the output file 'missing/out'" err.txt
     done
+
+    cd $(mktemp -d)
+    echo "Testing that no intermediate files are left in TMPDIR"
+    cat > m.f90 <<'EOF'
+module m
+implicit none
+contains
+integer function twice(x)
+integer, intent(in) :: x
+twice = 2*x
+end function
+end module
+EOF
+    cat > p.f90 <<'EOF'
+program p
+use m, only: twice
+implicit none
+if (twice(21) /= 42) error stop
+print *, "ok"
+end program
+EOF
+    cat > e.f90 <<'EOF'
+program e
+implicit none
+integer :: i
+i = undefined_variable
+end program
+EOF
+    cat > g.f90 <<'EOF'
+program g
+use m, only: twice
+implicit none
+integer :: i, x(100)
+do concurrent (i = 1:100)
+    x(i) = i
+end do
+if (twice(sum(x)) /= 10100) error stop
+print *, "ok"
+end program
+EOF
+    mkdir tmp obj
+    tmp_is_empty() {
+        if [ -n "$(ls -A tmp)" ]; then
+            ls -lR tmp
+            return 1
+        fi
+    }
+    TMPDIR=$PWD/tmp $FC m.f90 p.f90 -o a.out
+    ./a.out
+    tmp_is_empty
+    # A compile error in the second file
+    if TMPDIR=$PWD/tmp $FC m.f90 e.f90 -o b.out; then exit 1; fi
+    tmp_is_empty
+    TMPDIR=$PWD/tmp $FC --backend=c m.f90 p.f90 -o c.out
+    ./c.out
+    tmp_is_empty
+    # Nothing but the objects next to the objects
+    TMPDIR=$PWD/tmp $FC --backend=c -c m.f90 -o obj/m.o
+    TMPDIR=$PWD/tmp $FC --backend=c -c p.f90 -o obj/p.o
+    [ "$(ls -A obj | tr '\n' ' ')" == "m.o p.o " ]
+    tmp_is_empty
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu m.f90 g.f90 -o g.out
+    ./g.out
+    tmp_is_empty
+    # A plain -c compile does not need the temporary directory
+    TMPDIR=$PWD/missing $FC -c m.f90 -o m.o
+    [ -f m.o ]
+    if TMPDIR=$PWD/missing $FC m.f90 p.f90 -o d.out 2> err.txt; then
+        exit 1
+    fi
+    grep "cannot create a temporary directory in '$PWD/missing'" err.txt
 fi
 
 cd $(mktemp -d)
