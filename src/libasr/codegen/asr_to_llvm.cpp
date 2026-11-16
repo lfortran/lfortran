@@ -13469,7 +13469,8 @@ public:
 
     // Handle associate statement where the value is a component array
     // e.g., associate(first => token%first)
-    // This creates a descriptor with proper stride to access struct members
+    // This creates a descriptor with proper stride to access struct members.
+    // A component array is not a whole array, so its lower bounds are 1.
     void handle_component_array_association(const ASR::Associate_t& x) {
         ASR::expr_t* value_expr = x.m_value;
         // Look past ArrayPhysicalCast
@@ -13599,6 +13600,8 @@ public:
                     base_stride,
                     llvm::ConstantInt::get(arr_descr->get_index_type(), stride_multiplier));
                 builder->CreateStore(new_stride, arr_descr->get_stride(target_dim_des, false));
+                builder->CreateStore(llvm::ConstantInt::get(arr_descr->get_index_type(), 1),
+                    arr_descr->get_lower_bound(target_dim_des, false));
             }
         } else {
             // Set offset to 0
@@ -13627,12 +13630,7 @@ public:
                 [[maybe_unused]] int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(base_struct_array_type, dims));
                 LCOMPILERS_ASSERT(rank > 0 && i < rank);
 
-                // Lower bound (default 1)
                 llvm::Value* lb = llvm::ConstantInt::get(arr_descr->get_index_type(), 1);
-                if (dims[i].m_start) {
-                    visit_expr_wrapper(dims[i].m_start, true);
-                    lb = builder->CreateSExtOrTrunc(tmp, arr_descr->get_index_type());
-                }
                 builder->CreateStore(lb, arr_descr->get_lower_bound(target_dim_des, false));
 
                 // Dimension size

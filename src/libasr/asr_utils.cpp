@@ -2706,8 +2706,9 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         if (base_is_parameter && ASRUtils::is_array(base_expr_type) &&
                 !ASRUtils::is_array(member_type)) {
             n_dims = ASRUtils::extract_dimensions_from_ttype(base_expr_type, m_dims);
-            Vec<ASR::dimension_t> m_dims_vec;
-            m_dims_vec.from_pointer_n(m_dims, n_dims);
+            // A component of an array is not a whole array, so its lower bounds are 1.
+            Vec<ASR::dimension_t> m_dims_vec = make_complex_dimensions_bounds(
+                al, loc, m_dims, n_dims);
             member_type = ASRUtils::duplicate_type(al, member_type, &m_dims_vec);
         }
 
