@@ -4,20 +4,20 @@ target datalayout = "..."
 
 %select_type_13_module.shape.3_class = type <{ i32 (...)**, %select_type_13_module.shape.3* }>
 %select_type_13_module.shape.3 = type {}
+%select_type_13_module.circle.5 = type { %select_type_13_module.shape.3, float }
+%select_type_13_module.rectangle.6 = type { %select_type_13_module.shape.3, float, float }
 %string_descriptor = type { i8*, i64 }
 %select_type_13_module.circle.5_class = type <{ i32 (...)**, %select_type_13_module.circle.5* }>
-%select_type_13_module.circle.5 = type { %select_type_13_module.shape.3, float }
 %select_type_13_module.rectangle.6_class = type <{ i32 (...)**, %select_type_13_module.rectangle.6* }>
-%select_type_13_module.rectangle.6 = type { %select_type_13_module.shape.3, float, float }
 
 @_Name_shape = private unnamed_addr constant [6 x i8] c"shape\00", align 1
 @_Type_Info_select_type_13_module.shape = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_shape, i32 0, i32 0), i8* null, i8* null }, align 8
 @_VTable_select_type_13_module.shape = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.shape to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_select_type_13_module_shape to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_shape to i8*), i8* bitcast (void (i8*)* @finalize_StructType__shape_3_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__shape_3_of_select_type_13_module_no_final_for_UPoly to i8*), i8* null] }, align 8
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
-@_Type_Info_select_type_13_module.circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.shape to i8*) }, align 8
+@_Type_Info_select_type_13_module.circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* bitcast (%select_type_13_module.circle.5* getelementptr (%select_type_13_module.circle.5, %select_type_13_module.circle.5* null, i32 1) to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.shape to i8*) }, align 8
 @_VTable_select_type_13_module.circle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.circle to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_select_type_13_module_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_5_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_5_of_select_type_13_module_no_final_for_UPoly to i8*), i8* bitcast (float (%select_type_13_module.circle.5_class*)* @__module_select_type_13_module_circle_area to i8*)] }, align 8
 @_Name_rectangle = private unnamed_addr constant [10 x i8] c"rectangle\00", align 1
-@_Type_Info_select_type_13_module.rectangle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_rectangle, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.shape to i8*) }, align 8
+@_Type_Info_select_type_13_module.rectangle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([10 x i8], [10 x i8]* @_Name_rectangle, i32 0, i32 0), i8* bitcast (%select_type_13_module.rectangle.6* getelementptr (%select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* null, i32 1) to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.shape to i8*) }, align 8
 @_VTable_select_type_13_module.rectangle = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_select_type_13_module.rectangle to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_select_type_13_module_rectangle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__rectangle_6_of_select_type_13_module_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__rectangle_6_of_select_type_13_module_no_final_for_UPoly to i8*), i8* bitcast (float (%select_type_13_module.rectangle.6_class*)* @__module_select_type_13_module_rectangle_area to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [20 x i8] c"Matched as rectangle"

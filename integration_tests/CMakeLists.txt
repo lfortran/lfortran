@@ -4472,6 +4472,7 @@ RUN(NAME class_optional_05 LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME class_pointer_assoc_leak_01 LABELS gfortran llvm)
 RUN(NAME class_pointer_associated_01 LABELS gfortran llvm)
 RUN(NAME class_array_deepcopy_01 LABELS gfortran llvm)
+RUN(NAME class_array_stride_01 LABELS gfortran llvm llvm_wasm_emcc) # class array dummy elements strided by the dynamic type size
 RUN(NAME intent_out_finalize_01 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_02 LABELS gfortran llvm)
 RUN(NAME intent_out_finalize_03 LABELS llvm) # does not work with GFortran version at CI
