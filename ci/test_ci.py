@@ -2841,7 +2841,7 @@ class ApprovebotTests(unittest.TestCase):
     def test_next_action(self):
         bot = self.bot
         self.assertEqual(bot.next_action(self.pr(), None, "success"), "classify")
-        self.assertEqual(bot.next_action(self.pr(), None, "pending"), "wait: CI pending")
+        self.assertEqual(bot.next_action(self.pr(), None, "pending"), "classify")
         self.assertEqual(bot.next_action(self.pr(), None, "failure"), "skip: CI failed")
         self.assertEqual(bot.next_action(self.pr(draft=True), None, None), "skip: draft")
         self.assertTrue(bot.next_action(self.pr(labels=[bot.AUTO_MERGE]), None, None)
@@ -2850,6 +2850,9 @@ class ApprovebotTests(unittest.TestCase):
                         .startswith("hands-off"))
         labeled = self.pr(labels=[bot.APPROVED])
         self.assertEqual(bot.next_action(labeled, self.entry(), None), "done")
+        self.assertEqual(bot.next_action(labeled, self.entry(), "pending"), "done")
+        # The head failed CI after its verdict.
+        self.assertEqual(bot.next_action(labeled, self.entry(), "failure"), "retract")
         self.assertEqual(bot.next_action(self.pr(head="H2", labels=[bot.APPROVED]),
                                          self.entry(), None), "retract")
         self.assertEqual(bot.next_action(self.pr(), self.entry(retracted="t"), "success"),

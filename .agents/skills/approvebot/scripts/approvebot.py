@@ -29,7 +29,7 @@ APPROVED = "bot-approved"
 REVIEW = "needs review"
 VERDICTS = {"approved": APPROVED, "review": REVIEW}
 AUTO_MERGE = "auto-merge"
-POLICY_VERSION = 2
+POLICY_VERSION = 3
 SIGNATURE = "-- approvebot (automated; runs on {login}'s account)"
 BUILD_FLAGS = ["-DCMAKE_CXX_FLAGS_DEBUG=-g -O2", "-DCMAKE_C_FLAGS_DEBUG=-g -O2"]
 # Changes to these require `pixi run build` (regenerates sources) instead of
@@ -173,8 +173,10 @@ def next_action(pr, entry, ci):
     if current and current["head"] == pr["head"]:
         if current.get("acked"):
             return "done"
-        action = human_action(current, labels, "OPEN")
-        return "ack" if action else "done"
+        if human_action(current, labels, "OPEN"):
+            return "ack"
+        # The verdict assumed the head would pass CI; a failure withdraws it.
+        return "retract" if ci == "failure" else "done"
     if current and AUTO_MERGE in labels:
         # A maintainer took the PR over; mergebot's rebases keep the label.
         return "hands-off: labeled auto-merge" if current.get("acked") else "ack"
@@ -187,9 +189,10 @@ def next_action(pr, entry, ci):
         return "hands-off: verdict label without a journal entry"
     if pr["draft"]:
         return "skip: draft"
-    if ci == "success":
+    if ci in ("success", "pending"):
+        # Mergebot waits for Quick before merging, so pending checks are fine.
         return "classify"
-    return "wait: CI pending" if ci == "pending" else "skip: CI failed"
+    return "skip: CI failed"
 
 
 # --- Helpers -------------------------------------------------------------------
@@ -311,7 +314,7 @@ def cmd_status(args):
         entry = current_entry(pr["number"])
         state = None
         current = entry if entry and not entry.get("retracted") else None
-        if not current or current["head"] != pr["head"]:
+        if not current or current["head"] != pr["head"] or not current.get("acked"):
             if not pr["draft"] and AUTO_MERGE not in pr["labels"]:
                 state, _ = ci(pr["head"])
         action = next_action(pr, entry, state)
@@ -601,7 +604,7 @@ def cmd_apply(args):
     if AUTO_MERGE in pr["labels"]:
         fail("a maintainer labeled the PR auto-merge; hands off")
     state, failed = ci(pr["head"])
-    if state != "success":
+    if state not in ("success", "pending"):
         fail(f"required checks are {state} on the head {failed}")
     entry = current_entry(args.number)
     if entry and not entry.get("retracted"):
@@ -625,7 +628,7 @@ def cmd_apply(args):
     if {APPROVED, REVIEW} & set(after["labels"]) != {label}:
         fail(f"labels did not settle: {after['labels']}")
     entry = {"head": args.head, "label": label, "scope": args.scope,
-             "kind": args.kind, "policy": POLICY_VERSION,
+             "kind": args.kind, "policy": POLICY_VERSION, "ci": state,
              "main": read_json(state_dir() / "main.json", {}).get("sha"),
              "time": now(), "comment": None}
     save_entry(args.number, entry)

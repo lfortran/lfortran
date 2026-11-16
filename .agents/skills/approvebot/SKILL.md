@@ -1,7 +1,7 @@
 ---
 name: approvebot
 description: >
-  Classify the maintainer's own ready LFortran PRs (green, non-draft) as
+  Classify the maintainer's own ready LFortran PRs (non-draft, CI not failed) as
   `bot-approved` or `needs review`, posting a signed comment with the reason.
   `bot-approved` means the maintainer would very likely approve that exact
   head: the change is in scope (we want it) and fits a narrow, listed kind
@@ -59,8 +59,10 @@ examples use `--jobs 8`.
 ## One iteration
 
 1. **Status.** Run `python3 $BOT status`. Each open PR gets an `action`:
-   - `classify`: green, ready, and without a current verdict.
-   - `retract`: the head moved since the verdict.
+   - `classify`: ready, no required check failed (pending is fine), and
+     without a current verdict.
+   - `retract`: the head moved since the verdict, or a required check
+     failed on it.
    - `ack`: a human reacted to a verdict (the `human` field), or a
      classified PR was merged or closed (the `closed` list).
    - `done`, `wait: ...`, `skip: ...`, `hands-off: ...`: nothing to do.
@@ -75,8 +77,9 @@ examples use `--jobs 8`.
    For example, a `needs review` PR that the maintainer merged after asking
    for changes is `agree`. Never invent a reason.
 3. **Retractions.** For each `retract`, run
-   `python3 $BOT retract N --reason "new head <sha>"`. The next iteration
-   classifies the new head once its CI is green.
+   `python3 $BOT retract N --reason "new head <sha>"` (or
+   `--reason "CI failed on <sha>"`). The next iteration classifies the new
+   head.
 4. **Main build.** If anything is to be classified, run
    `python3 $BOT main --jobs 8`. It fetches main, and runs `rebuild`, or
    `build` when generator inputs changed. A fresh build takes a long time,
@@ -89,7 +92,7 @@ examples use `--jobs 8`.
       `check-main`. That is the case for a `control` area, production over
       the budget of every kind that its scope allows, an out-of-scope
       purpose (perf, refactor, CI, build, docs, GPU, a series, a bundle,
-      numerical policy), or changes requested.
+      a processor-dependent result), or changes requested.
    3. Otherwise run `python3 $BOT check-main N --jobs 8 > .approvebot/work/N-main.json`.
       Only one `check-main` may run at a time: they share the main worktree.
       If it stops midway, run `python3 $BOT restore`.
@@ -98,7 +101,7 @@ examples use `--jobs 8`.
       `.approvebot/main` to read source in (read only). It follows the
       policy and returns JSON:
       `{"verdict": "approved" | "review", "scope": "S1".."S6" | "-",
-      "kind": "C1".."C3" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
+      "kind": "C1".."C4" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
       Check that the answer cites the policy, and that a `bot-approved`
       verdict meets every rule of its kind. If you doubt it, the verdict is
       `review`. Judge every head afresh, even one that `cases.jsonl`
@@ -109,7 +112,7 @@ examples use `--jobs 8`.
       python3 $BOT apply N --verdict approved|review --head <sha> \
           --scope S1 --kind C3 --comment-file .approvebot/work/N-comment.md
       ```
-      The script refuses if the head moved, CI is no longer green, a human
+      The script refuses if the head moved, a required check failed, a human
       labeled the PR, or `auto-merge` appeared. In that case, skip the PR
       this iteration.
 6. **Calibration.** Run `python3 $BOT feedback`. If there are uncaptured
@@ -123,20 +126,20 @@ The comment is short. The maintainer reads it on GitHub to decide whether to
 apply `auto-merge`:
 
 ```markdown
-**approvebot: bot-approved** for head `<sha10>` (policy v2)
+**approvebot: bot-approved** for head `<sha10>` (policy v3)
 
 **Scope:** S1, fixes #N (<one line: what was wrong>).
 **Kind:** C3 / <shape>. Precedent: <the sibling code it follows>.
 **Invariant:** <what stays the same for every other input>.
 **Evidence:** `<test>` fails on main `<sha10>` (<how: ICE text / wrong value>);
-registered `gfortran llvm` with no mode opt-outs; required checks green.
+registered `gfortran llvm` with no mode opt-outs; required checks <green | pending>.
 ```
 
 For `needs review`, give the first rule that failed and, if useful, a
 suggested split:
 
 ```markdown
-**approvebot: needs review** for head `<sha10>` (policy v2)
+**approvebot: needs review** for head `<sha10>` (policy v3)
 
 **Reason:** <out of scope: ... | exclusion: ... | over the C3 budget: ... | unverifiable: ...>.
 ```

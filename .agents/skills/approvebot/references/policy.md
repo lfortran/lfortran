@@ -1,4 +1,4 @@
-# Approvebot policy, version 2
+# Approvebot policy, version 3
 
 `bot-approved` means: **the maintainer would very likely approve this exact
 head as it is.** That needs two separate things:
@@ -22,13 +22,16 @@ PRs that the maintainer reviews and merges ([calibration.md](calibration.md)).
 
 - Authored by an account in the script's `AUTHORS`, open, not a draft, and
   targeting `main`.
-- Every required check completed successfully on the current head.
+- No required check has failed on the current head. Pending checks are
+  fine.
 - Not labeled `auto-merge`: a maintainer has already decided.
 
-Merge conflicts do not matter. Mergebot rebases approved PRs and removes
-`auto-merge` when a rebase changes what the PR does; the new head is then
-classified again. How far the PR's base is behind main does not matter
-either: mergebot reruns Quick on the rebased head before merging.
+Merge conflicts, unfinished CI and how far the PR's base is behind main do
+not matter. Mergebot merges only after Quick passes on the final head: it
+rebases approved PRs, reruns Quick, removes `auto-merge` when a rebase
+changes what the PR does or the PR fails CI, and the new head is then
+classified again. If a required check fails on a classified head, the script
+retracts the verdict.
 
 ## 2. Scope: do we want it?
 
@@ -49,14 +52,13 @@ A PR is in scope only if its **whole purpose** is one of these:
   defaults or option behavior.
 - New errors or warnings, or rejecting code that compiled before (for
   example #17957 and #17950), even when the standard forbids that code.
-- Choices the standard leaves to the processor, and numerical policy:
-  results outside a function's domain (poles, overflow), NaN, infinity and
-  signed-zero handling, accuracy targets, and argument-reduction or
-  summation algorithms (for example #17983, #18006, #18007). Replacing or
-  rewriting a numerical algorithm to avoid intermediate overflow, underflow
-  or cancellation, or to gain accuracy, is numerical policy even when the
-  old result was plainly wrong (for example #18001, #18002, #17999).
-  Fixing an integer type, a truncation or an index is not (#17967).
+- Choices the standard leaves to the processor: results for arguments
+  outside a function's domain (poles, invalid arguments), which NaN or
+  infinity to return where the standard does not say, and results that
+  GFortran does not share (for example #17983, gamma at its poles). Making
+  an already correct result more accurate in its last bits is an accuracy
+  target, and also out of scope. A **plainly wrong** result for an argument
+  inside the domain is a bug, not policy: see C4 (#18002).
 - Performance work, optimization passes, refactors, cleanups and
   reformatting.
 - CI, the build system, packaging, dependencies, Pixi, agent skills and
@@ -86,16 +88,16 @@ budget counts added plus deleted lines in `src/` outside tests (the script's
 `production` area). Tests, their registrations, and the references that a
 kind allows do not count toward it, but they are still read.
 
-### Rules for every compiler change (C1-C3)
+### Rules for every compiler change (C1-C4)
 
 1. **The test fails on main and passes on the head.** Approvebot verifies
-   the first half itself (`check-main`, section 5). Green CI on the head is
-   the second half.
+   the first half itself (`check-main`, section 5). Quick on the head is the
+   second half, which mergebot waits for.
 2. **Registered for `gfortran` and `llvm`, with no mode opt-out.** A new
    `RUN` line has both labels and none of `NO_FAST`, `NO_FAST_MATH`,
    `NO_STD_F23`, `EXTRA_ARGS` or `GFORTRAN_ARGS`. An opt-out means the
    behavior differs by mode or by compiler, which is a decision for the
-   maintainer.
+   maintainer. The one exception is the narrow `NO_FAST_MATH` case below.
 3. **It only adds support.** For every input outside the fixed domain, the
    compiler takes the same path and produces the same ASR and IR as on main.
    Inside the domain, main crashed, wrongly rejected, or computed a value the
@@ -110,13 +112,31 @@ kind allows do not count toward it, but they are still read.
    never C3.
 6. **No new mechanism.** No new helper, class, flag, table, pass, traversal,
    state, ownership or allocation rule, and no copied algorithm. The fix
-   reuses what the code base already has, used the same way elsewhere.
+   reuses what the code base already has, used the same way elsewhere. C4's
+   replacement of one numerical formula is the only exception.
 7. **No changes to existing reference outputs**, except the diagnostic
    references that C2 allows.
 8. **Name the precedent.** For C3, the verdict comment names the sibling
    code, check or helper that the fix follows; if you cannot find one, the
    PR does not fit. For C2, it lists the decisions the changed values reach
-   instead.
+   instead. For C4, it names the published algorithm or identity.
+
+**The narrow `NO_FAST_MATH` case.** A test may opt out of fast-math only if
+all of these hold:
+
+- Its sole purpose is to check that a result is infinity or NaN, where the
+  standard or IEEE arithmetic requires that value and GFortran agrees: the
+  test is labeled `gfortran` and has no `GFORTRAN_ARGS`. Every finite result
+  of the fix is checked in a test without opt-outs.
+- The `RUN` comment says that the test checks infinity or NaN, which
+  fast-math assumes away.
+- The opt-out only lets the test observe infinity or NaN. It does not hide a
+  bug: the compiler change works the same with and without fast-math, and
+  does not itself depend on producing or detecting infinity or NaN. #18001
+  does not qualify: its norm2 detects overflow through an infinite sum of
+  squares, so the fix itself fails under fast-math.
+
+Any other `NO_FAST_MATH` is `needs review`: it often hides a bug.
 
 ### C3: local correction (scope S1)
 
@@ -143,6 +163,40 @@ boundaries (zero size, lower bounds other than 1, exact multiples, extreme
 values) and every kind, rank or type that reaches the changed code. Covering
 every kind is required only where the changed code depends on the kind. A
 keyword-table entry (#17948) does not.
+
+### C4: numerical correctness (scope S1)
+
+Main computes a **plainly wrong** result for an argument inside the
+function's mathematical domain, where the true result is finite and
+representable: NaN, infinity, an overflow or underflow to zero, or a value
+wrong in more than its last few digits. #18002 is the example: complex(16)
+`tanh` of `(20000, 0.5)` overflowed to NaN instead of `(1, 0)`, and `tan`
+cancelled its tiny real part.
+
+**Fits:**
+
+- The fix replaces the formula of that one function (or of it and the
+  sibling defined through it, like `tan` through `tanh`) with a published
+  algorithm or identity, named in a comment: C99 Annex G, glibc,
+  libquadmath, or a textbook identity. #18002 uses the C99 `ctanh`
+  algorithm, as in glibc and libquadmath. An algorithm invented for the PR
+  does not fit.
+- For arguments where main was already right, the new result agrees to the
+  kind's precision, and the test checks such moderate arguments too.
+- The expected values come from an independent reference (a high-precision
+  evaluation or the identity), not from LFortran's output, with a tolerance
+  near the kind's precision. The test covers both the run-time and the
+  constant-folded path when the PR changes both, and every kind that reaches
+  the changed code.
+- The registration rules above hold: GFortran agrees with every expected
+  value and the test passes with `--fast`, except for the narrow
+  `NO_FAST_MATH` case.
+
+**Budget:** at most 60 changed production lines in one file.
+
+**Does not fit:** a choice the standard leaves to the processor, a gain in
+accuracy for a result that was already right to a few digits, new shared
+numerical helpers, or a change to how other functions evaluate.
 
 ### C2: diagnostic text (scope S2)
 
@@ -227,18 +281,19 @@ to fit:
 | Representation and compatibility | ASR/AST schema, module or `.smod` files, ABI, array or string layout, calling conventions, runtime signatures, linkage, symbol identity across units (for example #17986). |
 | Lifetime and state | Ownership, allocation and deallocation, finalization, aliasing, caches, visitor or global state (for example #17978). |
 | Concurrency and devices | Synchronization, asynchronous execution, GPU memory, and host and device transfers. |
-| Optimization and work | Pass order, the pipeline, fast-math assumptions, new whole-tree scans, new algorithms, and more generated code (for example #17493). |
+| Optimization and work | Pass order, the pipeline, fast-math assumptions, new whole-tree scans, new algorithms (other than C4's formula), and more generated code (for example #17493). |
 | Weakened evidence | Removed or relaxed assertions, skips or expected failures, removed backend labels, changed references without an independent reason, disabled verification. |
 | Open concern | Requested changes, an unresolved review thread, or an unanswered question from a human. |
 | Incomplete view | The file list is incomplete, or there are binaries or generated files you cannot read, or context you could not obtain. |
 
 ## 5. Evidence
 
-**CI.** The required checks passed on the head. Trust that: Quick runs every
+**CI.** No required check failed on the head; some may still be running.
+Trust Quick to prove the rest before mergebot merges: it runs every
 `llvm`-labeled integration test in the default, `--fast` and `--std=f23`
 modes (minus the opt-outs on its `RUN` line), and every `gfortran`-labeled
 test with GFortran. Do not read CI logs. The registration line shows which
-modes ran.
+modes will run.
 
 **Fails on main.** `check-main` runs the PR's new and changed integration
 and reference tests against the build of main, in the default mode only. CI

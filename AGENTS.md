@@ -111,7 +111,7 @@ on the affected head or a newer run clears the failure/suspicion.
 When the user asks to run approvebot or to classify PRs as `bot-approved` or
 `needs review`, load and follow [approvebot](.agents/skills/approvebot/SKILL.md).
 It runs like mergebot, from a dedicated checkout with `/loop 30m /approvebot`,
-and classifies only the maintainer's own green, non-draft PRs. Each verdict
+and classifies only the maintainer's own non-draft PRs whose CI has not failed. Each verdict
 belongs to one head, comes with a signed comment, and carries no authority:
 the maintainer reviews both labels and applies `auto-merge` themselves.
 Approvebot never applies `auto-merge`, approves, merges, or pushes to PRs.
