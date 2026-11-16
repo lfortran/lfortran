@@ -20857,10 +20857,15 @@ public:
     bool handle_intrinsic_node_args(const T& x,
         Vec<ASR::expr_t*>& args, std::vector<std::string>& kwarg_names,
         size_t min_args, size_t max_args, const std::string& intrinsic_name,
-        bool raise_error=true) {
+        bool raise_error=true, const std::string& referenced_name="") {
         // raise_error is used only when the error is not related to number of arguments
+        // Diagnostics name the intrinsic as referenced (`referenced_name`,
+        // for example the specific `datan`), not `intrinsic_name`, the one
+        // it is mapped to (`atan`).
+        const std::string& diag_name = referenced_name.empty()
+            ? intrinsic_name : referenced_name;
         check_intrinsic_arg_count(x.base.base.loc, x.n_args + x.n_keywords,
-            min_args, max_args, intrinsic_name);
+            min_args, max_args, diag_name);
         args.reserve(al, max_args);
 
         for( size_t i = 0; i < max_args; i++ ) {
@@ -20870,7 +20875,7 @@ public:
             if (x.m_args[i].m_end == nullptr && x.m_args[i].m_label != 0) {
                 diag.add(diag::Diagnostic(
                     "Alternate return arguments are not permitted in calls to the '" +
-                    intrinsic_name + "' intrinsic.",
+                    diag_name + "' intrinsic.",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
@@ -20910,7 +20915,7 @@ public:
                         intrinsic_name == "associated" || intrinsic_name == "allocated" || intrinsic_name == "present" ||
                         intrinsic_name == "storage_size" || intrinsic_name == "same_type_as" || intrinsic_name == "extends_type_of" ||
                         intrinsic_name == "c_loc" || intrinsic_name == "c_sizeof")) {
-                        diag.semantic_error_label("assumed-rank arguments are not supported for intrinsic `" + intrinsic_name + "`",
+                        diag.semantic_error_label("assumed-rank arguments are not supported for intrinsic `" + diag_name + "`",
                             {arg_expr->base.loc}, "");
                         throw SemanticAbort();
                     }
@@ -20921,7 +20926,7 @@ public:
             || intrinsic_name == "selected_real_kind" || intrinsic_name == "selected_char_kind") {
                 if( ASRUtils::is_array(ASRUtils::expr_type(args[i]))) {
                     diag.add(diag::Diagnostic(
-                    "arguments of `" + intrinsic_name + "` intrinsic must be scalar",
+                    "arguments of `" + diag_name + "` intrinsic must be scalar",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
@@ -20937,7 +20942,7 @@ public:
                 }
                 diag.add(Diagnostic(
                     "Unrecognized keyword argument " + curr_kwarg_name +
-                    " passed to " + intrinsic_name + " intrinsic.",
+                    " passed to " + diag_name + " intrinsic.",
                     Level::Error, Stage::Semantic, {
                         Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
@@ -20956,7 +20961,7 @@ public:
                 diag.add(diag::Diagnostic(
                     curr_kwarg_name + " has already " +
                     "been specified as a positional/keyword " +
-                    "argument to " + intrinsic_name,
+                    "argument to " + diag_name,
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
@@ -20969,7 +20974,7 @@ public:
             if (args[i] == nullptr) {
                 std::string missing_name = (i < kwarg_names.size() && !kwarg_names[i].empty()) ? kwarg_names[i] : ("argument(" + std::to_string(i+1) + ")");
                 diag.add(Diagnostic(
-                    "Missing actual argument '" + missing_name + "' in call to '" + intrinsic_name + "'",
+                    "Missing actual argument '" + missing_name + "' in call to '" + diag_name + "'",
                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
@@ -23208,7 +23213,8 @@ public:
         }
     }
 
-    void scalar_kind_arg(std::string &name, Vec<ASR::expr_t*> &args) {
+    void scalar_kind_arg(const std::string &name,
+            const std::string &referenced_name, Vec<ASR::expr_t*> &args) {
         std::unordered_map<std::string, int> kind_arg_index_map = {
             {"logical", 1}, {"storage_size", 1}, {"anint", 1}, {"nint", 1}, {"aint", 1},
             {"floor", 1}, {"ceiling", 1}, {"aimag", 1}, {"maskl", 1}, {"maskr", 1},
@@ -23226,7 +23232,7 @@ public:
             if (args[kind_arg_index]) {
                 if (ASRUtils::is_array(ASRUtils::expr_type(args[kind_arg_index]))) {
                     diag.add(Diagnostic(
-                        "`kind` argument of `" + name + "` intrinsic must be a scalar",
+                        "`kind` argument of `" + referenced_name + "` intrinsic must be a scalar",
                         Level::Error, Stage::Semantic, {
                             Label("", {args[kind_arg_index]->base.loc})
                         }));
@@ -23604,9 +23610,11 @@ public:
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);
         if( is_intrinsic_registry_function(var_name)) {
             is_function = false;
-            // The two-argument form of atan, atand and atanpi is mapped to
-            // another intrinsic, but diagnostics name the one referenced.
-            std::string diag_var_name;
+            // A specific intrinsic (`datan`) is mapped to its generic
+            // (`atan`), and the two-argument form of atan, atand and atanpi
+            // to another intrinsic, but diagnostics name the one referenced.
+            const std::string diag_var_name = var_name;
+            bool is_two_argument_form = false;
             if (is_specific_type_intrinsic) {
                 specific_var_name = var_name;
                 var_name = intrinsic_mapping[var_name].first;
@@ -23615,12 +23623,9 @@ public:
                 check_intrinsic_arg_count(x.base.base.loc, total_args, 1, 2,
                     var_name);
                 if (total_args == 2) {
-                    diag_var_name = var_name;
+                    is_two_argument_form = true;
                     var_name = two_argument_intrinsic_mapping[var_name];
                 }
-            }
-            if (diag_var_name.empty()) {
-                diag_var_name = var_name;
             }
             if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ||
                     ASRUtils::IntrinsicArrayFunctionRegistry::is_intrinsic_function(var_name) ) {
@@ -23630,14 +23635,14 @@ public:
                 signature_matched = handle_intrinsic_node_args(
                     x, args, signature.kwarg_names,
                     signature.positional_args, signature.max_args,
-                    diag_var_name, false);
+                    var_name, false, diag_var_name);
                 check_specific_type_intrinsics(specific_var_name, args, x.base.base.loc);
                 if( !signature_matched ) {
                     diag.add(Diagnostic("No matching signature found for intrinsic " + diag_var_name,
                                         Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
-                if (diag_var_name != var_name) {
+                if (is_two_argument_form) {
                     check_two_argument_intrinsic_args(diag_var_name, args,
                         x.base.base.loc);
                 }
@@ -23649,7 +23654,7 @@ public:
                             if (to_lower(x.m_keywords[i].m_arg) == "dim" &&
                                     args.p[dim_idx] && !ASRUtils::is_integer(*ASRUtils::expr_type(args.p[dim_idx]))) {
                                 diag.add(Diagnostic(
-                                    "'dim' argument of '" + var_name + "' intrinsic must be INTEGER",
+                                    "'dim' argument of '" + diag_var_name + "' intrinsic must be INTEGER",
                                     Level::Error, Stage::Semantic, {
                                         Label("", {x.m_keywords[i].m_value->base.loc})}));
                                 throw SemanticAbort();
@@ -23676,7 +23681,7 @@ public:
                     convert_boz_args_to_real(var_name, args);
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
-                    scalar_kind_arg(var_name, args);
+                    scalar_kind_arg(var_name, diag_var_name, args);
                     // Validate character intrinsics with unlimited polymorphic arguments.
                     // With ClassToIntrinsic, inside a `type is (character(...))` guard,
                     // the Cast wrapping makes expr_type = String, so has_polymorphic_arg
