@@ -1419,7 +1419,11 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   sum shared out rather than its own iterations, which may be fewer than
   the lanes (a long sum split in a few parts). A launch
   with one lane per iteration runs the loop as it was, in the other branch
-  of a test of the lanes. On an H100 the forces of an n-body loop of 32768
+  of a test of the lanes, except in a kernel that reads vectors of 16 bytes
+  (see below), whose launches get lanes whatever their size: it keeps the
+  shared-out loop alone, which also runs on one lane (the second copy made
+  nvcc schedule the first worse, and a quantized matrix-vector product took
+  5% longer). On an H100 the forces of an n-body loop of 32768
   bodies run 1.5 times faster this way and the column sums of a 12288 by
   12288 matrix 2.6 times faster.
 * A statement with an effect the lanes must not repeat -- one that writes

@@ -685,6 +685,12 @@ struct KernelInfo {
     // loop variable only in a later subscript) is shared out as well
     // (give_lanes: only for a launch of few iterations).
     bool scattered_reductions = false;
+    // A kernel that reads vectors of 16 bytes gets lanes for a launch of
+    // any size (GpuKernelLaunch below), so its shared-out loops are not
+    // kept as they were for a launch with one lane: the shared-out form
+    // runs one lane too, and the second copy only made nvcc schedule the
+    // first worse (a quantized matrix-vector product took 5% longer).
+    bool shared_only = false;
     int lanes_count = 1;
 
     bool local(ASR::symbol_t *s) const {
@@ -3675,6 +3681,10 @@ private:
         for (auto &f : finals) {
             shared.push_back(al, b.Assignment(f.first, f.second));
         }
+        if (k.shared_only) {
+            for (size_t i = 0; i < shared.n; i++) out.push_back(al, shared[i]);
+            return;
+        }
         Vec<ASR::stmt_t*> alone;
         alone.reserve(al, 1);
         alone.push_back(al, as_it_was);
@@ -3936,6 +3946,7 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     k.independent_loops = caps.lane_independent_loops;
     k.inner_reductions_first = caps.lane_inner_reductions_first;
     k.lanes_count = caps.lanes_per_iteration;
+    k.shared_only = gpu_reads_wide(kernel, caps);
     // Where lanes share out only reductions (NVIDIA GPUs), a kernel with
     // workspaces or that takes memory from the device heap keeps one lane
     // per iteration: the lanes would share what the iteration builds there
