@@ -65,7 +65,8 @@ A PR is in scope only if its **whole purpose** is one of these:
   instructions (including this one), mergebot and approvebot.
 - New documentation: new pages, sections, runbooks, benchmarks, analyses
   and examples (for example #16824 and #15822). Whether we want them is the
-  maintainer's call.
+  maintainer's call. A short note inside an existing page about behavior
+  LFortran already has is D1, not new documentation.
 - GPU and device backends, coarrays, OpenMP, the interactive and Jupyter
   front end, the language server, and experimental features (traits,
   templates, namespaces).
@@ -276,9 +277,10 @@ values, input precision, labels, platform guards or skips are not T2.
 ### D1: documentation correction (scope S6)
 
 The PR corrects existing documentation so that it matches established
-behavior: a typo, a wrong statement, an outdated command. Commands and claims
-must be checked against the source. New sections and new promises about
-features are out of scope.
+behavior: a typo, a wrong statement, an outdated command. It may also add a
+short note to an existing page about behavior LFortran already has, such as
+a troubleshooting tip (#16202). Commands and claims must be checked against
+the source. New sections and new promises about features are out of scope.
 
 ## 4. Exclusions
 
