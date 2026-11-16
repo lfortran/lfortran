@@ -107,8 +107,8 @@ examples use `--jobs 8`.
       PR number and head, the two JSON files, and the main worktree
       `.approvebot/main` to read source in (read only). It follows the
       policy and returns JSON:
-      `{"verdict": "approved" | "review", "scope": "S1".."S6" | "-",
-      "kind": "C1".."C4" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
+      `{"verdict": "approved" | "review", "scope": "S1".."S7" | "-",
+      "kind": "C1".."C5" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
       Check that the answer cites the policy, and that a `bot-approved`
       verdict meets every rule of its kind. If you doubt it, the verdict is
       `review`. Judge every head afresh, even one that `cases.jsonl`

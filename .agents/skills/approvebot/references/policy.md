@@ -45,13 +45,16 @@ A PR is in scope only if its **whole purpose** is one of these:
 | S4 | Repair a defect in an existing test without weakening it. | The test still detects the behavior it was written for. |
 | S5 | Fix a compile failure of LFortran's own C/C++ sources, such as a missing standard include. | The failing build configuration. |
 | S6 | Correct a wrong or outdated statement, or a typo, in existing documentation. | The source the corrected statement follows from. |
+| S7 | Report an error that LFortran misses: code that breaks a rule of the standard compiles silently, crashes, or runs with garbage. | Fixes an issue labeled `error not reported`; the rule of the standard that the code breaks. |
 
 **Out of scope, whatever the size**, so always `needs-review`:
 
 - New features, language extensions, new compiler options, and changed
   defaults or option behavior.
-- New errors or warnings, or rejecting code that compiled before (for
-  example #17957 and #17950), even when the standard forbids that code.
+- New warnings, and new errors for code that the standard allows: a "not
+  supported yet" error, a restriction that only GFortran has, or rejecting
+  an extension that LFortran accepts on purpose. A new error for code that
+  breaks a rule of the standard is S7.
 - Choices the standard leaves to the processor: results for arguments
   outside a function's domain (poles, invalid arguments), which NaN or
   infinity to return where the standard does not say, and results that
@@ -89,7 +92,7 @@ budget counts added plus deleted lines in `src/` outside tests (the script's
 `production` area). Tests, their registrations, and the references that a
 kind allows do not count toward it, but they are still read.
 
-### Rules for every compiler change (C1-C4)
+### Rules for every compiler change (C1-C5)
 
 1. **The test fails on main and passes on the head.** Approvebot verifies
    the first half itself (`check-main`, section 5). Quick on the head is the
@@ -104,7 +107,8 @@ kind allows do not count toward it, but they are still read.
    Inside the domain, main crashed, wrongly rejected, or computed a value the
    test shows is wrong. To check this, read the changed function on main and
    ask: for input that already worked, does the new code do exactly what the
-   old code did?
+   old code did? For C5, the fixed domain is the invalid code that the new
+   error rejects; every valid program is outside it.
 4. **It handles the case rather than hiding it.** An early return,
    `if (!x) return`, an empty `case`, a `break`, or a skipped step that only
    makes the crash disappear does not fit.
@@ -118,11 +122,12 @@ kind allows do not count toward it, but they are still read.
    replace method of C3's "simple visitor or replacer method" shape is not
    a new traversal.
 7. **No changes to existing reference outputs**, except the diagnostic
-   references that C2 allows.
+   references that C2 and C5 allow.
 8. **Name the precedent.** For C3, the verdict comment names the sibling
    code, check or helper that the fix follows; if you cannot find one, the
    PR does not fit. For C2, it lists the decisions the changed values reach
-   instead. For C4, it names the published algorithm or identity.
+   instead. For C4, it names the published algorithm or identity. For C5,
+   it names the rule of the standard that the rejected code breaks.
 
 **The narrow `NO_FAST_MATH` case.** A test may opt out of fast-math only if
 all of these hold:
@@ -244,6 +249,43 @@ reference rules it out.
 **Tests:** each improved message has a case in
 `tests/errors/continue_compilation_1.f90` or an error test, appended at the
 end.
+
+### C5: missing error on invalid code (scope S7)
+
+The PR adds a compile-time error, semantic or syntax, that LFortran did not
+report, for code that breaks a rule of the standard. On main the code
+compiled silently, crashed, or ran with garbage. The example is item 3 of
+#17346 (without its other changes): a constant DIM of LBOUND or UBOUND of an
+assumed-rank array outside 1 to 15 is rejected, because DIM must be between
+1 and the rank, and a rank is at most 15.
+
+**Fits:**
+
+- The verdict names the rule the code breaks: a constraint or a section of
+  the standard. GFortran rejecting the code supports it, but is not proof.
+- The condition is exact: no valid program meets it. The edges are checked
+  (#17346: DIM 1 and 15 still compile, and a DIM that is not a constant is
+  not checked). A rule that depends on something known only at run time is
+  not a compile-time error.
+- The check sits next to the code that already handles the construct and
+  is built like the neighboring errors in that function: the same
+  `diag.add(Diagnostic(...))` form and the same recovery. A syntax error is
+  reported from a parser action or the semantic phase.
+- The message is lower case, shows explicit kinds, names no ASR node, and
+  says what is wrong and what is allowed. Its label points at the bad part
+  of the source.
+
+**Does not fit:** rejecting code the standard allows, even if GFortran
+rejects it; a "not supported yet" error; a warning, or a warning turned into
+an error; a run-time check; a changed grammar rule; a new walk or helper to
+find the case; any other changed message, severity or recovery.
+
+**Budget:** at most 25 changed production lines in one file.
+
+**References and tests:** each form the check catches has a case appended
+at the end of `tests/errors/continue_compilation_1.f90`. Its references
+change only by adding the new messages (and the `.json` hash); every other
+message stays as it was.
 
 ### C1: build hygiene (scope S5)
 
