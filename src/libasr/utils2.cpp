@@ -458,15 +458,20 @@ void close_signal_dirs() {
 }
 
 // Removes the files and the empty subdirectories in the open directory
-// `dir`, without allocating: in a signal handler
-void remove_entries_in_signal_handler(DIR *dir) {
+// `dir` in one pass over its entries, without allocating: in a signal
+// handler. Returns how many it removed.
+size_t remove_entries_once_in_signal_handler(DIR *dir) {
     int fd = dirfd(dir);
-    auto remove_entry = [fd](const char *name) {
+    size_t removed = 0;
+    auto remove_entry = [fd, &removed](const char *name) {
         if (name[0] == '.' && (name[1] == '\0'
                 || (name[1] == '.' && name[2] == '\0'))) {
             return;
         }
-        if (unlinkat(fd, name, 0) != 0) unlinkat(fd, name, AT_REMOVEDIR);
+        if (unlinkat(fd, name, 0) == 0
+                || unlinkat(fd, name, AT_REMOVEDIR) == 0) {
+            removed++;
+        }
     };
 #ifdef __linux__
     // The getdents64 system call reads the entries into this buffer.
@@ -493,6 +498,22 @@ void remove_entries_in_signal_handler(DIR *dir) {
     // readdir() of an open directory reads into the buffer of its DIR
     while (struct dirent *entry = readdir(dir)) remove_entry(entry->d_name);
 #endif
+    return removed;
+}
+
+// Removes the files and the empty subdirectories in the open directory
+// `dir`, without allocating. A file system may skip entries of a directory
+// that changes while it is read, so it is read again from the start until a
+// pass removes nothing, at most a few times.
+void remove_entries_in_signal_handler(DIR *dir) {
+    for (int pass = 0; pass < 8; pass++) {
+#ifdef __linux__
+        lseek(dirfd(dir), 0, SEEK_SET);
+#else
+        rewinddir(dir);
+#endif
+        if (remove_entries_once_in_signal_handler(dir) == 0) break;
+    }
 }
 
 void temp_dir_signal_set(sigset_t *set) {
