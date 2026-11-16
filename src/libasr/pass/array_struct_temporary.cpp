@@ -5446,6 +5446,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr];
             ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second;
             ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
+            // Only a whole allocatable variable is reallocated on assignment
+            // (F2018 10.2.1.3); x(v) with a vector subscript v has the
+            // allocatable type of x but is a section of it.
+            if( ASR::is_a<ASR::ArrayItem_t>(*underlying_target) ||
+                ASR::is_a<ASR::ArraySection_t>(*underlying_target) ) {
+                return true;
+            }
             if( underlying_target != target &&
                 ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
                 target_Type == targetType::OriginalTarget &&
