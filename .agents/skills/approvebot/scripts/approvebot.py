@@ -29,7 +29,7 @@ APPROVED = "bot-approved"
 REVIEW = "needs-review"
 VERDICTS = {"approved": APPROVED, "review": REVIEW}
 AUTO_MERGE = "auto-merge"
-POLICY_VERSION = 3
+POLICY_VERSION = 4
 SIGNATURE = "-- approvebot (automated; runs on {login}'s account)"
 BUILD_FLAGS = ["-DCMAKE_CXX_FLAGS_DEBUG=-g -O2", "-DCMAKE_C_FLAGS_DEBUG=-g -O2"]
 # Changes to these require `pixi run build` (regenerates sources) instead of

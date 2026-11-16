@@ -84,8 +84,7 @@ examples use `--jobs 8`.
    has no cap, because it needs no build:
    1. `python3 $BOT facts N > .approvebot/work/N-facts.json`.
    2. If the facts already settle `needs-review`, apply that verdict now
-      (step 6, item 3). That is the case for a `control` area, production
-      over the budget of every kind that its scope allows, an out-of-scope
+      (step 6, item 3). That is the case for a `control` area, an out-of-scope
       purpose (perf, refactor, CI, build, docs, GPU, a series, a bundle, a
       processor-dependent result), or changes requested.
    3. Otherwise the PR is a candidate: it needs `check-main` and a judge.
@@ -107,8 +106,8 @@ examples use `--jobs 8`.
       PR number and head, the two JSON files, and the main worktree
       `.approvebot/main` to read source in (read only). It follows the
       policy and returns JSON:
-      `{"verdict": "approved" | "review", "scope": "S1".."S6" | "-",
-      "kind": "C1".."C4" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
+      `{"verdict": "approved" | "review", "scope": "S1".."S7" | "-",
+      "kind": "C1".."C5" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
       Check that the answer cites the policy, and that a `bot-approved`
       verdict meets every rule of its kind. If you doubt it, the verdict is
       `review`. Judge every head afresh, even one that `cases.jsonl`
@@ -133,7 +132,7 @@ The comment is short. The maintainer reads it on GitHub to decide whether to
 apply `auto-merge`:
 
 ```markdown
-**approvebot: bot-approved** for head `<sha10>` (policy v3)
+**approvebot: bot-approved** for head `<sha10>` (policy v4)
 
 **Scope:** S1, fixes #N (<one line: what was wrong>).
 **Kind:** C3 / <shape>. Precedent: <the sibling code it follows>.
@@ -146,9 +145,9 @@ For `needs-review`, give the first rule that failed and, if useful, a
 suggested split:
 
 ```markdown
-**approvebot: needs-review** for head `<sha10>` (policy v3)
+**approvebot: needs-review** for head `<sha10>` (policy v4)
 
-**Reason:** <out of scope: ... | exclusion: ... | over the C3 budget: ... | unverifiable: ...>.
+**Reason:** <out of scope: ... | exclusion: ... | unverifiable: ...>.
 ```
 
 The comment must contain the head SHA (the script checks this). Do not
