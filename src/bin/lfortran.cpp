@@ -122,7 +122,8 @@ enum Backend {
 // the GPU kernels and runtime of a link. It is created when first needed and
 // removed with everything in it when main() returns, also after an error or
 // an exception, when the process exits, or when it is ended by a signal.
-LCompilers::TempDir temp_dir("lfortran");
+constexpr const char *TEMP_DIR_PREFIX = "lfortran";
+LCompilers::TempDir temp_dir(TEMP_DIR_PREFIX);
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique symbols during separate compilation.
@@ -2946,6 +2947,12 @@ int main_app(int argc, char *argv[]) {
         std::cout << "JSON_RPC Version: " << LCompilers::LanguageServerProtocol::JSON_RPC_VERSION
                   << std::endl;
 #endif
+        return 0;
+    }
+    if (opts.clean_temp) {
+        for (const std::string &dir : LCompilers::TempDir::remove_stale(TEMP_DIR_PREFIX)) {
+            std::cout << "removed " << dir << std::endl;
+        }
         return 0;
     }
     compiler_options.po.time_report = compiler_options.time_report;

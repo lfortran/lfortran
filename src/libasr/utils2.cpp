@@ -4,6 +4,7 @@
 #else
 #include <dirent.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -487,7 +488,72 @@ void install_temp_dir_signal_handlers(TempDir *dir) {
 #endif
 }
 
+bool process_exists(unsigned long pid) {
+#ifdef _WIN32
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE,
+        static_cast<DWORD>(pid));
+    if (!process) return GetLastError() != ERROR_INVALID_PARAMETER;
+    DWORD code = 0;
+    bool exists = !GetExitCodeProcess(process, &code) || code == STILL_ACTIVE;
+    CloseHandle(process);
+    return exists;
+#else
+    // EPERM: it exists, but belongs to another user
+    return !(kill(static_cast<pid_t>(pid), 0) == -1 && errno == ESRCH);
+#endif
+}
+
+// The process ID in the name `<start><pid>-<6 letters or digits>` of a
+// temporary directory, else 0
+unsigned long temp_dir_pid(const std::string &name, const std::string &start) {
+    if (name.compare(0, start.size(), start) != 0) return 0;
+    size_t begin = start.size(), end = begin;
+    while (end < name.size() && std::isdigit(static_cast<unsigned char>(name[end]))) {
+        end++;
+    }
+    if (end == begin || end - begin > 9 || name.size() != end + 7
+            || name[end] != '-') {
+        return 0;
+    }
+    for (size_t i = end + 1; i < name.size(); i++) {
+        if (!std::isalnum(static_cast<unsigned char>(name[i]))) return 0;
+    }
+    return std::stoul(name.substr(begin, end - begin));
+}
+
 } // namespace
+
+std::vector<std::string> TempDir::remove_stale(const std::string &prefix) {
+    std::vector<std::string> removed;
+    std::string start = prefix + "-" + temp_dir_host_name() + "-";
+    std::error_code ec;
+    std::filesystem::directory_iterator it(system_temp_dir(), ec), end;
+    for (; !ec && it != end; it.increment(ec)) {
+        const std::filesystem::path &dir = it->path();
+        unsigned long pid = temp_dir_pid(dir.filename().string(), start);
+        if (pid == 0) continue;
+#ifdef _WIN32
+        // The user's temporary directory is private on Windows
+        std::error_code status_ec;
+        if (!std::filesystem::is_directory(
+                std::filesystem::symlink_status(dir, status_ec))) {
+            continue;
+        }
+#else
+        // A directory of this user, not a symbolic link to one
+        struct stat st;
+        if (lstat(dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)
+                || st.st_uid != geteuid()) {
+            continue;
+        }
+#endif
+        if (process_exists(pid)) continue;
+        std::error_code remove_ec;
+        std::filesystem::remove_all(dir, remove_ec);
+        if (!remove_ec) removed.push_back(dir.string());
+    }
+    return removed;
+}
 
 TempDir::~TempDir() {
     remove();

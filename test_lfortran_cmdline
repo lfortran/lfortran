@@ -245,6 +245,34 @@ EOF
         [ $status -eq $((128 + $(kill -l $sig))) ]
         tmp_is_empty
     done
+
+    echo "Testing --clean-temp"
+    # The host name as the compiler puts it into the directory name
+    host=$(hostname | tr -c 'A-Za-z0-9._\n-' '_' | cut -c1-64)
+    sh -c 'exit 0' &
+    dead=$!
+    wait $dead
+    mkdir -p stale/lfortran-$host-$dead-Ab12Cd stale/lfortran-$host-$$-Ab12Cd \
+        stale/lfortran-other.host-$dead-Ab12Cd stale/other-$host-$dead-Ab12Cd \
+        stale/lfortran-$host-$dead-toolong stale/target
+    touch stale/lfortran-$host-$dead-Ab12Cd/m.o stale/target/m.o \
+        stale/lfortran-$host-$dead-File12
+    ln -s target stale/lfortran-$host-$dead-Link12
+    TMPDIR=$PWD/stale $FC --clean-temp > out.txt
+    [ "$(cat out.txt)" == "removed $PWD/stale/lfortran-$host-$dead-Ab12Cd" ]
+    [ ! -e stale/lfortran-$host-$dead-Ab12Cd ]
+    # Not a live process, another host, another prefix, another name, a
+    # file, a symbolic link (nor what it points to)
+    [ -d stale/lfortran-$host-$$-Ab12Cd ]
+    [ -d stale/lfortran-other.host-$dead-Ab12Cd ]
+    [ -d stale/other-$host-$dead-Ab12Cd ]
+    [ -d stale/lfortran-$host-$dead-toolong ]
+    [ -f stale/lfortran-$host-$dead-File12 ]
+    [ -L stale/lfortran-$host-$dead-Link12 ]
+    [ -f stale/target/m.o ]
+    # Nothing to remove
+    TMPDIR=$PWD/stale $FC --clean-temp > out.txt
+    [ ! -s out.txt ]
 fi
 
 cd $(mktemp -d)

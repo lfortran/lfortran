@@ -397,6 +397,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--mangle-underscore-external", compiler_options.po.mangle_underscore_external, "Mangles external symbols with underscore")->group(group_mangling_options);
 
         // Miscellaneous flags
+        app.add_flag("--clean-temp", opts.clean_temp, "Remove the temporary directories of killed compiler runs and exit")->group(group_miscellaneous_options);
         app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation")->group(group_miscellaneous_options);
         app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors")->group(group_miscellaneous_options);
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified")->group(group_miscellaneous_options);

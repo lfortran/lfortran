@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace LCompilers {
 
@@ -48,6 +49,11 @@ public:
 
     // The system temporary directory
     static std::string system_temp_dir();
+    // Remove the directories `<prefix>-<this host>-<pid>-<random>` in the
+    // system temporary directory that belong to this user and to processes
+    // that no longer exist: those of a process that was killed (SIGKILL).
+    // Symbolic links are left alone. Returns the removed directories.
+    static std::vector<std::string> remove_stale(const std::string &prefix);
 
 private:
     std::string prefix_;
