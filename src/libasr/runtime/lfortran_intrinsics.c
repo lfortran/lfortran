@@ -278,6 +278,7 @@ static int input_scan(FILE *file, const char *format, ...)
 /* ---- real(16) / binary128 support ---- */
 #include "lfortran_float128_quadmath.h"
 #include "lfortran_float128.c"
+#include "lfortran_trig.h"
 #include "lfortran_complex128.h"
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
@@ -7626,6 +7627,152 @@ LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_
                                   (uint32_t)bits_size);
 }
 
+// Trigonometric functions in degrees ------------------------------------------
+//
+// sind, cosd and tand reduce their argument exactly: |x| = 90*n + r with r
+// in [-45, 45] and no rounding error, so that every exact point is exact
+// (sind(n*360 + 30) = 0.5, cosd(90) = 0, tand(45) = 1, ...) and large
+// arguments keep their accuracy. r*pi/180 is formed as a double-word
+// bh + bl, and the libm function of bh is corrected by bl. The signs of
+// zero and infinity follow the binary128 lf_f128_sind, lf_f128_cosd and
+// lf_f128_tand (and GFortran). The compiler folds constant expressions with
+// these same functions (lfortran_trig.h). real(4) evaluates in real(8), where
+// the reduction of every real(4) argument is equally exact, and rounds once.
+
+// pi/180 = TRIG_D2R_HI + TRIG_D2R_LO to about 2^-108 relative
+static const double TRIG_D2R_HI = 0.017453292519943295;
+static const double TRIG_D2R_LO = 2.9486522708701687e-19;
+
+// sin(bh + bl) for |bh| <= ~pi/4 and |bl| <= ~ulp(bh): the bl correction
+// uses a short series for cos(bh).
+static double trig_sin_dw(double bh, double bl)
+{
+    double u = bh * bh;
+    return sin(bh) + bl * (1.0 - u * (0.5 - u / 24.0));
+}
+
+// cos(bh + bl), as trig_sin_dw
+static double trig_cos_dw(double bh, double bl)
+{
+    double u = bh * bh;
+    return cos(bh) - bl * bh * (1.0 - u * (1.0 / 6.0 - u / 120.0));
+}
+
+// tan(bh + bl) for even n and tan(bh + bl + pi/2) = -1/tan(bh + bl) for
+// odd n; the reciprocal is compensated for its rounding error.
+static double trig_tan_dw(int n, double bh, double bl)
+{
+    double t = tan(bh);
+    double dt = bl * (1.0 + t * t);
+    if ((n & 1) == 0) return t + dt;
+    double q = 1.0 / t;
+    double e = fma(-q, t, 1.0) - q * dt;
+    return -(q + q * e);
+}
+
+// |x| = 90*n + r with r in [-45, 45] (up to rounding of the quotient, which
+// only moves r slightly past 45), r exact, for finite x; returns n mod 4.
+static int trig_rem_90(double ax, double *r)
+{
+    // ax mod 360 is exact; below 2^52, ax - 90*q is exact directly.
+    if (ax >= 4503599627370496.0) ax = fmod(ax, 360.0);
+    double q = floor(ax / 90.0 + 0.5);
+    *r = ax - 90.0 * q;
+    return (int)((int64_t)q & 3);
+}
+
+// r * pi/180 as a double-word bh + bl
+static void trig_deg_to_rad(double r, double *bh, double *bl)
+{
+    *bh = r * TRIG_D2R_HI;
+    *bl = fma(r, TRIG_D2R_HI, -*bh) + r * TRIG_D2R_LO;
+}
+
+// sin of r degrees, |r| <= ~45; exact for r = 0 and r = +-30
+static double trig_sin_deg(double r)
+{
+    if (r == 0.0) return r;
+    if (r == 30.0) return 0.5;
+    if (r == -30.0) return -0.5;
+    double bh, bl;
+    trig_deg_to_rad(r, &bh, &bl);
+    return trig_sin_dw(bh, bl);
+}
+
+// cos of r degrees, |r| <= ~45; exact for r = 0
+static double trig_cos_deg(double r)
+{
+    if (r == 0.0) return 1.0;
+    double bh, bl;
+    trig_deg_to_rad(r, &bh, &bl);
+    return trig_cos_dw(bh, bl);
+}
+
+LFORTRAN_API double _lfortran_dsind(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, s;
+    int n = trig_rem_90(fabs(x), &r);
+    switch (n) {
+        case 0:  s = trig_sin_deg(r); break;
+        case 1:  s = trig_cos_deg(r); break;
+        case 2:  s = -trig_sin_deg(r); break;
+        default: s = -trig_cos_deg(r); break;
+    }
+    return signbit(x) ? -s : s;
+}
+
+LFORTRAN_API float _lfortran_ssind(float x)
+{
+    return (float)_lfortran_dsind(x);
+}
+
+LFORTRAN_API double _lfortran_dcosd(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    double r;
+    int n = trig_rem_90(fabs(x), &r);
+    // cos(90 + 180k degrees) is exactly +0.
+    if ((n & 1) && r == 0.0) return 0.0;
+    switch (n) {
+        case 0:  return trig_cos_deg(r);
+        case 1:  return -trig_sin_deg(r);
+        case 2:  return -trig_cos_deg(r);
+        default: return trig_sin_deg(r);
+    }
+}
+
+LFORTRAN_API float _lfortran_scosd(float x)
+{
+    return (float)_lfortran_dcosd(x);
+}
+
+LFORTRAN_API double _lfortran_dtand(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, t;
+    int n = trig_rem_90(fabs(x), &r);
+    if (r == 0.0) {
+        // A pole at an odd multiple of 90 degrees: +inf at 90, -inf at 270.
+        if (n & 1) return (signbit(x) != 0) != (n == 3) ? -INFINITY : INFINITY;
+        t = 0.0;
+    } else if (r == 45.0 || r == -45.0) {
+        t = ((r > 0) != ((n & 1) != 0)) ? 1.0 : -1.0;
+    } else {
+        double bh, bl;
+        trig_deg_to_rad(r, &bh, &bl);
+        t = trig_tan_dw(n, bh, bl);
+    }
+    return signbit(x) ? -t : t;
+}
+
+LFORTRAN_API float _lfortran_stand(float x)
+{
+    return (float)_lfortran_dtand(x);
+}
+
 // sin -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_ssin(float x)
@@ -7646,18 +7793,6 @@ LFORTRAN_API float_complex_t _lfortran_csin(float_complex_t x)
 LFORTRAN_API double_complex_t _lfortran_zsin(double_complex_t x)
 {
     return csin(x);
-}
-
-LFORTRAN_API float _lfortran_ssind(float x)
-{
-    float radians = (float)((x * PI) / 180.0);
-    return (float)sin(radians);
-}
-
-LFORTRAN_API double _lfortran_dsind(double x)
-{
-    double radians = (x * PI) / 180.0;
-    return sin(radians);
 }
 
 // cos -------------------------------------------------------------------------
@@ -7682,18 +7817,6 @@ LFORTRAN_API double_complex_t _lfortran_zcos(double_complex_t x)
     return ccos(x);
 }
 
-LFORTRAN_API float _lfortran_scosd(float x)
-{
-    float radians = (float)((x * PI) / 180.0);
-    return (float)cos(radians);
-}
-
-LFORTRAN_API double _lfortran_dcosd(double x)
-{
-    double radians = (x * PI) / 180.0;
-    return cos(radians);
-}
-
 // tan -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_stan(float x)
@@ -7714,18 +7837,6 @@ LFORTRAN_API float_complex_t _lfortran_ctan(float_complex_t x)
 LFORTRAN_API double_complex_t _lfortran_ztan(double_complex_t x)
 {
     return ctan(x);
-}
-
-LFORTRAN_API float _lfortran_stand(float x)
-{
-    float radians = (float)((x * PI) / 180.0);
-    return (float)tan(radians);
-}
-
-LFORTRAN_API double _lfortran_dtand(double x)
-{
-    double radians = (x * PI) / 180.0;
-    return tan(radians);
 }
 
 // sinh ------------------------------------------------------------------------

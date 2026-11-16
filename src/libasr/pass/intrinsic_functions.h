@@ -3,8 +3,10 @@
 
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
+#include <libasr/runtime/lfortran_trig.h>
 #include <math.h>
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -1096,6 +1098,86 @@ namespace HostBessel {
     }
 } // namespace HostBessel
 
+// The binary128 value of a host long double, exactly: its significand (at
+// most 113 bits) is the sum of at most three doubles.
+static inline lf_float128 long_double_to_f128(long double v) {
+    if (v == 0 || std::isnan(v) || std::isinf(v)) {
+        return lf_f128_from_double(static_cast<double>(v));
+    }
+    int e;
+    long double m = std::frexp(v, &e);
+    lf_float128 r = lf_f128_from_double(0.0);
+    for (int i = 0; i < 3; i++) {
+        double d = static_cast<double>(m);
+        r = lf_f128_add(r, lf_f128_from_double(d));
+        m -= d;
+    }
+    // r * 2^e, exact in steps of at most 2^512 towards the result
+    for (; e > 512; e -= 512) {
+        r = lf_f128_mul(r, lf_f128_from_double(std::ldexp(1.0, 512)));
+    }
+    for (; e < -512; e += 512) {
+        r = lf_f128_mul(r, lf_f128_from_double(std::ldexp(1.0, -512)));
+    }
+    return lf_f128_mul(r, lf_f128_from_double(std::ldexp(1.0, e)));
+}
+
+// A binary128 value rounded to the host long double. Scaled into the double
+// range, the value is the exact sum d1 + d2 + d3 of three doubles, with
+// d2 + d3 exact in a 64-bit significand, so it rounds once for x87.
+static inline long double f128_to_long_double(lf_float128 q) {
+    lf_float128 zero = lf_f128_from_double(0.0);
+    if (lf_f128_isnan(q) || lf_f128_isinf(q) || lf_f128_eq(q, zero)) {
+        return static_cast<long double>(lf_f128_to_double(q));
+    }
+    int e = 0;
+    while (std::fabs(lf_f128_to_double(q)) < std::ldexp(1.0, -512)) {
+        q = lf_f128_mul(q, lf_f128_from_double(std::ldexp(1.0, 512)));
+        e -= 512;
+    }
+    while (std::fabs(lf_f128_to_double(q)) > std::ldexp(1.0, 512)) {
+        q = lf_f128_mul(q, lf_f128_from_double(std::ldexp(1.0, -512)));
+        e += 512;
+    }
+    double d[3];
+    for (int i = 0; i < 3; i++) {
+        d[i] = lf_f128_to_double(q);
+        q = lf_f128_sub(q, lf_f128_from_double(d[i]));
+    }
+    long double v = static_cast<long double>(d[0])
+        + (static_cast<long double>(d[1]) + d[2]);
+    return std::ldexp(v, e);
+}
+
+// Folds a trigonometric function whose run-time implementation reduces its
+// argument exactly (sind, cosd, tand): real(4) and real(8) call the run-time
+// functions themselves, so that folding and run time agree bit for bit;
+// real(10) and real(16) use the binary128 implementation.
+static inline ASR::expr_t *eval_trig_exact_reduction(Allocator &al,
+        const Location &loc, ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
+        float (*sp_fn)(float), double (*dp_fn)(double),
+        lf_float128 (*qp_fn)(lf_float128)) {
+    LCOMPILERS_ASSERT(args.size() == 1);
+    if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;
+    ASR::RealConstant_t *c = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+    if (kind == 16) {
+        return ASRUtils::make_RealConstant_r16(al, loc,
+            qp_fn(ASRUtils::real_constant_get_r16(c)), t);
+    }
+    if (kind == 10) {
+        // Kind 10 stores a pointer in m_r.
+        lf_float128 x = long_double_to_f128(ASRUtils::real_constant_get_r10(c));
+        return ASRUtils::make_RealConstant_r10(al, loc,
+            f128_to_long_double(qp_fn(x)), t);
+    }
+    if (kind == 4) {
+        return ASRUtils::make_RealConstant_util(al, loc,
+            sp_fn(static_cast<float>(c->m_r)), t);
+    }
+    return ASRUtils::make_RealConstant_util(al, loc, dp_fn(c->m_r), t);
+}
+
 #define create_math_bindc(math_func, stdeval, stdeval_ld, degree, lcompilers_name, quad_eval)           \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
@@ -1126,8 +1208,6 @@ namespace math_func {                                                           
             long double result = stdeval_ld(rv);                                                        \
             if ( degree == 1 ) {                                                                        \
                 result = result * 180.0L / PI;                                                          \
-            } else if ( degree == 2 ) {                                                                 \
-                result = stdeval_ld( ( rv * PI ) / 180.0L );                                            \
             }                                                                                           \
             return ASRUtils::make_RealConstant_r10(al, loc, result, t);                                 \
         }                                                                                               \
@@ -1136,9 +1216,6 @@ namespace math_func {                                                           
         if ( degree == 1 ) {                                                                            \
             double PI = 3.14159265358979323846;                                                         \
             result = result * 180.0/PI;                                                                 \
-        } else if ( degree == 2 ) {                                                                     \
-            double PI = 3.14159265358979323846;                                                         \
-            result = stdeval( ( rv * PI ) / 180.0 );                                                    \
         }                                                                                               \
         return ASRUtils::make_RealConstant_util(al, loc, result, t);                              \
     }                                                                                                   \
@@ -1154,7 +1231,6 @@ namespace math_func {                                                           
 /*
     Degree acts as a switch
     - if degree = 1, math function output is in degrees
-    - if degree = 2, math function input is in degrees
     - degree = 0, implies no change in input or output ( radians )
 */
 
@@ -1165,9 +1241,54 @@ create_math_bindc(BesselY1, HostBessel::y1, HostBessel::y1l, 0, bessel_y1, lf_f1
 create_math_bindc(Asind, asin, asinl, 1, asind, lf_f128_asind)
 create_math_bindc(Acosd, acos, acosl, 1, acosd, lf_f128_acosd)
 create_math_bindc(Atand, atan, atanl, 1, atand, lf_f128_atand)
-create_math_bindc(Sind, sin, sinl, 2, sind, lf_f128_sind)
-create_math_bindc(Cosd, cos, cosl, 2, cosd, lf_f128_cosd)
-create_math_bindc(Tand, tan, tanl, 2, tand, lf_f128_tand)
+
+namespace Sind {
+    static inline ASR::expr_t *eval_Sind(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+            diag::Diagnostics& /*diag*/) {
+        return eval_trig_exact_reduction(al, loc, t, args, _lfortran_ssind,
+            _lfortran_dsind, lf_f128_sind);
+    }
+    static inline ASR::expr_t* instantiate_Sind(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id, int index_kind) {
+        return MathIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "sind", arg_types, return_type, new_args, overload_id, index_kind);
+    }
+} // namespace Sind
+
+namespace Cosd {
+    static inline ASR::expr_t *eval_Cosd(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+            diag::Diagnostics& /*diag*/) {
+        return eval_trig_exact_reduction(al, loc, t, args, _lfortran_scosd,
+            _lfortran_dcosd, lf_f128_cosd);
+    }
+    static inline ASR::expr_t* instantiate_Cosd(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id, int index_kind) {
+        return MathIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "cosd", arg_types, return_type, new_args, overload_id, index_kind);
+    }
+} // namespace Cosd
+
+namespace Tand {
+    static inline ASR::expr_t *eval_Tand(Allocator &al, const Location &loc,
+            ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+            diag::Diagnostics& /*diag*/) {
+        return eval_trig_exact_reduction(al, loc, t, args, _lfortran_stand,
+            _lfortran_dtand, lf_f128_tand);
+    }
+    static inline ASR::expr_t* instantiate_Tand(Allocator &al,
+            const Location &loc, SymbolTable *scope,
+            Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id, int index_kind) {
+        return MathIntrinsicFunction::instantiate_functions(al, loc, scope,
+            "tand", arg_types, return_type, new_args, overload_id, index_kind);
+    }
+} // namespace Tand
 
 #define create_math_pi_input(math_func, stdeval, c_name, lcompilers_name, quad_eval)                    \
 namespace math_func {                                                                                   \
