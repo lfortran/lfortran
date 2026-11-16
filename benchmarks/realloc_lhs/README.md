@@ -23,6 +23,9 @@ integration tests or CI.
   object file that uses the module.
 - `realloc_lhs_apps.f90`: kernels taken from the hottest assignments of two
   applications, Fiats and Formal, each in two forms (see below).
+- `realloc_lhs_missed.f90`: kernels where the possibility of a reallocation
+  costs a temporary, a copy or a heap allocation, each with a rewrite (see
+  below).
 - `run_benchmark.py`: builds the program once per configuration, runs every
   kernel, checks the checksums and prints a Markdown table (Python 3
   standard library only).
@@ -139,6 +142,36 @@ the original form with reallocation, the explicit form with reallocation
 and the explicit form without it; when the original form is as fast without
 reallocation as with it, a difference between the two forms is not the
 cost of reallocation on assignment but of the forms themselves.
+
+## Missed optimizations (`--missed`)
+
+`realloc_lhs_missed.f90` isolates statements where the possibility of a
+reallocation costs more than the check: the compiler adds a temporary, a
+copy or a heap allocation that it does not add when the target cannot be
+reallocated. Each kernel comes in two forms, the plain assignment and a
+rewrite, `<kernel>_x`, whose target cannot be reallocated (`x(:) = ...` to
+an allocated target, or an explicit `allocate`). The targets of the plain
+forms already have the shape of the value, so these are valid without
+reallocation on assignment too (except `promote`), and the column of the
+plain form without reallocation shows what the compiler does when it knows
+that the target is not reallocated:
+
+| kernel | plain form | rewrite |
+| --- | --- | --- |
+| `fres_comp` | `b%v = f3(a)`, an explicit-shape function result into an allocatable component | `b%v(:) = f3(a)` |
+| `fres_internal` | `c = f3(a)` into a local of a procedure that has an internal procedure | `c(:) = f3(a)` |
+| `fres_logical` | `m = g3(a)`, an explicit-shape logical result | `m(:) = g3(a)` |
+| `aconst` | `c = [1., 2., 3.]` | `c(:) = [1., 2., 3.]` |
+| `actor` | `c = [a(1) + 1, a(2)*2, a(3)]` | `c(:) = [...]` |
+| `aidl` | `c = [(a(j)*j, j = 1, n)]` | `c(:) = [...]` |
+| `cshift`, `transpose`, `reshape`, `pack`, `matmul` | `c = cshift(a, 1)` and so on, an intrinsic that gives a new array | `c(:) = ...` |
+| `promote` * | a work array of a procedure of a size known on entry, `t = 2*a`, an opaque call, `t = 3*a`: the second assignment keeps a reallocation, which keeps the array on the heap under `--fast` | `allocate(t(8))`, then `t(:) = ...`: an array of the procedure's frame |
+
+```bash
+pixi run -e llvm11 bench_realloc_lhs --missed --placements 4 \
+    "realloc=lfortran --fast --realloc-lhs-arrays" \
+    "no-realloc=lfortran --fast --no-realloc-lhs-arrays"
+```
 
 ## Running
 

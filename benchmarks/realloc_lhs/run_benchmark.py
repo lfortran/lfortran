@@ -11,6 +11,11 @@ pairs: an assignment as Fiats or Formal write it, and an explicit form
 (`<kernel>_x`) that does not rely on reallocation on assignment. The table
 then shows both forms and their ratio for each configuration.
 
+With --missed it builds realloc_lhs_missed.f90 the same way: kernels whose
+cost is not the check of the reallocation but a temporary, a copy or a heap
+allocation that the compiler adds because the target may be reallocated,
+each with a rewrite (`<kernel>_x`) whose target cannot be reallocated.
+
 A configuration is "label=compiler flags...", for example
 
     "main=/path/to/main/lfortran --fast --realloc-lhs-arrays"
@@ -32,6 +37,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(HERE, "realloc_lhs.f90")
 APPS_SOURCE = os.path.join(HERE, "realloc_lhs_apps.f90")
+MISSED_SOURCE = os.path.join(HERE, "realloc_lhs_missed.f90")
 # Compiled separately (with -c) and linked, so that the compiler of SOURCE
 # cannot inline its procedures or see what they do.
 EXTRA_SOURCES = [os.path.join(HERE, "realloc_lhs_ext.f90")]
@@ -127,6 +133,25 @@ APP_CASES = [
     ("points", 30, 300_000, False),
     ("deepcopy", 4, 20_000_000, False),
     ("string", 32, 20_000_000, False),
+]
+
+
+# The kernels of realloc_lhs_missed.f90: (kernel, n, reps,
+# plain_requires_realloc). Each also has a rewrite `<kernel>_x`.
+MISSED_CASES = [
+    ("fres_comp", 3, 20_000_000, False),
+    ("fres_internal", 3, 20_000_000, False),
+    ("fres_logical", 3, 20_000_000, False),
+    ("aconst", 3, 50_000_000, False),
+    ("actor", 3, 50_000_000, False),
+    ("aidl", 3, 20_000_000, False),
+    ("aidl", 100, 2_000_000, False),
+    ("cshift", 3, 20_000_000, False),
+    ("transpose", 3, 20_000_000, False),
+    ("reshape", 4, 20_000_000, False),
+    ("pack", 3, 10_000_000, False),
+    ("matmul", 3, 20_000_000, False),
+    ("promote", 8, 20_000_000, True),
 ]
 
 
@@ -343,12 +368,20 @@ def main():
                     help="run the paired kernels of realloc_lhs_apps.f90 "
                          "(the original form of an assignment of Fiats or "
                          "Formal and its explicit form) instead")
+    ap.add_argument("--missed", action="store_true",
+                    help="run the paired kernels of realloc_lhs_missed.f90 "
+                         "(an assignment that gets a temporary, a copy or a "
+                         "heap allocation because it may reallocate its "
+                         "target, and its rewrite) instead")
     args = ap.parse_args()
+    if args.apps and args.missed:
+        raise SystemExit("error: --apps and --missed exclude each other")
+    paired = args.apps or args.missed
 
     all_cases = CASES
-    if args.apps:
+    if paired:
         all_cases = []
-        for kernel, n, reps, req in APP_CASES:
+        for kernel, n, reps, req in (APP_CASES if args.apps else MISSED_CASES):
             all_cases.append((kernel, n, reps, req))
             all_cases.append((kernel + "_x", n, reps, False))
     if args.list:
@@ -362,7 +395,7 @@ def main():
     cases = all_cases
     if args.kernels:
         wanted = [k.strip() for k in args.kernels.split(",") if k.strip()]
-        if args.apps:
+        if paired:
             wanted += [k.replace(":", "_x:", 1) if ":" in k else k + "_x"
                        for k in wanted]
         cases = [c for c in all_cases
@@ -404,7 +437,8 @@ def main():
     try:
         for i, c in enumerate(configs):
             build(c, build_dir, i, args.placements,
-                  APPS_SOURCE if args.apps else SOURCE)
+                  APPS_SOURCE if args.apps else
+                  MISSED_SOURCE if args.missed else SOURCE)
 
         # results[case index][config index] = best seconds, or None (n/a),
         # or an error string
@@ -468,7 +502,7 @@ def main():
                     f"{kernel}:{n}: checksum mismatch: {ref[0]}={ref[1]!r} "
                     f"{c.label}={s!r}")
 
-    if args.apps:
+    if paired:
         table = paired_table(cases, results, configs, labels, args, pin, cpu)
         print(table, end="")
         if args.output:
@@ -582,9 +616,13 @@ def paired_table(cases, results, configs, labels, args, pin, cpu):
                + (f" runs of each of {args.placements} placements"
                   if args.placements > 1 else "")
                + (f", pinned to CPU {cpu}" if pin else ", not pinned")
-               + ". original: the assignment as the application writes it; "
-               "explicit: the same work without relying on reallocation on "
-               "assignment (realloc_lhs_apps.f90); ratio: original/explicit. "
+               + (". original: the plain assignment; explicit: its rewrite, "
+                  "whose target cannot be reallocated (realloc_lhs_missed.f90); "
+                  if args.missed else
+                  ". original: the assignment as the application writes it; "
+                  "explicit: the same work without relying on reallocation on "
+                  "assignment (realloc_lhs_apps.f90); ")
+               + "ratio: original/explicit. "
                "Original forms marked * require reallocation on assignment "
                "and are n/a without it.")
     out.append("")
