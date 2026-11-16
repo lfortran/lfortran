@@ -7786,8 +7786,8 @@ LFORTRAN_API float _lfortran_stand(float x)
 static const double TRIG_PI_HI = 3.141592653589793;
 static const double TRIG_PI_LO = 1.2246467991473532e-16;
 
-// |x| = n/2 + r with r in [-1/4, 1/4] (up to rounding of the quotient), r
-// exact, for finite x; returns n mod 4.
+// |x| = n/2 + r with r in [-1/4, 1/4], n and r exact, for finite x; returns
+// n mod 4.
 static int trig_rem_half(double ax, double *r)
 {
     // 2^53 and above are even integers.
@@ -7795,7 +7795,11 @@ static int trig_rem_half(double ax, double *r)
         *r = 0.0;
         return 0;
     }
-    double q = floor(2.0 * ax + 0.5);
+    // 2*ax is exact. Below 2^52, 2*ax + 0.5 is exact too; from 2^52 up,
+    // 2*ax is an integer already, and adding 0.5 would round (a tie for
+    // every odd 2*ax, giving r = -1/2). Neither depends on the rounding mode.
+    double t = 2.0 * ax;
+    double q = t < 4503599627370496.0 ? floor(t + 0.5) : t;
     *r = ax - 0.5 * q;
     return (int)((int64_t)q & 3);
 }

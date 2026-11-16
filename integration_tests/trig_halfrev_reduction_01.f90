@@ -13,6 +13,14 @@ real(sp), parameter :: fs(6) = [sinpi(1.0_sp), cospi(1000000.5_sp), &
 real(dp), parameter :: fd(7) = [sinpi(1.0_dp), cospi(4503599627370497.0_dp), &
     tanpi(1000000.75_dp), sinpi(1000000.5_dp), sinpi(0.1_dp), &
     cospi(3.3_dp), tanpi(1000000.2_dp)]
+! Half-integers in [2^51, 2^52): 2*|x| is an odd integer
+real(dp), parameter :: fh(12) = [sinpi(2251799813685248.5_dp), &
+    cospi(2251799813685248.5_dp), tanpi(2251799813685248.5_dp), &
+    sinpi(2251799813685249.5_dp), cospi(2251799813685249.5_dp), &
+    tanpi(2251799813685249.5_dp), sinpi(-2251799813685248.5_dp), &
+    cospi(-2251799813685248.5_dp), tanpi(-2251799813685248.5_dp), &
+    sinpi(4503599627370495.5_dp), cospi(4503599627370495.5_dp), &
+    tanpi(4503599627370495.5_dp)]
 real(sp) :: nzero4, pinf_4, ninf_4
 real(dp) :: nzero8, pinf_8, ninf_8
 real(qp) :: nzero16, pinf_16, ninf_16
@@ -55,6 +63,10 @@ call check8(0.25_dp, 0.0_dp, 0.0_dp, 1.0_dp, 4)
 call check8(1000000.5_dp, 1.0_dp, 0.0_dp, pinf_8, 7)
 call check8(1000000.75_dp, 0.0_dp, 0.0_dp, -1.0_dp, 4)
 call check8(4503599627370497.0_dp, 0.0_dp, -1.0_dp, nzero8, 7)
+call check8(2251799813685248.5_dp, 1.0_dp, 0.0_dp, pinf_8, 7)
+call check8(2251799813685249.5_dp, -1.0_dp, 0.0_dp, ninf_8, 7)
+call check8(-2251799813685248.5_dp, -1.0_dp, 0.0_dp, ninf_8, 7)
+call check8(4503599627370495.5_dp, -1.0_dp, 0.0_dp, ninf_8, 7)
 call check8(9007199254740994.0_dp, 0.0_dp, 1.0_dp, 0.0_dp, 7)
 call check8(1.0e300_dp, 0.0_dp, 1.0_dp, 0.0_dp, 7)
 call near8(sinpi(id8(1000000.3333333334_dp)), 0.8660254038453936_dp)
@@ -86,6 +98,18 @@ if (.not. same8(fd(4), 1.0_dp)) error stop 34
 call near8(fd(5), 0.30901699437494745_dp)
 call near8(fd(6), -0.5877852522924736_dp)
 call near8(fd(7), 0.7265425277818469_dp)
+if (.not. same8(fh(1), 1.0_dp)) error stop 41
+if (.not. same8(fh(2), 0.0_dp)) error stop 42
+if (.not. same8(fh(3), pinf_8)) error stop 43
+if (.not. same8(fh(4), -1.0_dp)) error stop 44
+if (.not. same8(fh(5), 0.0_dp)) error stop 45
+if (.not. same8(fh(6), ninf_8)) error stop 46
+if (.not. same8(fh(7), -1.0_dp)) error stop 47
+if (.not. same8(fh(8), 0.0_dp)) error stop 48
+if (.not. same8(fh(9), ninf_8)) error stop 49
+if (.not. same8(fh(10), -1.0_dp)) error stop 50
+if (.not. same8(fh(11), 0.0_dp)) error stop 51
+if (.not. same8(fh(12), ninf_8)) error stop 52
 print *, "ok"
 
 contains
