@@ -6136,22 +6136,28 @@ public:
                     if (fc->n_args > 1 && fc->m_args[1].m_value)
                         visit_expr(fc->m_args[1].m_value);
                     src << ")";
-                } else if (fn_name == "__byte_perm") {
-                    // The instruction of gpu_dp4a.cpp, whose operands and
-                    // result are unsigned: the integer(4) it stands for is
-                    // signed.
-                    src << "((int)__byte_perm((unsigned)(";
-                    visit_expr(fc->m_args[0].m_value);
-                    src << "), (unsigned)(";
-                    visit_expr(fc->m_args[1].m_value);
-                    src << "), ";
-                    visit_expr(fc->m_args[2].m_value);
-                    src << "))";
                 } else {
                     // User-defined function call — emit as fn(args)
                     // Resolve to actual function name
                     ASR::Function_t *fn = resolve_function(fc->m_name);
                     std::string call_name = fn ? device_function_name(fn) : fn_name;
+                    // An instruction a pass calls through an interface of
+                    // its own (gpu_dp4a.cpp: `__dp4a`, `__byte_perm`) takes
+                    // and gives the types of the interface; one whose C++
+                    // result is of another type, as the unsigned of
+                    // `__byte_perm`, is converted to the type of the call.
+                    bool instruction = fn && fn->n_body == 0
+                        && fn->m_return_var
+                        && ASRUtils::get_FunctionType(fn)->m_deftype
+                            == ASR::deftypeType::Interface
+                        && ASRUtils::get_FunctionType(fn)->m_abi
+                            == ASR::abiType::BindC
+                        && !ASRUtils::is_array(fc->m_type)
+                        && (ASRUtils::is_integer(*fc->m_type)
+                            || ASRUtils::is_real(*fc->m_type));
+                    if (instruction) {
+                        src << "((" << gpu_type(fc->m_type) << ")";
+                    }
                     src << sanitize_name(call_name) << "(";
                     bool first_arg = true;
                     for (size_t i = 0; i < fc->n_args; i++) {
@@ -6205,6 +6211,7 @@ public:
                         }
                     }
                     src << ")";
+                    if (instruction) src << ")";
                 }
                 break;
             }

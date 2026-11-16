@@ -2,7 +2,7 @@
 
 __device__ inline int dp4a_gpu_22(int a, int b, int c) {
     int r{};
-    r = __dp4a(a, b, c);
+    r = ((int)__dp4a(a, b, c));
     return r;
 }
 
@@ -314,8 +314,8 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_17gpu_
     i__dc = (__flat_idx + 1);
     r1[((int)(i__dc) - (1))] = dp4a_gpu_22(a[((int)(i__dc) - (1))], b[((int)(i__dc) - (1))], c[((int)(i__dc) - (1))]);
     r2[((int)(i__dc) - (1))] = dp4a_gpu_22(a[((int)(i__dc) - (1))], b[((int)(i__dc) - (1))], dp4a_gpu_22(a[((int)(i__dc) - (1))], b[((int)(i__dc) - (1))], 0));
-    r3[((int)(i__dc) - (1))] = __dp4a(a[((int)(i__dc) - (1))], b[((int)(i__dc) - (1))], c[((int)(i__dc) - (1))]);
-    r4[((int)(i__dc) - (1))] = (__dp4a(_lcompilers_ieor_i32_gpu_25(a[((int)(i__dc) - (1))], 5), (b[((int)(i__dc) - (1))] + 0), (c[((int)(i__dc) - (1))] + 1)) + (i__dc - i__dc));
+    r3[((int)(i__dc) - (1))] = ((int)__dp4a(a[((int)(i__dc) - (1))], b[((int)(i__dc) - (1))], c[((int)(i__dc) - (1))]));
+    r4[((int)(i__dc) - (1))] = (((int)__dp4a(_lcompilers_ieor_i32_gpu_25(a[((int)(i__dc) - (1))], 5), (b[((int)(i__dc) - (1))] + 0), (c[((int)(i__dc) - (1))] + 1))) + (i__dc - i__dc));
     r5[((int)(i__dc) - (1))] = ((((c[((int)(i__dc) - (1))] + (_lcompilers_rshift_i32_gpu_26(_lcompilers_shiftl_i32_gpu_34(a[((int)(i__dc) - (1))], 24), 24) * _lcompilers_rshift_i321_gpu_27(_lcompilers_shiftl_i321_gpu_35(b[((int)(i__dc) - (1))], 24), 24))) + (_lcompilers_rshift_i322_gpu_28(_lcompilers_shiftl_i322_gpu_36(b[((int)(i__dc) - (1))], 16), 24) * _lcompilers_rshift_i323_gpu_29(_lcompilers_shiftl_i323_gpu_37(a[((int)(i__dc) - (1))], 16), 24))) + (_lcompilers_rshift_i324_gpu_30(_lcompilers_shiftl_i324_gpu_38(a[((int)(i__dc) - (1))], 8), 24) * _lcompilers_rshift_i325_gpu_31(_lcompilers_shiftl_i325_gpu_39(a[((int)(i__dc) - (1))], 8), 24))) + (_lcompilers_rshift_i326_gpu_32(a[((int)(i__dc) - (1))], 24) * _lcompilers_rshift_i327_gpu_33(b[((int)(i__dc) - (1))], 24)));
     r6[((int)(i__dc) - (1))] = ((((c[((int)(i__dc) - (1))] + (_lcompilers_rshift_i328_gpu_40(_lcompilers_shiftl_i326_gpu_48(a[((int)(i__dc) - (1))], 24), 24) * _lcompilers_rshift_i329_gpu_41(_lcompilers_shiftl_i327_gpu_49(b[((int)(i__dc) - (1))], 24), 24))) + (_lcompilers_rshift_i3210_gpu_42(_lcompilers_shiftl_i328_gpu_50(a[((int)(i__dc) - (1))], 16), 24) * _lcompilers_rshift_i3211_gpu_43(_lcompilers_shiftl_i329_gpu_51(b[((int)(i__dc) - (1))], 16), 24))) + (_lcompilers_rshift_i3212_gpu_44(_lcompilers_shiftl_i3210_gpu_52(a[((int)(i__dc) - (1))], 16), 24) * _lcompilers_rshift_i3213_gpu_45(_lcompilers_shiftl_i3211_gpu_53(b[((int)(i__dc) - (1))], 16), 24))) + (_lcompilers_rshift_i3214_gpu_46(a[((int)(i__dc) - (1))], 24) * _lcompilers_rshift_i3215_gpu_47(b[((int)(i__dc) - (1))], 24)));
     r7[((int)(i__dc) - (1))] = dp4a_gpu_22(a[((int)(i__dc) - (1))], a[((int)(i__dc) - (1))], c[((int)(i__dc) - (1))]);
