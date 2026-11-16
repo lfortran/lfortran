@@ -2626,9 +2626,10 @@ static f128_dw f128_log_gamma_neg_dw(lf_float128 x, int *neg) {
 
 lf_float128 lf_f128_lgamma(lf_float128 x) {
     f128_parts p = f128_unpack(x);
-    if (p.is_nan || (p.is_inf && p.sign)) return f128_make_nan();
-    if (p.is_inf) return f128_make_inf(0);
-    if (f128_is_nonpos_int(x)) return f128_make_nan();
+    if (p.is_nan) return f128_make_nan();
+    /* log Γ has poles at 0 and the negative integers, and tends to +Inf as
+     * x -> -Inf, matching C lgamma. */
+    if (p.is_inf || f128_is_nonpos_int(x)) return f128_make_inf(0);
     int64_t n_int = 0;
     lf_float128 fac;
     if (f128_positive_int(x, &n_int) && f128_factorial_exact(n_int, &fac)) {
@@ -2647,6 +2648,8 @@ lf_float128 lf_f128_tgamma(lf_float128 x) {
     f128_parts p = f128_unpack(x);
     if (p.is_nan) return x;
     if (p.is_inf) return p.sign ? f128_make_nan() : f128_make_inf(0);
+    /* Γ(+-0) = +-Inf; the negative integers are NaN, matching C tgamma. */
+    if (p.is_zero) return f128_make_inf(p.sign);
     if (f128_is_nonpos_int(x)) return f128_make_nan();
     int64_t n_int = 0;
     lf_float128 fac;
