@@ -1504,6 +1504,7 @@ RUN(NAME real16_parameter_findloc_01 LABELS llvm) # not gfortran: GFortran 15.3 
 RUN(NAME real16_parameter_norm2_01 LABELS gfortran llvm)
 RUN(NAME real16_parameter_spread_01 LABELS gfortran llvm)
 RUN(NAME real16_parameter_cshift_01 LABELS gfortran llvm)
+RUN(NAME cshift_eoshift_shift_overflow_01 LABELS gfortran llvm) # cshift/eoshift folding with |shift| > size (#17875)
 RUN(NAME complex16_cmplx_kind_const_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_02 LABELS gfortran llvm)
