@@ -2877,7 +2877,7 @@ class ApprovebotTests(unittest.TestCase):
         self.assertEqual(bot.outcome(review, action), "disagree")
         action = bot.human_action(approved, [bot.REVIEW], "OPEN")
         self.assertEqual((action, bot.outcome(approved, action)),
-                         ("relabeled to needs review", "disagree"))
+                         ("relabeled to needs-review", "disagree"))
         action = bot.human_action(approved, [], "OPEN")
         self.assertEqual(action, "removed bot-approved")
         self.assertEqual(bot.outcome(approved, bot.human_action(approved, [], "MERGED")),

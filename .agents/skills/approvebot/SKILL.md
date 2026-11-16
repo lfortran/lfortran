@@ -2,13 +2,13 @@
 name: approvebot
 description: >
   Classify the maintainer's own ready LFortran PRs (non-draft, CI not failed) as
-  `bot-approved` or `needs review`, posting a signed comment with the reason.
+  `bot-approved` or `needs-review`, posting a signed comment with the reason.
   `bot-approved` means the maintainer would very likely approve that exact
   head: the change is in scope (we want it) and fits a narrow, listed kind
   whose test is proven to fail on a local build of main. It journals every
   human reaction to a verdict and turns disagreements into calibration PRs
   for this skill, which it never merges. Use when asked to run approvebot,
-  to classify or label PRs as bot-approved or needs review, or from a
+  to classify or label PRs as bot-approved or needs-review, or from a
   recurring `/loop`. It never applies `auto-merge`, approves, merges or
   pushes to a PR. Not for code review (pr-review) or merging (mergebot).
 compatibility: >
@@ -26,7 +26,7 @@ signs its comments `-- approvebot (automated; runs on <login>'s account)`.
 | Label | Meaning |
 | --- | --- |
 | `bot-approved` | The change is in scope and fits a listed kind, with its evidence; the maintainer would very likely approve this head as it is. |
-| `needs review` | Anything else. This is the default, and it is not a criticism of the PR. |
+| `needs-review` | Anything else. This is the default, and it is not a criticism of the PR. |
 
 The labels carry no authority. The maintainer reviews both, and applies
 `auto-merge` (which mergebot acts on) when they agree. Approvebot **never**
@@ -74,7 +74,7 @@ examples use `--jobs 8`.
        --reason "<the maintainer's words, quoted, or: no reason given>"
    ```
    Start from `suggested_outcome`, and change it only for a stated reason.
-   For example, a `needs review` PR that the maintainer merged after asking
+   For example, a `needs-review` PR that the maintainer merged after asking
    for changes is `agree`. Never invent a reason.
 3. **Retractions.** For each `retract`, run
    `python3 $BOT retract N --reason "new head <sha>"` (or
@@ -88,7 +88,7 @@ examples use `--jobs 8`.
 5. **Classify.** Take at most five `classify` PRs per iteration, oldest
    first, one at a time:
    1. `python3 $BOT facts N > .approvebot/work/N-facts.json`.
-   2. **Screen.** If the facts already settle `needs review`, skip
+   2. **Screen.** If the facts already settle `needs-review`, skip
       `check-main`. That is the case for a `control` area, production over
       the budget of every kind that its scope allows, an out-of-scope
       purpose (perf, refactor, CI, build, docs, GPU, a series, a bundle,
@@ -135,11 +135,11 @@ apply `auto-merge`:
 registered `gfortran llvm` with no mode opt-outs; required checks <green | pending>.
 ```
 
-For `needs review`, give the first rule that failed and, if useful, a
+For `needs-review`, give the first rule that failed and, if useful, a
 suggested split:
 
 ```markdown
-**approvebot: needs review** for head `<sha10>` (policy v3)
+**approvebot: needs-review** for head `<sha10>` (policy v3)
 
 **Reason:** <out of scope: ... | exclusion: ... | over the C3 budget: ... | unverifiable: ...>.
 ```

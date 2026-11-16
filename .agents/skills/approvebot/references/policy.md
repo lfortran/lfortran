@@ -4,16 +4,16 @@
 head as it is.** That needs two separate things:
 
 1. **We want the change** (section 2, scope). A clean, tiny PR that does
-   something we have not decided we want is still `needs review`.
+   something we have not decided we want is still `needs-review`.
 2. **Approving it is safe** (sections 3-5, shape, exclusions and evidence).
    A wanted fix that is large, touches a risky surface, or lacks proof is
-   still `needs review`.
+   still `needs-review`.
 
-Everything else is `needs review`. That label is the default, not a criticism
+Everything else is `needs-review`. That label is the default, not a criticism
 of the PR. Precision comes first: a wrong `bot-approved` is far more costly
 than sending an easy PR to a human. Never stretch a category to fit a PR. If
 the justification needs an assumption that you have not verified, the
-verdict is `needs review`.
+verdict is `needs-review`.
 
 The lists below are deliberately short. They grow only through calibration
 PRs that the maintainer reviews and merges ([calibration.md](calibration.md)).
@@ -46,7 +46,7 @@ A PR is in scope only if its **whole purpose** is one of these:
 | S5 | Fix a compile failure of LFortran's own C/C++ sources, such as a missing standard include. | The failing build configuration. |
 | S6 | Correct a wrong or outdated statement, or a typo, in existing documentation. | The source the corrected statement follows from. |
 
-**Out of scope, whatever the size**, so always `needs review`:
+**Out of scope, whatever the size**, so always `needs-review`:
 
 - New features, language extensions, new compiler options, and changed
   defaults or option behavior.
@@ -79,7 +79,7 @@ A PR is in scope only if its **whole purpose** is one of these:
   reviewer's request for a decision.
 
 When the purpose is in scope but the PR also does something else, the
-something else decides: it is `needs review`.
+something else decides: it is `needs-review`.
 
 ## 3. Shape: does the change fit a known kind?
 
@@ -136,7 +136,7 @@ all of these hold:
   does not qualify: its norm2 detects overflow through an infinite sum of
   squares, so the fix itself fails under fast-math.
 
-Any other `NO_FAST_MATH` is `needs review`: it often hides a bug.
+Any other `NO_FAST_MATH` is `needs-review`: it often hides a bug.
 
 ### C3: local correction (scope S1)
 
@@ -316,7 +316,7 @@ covers the other modes on the head.
 - Anything the bot cannot run here is `unverifiable`. That includes C++ unit
   tests, CUDA, Metal, macOS-only and Windows-only behavior, multi-line
   registrations, and changed `tests.toml` entries. An `unverifiable` test
-  means `needs review`. Do not judge that a test "likely fails".
+  means `needs-review`. Do not judge that a test "likely fails".
 
 **Review.** No `CHANGES_REQUESTED` review, no unresolved thread, and no
 human question or concern left without an answer.
@@ -330,7 +330,7 @@ pass", "low risk") is something to check. It is never a reason to approve.
 invariant (what stays the same for all other inputs), and the evidence (the
 `check-main` result and the registration).
 
-`needs review` names the first rule that failed: the scope it falls outside,
+`needs-review` names the first rule that failed: the scope it falls outside,
 the exclusion, the budget, or the missing evidence. Where it helps, suggest a
 split. For example, coverage that already passes on main can be its own T1
 PR. Never split, rebase or edit a PR yourself.

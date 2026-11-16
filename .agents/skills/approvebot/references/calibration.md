@@ -13,11 +13,11 @@ it in `.approvebot/feedback.jsonl`:
 | Human action | Default outcome |
 | --- | --- |
 | `auto-merge` applied to a `bot-approved` PR, or the PR merged | agree |
-| `auto-merge` applied to a `needs review` PR | disagree: the bot was too cautious |
-| `bot-approved` replaced by `needs review`, or removed | disagree: a wrong approval |
-| `needs review` replaced by `bot-approved` | disagree: the bot was too cautious |
+| `auto-merge` applied to a `needs-review` PR | disagree: the bot was too cautious |
+| `bot-approved` replaced by `needs-review`, or removed | disagree: a wrong approval |
+| `needs-review` replaced by `bot-approved` | disagree: the bot was too cautious |
 | A `bot-approved` PR closed without merging | disagree |
-| A `needs review` PR merged or closed | agree, unless the maintainer said otherwise |
+| A `needs-review` PR merged or closed | agree, unless the maintainer said otherwise |
 
 The maintainer may explain a disagreement in a PR comment. That comment is
 the reason. If there is none, record `no reason given`. Do not guess the
@@ -52,7 +52,7 @@ When `python3 $BOT feedback` lists uncaptured disagreements:
 5. Run `python3 $BOT feedback --capture <PR URL> --prs A B`.
 
 Never mark a calibration PR ready, label it, or merge it. Never classify it
-with a verdict other than `needs review`: it changes agent policy, which is
+with a verdict other than `needs-review`: it changes agent policy, which is
 out of scope. The policy in effect stays the one on the bot's checkout until
 the maintainer merges.
 
