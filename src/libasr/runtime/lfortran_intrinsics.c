@@ -3857,6 +3857,7 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
 
     int byte_count = 0;
     uint64_t raw = 0;
+    char *hex_full = NULL;
     switch (type) {
         case INTEGER_8_TYPE:
             byte_count = 1;
@@ -3905,45 +3906,17 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             break;
         }
         case FLOAT_128_TYPE: {
-            /* fp128 hex: handle separately .
-             * Build the full 32-hex-digit string directly from the 16 raw bytes. */
+            /* fp128 does not fit in raw: build the digits from its 16 bytes,
+             * most significant byte first */
             byte_count = 16;
             unsigned char fp128_bytes[16];
             memcpy(fp128_bytes, arg_ptr, 16);
-            int total_hex = 32;
-            char *hex_full = (char*)internal_malloc((total_hex + 1) * sizeof(char));
-            for (int _b = 15; _b >= 0; _b--) {
-                snprintf(hex_full + (15 - _b) * 2, 3, "%02X", fp128_bytes[_b]);
+            hex_full = (char*)internal_malloc((2 * byte_count + 1) * sizeof(char));
+            for (int i = 0; i < byte_count; i++) {
+                snprintf(hex_full + 2 * i, 3, "%02X",
+                    fp128_bytes[byte_count - 1 - i]);
             }
-            hex_full[total_hex] = '\0';
-            /* strip leading zeros, respect min_digits and width */
-            int _s = 0;
-            while (_s < total_hex - 1 && hex_full[_s] == '0') _s++;
-            int _dlen = total_hex - _s;
-            if (_dlen < 1) _dlen = 1;
-            if (min_digits < 1) min_digits = 1;
-            int _olen = _dlen > min_digits ? _dlen : min_digits;
-            char *_out = (char*)internal_malloc((_olen + (width > 0 ? width : 0) + 2) * sizeof(char));
-            int _lz = _olen - _dlen;
-            for (int _i = 0; _i < _lz; _i++) _out[_i] = '0';
-            memcpy(_out + _lz, hex_full + _s, _dlen);
-            _out[_olen] = '\0';
-            internal_free(hex_full);
-            if (width > 0 && _olen > width) {
-                char *stars = (char*)internal_malloc((width + 1) * sizeof(char));
-                memset(stars, '*', width);
-                stars[width] = '\0';
-                *result = stars;
-            } else if (width > _olen) {
-                char *padded = (char*)internal_malloc((width + 1) * sizeof(char));
-                memset(padded, ' ', width - _olen);
-                memcpy(padded + (width - _olen), _out, _olen + 1);
-                internal_free(_out);
-                *result = padded;
-            } else {
-                *result = _out;
-            }
-            return; /* early return: skip the generic uint64 path below */
+            break;
         }
         default:
             fprintf(stderr, "Unsupported type for Z edit descriptor\n");
@@ -3955,9 +3928,11 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
         total_digits = 1;
     }
 
-    char *hex_full = (char*)internal_malloc((total_digits + 1) * sizeof(char));
-    snprintf(hex_full, total_digits + 1, "%0*llX", total_digits,
-        (unsigned long long)raw);
+    if (hex_full == NULL) {
+        hex_full = (char*)internal_malloc((total_digits + 1) * sizeof(char));
+        snprintf(hex_full, total_digits + 1, "%0*llX", total_digits,
+            (unsigned long long)raw);
+    }
 
     int start_idx = 0;
     while (start_idx < total_digits - 1 && hex_full[start_idx] == '0') {
