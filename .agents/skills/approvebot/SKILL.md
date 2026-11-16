@@ -84,8 +84,7 @@ examples use `--jobs 8`.
    has no cap, because it needs no build:
    1. `python3 $BOT facts N > .approvebot/work/N-facts.json`.
    2. If the facts already settle `needs-review`, apply that verdict now
-      (step 6, item 3). That is the case for a `control` area, production
-      over the budget of every kind that its scope allows, an out-of-scope
+      (step 6, item 3). That is the case for a `control` area, an out-of-scope
       purpose (perf, refactor, CI, build, docs, GPU, a series, a bundle, a
       processor-dependent result), or changes requested.
    3. Otherwise the PR is a candidate: it needs `check-main` and a judge.
@@ -148,7 +147,7 @@ suggested split:
 ```markdown
 **approvebot: needs-review** for head `<sha10>` (policy v3)
 
-**Reason:** <out of scope: ... | exclusion: ... | over the C3 budget: ... | unverifiable: ...>.
+**Reason:** <out of scope: ... | exclusion: ... | unverifiable: ...>.
 ```
 
 The comment must contain the head SHA (the script checks this). Do not

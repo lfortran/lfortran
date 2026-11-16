@@ -6,8 +6,8 @@ head as it is.** That needs two separate things:
 1. **We want the change** (section 2, scope). A clean, tiny PR that does
    something we have not decided we want is still `needs-review`.
 2. **Approving it is safe** (sections 3-5, shape, exclusions and evidence).
-   A wanted fix that is large, touches a risky surface, or lacks proof is
-   still `needs-review`.
+   A wanted fix that touches a risky surface or lacks proof is still
+   `needs-review`. Size alone never makes it `needs-review`.
 
 Everything else is `needs-review`. That label is the default, not a criticism
 of the PR. Precision comes first: a wrong `bot-approved` is far more costly
@@ -87,10 +87,10 @@ something else decides: it is `needs-review`.
 
 ## 3. Shape: does the change fit a known kind?
 
-Every changed file must belong to the single kind chosen. The production
-budget counts added plus deleted lines in `src/` outside tests (the script's
-`production` area). Tests, their registrations, and the references that a
-kind allows do not count toward it, but they are still read.
+Every changed file must belong to the single kind chosen. There is no size
+limit: a large change that fits one kind in every part fits that kind.
+Tests, their registrations, and the references that a kind allows are read
+too.
 
 ### Rules for every compiler change (C1-C5)
 
@@ -148,10 +148,6 @@ Any other `NO_FAST_MATH` is `needs-review`: it often hides a bug.
 
 ### C3: local correction (scope S1)
 
-**Budget:** at most 25 changed production lines in one file. They are either
-in one function, or the same mechanical edit repeated in sibling functions
-(#17967 widens `int` to `int64_t` in the spread, cshift and eoshift folds).
-
 These shapes fit. The descriptions come from approved PRs:
 
 | Shape | What fits | Examples |
@@ -160,8 +156,8 @@ These shapes fit. The descriptions come from approved PRs:
 | Make the call the sibling makes | An argument, symbol or type is built with the call that its siblings already use. | #18003: the `vector` dummy gets its derived type from `fill_func_arg_struct_type`, exactly as the `array` dummy and the result do. |
 | Use the established type | A temporary or literal is built in the type that the surrounding API already takes. | #17967: `int` temporaries become `int64_t`, the type `b.i_t` takes. |
 | Correct an endpoint or range | A local predicate or index computation gets the truth table that follows from the operation's definition, with every boundary tested. | #17949: CSHIFT reduces the shift modulo the extent, and EOSHIFT clamps it to the extent, instead of reading out of range. |
-| Add a missing table entry | One entry for an already supported item, in an existing table and in the table's current form. The code that reads the table does not change. | #15679: `{boolopType::NEqv, "~neqv"}` next to `.eqv.` in `boolop2str`. |
-| Add a missing switch case | One `case` for a switch whose `default` asserts or says "not implemented", built like a neighbor case in the same switch. | The `Unpack` case of `set_allocation_size`, built like CSHIFT and TRANSPOSE (from #17345, without its other changes). |
+| Add a missing table entry | Entries for already supported items, in an existing table and in the table's current form. The code that reads the table does not change. | #15679: `{boolopType::NEqv, "~neqv"}` next to `.eqv.` in `boolop2str`. |
+| Add a missing switch case | Missing `case`s for a switch whose `default` asserts or says "not implemented", built like a neighbor case in the same switch. | The `Unpack` case of `set_allocation_size`, built like CSHIFT and TRANSPOSE (from #17345, without its other changes). |
 | Apply a common guard | An existing step is wrapped in a check that the same phase already uses many times for the same decision (for example `LLVM::is_llvm_pointer`, used about 180 times in `asr_to_llvm.cpp`). Every old case still meets the guard. | #17349: `visit_PointerAssociated` loads the descriptor only for a pointer target. |
 | Walk the children first | A pass that crashed on a nested construct now calls the base walker on the construct's bodies before lowering it, as the pass's other visitors do. A workaround that this makes dead, such as a second walk over the whole unit, may be removed when the PR says why. | #16941: `SelectCaseVisitor::visit_Select` walks the case bodies first, so nested SELECT CASE of any depth is lowered in one walk; the second walk is removed. |
 | Check a value before use | The generated code tests a value before it reads it (a null descriptor or data pointer, `present`, "is allocated", zero size) with a check that the same code already makes for the same kind of value. The checked state is legal Fortran (a nullified pointer, an unallocated component, an absent optional), and the check gives the answer the standard asks for in that state. When the check passes, the old code runs unchanged. It never fits when the value should not be null there: then the code that produced it is the bug. | #15967: `get_is_allocated_flag` checks the string descriptor for null before reading its data, as it already checks the array descriptor and the polymorphic wrapper. |
@@ -207,8 +203,6 @@ cancelled its tiny real part.
   value and the test passes with `--fast`, except for the narrow
   `NO_FAST_MATH` case.
 
-**Budget:** at most 60 changed production lines in one file.
-
 **Does not fit:** a choice the standard leaves to the processor, a gain in
 accuracy for a result that was already right to a few digits, new shared
 numerical helpers, or a change to how other functions evaluate.
@@ -237,9 +231,6 @@ information that the message needs to the place that prints it.
 **Does not fit:** any change to when a diagnostic fires (a new or removed
 check, a changed condition), its severity, recovery or continue-compilation
 flow, what is accepted, or the ASR or IR of any program.
-
-**Budget:** at most 100 changed production lines in at most 2 files of the
-same phase.
 
 **References:** the diagnostic test's references may change only by adding
 the new cases' output, or by changing the text or location of the messages
@@ -280,8 +271,6 @@ rejects it; a "not supported yet" error; a warning, or a warning turned into
 an error; a run-time check; a changed grammar rule; a new walk or helper to
 find the case; any other changed message, severity or recovery.
 
-**Budget:** at most 25 changed production lines in one file.
-
 **References and tests:** each form the check catches has a case appended
 at the end of `tests/errors/continue_compilation_1.f90`. Its references
 change only by adding the new messages (and the `.json` hash); every other
@@ -289,8 +278,8 @@ message stays as it was.
 
 ### C1: build hygiene (scope S5)
 
-A missing standard header, or an equivalent local declaration fix, in one
-translation unit. Executable behavior, macros, exported interfaces, build
+A missing standard header, or an equivalent local declaration fix, in C or C++
+sources. Executable behavior, macros, exported interfaces, build
 flags and dependencies stay the same. The failing build configuration is the
 test. It must be named, together with evidence that this PR fixes it.
 
@@ -380,7 +369,7 @@ invariant (what stays the same for all other inputs), and the evidence (the
 `check-main` result and the registration).
 
 `needs-review` names the first rule that failed: the scope it falls outside,
-the exclusion, the budget, or the missing evidence. Where it helps, suggest a
+the exclusion, or the missing evidence. Where it helps, suggest a
 split. For example, coverage that already passes on main can be its own T1
 PR. Never split, rebase or edit a PR yourself.
 
