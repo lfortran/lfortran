@@ -2320,6 +2320,7 @@ RUN(NAME intrinsics_518 LABELS gfortran llvm) # real(16) parameter gamma/log_gam
 RUN(NAME intrinsics_519 LABELS gfortran llvm) # digits/maxexponent/minexponent of x87 kind 10 (#15050)
 RUN(NAME eoshift_default_boundary_complex_01 LABELS gfortran llvm) # eoshift of a complex array without BOUNDARY (#16933)
 RUN(NAME eoshift_default_boundary_char_01 LABELS gfortran llvm) # eoshift of a character array without BOUNDARY (#14677)
+RUN(NAME intrinsics_520 LABELS gfortran llvm) # x= keyword for sind and atand (#17843)
 RUN(NAME real16_gamma_01 LABELS gfortran llvm) # real(16) gamma/log_gamma/erfc_scaled of non-constant arguments (#15736, #17463)
 RUN(NAME real16_gamma_02 LABELS gfortran llvm) # real(16) gamma/log_gamma within 2 ulp, folded and at run time (#17825)
 RUN(NAME real16_intrinsics_rounding_01 LABELS gfortran llvm) # real(16) exp, hyperbolic and ** correctly rounded when folded (#17825)
