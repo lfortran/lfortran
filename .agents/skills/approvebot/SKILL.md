@@ -132,7 +132,7 @@ The comment is short. The maintainer reads it on GitHub to decide whether to
 apply `auto-merge`:
 
 ```markdown
-**approvebot: bot-approved** for head `<sha10>` (policy v3)
+**approvebot: bot-approved** for head `<sha10>` (policy v4)
 
 **Scope:** S1, fixes #N (<one line: what was wrong>).
 **Kind:** C3 / <shape>. Precedent: <the sibling code it follows>.
@@ -145,7 +145,7 @@ For `needs-review`, give the first rule that failed and, if useful, a
 suggested split:
 
 ```markdown
-**approvebot: needs-review** for head `<sha10>` (policy v3)
+**approvebot: needs-review** for head `<sha10>` (policy v4)
 
 **Reason:** <out of scope: ... | exclusion: ... | unverifiable: ...>.
 ```

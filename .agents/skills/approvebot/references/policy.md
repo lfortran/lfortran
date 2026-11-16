@@ -1,4 +1,4 @@
-# Approvebot policy, version 3
+# Approvebot policy, version 4
 
 `bot-approved` means: **the maintainer would very likely approve this exact
 head as it is.** That needs two separate things:
