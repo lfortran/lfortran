@@ -7773,6 +7773,113 @@ LFORTRAN_API float _lfortran_stand(float x)
     return (float)_lfortran_dtand(x);
 }
 
+// Trigonometric functions in half revolutions ---------------------------------
+//
+// sinpi, cospi and tanpi reduce their argument exactly, |x| = n/2 + r with r
+// in [-1/4, 1/4], and evaluate as sind, cosd and tand with r*pi formed as a
+// double-word. The signs of zero and infinity follow IEEE 754 sinPi, cosPi
+// and tanPi, like the binary128 lf_f128_sinpi, lf_f128_cospi and
+// lf_f128_tanpi. The compiler folds constant expressions with these same
+// functions (lfortran_trig.h).
+
+// pi = TRIG_PI_HI + TRIG_PI_LO to about 2^-107 relative
+static const double TRIG_PI_HI = 3.141592653589793;
+static const double TRIG_PI_LO = 1.2246467991473532e-16;
+
+// |x| = n/2 + r with r in [-1/4, 1/4] (up to rounding of the quotient), r
+// exact, for finite x; returns n mod 4.
+static int trig_rem_half(double ax, double *r)
+{
+    // 2^53 and above are even integers.
+    if (ax >= 9007199254740992.0) {
+        *r = 0.0;
+        return 0;
+    }
+    double q = floor(2.0 * ax + 0.5);
+    *r = ax - 0.5 * q;
+    return (int)((int64_t)q & 3);
+}
+
+// r * pi as a double-word bh + bl
+static void trig_halfrev_to_rad(double r, double *bh, double *bl)
+{
+    *bh = r * TRIG_PI_HI;
+    *bl = fma(r, TRIG_PI_HI, -*bh) + r * TRIG_PI_LO;
+}
+
+LFORTRAN_API double _lfortran_dsinpi(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, bh, bl, s;
+    int n = trig_rem_half(fabs(x), &r);
+    // sin(pi*k) is exactly 0, with the sign of x.
+    if ((n & 1) == 0 && r == 0.0) return signbit(x) ? -0.0 : 0.0;
+    trig_halfrev_to_rad(r, &bh, &bl);
+    switch (n) {
+        case 0:  s = trig_sin_dw(bh, bl); break;
+        case 1:  s = trig_cos_dw(bh, bl); break;
+        case 2:  s = -trig_sin_dw(bh, bl); break;
+        default: s = -trig_cos_dw(bh, bl); break;
+    }
+    return signbit(x) ? -s : s;
+}
+
+LFORTRAN_API float _lfortran_ssinpi(float x)
+{
+    return (float)_lfortran_dsinpi(x);
+}
+
+LFORTRAN_API double _lfortran_dcospi(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    double r, bh, bl;
+    int n = trig_rem_half(fabs(x), &r);
+    // cos(pi*(k + 1/2)) is exactly +0.
+    if ((n & 1) && r == 0.0) return 0.0;
+    trig_halfrev_to_rad(r, &bh, &bl);
+    switch (n) {
+        case 0:  return trig_cos_dw(bh, bl);
+        case 1:  return -trig_sin_dw(bh, bl);
+        case 2:  return -trig_cos_dw(bh, bl);
+        default: return trig_sin_dw(bh, bl);
+    }
+}
+
+LFORTRAN_API float _lfortran_scospi(float x)
+{
+    return (float)_lfortran_dcospi(x);
+}
+
+LFORTRAN_API double _lfortran_dtanpi(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, t;
+    int n = trig_rem_half(fabs(x), &r);
+    int negative = signbit(x) != 0;
+    if (r == 0.0) {
+        // tan(pi*k) is +0 for even k and -0 for odd k, times the sign of x;
+        // tan(pi*(k + 1/2)) is +inf for even k and -inf for odd k.
+        if (n & 1) return negative != (n == 3) ? -INFINITY : INFINITY;
+        return negative != (n == 2) ? -0.0 : 0.0;
+    }
+    if (r == 0.25 || r == -0.25) {
+        // tan(pi*(k/2 + 1/4)) is exactly +-1.
+        t = ((r > 0) != ((n & 1) != 0)) ? 1.0 : -1.0;
+    } else {
+        double bh, bl;
+        trig_halfrev_to_rad(r, &bh, &bl);
+        t = trig_tan_dw(n, bh, bl);
+    }
+    return negative ? -t : t;
+}
+
+LFORTRAN_API float _lfortran_stanpi(float x)
+{
+    return (float)_lfortran_dtanpi(x);
+}
+
 // sin -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_ssin(float x)

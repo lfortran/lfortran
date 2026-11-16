@@ -3608,6 +3608,9 @@ lf_f128_abi lf_tandq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f
 lf_f128_abi lf_asindq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_asind(lf_f128_from_abi(a))); }
 lf_f128_abi lf_acosdq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_acosd(lf_f128_from_abi(a))); }
 lf_f128_abi lf_atandq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_atand(lf_f128_from_abi(a))); }
+lf_f128_abi lf_sinpiq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_sinpi(lf_f128_from_abi(a))); }
+lf_f128_abi lf_cospiq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_cospi(lf_f128_from_abi(a))); }
+lf_f128_abi lf_tanpiq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_tanpi(lf_f128_from_abi(a))); }
 #endif
 
 /* ========================================================================
@@ -3831,6 +3834,9 @@ _LF_SHIM1(lf_tandq,         lf_f128_tand)
 _LF_SHIM1(lf_asindq,        lf_f128_asind)
 _LF_SHIM1(lf_acosdq,        lf_f128_acosd)
 _LF_SHIM1(lf_atandq,        lf_f128_atand)
+_LF_SHIM1(lf_sinpiq,        lf_f128_sinpi)
+_LF_SHIM1(lf_cospiq,        lf_f128_cospi)
+_LF_SHIM1(lf_tanpiq,        lf_f128_tanpi)
 #if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)

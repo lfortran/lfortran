@@ -2328,6 +2328,7 @@ RUN(NAME eoshift_default_boundary_complex_01 LABELS gfortran llvm) # eoshift of 
 RUN(NAME eoshift_default_boundary_char_01 LABELS gfortran llvm) # eoshift of a character array without BOUNDARY (#14677)
 RUN(NAME intrinsics_520 LABELS gfortran llvm) # x= keyword for sind and atand (#17843)
 RUN(NAME trig_degree_reduction_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sind/cosd/tand exact argument reduction (#3912)
+RUN(NAME trig_halfrev_reduction_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # sinpi/cospi/tanpi exact argument reduction (#3912); GFortran does not have these intrinsics
 RUN(NAME real16_gamma_01 LABELS gfortran llvm) # real(16) gamma/log_gamma/erfc_scaled of non-constant arguments (#15736, #17463)
 RUN(NAME real16_gamma_02 LABELS gfortran llvm) # real(16) gamma/log_gamma within 2 ulp, folded and at run time (#17825)
 RUN(NAME real16_intrinsics_rounding_01 LABELS gfortran llvm) # real(16) exp, hyperbolic and ** correctly rounded when folded (#17825)

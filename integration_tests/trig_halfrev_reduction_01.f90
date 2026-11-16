@@ -1,0 +1,174 @@
+program trig_halfrev_reduction_01
+! sinpi, cospi and tanpi reduce their argument exactly in half revolutions:
+! they are exact at the exact points, with the IEEE 754 signs of zero and
+! infinity, and accurate for large arguments, both at run time and in
+! constant expressions (#3912).
+implicit none
+integer, parameter :: sp = kind(1.0), dp = kind(1.0d0), qp = 16
+integer, parameter :: nz4 = -huge(0) - 1, pinf4 = 2139095040, ninf4 = -8388608
+integer(8), parameter :: nz8 = -huge(0_8) - 1_8, &
+    pinf8 = 9218868437227405312_8, ninf8 = -4503599627370496_8
+real(sp), parameter :: fs(6) = [sinpi(1.0_sp), cospi(1000000.5_sp), &
+    tanpi(1000000.25_sp), sinpi(1000.1_sp), cospi(3.3_sp), tanpi(0.4999_sp)]
+real(dp), parameter :: fd(7) = [sinpi(1.0_dp), cospi(4503599627370497.0_dp), &
+    tanpi(1000000.75_dp), sinpi(1000000.5_dp), sinpi(0.1_dp), &
+    cospi(3.3_dp), tanpi(1000000.2_dp)]
+real(sp) :: nzero4, pinf_4, ninf_4
+real(dp) :: nzero8, pinf_8, ninf_8
+real(qp) :: nzero16, pinf_16, ninf_16
+
+nzero4 = transfer(nz4, 1.0_sp)
+pinf_4 = transfer(pinf4, 1.0_sp)
+ninf_4 = transfer(ninf4, 1.0_sp)
+nzero8 = transfer(nz8, 1.0_dp)
+pinf_8 = transfer(pinf8, 1.0_dp)
+ninf_8 = transfer(ninf8, 1.0_dp)
+nzero16 = real(nzero8, qp)
+pinf_16 = real(pinf_8, qp)
+ninf_16 = real(ninf_8, qp)
+
+! real(4), run time; `which` selects 1 sinpi, 2 cospi, 4 tanpi
+call check4(1.0_sp, 0.0_sp, -1.0_sp, nzero4, 7)
+call check4(-1.0_sp, nzero4, -1.0_sp, 0.0_sp, 7)
+call check4(2.0_sp, 0.0_sp, 1.0_sp, 0.0_sp, 7)
+call check4(nzero4, nzero4, 1.0_sp, nzero4, 7)
+call check4(0.5_sp, 1.0_sp, 0.0_sp, pinf_4, 7)
+call check4(1.5_sp, -1.0_sp, 0.0_sp, ninf_4, 7)
+call check4(-0.5_sp, -1.0_sp, 0.0_sp, ninf_4, 7)
+call check4(0.25_sp, 0.0_sp, 0.0_sp, 1.0_sp, 4)
+call check4(-0.75_sp, 0.0_sp, 0.0_sp, 1.0_sp, 4)
+call check4(1000000.5_sp, 1.0_sp, 0.0_sp, pinf_4, 7)
+call check4(1000001.0_sp, 0.0_sp, -1.0_sp, nzero4, 7)
+call check4(1000000.75_sp, 0.0_sp, 0.0_sp, -1.0_sp, 4)
+call check4(16777217.0_sp, 0.0_sp, 1.0_sp, 0.0_sp, 7)
+call near4(sinpi(id4(1000.1_sp)), 0.30894404649734497_sp)
+call near4(cospi(id4(3.3_sp)), -0.5877853631973267_sp)
+call near4(tanpi(id4(0.4999_sp)), 3183.519287109375_sp)
+
+! real(8), run time
+call check8(1.0_dp, 0.0_dp, -1.0_dp, nzero8, 7)
+call check8(-1.0_dp, nzero8, -1.0_dp, 0.0_dp, 7)
+call check8(nzero8, nzero8, 1.0_dp, nzero8, 7)
+call check8(0.5_dp, 1.0_dp, 0.0_dp, pinf_8, 7)
+call check8(1.5_dp, -1.0_dp, 0.0_dp, ninf_8, 7)
+call check8(0.25_dp, 0.0_dp, 0.0_dp, 1.0_dp, 4)
+call check8(1000000.5_dp, 1.0_dp, 0.0_dp, pinf_8, 7)
+call check8(1000000.75_dp, 0.0_dp, 0.0_dp, -1.0_dp, 4)
+call check8(4503599627370497.0_dp, 0.0_dp, -1.0_dp, nzero8, 7)
+call check8(9007199254740994.0_dp, 0.0_dp, 1.0_dp, 0.0_dp, 7)
+call check8(1.0e300_dp, 0.0_dp, 1.0_dp, 0.0_dp, 7)
+call near8(sinpi(id8(1000000.3333333334_dp)), 0.8660254038453936_dp)
+call near8(tanpi(id8(1000000.2_dp)), 0.7265425277818469_dp)
+call near8(sinpi(id8(0.1_dp)), 0.30901699437494745_dp)
+call near8(cospi(id8(3.3_dp)), -0.5877852522924736_dp)
+call near8(tanpi(id8(0.4999_dp)), 3183.0987571185015_dp)
+
+! real(16), run time
+call check16(1.0_qp, 0.0_qp, -1.0_qp, nzero16, 7)
+call check16(-1.0_qp, nzero16, -1.0_qp, 0.0_qp, 7)
+call check16(0.5_qp, 1.0_qp, 0.0_qp, pinf_16, 7)
+call check16(1.5_qp, -1.0_qp, 0.0_qp, ninf_16, 7)
+call check16(0.25_qp, 0.0_qp, 0.0_qp, 1.0_qp, 4)
+call check16(1000000.5_qp, 1.0_qp, 0.0_qp, pinf_16, 7)
+call check16(1000000.25_qp, 0.0_qp, 0.0_qp, 1.0_qp, 4)
+
+! constant expressions
+if (.not. same4(fs(1), 0.0_sp)) error stop 21
+if (.not. same4(fs(2), 0.0_sp)) error stop 22
+if (.not. same4(fs(3), 1.0_sp)) error stop 23
+call near4(fs(4), 0.30894404649734497_sp)
+call near4(fs(5), -0.5877853631973267_sp)
+call near4(fs(6), 3183.519287109375_sp)
+if (.not. same8(fd(1), 0.0_dp)) error stop 31
+if (.not. same8(fd(2), -1.0_dp)) error stop 32
+if (.not. same8(fd(3), -1.0_dp)) error stop 33
+if (.not. same8(fd(4), 1.0_dp)) error stop 34
+call near8(fd(5), 0.30901699437494745_dp)
+call near8(fd(6), -0.5877852522924736_dp)
+call near8(fd(7), 0.7265425277818469_dp)
+print *, "ok"
+
+contains
+
+    logical function same4(a, b)
+        real(sp), intent(in) :: a, b
+        same4 = transfer(a, 0) == transfer(b, 0)
+    end function
+
+    logical function same8(a, b)
+        real(dp), intent(in) :: a, b
+        same8 = transfer(a, 0_8) == transfer(b, 0_8)
+    end function
+
+    logical function same16(a, b)
+        real(qp), intent(in) :: a, b
+        integer(8) :: ia(2), ib(2)
+        ia = transfer(a, ia)
+        ib = transfer(b, ib)
+        same16 = ia(1) == ib(1) .and. ia(2) == ib(2)
+    end function
+
+    real(sp) function id4(a)
+        real(sp), intent(in) :: a
+        id4 = a
+    end function
+
+    real(dp) function id8(a)
+        real(dp), intent(in) :: a
+        id8 = a
+    end function
+
+    subroutine check4(a, s, c, t, which)
+        real(sp), intent(in) :: a, s, c, t
+        integer, intent(in) :: which
+        if (iand(which, 1) /= 0) then
+            if (.not. same4(sinpi(a), s)) error stop 2
+        end if
+        if (iand(which, 2) /= 0) then
+            if (.not. same4(cospi(a), c)) error stop 3
+        end if
+        if (iand(which, 4) /= 0) then
+            if (.not. same4(tanpi(a), t)) error stop 4
+        end if
+    end subroutine
+
+    subroutine check8(a, s, c, t, which)
+        real(dp), intent(in) :: a, s, c, t
+        integer, intent(in) :: which
+        if (iand(which, 1) /= 0) then
+            if (.not. same8(sinpi(a), s)) error stop 5
+        end if
+        if (iand(which, 2) /= 0) then
+            if (.not. same8(cospi(a), c)) error stop 6
+        end if
+        if (iand(which, 4) /= 0) then
+            if (.not. same8(tanpi(a), t)) error stop 7
+        end if
+    end subroutine
+
+    subroutine check16(a, s, c, t, which)
+        real(qp), intent(in) :: a, s, c, t
+        integer, intent(in) :: which
+        if (iand(which, 1) /= 0) then
+            if (.not. same16(sinpi(a), s)) error stop 10
+        end if
+        if (iand(which, 2) /= 0) then
+            if (.not. same16(cospi(a), c)) error stop 11
+        end if
+        if (iand(which, 4) /= 0) then
+            if (.not. same16(tanpi(a), t)) error stop 12
+        end if
+    end subroutine
+
+    ! Within one ulp of the correctly rounded reference value
+    subroutine near4(y, ref)
+        real(sp), intent(in) :: y, ref
+        if (abs(y - ref) > spacing(ref)) error stop 8
+    end subroutine
+
+    subroutine near8(y, ref)
+        real(dp), intent(in) :: y, ref
+        if (abs(y - ref) > spacing(ref)) error stop 9
+    end subroutine
+
+end program

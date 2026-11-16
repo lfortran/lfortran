@@ -297,7 +297,7 @@ static inline std::string real_c_func_name(const std::string &name,
             "exp", "log", "log10", "sin", "cos", "tan", "asin", "acos",
             "atan", "atan2", "sinh", "cosh", "tanh", "asinh", "acosh",
             "atanh", "sind", "cosd", "tand", "asind", "acosd", "atand",
-            "erf", "erfc"};
+            "sinpi", "cospi", "tanpi", "erf", "erfc"};
         for (const char *f : quad_functions) {
             if (name == f) return "lf_" + name + "q";
         }
@@ -1150,9 +1150,10 @@ static inline long double f128_to_long_double(lf_float128 q) {
 }
 
 // Folds a trigonometric function whose run-time implementation reduces its
-// argument exactly (sind, cosd, tand): real(4) and real(8) call the run-time
-// functions themselves, so that folding and run time agree bit for bit;
-// real(10) and real(16) use the binary128 implementation.
+// argument exactly (sind, cosd, tand, sinpi, cospi, tanpi): real(4) and
+// real(8) call the run-time functions themselves, so that folding and run
+// time agree bit for bit; real(10) and real(16) use the binary128
+// implementation.
 static inline ASR::expr_t *eval_trig_exact_reduction(Allocator &al,
         const Location &loc, ASR::ttype_t *t, Vec<ASR::expr_t*> &args,
         float (*sp_fn)(float), double (*dp_fn)(double),
@@ -1290,38 +1291,23 @@ namespace Tand {
     }
 } // namespace Tand
 
-#define create_math_pi_input(math_func, stdeval, c_name, lcompilers_name, quad_eval)                    \
+#define create_math_pi_input(math_func, sp_eval, dp_eval, c_name, lcompilers_name, quad_eval)           \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
             diag::Diagnostics& /*diag*/) {                                                              \
-        LCOMPILERS_ASSERT(args.size() == 1);                                                            \
-        if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {                                             \
-            if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
-            return ASRUtils::make_RealConstant_r16(al, loc,                                             \
-                quad_eval(ASRUtils::real_expr_get_r16(args[0])), t);                                    \
-        }                                                                                               \
-        if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {                                             \
-            /* Kind 10 stores a pointer in m_r. Fold in long double. */                                 \
-            if (!ASR::is_a<ASR::RealConstant_t>(*args[0])) return nullptr;                              \
-            long double rv = ASRUtils::real_constant_get_r10(                                           \
-                ASR::down_cast<ASR::RealConstant_t>(args[0]));                                          \
-            long double PI = 3.141592653589793238462643383279502884L;                                   \
-            return ASRUtils::make_RealConstant_r10(al, loc, std::stdeval(rv * PI), t);                  \
-        }                                                                                               \
-        double rv = -1;                                                                                 \
-        if( ASRUtils::extract_value(args[0], rv) ) {                                                    \
-            double PI = 3.14159265358979323846;                                                         \
-            double result = std::stdeval(rv * PI);                                                      \
-            return ASRUtils::make_RealConstant_util(al, loc, result, t);                          \
-        }                                                                                               \
-        return nullptr;                                                                                 \
+        return eval_trig_exact_reduction(al, loc, t, args, sp_eval, dp_eval, quad_eval);                \
     }                                                                                                   \
     static inline ASR::expr_t* instantiate_##math_func (Allocator &al,                                  \
             const Location &loc, SymbolTable *scope,                                                    \
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/)  {             \
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id, int index_kind)  {                     \
         ASR::ttype_t* arg_type = arg_types[0];                                                          \
+        if (ASRUtils::extract_kind_from_ttype_t(arg_type) != 10) {                                      \
+            return MathIntrinsicFunction::instantiate_functions(al, loc, scope,                         \
+                lcompilers_name, arg_types, return_type, new_args, overload_id, index_kind);            \
+        }                                                                                               \
+        /* real(10) has no run-time function: evaluate c_name(x*pi). */                                 \
         std::string c_func_name = real_c_func_name(c_name, arg_type);                                   \
         std::string new_name = "_lcompilers_" + std::string(lcompilers_name) + "_" +                    \
             type_to_str_python_expr(arg_type, new_args[0].m_value);                                     \
@@ -1410,9 +1396,9 @@ namespace math_func {                                                           
     }                                                                                                   \
 } // namespace math_func
 
-create_math_pi_input(Sinpi, sin, "sin", "sinpi", lf_f128_sinpi)
-create_math_pi_input(Cospi, cos, "cos", "cospi", lf_f128_cospi)
-create_math_pi_input(Tanpi, tan, "tan", "tanpi", lf_f128_tanpi)
+create_math_pi_input(Sinpi, _lfortran_ssinpi, _lfortran_dsinpi, "sin", "sinpi", lf_f128_sinpi)
+create_math_pi_input(Cospi, _lfortran_scospi, _lfortran_dcospi, "cos", "cospi", lf_f128_cospi)
+create_math_pi_input(Tanpi, _lfortran_stanpi, _lfortran_dtanpi, "tan", "tanpi", lf_f128_tanpi)
 create_math_pi_output(Asinpi, asin, "asin", "asinpi", lf_f128_asinpi)
 create_math_pi_output(Acospi, acos, "acos", "acospi", lf_f128_acospi)
 create_math_pi_output(Atanpi, atan, "atan", "atanpi", lf_f128_atanpi)

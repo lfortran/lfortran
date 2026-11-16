@@ -22,6 +22,14 @@ double _lfortran_dcosd(double x);
 float  _lfortran_stand(float x);
 double _lfortran_dtand(double x);
 
+/* Fortran 2023 sinpi, cospi and tanpi of real(4) and real(8) */
+float  _lfortran_ssinpi(float x);
+double _lfortran_dsinpi(double x);
+float  _lfortran_scospi(float x);
+double _lfortran_dcospi(double x);
+float  _lfortran_stanpi(float x);
+double _lfortran_dtanpi(double x);
+
 #ifdef __cplusplus
 }
 #endif
