@@ -727,6 +727,8 @@ public:
     // placeholder. A later Function that owns the same link name may replace
     // that declare; the decision is this set, not LLVM type inequality.
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
+    // Placeholders already redeclared with the interface of their first call.
+    std::set<llvm::Function*> bare_implicit_declared_by_call;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     // The constructs that contain each labeled statement of the procedure
@@ -21096,6 +21098,56 @@ public:
         return fn ? fn->getFunctionType() : nullptr;
     }
 
+    // A procedure with an implicit interface that is only referenced in this
+    // file is declared without parameters (instantiate_function). Its first
+    // call through the interface built from the actual arguments (`call_type`)
+    // redeclares it with that interface: WebAssembly links a call only to a
+    // definition with the same signature, and the definition elsewhere has
+    // the parameters the call passes.
+    void declare_bare_implicit_by_call(const ASR::Function_t& fn,
+            llvm::FunctionType* call_type) {
+        uint64_t h = get_hash((ASR::asr_t*)&fn);
+        if (llvm_symtab_fn_arg.find(h) != llvm_symtab_fn_arg.end()) {
+            return;
+        }
+        if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+            instantiate_function(fn);
+        }
+        auto it = llvm_symtab_fn.find(h);
+        if (it == llvm_symtab_fn.end()) {
+            return;
+        }
+        llvm::Function* F = it->second;
+        if (!F->isDeclaration() || F->getFunctionType() == call_type
+                || bare_implicit_declared_by_call.count(F)) {
+            return;
+        }
+        bool placeholder = false;
+        for (uint64_t ph : llvm_fn_from_bare_implicit_interface) {
+            auto pf = llvm_symtab_fn.find(ph);
+            if (pf != llvm_symtab_fn.end() && pf->second == F) {
+                placeholder = true;
+                break;
+            }
+        }
+        if (!placeholder) {
+            return;
+        }
+        llvm::Function* new_F = llvm::Function::Create(call_type,
+            llvm::Function::ExternalLinkage, "", module.get());
+        new_F->takeName(F);
+        if (!F->use_empty()) {
+            F->replaceAllUsesWith(llvm::ConstantExpr::getBitCast(new_F, F->getType()));
+        }
+        for (auto &entry : llvm_symtab_fn) {
+            if (entry.second == F) {
+                entry.second = new_F;
+            }
+        }
+        F->eraseFromParent();
+        bare_implicit_declared_by_call.insert(new_F);
+    }
+
     void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t& x) {
         // View a procedure through another procedure type: the interface
         // `m_to`, or without it the opaque procedure type. Only the type of
@@ -21105,11 +21157,13 @@ public:
             return;
         }
         llvm::Type* target_type = nullptr;
+        llvm::FunctionType* to_fn_type = nullptr;
         if (x.m_to) {
             ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(x.m_to);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
-            target_type = llvm_utils->get_function_type(
-                *ASR::down_cast<ASR::Function_t>(to_sym), module.get())->getPointerTo();
+            to_fn_type = llvm_utils->get_function_type(
+                *ASR::down_cast<ASR::Function_t>(to_sym), module.get());
+            target_type = to_fn_type->getPointerTo();
         } else {
             target_type = llvm_utils->get_opaque_procedure_ptr_type(
                 *ASR::down_cast<ASR::FunctionType_t>(x.m_type), module.get());
@@ -21119,6 +21173,10 @@ public:
             ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v);
             if (ASR::is_a<ASR::Function_t>(*arg_sym)) {
+                if (to_fn_type) {
+                    declare_bare_implicit_by_call(
+                        *ASR::down_cast<ASR::Function_t>(arg_sym), to_fn_type);
+                }
                 src = get_procedure_value(ASR::down_cast<ASR::Function_t>(arg_sym));
             } else if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
                 // A procedure variable stored in memory (a local or a
