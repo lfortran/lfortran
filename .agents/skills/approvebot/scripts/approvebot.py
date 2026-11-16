@@ -33,12 +33,14 @@ POLICY_VERSION = 3
 SIGNATURE = "-- approvebot (automated; runs on {login}'s account)"
 BUILD_FLAGS = ["-DCMAKE_CXX_FLAGS_DEBUG=-g -O2", "-DCMAKE_C_FLAGS_DEBUG=-g -O2"]
 # Changes to these require `pixi run build` (regenerates sources) instead of
-# `rebuild`; see AGENTS.md.
+# `rebuild`; see AGENTS.md. CMakeLists.txt and cmake/ are not listed: `rebuild`
+# reconfigures by itself when a file of the build changes, and most commits
+# touch only integration_tests/CMakeLists.txt, which is not part of the build.
 GENERATOR_INPUTS = re.compile(
     r"(^|/)(ASR\.asdl|AST\.asdl|parser\.yy|tokenizer\.re|preprocessor\.re"
     r"|wasm_instructions\.txt|asdl_cpp\.py|wasm_instructions_visitor\.py"
-    r"|intrinsic_func_registry_util_gen\.py|CMakeLists\.txt|build0\.sh|build1\.sh"
-    r"|pixi\.toml|pixi\.lock)$|^src/server/generator/|^cmake/")
+    r"|intrinsic_func_registry_util_gen\.py|build0\.sh|build1\.sh"
+    r"|pixi\.toml|pixi\.lock)$|^src/server/generator/")
 CONTROL = re.compile(
     r"^(\.agents/|\.claude/|\.github/|ci/|cmake/|AGENTS\.md$|CLAUDE\.md$|pixi\.|"
     r"build\d?\.sh$|environment.*\.yml$|.*CMakeLists\.txt$|.*\.cmake$|.*\.py$)")
