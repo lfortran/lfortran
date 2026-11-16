@@ -7,5 +7,7 @@ program coarray_02
         a(i) = this_image() * 10 + i
     end do
 
+    sync all
+
     if (any(a(2:4)[1] /= [12, 13, 14])) error stop
 end program
