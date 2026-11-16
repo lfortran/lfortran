@@ -210,6 +210,22 @@ EOF
     TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu m.f90 g.f90 -o g.out
     ./g.out
     tmp_is_empty
+    # A temporary directory with a space in its path, in the commands of
+    # the tools
+    mkdir "sp ace"
+    TMPDIR="$PWD/sp ace" $FC --backend=c -c p.f90 -o obj/p_sp.o
+    [ -f obj/p_sp.o ]
+    TMPDIR="$PWD/sp ace" $FC --backend=c m.f90 p.f90 -o c_sp.out
+    ./c_sp.out
+    # A C source makes the compiler driver do the link
+    TMPDIR="$PWD/sp ace" $FC $f1 $add_c -o a_sp.out
+    ./a_sp.out
+    TMPDIR="$PWD/sp ace" $FC --gpu=cuda_cpu m.f90 g.f90 -o g_sp.out
+    ./g_sp.out
+    if [ -n "$(ls -A "sp ace")" ]; then
+        ls -lR "sp ace"
+        exit 1
+    fi
     # A plain -c compile does not need the temporary directory
     TMPDIR=$PWD/missing $FC -c m.f90 -o m.o
     [ -f m.o ]

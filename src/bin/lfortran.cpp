@@ -1675,6 +1675,13 @@ int check_block_data_object(const LCompilers::ASR::TranslationUnit_t &asr,
     return 0;
 }
 
+// A path as one argument of a command run by system(), which may contain
+// spaces: a temporary file is in TMPDIR, e.g. C:\Users\First Last\...\Temp
+std::string quote_path(const std::string &path)
+{
+    return "\"" + path + "\"";
+}
+
 std::string get_c_compiler(const std::string &default_compiler)
 {
     if (char *env_CC = std::getenv("LFORTRAN_CC")) {
@@ -1800,7 +1807,8 @@ int compile_to_object_file_cpp(const std::string &infile,
             options += "-std=c++17 -I" + kokkos_includedir;
         }
         options += " -I" + rtlib_header_dir;
-        std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cppfile;
+        std::string cmd = CXX + " " + options + " -o " + quote_path(outfile)
+            + " -c " + quote_path(cppfile);
         if (verbose) {
             std::cout << cmd << std::endl;
         }
@@ -1919,7 +1927,8 @@ int compile_to_object_file_c(const std::string &infile,
 
         std::string CC = get_c_compiler("gcc");
         std::string options = " -I" + rtlib_header_dir;
-        std::string cmd = CC + " " + options + " -o " + outfile + " -c " + cfile;
+        std::string cmd = CC + " " + options + " -o " + quote_path(outfile)
+            + " -c " + quote_path(cfile);
         if (verbose) {
             std::cout << cmd << std::endl;
         }
@@ -1962,7 +1971,8 @@ int compile_to_binary_fortran(const std::string &infile,
         out << src.result;
     }
 
-    std::string cmd = "gfortran -fno-backtrace -o " + outfile + " -c " + in_file;
+    std::string cmd = "gfortran -fno-backtrace -o " + quote_path(outfile)
+        + " -c " + quote_path(in_file);
     int err = system(cmd.c_str());
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -2092,7 +2102,7 @@ int link_executable(const std::vector<std::string> &infiles,
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
             for (auto &s : infiles) {
-                compile_cmd += s + " ";
+                compile_cmd += quote_path(s) + " ";
             }
             compile_cmd += runtime_library_dir + "\\lfortran_runtime_static.lib";
             run_cmd = outfile;
@@ -2127,7 +2137,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 return 10;
             }
             for (auto &s : infiles) {
-                compile_cmd += s + " ";
+                compile_cmd += quote_path(s) + " ";
             }
             compile_cmd += runtime_library_dir + "/" + runtime_lib;
             compile_cmd +=  extra_linker_flags;
@@ -2178,7 +2188,7 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
-                compile_cmd += s + " ";
+                compile_cmd += quote_path(s) + " ";
             }
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
@@ -2208,7 +2218,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 // macOS SDK and its Metal framework.
                 std::string metal_compile_cmd = linker_dir
                     + "clang -c -O2 -fobjc-arc"
-                    " -o " + metal_runtime_obj
+                    " -o " + quote_path(metal_runtime_obj)
                     + " " + metal_runtime_src;
                 int metal_err = system(metal_compile_cmd.c_str());
                 if (metal_err) {
@@ -2216,7 +2226,7 @@ int link_executable(const std::vector<std::string> &infiles,
                         << metal_compile_cmd << std::endl;
                     return 10;
                 }
-                compile_cmd += " " + metal_runtime_obj
+                compile_cmd += " " + quote_path(metal_runtime_obj)
                     + " -framework Metal -framework Foundation";
             }
             if (compiler_options.gpu_backend == "cuda") {
@@ -2303,7 +2313,8 @@ int link_executable(const std::vector<std::string> &infiles,
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"
                         + (emulate_cpu ? runtime_include + " -x c++"
                             : hip ? std::string(" -x hip") : std::string())
-                        + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
+                        + " -o " + quote_path(cuda_kernel_obj) + " "
+                        + quote_path(cuda_kernel_src);
                     int cuda_err = system(cuda_kernel_cmd.c_str());
                     if (cuda_err) {
                         std::cerr << "Failed to compile CUDA kernel: "
@@ -2360,7 +2371,8 @@ int link_executable(const std::vector<std::string> &infiles,
                     std::string cuda_runtime_obj = temp_dir.file(
                         "lfortran_gpu_cuda_" + std::to_string(i) + ".o");
                     std::string cuda_rt_cmd = cuda_rt_cmd_base + " -o "
-                        + cuda_runtime_obj + " " + cuda_runtime_srcs[i];
+                        + quote_path(cuda_runtime_obj) + " "
+                        + cuda_runtime_srcs[i];
                     int cuda_err = system(cuda_rt_cmd.c_str());
                     if (cuda_err) {
                         std::cerr << "Failed to compile CUDA runtime: "
@@ -2385,10 +2397,10 @@ int link_executable(const std::vector<std::string> &infiles,
                         || compiler_options.platform
                             == LCompilers::Platform::macOS_PowerPC;
                     for (auto &cuda_kernel_obj : cuda_kernel_objs) {
-                        compile_cmd += " " + cuda_kernel_obj;
+                        compile_cmd += " " + quote_path(cuda_kernel_obj);
                     }
                     for (auto &cuda_runtime_obj : cuda_runtime_objs) {
-                        compile_cmd += " " + cuda_runtime_obj;
+                        compile_cmd += " " + quote_path(cuda_runtime_obj);
                     }
                     compile_cmd += std::string(is_macos ? " -lc++" : " -lstdc++")
                         + " -lm";
@@ -2406,13 +2418,13 @@ int link_executable(const std::vector<std::string> &infiles,
                             ? " -Xcompiler=-static" : "")
                         + " -o " + outfile + " ";
                     for (auto &s : infiles) {
-                        compile_cmd += s + " ";
+                        compile_cmd += quote_path(s) + " ";
                     }
                     for (auto &cuda_kernel_obj : cuda_kernel_objs) {
-                        compile_cmd += cuda_kernel_obj + " ";
+                        compile_cmd += quote_path(cuda_kernel_obj) + " ";
                     }
                     for (auto &cuda_runtime_obj : cuda_runtime_objs) {
-                        compile_cmd += cuda_runtime_obj + " ";
+                        compile_cmd += quote_path(cuda_runtime_obj) + " ";
                     }
                     compile_cmd += extra_library_flags;
                     // The linker options given with -Wl: the HIP driver takes
@@ -2541,7 +2553,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::string base_path = "\"" + runtime_library_dir + "\"";
         std::string runtime_lib = "lfortran_runtime";
         for (auto &s : infiles) {
-            cmd += s + " ";
+            cmd += quote_path(s) + " ";
         }
         if(!extra_library_flags.empty()) {
             cmd += extra_library_flags + " ";
@@ -2579,7 +2591,7 @@ int link_executable(const std::vector<std::string> &infiles,
         }
         std::string cmd = CXX + options + " -o " + outfile + " ";
         for (auto &s : infiles) {
-            cmd += s + " ";
+            cmd += quote_path(s) + " ";
         }
         if(!extra_library_flags.empty()) {
             cmd += extra_library_flags + " ";
@@ -2607,7 +2619,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::string base_path = "\"" + runtime_library_dir + "\"";
         std::string runtime_lib = "lfortran_runtime";
         for (auto &s : infiles) {
-            cmd += s + " ";
+            cmd += quote_path(s) + " ";
         }
         if(!extra_library_flags.empty()) {
             cmd += extra_library_flags + " ";
