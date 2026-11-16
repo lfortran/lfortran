@@ -226,6 +226,25 @@ EOF
         ls -lR "sp ace"
         exit 1
     fi
+    # A temporary directory with characters that the shell interprets, also
+    # inside double quotes: none of them may run a command
+    qdir="$PWD/q \$x \`touch pwned\` \"d\" 's'"
+    mkdir "$qdir"
+    TMPDIR="$qdir" $FC --backend=c -c p.f90 -o obj/p_q.o
+    [ -f obj/p_q.o ]
+    TMPDIR="$qdir" $FC m.f90 p.f90 -o a_q.out
+    ./a_q.out
+    TMPDIR="$qdir" $FC --backend=c m.f90 p.f90 -o c_q.out
+    ./c_q.out
+    TMPDIR="$qdir" $FC $f1 $add_c -o a2_q.out
+    ./a2_q.out
+    TMPDIR="$qdir" $FC --gpu=cuda_cpu m.f90 g.f90 -o g_q.out
+    ./g_q.out
+    [ ! -e pwned ]
+    if [ -n "$(ls -A "$qdir")" ]; then
+        ls -lR "$qdir"
+        exit 1
+    fi
     # Sources named like the files of the link
     cp m.f90 lfortran_gpu_cuda_0.f90
     cp p.f90 lfortran_gpu_kernel_0.f90

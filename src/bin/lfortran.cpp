@@ -1680,10 +1680,26 @@ int check_block_data_object(const LCompilers::ASR::TranslationUnit_t &asr,
 }
 
 // A path as one argument of a command run by system(), which may contain
-// spaces: a temporary file is in TMPDIR, e.g. C:\Users\First Last\...\Temp
+// spaces or other characters of the shell: a temporary file is in TMPDIR,
+// e.g. C:\Users\First Last\...\Temp
 std::string quote_path(const std::string &path)
 {
+#ifdef _WIN32
+    // cmd.exe; a Windows path cannot contain '"'
     return "\"" + path + "\"";
+#else
+    // sh expands '$' and '`' inside double quotes, but nothing inside single
+    // quotes; a single quote becomes '\''
+    std::string quoted = "'";
+    for (char c : path) {
+        if (c == '\'') {
+            quoted += "'\\''";
+        } else {
+            quoted += c;
+        }
+    }
+    return quoted + "'";
+#endif
 }
 
 std::string get_c_compiler(const std::string &default_compiler)
@@ -1757,7 +1773,8 @@ int compile_to_object_file_cpp(const std::string &infile,
         } else {
             // An empty C translation unit, from standard input
             std::string CC = get_c_compiler("cc");
-            std::string cmd = CC + " -x c -c - -o '" + outfile + "' < /dev/null";
+            std::string cmd = CC + " -x c -c - -o " + quote_path(outfile)
+                + " < /dev/null";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1885,7 +1902,8 @@ int compile_to_object_file_c(const std::string &infile,
         } else {
             // An empty C translation unit, from standard input
             std::string CC = get_c_compiler("cc");
-            std::string cmd = CC + " -x c -c - -o '" + outfile + "' < /dev/null";
+            std::string cmd = CC + " -x c -c - -o " + quote_path(outfile)
+                + " < /dev/null";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
