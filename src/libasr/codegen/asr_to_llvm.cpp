@@ -21149,11 +21149,15 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        // Visit with appropriate load
-        if (ASRUtils::is_string_only(expr_type(x.m_arg))) {
+        // Visit with appropriate load. An allocatable scalar, like a pointer,
+        // is held through a pointer that must be loaded to get its value.
+        ASR::ttype_t* arg_type = expr_type(x.m_arg);
+        if (ASRUtils::is_string_only(arg_type)) {
             this->visit_expr_load_wrapper(x.m_arg, 0);
-        } else if(ASRUtils::is_pointer(expr_type(x.m_arg))){
+        } else if (ASRUtils::is_pointer(arg_type) ||
+                (LLVM::is_llvm_pointer(*arg_type) && !ASRUtils::is_array(arg_type))) {
             this->visit_expr_load_wrapper(x.m_arg, 2, true);
+            load_non_array_non_character_pointers(x.m_arg, arg_type, tmp);
         } else {
             this->visit_expr_load_wrapper(x.m_arg, ptr_loads, true);
         }
