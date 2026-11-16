@@ -162,6 +162,10 @@ struct CompilerOptions {
     bool symtab_only = false;
     bool show_stacktrace = false;
     bool use_colors = true;
+    // Whether the stack trace of a program compiled with debug information
+    // may be colored; the program colors it only when its stderr is a
+    // terminal and NO_COLOR is not set.
+    bool use_stacktrace_colors = true;
     bool use_runtime_colors = false;
     bool indent = true;
     bool json = false;

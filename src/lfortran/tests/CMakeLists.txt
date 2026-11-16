@@ -347,6 +347,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --workdir ${PROJECT_BINARY_DIR}/continue-compilation-output
                 ${CONTINUE_COMPILATION_OUTPUT_ARGS}
         )
+        # Diagnostics and AST/ASR are colored only on a terminal, unless
+        # NO_COLOR or --color says otherwise.
+        add_test(
+            NAME test_color_output
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_CURRENT_SOURCE_DIR}/test_color_output.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --workdir ${PROJECT_BINARY_DIR}/color-output
+        )
         add_test(
             NAME test_asr_llvm_constructor_coverage
             COMMAND ${LFORTRAN_TEST_PYTHON}

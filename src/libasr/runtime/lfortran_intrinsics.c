@@ -20049,6 +20049,12 @@ static inline void print_stacktrace_raw_addresses(struct Stacktrace *d, bool use
 
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #ifdef HAVE_RUNTIME_STACKTRACE
+    // Color only a terminal, unless NO_COLOR is set (https://no-color.org).
+    if (use_colors) {
+        const char *no_color = getenv("NO_COLOR");
+        use_colors = isatty(lfortran_fileno(stderr))
+            && (no_color == NULL || no_color[0] == '\0');
+    }
     source_filename = filename;
     struct Stacktrace d = get_stacktrace_addresses();
     get_local_address(&d);

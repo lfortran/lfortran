@@ -20330,7 +20330,7 @@ public:
             if (compiler_options.emit_debug_info) {
                 llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
                 llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
-                    1, compiler_options.use_colors));
+                    1, compiler_options.use_stacktrace_colors));
                 call_print_stacktrace_addresses(context, *module, *builder,
                     {fmt_ptr, fmt_ptr1});
             }
@@ -26859,7 +26859,7 @@ public:
         if (compiler_options.emit_debug_info && stop_code_value) {
             llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
             llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
-                1, compiler_options.use_colors));
+                1, compiler_options.use_stacktrace_colors));
             llvm::Value *test = builder->CreateICmpNE(stop_code_value, builder->getInt32(0));
             llvm_utils->create_if_else(test, [=]() {
                 call_print_stacktrace_addresses(context, *module, *builder,
@@ -26878,7 +26878,7 @@ public:
             debug_emit_loc(x);
             llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, infile);
             llvm::Value *fmt_ptr1 = llvm::ConstantInt::get(context, llvm::APInt(
-                1, compiler_options.use_colors));
+                1, compiler_options.use_stacktrace_colors));
             call_print_stacktrace_addresses(context, *module, *builder,
                 {fmt_ptr, fmt_ptr1});
         }
