@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -156,7 +166,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
             }
             __gpu_lane_after1 = (1 + (((int)((((((i__dc - 1) + 4) / 4) > 0)) ? ((((i__dc - 1) + 4) / 4)) : (0))) * 4));
             j = (1 + (((int)__gpu_lane) * 4));
-            const int __lfortran_trips_0 = i__dc >= j ? (i__dc - j) / (4 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_0 = i__dc >= j ? (int)((unsigned)(i__dc - j) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 16
             for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, j += (4 * ((int)__gpu_lanes))) {
                 t = (t + j);
@@ -194,7 +204,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
                     __triangle_s = 0;
                 }
                 __triangle_k = (1 + (((int)__gpu_lane) * 1));
-                const int __lfortran_trips_2 = i__dc >= __triangle_k ? (i__dc - __triangle_k) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+                const int __lfortran_trips_2 = i__dc >= __triangle_k ? (int)((unsigned)(i__dc - __triangle_k) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
                 #pragma unroll 16
                 for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __triangle_k += (1 * ((int)__gpu_lanes))) {
                     __triangle_s = (__triangle_s + __triangle_k);

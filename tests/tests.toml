@@ -8005,3 +8005,9 @@ options = "--std=f23"
 [[test]]
 filename = "read_real16_long_token_error_01.f90"
 run = true
+
+# Lane loops of a length known at compile time, unrolled by the iterations of
+# a lane (`#pragma unroll 4` for 128), with unsigned trip counts.
+[[test]]
+filename = "../integration_tests/gpu_lanes_const_trips_01.f90"
+gpu_cuda_kernel = true

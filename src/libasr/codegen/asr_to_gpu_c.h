@@ -4526,11 +4526,34 @@ public:
             src << get_indent() << v << " = ";
             visit_expr(head.m_start);
             src << ";\n";
+            // The span is not negative there, and an unsigned division is
+            // shorter than a signed one.
+            std::string unsigned_name = ASRUtils::extract_kind_from_ttype_t(
+                type) == 8 ? "unsigned long long" : "unsigned";
             src << get_indent() << "const " << type_name << " " << trips
-                << " = " << end << " >= " << v << " ? (" << end << " - " << v
-                << ") / " << inc << " + 1 : 0;\n";
-            src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
-                : dialect.unroll_pragma(deep)) << "\n";
+                << " = " << end << " >= " << v << " ? (" << type_name << ")(("
+                << unsigned_name << ")(" << end << " - " << v << ") / ("
+                << unsigned_name << ")(" << inc << ")) + 1 : 0;\n";
+            // A loop of a constant length shared by a warp's lanes runs
+            // few iterations on each (4 of 128): unrolled by 16, nvcc runs
+            // them all in the loop that finishes the unrolled one, where
+            // each waits for its load before the next is issued (the sums
+            // over the 128 x 128 state of a gated delta rule took 3 of
+            // their 4 us). It is unrolled by the iterations of a lane.
+            std::string unroll_text = wide
+                ? dialect.unroll_wide_pragma(kernel_lane_vectors)
+                : dialect.unroll_pragma(deep);
+            int64_t end_value = 0;
+            if (!wide && !unroll_text.empty() && kernel_has_lanes()
+                    && ASRUtils::extract_value(ASRUtils::expr_value(
+                        head.m_end), end_value) && end_value > 0) {
+                int64_t per_lane = (end_value + 31) / 32;
+                if (per_lane < 16) {
+                    unroll_text = "#pragma unroll "
+                        + std::to_string(std::max<int64_t>(per_lane, 1));
+                }
+            }
+            src << get_indent() << unroll_text << "\n";
             src << get_indent() << "for (" << type_name << " " << count
                 << " = 0; " << count << " < " << trips << "; " << count
                 << "++, " << v << " += " << inc << ") {\n";

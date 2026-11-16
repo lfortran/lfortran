@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -297,7 +307,7 @@ extern "C" __global__ void __launch_bounds__(256, 6) __lfortran_gpu_kernel_0_19g
         }
         if ((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0) && ((true) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
             c = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_0 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_0 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (int)((unsigned)(((1 * ((int)__dim_x_0)) / 16) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 1
             for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, c += (1 * ((int)__gpu_lanes))) {
                 __lfortran_wide_load(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)((n__dc + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
@@ -307,7 +317,7 @@ extern "C" __global__ void __launch_bounds__(256, 6) __lfortran_gpu_kernel_0_19g
             }
         } else {
             c = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_1 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_1 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (int)((unsigned)(((1 * ((int)__dim_x_0)) / 16) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 1
             for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, c += (1 * ((int)__gpu_lanes))) {
                 __lfortran_wide_load((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)((n__dc + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
@@ -488,7 +498,7 @@ extern "C" __global__ void __launch_bounds__(256, 6) __lfortran_gpu_kernel_1_19g
         }
         if (((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0) && (((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0) && (((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
             c = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_2 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_2 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (int)((unsigned)(((1 * ((int)__dim_x_0)) / 16) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 1
             for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, c += (1 * ((int)__gpu_lanes))) {
                 __lfortran_wide_load(true, &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
@@ -498,7 +508,7 @@ extern "C" __global__ void __launch_bounds__(256, 6) __lfortran_gpu_kernel_1_19g
             }
         } else {
             c = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_3 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_3 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (int)((unsigned)(((1 * ((int)__dim_x_0)) / 16) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 1
             for (int __lfortran_count_3 = 0; __lfortran_count_3 < __lfortran_trips_3; __lfortran_count_3++, c += (1 * ((int)__gpu_lanes))) {
                 __lfortran_wide_load(((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);

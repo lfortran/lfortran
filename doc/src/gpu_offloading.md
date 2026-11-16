@@ -1362,7 +1362,14 @@ such loops four times in the `gpu_sequential_unroll` pass instead:
 
 * A small innermost sequential loop (at most 8 statements, no loop inside)
   is unrolled 16 times (`#pragma unroll 16`), as nvfortran does, so a thread
-  issues the loads of 16 iterations before it needs the first.
+  issues the loads of 16 iterations before it needs the first. In a kernel
+  with lanes, a loop of a length known at compile time is unrolled by the
+  iterations each of 32 lanes takes when they are fewer: a loop of 128 by
+  4. Unrolled by 16, nvcc ran its few iterations in the loop that finishes
+  the unrolled one, each waiting for its load (the sums over the 128 x 128
+  state of a gated delta rule took 3 of their 4 us). The trips of such loops
+  are counted with an unsigned division, and the lanes of a whole warp
+  combine their values with shuffles under a constant mask.
 * A kernel whose small innermost loop reads an array through its variable
   times a stride that is not a constant (`a(i, j)` over `j`: each thread
   streams down a row while the threads read a column together) is declared

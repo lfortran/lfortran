@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {

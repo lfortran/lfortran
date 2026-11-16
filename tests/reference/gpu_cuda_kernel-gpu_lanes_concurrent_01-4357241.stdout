@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -209,7 +219,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_25g
                         s =   0.00000000000000000e+00f;
                     }
                     d = (1 + (((int)__gpu_lane) * 1));
-                    const int __lfortran_trips_0 = __dim_q_0 >= d ? (__dim_q_0 - d) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+                    const int __lfortran_trips_0 = __dim_q_0 >= d ? (int)((unsigned)(__dim_q_0 - d) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
                     #pragma unroll 64
                     for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, d += (1 * ((int)__gpu_lanes))) {
                         s = (s + (q[((int)(d) - (__lb_q_0)) + (__dim_q_0 * ((int)(h__dc) - (__lb_q_1)))] * k[((int)(d) - (__lb_k_0)) + (__dim_k_0 * ((int)(kh) - (__lb_k_1))) + ((__dim_k_0 * __dim_k_1) * ((int)(t__dc) - (__lb_k_2)))]));
@@ -233,7 +243,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_25g
                 top =  -3.40282346638528860e+38f;
             }
             t__dc1 = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_1 = length >= t__dc1 ? (length - t__dc1) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_1 = length >= t__dc1 ? (int)((unsigned)(length - t__dc1) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 64
             for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, t__dc1 += (1 * ((int)__gpu_lanes))) {
                 top = max(top, scores[((int)(t__dc1) - (__lb_scores_0)) + (__dim_scores_0 * ((int)(h__dc) - (__lb_scores_1)))]);
@@ -246,7 +256,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_25g
             }
         }
         t__dc2 = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_2 = length >= t__dc2 ? (length - t__dc2) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+        const int __lfortran_trips_2 = length >= t__dc2 ? (int)((unsigned)(length - t__dc2) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 64
         for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, t__dc2 += (1 * ((int)__gpu_lanes))) {
             scores[((int)(t__dc2) - (__lb_scores_0)) + (__dim_scores_0 * ((int)(h__dc) - (__lb_scores_1)))] = exp((scores[((int)(t__dc2) - (__lb_scores_0)) + (__dim_scores_0 * ((int)(h__dc) - (__lb_scores_1)))] - top));
@@ -258,7 +268,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_25g
                 total =   0.00000000000000000e+00f;
             }
             t__dc3 = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_3 = length >= t__dc3 ? (length - t__dc3) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_3 = length >= t__dc3 ? (int)((unsigned)(length - t__dc3) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 64
             for (int __lfortran_count_3 = 0; __lfortran_count_3 < __lfortran_trips_3; __lfortran_count_3++, t__dc3 += (1 * ((int)__gpu_lanes))) {
                 total = (total + scores[((int)(t__dc3) - (__lb_scores_0)) + (__dim_scores_0 * ((int)(h__dc) - (__lb_scores_1)))]);

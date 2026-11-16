@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -135,7 +145,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     j__dc = (__flat_idx + 1);
     __gpu_sec_i = (((long)1) + (((long)__gpu_lane) * ((long)1)));
-    const long __lfortran_trips_0 = ((((((long)__dim_v_0) + ((long)__lb_v_0)) - ((long)1)) - ((long)__lb_v_0)) + ((long)1)) >= __gpu_sec_i ? (((((((long)__dim_v_0) + ((long)__lb_v_0)) - ((long)1)) - ((long)__lb_v_0)) + ((long)1)) - __gpu_sec_i) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+    const long __lfortran_trips_0 = ((((((long)__dim_v_0) + ((long)__lb_v_0)) - ((long)1)) - ((long)__lb_v_0)) + ((long)1)) >= __gpu_sec_i ? (long)((unsigned long long)(((((((long)__dim_v_0) + ((long)__lb_v_0)) - ((long)1)) - ((long)__lb_v_0)) + ((long)1)) - __gpu_sec_i) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
     #pragma unroll 16
     for (long __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_sec_i += (((long)1) * ((long)__gpu_lanes))) {
         v[((long)((((long)__lb_v_0) + (__gpu_sec_i - ((long)1)))) - (__lb_v_0)) + (__dim_v_0 * ((long)((unsigned int)((j__dc) - (__lb_v_1)))))] = (z[((long)((((long)__lb_z_0) + (__gpu_sec_i - ((long)1)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] + ((float)1));
@@ -195,7 +205,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
     __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     j__dc1 = (__flat_idx + 1);
     __gpu_sec_i1 = (((long)1) + (((long)__gpu_lane) * ((long)1)));
-    const long __lfortran_trips_1 = (((lo8 + ((long)2)) - lo8) + ((long)1)) >= __gpu_sec_i1 ? ((((lo8 + ((long)2)) - lo8) + ((long)1)) - __gpu_sec_i1) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+    const long __lfortran_trips_1 = (((lo8 + ((long)2)) - lo8) + ((long)1)) >= __gpu_sec_i1 ? (long)((unsigned long long)((((lo8 + ((long)2)) - lo8) + ((long)1)) - __gpu_sec_i1) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
     #pragma unroll 16
     for (long __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, __gpu_sec_i1 += (((long)1) * ((long)__gpu_lanes))) {
         v[((long)((lo8 + (__gpu_sec_i1 - ((long)1)))) - (__lb_v_0)) + (__dim_v_0 * ((long)((unsigned int)((j__dc1) - (__lb_v_1)))))] = ((float)0);
@@ -207,7 +217,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
             __gpu_sum_res =   0.00000000000000000e+00f;
         }
         __gpu_sum_k = (((long)__lb_z_0) + (((long)__gpu_lane) * ((long)1)));
-        const long __lfortran_trips_2 = ((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) >= __gpu_sum_k ? (((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) - __gpu_sum_k) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+        const long __lfortran_trips_2 = ((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) >= __gpu_sum_k ? (long)((unsigned long long)(((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) - __gpu_sum_k) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (long __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_sum_k += (((long)1) * ((long)__gpu_lanes))) {
             __gpu_sum_res = (__gpu_sum_res + z[((long)(__gpu_sum_k) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc1) - (__lb_z_1)))))]);
@@ -229,7 +239,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
             __gpu_sum_res1 =   0.00000000000000000e+00f;
         }
         __gpu_sum_k1 = (((long)1) + (((long)__gpu_lane) * ((long)1)));
-        const long __lfortran_trips_3 = __dim_r_0 >= __gpu_sum_k1 ? (__dim_r_0 - __gpu_sum_k1) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+        const long __lfortran_trips_3 = __dim_r_0 >= __gpu_sum_k1 ? (long)((unsigned long long)(__dim_r_0 - __gpu_sum_k1) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (long __lfortran_count_3 = 0; __lfortran_count_3 < __lfortran_trips_3; __lfortran_count_3++, __gpu_sum_k1 += (((long)1) * ((long)__gpu_lanes))) {
             __gpu_sum_res1 = (__gpu_sum_res1 + r[((long)((((long)__lb_r_0) + (__gpu_sum_k1 - ((long)1)))) - (__lb_r_0))]);
@@ -292,7 +302,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_
             __gpu_sum_res2 =   0.00000000000000000e+00f;
         }
         __gpu_sum_k2 = ((lo8 + ((long)3)) + (((long)__gpu_lane) * ((long)1)));
-        const long __lfortran_trips_4 = ((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) >= __gpu_sum_k2 ? (((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) - __gpu_sum_k2) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+        const long __lfortran_trips_4 = ((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) >= __gpu_sum_k2 ? (long)((unsigned long long)(((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) - __gpu_sum_k2) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (long __lfortran_count_4 = 0; __lfortran_count_4 < __lfortran_trips_4; __lfortran_count_4++, __gpu_sum_k2 += (((long)1) * ((long)__gpu_lanes))) {
             __gpu_sum_res2 = (__gpu_sum_res2 + z[((long)(__gpu_sum_k2) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc2) - (__lb_z_1)))))]);
@@ -314,7 +324,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_
             __gpu_sum_res3 =   0.00000000000000000e+00f;
         }
         __gpu_sum_k3 = (((long)__lb_z_0) + (((long)__gpu_lane) * ((long)1)));
-        const long __lfortran_trips_5 = (lo8 + ((long)3)) >= __gpu_sum_k3 ? ((lo8 + ((long)3)) - __gpu_sum_k3) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+        const long __lfortran_trips_5 = (lo8 + ((long)3)) >= __gpu_sum_k3 ? (long)((unsigned long long)((lo8 + ((long)3)) - __gpu_sum_k3) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (long __lfortran_count_5 = 0; __lfortran_count_5 < __lfortran_trips_5; __lfortran_count_5++, __gpu_sum_k3 += (((long)1) * ((long)__gpu_lanes))) {
             __gpu_sum_res3 = (__gpu_sum_res3 + z[((long)(__gpu_sum_k3) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc2) - (__lb_z_1)))))]);
@@ -341,7 +351,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_
             }
             const int __lfortran_end_6 = ((int)((long)((((((lo8 + ((long)1))) - (((long)__lb_z_0))) / (((long)1))) + 1))));
             __f_i = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_7 = __lfortran_end_6 >= __f_i ? (__lfortran_end_6 - __f_i) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            const int __lfortran_trips_7 = __lfortran_end_6 >= __f_i ? (int)((unsigned)(__lfortran_end_6 - __f_i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 16
             for (int __lfortran_count_7 = 0; __lfortran_count_7 < __lfortran_trips_7; __lfortran_count_7++, __f_i += (1 * ((int)__gpu_lanes))) {
                 __f_f = (__f_f + __libasr_created__function_call_f[((long)((((long)__f_i) + (((long)(1)) - ((long)1)))) - (1))]);
@@ -403,7 +413,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_
             __gpu_sum_res4 =   0.00000000000000000e+00f;
         }
         __gpu_sum_k4 = (((long)__lb_w_0) + (((long)__gpu_lane) * ((long)1)));
-        const long __lfortran_trips_9 = ((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) >= __gpu_sum_k4 ? (((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) - __gpu_sum_k4) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+        const long __lfortran_trips_9 = ((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) >= __gpu_sum_k4 ? (long)((unsigned long long)(((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) - __gpu_sum_k4) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (long __lfortran_count_9 = 0; __lfortran_count_9 < __lfortran_trips_9; __lfortran_count_9++, __gpu_sum_k4 += (((long)1) * ((long)__gpu_lanes))) {
             __gpu_sum_res4 = (__gpu_sum_res4 + w[((long)(__gpu_sum_k4) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc3) - (__lb_w_1)))))]);
@@ -425,7 +435,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_
             __gpu_sum_res5 =   0.00000000000000000e+00f;
         }
         __gpu_sum_k5 = ((lo8 + ((long)3)) + (((long)__gpu_lane) * ((long)1)));
-        const long __lfortran_trips_10 = ((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) >= __gpu_sum_k5 ? (((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) - __gpu_sum_k5) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+        const long __lfortran_trips_10 = ((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) >= __gpu_sum_k5 ? (long)((unsigned long long)(((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)) - __gpu_sum_k5) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (long __lfortran_count_10 = 0; __lfortran_count_10 < __lfortran_trips_10; __lfortran_count_10++, __gpu_sum_k5 += (((long)1) * ((long)__gpu_lanes))) {
             __gpu_sum_res5 = (__gpu_sum_res5 + w[((long)(__gpu_sum_k5) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc3) - (__lb_w_1)))))]);
