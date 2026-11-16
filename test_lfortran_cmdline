@@ -217,6 +217,12 @@ EOF
         exit 1
     fi
     grep "cannot create a temporary directory in '$PWD/missing'" err.txt
+    # Nor does the empty object of a file without a main program, with the
+    # C and C++ backends
+    TMPDIR=$PWD/missing $FC --backend=c -c m.f90 -o m_c.o
+    [ -f m_c.o ]
+    TMPDIR=$PWD/missing $FC --backend=cpp -c m.f90 -o m_cpp.o
+    [ -f m_cpp.o ]
 fi
 
 cd $(mktemp -d)

@@ -1743,15 +1743,9 @@ int compile_to_object_file_cpp(const std::string &infile,
                 out << " ";
             }
         } else {
-            std::string outfile_empty = temp_dir.file(
-                std::filesystem::path(outfile).filename().string() + ".empty.c");
-            {
-                std::ofstream out;
-                out.open(outfile_empty);
-                out << " ";
-            }
+            // An empty C translation unit, from standard input
             std::string CC = get_c_compiler("cc");
-            std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
+            std::string cmd = CC + " -x c -c - -o '" + outfile + "' < /dev/null";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
@@ -1876,15 +1870,9 @@ int compile_to_object_file_c(const std::string &infile,
                 out << " ";
             }
         } else {
-            std::string outfile_empty = temp_dir.file(
-                std::filesystem::path(outfile).filename().string() + ".empty.c");
-            {
-                std::ofstream out;
-                out.open(outfile_empty);
-                out << " ";
-            }
+            // An empty C translation unit, from standard input
             std::string CC = get_c_compiler("cc");
-            std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
+            std::string cmd = CC + " -x c -c - -o '" + outfile + "' < /dev/null";
             int err = system(cmd.c_str());
             if (err) {
                 std::cout << "The command '" + cmd + "' failed." << std::endl;
