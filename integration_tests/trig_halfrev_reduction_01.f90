@@ -21,6 +21,16 @@ real(dp), parameter :: fh(12) = [sinpi(2251799813685248.5_dp), &
     cospi(-2251799813685248.5_dp), tanpi(-2251799813685248.5_dp), &
     sinpi(4503599627370495.5_dp), cospi(4503599627370495.5_dp), &
     tanpi(4503599627370495.5_dp)]
+! Just below a quarter turn: 2*|x| + 1/2 is not representable
+real(sp), parameter :: q4 = nearest(0.25_sp, -1.0_sp)
+real(dp), parameter :: q8 = nearest(0.25_dp, -1.0_dp)
+real(qp), parameter :: q16 = nearest(0.25_qp, -1.0_qp)
+real(sp), parameter :: fq4(6) = [sinpi(q4), cospi(q4), tanpi(q4), &
+    sinpi(-q4), cospi(-q4), tanpi(-q4)]
+real(dp), parameter :: fq8(6) = [sinpi(q8), cospi(q8), tanpi(q8), &
+    sinpi(-q8), cospi(-q8), tanpi(-q8)]
+real(qp), parameter :: fq16(6) = [sinpi(q16), cospi(q16), tanpi(q16), &
+    sinpi(-q16), cospi(-q16), tanpi(-q16)]
 real(sp) :: nzero4, pinf_4, ninf_4
 real(dp) :: nzero8, pinf_8, ninf_8
 real(qp) :: nzero16, pinf_16, ninf_16
@@ -110,6 +120,21 @@ if (.not. same8(fh(9), ninf_8)) error stop 49
 if (.not. same8(fh(10), -1.0_dp)) error stop 50
 if (.not. same8(fh(11), 0.0_dp)) error stop 51
 if (.not. same8(fh(12), ninf_8)) error stop 52
+
+! Just below a quarter turn, run time and constant expressions
+call quarter4(sinpi(id4(q4)), cospi(id4(q4)), tanpi(id4(q4)), 1.0_sp)
+call quarter4(sinpi(id4(-q4)), cospi(id4(-q4)), tanpi(id4(-q4)), -1.0_sp)
+call quarter4(fq4(1), fq4(2), fq4(3), 1.0_sp)
+call quarter4(fq4(4), fq4(5), fq4(6), -1.0_sp)
+call quarter8(sinpi(id8(q8)), cospi(id8(q8)), tanpi(id8(q8)), 1.0_dp)
+call quarter8(sinpi(id8(-q8)), cospi(id8(-q8)), tanpi(id8(-q8)), -1.0_dp)
+call quarter8(fq8(1), fq8(2), fq8(3), 1.0_dp)
+call quarter8(fq8(4), fq8(5), fq8(6), -1.0_dp)
+call quarter16(sinpi(id16(q16)), cospi(id16(q16)), tanpi(id16(q16)), 1.0_qp)
+call quarter16(sinpi(id16(-q16)), cospi(id16(-q16)), tanpi(id16(-q16)), &
+    -1.0_qp)
+call quarter16(fq16(1), fq16(2), fq16(3), 1.0_qp)
+call quarter16(fq16(4), fq16(5), fq16(6), -1.0_qp)
 print *, "ok"
 
 contains
@@ -140,6 +165,11 @@ contains
     real(dp) function id8(a)
         real(dp), intent(in) :: a
         id8 = a
+    end function
+
+    real(qp) function id16(a)
+        real(qp), intent(in) :: a
+        id16 = a
     end function
 
     subroutine check4(a, s, c, t, which)
@@ -182,6 +212,37 @@ contains
         if (iand(which, 4) /= 0) then
             if (.not. same16(tanpi(a), t)) error stop 12
         end if
+    end subroutine
+
+    ! sinpi, cospi and tanpi of sg*nearest(0.25, -1.0): sin(pi*x) < cos(pi*x)
+    ! and tan(pi*x) < 1 by about 2 ulp, so neither is rounded to the value
+    ! at a quarter turn (#3912).
+    subroutine quarter4(s, c, t, sg)
+        real(sp), intent(in) :: s, c, t, sg
+        call near4(s, sg*0.7071067690849304_sp)
+        call near4(c, 0.7071068286895752_sp)
+        call near4(t, sg*0.9999998807907104_sp)
+        if (.not. abs(s) <= c .or. .not. abs(t) < 1) error stop 13
+    end subroutine
+
+    subroutine quarter8(s, c, t, sg)
+        real(dp), intent(in) :: s, c, t, sg
+        call near8(s, sg*0.7071067811865475_dp)
+        call near8(c, 0.7071067811865476_dp)
+        call near8(t, sg*0.9999999999999998_dp)
+        if (.not. abs(s) <= c .or. .not. abs(t) < 1) error stop 14
+    end subroutine
+
+    ! binary128 is correctly rounded here: sinpi is sqrt(1/2), cospi is
+    ! one ulp above it, and tanpi is two ulp below 1.
+    subroutine quarter16(s, c, t, sg)
+        real(qp), intent(in) :: s, c, t, sg
+        real(qp) :: h
+        h = sqrt(0.5_qp)
+        if (.not. same16(s, sg*h)) error stop 15
+        if (.not. same16(c, nearest(h, 1.0_qp))) error stop 16
+        if (.not. same16(t, sg*nearest(nearest(1.0_qp, -1.0_qp), -1.0_qp))) &
+            error stop 17
     end subroutine
 
     ! Within one ulp of the correctly rounded reference value

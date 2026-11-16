@@ -2266,8 +2266,14 @@ static int f128_rem_half(lf_float128 a, lf_float128 *r) {
     if (p.is_zero || p.exp >= 113) { *r = f128_make_zero(0); return 0; }
     /* ax mod 2, exact */
     ax = f_sub(ax, f128_scale(lf_f128_floor(f128_scale(ax, -1)), 1));
-    int64_t n = __fixtfdi_lf_impl(lf_f128_floor(f_add(f128_scale(ax, 1),
-                                                      f128_half())));
+    /* 2*ax rounded to nearest, exactly: 2*ax + 1/2 would round, e.g. to a
+     * tie for ax just below 1/4. */
+    lf_float128 t = f128_scale(ax, 1);
+    lf_float128 q = lf_f128_floor(t);
+    if (f128_cmp_internal(f_sub(t, q), f128_half()) >= 0) {
+        q = f_add(q, f128_one());
+    }
+    int64_t n = __fixtfdi_lf_impl(q);
     *r = f_sub(ax, f128_scale(f_int(n), -1));   /* exact */
     return (int)(n & 3);
 }

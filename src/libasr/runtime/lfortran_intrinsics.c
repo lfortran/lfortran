@@ -7795,11 +7795,12 @@ static int trig_rem_half(double ax, double *r)
         *r = 0.0;
         return 0;
     }
-    // 2*ax is exact. Below 2^52, 2*ax + 0.5 is exact too; from 2^52 up,
-    // 2*ax is an integer already, and adding 0.5 would round (a tie for
-    // every odd 2*ax, giving r = -1/2). Neither depends on the rounding mode.
+    // t = 2*ax, its fraction t - floor(t) and q + 1 are exact, so q is t
+    // rounded to nearest and r is exact, in any rounding mode (t + 0.5 is
+    // not: it rounds, e.g. to a tie for ax just below 1/4).
     double t = 2.0 * ax;
-    double q = t < 4503599627370496.0 ? floor(t + 0.5) : t;
+    double q = floor(t);
+    if (t - q >= 0.5) q += 1.0;
     *r = ax - 0.5 * q;
     return (int)((int64_t)q & 3);
 }
