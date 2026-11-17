@@ -5935,7 +5935,11 @@ namespace Modulo {
                     append_error(diag, "Second argument of modulo cannot be 0", loc);
                     return nullptr;
                 }
-                long double r = a - b * floorl(a / b);
+                // fmodl is exact; `a - b*floorl(a/b)` rounds the product
+                long double r = fmodl(a, b);
+                if (r != 0 && std::signbit(r) != std::signbit(b)) {
+                    r += b;
+                }
                 return ASRUtils::make_RealConstant_r10(al, loc, r, t1);
             }
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;

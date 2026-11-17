@@ -8057,6 +8057,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real10_transfer_fold_01 LABELS gfortran llvm)
     RUN(NAME real10_aint_kind_scalar_fold_01 LABELS gfortran llvm)
     RUN(NAME real10_int_nint_floor_ceiling_scalar_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_modulo_scalar_fold_01 LABELS gfortran llvm)
     # The value check waits on #17031.
     RUN(NAME separate_compilation_73 LABELS gfortran llvm
         EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)
