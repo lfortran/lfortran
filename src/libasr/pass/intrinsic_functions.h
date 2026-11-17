@@ -2119,6 +2119,37 @@ namespace Range {
 namespace OutOfRange
 {
 
+    // out_of_range(x, mold[, round]) for a real(10) or real(16) constant `x`
+    // (of kind `kind_x`) and a mold of kind `kind_mold`
+    static bool extended_real_out_of_range(Vec<ASR::expr_t*>& args,
+            int kind_x, int kind_mold) {
+        ASR::RealConstant_t* x = ASR::down_cast<ASR::RealConstant_t>(args[0]);
+        lf_float128 v = kind_x == 10
+            ? lf_f128_from_long_double(ASRUtils::real_constant_get_r10(x))
+            : ASRUtils::real_constant_get_r16(x);
+        if (is_integer(*expr_type(args[1]))) {
+            if (!ASRUtils::real16_is_finite(v)) {
+                return true;
+            }
+            bool round = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
+            lf_float128 t = round ? ASRUtils::real16_round_half_away(v)
+                : lf_f128_signbit(v) ? lf_f128_ceiling(v) : lf_f128_floor(v);
+            int64_t i;
+            return !ASRUtils::real16_integral_to_int64(t, i)
+                || !ASRUtils::int64_fits_integer_kind(i, kind_mold);
+        }
+        // A real mold: a finite `x` whose magnitude exceeds huge(mold)
+        if (!ASRUtils::real16_is_finite(v) || kind_mold == 16
+                || (kind_mold == 10 && kind_x == 10)) {
+            return false;
+        }
+        lf_float128 huge = kind_mold == 4
+            ? lf_f128_from_double(std::numeric_limits<float>::max())
+            : kind_mold == 8 ? lf_f128_from_double(std::numeric_limits<double>::max())
+            : lf_f128_from_long_double(std::numeric_limits<long double>::max());
+        return lf_f128_cmp(lf_f128_abs(v), huge) > 0;
+    }
+
     static ASR::expr_t* eval_OutOfRange(Allocator& al, const Location& loc,
         ASR::ttype_t* return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/){
         ASRUtils::ASRBuilder b(al, loc);
@@ -2130,6 +2161,13 @@ namespace OutOfRange
         ASR::ttype_t* arg_type_1 = expr_type(args[0]);
         ASR::ttype_t* arg_type_2 = expr_type(args[1]);
         int32_t kind_2 = extract_kind_from_ttype_t(arg_type_2);
+        int32_t kind_1 = extract_kind_from_ttype_t(arg_type_1);
+        if (is_real(*arg_type_1) && (kind_1 == 10 || kind_1 == 16)) {
+            // Decided exactly in binary128, which holds every real(10) value,
+            // not through double
+            return b.bool_t(extended_real_out_of_range(args, kind_1, kind_2),
+                return_type);
+        }
         switch (kind_2) {
             case 1:
                 max_val_int = 127;
