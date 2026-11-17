@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_const_trips_01-1d18f78",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_const_trips_01.f90",
+    "infile_hash": "fef3336713bfcc10d5abdee75bf2083321bf7369ac7261644123169b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_const_trips_01-1d18f78.stdout",
+    "stdout_hash": "1ea3fa520e825d88b8899e8ec98a43b2cdc148aeb264000ea9fdbc62",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

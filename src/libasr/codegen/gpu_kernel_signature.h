@@ -44,9 +44,17 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
     kernel_streams_strided_rows = streams_rows && loop_dimensions <= 1;
     kernel_lane_vectors = kernel.m_gpu->m_lanes != nullptr
         && holds_wide_load(kernel.m_body, kernel.n_body);
-    src << dialect.kernel_qualifier(
-            gpu_device_capabilities(co.po).threads_per_block,
-            streams_rows, kernel_lane_vectors)
+    // A kernel that reads vectors of 16 bytes may run an iteration on each
+    // block of caps.lanes_wide threads (gpu_vector_lanes.cpp), and its
+    // register bound is for blocks of that size.
+    GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
+    int64_t kernel_threads = kernel_lane_vectors && kernel_caps.lanes_wide > 0
+            && kernel.m_gpu->m_lanes_max == kernel_caps.lanes_wide
+        ? kernel_caps.lanes_wide : kernel_caps.threads_per_block;
+    src << dialect.kernel_qualifier(kernel_threads,
+            streams_rows, kernel_lane_vectors
+                ? std::max<int64_t>(1, gpu_wide_vectors_per_iteration(kernel))
+                : 0)
         << name << "(\n";
     kernel_params.clear();
     int slot = 0;
@@ -122,7 +130,10 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
     if (layout.m_lanes) {
         std::stringstream prologue;
         dialect.emit_lane_prologue(prologue, get_indent(),
-            ASRUtils::symbol_name(layout.m_lanes));
+            ASRUtils::symbol_name(layout.m_lanes),
+            kernel_caps.lanes_wide > 0
+                && kernel.m_gpu->m_lanes_max == kernel_caps.lanes_wide
+                ? kernel_caps.lanes_wide : 0);
         kernel_declarations.push_back({{}, prologue.str()});
     }
     if (layout.m_packed) {

@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -203,7 +213,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_18gpu_
                     s = 0;
                 }
                 __gpu_residue_group = (1 + (((int)__gpu_lane) * 4));
-                const int __lfortran_trips_0 = (k - 3) >= __gpu_residue_group ? ((k - 3) - __gpu_residue_group) / (4 * ((int)__gpu_lanes)) + 1 : 0;
+                const int __lfortran_trips_0 = (k - 3) >= __gpu_residue_group ? (int)((unsigned)((k - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
                 #pragma unroll 16
                 for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
                     __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
@@ -261,7 +271,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_18gpu_
         long position;
         position = (offset + ((long)(r__dc2 - 1)));
         d = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_1 = k >= d ? (k - d) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+        const int __lfortran_trips_1 = k >= d ? (int)((unsigned)(k - d) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 16
         for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, d += (1 * ((int)__gpu_lanes))) {
             o[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))] = ((((float)2) * q[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))]) + ((float)position));

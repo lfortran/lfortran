@@ -109,21 +109,36 @@ struct CudaDialect {
     // bound). The CPU emulation's host compiler knows no such attribute, and
     // HIP, tuned on AMD GPUs without it, is left as it was.
     //
-    // A kernel whose lanes read vectors of 16 bytes (`lane_vectors`) is held
-    // to the registers that let three quarters of the threads of a
-    // multiprocessor (1536 of 2048) run, six blocks of 256. It needs the
-    // loads of its iterations in flight, which a bound that lets ptxas
-    // cut the registers to run all 2048 does not leave it, and the
-    // many threads that hide them, which one block per multiprocessor
-    // would not.
+    // A kernel whose lanes read vectors of 16 bytes (`lane_vectors`, the
+    // most vectors an iteration of one of its loops reads) is held to the
+    // registers that let as many of its blocks share a multiprocessor as
+    // keep those loads in flight together: each vector lands in 4
+    // registers and is decoded into about as many more, and the addresses,
+    // counters and accumulators take about 8, so a thread needs
+    // 8 + 8*vectors of the 65536 registers of a multiprocessor. That is at
+    // most the 1536 of its 2048 threads, six blocks of 256: a bound that
+    // lets ptxas cut the registers to run all 2048 leaves the loads too few
+    // registers, and one block per multiprocessor too few threads to hide
+    // them. On an H200, a q8 matrix-vector product of 34816 by 5120 that
+    // takes 1, 2 or 4 rows per iteration (5, 6 or 8 vectors) runs fastest
+    // with 4 to 6, 4 and 3 blocks (5, 4 and 3 here), the 4-row one in
+    // 61 us with 3 blocks and 92 us with 6, where ptxas spills registers to
+    // fit 40; one that reads 4 vectors (two chunks of a row per iteration)
+    // keeps six.
     std::string kernel_qualifier(int64_t threads_per_block,
-            bool few_blocks, bool lane_vectors = false) const {
+            bool few_blocks, int64_t lane_vectors = 0) const {
         if (emulate_cpu || hip) return "extern \"C\" __global__ void ";
-        std::string min_blocks = few_blocks ? ", 1"
-            : lane_vectors && threads_per_block > 0
-                && threads_per_block <= 1536
-                ? ", " + std::to_string(1536 / threads_per_block)
-                : std::string();
+        std::string min_blocks;
+        if (few_blocks) {
+            min_blocks = ", 1";
+        } else if (lane_vectors > 0 && threads_per_block > 0
+                && threads_per_block <= 1536) {
+            int64_t registers = 8 + 8*lane_vectors;
+            int64_t blocks = std::max<int64_t>(1, std::min<int64_t>(
+                1536 / threads_per_block,
+                65536 / (threads_per_block*registers)));
+            min_blocks = ", " + std::to_string(blocks);
+        }
         return "extern \"C\" __global__ void __launch_bounds__("
             + std::to_string(threads_per_block) + min_blocks + ") ";
     }
@@ -157,7 +172,13 @@ struct CudaDialect {
     void emit_lane_thread_params(std::stringstream & /*src*/,
             bool /*has_prev*/) const {}
     void emit_lane_prologue(std::stringstream &src, const std::string &indent,
-            const std::string &lanes) const {
+            const std::string &lanes, int64_t fixed_lanes = 0) const {
+        // A kernel that every launch gives the same lanes (fixed_lanes,
+        // gpu_vector_lanes.cpp) names them as a constant: its loops step
+        // by a constant, which nvcc turns into constant address increments.
+        if (fixed_lanes > 0) {
+            src << indent << lanes << " = " << fixed_lanes << ";\n";
+        }
         src << indent << "int __gpu_lanes_n = " << lanes << ";\n";
         src << indent << "unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? "
             "0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << "
@@ -197,6 +218,12 @@ struct CudaDialect {
             : "__lfortran_lane_reduce<") + std::to_string(op) + ">(" + value
             + ", " + (has_lanes ? "__gpu_lanes_n, __gpu_lane_mask"
                 : "32, 0xffffffffu") + ")";
+    }
+    // Whether consecutive combinations over the lanes of a whole block
+    // share one barrier (emit_stmts): not in the CPU emulation or on HIP,
+    // whose blocks have no lanes of more than a warp.
+    bool batched_block_reduce() const {
+        return !emulate_cpu && !hip;
     }
     // `targets` are assigned the elements that start at `source` (`a[i]`),
     // read with __lfortran_wide_load in the prologue of the kernel source.
@@ -286,7 +313,17 @@ struct CudaDialect {
             "// largest. With one lane, the lane's own value.\n"
             "template <int op, typename T>\n"
             "__device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {\n"
-            "    if (lanes == 32 || lanes == 16) {\n"
+            "    if (lanes == 32) {\n"
+            "        // A whole warp, named as a constant: with the mask in a\n"
+            "        // register nvcc tests every shuffle for diverged lanes.\n"
+            "        #pragma unroll\n"
+            "        for (int offset = 16; offset > 0; offset >>= 1) {\n"
+            "            v = __lfortran_lane_combine<op>(v,\n"
+            "                __shfl_xor_sync(0xffffffffu, v, offset, 32));\n"
+            "        }\n"
+            "        return v;\n"
+            "    }\n"
+            "    if (lanes == 16) {\n"
             "        // The common sizes, with the shuffles unrolled.\n"
             "        #pragma unroll\n"
             "        for (int offset = 16; offset > 0; offset >>= 1) {\n"

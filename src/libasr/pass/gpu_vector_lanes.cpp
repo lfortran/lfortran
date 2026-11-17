@@ -685,6 +685,12 @@ struct KernelInfo {
     // loop variable only in a later subscript) is shared out as well
     // (give_lanes: only for a launch of few iterations).
     bool scattered_reductions = false;
+    // A kernel that reads vectors of 16 bytes gets lanes for a launch of
+    // any size (GpuKernelLaunch below), so its shared-out loops are not
+    // kept as they were for a launch with one lane: the shared-out form
+    // runs one lane too, and the second copy only made nvcc schedule the
+    // first worse (a quantized matrix-vector product took 5% longer).
+    bool shared_only = false;
     int lanes_count = 1;
 
     bool local(ASR::symbol_t *s) const {
@@ -3675,6 +3681,10 @@ private:
         for (auto &f : finals) {
             shared.push_back(al, b.Assignment(f.first, f.second));
         }
+        if (k.shared_only) {
+            for (size_t i = 0; i < shared.n; i++) out.push_back(al, shared[i]);
+            return;
+        }
         Vec<ASR::stmt_t*> alone;
         alone.reserve(al, 1);
         alone.push_back(al, as_it_was);
@@ -3936,6 +3946,7 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     k.independent_loops = caps.lane_independent_loops;
     k.inner_reductions_first = caps.lane_inner_reductions_first;
     k.lanes_count = caps.lanes_per_iteration;
+    k.shared_only = gpu_reads_wide(kernel, caps);
     // Where lanes share out only reductions (NVIDIA GPUs), a kernel with
     // workspaces or that takes memory from the device heap keeps one lane
     // per iteration: the lanes would share what the iteration builds there
@@ -4045,6 +4056,14 @@ public:
             if (kernel.m_gpu->m_lanes != nullptr
                     && gpu_reads_wide(kernel, caps)) {
                 wide_kernels.insert(&kernel);
+                if (!scattered && caps.lanes_wide > caps.lanes_per_iteration
+                        && kernel_lanes == caps.lanes_per_iteration
+                        && gpu_wide_rows_per_iteration(kernel)
+                            >= wide_block_rows
+                        && kernel.m_gpu->m_lanes_max >= caps.lanes_wide
+                        && kernel.m_gpu->m_lanes_max % caps.lanes_wide == 0) {
+                    kernel.m_gpu->m_lanes_max = caps.lanes_wide;
+                }
             }
         }
         if (kernel.m_gpu->m_lanes == nullptr
@@ -4087,6 +4106,10 @@ public:
         // A kernel whose lanes were cut to the length of a loop they share
         // keeps that many.
         int kernel_lanes = kernel_lane_count[&kernel];
+        // A kernel that reads vectors of 16 bytes runs an iteration on each
+        // block of caps.lanes_wide threads (see `decided` above).
+        bool wide_block = wide_kernels.count(&kernel) && caps.lanes_wide > 0
+            && kernel.m_gpu->m_lanes_max == caps.lanes_wide;
         if (column_kernels.count(&kernel) && kernel_lanes == lanes
                 && caps.lanes_column_block > lanes) {
             kernel_lanes = caps.lanes_column_block;
@@ -4098,7 +4121,8 @@ public:
         // kernel has no use for more lanes than it gets.
         if (kernel.m_gpu->m_lanes_max > caps.lanes_per_iteration) {
             pass_result.push_back(al, b.If(b.LtE(count,
-                b.i_t(block_iterations_max, count_type)),
+                b.i_t(wide_block ? iterations_max : block_iterations_max,
+                    count_type)),
                 {b.Assignment(n, b.i32(kernel.m_gpu->m_lanes_max))}, {}));
         }
         // When every loop the lanes share out is shorter than a few
@@ -4137,6 +4161,11 @@ public:
                     {b.Assignment(n, b.i32(lanes))}, {}));
             }
         }
+        // The kernel names those lanes as a constant (gpu_kernel_signature.h),
+        // whatever the size of the launch.
+        if (wide_block) {
+            pass_result.push_back(al, b.Assignment(n, b.i32(caps.lanes_wide)));
+        }
         // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
         // from the thread index along the tile's width and height, which
         // lanes narrow to the iterations' (the lanes of one iteration share
@@ -4164,6 +4193,34 @@ public:
         arg.m_value = n;
         args.push_back(al, arg);
         auto &launch = const_cast<ASR::GpuKernelLaunch_t&>(x);
+        // An iteration of a kernel that reads vectors of 16 bytes streams
+        // whole rows, and the launch has few of them: blocks of
+        // `threads_per_block` would share them out unevenly between the
+        // multiprocessors (the 320 blocks of 8 warps of a matrix-vector
+        // product of 5120 rows, two rows per iteration, are three on some
+        // of the 132 of an H200 and two on the others, which then wait).
+        // Its launches start blocks of caps.lanes_wide threads, one
+        // iteration each, or of wide_block_iterations warps when the lanes
+        // are a warp.
+        int64_t block_threads = 0;
+        if (wide_kernels.count(&kernel)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    x.m_block_size), block_threads)) {
+            ASR::ttype_t *bt = ASRUtils::expr_type(x.m_block_size);
+            if (wide_block && block_threads >= caps.lanes_wide) {
+                launch.m_block_size = b.i_t(caps.lanes_wide, bt);
+            } else if (block_threads > wide_block_iterations*lanes
+                    && block_threads % (wide_block_iterations*lanes) == 0) {
+                ASR::expr_t *block = b.Variable(current_scope,
+                    current_scope->get_unique_name("__gpu_block_threads"),
+                    ASRUtils::duplicate_type(al, bt), ASR::intentType::Local);
+                pass_result.push_back(al, b.Assignment(block, x.m_block_size));
+                pass_result.push_back(al, b.If(b.Eq(n, b.i32(lanes)),
+                    {b.Assignment(block,
+                        b.i_t(wide_block_iterations*lanes, bt))}, {}));
+                launch.m_block_size = block;
+            }
+        }
         launch.m_args = args.p;
         launch.n_args = args.n;
         pass_result.push_back(al, &launch.base);
@@ -4189,6 +4246,18 @@ private:
     // The most iterations of a launch of such a kernel that get lanes:
     // 32 lanes of them stay within the 32-bit thread index.
     static constexpr int64_t wide_iterations_max = int64_t(1) << 24;
+    // The iterations, a warp each, of a block of a launch of such a kernel.
+    static constexpr int64_t wide_block_iterations = 2;
+    // The rows of a matrix an iteration of a kernel that reads vectors must
+    // read in one loop to get the lanes of caps.lanes_wide threads, as a
+    // hand-written product gives a block to several rows at once. With
+    // fewer rows a warp reads them faster: on an H200, a q8 product of
+    // 5120 rows and 17408 columns, two rows per iteration, took 38.5 us
+    // with a warp and 46.8 us with 64 lanes, and one row per iteration was
+    // 12% slower with 64 lanes; four rows of 34816 by 5120 took 51.6 us
+    // with 64 lanes (and their sums combined together, asr_to_gpu_c.h)
+    // and 54.7 us with a warp.
+    static constexpr int64_t wide_block_rows = 4;
     // A loop of fewer iterations than this many per thread of a block does
     // not get a block of lanes.
     static constexpr int64_t short_loop_threads = 8;

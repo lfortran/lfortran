@@ -27,15 +27,18 @@ as exp2(k*log2(x)) under fast math, more slowly and not always exactly. So
 such a power in device code becomes the same products here, and the device
 computes what the host does: `x*x` is the correctly rounded square.
 
-`x` is evaluated once. A variable or a constant is written once per
-factor. Anything else, in an operand that is always evaluated of an
-assignment, a test of an IF or a SELECT, the bounds of a loop or an argument
-of a subroutine call, is assigned to a variable of its own right before the
-statement, and the products read that. Elsewhere, such as in the test of a
-DO WHILE or in an operand that need not be evaluated (the second operand of
-`.and.`, a branch of `merge`), an element of an array whose subscripts call
-no function is written once per factor, and a power of anything else is
-kept as it is.
+`x` is evaluated once. A variable, a constant or an element of an array
+whose subscripts call no function (`designator`) is written once per factor:
+reading it again in the same expression reads the same value, which the
+device compiler loads once, and the statement keeps reading the element
+itself, as gpu_wide_loads needs to read the elements a statement reads side
+by side as one vector (`ssp(8*c-7)**2 + ... + ssp(8*c)**2`). Anything else,
+in an operand that is always evaluated of an assignment, a test of an IF or
+a SELECT, the bounds of a loop or an argument of a subroutine call, is
+assigned to a variable of its own right before the statement, and the
+products read that. Elsewhere, such as in the test of a DO WHILE or in an
+operand that need not be evaluated (the second operand of `.and.`, a branch
+of `merge`), a power of anything else is kept as it is.
 
 The pass runs once the device code is complete -- after the intrinsic
 functions and the array operations are lowered, which write such powers
@@ -148,9 +151,7 @@ public:
         Location loc = x->base.base.loc;
         ASR::expr_t *base = x->m_left;
         bool hoist = pre != nullptr && conditional == 0;
-        if (k >= 2 && !ASR::is_a<ASR::Var_t>(*base)
-                && !ASR::is_a<ASR::RealConstant_t>(*base)
-                && (hoist || !designator(base))) {
+        if (k >= 2 && !designator(base)) {
             if (!hoist) return;
             ASRUtils::ASRBuilder b(al, loc);
             std::string name = scope->get_unique_name("__gpu_power_base",

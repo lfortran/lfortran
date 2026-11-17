@@ -1308,7 +1308,10 @@ time instead of 2.73 ms.
 A real power with a constant integer exponent from 0 to 8 in device code,
 such as `x**2`, is written as the products the host computes it with
 (`gpu_integer_powers`): `x*x`, `x*(x*x)`, `(x*x)*(x*x)` and so on, with `x`
-evaluated once, into a variable of its own unless it is one already. The
+evaluated once, into a variable of its own unless it is one already, a
+constant, or an element of an array, which is read in each factor (so that
+the elements a statement reads side by side are still read as one vector,
+see Lanes). The
 device's `pow` takes a logarithm and an exponential under fast math, which
 is slower and not always exact (a product of powers of two came out
 inexact on an Apple M1), where `x*x` is the correctly rounded square the
@@ -1340,6 +1343,14 @@ is added to `c`. The four left shifts must be 24, 16, 8 and 0 (a shift by
 position are left as they are. HIP, Metal and the CPU emulation (`cuda_cpu`)
 do not have the instruction and compile the arithmetic.
 
+The same pass writes a byte of an `integer(4)` placed in the low byte of a
+constant whose low byte is zero, `ior(iand(shiftr(w, 8*k), 255), c)` (or
+`iand(w, 255)`, `shiftr(w, 24)`, `ibits(w, 8*k, 8)` for the byte, with the
+operands of `ior` in either order), as one `__byte_perm(w, c, 0x7650 + k)`,
+which takes the low byte from w and the others from c: one instruction for
+the shift and the mask. A q8 dequantization reads a byte as a real this way,
+`transfer(ior(byte, 1258291200), 0.0) - 8388608.0`.
+
 ### Loads in flight
 
 A GPU hides the latency of memory with many threads, each waiting for a
@@ -1351,7 +1362,14 @@ such loops four times in the `gpu_sequential_unroll` pass instead:
 
 * A small innermost sequential loop (at most 8 statements, no loop inside)
   is unrolled 16 times (`#pragma unroll 16`), as nvfortran does, so a thread
-  issues the loads of 16 iterations before it needs the first.
+  issues the loads of 16 iterations before it needs the first. In a kernel
+  with lanes, a loop of a length known at compile time is unrolled by the
+  iterations each of 32 lanes takes when they are fewer: a loop of 128 by
+  4. Unrolled by 16, nvcc ran its few iterations in the loop that finishes
+  the unrolled one, each waiting for its load (the sums over the 128 x 128
+  state of a gated delta rule took 3 of their 4 us). The trips of such loops
+  are counted with an unsigned division, and the lanes of a whole warp
+  combine their values with shuffles under a constant mask.
 * A kernel whose small innermost loop reads an array through its variable
   times a stride that is not a constant (`a(i, j)` over `j`: each thread
   streams down a row while the threads read a column together) is declared
@@ -1408,7 +1426,11 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   sum shared out rather than its own iterations, which may be fewer than
   the lanes (a long sum split in a few parts). A launch
   with one lane per iteration runs the loop as it was, in the other branch
-  of a test of the lanes. On an H100 the forces of an n-body loop of 32768
+  of a test of the lanes, except in a kernel that reads vectors of 16 bytes
+  (see below), whose launches get lanes whatever their size: it keeps the
+  shared-out loop alone, which also runs on one lane (the second copy made
+  nvcc schedule the first worse, and a quantized matrix-vector product took
+  5% longer). On an H100 the forces of an n-body loop of 32768
   bodies run 1.5 times faster this way and the column sums of a 12288 by
   12288 matrix 2.6 times faster.
 * A statement with an effect the lanes must not repeat -- one that writes
@@ -1423,7 +1445,16 @@ runs a loop, such as `sum_squares(x(:, m))` returning `sum(x**2)`, is
 inlined first (`gpu_inline_loop_calls`, using the inliner of the loop
 transformations, `GpuInliner`): its loop is then one of the kernel's, and
 the lanes share it and combine its sum. An RMS norm of a 5120-element row
-computes its sum of squares this way.
+computes its sum of squares this way. A call of a small pure function that
+is one expression of its arguments, an array among them -- the dot product
+of one chunk of a row of a quantized matrix with the vector,
+`a1 = a1 + qdot(w, s, x, n, c)` -- is replaced by that expression, written
+with the elements of the actual arguments: the loop over the chunks is then
+a reduction the lanes share, and its statement reads the words and the
+elements of the vector side by side, as vectors (`gpu_wide_loads`). As a
+call of its own, its reads are behind pointers that the device compiler
+cannot tell apart, and a 4-row q8 product of 34816 by 5120 took 324 us on an
+H200 instead of 92 us.
 
 A loop shared out between the lanes steps by the lanes, so each lane runs a
 loop of its own with one load after another. On Metal such a loop is
@@ -1452,9 +1483,9 @@ every lane, gets lanes up to `lanes_column_iterations_max` iterations
 (`huge(0)/32` on Metal): one lane per iteration would read 32 columns at
 once there, a few elements at a time, while the lanes read one column
 together. Every row of a quantized matrix-vector product, and every row of a
-gated-delta state update, is such an iteration. On an NVIDIA GPU only reduction loops are shared out
-(`lane_independent_loops` is off), and a kernel with workspaces or that
-takes memory from the device heap keeps one lane per iteration. The kernel takes
+gated-delta state update, is such an iteration. On an NVIDIA GPU a kernel
+with workspaces or that takes memory from the device heap keeps one lane
+per iteration. The kernel takes
 the lanes as its last parameter (`gpu_kernel_layout.lanes`); its thread
 index then numbers the iterations, the host starts `lanes` threads per
 iteration, and a workspace slice belongs to an iteration, shared by its
@@ -1468,14 +1499,68 @@ otherwise moves by multiples of that number, reads them from new variables,
 which a `GpuWideLoad` before the statement assigns: from the 16 bytes at the
 first element when they start at a multiple of 16, one by one when they do
 not (the test depends on the address of the array and on its lower bound and
-extents only, and the device code tests it once per kernel). A warp then reads
+extents only, and the device code tests it once per kernel). A subscript
+that adds the lower bound of the array, as the element of an array dummy
+of an inlined function does (`a(i + (lbound(a, 1) - 1))`), counts from the
+start of the array whatever its lower bound is. A warp then reads
 512 contiguous bytes per instruction, with a quarter or an eighth of the
 instructions of the loads of single elements: the codes and activations of
 a lane of a quantized matrix-vector product read at 1.2 to 1.8 times the
 speed. Such a kernel needs no more lanes than a warp to keep the memory busy,
 so it does not get the lanes of a block (`gpu_reads_wide` in
-`gpu_wide_loads.cpp`), and its loops are unrolled eight times, where a loop
-of single elements is unrolled sixteen times.
+`gpu_wide_loads.cpp`), and its loops are unrolled twice (not at all where
+its lanes share them: `unroll_wide_pragma` in `asr_to_cuda.cpp`), where a
+loop of single elements is unrolled sixteen times.
+
+The lanes of such a kernel need the vectors an iteration of their loop reads
+in flight together, each in 4 registers and about as many for what is
+decoded from it. So the kernel is declared
+`__launch_bounds__(threads_per_block, blocks)`, with as many blocks per
+multiprocessor as leave each thread `8 + 8*vectors` of its 65536 registers,
+at most six blocks of 256 (`kernel_qualifier` in `asr_to_cuda.cpp`; the
+vectors are counted once per element they start at, by
+`gpu_wide_vectors_per_iteration`). A q8 matrix-vector product of 34816 by
+5120 on an H200 that takes four rows per iteration reads 8 vectors (four
+rows of words and the vector's four, which the rows share) and gets three
+blocks: 61 us, where six blocks spilled its registers and took 92 us. One
+that takes a row per iteration reads 5 and gets five blocks, and two rows
+(6 vectors) get four.
+
+An iteration of such a kernel is a warp that streams a whole row, and its
+launches have few iterations, so a launch with a warp per iteration starts
+blocks of two warps rather than of `threads_per_block` threads
+(`wide_block_iterations` in `gpu_vector_lanes.cpp`): the 320 blocks of 8
+warps of a product of 5120 rows, two per iteration, fell three on some of
+the 132 multiprocessors of an H200 and two on the others, which then waited
+for them (43 us; 38 us with blocks of two warps).
+
+The vectors a statement of a loop reads are read at the start of the loop's
+body (`hoist` in `gpu_wide_loads.cpp`), ahead of the arithmetic of the
+statements before it, together with the other elements its statements read
+for certain (the scale of a row of a quantized product), into variables of
+their own: nvcc keeps a load where it is under a tight register bound, and
+the last rows of a 4-row product were read halfway through the iteration.
+A load moves only when nothing in the body assigns its array or, before it,
+a variable its subscripts read, and nothing leaves the body early (an
+`exit`, a `cycle`, a stop).
+
+A kernel whose loop reads four or more rows of one array side by side
+(`gpu_wide_rows_per_iteration`) gives each iteration the 64 lanes of a block
+of its own instead (`lanes_wide`), as a hand-written product gives a block
+to several rows: twice the lanes keep twice the loads of each row in flight
+with no more registers. Every launch of it has those lanes, so the kernel
+names them as a constant, and its launch bound is for blocks of 64 threads.
+On an H200 a q8 product of 34816 by 5120, four rows per iteration, took
+54.7 us with a warp per iteration and takes 51.6 us with 64 lanes (with the
+combinations of their sums batched, below). With two rows, a warp is faster
+(5120 by 17408: 38.5 us, against 46.8 us with 64 lanes).
+
+Where an iteration has the lanes of a whole block, consecutive statements
+that each combine what the lanes hold (the sums of the rows of such a
+product) meet in shared memory together, behind one barrier rather than one
+each (`emit_stmts` in `asr_to_gpu_c.h`): a block of 64 threads that sums 4
+rows of 5120 columns spent a third of its time waiting at the barriers of 5
+combinations.
 
 ### Deliberate relaxations
 

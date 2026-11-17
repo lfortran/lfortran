@@ -102,6 +102,12 @@ struct GpuDeviceCapabilities {
     // meet in shared memory behind a block barrier.
     int lanes_block = 1;
     int64_t lanes_block_iterations_max = 1024;
+    // A kernel that reads vectors of 16 bytes (gpu_wide_loads.cpp) gives
+    // each iteration a block of this many threads, all its lanes, as a
+    // hand-written matrix-vector product gives the rows of a block: twice
+    // the lanes of a warp keep twice as many loads in flight for each row,
+    // with no more registers. Zero keeps lanes_per_iteration.
+    int lanes_wide = 0;
     // A kernel whose lanes share out a sum that reads across the columns of
     // an array, each lane its own column, while one lane per iteration
     // would read along them with consecutive threads (gpu_vector_lanes.cpp,

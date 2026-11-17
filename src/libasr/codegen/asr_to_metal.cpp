@@ -54,7 +54,7 @@ struct MetalDialect {
     }
 
     std::string kernel_qualifier(int64_t /*threads_per_block*/,
-            bool /*few_blocks*/, bool = false) const {
+            bool /*few_blocks*/, int64_t = 0) const {
         return "kernel void ";
     }
 
@@ -91,11 +91,17 @@ struct MetalDialect {
     // capabilities give), and the threads of a threadgroup fill its
     // SIMD-groups in order.
     void emit_lane_prologue(std::stringstream &src, const std::string &indent,
-            const std::string &lanes) const {
+            const std::string &lanes, int64_t /*fixed_lanes*/ = 0) const {
         src << indent << "uint __thread_id = __gpu_grid_thread / (uint)"
             << lanes << ";\n";
         src << indent << "int __gpu_lane = (int)(__gpu_grid_thread % (uint)"
             << lanes << ");\n";
+    }
+
+    // Consecutive combinations over the lanes of a threadgroup each take
+    // their own barrier (asr_to_gpu_c.h, emit_stmts).
+    bool batched_block_reduce() const {
+        return false;
     }
 
     std::string lane_index() const { return "__gpu_lane"; }

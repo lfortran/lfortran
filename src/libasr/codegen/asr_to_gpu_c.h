@@ -8,6 +8,7 @@
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_designator.h>
+#include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/codegen/gpu_symbol_map.h>
 #include <libasr/codegen/c_utils.h>
 #include <libasr/codegen/c_loop_control.h>
@@ -4259,6 +4260,8 @@ public:
     bool kernel_streams_strided_rows = false;
     // Whether the kernel has lanes that read vectors of 16 bytes.
     bool kernel_lane_vectors = false;
+    // Numbers the shared arrays of batched lane combinations (emit_stmts).
+    int batched_reductions = 0;
 
     // Whether the kernel being written runs each iteration on lanes.
     bool kernel_has_lanes() const {
@@ -4525,11 +4528,34 @@ public:
             src << get_indent() << v << " = ";
             visit_expr(head.m_start);
             src << ";\n";
+            // The span is not negative there, and an unsigned division is
+            // shorter than a signed one.
+            std::string unsigned_name = ASRUtils::extract_kind_from_ttype_t(
+                type) == 8 ? "unsigned long long" : "unsigned";
             src << get_indent() << "const " << type_name << " " << trips
-                << " = " << end << " >= " << v << " ? (" << end << " - " << v
-                << ") / " << inc << " + 1 : 0;\n";
-            src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
-                : dialect.unroll_pragma(deep)) << "\n";
+                << " = " << end << " >= " << v << " ? (" << type_name << ")(("
+                << unsigned_name << ")(" << end << " - " << v << ") / ("
+                << unsigned_name << ")(" << inc << ")) + 1 : 0;\n";
+            // A loop of a constant length shared by a warp's lanes runs
+            // few iterations on each (4 of 128): unrolled by 16, nvcc runs
+            // them all in the loop that finishes the unrolled one, where
+            // each waits for its load before the next is issued (the sums
+            // over the 128 x 128 state of a gated delta rule took 3 of
+            // their 4 us). It is unrolled by the iterations of a lane.
+            std::string unroll_text = wide
+                ? dialect.unroll_wide_pragma(kernel_lane_vectors)
+                : dialect.unroll_pragma(deep);
+            int64_t end_value = 0;
+            if (!wide && !unroll_text.empty() && kernel_has_lanes()
+                    && ASRUtils::extract_value(ASRUtils::expr_value(
+                        head.m_end), end_value) && end_value > 0) {
+                int64_t per_lane = (end_value + 31) / 32;
+                if (per_lane < 16) {
+                    unroll_text = "#pragma unroll "
+                        + std::to_string(std::max<int64_t>(per_lane, 1));
+                }
+            }
+            src << get_indent() << unroll_text << "\n";
             src << get_indent() << "for (" << type_name << " " << count
                 << " = 0; " << count << " < " << trips << "; " << count
                 << "++, " << v << " += " << inc << ") {\n";
@@ -4563,6 +4589,98 @@ public:
             src << " -= " << -step;
         }
         src << ") {\n";
+    }
+
+    // `v = GpuLaneReduce(v)`: the variable and the operation (0 adds, 1
+    // multiplies, 2 takes the smallest, 3 the largest).
+    static bool lane_reduce_assignment(ASR::stmt_t *stmt, ASR::expr_t *&var,
+            int &op) {
+        if (!ASR::is_a<ASR::Assignment_t>(*stmt)) return false;
+        ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(stmt);
+        if (!ASR::is_a<ASR::Var_t>(*a->m_target)
+                || !ASR::is_a<ASR::GpuLaneReduce_t>(*a->m_value)) {
+            return false;
+        }
+        ASR::GpuLaneReduce_t *r = ASR::down_cast<ASR::GpuLaneReduce_t>(
+            a->m_value);
+        if (!ASR::is_a<ASR::Var_t>(*r->m_arg)
+                || ASR::down_cast<ASR::Var_t>(r->m_arg)->m_v
+                    != ASR::down_cast<ASR::Var_t>(a->m_target)->m_v) {
+            return false;
+        }
+        ASR::ttype_t *t = ASRUtils::expr_type(a->m_target);
+        if (!ASRUtils::is_real(*t) && !ASRUtils::is_integer(*t)) return false;
+        var = a->m_target;
+        op = r->m_op == ASR::reduction_opType::ReduceAdd ? 0
+            : r->m_op == ASR::reduction_opType::ReduceMul ? 1
+            : r->m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
+        return true;
+    }
+
+    // The statements of a body. Where an iteration may have the lanes of a
+    // whole block, consecutive combinations of what the lanes hold (the
+    // sums of the rows of a matrix-vector product) meet in shared memory
+    // together, behind one barrier rather than one each: a block of 64
+    // threads that sums 4 rows of 5120 columns spent a third of its time
+    // waiting at the barriers of 5 combinations.
+    void emit_stmts(ASR::stmt_t **body, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            std::vector<std::pair<ASR::expr_t*, int>> run;
+            if (kernel_has_block_lanes() && dialect.batched_block_reduce()) {
+                for (size_t j = i; j < n; j++) {
+                    ASR::expr_t *var = nullptr;
+                    int op = 0;
+                    if (!lane_reduce_assignment(body[j], var, op)) break;
+                    run.push_back({var, op});
+                }
+            }
+            if (run.size() < 2) {
+                visit_stmt(body[i]);
+                continue;
+            }
+            std::vector<std::string> names, types;
+            for (auto &r : run) {
+                names.push_back(expr_str(r.first));
+                types.push_back(gpu_type(ASRUtils::expr_type(r.first)));
+            }
+            std::string id = std::to_string(batched_reductions++);
+            std::string in = get_indent();
+            src << in << "if (__gpu_lanes_n > 32) {\n";
+            for (size_t k = 0; k < run.size(); k++) {
+                src << in << "    " << names[k] << " = __lfortran_lane_reduce<"
+                    << run[k].second << ">(" << names[k]
+                    << ", 32, 0xffffffffu);\n";
+            }
+            for (size_t k = 0; k < run.size(); k++) {
+                src << in << "    __shared__ " << types[k]
+                    << " __lfortran_partial" << id << "_" << k << "[32];\n";
+            }
+            src << in << "    if ((threadIdx.x & 31u) == 0) {\n";
+            for (size_t k = 0; k < run.size(); k++) {
+                src << in << "        __lfortran_partial" << id << "_" << k
+                    << "[threadIdx.x >> 5] = " << names[k] << ";\n";
+            }
+            src << in << "    }\n" << in << "    __syncthreads();\n";
+            for (size_t k = 0; k < run.size(); k++) {
+                src << in << "    " << names[k] << " = __lfortran_partial" << id
+                    << "_" << k << "[0];\n";
+            }
+            src << in << "    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {\n";
+            for (size_t k = 0; k < run.size(); k++) {
+                src << in << "        " << names[k] << " = __lfortran_lane_combine<"
+                    << run[k].second << ">(" << names[k] << ", __lfortran_partial"
+                    << id << "_" << k << "[__i]);\n";
+            }
+            src << in << "    }\n" << in << "    __syncthreads();\n"
+                << in << "} else {\n";
+            for (size_t k = 0; k < run.size(); k++) {
+                src << in << "    " << names[k] << " = __lfortran_lane_reduce<"
+                    << run[k].second << ">(" << names[k]
+                    << ", __gpu_lanes_n, __gpu_lane_mask);\n";
+            }
+            src << in << "}\n";
+            i += run.size() - 1;
+        }
     }
 
     void visit_stmt(ASR::stmt_t *stmt) {
@@ -5210,16 +5328,12 @@ public:
                     visit_expr(if_stmt->m_test);
                     src << ") {\n";
                     indent_level++;
-                    for (size_t i = 0; i < if_stmt->n_body; i++) {
-                        visit_stmt(if_stmt->m_body[i]);
-                    }
+                    emit_stmts(if_stmt->m_body, if_stmt->n_body);
                     indent_level--;
                     if (if_stmt->n_orelse > 0) {
                         src << get_indent() << "} else {\n";
                         indent_level++;
-                        for (size_t i = 0; i < if_stmt->n_orelse; i++) {
-                            visit_stmt(if_stmt->m_orelse[i]);
-                        }
+                        emit_stmts(if_stmt->m_orelse, if_stmt->n_orelse);
                         indent_level--;
                     }
                     src << get_indent() << "}\n";
@@ -5403,9 +5517,7 @@ public:
                     }));
                 }
                 std::string body = captured_source([&]() {
-                    for (size_t i = 0; i < block->n_body; i++) {
-                        visit_stmt(block->m_body[i]);
-                    }
+                    emit_stmts(block->m_body, block->n_body);
                 });
                 src << gpu_referenced_declarations(declarations, body)
                     << body;
@@ -6140,6 +6252,23 @@ public:
                     // Resolve to actual function name
                     ASR::Function_t *fn = resolve_function(fc->m_name);
                     std::string call_name = fn ? device_function_name(fn) : fn_name;
+                    // An instruction a pass calls through an interface of
+                    // its own (gpu_dp4a.cpp: `__dp4a`, `__byte_perm`) takes
+                    // and gives the types of the interface; one whose C++
+                    // result is of another type, as the unsigned of
+                    // `__byte_perm`, is converted to the type of the call.
+                    bool instruction = fn && fn->n_body == 0
+                        && fn->m_return_var
+                        && ASRUtils::get_FunctionType(fn)->m_deftype
+                            == ASR::deftypeType::Interface
+                        && ASRUtils::get_FunctionType(fn)->m_abi
+                            == ASR::abiType::BindC
+                        && !ASRUtils::is_array(fc->m_type)
+                        && (ASRUtils::is_integer(*fc->m_type)
+                            || ASRUtils::is_real(*fc->m_type));
+                    if (instruction) {
+                        src << "((" << gpu_type(fc->m_type) << ")";
+                    }
                     src << sanitize_name(call_name) << "(";
                     bool first_arg = true;
                     for (size_t i = 0; i < fc->n_args; i++) {
@@ -6193,6 +6322,7 @@ public:
                         }
                     }
                     src << ")";
+                    if (instruction) src << ")";
                 }
                 break;
             }

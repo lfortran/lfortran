@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -150,7 +160,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_22g
             t =   0.00000000000000000e+00;
         }
         k__dc = (2 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_0 = (np - 1) >= k__dc ? ((np - 1) - k__dc) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+        const int __lfortran_trips_0 = (np - 1) >= k__dc ? (int)((unsigned)((np - 1) - k__dc) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 64
         for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, k__dc += (1 * ((int)__gpu_lanes))) {
             t = (t + (x[((int)(i__dc) - (__lb_x_0)) + (__dim_x_0 * ((int)(2) - (__lb_x_1))) + ((__dim_x_0 * __dim_x_1) * ((int)(k__dc) - (__lb_x_2)))] * w[((int)(k__dc) - (__lb_w_0))]));

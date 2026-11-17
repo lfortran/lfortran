@@ -8005,3 +8005,28 @@ options = "--std=f23"
 [[test]]
 filename = "read_real16_long_token_error_01.f90"
 run = true
+
+# Lane loops of a length known at compile time, unrolled by the iterations of
+# a lane (`#pragma unroll 4` for 128), with unsigned trip counts.
+[[test]]
+filename = "../integration_tests/gpu_lanes_const_trips_01.f90"
+gpu_cuda_kernel = true
+
+# The vectors and the scalar elements a loop of a wide-load kernel reads for
+# certain, read at the start of its body; not past an `exit`.
+[[test]]
+filename = "../integration_tests/gpu_wide_loads_hoist_01.f90"
+gpu_cuda_kernel = true
+
+# A q8 product of four rows per iteration runs an iteration on the 64 lanes
+# of a block (`__launch_bounds__(64, ...)`, lanes named as a constant); one of
+# two rows on the 32 lanes of a warp.
+[[test]]
+filename = "../integration_tests/gpu_wide_rows_01.f90"
+gpu_cuda_kernel = true
+
+# Consecutive combinations of the lanes of a whole block (sums, maxima,
+# minima, products, of reals and integers) meet in shared memory together.
+[[test]]
+filename = "../integration_tests/gpu_lanes_block_03.f90"
+gpu_cuda_kernel = true

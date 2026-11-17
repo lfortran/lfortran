@@ -65,6 +65,66 @@ print *, y(1)
 end program
 """
 
+# Four rows per iteration: an iteration runs on the 64 lanes of a block of
+# its own, which read a vector of words of each row and the four vectors of
+# `x` the rows share, 8 vectors, which need the registers of 14 blocks of 64
+# threads per multiprocessor.
+SOURCE_ROWS = """\
+module gpu_launch_bounds_rows_m
+implicit none
+contains
+    pure real function dot4(w, x0, x1, x2, x3)
+        integer, intent(in) :: w
+        real, intent(in) :: x0, x1, x2, x3
+        dot4 = iand(w, 255)*x0 + iand(shiftr(w, 8), 255)*x1 &
+            + iand(shiftr(w, 16), 255)*x2 + shiftr(w, 24)*x3
+    end function
+
+    pure real function qdot(w, x, n, c)
+        integer, intent(in) :: w(:, :)
+        real, intent(in) :: x(:)
+        integer, intent(in) :: n, c
+        qdot = (dot4(w(4*c-3, n), x(16*c-15), x(16*c-14), x(16*c-13), x(16*c-12)) &
+            + dot4(w(4*c-2, n), x(16*c-11), x(16*c-10), x(16*c-9), x(16*c-8))) &
+            + (dot4(w(4*c-1, n), x(16*c-7), x(16*c-6), x(16*c-5), x(16*c-4)) &
+            + dot4(w(4*c, n), x(16*c-3), x(16*c-2), x(16*c-1), x(16*c)))
+    end function
+
+    subroutine gemv(w, x, y)
+        integer, intent(in) :: w(:, :)
+        real, intent(in) :: x(:)
+        real, intent(out) :: y(:)
+        integer :: i
+        do concurrent (i = 1:size(y)/4)
+            block
+                real :: a1, a2, a3, a4
+                integer :: c, n
+                a1 = 0; a2 = 0; a3 = 0; a4 = 0
+                n = 4*i - 3
+                do c = 1, size(w, 1)/4
+                    a1 = a1 + qdot(w, x, n, c)
+                    a2 = a2 + qdot(w, x, n + 1, c)
+                    a3 = a3 + qdot(w, x, n + 2, c)
+                    a4 = a4 + qdot(w, x, n + 3, c)
+                end do
+                y(n) = a1; y(n + 1) = a2; y(n + 2) = a3; y(n + 3) = a4
+            end block
+        end do
+    end subroutine
+end module
+
+program p
+use gpu_launch_bounds_rows_m
+implicit none
+integer :: w(1280, 4096)
+real :: x(5120), y(4096)
+w = 1
+x = 1
+call gemv(w, x, y)
+print *, y(1)
+end program
+"""
+
 
 def kernel_source(lfortran, source):
     result = subprocess.run(
@@ -87,6 +147,14 @@ def main():
     # not unrolled.
     assert "#pragma unroll 2" not in kernel, kernel
     assert kernel.count("#pragma unroll 1") >= 1, kernel
+    with tempfile.TemporaryDirectory() as tmp:
+        source = Path(tmp) / "rows.f90"
+        source.write_text(SOURCE_ROWS)
+        out = kernel_source(sys.argv[1], source)
+    # Fourteen blocks of 64 threads per multiprocessor, with the lanes
+    # named as a constant.
+    assert "__global__ void __launch_bounds__(64, 14)" in out, out
+    assert "__gpu_lanes = 64;" in out, out
     print("ok")
 
 

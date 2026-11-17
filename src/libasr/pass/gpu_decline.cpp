@@ -129,6 +129,11 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         caps.lane_inner_reductions_first = true;
         caps.wide_loads = true;
         caps.lanes_block = caps.threads_per_block;
+        // A matrix-vector product of 5120 rows and 17408 columns, 4 rows
+        // per iteration, took 39 us with a warp per iteration and 27 with
+        // two (26 us in hand-written CUDA); one of 34816 rows and 5120
+        // columns 52 and 49 (48).
+        caps.lanes_wide = 64;
         // 1024 iterations are 32 warps, which an H200 (8,448 resident
         // warps) runs on a few of its 132 multiprocessors.
         caps.lanes_scattered_iterations_max = 1024;

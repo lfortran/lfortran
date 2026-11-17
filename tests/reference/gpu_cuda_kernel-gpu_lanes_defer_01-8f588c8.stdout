@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -184,7 +194,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
                         acc =   0.00000000000000000e+00f;
                     }
                     __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                    const int __lfortran_trips_0 = ((g * 64) - 3) >= __gpu_residue_group ? (((g * 64) - 3) - __gpu_residue_group) / (4 * ((int)__gpu_lanes)) + 1 : 0;
+                    const int __lfortran_trips_0 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
                     #pragma unroll 16
                     for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
                         __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
@@ -341,7 +351,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_
                             acc =   0.00000000000000000e+00f;
                         }
                         __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                        const int __lfortran_trips_1 = ((g * 64) - 3) >= __gpu_residue_group ? (((g * 64) - 3) - __gpu_residue_group) / (4 * ((int)__gpu_lanes)) + 1 : 0;
+                        const int __lfortran_trips_1 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
                         #pragma unroll 16
                         for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
                             __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
@@ -508,7 +518,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_
                             acc =   0.00000000000000000e+00f;
                         }
                         __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                        const int __lfortran_trips_2 = ((g * 64) - 3) >= __gpu_residue_group ? (((g * 64) - 3) - __gpu_residue_group) / (4 * ((int)__gpu_lanes)) + 1 : 0;
+                        const int __lfortran_trips_2 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
                         #pragma unroll 16
                         for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
                             __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];

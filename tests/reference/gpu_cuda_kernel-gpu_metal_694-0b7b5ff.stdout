@@ -34,7 +34,17 @@ __device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
-    if (lanes == 32 || lanes == 16) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
         // The common sizes, with the shuffles unrolled.
         #pragma unroll
         for (int offset = 16; offset > 0; offset >>= 1) {
@@ -332,7 +342,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_
                 __gpu_mm_acc1 =   0.00000000000000000e+00f;
             }
             __gpu_mm_k1 = (((long)__lb_b_0) + (((long)__gpu_lane) * ((long)1)));
-            const long __lfortran_trips_0 = ((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)) >= __gpu_mm_k1 ? (((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)) - __gpu_mm_k1) / (((long)1) * ((long)__gpu_lanes)) + 1 : 0;
+            const long __lfortran_trips_0 = ((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)) >= __gpu_mm_k1 ? (long)((unsigned long long)(((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)) - __gpu_mm_k1) / (unsigned long long)((((long)1) * ((long)__gpu_lanes)))) + 1 : 0;
             #pragma unroll 16
             for (long __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_mm_k1 += (((long)1) * ((long)__gpu_lanes))) {
                 __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((long)((lo8 + ((__gpu_mm_k1 - ((long)__lb_b_0)) * ((long)2)))) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc1) - (__lb_w_1)))))] * b[((long)(__gpu_mm_k1) - (__lb_b_0)) + (__dim_b_0 * ((long)(__gpu_mm_j) - (__lb_b_1)))]));
