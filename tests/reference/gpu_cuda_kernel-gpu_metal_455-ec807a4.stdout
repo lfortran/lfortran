@@ -124,82 +124,162 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
     float* __restrict__ z,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_455 __scalar_args)
 {
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    int __gpu_lanes_n = __gpu_lanes;
-    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
-    int __flat_idx;
-    float __gpu_mm_acc;
-    float __gpu_mm_acc1;
-    float __gpu_mm_acc2;
-    float __gpu_mm_acc3;
-    float __gpu_mm_acc4;
-    float __gpu_mm_acc5;
-    int __gpu_mm_i;
-    int __gpu_mm_i2;
-    int __gpu_mm_i3;
-    int __gpu_mm_j1;
-    int __gpu_mm_k;
-    int __gpu_mm_k1;
-    int __gpu_mm_k2;
-    int __gpu_mm_k3;
-    int __gpu_mm_k4;
-    int __gpu_mm_k5;
-    const int m = 4;
-    const int n = 3;
-    int p__dc;
-    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 2)) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
-    p__dc = (__flat_idx + 1);
-    for (__gpu_mm_i = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i <= n; __gpu_mm_i += (1 * ((int)__gpu_lanes))) {
-        __gpu_mm_acc =   0.00000000000000000e+00f;
-        #pragma unroll 16
-        for (__gpu_mm_k = 1; __gpu_mm_k <= m; __gpu_mm_k++) {
-            __gpu_mm_acc = (__gpu_mm_acc + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k) - (1)))] * x[((int)(__gpu_mm_k) - (1)) + (4 * ((int)(p__dc) - (1)))]));
+    if (__scalar_args.__gpu_lanes == 32) {
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        float __gpu_mm_acc;
+        float __gpu_mm_acc1;
+        float __gpu_mm_acc2;
+        float __gpu_mm_acc3;
+        float __gpu_mm_acc4;
+        float __gpu_mm_acc5;
+        int __gpu_mm_i;
+        int __gpu_mm_i2;
+        int __gpu_mm_i3;
+        int __gpu_mm_j1;
+        int __gpu_mm_k;
+        int __gpu_mm_k1;
+        int __gpu_mm_k2;
+        int __gpu_mm_k3;
+        int __gpu_mm_k4;
+        int __gpu_mm_k5;
+        const int m = 4;
+        const int n = 3;
+        int p__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 2)) {
+            return;
         }
-        z[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc + b[((int)(__gpu_mm_i) - (1))]);
-        __gpu_mm_acc1 =   0.00000000000000000e+00f;
-        #pragma unroll 16
-        for (__gpu_mm_k1 = 1; __gpu_mm_k1 <= m; __gpu_mm_k1++) {
-            __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k1) - (1)))] * x0[((int)((0 + (__gpu_mm_k1 - 1))) - (0)) + (4 * ((int)(p__dc) - (1)))]));
-        }
-        e[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (b[((int)(__gpu_mm_i) - (1))] - __gpu_mm_acc1);
-    }
-    __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
-    for (__gpu_mm_i2 = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i2 <= m; __gpu_mm_i2 += (1 * ((int)__gpu_lanes))) {
-        __gpu_mm_acc2 =   0.00000000000000000e+00f;
-        #pragma unroll 16
-        for (__gpu_mm_k2 = 1; __gpu_mm_k2 <= n; __gpu_mm_k2++) {
-            __gpu_mm_acc2 = (__gpu_mm_acc2 + (w[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))] * z[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(p__dc) - (1)))]));
-        }
-        y[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc2;
-        __gpu_mm_acc3 =   0.00000000000000000e+00f;
-        #pragma unroll 16
-        for (__gpu_mm_k3 = 1; __gpu_mm_k3 <= n; __gpu_mm_k3++) {
-            __gpu_mm_acc3 = (__gpu_mm_acc3 + (z[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(p__dc) - (1)))] * w[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))]));
-        }
-        v[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc3;
-    }
-    __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
-    for (__gpu_mm_i3 = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i3 <= n; __gpu_mm_i3 += (1 * ((int)__gpu_lanes))) {
-        for (__gpu_mm_j1 = 1; __gpu_mm_j1 <= n; __gpu_mm_j1++) {
-            __gpu_mm_acc4 =   0.00000000000000000e+00f;
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        p__dc = (__flat_idx + 1);
+        for (__gpu_mm_i = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i <= n; __gpu_mm_i += (1 * ((int)__gpu_lanes))) {
+            __gpu_mm_acc =   0.00000000000000000e+00f;
             #pragma unroll 16
-            for (__gpu_mm_k4 = 1; __gpu_mm_k4 <= m; __gpu_mm_k4++) {
-                __gpu_mm_acc4 = (__gpu_mm_acc4 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))] * w[((int)(__gpu_mm_j1) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))]));
+            for (__gpu_mm_k = 1; __gpu_mm_k <= m; __gpu_mm_k++) {
+                __gpu_mm_acc = (__gpu_mm_acc + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k) - (1)))] * x[((int)(__gpu_mm_k) - (1)) + (4 * ((int)(p__dc) - (1)))]));
             }
-            c[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_j1) - (1))) + ((3 * 3) * ((int)(p__dc) - (1)))] = (__gpu_mm_acc4 * ((float)p__dc));
+            z[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc + b[((int)(__gpu_mm_i) - (1))]);
+            __gpu_mm_acc1 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k1 = 1; __gpu_mm_k1 <= m; __gpu_mm_k1++) {
+                __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k1) - (1)))] * x0[((int)((0 + (__gpu_mm_k1 - 1))) - (0)) + (4 * ((int)(p__dc) - (1)))]));
+            }
+            e[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (b[((int)(__gpu_mm_i) - (1))] - __gpu_mm_acc1);
         }
-        __gpu_mm_acc5 =   0.00000000000000000e+00f;
-        #pragma unroll 16
-        for (__gpu_mm_k5 = 1; __gpu_mm_k5 <= m; __gpu_mm_k5++) {
-            __gpu_mm_acc5 = (__gpu_mm_acc5 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k5) - (1)))] * x[((int)(__gpu_mm_k5) - (1)) + (4 * ((int)(p__dc) - (1)))]));
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+        for (__gpu_mm_i2 = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i2 <= m; __gpu_mm_i2 += (1 * ((int)__gpu_lanes))) {
+            __gpu_mm_acc2 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k2 = 1; __gpu_mm_k2 <= n; __gpu_mm_k2++) {
+                __gpu_mm_acc2 = (__gpu_mm_acc2 + (w[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))] * z[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(p__dc) - (1)))]));
+            }
+            y[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc2;
+            __gpu_mm_acc3 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k3 = 1; __gpu_mm_k3 <= n; __gpu_mm_k3++) {
+                __gpu_mm_acc3 = (__gpu_mm_acc3 + (z[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(p__dc) - (1)))] * w[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))]));
+            }
+            v[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc3;
         }
-        d[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc5 + d[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(p__dc) - (1)))]);
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+        for (__gpu_mm_i3 = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i3 <= n; __gpu_mm_i3 += (1 * ((int)__gpu_lanes))) {
+            for (__gpu_mm_j1 = 1; __gpu_mm_j1 <= n; __gpu_mm_j1++) {
+                __gpu_mm_acc4 =   0.00000000000000000e+00f;
+                #pragma unroll 16
+                for (__gpu_mm_k4 = 1; __gpu_mm_k4 <= m; __gpu_mm_k4++) {
+                    __gpu_mm_acc4 = (__gpu_mm_acc4 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))] * w[((int)(__gpu_mm_j1) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))]));
+                }
+                c[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_j1) - (1))) + ((3 * 3) * ((int)(p__dc) - (1)))] = (__gpu_mm_acc4 * ((float)p__dc));
+            }
+            __gpu_mm_acc5 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k5 = 1; __gpu_mm_k5 <= m; __gpu_mm_k5++) {
+                __gpu_mm_acc5 = (__gpu_mm_acc5 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k5) - (1)))] * x[((int)(__gpu_mm_k5) - (1)) + (4 * ((int)(p__dc) - (1)))]));
+            }
+            d[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc5 + d[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(p__dc) - (1)))]);
+        }
+    } else {
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        float __gpu_mm_acc;
+        float __gpu_mm_acc1;
+        float __gpu_mm_acc2;
+        float __gpu_mm_acc3;
+        float __gpu_mm_acc4;
+        float __gpu_mm_acc5;
+        int __gpu_mm_i;
+        int __gpu_mm_i2;
+        int __gpu_mm_i3;
+        int __gpu_mm_j1;
+        int __gpu_mm_k;
+        int __gpu_mm_k1;
+        int __gpu_mm_k2;
+        int __gpu_mm_k3;
+        int __gpu_mm_k4;
+        int __gpu_mm_k5;
+        const int m = 4;
+        const int n = 3;
+        int p__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 2)) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        p__dc = (__flat_idx + 1);
+        for (__gpu_mm_i = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i <= n; __gpu_mm_i += (1 * ((int)__gpu_lanes))) {
+            __gpu_mm_acc =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k = 1; __gpu_mm_k <= m; __gpu_mm_k++) {
+                __gpu_mm_acc = (__gpu_mm_acc + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k) - (1)))] * x[((int)(__gpu_mm_k) - (1)) + (4 * ((int)(p__dc) - (1)))]));
+            }
+            z[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc + b[((int)(__gpu_mm_i) - (1))]);
+            __gpu_mm_acc1 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k1 = 1; __gpu_mm_k1 <= m; __gpu_mm_k1++) {
+                __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k1) - (1)))] * x0[((int)((0 + (__gpu_mm_k1 - 1))) - (0)) + (4 * ((int)(p__dc) - (1)))]));
+            }
+            e[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p__dc) - (1)))] = (b[((int)(__gpu_mm_i) - (1))] - __gpu_mm_acc1);
+        }
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+        for (__gpu_mm_i2 = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i2 <= m; __gpu_mm_i2 += (1 * ((int)__gpu_lanes))) {
+            __gpu_mm_acc2 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k2 = 1; __gpu_mm_k2 <= n; __gpu_mm_k2++) {
+                __gpu_mm_acc2 = (__gpu_mm_acc2 + (w[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))] * z[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(p__dc) - (1)))]));
+            }
+            y[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc2;
+            __gpu_mm_acc3 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k3 = 1; __gpu_mm_k3 <= n; __gpu_mm_k3++) {
+                __gpu_mm_acc3 = (__gpu_mm_acc3 + (z[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(p__dc) - (1)))] * w[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))]));
+            }
+            v[((int)(__gpu_mm_i2) - (1)) + (4 * ((int)(p__dc) - (1)))] = __gpu_mm_acc3;
+        }
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+        for (__gpu_mm_i3 = (1 + (((int)__gpu_lane) * 1)); __gpu_mm_i3 <= n; __gpu_mm_i3 += (1 * ((int)__gpu_lanes))) {
+            for (__gpu_mm_j1 = 1; __gpu_mm_j1 <= n; __gpu_mm_j1++) {
+                __gpu_mm_acc4 =   0.00000000000000000e+00f;
+                #pragma unroll 16
+                for (__gpu_mm_k4 = 1; __gpu_mm_k4 <= m; __gpu_mm_k4++) {
+                    __gpu_mm_acc4 = (__gpu_mm_acc4 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))] * w[((int)(__gpu_mm_j1) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))]));
+                }
+                c[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_j1) - (1))) + ((3 * 3) * ((int)(p__dc) - (1)))] = (__gpu_mm_acc4 * ((float)p__dc));
+            }
+            __gpu_mm_acc5 =   0.00000000000000000e+00f;
+            #pragma unroll 16
+            for (__gpu_mm_k5 = 1; __gpu_mm_k5 <= m; __gpu_mm_k5++) {
+                __gpu_mm_acc5 = (__gpu_mm_acc5 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k5) - (1)))] * x[((int)(__gpu_mm_k5) - (1)) + (4 * ((int)(p__dc) - (1)))]));
+            }
+            d[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(p__dc) - (1)))] = (__gpu_mm_acc5 + d[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(p__dc) - (1)))]);
+        }
     }
 }
 

@@ -4091,14 +4091,54 @@ public:
             }
         });
         writing_kernel_body = false;
-        src << gpu_referenced_declarations(kernel_declarations, body)
-            << body;
+        std::string code = gpu_referenced_declarations(kernel_declarations,
+            body) + body;
         kernel_declarations.clear();
+        std::string test = common_lanes_test(x);
+        if (test.empty()) {
+            src << code;
+        } else {
+            // The kernel twice: for the lanes most launches give it, which
+            // the device compiler then knows (its loops have constant steps
+            // and trip counts, its combinations stay in the warp), and for
+            // any other number.
+            std::string in = get_indent(), nested;
+            for (size_t i = 0; i < code.size(); i++) {
+                if (i == 0 || code[i - 1] == '\n') nested += "    ";
+                nested += code[i];
+            }
+            src << in << "if (" << test << ") {\n" << nested << in
+                << "} else {\n" << nested << in << "}\n";
+        }
 
         indent_level--;
         src << "}\n\n";
 
         dialect.emit_kernel_epilogue(src, name, kernel_params);
+    }
+
+    // The test, empty for none, of the lanes a launch most often gives the
+    // kernel `x`, when they are a run-time value: kernels that every
+    // launch gives the same lanes name them as a constant already
+    // (emit_lane_prologue).
+    std::string common_lanes_test(const ASR::Function_t &x) const {
+        const ASR::gpu_kernel_layout_t &layout = *x.m_gpu;
+        GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
+        if (layout.m_lanes == nullptr || (kernel_caps.lanes_wide > 0
+                && layout.m_lanes_max == kernel_caps.lanes_wide)) {
+            return "";
+        }
+        for (size_t i = 0; i < layout.n_scalars; i++) {
+            if (layout.m_scalars[i].m_member == nullptr
+                    && ASRUtils::symbol_get_past_external(
+                        layout.m_scalars[i].m_variable)
+                    == ASRUtils::symbol_get_past_external(layout.m_lanes)) {
+                return dialect.common_lanes_test(
+                    gpu_argument_name(layout.m_scalars[i], layout),
+                    layout.m_lanes_max);
+            }
+        }
+        return "";
     }
 
     // The lane barriers the kernel being written ends with: past them its

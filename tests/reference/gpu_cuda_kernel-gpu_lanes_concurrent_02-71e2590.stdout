@@ -158,81 +158,161 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_25gpu_
     float* __restrict__ x,
     __ScalarArgs___lfortran_gpu_kernel_0_25gpu_lanes_concurrent_02_m9conv_norm __scalar_args)
 {
-    int heads = __scalar_args.heads;
-    int kdh = __scalar_args.kdh;
-    int __dim_qk_0 = __scalar_args.__dim_qk_0;
-    int __lb_qk_0 = __scalar_args.__lb_qk_0;
-    int __lb_qk_1 = __scalar_args.__lb_qk_1;
-    int __dim_qn_0 = __scalar_args.__dim_qn_0;
-    int __lb_qn_0 = __scalar_args.__lb_qn_0;
-    int __lb_qn_1 = __scalar_args.__lb_qn_1;
-    int __dim_state_0 = __scalar_args.__dim_state_0;
-    int __lb_state_0 = __scalar_args.__lb_state_0;
-    int __lb_state_1 = __scalar_args.__lb_state_1;
-    int __dim_w_0 = __scalar_args.__dim_w_0;
-    int __lb_w_0 = __scalar_args.__lb_w_0;
-    int __lb_w_1 = __scalar_args.__lb_w_1;
-    int __lb_x_0 = __scalar_args.__lb_x_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    int __gpu_lanes_n = __gpu_lanes;
-    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
-    int __flat_idx;
-    int blk__dc;
-    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
-    blk__dc = (__flat_idx + 1);
-    {
-        int col;
-        int i__dc;
-        int i__dc1;
-        int i__dc2;
-        float rrms;
-        float ss;
-        col = ((((blk__dc - 1) / 2) + 1) + (_lcompilers_optimization_modulo_i321_gpu_28((blk__dc - 1), 2) * (heads / 2)));
-        for (i__dc = (1 + (((int)__gpu_lane) * 1)); i__dc <= kdh; i__dc += (1 * ((int)__gpu_lanes))) {
-            {
-                float acc;
-                int c;
-                int r;
-                c = (((blk__dc - 1) * kdh) + i__dc);
-                acc = (((w[((int)(1) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))]) + (w[((int)(2) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))])) + (w[((int)(3) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * x[((int)(c) - (__lb_x_0))]));
-                r = _lcompilers_optimization_modulo_i32_gpu_26(((i__dc * 5) - 5), kdh);
-                qk[((int)((r + 1)) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] = acc;
-                state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))] = state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))];
-                state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))] = x[((int)(c) - (__lb_x_0))];
+    if (__scalar_args.__gpu_lanes == 32) {
+        int heads = __scalar_args.heads;
+        int kdh = __scalar_args.kdh;
+        int __dim_qk_0 = __scalar_args.__dim_qk_0;
+        int __lb_qk_0 = __scalar_args.__lb_qk_0;
+        int __lb_qk_1 = __scalar_args.__lb_qk_1;
+        int __dim_qn_0 = __scalar_args.__dim_qn_0;
+        int __lb_qn_0 = __scalar_args.__lb_qn_0;
+        int __lb_qn_1 = __scalar_args.__lb_qn_1;
+        int __dim_state_0 = __scalar_args.__dim_state_0;
+        int __lb_state_0 = __scalar_args.__lb_state_0;
+        int __lb_state_1 = __scalar_args.__lb_state_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int blk__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        blk__dc = (__flat_idx + 1);
+        {
+            int col;
+            int i__dc;
+            int i__dc1;
+            int i__dc2;
+            float rrms;
+            float ss;
+            col = ((((blk__dc - 1) / 2) + 1) + (_lcompilers_optimization_modulo_i321_gpu_28((blk__dc - 1), 2) * (heads / 2)));
+            for (i__dc = (1 + (((int)__gpu_lane) * 1)); i__dc <= kdh; i__dc += (1 * ((int)__gpu_lanes))) {
+                {
+                    float acc;
+                    int c;
+                    int r;
+                    c = (((blk__dc - 1) * kdh) + i__dc);
+                    acc = (((w[((int)(1) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))]) + (w[((int)(2) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))])) + (w[((int)(3) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * x[((int)(c) - (__lb_x_0))]));
+                    r = _lcompilers_optimization_modulo_i32_gpu_26(((i__dc * 5) - 5), kdh);
+                    qk[((int)((r + 1)) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] = acc;
+                    state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))] = state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))];
+                    state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))] = x[((int)(c) - (__lb_x_0))];
+                }
+            }
+            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+            ss = ((float)0);
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    ss =   0.00000000000000000e+00f;
+                }
+                i__dc1 = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_0 = kdh >= i__dc1 ? (int)((unsigned)(kdh - i__dc1) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+                #pragma unroll 16
+                for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i__dc1 += (1 * ((int)__gpu_lanes))) {
+                    ss = (ss + (qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))]));
+                }
+                ss = __lfortran_lane_reduce_block<0>(ss, __gpu_lanes_n, __gpu_lane_mask);
+            } else {
+                #pragma unroll 16
+                for (i__dc1 = 1; i__dc1 <= kdh; i__dc1++) {
+                    ss = (ss + (qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))]));
+                }
+            }
+            rrms = (((float)1) / sqrt(((ss / ((float)kdh)) +   9.99999997475242708e-07f)));
+            i__dc2 = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_1 = kdh >= i__dc2 ? (int)((unsigned)(kdh - i__dc2) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 16
+            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i__dc2 += (1 * ((int)__gpu_lanes))) {
+                qn[((int)(i__dc2) - (__lb_qn_0)) + (__dim_qn_0 * ((int)(col) - (__lb_qn_1)))] = (qk[((int)(i__dc2) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * rrms);
             }
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
-        ss = ((float)0);
-        if ((__gpu_lanes > 1)) {
-            if ((__gpu_lane != 0)) {
-                ss =   0.00000000000000000e+00f;
-            }
-            i__dc1 = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_0 = kdh >= i__dc1 ? (int)((unsigned)(kdh - i__dc1) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
-            #pragma unroll 16
-            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i__dc1 += (1 * ((int)__gpu_lanes))) {
-                ss = (ss + (qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))]));
-            }
-            ss = __lfortran_lane_reduce_block<0>(ss, __gpu_lanes_n, __gpu_lane_mask);
-        } else {
-            #pragma unroll 16
-            for (i__dc1 = 1; i__dc1 <= kdh; i__dc1++) {
-                ss = (ss + (qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))]));
-            }
+    } else {
+        int heads = __scalar_args.heads;
+        int kdh = __scalar_args.kdh;
+        int __dim_qk_0 = __scalar_args.__dim_qk_0;
+        int __lb_qk_0 = __scalar_args.__lb_qk_0;
+        int __lb_qk_1 = __scalar_args.__lb_qk_1;
+        int __dim_qn_0 = __scalar_args.__dim_qn_0;
+        int __lb_qn_0 = __scalar_args.__lb_qn_0;
+        int __lb_qn_1 = __scalar_args.__lb_qn_1;
+        int __dim_state_0 = __scalar_args.__dim_state_0;
+        int __lb_state_0 = __scalar_args.__lb_state_0;
+        int __lb_state_1 = __scalar_args.__lb_state_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int blk__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
         }
-        rrms = (((float)1) / sqrt(((ss / ((float)kdh)) +   9.99999997475242708e-07f)));
-        i__dc2 = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_1 = kdh >= i__dc2 ? (int)((unsigned)(kdh - i__dc2) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
-        #pragma unroll 16
-        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i__dc2 += (1 * ((int)__gpu_lanes))) {
-            qn[((int)(i__dc2) - (__lb_qn_0)) + (__dim_qn_0 * ((int)(col) - (__lb_qn_1)))] = (qk[((int)(i__dc2) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * rrms);
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        blk__dc = (__flat_idx + 1);
+        {
+            int col;
+            int i__dc;
+            int i__dc1;
+            int i__dc2;
+            float rrms;
+            float ss;
+            col = ((((blk__dc - 1) / 2) + 1) + (_lcompilers_optimization_modulo_i321_gpu_28((blk__dc - 1), 2) * (heads / 2)));
+            for (i__dc = (1 + (((int)__gpu_lane) * 1)); i__dc <= kdh; i__dc += (1 * ((int)__gpu_lanes))) {
+                {
+                    float acc;
+                    int c;
+                    int r;
+                    c = (((blk__dc - 1) * kdh) + i__dc);
+                    acc = (((w[((int)(1) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))]) + (w[((int)(2) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))])) + (w[((int)(3) - (__lb_w_0)) + (__dim_w_0 * ((int)(c) - (__lb_w_1)))] * x[((int)(c) - (__lb_x_0))]));
+                    r = _lcompilers_optimization_modulo_i32_gpu_26(((i__dc * 5) - 5), kdh);
+                    qk[((int)((r + 1)) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] = acc;
+                    state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(1) - (__lb_state_1)))] = state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))];
+                    state[((int)(c) - (__lb_state_0)) + (__dim_state_0 * ((int)(2) - (__lb_state_1)))] = x[((int)(c) - (__lb_x_0))];
+                }
+            }
+            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+            ss = ((float)0);
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    ss =   0.00000000000000000e+00f;
+                }
+                i__dc1 = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_0 = kdh >= i__dc1 ? (int)((unsigned)(kdh - i__dc1) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+                #pragma unroll 16
+                for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i__dc1 += (1 * ((int)__gpu_lanes))) {
+                    ss = (ss + (qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))]));
+                }
+                ss = __lfortran_lane_reduce_block<0>(ss, __gpu_lanes_n, __gpu_lane_mask);
+            } else {
+                #pragma unroll 16
+                for (i__dc1 = 1; i__dc1 <= kdh; i__dc1++) {
+                    ss = (ss + (qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * qk[((int)(i__dc1) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))]));
+                }
+            }
+            rrms = (((float)1) / sqrt(((ss / ((float)kdh)) +   9.99999997475242708e-07f)));
+            i__dc2 = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_1 = kdh >= i__dc2 ? (int)((unsigned)(kdh - i__dc2) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 16
+            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i__dc2 += (1 * ((int)__gpu_lanes))) {
+                qn[((int)(i__dc2) - (__lb_qn_0)) + (__dim_qn_0 * ((int)(col) - (__lb_qn_1)))] = (qk[((int)(i__dc2) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * rrms);
+            }
         }
     }
 }

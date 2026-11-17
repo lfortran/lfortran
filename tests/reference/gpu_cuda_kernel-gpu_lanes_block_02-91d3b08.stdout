@@ -121,342 +121,683 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_18gpu_
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_18gpu_lanes_block_02 __scalar_args)
 {
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    int __gpu_lanes_n = __gpu_lanes;
-    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
-    int __flat_idx;
-    int __gpu_lane_after;
-    int i__dc;
-    int j__dc;
-    const int n = 1000;
-    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 3)) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
-    j__dc = (__flat_idx + 1);
-    {
-        int __gpu_residue_first;
-        int __gpu_residue_group;
-        int c;
-        int i;
-        float r;
-        float t;
-        float u;
-        float v;
-        t = ((float)0);
-        u = ((float)1);
-        r = (-(  1.00000001504746622e+30f));
-        v =   1.00000001504746622e+30f;
-        c = j__dc;
-        __gpu_residue_first = (1 + ((7 - ((1 + 0) - (((1 + 0) / 7) * 7))) - (((7 - ((1 + 0) - (((1 + 0) / 7) * 7))) / 7) * 7)));
-        if ((__gpu_lanes > 1)) {
-            if ((__gpu_lane != 0)) {
-                c = 0;
-                r =  -3.40282346638528860e+38f;
-                t =   0.00000000000000000e+00f;
-                u =   1.00000000000000000e+00f;
-                v =   3.40282346638528860e+38f;
-            }
-            i = (1 + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_0 = (__gpu_residue_first - 1) >= i ? (int)((unsigned)((__gpu_residue_first - 1) - i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
-            #pragma unroll 16
-            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i += (1 * ((int)__gpu_lanes))) {
-                t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if ((((i) % (100)) == 0)) {
-                    u = (u * ((float)2));
+    if (__scalar_args.__gpu_lanes == 32) {
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int __gpu_lane_after;
+        int i__dc;
+        int j__dc;
+        const int n = 1000;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 3)) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        j__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_first;
+            int __gpu_residue_group;
+            int c;
+            int i;
+            float r;
+            float t;
+            float u;
+            float v;
+            t = ((float)0);
+            u = ((float)1);
+            r = (-(  1.00000001504746622e+30f));
+            v =   1.00000001504746622e+30f;
+            c = j__dc;
+            __gpu_residue_first = (1 + ((7 - ((1 + 0) - (((1 + 0) / 7) * 7))) - (((7 - ((1 + 0) - (((1 + 0) / 7) * 7))) / 7) * 7)));
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    c = 0;
+                    r =  -3.40282346638528860e+38f;
+                    t =   0.00000000000000000e+00f;
+                    u =   1.00000000000000000e+00f;
+                    v =   3.40282346638528860e+38f;
                 }
-                r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
-                v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
-                c = (c + ((i) % (7)));
-            }
-            if (__gpu_lanes_n > 32) {
-                c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
-                r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
-                t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
-                u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
-                v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
-                __shared__ int __lfortran_partial0_0[32];
-                __shared__ float __lfortran_partial0_1[32];
-                __shared__ float __lfortran_partial0_2[32];
-                __shared__ float __lfortran_partial0_3[32];
-                __shared__ float __lfortran_partial0_4[32];
-                if ((threadIdx.x & 31u) == 0) {
-                    __lfortran_partial0_0[threadIdx.x >> 5] = c;
-                    __lfortran_partial0_1[threadIdx.x >> 5] = r;
-                    __lfortran_partial0_2[threadIdx.x >> 5] = t;
-                    __lfortran_partial0_3[threadIdx.x >> 5] = u;
-                    __lfortran_partial0_4[threadIdx.x >> 5] = v;
+                i = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_0 = (__gpu_residue_first - 1) >= i ? (int)((unsigned)((__gpu_residue_first - 1) - i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+                #pragma unroll 16
+                for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i += (1 * ((int)__gpu_lanes))) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
                 }
-                __syncthreads();
-                c = __lfortran_partial0_0[0];
-                r = __lfortran_partial0_1[0];
-                t = __lfortran_partial0_2[0];
-                u = __lfortran_partial0_3[0];
-                v = __lfortran_partial0_4[0];
-                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
-                    c = __lfortran_lane_combine<0>(c, __lfortran_partial0_0[__i]);
-                    r = __lfortran_lane_combine<3>(r, __lfortran_partial0_1[__i]);
-                    t = __lfortran_lane_combine<0>(t, __lfortran_partial0_2[__i]);
-                    u = __lfortran_lane_combine<1>(u, __lfortran_partial0_3[__i]);
-                    v = __lfortran_lane_combine<2>(v, __lfortran_partial0_4[__i]);
+                if (__gpu_lanes_n > 32) {
+                    c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
+                    r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
+                    t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
+                    u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
+                    v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
+                    __shared__ int __lfortran_partial0_0[32];
+                    __shared__ float __lfortran_partial0_1[32];
+                    __shared__ float __lfortran_partial0_2[32];
+                    __shared__ float __lfortran_partial0_3[32];
+                    __shared__ float __lfortran_partial0_4[32];
+                    if ((threadIdx.x & 31u) == 0) {
+                        __lfortran_partial0_0[threadIdx.x >> 5] = c;
+                        __lfortran_partial0_1[threadIdx.x >> 5] = r;
+                        __lfortran_partial0_2[threadIdx.x >> 5] = t;
+                        __lfortran_partial0_3[threadIdx.x >> 5] = u;
+                        __lfortran_partial0_4[threadIdx.x >> 5] = v;
+                    }
+                    __syncthreads();
+                    c = __lfortran_partial0_0[0];
+                    r = __lfortran_partial0_1[0];
+                    t = __lfortran_partial0_2[0];
+                    u = __lfortran_partial0_3[0];
+                    v = __lfortran_partial0_4[0];
+                    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                        c = __lfortran_lane_combine<0>(c, __lfortran_partial0_0[__i]);
+                        r = __lfortran_lane_combine<3>(r, __lfortran_partial0_1[__i]);
+                        t = __lfortran_lane_combine<0>(t, __lfortran_partial0_2[__i]);
+                        u = __lfortran_lane_combine<1>(u, __lfortran_partial0_3[__i]);
+                        v = __lfortran_lane_combine<2>(v, __lfortran_partial0_4[__i]);
+                    }
+                } else {
+                    c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
+                    r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
+                    t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
+                    u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
+                    v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
                 }
             } else {
-                c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
-                r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
-                t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
-                u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
-                v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
+                #pragma unroll 16
+                for (i = 1; i <= (__gpu_residue_first - 1); i++) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
+                }
             }
-        } else {
-            #pragma unroll 16
-            for (i = 1; i <= (__gpu_residue_first - 1); i++) {
-                t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if ((((i) % (100)) == 0)) {
-                    u = (u * ((float)2));
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    c = 0;
+                    r =  -3.40282346638528860e+38f;
+                    t =   0.00000000000000000e+00f;
+                    u =   1.00000000000000000e+00f;
+                    v =   3.40282346638528860e+38f;
                 }
-                r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
-                v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
-                c = (c + ((i) % (7)));
+                __gpu_lane_after = (__gpu_residue_first + (((int)(((((((n - 6) - __gpu_residue_first) + 7) / 7) > 0)) ? (((((n - 6) - __gpu_residue_first) + 7) / 7)) : (0))) * 7));
+                for (__gpu_residue_group = (__gpu_residue_first + (((int)__gpu_lane) * 7)); __gpu_residue_group <= (n - 6); __gpu_residue_group += (7 * ((int)__gpu_lanes))) {
+                    t = (t + a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((__gpu_residue_group) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)__gpu_residue_group)));
+                    v = min(v, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)__gpu_residue_group)));
+                    c = (c + 0);
+                    t = (t + a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 1)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 1))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 1))));
+                    c = (c + 1);
+                    t = (t + a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 2)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 2))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 2))));
+                    c = (c + 2);
+                    t = (t + a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 3)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 3))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 3))));
+                    c = (c + 3);
+                    t = (t + a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 4)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 4))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 4))));
+                    c = (c + 4);
+                    t = (t + a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 5)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 5))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 5))));
+                    c = (c + 5);
+                    t = (t + a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 6)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 6))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 6))));
+                    c = (c + 6);
+                }
+                if (__gpu_lanes_n > 32) {
+                    c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
+                    r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
+                    t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
+                    u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
+                    v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
+                    __shared__ int __lfortran_partial1_0[32];
+                    __shared__ float __lfortran_partial1_1[32];
+                    __shared__ float __lfortran_partial1_2[32];
+                    __shared__ float __lfortran_partial1_3[32];
+                    __shared__ float __lfortran_partial1_4[32];
+                    if ((threadIdx.x & 31u) == 0) {
+                        __lfortran_partial1_0[threadIdx.x >> 5] = c;
+                        __lfortran_partial1_1[threadIdx.x >> 5] = r;
+                        __lfortran_partial1_2[threadIdx.x >> 5] = t;
+                        __lfortran_partial1_3[threadIdx.x >> 5] = u;
+                        __lfortran_partial1_4[threadIdx.x >> 5] = v;
+                    }
+                    __syncthreads();
+                    c = __lfortran_partial1_0[0];
+                    r = __lfortran_partial1_1[0];
+                    t = __lfortran_partial1_2[0];
+                    u = __lfortran_partial1_3[0];
+                    v = __lfortran_partial1_4[0];
+                    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                        c = __lfortran_lane_combine<0>(c, __lfortran_partial1_0[__i]);
+                        r = __lfortran_lane_combine<3>(r, __lfortran_partial1_1[__i]);
+                        t = __lfortran_lane_combine<0>(t, __lfortran_partial1_2[__i]);
+                        u = __lfortran_lane_combine<1>(u, __lfortran_partial1_3[__i]);
+                        v = __lfortran_lane_combine<2>(v, __lfortran_partial1_4[__i]);
+                    }
+                } else {
+                    c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
+                    r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
+                    t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
+                    u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
+                    v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
+                }
+                __gpu_residue_group = __gpu_lane_after;
+            } else {
+                for (__gpu_residue_group = __gpu_residue_first; __gpu_residue_group <= (n - 6); __gpu_residue_group += 7) {
+                    t = (t + a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((__gpu_residue_group) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)__gpu_residue_group)));
+                    v = min(v, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)__gpu_residue_group)));
+                    c = (c + 0);
+                    t = (t + a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 1)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 1))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 1))));
+                    c = (c + 1);
+                    t = (t + a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 2)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 2))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 2))));
+                    c = (c + 2);
+                    t = (t + a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 3)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 3))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 3))));
+                    c = (c + 3);
+                    t = (t + a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 4)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 4))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 4))));
+                    c = (c + 4);
+                    t = (t + a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 5)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 5))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 5))));
+                    c = (c + 5);
+                    t = (t + a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 6)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 6))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 6))));
+                    c = (c + 6);
+                }
             }
-        }
-        if ((__gpu_lanes > 1)) {
-            if ((__gpu_lane != 0)) {
-                c = 0;
-                r =  -3.40282346638528860e+38f;
-                t =   0.00000000000000000e+00f;
-                u =   1.00000000000000000e+00f;
-                v =   3.40282346638528860e+38f;
-            }
-            __gpu_lane_after = (__gpu_residue_first + (((int)(((((((n - 6) - __gpu_residue_first) + 7) / 7) > 0)) ? (((((n - 6) - __gpu_residue_first) + 7) / 7)) : (0))) * 7));
-            for (__gpu_residue_group = (__gpu_residue_first + (((int)__gpu_lane) * 7)); __gpu_residue_group <= (n - 6); __gpu_residue_group += (7 * ((int)__gpu_lanes))) {
-                t = (t + a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if ((((__gpu_residue_group) % (100)) == 0)) {
-                    u = (u * ((float)2));
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    c = 0;
+                    r =  -3.40282346638528860e+38f;
+                    t =   0.00000000000000000e+00f;
+                    u =   1.00000000000000000e+00f;
+                    v =   3.40282346638528860e+38f;
                 }
-                r = max(r, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)__gpu_residue_group)));
-                v = min(v, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)__gpu_residue_group)));
-                c = (c + 0);
-                t = (t + a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 1)) % (100)) == 0)) {
-                    u = (u * ((float)2));
+                i = (__gpu_residue_group + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_1 = n >= i ? (int)((unsigned)(n - i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+                #pragma unroll 16
+                for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i += (1 * ((int)__gpu_lanes))) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
                 }
-                r = max(r, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 1))));
-                v = min(v, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 1))));
-                c = (c + 1);
-                t = (t + a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 2)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 2))));
-                v = min(v, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 2))));
-                c = (c + 2);
-                t = (t + a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 3)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 3))));
-                v = min(v, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 3))));
-                c = (c + 3);
-                t = (t + a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 4)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 4))));
-                v = min(v, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 4))));
-                c = (c + 4);
-                t = (t + a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 5)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 5))));
-                v = min(v, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 5))));
-                c = (c + 5);
-                t = (t + a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 6)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 6))));
-                v = min(v, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 6))));
-                c = (c + 6);
-            }
-            if (__gpu_lanes_n > 32) {
-                c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
-                r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
-                t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
-                u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
-                v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
-                __shared__ int __lfortran_partial1_0[32];
-                __shared__ float __lfortran_partial1_1[32];
-                __shared__ float __lfortran_partial1_2[32];
-                __shared__ float __lfortran_partial1_3[32];
-                __shared__ float __lfortran_partial1_4[32];
-                if ((threadIdx.x & 31u) == 0) {
-                    __lfortran_partial1_0[threadIdx.x >> 5] = c;
-                    __lfortran_partial1_1[threadIdx.x >> 5] = r;
-                    __lfortran_partial1_2[threadIdx.x >> 5] = t;
-                    __lfortran_partial1_3[threadIdx.x >> 5] = u;
-                    __lfortran_partial1_4[threadIdx.x >> 5] = v;
-                }
-                __syncthreads();
-                c = __lfortran_partial1_0[0];
-                r = __lfortran_partial1_1[0];
-                t = __lfortran_partial1_2[0];
-                u = __lfortran_partial1_3[0];
-                v = __lfortran_partial1_4[0];
-                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
-                    c = __lfortran_lane_combine<0>(c, __lfortran_partial1_0[__i]);
-                    r = __lfortran_lane_combine<3>(r, __lfortran_partial1_1[__i]);
-                    t = __lfortran_lane_combine<0>(t, __lfortran_partial1_2[__i]);
-                    u = __lfortran_lane_combine<1>(u, __lfortran_partial1_3[__i]);
-                    v = __lfortran_lane_combine<2>(v, __lfortran_partial1_4[__i]);
+                if (__gpu_lanes_n > 32) {
+                    c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
+                    r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
+                    t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
+                    u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
+                    v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
+                    __shared__ int __lfortran_partial2_0[32];
+                    __shared__ float __lfortran_partial2_1[32];
+                    __shared__ float __lfortran_partial2_2[32];
+                    __shared__ float __lfortran_partial2_3[32];
+                    __shared__ float __lfortran_partial2_4[32];
+                    if ((threadIdx.x & 31u) == 0) {
+                        __lfortran_partial2_0[threadIdx.x >> 5] = c;
+                        __lfortran_partial2_1[threadIdx.x >> 5] = r;
+                        __lfortran_partial2_2[threadIdx.x >> 5] = t;
+                        __lfortran_partial2_3[threadIdx.x >> 5] = u;
+                        __lfortran_partial2_4[threadIdx.x >> 5] = v;
+                    }
+                    __syncthreads();
+                    c = __lfortran_partial2_0[0];
+                    r = __lfortran_partial2_1[0];
+                    t = __lfortran_partial2_2[0];
+                    u = __lfortran_partial2_3[0];
+                    v = __lfortran_partial2_4[0];
+                    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                        c = __lfortran_lane_combine<0>(c, __lfortran_partial2_0[__i]);
+                        r = __lfortran_lane_combine<3>(r, __lfortran_partial2_1[__i]);
+                        t = __lfortran_lane_combine<0>(t, __lfortran_partial2_2[__i]);
+                        u = __lfortran_lane_combine<1>(u, __lfortran_partial2_3[__i]);
+                        v = __lfortran_lane_combine<2>(v, __lfortran_partial2_4[__i]);
+                    }
+                } else {
+                    c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
+                    r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
+                    t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
+                    u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
+                    v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
                 }
             } else {
-                c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
-                r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
-                t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
-                u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
-                v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
+                #pragma unroll 16
+                for (i = __gpu_residue_group; i <= n; i++) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
+                }
             }
-            __gpu_residue_group = __gpu_lane_after;
-        } else {
-            for (__gpu_residue_group = __gpu_residue_first; __gpu_residue_group <= (n - 6); __gpu_residue_group += 7) {
-                t = (t + a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if ((((__gpu_residue_group) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)__gpu_residue_group)));
-                v = min(v, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)__gpu_residue_group)));
-                c = (c + 0);
-                t = (t + a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 1)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 1))));
-                v = min(v, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 1))));
-                c = (c + 1);
-                t = (t + a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 2)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 2))));
-                v = min(v, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 2))));
-                c = (c + 2);
-                t = (t + a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 3)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 3))));
-                v = min(v, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 3))));
-                c = (c + 3);
-                t = (t + a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 4)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 4))));
-                v = min(v, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 4))));
-                c = (c + 4);
-                t = (t + a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 5)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 5))));
-                v = min(v, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 5))));
-                c = (c + 5);
-                t = (t + a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if (((((__gpu_residue_group + 6)) % (100)) == 0)) {
-                    u = (u * ((float)2));
-                }
-                r = max(r, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 6))));
-                v = min(v, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 6))));
-                c = (c + 6);
+            if ((__gpu_lane == 0)) {
+                s[((int)(j__dc) - (1))] = t;
+                p[((int)(j__dc) - (1))] = u;
+                mx[((int)(j__dc) - (1))] = r;
+                mn[((int)(j__dc) - (1))] = v;
+                k[((int)(j__dc) - (1))] = c;
+            }
+            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+            i__dc = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_2 = n >= i__dc ? (int)((unsigned)(n - i__dc) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 16
+            for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, i__dc += (1 * ((int)__gpu_lanes))) {
+                y[((int)(i__dc) - (1)) + (1000 * ((int)(j__dc) - (1)))] = (((a[((int)(i__dc) - (1)) + (1000 * ((int)(j__dc) - (1)))] * u) + t) - v);
             }
         }
-        if ((__gpu_lanes > 1)) {
-            if ((__gpu_lane != 0)) {
-                c = 0;
-                r =  -3.40282346638528860e+38f;
-                t =   0.00000000000000000e+00f;
-                u =   1.00000000000000000e+00f;
-                v =   3.40282346638528860e+38f;
-            }
-            i = (__gpu_residue_group + (((int)__gpu_lane) * 1));
-            const int __lfortran_trips_1 = n >= i ? (int)((unsigned)(n - i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
-            #pragma unroll 16
-            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i += (1 * ((int)__gpu_lanes))) {
-                t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if ((((i) % (100)) == 0)) {
-                    u = (u * ((float)2));
+    } else {
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int __gpu_lane_after;
+        int i__dc;
+        int j__dc;
+        const int n = 1000;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 3)) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        j__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_first;
+            int __gpu_residue_group;
+            int c;
+            int i;
+            float r;
+            float t;
+            float u;
+            float v;
+            t = ((float)0);
+            u = ((float)1);
+            r = (-(  1.00000001504746622e+30f));
+            v =   1.00000001504746622e+30f;
+            c = j__dc;
+            __gpu_residue_first = (1 + ((7 - ((1 + 0) - (((1 + 0) / 7) * 7))) - (((7 - ((1 + 0) - (((1 + 0) / 7) * 7))) / 7) * 7)));
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    c = 0;
+                    r =  -3.40282346638528860e+38f;
+                    t =   0.00000000000000000e+00f;
+                    u =   1.00000000000000000e+00f;
+                    v =   3.40282346638528860e+38f;
                 }
-                r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
-                v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
-                c = (c + ((i) % (7)));
-            }
-            if (__gpu_lanes_n > 32) {
-                c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
-                r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
-                t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
-                u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
-                v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
-                __shared__ int __lfortran_partial2_0[32];
-                __shared__ float __lfortran_partial2_1[32];
-                __shared__ float __lfortran_partial2_2[32];
-                __shared__ float __lfortran_partial2_3[32];
-                __shared__ float __lfortran_partial2_4[32];
-                if ((threadIdx.x & 31u) == 0) {
-                    __lfortran_partial2_0[threadIdx.x >> 5] = c;
-                    __lfortran_partial2_1[threadIdx.x >> 5] = r;
-                    __lfortran_partial2_2[threadIdx.x >> 5] = t;
-                    __lfortran_partial2_3[threadIdx.x >> 5] = u;
-                    __lfortran_partial2_4[threadIdx.x >> 5] = v;
+                i = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_0 = (__gpu_residue_first - 1) >= i ? (int)((unsigned)((__gpu_residue_first - 1) - i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+                #pragma unroll 16
+                for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, i += (1 * ((int)__gpu_lanes))) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
                 }
-                __syncthreads();
-                c = __lfortran_partial2_0[0];
-                r = __lfortran_partial2_1[0];
-                t = __lfortran_partial2_2[0];
-                u = __lfortran_partial2_3[0];
-                v = __lfortran_partial2_4[0];
-                for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
-                    c = __lfortran_lane_combine<0>(c, __lfortran_partial2_0[__i]);
-                    r = __lfortran_lane_combine<3>(r, __lfortran_partial2_1[__i]);
-                    t = __lfortran_lane_combine<0>(t, __lfortran_partial2_2[__i]);
-                    u = __lfortran_lane_combine<1>(u, __lfortran_partial2_3[__i]);
-                    v = __lfortran_lane_combine<2>(v, __lfortran_partial2_4[__i]);
+                if (__gpu_lanes_n > 32) {
+                    c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
+                    r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
+                    t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
+                    u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
+                    v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
+                    __shared__ int __lfortran_partial0_0[32];
+                    __shared__ float __lfortran_partial0_1[32];
+                    __shared__ float __lfortran_partial0_2[32];
+                    __shared__ float __lfortran_partial0_3[32];
+                    __shared__ float __lfortran_partial0_4[32];
+                    if ((threadIdx.x & 31u) == 0) {
+                        __lfortran_partial0_0[threadIdx.x >> 5] = c;
+                        __lfortran_partial0_1[threadIdx.x >> 5] = r;
+                        __lfortran_partial0_2[threadIdx.x >> 5] = t;
+                        __lfortran_partial0_3[threadIdx.x >> 5] = u;
+                        __lfortran_partial0_4[threadIdx.x >> 5] = v;
+                    }
+                    __syncthreads();
+                    c = __lfortran_partial0_0[0];
+                    r = __lfortran_partial0_1[0];
+                    t = __lfortran_partial0_2[0];
+                    u = __lfortran_partial0_3[0];
+                    v = __lfortran_partial0_4[0];
+                    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                        c = __lfortran_lane_combine<0>(c, __lfortran_partial0_0[__i]);
+                        r = __lfortran_lane_combine<3>(r, __lfortran_partial0_1[__i]);
+                        t = __lfortran_lane_combine<0>(t, __lfortran_partial0_2[__i]);
+                        u = __lfortran_lane_combine<1>(u, __lfortran_partial0_3[__i]);
+                        v = __lfortran_lane_combine<2>(v, __lfortran_partial0_4[__i]);
+                    }
+                } else {
+                    c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
+                    r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
+                    t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
+                    u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
+                    v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
                 }
             } else {
-                c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
-                r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
-                t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
-                u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
-                v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
-            }
-        } else {
-            #pragma unroll 16
-            for (i = __gpu_residue_group; i <= n; i++) {
-                t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
-                if ((((i) % (100)) == 0)) {
-                    u = (u * ((float)2));
+                #pragma unroll 16
+                for (i = 1; i <= (__gpu_residue_first - 1); i++) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
                 }
-                r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
-                v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
-                c = (c + ((i) % (7)));
             }
-        }
-        if ((__gpu_lane == 0)) {
-            s[((int)(j__dc) - (1))] = t;
-            p[((int)(j__dc) - (1))] = u;
-            mx[((int)(j__dc) - (1))] = r;
-            mn[((int)(j__dc) - (1))] = v;
-            k[((int)(j__dc) - (1))] = c;
-        }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
-        i__dc = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_2 = n >= i__dc ? (int)((unsigned)(n - i__dc) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
-        #pragma unroll 16
-        for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, i__dc += (1 * ((int)__gpu_lanes))) {
-            y[((int)(i__dc) - (1)) + (1000 * ((int)(j__dc) - (1)))] = (((a[((int)(i__dc) - (1)) + (1000 * ((int)(j__dc) - (1)))] * u) + t) - v);
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    c = 0;
+                    r =  -3.40282346638528860e+38f;
+                    t =   0.00000000000000000e+00f;
+                    u =   1.00000000000000000e+00f;
+                    v =   3.40282346638528860e+38f;
+                }
+                __gpu_lane_after = (__gpu_residue_first + (((int)(((((((n - 6) - __gpu_residue_first) + 7) / 7) > 0)) ? (((((n - 6) - __gpu_residue_first) + 7) / 7)) : (0))) * 7));
+                for (__gpu_residue_group = (__gpu_residue_first + (((int)__gpu_lane) * 7)); __gpu_residue_group <= (n - 6); __gpu_residue_group += (7 * ((int)__gpu_lanes))) {
+                    t = (t + a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((__gpu_residue_group) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)__gpu_residue_group)));
+                    v = min(v, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)__gpu_residue_group)));
+                    c = (c + 0);
+                    t = (t + a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 1)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 1))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 1))));
+                    c = (c + 1);
+                    t = (t + a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 2)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 2))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 2))));
+                    c = (c + 2);
+                    t = (t + a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 3)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 3))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 3))));
+                    c = (c + 3);
+                    t = (t + a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 4)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 4))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 4))));
+                    c = (c + 4);
+                    t = (t + a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 5)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 5))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 5))));
+                    c = (c + 5);
+                    t = (t + a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 6)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 6))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 6))));
+                    c = (c + 6);
+                }
+                if (__gpu_lanes_n > 32) {
+                    c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
+                    r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
+                    t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
+                    u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
+                    v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
+                    __shared__ int __lfortran_partial1_0[32];
+                    __shared__ float __lfortran_partial1_1[32];
+                    __shared__ float __lfortran_partial1_2[32];
+                    __shared__ float __lfortran_partial1_3[32];
+                    __shared__ float __lfortran_partial1_4[32];
+                    if ((threadIdx.x & 31u) == 0) {
+                        __lfortran_partial1_0[threadIdx.x >> 5] = c;
+                        __lfortran_partial1_1[threadIdx.x >> 5] = r;
+                        __lfortran_partial1_2[threadIdx.x >> 5] = t;
+                        __lfortran_partial1_3[threadIdx.x >> 5] = u;
+                        __lfortran_partial1_4[threadIdx.x >> 5] = v;
+                    }
+                    __syncthreads();
+                    c = __lfortran_partial1_0[0];
+                    r = __lfortran_partial1_1[0];
+                    t = __lfortran_partial1_2[0];
+                    u = __lfortran_partial1_3[0];
+                    v = __lfortran_partial1_4[0];
+                    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                        c = __lfortran_lane_combine<0>(c, __lfortran_partial1_0[__i]);
+                        r = __lfortran_lane_combine<3>(r, __lfortran_partial1_1[__i]);
+                        t = __lfortran_lane_combine<0>(t, __lfortran_partial1_2[__i]);
+                        u = __lfortran_lane_combine<1>(u, __lfortran_partial1_3[__i]);
+                        v = __lfortran_lane_combine<2>(v, __lfortran_partial1_4[__i]);
+                    }
+                } else {
+                    c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
+                    r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
+                    t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
+                    u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
+                    v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
+                }
+                __gpu_residue_group = __gpu_lane_after;
+            } else {
+                for (__gpu_residue_group = __gpu_residue_first; __gpu_residue_group <= (n - 6); __gpu_residue_group += 7) {
+                    t = (t + a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((__gpu_residue_group) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)__gpu_residue_group)));
+                    v = min(v, (a[((int)(__gpu_residue_group) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)__gpu_residue_group)));
+                    c = (c + 0);
+                    t = (t + a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 1)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 1))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 1)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 1))));
+                    c = (c + 1);
+                    t = (t + a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 2)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 2))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 2)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 2))));
+                    c = (c + 2);
+                    t = (t + a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 3)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 3))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 3)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 3))));
+                    c = (c + 3);
+                    t = (t + a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 4)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 4))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 4)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 4))));
+                    c = (c + 4);
+                    t = (t + a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 5)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 5))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 5)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 5))));
+                    c = (c + 5);
+                    t = (t + a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if (((((__gpu_residue_group + 6)) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)(__gpu_residue_group + 6))));
+                    v = min(v, (a[((int)((__gpu_residue_group + 6)) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)(__gpu_residue_group + 6))));
+                    c = (c + 6);
+                }
+            }
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    c = 0;
+                    r =  -3.40282346638528860e+38f;
+                    t =   0.00000000000000000e+00f;
+                    u =   1.00000000000000000e+00f;
+                    v =   3.40282346638528860e+38f;
+                }
+                i = (__gpu_residue_group + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_1 = n >= i ? (int)((unsigned)(n - i) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+                #pragma unroll 16
+                for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i += (1 * ((int)__gpu_lanes))) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
+                }
+                if (__gpu_lanes_n > 32) {
+                    c = __lfortran_lane_reduce<0>(c, 32, 0xffffffffu);
+                    r = __lfortran_lane_reduce<3>(r, 32, 0xffffffffu);
+                    t = __lfortran_lane_reduce<0>(t, 32, 0xffffffffu);
+                    u = __lfortran_lane_reduce<1>(u, 32, 0xffffffffu);
+                    v = __lfortran_lane_reduce<2>(v, 32, 0xffffffffu);
+                    __shared__ int __lfortran_partial2_0[32];
+                    __shared__ float __lfortran_partial2_1[32];
+                    __shared__ float __lfortran_partial2_2[32];
+                    __shared__ float __lfortran_partial2_3[32];
+                    __shared__ float __lfortran_partial2_4[32];
+                    if ((threadIdx.x & 31u) == 0) {
+                        __lfortran_partial2_0[threadIdx.x >> 5] = c;
+                        __lfortran_partial2_1[threadIdx.x >> 5] = r;
+                        __lfortran_partial2_2[threadIdx.x >> 5] = t;
+                        __lfortran_partial2_3[threadIdx.x >> 5] = u;
+                        __lfortran_partial2_4[threadIdx.x >> 5] = v;
+                    }
+                    __syncthreads();
+                    c = __lfortran_partial2_0[0];
+                    r = __lfortran_partial2_1[0];
+                    t = __lfortran_partial2_2[0];
+                    u = __lfortran_partial2_3[0];
+                    v = __lfortran_partial2_4[0];
+                    for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                        c = __lfortran_lane_combine<0>(c, __lfortran_partial2_0[__i]);
+                        r = __lfortran_lane_combine<3>(r, __lfortran_partial2_1[__i]);
+                        t = __lfortran_lane_combine<0>(t, __lfortran_partial2_2[__i]);
+                        u = __lfortran_lane_combine<1>(u, __lfortran_partial2_3[__i]);
+                        v = __lfortran_lane_combine<2>(v, __lfortran_partial2_4[__i]);
+                    }
+                } else {
+                    c = __lfortran_lane_reduce<0>(c, __gpu_lanes_n, __gpu_lane_mask);
+                    r = __lfortran_lane_reduce<3>(r, __gpu_lanes_n, __gpu_lane_mask);
+                    t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n, __gpu_lane_mask);
+                    u = __lfortran_lane_reduce<1>(u, __gpu_lanes_n, __gpu_lane_mask);
+                    v = __lfortran_lane_reduce<2>(v, __gpu_lanes_n, __gpu_lane_mask);
+                }
+            } else {
+                #pragma unroll 16
+                for (i = __gpu_residue_group; i <= n; i++) {
+                    t = (t + a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))]);
+                    if ((((i) % (100)) == 0)) {
+                        u = (u * ((float)2));
+                    }
+                    r = max(r, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] * ((float)i)));
+                    v = min(v, (a[((int)(i) - (1)) + (1000 * ((int)(j__dc) - (1)))] - ((float)i)));
+                    c = (c + ((i) % (7)));
+                }
+            }
+            if ((__gpu_lane == 0)) {
+                s[((int)(j__dc) - (1))] = t;
+                p[((int)(j__dc) - (1))] = u;
+                mx[((int)(j__dc) - (1))] = r;
+                mn[((int)(j__dc) - (1))] = v;
+                k[((int)(j__dc) - (1))] = c;
+            }
+            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+            i__dc = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_2 = n >= i__dc ? (int)((unsigned)(n - i__dc) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 16
+            for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, i__dc += (1 * ((int)__gpu_lanes))) {
+                y[((int)(i__dc) - (1)) + (1000 * ((int)(j__dc) - (1)))] = (((a[((int)(i__dc) - (1)) + (1000 * ((int)(j__dc) - (1)))] * u) + t) - v);
+            }
         }
     }
 }
