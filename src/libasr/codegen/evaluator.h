@@ -44,23 +44,6 @@ std::string apply_macos_deployment_target(const std::string &triple);
 // is not a macOS or Darwin triple.
 std::string macos_platform_version(const std::string &triple);
 
-// The JIT could not link the code to run: it references symbols that are
-// defined nowhere, neither by an earlier module nor by the host process. Like
-// an undefined reference at link time, this is an error in the user's code.
-class UndefinedSymbolsError : public LCompilersException
-{
-    std::vector<std::string> m_symbols;
-public:
-    UndefinedSymbolsError(const std::string &msg,
-            const std::vector<std::string> &symbols)
-        : LCompilersException(msg), m_symbols{symbols}
-    { }
-    const std::vector<std::string> &symbols() const
-    {
-        return m_symbols;
-    }
-};
-
 struct LLVMTargetConfig {
     std::string triple;
     std::string cpu = "generic";
@@ -125,6 +108,11 @@ public:
     void add_module(const std::string &source);
     void add_module(std::unique_ptr<llvm::Module> mod);
     void add_module(std::unique_ptr<LLVMModule> m);
+    // The symbols `m` refers to that are defined nowhere, neither by a module
+    // added earlier nor by the host process, so that it would fail to link.
+    // Nothing is added, so a module found to refer to such symbols leaves no
+    // trace in the JIT.
+    std::vector<std::string> undefined_symbols(LLVMModule &m);
     intptr_t get_symbol_address(const std::string &name);
     std::string get_asm(llvm::Module &m);
     void save_asm_file(llvm::Module &m, const std::string &filename);

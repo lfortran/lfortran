@@ -1063,6 +1063,59 @@ void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
     add_module(std::move(m->m_m));
 }
 
+std::vector<std::string> LLVMEvaluator::undefined_symbols(LLVMModule &m) {
+    // The JIT links a module the first time a symbol it defines is looked up.
+    // If that fails, the symbols of the module stay failed for the rest of
+    // the session, and so does every symbol depending on them. So what the
+    // module refers to is looked up here first, which does not touch the
+    // module itself.
+    std::vector<std::string> undefined;
+    for (llvm::GlobalValue &gv : m.m_m->global_values()) {
+        if (!gv.isDeclaration() || gv.use_empty() || !gv.hasName()
+                || gv.hasExternalWeakLinkage()) {
+            continue;
+        }
+        if (llvm::Function *fn = llvm::dyn_cast<llvm::Function>(&gv)) {
+            if (fn->isIntrinsic()) continue;
+        }
+        std::string name = gv.getName().str();
+#if LLVM_VERSION_MAJOR < 8
+        llvm::JITSymbol s = jit->findSymbol(name);
+        if (s) continue;
+        llvm::Error err = s.takeError();
+        if (!err) {
+            undefined.push_back(name);
+            continue;
+        }
+#else
+#if LLVM_VERSION_MAJOR < 17
+        llvm::Expected<llvm::JITEvaluatedSymbol>
+#else
+        llvm::Expected<llvm::orc::ExecutorSymbolDef>
+#endif
+            s = jit->lookup(name);
+        if (s) continue;
+        bool not_found = false;
+        llvm::Error err = llvm::handleErrors(s.takeError(),
+            [&](llvm::orc::SymbolsNotFound &) { not_found = true; });
+        if (not_found && !err) {
+            undefined.push_back(name);
+            continue;
+        }
+#endif
+        llvm::SmallVector<char, 128> buf;
+        llvm::raw_svector_ostream dest(buf);
+        llvm::logAllUnhandledErrors(std::move(err), dest, "");
+        std::string msg = std::string(dest.str().data(), dest.str().size());
+        if (!msg.empty() && msg[msg.size()-1] == '\n') {
+            msg = msg.substr(0, msg.size()-1);
+        }
+        throw LCompilersException("lookup() failed to find the symbol '"
+            + name + "', error: " + msg);
+    }
+    return undefined;
+}
+
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
 #if LLVM_VERSION_MAJOR < 8
     // LLVM 7: Use findSymbol which returns JITSymbol
@@ -1083,9 +1136,6 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
     }
     return (intptr_t)addr.get();
 #else
-    // Forget what earlier lookups failed to find, so that a failure of this
-    // one names only what it is missing.
-    jit->takeMissingSymbols();
 #if LLVM_VERSION_MAJOR < 17
     llvm::Expected<llvm::JITEvaluatedSymbol>
 #else
@@ -1099,13 +1149,8 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         llvm::logAllUnhandledErrors(std::move(e), dest, "");
         std::string msg = std::string(dest.str().data(), dest.str().size());
         if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
-        msg = "lookup() failed to find the symbol '" + name + "', error: "
-            + msg;
-        std::vector<std::string> missing = jit->takeMissingSymbols();
-        if (!missing.empty()) {
-            throw UndefinedSymbolsError(msg, missing);
-        }
-        throw LCompilersException(msg);
+        throw LCompilersException("lookup() failed to find the symbol '"
+            + name + "', error: " + msg);
     }
 #if LLVM_VERSION_MAJOR < 17
     llvm::Expected<uint64_t> addr0 = s->getAddress();

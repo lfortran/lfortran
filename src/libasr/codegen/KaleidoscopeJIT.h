@@ -34,14 +34,10 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
 #endif
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
-#include <mutex>
-#include <string>
-#include <vector>
 
 #if LLVM_VERSION_MAJOR >= 13
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
@@ -137,11 +133,6 @@ private:
   DataLayout DL;
   MangleAndInterner Mangle;
   JITDylib &JITDL;
-  // The symbols that linking failed to find since takeMissingSymbols() was
-  // last called. A lookup reports only that it failed to materialize what it
-  // looked up; why is reported to the session's error reporter.
-  std::mutex MissingSymbolsMutex;
-  std::vector<std::string> MissingSymbols;
 #else
   // LLVM 7: Different JIT infrastructure
   ExecutionSession ES;
@@ -190,23 +181,6 @@ public:
         cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
             this->DL)));
 #endif
-    this->ES->setErrorReporter([this](Error Err) {
-      handleAllErrors(std::move(Err),
-        [this](SymbolsNotFound &E) {
-          std::lock_guard<std::mutex> lock(MissingSymbolsMutex);
-          char prefix = this->DL.getGlobalPrefix();
-          for (const auto &S : E.getSymbols()) {
-            std::string name = (*S).str();
-            if (prefix != '\0' && !name.empty() && name[0] == prefix) {
-              name.erase(0, 1);
-            }
-            MissingSymbols.push_back(name);
-          }
-        },
-        [](ErrorInfoBase &E) {
-          errs() << "JIT session error: " << E.message() << "\n";
-        });
-    });
     if (JTMB.getTargetTriple().isOSBinFormatCOFF()) {
       ObjectLayer.setOverrideObjectFlagsWithResponsibilityFlags(true);
       ObjectLayer.setAutoClaimResponsibilityForObjectSymbols(true);
@@ -319,20 +293,6 @@ public:
   Expected<ExecutorSymbolDef> lookup(StringRef Name) {
 #endif
     return ES->lookup({&JITDL}, Mangle(Name.str()));
-  }
-
-  // Returns the symbols that linking failed to find since the last call,
-  // each once, and forgets them.
-  std::vector<std::string> takeMissingSymbols() {
-    std::lock_guard<std::mutex> lock(MissingSymbolsMutex);
-    std::vector<std::string> names;
-    for (const std::string &name : MissingSymbols) {
-      if (std::find(names.begin(), names.end(), name) == names.end()) {
-        names.push_back(name);
-      }
-    }
-    MissingSymbols.clear();
-    return names;
   }
 #else
   // LLVM 7: Different lookup API

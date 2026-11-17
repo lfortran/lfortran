@@ -5452,21 +5452,6 @@ end module
     CHECK(r.result.i32 == 7);
 }
 
-#if !defined(__EMSCRIPTEN__) && LLVM_VERSION_MAJOR != 8
-// The evaluator's message for a symbol the JIT cannot resolve; LLVM 7
-// reports it from findSymbol()/getAddress(), newer LLVM from lookup().
-// In the WASM build an unresolved symbol is instead a JavaScript "Dynamic
-// linking error" that aborts the process, so the checks below that call a
-// cell that does not link are native only. They are also skipped with
-// LLVM 8, whose ORC ExecutionSession::lookup() reports "Symbols not found"
-// but then never returns when a symbol fails to materialize.
-static bool is_jit_symbol_lookup_failure(const std::string &msg) {
-    return msg.find("lookup() failed to find the symbol") != std::string::npos
-        || msg.find("findSymbol() failed to find the symbol") != std::string::npos
-        || msg.find("getAddress() failed for symbol") != std::string::npos;
-}
-#endif
-
 TEST_CASE("FortranEvaluator interface body in a generic interface block") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -5478,29 +5463,27 @@ fn = 1
 end function
 )").ok);
     // The generic interface refers to the interface body, so it stays and
-    // the cell compiles; as without an earlier `fn`, a call of `c` then
-    // does not link.
-    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(integer function c()
+    // the cell compiles; as without an earlier `fn`, it then does not link.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(R"(integer function c()
 interface gen
 integer function fn()
 end function
 end interface
 c = gen()
 end function
-)");
+)", false, lm, lpm, d);
+#ifdef __EMSCRIPTEN__
+    // The WASM build does not look for undefined references.
     CHECK(r.ok);
-#if !defined(__EMSCRIPTEN__) && LLVM_VERSION_MAJOR != 8
-    // The unresolved `fn` makes the JIT lookup of the cell fail.
-    bool linked = false;
-    try {
-        r = e.evaluate2("c()");
-        linked = r.ok;
-    } catch (const LCompilers::LCompilersException &ex) {
-        std::string msg = ex.msg();
-        CAPTURE(msg);
-        CHECK(is_jit_symbol_lookup_failure(msg));
-    }
-    CHECK(!linked);
+#else
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    CHECK(d.render(lm, cu).find("undefined reference to 'fn'")
+        != std::string::npos);
 #endif
 }
 
@@ -5582,25 +5565,20 @@ end function
     // like #17138).
     // `fn` has the implicit type real, so the external procedure it
     // declares is not the earlier cell's integer `fn`: as without that
-    // `fn`, a call of `c` does not link.
-    REQUIRE(e.evaluate2(R"(real function c()
+    // `fn`, the cell does not link.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    r = e.evaluate(R"(real function c()
 external fn
 c = fn() / 2
 end function
-)").ok);
-#if LLVM_VERSION_MAJOR != 8
-    // The unresolved `fn` makes the JIT lookup of the cell fail.
-    bool linked = false;
-    try {
-        r = e.evaluate2("c()");
-        linked = r.ok;
-    } catch (const LCompilers::LCompilersException &ex) {
-        std::string msg = ex.msg();
-        CAPTURE(msg);
-        CHECK(is_jit_symbol_lookup_failure(msg));
-    }
-    CHECK(!linked);
-#endif
+)", false, lm, lpm, d);
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    CHECK(d.render(lm, cu).find("undefined reference to 'fn'")
+        != std::string::npos);
 #endif
 }
 
@@ -6678,32 +6656,71 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
 }
 
 TEST_CASE("FortranEvaluator execute: undefined procedure") {
-    // A procedure that is never defined is found missing when the JIT links
-    // the cell that first calls it. That is a user error, like an undefined
-    // reference at link time, and the session continues (#17046).
+    // A procedure that is never defined is a user error, like an undefined
+    // reference at link time. It is found when the cell that calls it is
+    // compiled, which then leaves no trace, and the session continues
+    // (#17046).
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);
-    auto cell = e.execute(R"(integer function c()
+    const std::string c_17046 = R"(integer function c()
 interface
     integer function nothere()
     end function
 end interface
 c = nothere()
 end function
-)");
-    REQUIRE(cell.ok);
-    cell = e.execute("c()");
+)";
+    auto cell = e.execute(c_17046);
     CHECK(!cell.ok);
     CHECK(!cell.internal_error);
     CHECK(cell.error_name == "CompilerError");
     CHECK(cell.error_value.find("undefined reference to 'nothere'")
         != std::string::npos);
     CHECK(cell.error_traceback.empty());
+    // The procedure was not defined, and calling it is an ordinary error,
+    // every time.
+    for (int i = 0; i < 2; i++) {
+        cell = e.execute("c()");
+        CHECK(!cell.ok);
+        CHECK(!cell.internal_error);
+        CHECK(cell.error_name == "CompilerError");
+        CHECK(cell.error_value.find("'c' not found") != std::string::npos);
+        CHECK(cell.error_traceback.empty());
+    }
     // A cell that does not need the procedure still runs.
     cell = e.execute("40 + 2");
     REQUIRE(cell.ok);
     CHECK(cell.value.text() == "42");
-    // The same when the cell that defines the caller also runs it.
+    // A correct procedure defined in the same cell is not defined either.
+    cell = e.execute(c_17046 + R"(integer function good()
+good = 7
+end function
+)");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("undefined reference to 'nothere'")
+        != std::string::npos);
+    cell = e.execute("good()");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("'good' not found") != std::string::npos);
+    // Both can be defined once the cell is corrected.
+    cell = e.execute(R"(integer function c()
+c = 9
+end function
+integer function good()
+good = 7
+end function
+)");
+    REQUIRE(cell.ok);
+    cell = e.execute("c() + good()");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.text() == "16");
+    // The same when the cell that defines the caller also runs it: nothing
+    // of it runs.
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
     cell = e.execute(R"(subroutine s_17046()
 interface
     subroutine nothere2()
@@ -6711,12 +6728,14 @@ interface
 end interface
 call nothere2()
 end subroutine
+print *, "not printed"
 call s_17046()
-)");
+)", false, io);
     CHECK(!cell.ok);
     CHECK(!cell.internal_error);
     CHECK(cell.error_value.find("undefined reference to 'nothere2'")
         != std::string::npos);
+    CHECK(output.find("not printed") == std::string::npos);
     cell = e.execute("6 * 7");
     REQUIRE(cell.ok);
     CHECK(cell.value.text() == "42");

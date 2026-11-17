@@ -507,6 +507,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 {
 #ifdef HAVE_LFORTRAN_LLVM
     EvalResult result;
+#ifndef __EMSCRIPTEN__
+    // The scope of the session before this cell.
+    SymbolTable *cell_parent = symbol_table;
+#endif
 
     // Src -> AST
     Result<LFortran::AST::TranslationUnit_t*> res = get_ast2(
@@ -598,6 +602,28 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         }
     }
 
+#ifndef __EMSCRIPTEN__
+    // A procedure that is defined nowhere, neither by this cell nor by an
+    // earlier one nor by the runtime, is an error in the user's code, like an
+    // undefined reference at link time. It is found before the cell is added
+    // to the JIT, so the cell leaves no trace, as with a semantic error, and
+    // the user can define what is missing and enter the cell again.
+    std::vector<std::string> undefined
+        = get_llvm_evaluator().undefined_symbols(*m);
+    if (!undefined.empty()) {
+        if (symbol_table != cell_parent) {
+            cell_implicit_types.erase(symbol_table);
+            symbol_table = cell_parent;
+        }
+        for (const std::string &name : undefined) {
+            diagnostics.add(diag::Diagnostic(
+                "undefined reference to '" + name + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+        }
+        return Error();
+    }
+#endif
+
     if (compiler_options.interactive) {
         drop_redefinitions(*m);
     }
@@ -610,22 +636,6 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
-    // Link what the cell runs before running any of it. A procedure that is
-    // defined nowhere, neither by this cell nor by an earlier one nor by the
-    // runtime, is found missing here: an error in the user's code, like an
-    // undefined reference at link time.
-    try {
-        if (has_setup) e.get_symbol_address(setup_fn);
-        if (has_program) e.get_symbol_address(program_fn);
-        if (return_type != "none") e.get_symbol_address(run_fn);
-    } catch (const UndefinedSymbolsError &error) {
-        for (const std::string &name : error.symbols()) {
-            diagnostics.add(diag::Diagnostic(
-                "undefined reference to '" + name + "'",
-                diag::Level::Error, diag::Stage::CodeGen));
-        }
-        return Error();
-    }
     if (has_setup) {
         e.execfn<void>(setup_fn);
     }
