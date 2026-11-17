@@ -745,6 +745,13 @@ struct CudaDialect {
             : std::string(lane_vectors ? "#pragma unroll 1"
                                        : "#pragma unroll 2");
     }
+    // A loop that indexes a private array by its variable, of few
+    // iterations known at compile time, is unrolled whole, so that the
+    // array lives in registers.
+    std::string unroll_whole_pragma() const {
+        return emulate_cpu || hip ? std::string()
+            : std::string("#pragma unroll");
+    }
     // A loop that combines the values of the lanes of an iteration in each
     // of its iterations is unrolled by four: the shuffles of one iteration
     // wait for the loads of the next otherwise.

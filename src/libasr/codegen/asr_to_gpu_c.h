@@ -4304,8 +4304,82 @@ public:
         // of its body: it reads vectors, and each iteration is long.
         emit_counted_for(dl->m_head, written, stmt->base.loc,
             small_innermost_loop(dl->m_body, dl->n_body) || wide,
-            holds_lane_reduce(dl->m_body, dl->n_body), wide);
+            holds_lane_reduce(dl->m_body, dl->n_body), wide,
+            indexes_registers(*dl));
         emit_loop_body(frame, dl->m_body, dl->n_body);
+    }
+
+    // The most iterations of a loop unrolled whole for a private array it
+    // indexes (indexes_registers).
+    static constexpr int64_t whole_unroll_max = 64;
+
+    // Whether `l` runs at most whole_unroll_max iterations, known at compile
+    // time, has no loop inside, and indexes an array of the thread's own by
+    // its variable: the elements a lane keeps of a column
+    // (gpu_vector_lanes.cpp, hold_elements). Unrolled whole, every index is
+    // a constant, and the array lives in registers rather than in the
+    // thread's local memory.
+    static bool indexes_registers(const ASR::DoLoop_t &l) {
+        if (l.m_head.m_v == nullptr) return false;
+        int64_t start = 0, end = 0, step = 1;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(l.m_head.m_start),
+                    start)
+                || !ASRUtils::extract_value(ASRUtils::expr_value(
+                    l.m_head.m_end), end)
+                || (l.m_head.m_increment && !ASRUtils::extract_value(
+                    ASRUtils::expr_value(l.m_head.m_increment), step))
+                || step <= 0 || end < start
+                || (end - start)/step + 1 > whole_unroll_max
+                || !small_innermost_loop(l.m_body, l.n_body)) {
+            return false;
+        }
+        class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            ASR::symbol_t *v;
+            bool found = false;
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
+                    ASR::symbol_t *a = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x.m_v)->m_v);
+                    ASR::Variable_t *var = ASR::is_a<ASR::Variable_t>(*a)
+                        ? ASR::down_cast<ASR::Variable_t>(a) : nullptr;
+                    // Not a named constant, which the device compiler
+                    // folds already.
+                    ASR::ttype_t *t = var && var->m_storage
+                            == ASR::storage_typeType::Default
+                            && var->m_value == nullptr
+                            && var->m_symbolic_value == nullptr
+                        ? var->m_type : nullptr;
+                    if (t && ASR::is_a<ASR::Array_t>(*t)
+                            && ASR::down_cast<ASR::Array_t>(t)->m_memory_space
+                                == ASR::memory_spaceType::Thread) {
+                        for (size_t i = 0; i < x.n_args; i++) {
+                            ASR::expr_t *sub = x.m_args[i].m_right;
+                            CountVar c(v);
+                            if (sub) c.visit_expr(*sub);
+                            if (c.found) found = true;
+                        }
+                    }
+                }
+                ASR::BaseWalkVisitor<Finder>::visit_ArrayItem(x);
+            }
+            class CountVar : public ASR::BaseWalkVisitor<CountVar> {
+            public:
+                ASR::symbol_t *v;
+                bool found = false;
+                explicit CountVar(ASR::symbol_t *v_) : v(v_) {}
+                void visit_Var(const ASR::Var_t &x) {
+                    if (ASRUtils::symbol_get_past_external(x.m_v) == v) {
+                        found = true;
+                    }
+                }
+            };
+        } finder;
+        finder.v = gpu_designator_base(l.m_head.m_v).root;
+        for (size_t i = 0; i < l.n_body && !finder.found; i++) {
+            finder.visit_stmt(*l.m_body[i]);
+        }
+        return finder.found;
     }
 
     bool wide_versioned = false;
@@ -4667,7 +4741,7 @@ public:
     void emit_counted_for(const ASR::do_loop_head_t &head,
             const std::set<ASR::symbol_t*> &written, const Location &loc,
             bool unroll = false, bool unroll_few = false,
-            bool wide = false) {
+            bool wide = false, bool whole = false) {
         if (head.m_v == nullptr) {
             src << get_indent() << "for (;;) {\n";
             return;
@@ -4747,7 +4821,9 @@ public:
                 << "++, " << v << " += " << inc << ") {\n";
             return;
         }
-        if (pragma) {
+        if (whole && !dialect.unroll_whole_pragma().empty()) {
+            src << get_indent() << dialect.unroll_whole_pragma() << "\n";
+        } else if (pragma) {
             src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
                 : dialect.unroll_pragma(deep)) << "\n";
         } else if (unroll_few && !dialect.unroll_few_pragma().empty()) {

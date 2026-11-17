@@ -227,7 +227,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_points[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
-        #pragma unroll 16
+        #pragma unroll
         for (__gpu_sec_i2 = 1; __gpu_sec_i2 <= n; __gpu_sec_i2++) {
             q[((int)(__gpu_sec_i2) - (1)) + (3 * ((int)(p__dc) - (1)))] = __gpu_call_result[((int)(__gpu_sec_i2) - (1))];
         }

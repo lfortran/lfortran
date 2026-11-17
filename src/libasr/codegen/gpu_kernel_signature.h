@@ -55,8 +55,12 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         : kernel_lane_vectors && kernel_caps.lanes_wide > 0
             && kernel.m_gpu->m_lanes_max == kernel_caps.lanes_wide
         ? kernel_caps.lanes_wide : kernel_caps.threads_per_block;
+    // The bound on the registers of a kernel whose lanes read vectors is
+    // for many blocks per multiprocessor; one whose arrays of the iteration
+    // the block shares keeps the registers for the elements its lanes keep
+    // (gpu_vector_lanes.cpp, hold_elements).
     src << dialect.kernel_qualifier(kernel_threads,
-            streams_rows, kernel_lane_vectors
+            streams_rows, kernel_lane_vectors && !gpu_kernel_block_shared(kernel)
                 ? std::max<int64_t>(1, gpu_wide_vectors_per_iteration(kernel))
                 : 0)
         << name << "(\n";

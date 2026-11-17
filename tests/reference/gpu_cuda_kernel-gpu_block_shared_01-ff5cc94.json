@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "gpu_cuda_kernel-gpu_block_shared_01-ff5cc94.stdout",
-    "stdout_hash": "f09b996f1edc84249f9312270e5060ab1af86ad68f255127debdd19d",
+    "stdout_hash": "8ed356d7e695ab6e38ff4ae88222ef19a6405434d5ea5943d929f375",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

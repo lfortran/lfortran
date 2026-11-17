@@ -146,7 +146,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
                 __1__libasr_index_ = (__1__libasr_index_ + 1);
                 __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = ((  1.00000000000000000e+01f * x[((int)(j__dc) - (1))]) +   2.00000000000000000e+00f);
                 __1__libasr_index_ = (__1__libasr_index_ + 1);
-                #pragma unroll 16
+                #pragma unroll
                 for (__gpu_elem_i = 1; __gpu_elem_i <= 4; __gpu_elem_i++) {
                     t[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
                 }
@@ -188,7 +188,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
                 __1__libasr_index_ = (__1__libasr_index_ + 1);
                 __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = ((  1.00000000000000000e+01f * x[((int)(j__dc) - (1))]) +   2.00000000000000000e+00f);
                 __1__libasr_index_ = (__1__libasr_index_ + 1);
-                #pragma unroll 16
+                #pragma unroll
                 for (__gpu_elem_i = 1; __gpu_elem_i <= 4; __gpu_elem_i++) {
                     t[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
                 }
@@ -242,7 +242,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_
             __1__libasr_index_ = (__1__libasr_index_ + 1);
             __libasr__created__var__1__array_constructor_[((int)(__1__libasr_index_) - (1))] = (  4.00000000000000000e+00f * x[((int)(j__dc1) - (1))]);
             __1__libasr_index_ = (__1__libasr_index_ + 1);
-            #pragma unroll 16
+            #pragma unroll
             for (__gpu_elem_i1 = 1; __gpu_elem_i1 <= 4; __gpu_elem_i1++) {
                 t[((int)(__gpu_elem_i1) - (1))] = __libasr__created__var__1__array_constructor_[((int)(__gpu_elem_i1) - (1))];
             }
@@ -287,7 +287,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_
             __1__libasr_index_ = (__1__libasr_index_ + 1);
             __libasr__created__var__1__array_constructor_[((int)(__1__libasr_index_) - (1))] = (  4.00000000000000000e+00f * x[((int)(j__dc1) - (1))]);
             __1__libasr_index_ = (__1__libasr_index_ + 1);
-            #pragma unroll 16
+            #pragma unroll
             for (__gpu_elem_i1 = 1; __gpu_elem_i1 <= 4; __gpu_elem_i1++) {
                 t[((int)(__gpu_elem_i1) - (1))] = __libasr__created__var__1__array_constructor_[((int)(__gpu_elem_i1) - (1))];
             }

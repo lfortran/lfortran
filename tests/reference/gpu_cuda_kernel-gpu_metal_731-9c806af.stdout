@@ -13,7 +13,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     i__dc = (__flat_idx + 1);
     {
         int tmp[4];
-        #pragma unroll 16
+        #pragma unroll
         for (__gpu_sec_i = 1; __gpu_sec_i <= 4; __gpu_sec_i++) {
             tmp[((int)(__gpu_sec_i) - (1))] = i__dc;
         }
@@ -52,7 +52,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_
     i__dc2 = (__flat_idx + 1);
     {
         int tmp[4];
-        #pragma unroll 16
+        #pragma unroll
         for (__gpu_sec_i2 = 1; __gpu_sec_i2 <= 4; __gpu_sec_i2++) {
             tmp[((int)(__gpu_sec_i2) - (1))] = (3 * i__dc2);
         }
@@ -90,7 +90,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_4_13g
     {
         int b[6];
         for (__gpu_sec_i4 = 1; __gpu_sec_i4 <= 3; __gpu_sec_i4++) {
-            #pragma unroll 16
+            #pragma unroll
             for (__gpu_sec_i5 = 1; __gpu_sec_i5 <= 2; __gpu_sec_i5++) {
                 b[((int)(__gpu_sec_i4) - (1)) + (3 * ((int)(__gpu_sec_i5) - (1)))] = i__dc4;
             }
@@ -115,7 +115,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_5_13g
     {
         int b[6];
         for (__gpu_sec_i6 = 1; __gpu_sec_i6 <= 3; __gpu_sec_i6++) {
-            #pragma unroll 16
+            #pragma unroll
             for (__gpu_sec_i7 = 1; __gpu_sec_i7 <= 2; __gpu_sec_i7++) {
                 b[((int)(__gpu_sec_i6) - (1)) + (3 * ((int)(__gpu_sec_i7) - (1)))] = (5 * i__dc5);
             }

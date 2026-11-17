@@ -13,7 +13,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     j__dc = (__flat_idx + 1);
     {
         float t[16];
-        #pragma unroll 16
+        #pragma unroll
         for (__gpu_bc_i = 1; __gpu_bc_i <= 16; __gpu_bc_i++) {
             t[((int)(__gpu_bc_i) - (1))] = ((float)j__dc);
         }
