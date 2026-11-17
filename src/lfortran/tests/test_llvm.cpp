@@ -5143,6 +5143,47 @@ TEST_CASE("FortranEvaluator earlier cell's function with a getter in its result 
     CHECK(r.result.i32 == 3);
 }
 
+
+// The bound of an earlier cell's function result can only be evaluated
+// through a helper function, which the cell calling the function creates.
+TEST_CASE("FortranEvaluator earlier cell's function with a result bound needing a helper") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("function fc(a) result(r); integer, intent(in) :: a(:); "
+        "integer :: r(maxval(shape(a))); r = a + 1; end function").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("sum(fc([1, 2, 3]))");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("sum(fc([1, 2, 3, 4]))");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 14);
+
+    REQUIRE(e.evaluate2("module mfc; contains; function gc(a) result(r); "
+        "integer, intent(in) :: a(:); integer :: r(maxval(shape(a))); "
+        "r = 2 * a; end function; end module").ok);
+    REQUIRE(e.evaluate2("use mfc").ok);
+    REQUIRE(e.evaluate2("integer :: x(3)").ok);
+    REQUIRE(e.evaluate2("x = gc([1, 2, 3])").ok);
+    r = e.evaluate2("sum(x)");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 12);
+
+    // A type-bound call names the binding of the function.
+    REQUIRE(e.evaluate2("module mtc; type :: tc; contains; "
+        "procedure, nopass :: f => hc; end type; contains; "
+        "function hc(a) result(r); integer, intent(in) :: a(:); "
+        "integer :: r(maxval(shape(a))); r = a + 1; end function; "
+        "end module").ok);
+    REQUIRE(e.evaluate2("use mtc").ok);
+    REQUIRE(e.evaluate2("type(tc) :: y").ok);
+    r = e.evaluate2("sum(y%f([1, 2, 3]))");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 9);
+}
+
 TEST_CASE("FortranEvaluator interface body to an earlier cell's function as actual argument") {
     CompilerOptions cu;
     cu.interactive = true;
