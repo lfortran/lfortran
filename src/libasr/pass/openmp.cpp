@@ -770,6 +770,9 @@ class InvolvedSymbolsCollector:
     private:
         Allocator &al;
         std::set<SymbolTable*> block_scopes;
+        // Set while walking a do-loop bound. A variable used there is private,
+        // as a bare bound is. visit_Var would mark an ordinary variable shared.
+        bool in_loop_bound = false;
 
         bool is_block_local(ASR::symbol_t* sym) {
             return block_scopes.count(ASRUtils::symbol_parent_symtab(sym)) != 0;
@@ -812,8 +815,34 @@ class InvolvedSymbolsCollector:
             return true;
         }
 
+        // Record one variable of a loop bound. Parameters are named constants.
+        // Anything else is private, including when the body already recorded it
+        // as shared: a shared scalar is outlined as a pointer and is not lowered.
+        void record_loop_bound_var(const ASR::Var_t &x) {
+            if (!ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_v))) {
+                return;
+            }
+            if (add_named_constant(x.m_v)) {
+                return;
+            }
+            std::string key = to_lower(ASRUtils::symbol_name(x.m_v));
+            if (symbols.find(key) == symbols.end()) {
+                ASR::ttype_t* type = ASRUtils::symbol_type(x.m_v);
+                if (ASR::is_a<ASR::FunctionType_t>(*type)) {
+                    type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, type));
+                }
+                symbols[key].first = type;
+                symbols[key].second = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v));
+            }
+            variable_accessibility[ASRUtils::symbol_name(x.m_v)] = ASR::omp_clauseType::OMPPrivate;
+        }
+
         void visit_Var(const ASR::Var_t &x) {
             if (is_block_local(x.m_v)) {
+                return;
+            }
+            if (in_loop_bound) {
+                record_loop_bound_var(x);
                 return;
             }
             if(symbols.find(to_lower(ASRUtils::symbol_name(x.m_v))) != symbols.end()) {
@@ -882,44 +911,20 @@ class InvolvedSymbolsCollector:
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
-            if (ASR::is_a<ASR::Var_t>(*x.m_end)
-                    && !is_block_local(ASR::down_cast<ASR::Var_t>(x.m_end)->m_v)
-                    && !add_named_constant(ASR::down_cast<ASR::Var_t>(x.m_end)->m_v)) {
-                var = ASR::down_cast<ASR::Var_t>(x.m_end);
-                if(symbols.find((to_lower(ASRUtils::symbol_name(var->m_v)))) != symbols.end()) {
-                    // Make the bool false in that pair
-                    auto it = symbols.find((to_lower(ASRUtils::symbol_name(var->m_v))));
-                    if (it != symbols.end()) {
-                        ASR::ttype_t* type_val = it->second.first;
-                        symbols.erase(it);
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = type_val;
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = it->second.second;
-                    }
-                }
-                variable_accessibility[ASRUtils::symbol_name(var->m_v)] = ASR::omp_clauseType::OMPPrivate;
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
+            // Walk start, end, and step even when they are not Vars (`n-1`,
+            // `2*n`). A bare bound is handled by the same recording.
+            bool saved_in_loop_bound = in_loop_bound;
+            in_loop_bound = true;
+            if (x.m_start) {
+                visit_expr(*x.m_start);
             }
-            if (ASR::is_a<ASR::Var_t>(*x.m_start)
-                    && !is_block_local(ASR::down_cast<ASR::Var_t>(x.m_start)->m_v)
-                    && !add_named_constant(ASR::down_cast<ASR::Var_t>(x.m_start)->m_v)) {
-                var = ASR::down_cast<ASR::Var_t>(x.m_start);
-                if(symbols.find((to_lower(ASRUtils::symbol_name(var->m_v)))) != symbols.end()) {
-                    // Make the bool false in that pair
-                    auto it = symbols.find((to_lower(ASRUtils::symbol_name(var->m_v))));
-                    if (it != symbols.end()) {
-                        ASR::ttype_t* type_val = it->second.first;
-                        symbols.erase(it);
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = type_val;
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = it->second.second;
-
-                    }
-                }
-                variable_accessibility[ASRUtils::symbol_name(var->m_v)] = ASR::omp_clauseType::OMPPrivate;
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
+            if (x.m_end) {
+                visit_expr(*x.m_end);
             }
-            
+            if (x.m_increment) {
+                visit_expr(*x.m_increment);
+            }
+            in_loop_bound = saved_in_loop_bound;
             return;
         }
 };
