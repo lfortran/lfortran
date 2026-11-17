@@ -12888,7 +12888,13 @@ public:
         }
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
-        this->visit_expr(*x.m_arg);
+        if (ASR::is_a<ASR::ArrayItem_t>(*x.m_arg)) {
+            // The address of an element of a named constant is in the
+            // constant's storage, where the elements that follow it are.
+            visit_ArrayItem_storage(*ASR::down_cast<ASR::ArrayItem_t>(x.m_arg));
+        } else {
+            this->visit_expr(*x.m_arg);
+        }
         ptr_loads = ptr_loads_copy;
         note_address_taken(tmp);
         tmp = GetPointerCPtrUtil(tmp, x.m_arg);

@@ -1,0 +1,456 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            res:
+                                (Variable
+                                    3
+                                    res
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            work:
+                                (Variable
+                                    3
+                                    work
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 6 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    main
+                    []
+                    [(Assignment
+                        (Var 3 work)
+                        (ArrayConstant
+                            24
+                            [10, 20, 30, 40, 50, 60]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 6 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ColMajor
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 sum_n
+                        ()
+                        [((IntegerConstant 4 (Integer 4) Decimal))
+                        ((GetPointer
+                            (ArrayItem
+                                (Var 3 work)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                                .true.
+                            )
+                            (Array
+                                (Integer 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((Var 3 res))]
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 res)]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 3 res)
+                            NotEq
+                            (IntegerConstant 180 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        1 sum_n
+                        ()
+                        [((IntegerConstant 6 (Integer 4) Decimal))
+                        ((GetPointer
+                            (ArrayItem
+                                (Var 3 work)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                                .true.
+                            )
+                            (Array
+                                (Integer 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((Var 3 res))]
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 res)]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 3 res)
+                            NotEq
+                            (IntegerConstant 210 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SubroutineCall
+                        1 sum_n
+                        ()
+                        [((IntegerConstant 2 (Integer 4) Decimal))
+                        ((GetPointer
+                            (ArrayItem
+                                (Var 3 work)
+                                [(()
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                                .true.
+                            )
+                            (Array
+                                (Integer 4)
+                                [(()
+                                ())]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((Var 3 res))]
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 res)]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 3 res)
+                            NotEq
+                            (IntegerConstant 110 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                    ()
+                ),
+            sum_n:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            s:
+                                (Variable
+                                    2
+                                    s
+                                    []
+                                    Out
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    [n]
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 2 n))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    sum_n
+                    (FunctionType
+                        [(Integer 4)
+                        (Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (FunctionParam
+                                0
+                                (Integer 4)
+                                ()
+                            ))]
+                            PointerArray
+                            Global
+                        )
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 2 n)
+                    (Var 2 x)
+                    (Var 2 s)]
+                    [(Assignment
+                        (Var 2 s)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 i)
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        (Var 2 n)
+                        (IntegerConstant 1 (Integer 4) Decimal))
+                        [(Assignment
+                            (Var 2 s)
+                            (IntegerBinOp
+                                (Var 2 s)
+                                Add
+                                (ArrayItem
+                                    (Var 2 x)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Integer 4)
+                                    ColMajor
+                                    ()
+                                    .false.
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                )
+        })
+    []
+    ()
+)
