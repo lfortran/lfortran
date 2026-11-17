@@ -836,7 +836,7 @@ namespace LCompilers {
             }
         }
 
-        ASR::stmt_t* create_do_loop_helper_norm2(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res, int curr_idx) {
+        ASR::stmt_t* create_do_loop_helper_norm2(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res, int curr_idx, ASR::expr_t* factor) {
             ASRUtils::ASRBuilder b(al, loc);
 
             if (curr_idx == 1) {
@@ -844,40 +844,40 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
+                auto x = [&]() {
+                    ASR::expr_t* item = b.ArrayItem_01(array, vars);
+                    return factor ? b.Mul(item, factor) : item;
+                };
                 return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
-                        b.Assignment(res, b.Add(res, b.Mul(b.ArrayItem_01(array, vars), b.ArrayItem_01(array, vars)))),
+                        b.Assignment(res, b.Add(res, b.Mul(x(), x()))),
                 }, nullptr);
             }
             return b.DoLoop(do_loop_variables[curr_idx - 1], b.GetLBound(array, curr_idx), b.GetUBound(array, curr_idx), {
-                create_do_loop_helper_norm2(al, loc, do_loop_variables, array, res, curr_idx - 1)
+                create_do_loop_helper_norm2(al, loc, do_loop_variables, array, res, curr_idx - 1, factor)
             }, nullptr);
         }
 
         ASR::stmt_t* create_do_loop_helper_norm2_dim(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables,
                     std::vector<ASR::expr_t*> res_idx, ASR::stmt_t* inner_most_do_loop,
-                    ASR::expr_t* c, ASR::expr_t* array, ASR::expr_t* res, int curr_idx, int dim, bool apply_sqrt) {
+                    ASR::expr_t* c, ASR::expr_t* array, ASR::expr_t* res, int curr_idx, int dim, ASR::stmt_t* finalize) {
             ASRUtils::ASRBuilder b(al, loc);
 
             if (curr_idx == (int) do_loop_variables.size() - 1 ||
                 (curr_idx == (int) do_loop_variables.size() - 2 &&
                     dim == (int) do_loop_variables.size())) {
-                ASR::expr_t* assign_val = c;
-                if (apply_sqrt) {
-                    ASR::ttype_t* c_type = ASRUtils::expr_type(c);
-                    assign_val = ASRUtils::EXPR(ASR::make_RealSqrt_t(al, loc, c, c_type, nullptr));
-                }
                 return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 1), b.GetUBound(array, curr_idx + 1), {
                     b.Assignment(c, ASRUtils::make_RealConstant_util(al, loc, 0.0, ASRUtils::expr_type(c))),
                     inner_most_do_loop,
-                    b.Assignment(b.ArrayItem_01(res, {res_idx}), assign_val)
+                    finalize,
+                    b.Assignment(b.ArrayItem_01(res, {res_idx}), c)
                 });
             }
             if (curr_idx != dim - 1) {
                 return b.DoLoop(do_loop_variables[curr_idx], b.GetLBound(array, curr_idx + 1), b.GetUBound(array, curr_idx + 1), {
-                    create_do_loop_helper_norm2_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, array, res, curr_idx + 1, dim, apply_sqrt)
+                    create_do_loop_helper_norm2_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, array, res, curr_idx + 1, dim, finalize)
                 });
             } else {
-                return create_do_loop_helper_norm2_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, array, res, curr_idx + 1, dim, apply_sqrt);
+                return create_do_loop_helper_norm2_dim(al, loc, do_loop_variables, res_idx, inner_most_do_loop, c, array, res, curr_idx + 1, dim, finalize);
             }
         }
 

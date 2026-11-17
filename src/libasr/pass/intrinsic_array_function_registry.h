@@ -6855,6 +6855,127 @@ namespace Parity {
 
 namespace Norm2 {
 
+    // norm2 avoids undue overflow and underflow, at run time and when folded:
+    // if the sum of the squares of the elements is at least 2**big, it may
+    // have overflowed, and if it is below 2**small = tiny/epsilon, squares
+    // may have underflowed. Then it is summed again with the elements scaled
+    // by 2**(-e) or by 2**e, and the square root is scaled back. The scaling
+    // is exact, so the result is the same as without scaling whenever that
+    // neither overflows nor underflows.
+    struct Scaling {
+        int e, big, small;
+    };
+
+    // `e` keeps the scaled squares well inside the range in both directions.
+    // The arguments are those of std::numeric_limits of the real format.
+    static inline Scaling get_scaling(int digits, int min_exponent,
+            int max_exponent) {
+        return {(2*max_exponent - min_exponent + 1)/4, max_exponent - 1,
+            min_exponent + digits - 2};
+    }
+
+    static inline Scaling get_scaling(int64_t kind) {
+        switch (kind) {
+            case 4: return get_scaling(std::numeric_limits<float>::digits,
+                std::numeric_limits<float>::min_exponent,
+                std::numeric_limits<float>::max_exponent);
+            case 8: return get_scaling(std::numeric_limits<double>::digits,
+                std::numeric_limits<double>::min_exponent,
+                std::numeric_limits<double>::max_exponent);
+            case 10: return get_scaling(std::numeric_limits<long double>::digits,
+                std::numeric_limits<long double>::min_exponent,
+                std::numeric_limits<long double>::max_exponent);
+            default: return get_scaling(113, -16381, 16384); // binary128
+        }
+    }
+
+    // The norm of the `n` values `x(i)`, computed like at run time.
+    template <typename T, typename Get>
+    static inline T scaled_norm2(size_t n, Get x) {
+        Scaling s = get_scaling(std::numeric_limits<T>::digits,
+            std::numeric_limits<T>::min_exponent,
+            std::numeric_limits<T>::max_exponent);
+        auto sum_squares = [&](T factor) {
+            T ssq = 0;
+            for (size_t i = 0; i < n; i++) {
+                T y = x(i)*factor;
+                ssq += y*y;
+            }
+            return ssq;
+        };
+        T ssq = sum_squares(1);
+        if (ssq >= std::ldexp(T(1), s.big)) {
+            return std::sqrt(sum_squares(std::ldexp(T(1), -s.e)))*std::ldexp(T(1), s.e);
+        } else if (ssq < std::ldexp(T(1), s.small)) {
+            return std::sqrt(sum_squares(std::ldexp(T(1), s.e)))*std::ldexp(T(1), -s.e);
+        }
+        return std::sqrt(ssq);
+    }
+
+    // The binary128 norm of the `n` values `x(i)`, computed like at run time.
+    template <typename Get>
+    static inline lf_float128 scaled_norm2_r16(size_t n, Get x) {
+        Scaling s = get_scaling(16);
+        auto sum_squares = [&](lf_float128 factor) {
+            lf_float128 ssq = lf_f128_from_double(0.0);
+            for (size_t i = 0; i < n; i++) {
+                lf_float128 y = lf_f128_mul(x(i), factor);
+                ssq = lf_f128_add(ssq, lf_f128_mul(y, y));
+            }
+            return ssq;
+        };
+        lf_float128 ssq = sum_squares(ASRUtils::real16_pow2(0));
+        if (lf_f128_isnan(ssq)) {
+            return ssq;
+        } else if (lf_f128_cmp(ssq, ASRUtils::real16_pow2(s.big)) >= 0) {
+            return lf_f128_mul(lf_f128_sqrt(sum_squares(ASRUtils::real16_pow2(-s.e))),
+                ASRUtils::real16_pow2(s.e));
+        } else if (lf_f128_cmp(ssq, ASRUtils::real16_pow2(s.small)) < 0) {
+            return lf_f128_mul(lf_f128_sqrt(sum_squares(ASRUtils::real16_pow2(s.e))),
+                ASRUtils::real16_pow2(-s.e));
+        }
+        return lf_f128_sqrt(ssq);
+    }
+
+    // The real constant 2**n of type `type`.
+    static inline ASR::expr_t* pow2(Allocator &al, const Location &loc, int n,
+            ASR::ttype_t* type) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+        if (kind == 16) {
+            return ASRUtils::make_RealConstant_r16(al, loc, ASRUtils::real16_pow2(n), type);
+        } else if (kind == 10) {
+            return ASRUtils::make_RealConstant_r10(al, loc, std::ldexp(1.0L, n), type);
+        }
+        return ASRUtils::make_RealConstant_util(al, loc, std::ldexp(1.0, n), type);
+    }
+
+    // The statement that replaces the sum of squares `ssq`, accumulated by
+    // `sum_squares(nullptr)`, with the norm. `sum_squares(factor)` returns the
+    // loop that adds the squares of the elements times `factor` to `ssq`.
+    template <typename SumSquares>
+    static inline ASR::stmt_t* finalize_norm2(Allocator &al, const Location &loc,
+            ASR::expr_t* ssq, SumSquares sum_squares) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* type = ASRUtils::expr_type(ssq);
+        Scaling s = get_scaling(ASRUtils::extract_kind_from_ttype_t(type));
+        auto root = [&]() {
+            return ASRUtils::EXPR(ASR::make_RealSqrt_t(al, loc, ssq, type, nullptr));
+        };
+        return b.If(b.GtE(ssq, pow2(al, loc, s.big, type)), {
+            b.Assignment(ssq, b.f_t(0.0, type)),
+            sum_squares(pow2(al, loc, -s.e, type)),
+            b.Assignment(ssq, b.Mul(root(), pow2(al, loc, s.e, type)))
+        }, {
+            b.If(b.Lt(ssq, pow2(al, loc, s.small, type)), {
+                b.Assignment(ssq, b.f_t(0.0, type)),
+                sum_squares(pow2(al, loc, s.e, type)),
+                b.Assignment(ssq, b.Mul(root(), pow2(al, loc, -s.e, type)))
+            }, {
+                b.Assignment(ssq, root())
+            })
+        });
+    }
+
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t &x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args == 1 || x.n_args == 2, "`norm2` intrinsic accepts "
@@ -6887,13 +7008,10 @@ namespace Norm2 {
             // implementation. A non-finite result is left to run time.
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
             size_t size = ASRUtils::get_fixed_size_of_array(arr->m_type);
-            lf_float128 norm = lf_f128_from_double(0.0);
-            for (size_t i = 0; i < size; i++) {
-                lf_float128 x = ASRUtils::real_expr_get_r16(
+            lf_float128 norm = scaled_norm2_r16(size, [&](size_t i) {
+                return ASRUtils::real_expr_get_r16(
                     ASRUtils::fetch_ArrayConstant_value(al, arr, i));
-                norm = lf_f128_add(norm, lf_f128_mul(x, x));
-            }
-            norm = lf_f128_sqrt(norm);
+            });
             if (lf_f128_isnan(norm) || lf_f128_isinf(norm)) return nullptr;
             return ASRUtils::make_RealConstant_r16(al, loc, norm, return_type);
         }
@@ -6902,17 +7020,15 @@ namespace Norm2 {
             size_t size = ASRUtils::get_fixed_size_of_array(arr->m_type);
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array));
             if (kind == 4) {
-                float norm = 0.0;
-                for (size_t i = 0; i < size; i++) {
-                    norm += ((float*)(arr->m_data))[i] * ((float*)(arr->m_data))[i];
-                }
-                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), return_type));
+                float norm = scaled_norm2<float>(size, [&](size_t i) {
+                    return ((float*)(arr->m_data))[i];
+                });
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, norm, return_type));
             } else {
-                double norm = 0.0;
-                for (size_t i = 0; i < size; i++) {
-                    norm += ((double*)(arr->m_data))[i] * ((double*)(arr->m_data))[i];
-                }
-                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, std::sqrt(norm), return_type));
+                double norm = scaled_norm2<double>(size, [&](size_t i) {
+                    return ((double*)(arr->m_data))[i];
+                });
+                return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, norm, return_type));
             }
         }
         return nullptr;
@@ -7026,13 +7142,13 @@ namespace Norm2 {
             for (int64_t i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
             }
+            auto sum_squares = [&](ASR::expr_t* factor) {
+                return PassUtils::create_do_loop_helper_norm2(al, loc, do_loop_variables, args[0], result,
+                    checked_integer_cast<int>(array_rank), factor);
+            };
             body.push_back(al, b.Assignment(result, b.f_t(0.0, return_type)));
-            ASR::stmt_t* do_loop = PassUtils::create_do_loop_helper_norm2(al, loc, do_loop_variables, args[0], result,
-                checked_integer_cast<int>(array_rank));
-            ASR::expr_t* res = EXPR(ASR::make_RealSqrt_t(al, loc,
-                result, return_type, nullptr));
-            body.push_back(al, do_loop);
-            body.push_back(al, b.Assignment(result, res));
+            body.push_back(al, sum_squares(nullptr));
+            body.push_back(al, finalize_norm2(al, loc, result, sum_squares));
             body.push_back(al, b.Return());
             ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                     body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -7076,11 +7192,18 @@ namespace Norm2 {
                                     idx.push_back(res_idx[i]);
                     }
                 }
-                ASR::stmt_t* inner_most_do_loop = b.DoLoop(j, b.GetLBound(args[0], dim_val), b.GetUBound(args[0], dim_val), {
-                    b.Assignment(c, b.Add(c, b.Mul(b.ArrayItem_01(args[0], idx), b.ArrayItem_01(args[0], idx)))),
-                });
+                auto sum_squares = [&](ASR::expr_t* factor) {
+                    auto x = [&]() {
+                        ASR::expr_t* item = b.ArrayItem_01(args[0], idx);
+                        return factor ? b.Mul(item, factor) : item;
+                    };
+                    return b.DoLoop(j, b.GetLBound(args[0], dim_val), b.GetUBound(args[0], dim_val), {
+                        b.Assignment(c, b.Add(c, b.Mul(x(), x()))),
+                    });
+                };
                 return PassUtils::create_do_loop_helper_norm2_dim(al, loc,
-                                        idx, res_idx, inner_most_do_loop, c, args[0], result, 0, dim_val, true);
+                                        idx, res_idx, sum_squares(nullptr), c, args[0], result, 0, dim_val,
+                                        finalize_norm2(al, loc, c, sum_squares));
             };
 
             ASR::expr_t* dim_expr = m_args[1].m_value;

@@ -2034,6 +2034,8 @@ RUN(NAME intrinsics_225 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_226 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # iall
 RUN(NAME iany_01 LABELS gfortran llvm) # iany, iall and iparity with a mask (#12357)
 RUN(NAME intrinsics_227 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # norm2
+RUN(NAME norm2_overflow_01 LABELS gfortran llvm NO_FAST_MATH) # norm2 without undue overflow or underflow, at run time and folded (#17877); overflow is detected through an infinite sum of squares, which fast-math assumes away
+RUN(NAME norm2_underflow_01 LABELS llvm) # norm2 without undue underflow at run time (#17877); not gfortran, whose run-time norm2 returns 0 here
 RUN(NAME intrinsics_228 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # derf
 RUN(NAME intrinsics_229 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # derfc
 RUN(NAME intrinsics_230 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bessel
