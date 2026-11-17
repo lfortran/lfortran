@@ -171,7 +171,10 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     const void* val, size_t size);
 // A buffer of `size` bytes only the device holds: nothing is copied in or
 // back. What the launch leaves in it lasts until the next launch of the
-// kernel; the runtime may keep the memory for later launches.
+// kernel; the runtime may keep the memory for later launches. The CUDA
+// runtime gives it zero when the memory is new, so what a launch leaves
+// zero there the next launch finds zero (GpuReduceCombine); Metal does not
+// combine on the device and makes no such promise.
 void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
     size_t size);
 // Copies the leading `size` bytes of the scratch buffer `idx` into `dst`,
