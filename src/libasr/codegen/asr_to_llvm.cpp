@@ -1082,6 +1082,13 @@ public:
     // merges them only then; a Mach-O object file has no COMDATs and merges
     // weak definitions without one.
     bool odr_definitions_use_comdat = true;
+    // Whether the driver retained source-module variables while compiling a
+    // global procedure or BLOCK DATA. A program that uses the module emits
+    // the selected definitions, so these copies are weak.
+    bool module_variables_are_weak = false;
+    // Coarray data and handles are declared in the translation-unit scope,
+    // not the module scope of the variable they implement.
+    std::set<ASR::symbol_t*> weak_module_coarray_companions;
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
@@ -2364,6 +2371,36 @@ public:
         }
     }
 
+    void find_weak_module_coarray_companions(
+            const ASR::TranslationUnit_t &x) {
+        weak_module_coarray_companions.clear();
+        if (!module_variables_are_weak) return;
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Module_t>(*item.second)) continue;
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(item.second);
+            if (mod->m_loaded_from_mod) continue;
+            for (auto &mod_item : mod->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*mod_item.second)) continue;
+                ASR::Variable_t *var =
+                    ASR::down_cast<ASR::Variable_t>(mod_item.second);
+                if (var->n_codims == 0) continue;
+                std::string base = "__module_" + std::string(mod->m_name)
+                    + "_" + var->m_name;
+                const char *suffixes[] = {
+                    "__coarray_data", "__coarray_handle"
+                };
+                for (const char *suffix : suffixes) {
+                    ASR::symbol_t *companion =
+                        x.m_symtab->get_symbol(base + suffix);
+                    if (companion != nullptr
+                            && ASR::is_a<ASR::Variable_t>(*companion)) {
+                        weak_module_coarray_companions.insert(companion);
+                    }
+                }
+            }
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         // Set host target DataLayout so that getTypeAllocSize() returns
@@ -2413,6 +2450,10 @@ public:
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
 
+        module_variables_are_weak =
+            compiler_options.retained_module_variables_are_weak;
+        find_weak_module_coarray_companions(x);
+
         // Define LLVM types that we might need
         // Complex type is represented as an identified struct in LLVM
         // %complex = type { float, float }
@@ -2448,8 +2489,12 @@ public:
         for (SymbolTable *scope : cell_scopes) {
             mangle_prefix = ASRUtils::cell_prefix(scope);
             for (auto &item : scope->get_scope()) {
-                if (is_a<ASR::Variable_t>(*item.second) ||
-                    is_a<ASR::Enum_t>(*item.second)) {
+                if (weak_module_coarray_companions.find(item.second)
+                        != weak_module_coarray_companions.end()) {
+                    visit_Variable_weak(
+                        *ASR::down_cast<ASR::Variable_t>(item.second));
+                } else if (is_a<ASR::Variable_t>(*item.second) ||
+                        is_a<ASR::Enum_t>(*item.second)) {
                     visit_symbol(*item.second);
                 }
             }
@@ -8107,9 +8152,12 @@ public:
                     ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
                     if (compiler_options.separate_compilation
-                            || compiler_options.interactive) {
+                            || compiler_options.interactive
+                            || ASRUtils::is_module_variable(x)) {
                         // Other translation units (or later interactive
-                        // cells) reference the descriptor by name.
+                        // cells) reference the descriptor by name; the
+                        // object file of a global procedure does so for a
+                        // variable of a module the program also defines.
                         llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(llvm::GlobalValue::ExternalLinkage);
                     }
                 }
@@ -8200,7 +8248,8 @@ public:
                         initial_string_value = "";
                     }
                     llvm::GlobalValue::LinkageTypes string_linkage;
-                    if (x.m_abi == ASR::abiType::BindC || compiler_options.separate_compilation) {
+                    if (x.m_abi == ASR::abiType::BindC
+                            || compiler_options.separate_compilation) {
                         string_linkage = llvm::GlobalValue::ExternalLinkage;
                     } else {
                         string_linkage = llvm::GlobalValue::PrivateLinkage;
@@ -8216,10 +8265,11 @@ public:
                     }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
                         is_const, desc_name, string_linkage, data_name);
-                    if (compiler_options.interactive) {
-                        // Later cells declare the descriptor as an external
-                        // global and look it up by name. Its storage can stay
-                        // private: only the descriptor points at it.
+                    if (compiler_options.interactive
+                            || ASRUtils::is_module_variable(x)) {
+                        // A later cell or another object refers to the
+                        // descriptor by name. Only the descriptor has to be
+                        // exported: it points at the private backing storage.
                         llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(
                             llvm::GlobalValue::ExternalLinkage);
                     }
@@ -8536,27 +8586,6 @@ public:
                 gv->setLinkage(llvm::GlobalValue::InternalLinkage);
             }
         }
-        // A file that is compiled for its global procedures also defines the
-        // modules written in that file. A program that uses the module emits
-        // the same variables again, so this copy is weak and yields to that
-        // definition. A program that only calls the procedure still finds
-        // the initializer here.
-        if (!external && compiler_options.generate_code_for_global_procedures
-                && x.m_parent_symtab && x.m_parent_symtab->asr_owner
-                && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)
-                && ASR::is_a<ASR::Module_t>(
-                    *ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner))
-                && !ASR::down_cast<ASR::Module_t>(
-                    ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner))
-                    ->m_loaded_from_mod) {
-            if (llvm::GlobalVariable *gv = module->getNamedGlobal(llvm_var_name)) {
-                if (!gv->isDeclaration()
-                        && gv->getLinkage() != llvm::GlobalValue::InternalLinkage
-                        && gv->getLinkage() != llvm::GlobalValue::PrivateLinkage) {
-                    gv->setLinkage(llvm::GlobalValue::WeakAnyLinkage);
-                }
-            }
-        }
         if (!external && x.m_storage == ASR::storage_typeType::Save
                 && ASRUtils::is_class_type(ASRUtils::extract_type(x.m_type))) {
             // Define the static class wrapper with the variable, for the
@@ -8740,6 +8769,51 @@ public:
         return ambient;
     }
 
+    void make_retained_definition_weak(llvm::GlobalValue &g) {
+        if (g.isDeclaration() || !g.hasExternalLinkage()) return;
+        bool mach_o = compiler_options.platform == Platform::macOS_Intel
+            || compiler_options.platform == Platform::macOS_ARM
+            || compiler_options.platform == Platform::macOS_PowerPC;
+        if (mach_o && llvm::isa<llvm::GlobalAlias>(g)) {
+            // Mach-O lowers a weak LLVM alias as an undefined weak reference,
+            // not as a selectable definition. This alias is only needed by
+            // code in this object; the selected object exports its own alias.
+            g.setLinkage(llvm::GlobalValue::PrivateLinkage);
+        } else {
+            g.setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+        }
+    }
+
+    // Emits a retained module variable whose definition yields to that of
+    // another object file (see module_variables_are_weak). Every global the
+    // linker would export for it, its own and those of its descriptor or
+    // class wrapper, is weak.
+    void visit_Variable_weak(const ASR::Variable_t &v) {
+        bool had_globals = !module->global_empty();
+        llvm::Module::global_iterator last_global;
+        if (had_globals) last_global = std::prev(module->global_end());
+        bool had_aliases = !module->alias_empty();
+        llvm::Module::alias_iterator last_alias;
+        if (had_aliases) last_alias = std::prev(module->alias_end());
+        visit_Variable(v);
+        for (auto it = had_globals ? std::next(last_global) : module->global_begin();
+                it != module->global_end(); ++it) {
+            make_retained_definition_weak(*it);
+        }
+        for (auto it = had_aliases ? std::next(last_alias) : module->alias_begin();
+                it != module->alias_end(); ++it) {
+            make_retained_definition_weak(*it);
+        }
+        // Declared already if a procedure emitted earlier refers to it.
+        auto own = llvm_symtab.find(get_hash((ASR::asr_t*)&v));
+        if (own != llvm_symtab.end()) {
+            if (llvm::GlobalValue *g = llvm::dyn_cast<llvm::GlobalValue>(
+                    own->second->stripPointerCasts())) {
+                make_retained_definition_weak(*g);
+            }
+        }
+    }
+
     void visit_Module(const ASR::Module_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -8799,11 +8873,26 @@ public:
             ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                     sym);
             if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                visit_Variable(*v);
+                if (module_variables_are_weak && !x.m_loaded_from_mod) {
+                    visit_Variable_weak(*v);
+                } else {
+                    visit_Variable(*v);
+                }
             }
         }
 
         visit_procedures(x);
+        if (module_variables_are_weak && !x.m_loaded_from_mod
+                && x.m_global_init != nullptr) {
+            ASR::symbol_t *init = x.m_symtab->get_symbol(x.m_global_init);
+            if (init != nullptr) {
+                init = ASRUtils::symbol_get_past_external(init);
+                auto fn = llvm_symtab_fn.find(get_hash((ASR::asr_t*)init));
+                if (fn != llvm_symtab_fn.end()) {
+                    make_retained_definition_weak(*fn->second);
+                }
+            }
+        }
         mangle_prefix = ASRUtils::cell_prefix(current_scope_copy);
         current_scope = current_scope_copy;
     }
