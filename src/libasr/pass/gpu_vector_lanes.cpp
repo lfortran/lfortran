@@ -148,6 +148,13 @@ values in its private scalars, except for these statements:
   lane, or on the first alone, without its own locals, which are gone
   after it, to hand on to the others.
 
+The lanes run the statements between two barriers each at its own pace, so
+before a single statement or a distributed loop that assigns shared memory
+which the statements every lane ran since the last barrier read, the lanes
+wait for each other: one lane would assign an element another still reads
+(`s = a(1)` and then `a(j) = a(j) - s`). A loop whose next iteration assigns
+what its body read last waits at the end of its body as well.
+
 A kernel is rewritten only if it has a loop to distribute, and only if all
 of the following holds of every single statement: it does not return (a
 stop on the first lane alone would leave the others going on with values
@@ -1254,6 +1261,123 @@ public:
     }
 };
 
+// The memory every lane sees the same of (KernelInfo::shared) that the
+// statements walked name, and that they may assign: an assignment's target,
+// what a procedure is handed for a dummy that is not `intent(in)`, what an
+// atomic adds to.
+class SharedAccess : public ASR::BaseWalkVisitor<SharedAccess> {
+public:
+    const KernelInfo &k;
+    std::set<ASR::symbol_t*> reads;
+    std::set<ASR::symbol_t*> writes;
+    std::set<ASR::symbol_t*> blocks;
+    explicit SharedAccess(const KernelInfo &k_) : k(k_) {}
+
+    bool shared_variable(ASR::symbol_t *s) const {
+        return s != nullptr && ASR::is_a<ASR::Variable_t>(*s) && k.shared(s);
+    }
+    void written(ASR::expr_t *e) {
+        ASR::symbol_t *r = root_of(e);
+        if (shared_variable(r)) writes.insert(r);
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (shared_variable(s)) reads.insert(s);
+    }
+    // An element assigned is not read: only its subscripts are.
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        written(x.m_target);
+        ASR::expr_t *e = x.m_target;
+        while (e && !ASR::is_a<ASR::Var_t>(*e)) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                auto *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+                for (size_t i = 0; i < item->n_args; i++) {
+                    if (item->m_args[i].m_left) {
+                        visit_expr(*item->m_args[i].m_left);
+                    }
+                    if (item->m_args[i].m_right) {
+                        visit_expr(*item->m_args[i].m_right);
+                    }
+                    if (item->m_args[i].m_step) {
+                        visit_expr(*item->m_args[i].m_step);
+                    }
+                }
+                e = item->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else {
+                visit_expr(*e);
+                e = nullptr;
+            }
+        }
+        visit_expr(*x.m_value);
+    }
+    void call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
+            callee = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)
+                    ->m_proc);
+        }
+        ASR::Function_t *fn = ASR::is_a<ASR::Function_t>(*callee)
+            ? ASR::down_cast<ASR::Function_t>(callee) : nullptr;
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_value == nullptr) continue;
+            if (fn && i < fn->n_args && ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*dummy)
+                        && ASR::down_cast<ASR::Variable_t>(dummy)->m_intent
+                            == ASR::intentType::In) {
+                    continue;
+                }
+            }
+            written(args[i].m_value);
+        }
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        call_args(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        call_args(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor::visit_FunctionCall(x);
+    }
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        written(x.m_target);
+        BaseWalkVisitor::visit_GpuAtomicFetchAdd(x);
+    }
+    // The shape of an array is not its elements.
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+    // What device code lays out beforehand (device_no_op).
+    void visit_Allocate(const ASR::Allocate_t &) {}
+    void visit_ReAlloc(const ASR::ReAlloc_t &) {}
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &) {}
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &) {}
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+bool intersects(const std::set<ASR::symbol_t*> &a,
+        const std::set<ASR::symbol_t*> &b) {
+    for (ASR::symbol_t *s : a) {
+        if (b.count(s)) return true;
+    }
+    return false;
+}
+
 // Whether the statements walked leave the loop they belong to: an unnamed
 // `exit` or `cycle` outside every loop inside them, or a named one whose
 // target is no loop inside them (the loop itself, or a loop around it).
@@ -1677,6 +1801,14 @@ public:
     }
 
     // Rewrites a list as decided.
+    //
+    // The lanes run the statements between two barriers each at its own
+    // pace, so a lane may assign shared memory while another still reads
+    // what was there before: the statements every lane runs read it where
+    // they are, and a statement on the first lane or a distributed loop
+    // after them may assign it. Such a statement or loop waits for the
+    // lanes first. `unsettled` is the shared memory the lanes may still be
+    // reading, named since their last barrier.
     void apply(ASR::stmt_t **&body, size_t &n_body) {
         Vec<ASR::stmt_t*> out;
         out.reserve(al, n_body + 4);
@@ -1691,26 +1823,53 @@ public:
                 continue;
             }
             if (!single.empty()) {
+                SharedAccess access(k);
+                for (ASR::stmt_t *s : single) access.visit_stmt(*s);
+                settle_before(access, single[0]->base.loc, out);
                 emit_single(single, out);
+                unsettled.clear();
                 single.clear();
             }
             if (i == n_body) break;
+            SharedAccess access(k);
+            access.visit_stmt(*body[i]);
             if (r == Role::Distribute) {
+                settle_before(access, body[i]->base.loc, out);
                 auto copy = either.find(body[i]);
                 if (copy != either.end()) {
+                    // The loop shared out ends with a barrier, and the copy
+                    // that shares its sums instead is written as a list of
+                    // its own, which leaves `unsettled` as it ends.
                     emit_either(ASR::down_cast<ASR::DoLoop_t>(body[i]),
                         copy->second, out);
                     continue;
                 }
+                bool reduction = reductions.count(body[i]) > 0;
+                bool deferred = deferred_inner.count(body[i]) > 0;
                 distribute(ASR::down_cast<ASR::DoLoop_t>(body[i]), out);
+                // A loop that only accumulates ends without a barrier, but
+                // the lanes have read what they accumulate once they
+                // combine it, unless the combination is deferred.
+                if (deferred) {
+                    unsettled.insert(access.reads.begin(),
+                        access.reads.end());
+                } else if (!reduction) {
+                    unsettled.clear();
+                }
                 continue;
             }
             auto deferral = deferrals.find(body[i]);
             if (r == Role::Recurse && deferral != deferrals.end()) {
+                settle_before(access, body[i]->base.loc, out);
                 emit_deferred(body[i], deferral->second, out);
+                unsettled.insert(access.reads.begin(), access.reads.end());
                 continue;
             }
-            if (r == Role::Recurse) nested_apply(body[i]);
+            if (r == Role::Recurse) {
+                nested_apply(body[i]);
+            } else {
+                unsettled.insert(access.reads.begin(), access.reads.end());
+            }
             out.push_back(al, body[i]);
         }
         body = out.p;
@@ -2417,22 +2576,72 @@ private:
         }
     }
 
+    // The lanes wait for each other before `access`, when it may assign
+    // shared memory they may still be reading.
+    void settle_before(const SharedAccess &access, const Location &loc,
+            Vec<ASR::stmt_t*> &out) {
+        if (!intersects(access.writes, unsettled)) return;
+        out.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
+            loc)));
+        unsettled.clear();
+    }
+
+    // Shared memory the lanes may still be reading (apply).
+    std::set<ASR::symbol_t*> unsettled;
+
+    // What a loop's header reads, and, in its body, a barrier at the end
+    // when the next iteration may assign what the lanes still read there.
+    // What may be unsettled after the loop is what was before it (it may
+    // run no iteration) and what is at the end of its body.
+    void apply_loop(ASR::stmt_t *loop, ASR::stmt_t **&body, size_t &n_body,
+            const std::vector<ASR::expr_t*> &header) {
+        SharedAccess head(k);
+        for (ASR::expr_t *e : header) {
+            if (e) head.visit_expr(*e);
+        }
+        unsettled.insert(head.reads.begin(), head.reads.end());
+        std::set<ASR::symbol_t*> before = unsettled;
+        apply(body, n_body);
+        unsettled.insert(head.reads.begin(), head.reads.end());
+        SharedAccess inside(k);
+        inside.visit_stmt(*loop);
+        if (intersects(inside.writes, unsettled)) {
+            Vec<ASR::stmt_t*> list;
+            list.reserve(al, n_body + 1);
+            for (size_t i = 0; i < n_body; i++) list.push_back(al, body[i]);
+            list.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
+                loop->base.loc)));
+            body = list.p;
+            n_body = list.n;
+            unsettled.clear();
+        }
+        unsettled.insert(before.begin(), before.end());
+    }
+
     void nested_apply(ASR::stmt_t *s) {
         switch (s->type) {
             case ASR::stmtType::DoLoop: {
                 auto *x = ASR::down_cast<ASR::DoLoop_t>(s);
-                apply(x->m_body, x->n_body);
+                apply_loop(s, x->m_body, x->n_body, {x->m_head.m_start,
+                    x->m_head.m_end, x->m_head.m_increment});
                 break;
             }
             case ASR::stmtType::WhileLoop: {
                 auto *x = ASR::down_cast<ASR::WhileLoop_t>(s);
-                apply(x->m_body, x->n_body);
+                apply_loop(s, x->m_body, x->n_body, {x->m_test});
                 break;
             }
             case ASR::stmtType::If: {
                 auto *x = ASR::down_cast<ASR::If_t>(s);
+                SharedAccess test(k);
+                test.visit_expr(*x->m_test);
+                unsettled.insert(test.reads.begin(), test.reads.end());
+                std::set<ASR::symbol_t*> before = unsettled;
                 apply(x->m_body, x->n_body);
+                std::set<ASR::symbol_t*> taken = unsettled;
+                unsettled = before;
                 apply(x->m_orelse, x->n_orelse);
+                unsettled.insert(taken.begin(), taken.end());
                 break;
             }
             case ASR::stmtType::BlockCall: {
