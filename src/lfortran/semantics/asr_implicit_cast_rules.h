@@ -365,16 +365,20 @@ public:
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                     int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
                     int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
-                    if (src_kind == 10 || dest_kind == 10) {
+                    if (src_kind == 10) {
                         // kind=10 m_r is a pointer to the long double bytes.
-                        // A cast between kind=10 and kind=16 is left to run time.
-                        value = nullptr;
-                        if (src_kind != 16 && dest_kind != 16) {
-                            double rval = src_kind == 10
-                                ? ASRUtils::real_constant_get_r10(r) : r->m_r;
-                            value = ASRUtils::make_RealConstant_util(al, a_loc,
-                                rval, dest_type2);
-                        }
+                        // Widening to kind=16 is exact; the narrowing
+                        // conversions round once, to the destination kind.
+                        value = ASRUtils::make_RealConstant_from_r10(al, a_loc,
+                            ASRUtils::real_constant_get_r10(r), dest_type2);
+                    } else if (src_kind == 16 && dest_kind == 10) {
+                        value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                            lf_f128_to_long_double(
+                                ASRUtils::real_constant_get_r16(r)), dest_type2);
+                    } else if (dest_kind == 10) {
+                        // real(4) and real(8) values are exact in real(10)
+                        value = ASRUtils::make_RealConstant_util(al, a_loc,
+                            r->m_r, dest_type2);
                     } else if (src_kind == 16) {
                         // kind=16 m_r is a pointer to the binary128 bytes.
                         lf_float128 v = ASRUtils::real_constant_get_r16(r);

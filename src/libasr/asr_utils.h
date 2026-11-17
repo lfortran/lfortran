@@ -632,6 +632,41 @@ static inline bool real16_is_zero(const lf_float128& v) {
     return true;
 }
 
+// The real(10) value `v` rounded once to real(kind), kind 4 or 8, as the
+// double that holds a real(4) or real(8) constant. Rounding through double
+// would round twice for real(4).
+static inline double real10_to_kind_double(long double v, int kind) {
+    return kind == 4 ? static_cast<double>(static_cast<float>(v))
+        : static_cast<double>(v);
+}
+
+// A RealConstant of the kind of `type` from the real(10) value `v`: exact
+// for real(10) and real(16), rounded once for real(8) and real(4).
+static inline ASR::expr_t* make_RealConstant_from_r10(Allocator& al,
+        const Location& loc, long double v, ASR::ttype_t* type) {
+    int kind = extract_kind_from_ttype_t(type);
+    if (kind == 10) {
+        return make_RealConstant_r10(al, loc, v, type);
+    } else if (kind == 16) {
+        return make_RealConstant_r16(al, loc, lf_f128_from_long_double(v), type);
+    }
+    return make_RealConstant_util(al, loc, real10_to_kind_double(v, kind), type);
+}
+
+// A RealConstant of the kind of `type` from the real(16) value `v`: exact
+// for real(16), rounded to nearest for real(10), and through double for
+// real(8) and real(4).
+static inline ASR::expr_t* make_RealConstant_from_r16(Allocator& al,
+        const Location& loc, lf_float128 v, ASR::ttype_t* type) {
+    int kind = extract_kind_from_ttype_t(type);
+    if (kind == 16) {
+        return make_RealConstant_r16(al, loc, v, type);
+    } else if (kind == 10) {
+        return make_RealConstant_r10(al, loc, lf_f128_to_long_double(v), type);
+    }
+    return make_RealConstant_util(al, loc, lf_f128_to_double(v), type);
+}
+
 // 2**n as a binary128 value for n in [-16494, 16383] (down to the smallest
 // subnormal).
 static inline lf_float128 real16_pow2(int n) {

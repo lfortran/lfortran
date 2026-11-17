@@ -6128,26 +6128,15 @@ namespace Real {
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(args[0]));
             int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
-            int dest_kind = ASRUtils::extract_kind_from_ttype_t(t1);
             if (src_kind == 16) {
-                lf_float128 v = ASRUtils::real_constant_get_r16(r);
-                if (dest_kind == 16) {
-                    return ASRUtils::make_RealConstant_r16(al, loc, v, t1);
-                }
-                return ASRUtils::make_RealConstant_util(al, loc, lf_f128_to_double(v), t1);
+                return ASRUtils::make_RealConstant_from_r16(al, loc,
+                    ASRUtils::real_constant_get_r16(r), t1);
             }
-            // kind 10 stores a pointer in m_r, not the numeric value.
+            // kind 10 stores a pointer in m_r, not the numeric value. It is
+            // rounded once, not through double for real(4).
             if (src_kind == 10) {
-                long double v = ASRUtils::real_constant_get_r10(r);
-                if (dest_kind == 10) {
-                    return ASRUtils::make_RealConstant_r10(al, loc, v, t1);
-                }
-                if (dest_kind == 16) {
-                    return ASRUtils::make_RealConstant_r16(al, loc,
-                        lf_f128_from_long_double(v), t1);
-                }
-                return ASRUtils::make_RealConstant_util(al, loc,
-                    static_cast<double>(v), t1);
+                return ASRUtils::make_RealConstant_from_r10(al, loc,
+                    ASRUtils::real_constant_get_r10(r), t1);
             }
             return ASRUtils::make_RealConstant_util(al, loc,
                 ASRUtils::real_constant_get_double(r), t1);
