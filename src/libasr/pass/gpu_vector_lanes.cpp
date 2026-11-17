@@ -188,6 +188,12 @@ and of two of them over the same iterations, the second takes the elements
 of an array the first read from registers (hold_elements), as a
 hand-written kernel keeps a column of the state.
 
+A reduction loop right after a distributed loop over the same iterations,
+which reads what that loop assigns only where it assigns it, is joined
+into it (fold_reduction): each lane accumulates the elements it has just
+computed (the norms of the vectors a phase works out) in the same pass,
+and the lanes combine what they hold after it.
+
 A kernel is rewritten only if it has a loop to distribute, and only if all
 of the following holds of every single statement: it does not return (a
 stop on the first lane alone would leave the others going on with values
@@ -753,6 +759,11 @@ struct KernelInfo {
     // The lanes of the block, all of which run the iteration, while the
     // iteration is tried with arrays the block shares (zero otherwise).
     int block_lanes = 0;
+    // The lanes every launch gives an iteration, once they are known (zero
+    // when a launch decides): above a SIMD-group, the lanes combine their
+    // values (GpuLaneReduce) through shared memory behind a barrier of the
+    // block, which every lane has reached when it has the result.
+    int fixed_lanes = 0;
 
     bool local(ASR::symbol_t *s) const {
         if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
@@ -1861,6 +1872,9 @@ public:
                     plan_parts(ASR::down_cast<ASR::DoLoop_t>(body[i]), frames);
                 }
                 frames.pop_back();
+                if (!collapse.count(body[i]) && !parted.count(body[i])) {
+                    fold_reduction(body, n_body, i, owner, frames);
+                }
             }
             roles[body[i]] = r;
             if (r == Role::Distribute || r == Role::Recurse) any = true;
@@ -1915,7 +1929,8 @@ public:
                         copy->second, out);
                     continue;
                 }
-                bool reduction = reductions.count(body[i]) > 0;
+                bool reduction = reductions.count(body[i]) > 0
+                    && !folded.count(body[i]);
                 bool deferred = deferred_inner.count(body[i]) > 0;
                 distribute(ASR::down_cast<ASR::DoLoop_t>(body[i]), out);
                 // A loop that only accumulates ends without a barrier, but
@@ -2296,6 +2311,155 @@ private:
         }
     }
 
+    // A reduction loop over the iterations of the distributed loop body[i]
+    // that follows it, past assignments of scalars (the starts of its
+    // accumulators, which move in front of it), and reads what body[i]
+    // assigns only where body[i] assigns it in the same iteration, joined
+    // into body[i]: each lane accumulates the elements it has just
+    // computed (the sums of squares of the vectors a phase works out, for
+    // their norms), in one pass over them, with no barrier in between, and
+    // the lanes combine what they hold after the loop, as after a
+    // reduction loop, and wait for each other.
+    void fold_reduction(ASR::stmt_t **&body, size_t &n_body, size_t &i,
+            ASR::stmt_t *owner, std::vector<Frame> &frames) {
+        if (!k.lane_reductions) return;
+        ASR::DoLoop_t *l1 = ASR::down_cast<ASR::DoLoop_t>(body[i]);
+        Effects e1(k);
+        for (size_t q = 0; q < l1->n_body; q++) e1.visit_stmt(*l1->m_body[q]);
+        if (!e1.statuses.empty()) return;
+        std::set<ASR::symbol_t*> changed1 = e1.scalars;
+        ASR::symbol_t *v1 = root_of(l1->m_head.m_v);
+        changed1.insert(v1);
+        std::set<ASR::symbol_t*> arrays1 = assigned_arrays(l1->m_body,
+            l1->n_body);
+        std::vector<size_t> bridges;
+        size_t j = i + 1;
+        for (; j < n_body; j++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*body[j])) break;
+            auto *a = ASR::down_cast<ASR::Assignment_t>(body[j]);
+            ASR::symbol_t *t = root_of(a->m_target);
+            Effects eb(k);
+            eb.visit_stmt(*body[j]);
+            if (!ASR::is_a<ASR::Var_t>(*a->m_target) || !k.private_scalar(t)
+                    || eb.shared_effect || eb.unknown || changed1.count(t)
+                    || mentions(*body[i], t)
+                    || mentions_any(a->m_value, changed1)
+                    || mentions_any(a->m_value, arrays1)) {
+                break;
+            }
+            bridges.push_back(j);
+        }
+        if (j >= n_body || !ASR::is_a<ASR::DoLoop_t>(*body[j])) return;
+        ASR::DoLoop_t *l2 = ASR::down_cast<ASR::DoLoop_t>(body[j]);
+        if (l2->n_orelse > 0 || l2->m_head.m_v == nullptr || has_block(l2)) {
+            return;
+        }
+        ASR::symbol_t *v2 = root_of(l2->m_head.m_v);
+        if (!k.private_scalar(v2) || !same_step(l1->m_head.m_increment,
+                l2->m_head.m_increment)) {
+            return;
+        }
+        ASR::expr_t *s1 = resolve(l1->m_head.m_start, body, i);
+        ASR::expr_t *s2 = resolve(l2->m_head.m_start, body, j);
+        ASR::expr_t *f1 = resolve(l1->m_head.m_end, body, i);
+        ASR::expr_t *f2 = resolve(l2->m_head.m_end, body, j);
+        if (!same_expr(s1, s2) || !same_expr(f1, f2)
+                || mentions_any(s2, changed1) || mentions_any(f2, changed1)
+                || mentions_any(s2, arrays1) || mentions_any(f2, arrays1)) {
+            return;
+        }
+        std::vector<Accumulator> accumulators;
+        std::vector<Induction> counters;
+        frames.push_back({body, n_body, j, owner});
+        bool was_scattered = declined_scattered;
+        bool ok = reducible(l2, frames, accumulators, counters);
+        declined_scattered = was_scattered;
+        frames.pop_back();
+        if (!ok || !counters.empty() || accumulators.empty()
+                || live_variables.count(&l2->base)) {
+            return;
+        }
+        // The joined body, with the second loop's variable the first's.
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.allow_procedure_calls = true;
+        class Rename : public ASR::BaseWalkVisitor<Rename> {
+        public:
+            ASR::symbol_t *from, *to;
+            void visit_Var(const ASR::Var_t &x) {
+                if (ASRUtils::symbol_get_past_external(x.m_v) == from) {
+                    const_cast<ASR::Var_t&>(x).m_v = to;
+                }
+            }
+        } rename;
+        rename.from = v2;
+        rename.to = v1;
+        std::vector<ASR::stmt_t*> copies;
+        for (size_t q = 0; q < l2->n_body; q++) {
+            ASR::stmt_t *copy = dup.duplicate_stmt(l2->m_body[q]);
+            if (copy == nullptr) return;
+            rename.visit_stmt(*copy);
+            copies.push_back(copy);
+        }
+        // It reads what the first assigns where the first assigns it, and
+        // none of the first's scalars; the first names none of its own.
+        Assignments assigns;
+        for (size_t q = 0; q < l1->n_body; q++) assigns.visit_stmt(*l1->m_body[q]);
+        Designators names;
+        for (ASR::stmt_t *c : copies) names.visit_stmt(*c);
+        for (ASR::expr_t *item : names.items) {
+            if (!arrays1.count(root_of(item))) continue;
+            bool same = false;
+            for (ASR::Assignment_t *a : assigns.found) {
+                if (same_expr(a->m_target, item)) same = true;
+            }
+            if (!same) return;
+        }
+        for (ASR::expr_t *w : names.wholes) {
+            ASR::symbol_t *r = root_of(w);
+            if (arrays1.count(r) || (r != v1 && changed1.count(r))) return;
+        }
+        Effects e2(k);
+        for (ASR::stmt_t *c : copies) e2.visit_stmt(*c);
+        for (ASR::symbol_t *x : e2.scalars) {
+            if (x != v1 && mentions(*body[i], x)) return;
+        }
+        for (const Accumulator &a : accumulators) {
+            if (mentions(*body[i], a.variable)) return;
+        }
+        bool copyable = true;
+        block_scope(l1->m_body, l1->n_body, copyable);
+        if (!copyable) return;
+        Vec<ASR::stmt_t*> joined;
+        joined.reserve(al, l1->n_body + copies.size());
+        for (size_t q = 0; q < l1->n_body; q++) joined.push_back(al, l1->m_body[q]);
+        for (ASR::stmt_t *c : copies) joined.push_back(al, c);
+        l1->m_body = joined.p;
+        l1->n_body = joined.n;
+        Vec<ASR::stmt_t*> list;
+        list.reserve(al, n_body);
+        for (size_t q = 0; q < i; q++) list.push_back(al, body[q]);
+        for (size_t q : bridges) {
+            list.push_back(al, body[q]);
+            roles[body[q]] = Role::Replicate;
+        }
+        for (size_t q = i; q < n_body; q++) {
+            if (q == j || std::find(bridges.begin(), bridges.end(), q)
+                    != bridges.end()) {
+                continue;
+            }
+            list.push_back(al, body[q]);
+        }
+        body = list.p;
+        n_body = list.n;
+        i += bridges.size();
+        reductions[&l1->base] = accumulators;
+        folded.insert(&l1->base);
+    }
+
+    // The distributed loops a reduction loop was joined into
+    // (fold_reduction).
+    std::set<ASR::stmt_t*> folded;
+
     // Joins the loops of a distributed loop's body that run over the same
     // independent iterations: they run on one lane, one after another, and
     // only the order of independent iterations changes. `frames` ends with
@@ -2610,6 +2774,9 @@ private:
         auto reduction = reductions.find(&d->base);
         if (reduction != reductions.end()) {
             distribute_reduction(d, reduction->second, out);
+            if (folded.count(&d->base) && k.fixed_lanes <= k.lanes_count) {
+                finish_distributed(d, out);
+            }
             return;
         }
         const Location &loc = d->base.base.loc;
@@ -5184,6 +5351,7 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         }
         k.lanes = add_lanes_parameter(al, kernel);
         kernel.m_gpu->m_lanes_max = lanes;
+        k.fixed_lanes = lanes;
         shared->apply(kernel.m_body, kernel.n_body);
         for (ASR::symbol_t *s : k.block_arrays) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);

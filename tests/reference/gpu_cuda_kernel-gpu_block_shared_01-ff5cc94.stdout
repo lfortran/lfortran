@@ -184,6 +184,12 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
         float sb;
         float so;
         float t;
+        sa = ((float)0);
+        sb = ((float)0);
+        if ((__gpu_lane != 0)) {
+            sa =   0.00000000000000000e+00f;
+            sb =   0.00000000000000000e+00f;
+        }
         j__dc = (1 + (((int)__gpu_lane) * 1));
         const int __lfortran_trips_0 = n >= j__dc ? (int)((unsigned)(n - j__dc) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 1
@@ -194,20 +200,8 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
             b[((int)(j__dc) - (1))] = (b[((int)(j__dc) - (1))] - (abs(b[((int)(j__dc) - (1))]) / ((float)2)));
             c[((int)(j__dc) - (1))] = (x[((int)(j__dc) - (__lb_x_0)) + (__dim_x_0 * ((int)(h__dc) - (__lb_x_1)))] - ((float)j__dc));
             c[((int)(j__dc) - (1))] = (c[((int)(j__dc) - (1))] + abs(c[((int)(j__dc) - (1))]));
-        }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
-        sa = ((float)0);
-        sb = ((float)0);
-        if ((__gpu_lane != 0)) {
-            sa =   0.00000000000000000e+00f;
-            sb =   0.00000000000000000e+00f;
-        }
-        j = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_1 = n >= j ? (int)((unsigned)(n - j) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
-        #pragma unroll 1
-        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, j += (1 * ((int)__gpu_lanes))) {
-            sa = (sa + a[((int)(j) - (1))]);
-            sb = (sb + (b[((int)(j) - (1))] * c[((int)(j) - (1))]));
+            sa = (sa + a[((int)(j__dc) - (1))]);
+            sb = (sb + (b[((int)(j__dc) - (1))] * c[((int)(j__dc) - (1))]));
         }
         if (__gpu_lanes_n > 32) {
             sa = __lfortran_lane_reduce<0>(sa, 32, 0xffffffffu);
@@ -251,16 +245,16 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
             so =   0.00000000000000000e+00f;
         }
         j = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_2 = n >= j ? (int)((unsigned)(n - j) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+        const int __lfortran_trips_1 = n >= j ? (int)((unsigned)(n - j) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 1
-        for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, j += (1 * ((int)__gpu_lanes))) {
+        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, j += (1 * ((int)__gpu_lanes))) {
             so = (so + o[((int)(j) - (1))]);
         }
         so = __lfortran_lane_reduce_block<0>(so, __gpu_lanes_n, __gpu_lane_mask);
         i__dc1 = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_3 = n >= i__dc1 ? (int)((unsigned)(n - i__dc1) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+        const int __lfortran_trips_2 = n >= i__dc1 ? (int)((unsigned)(n - i__dc1) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
         #pragma unroll 1
-        for (int __lfortran_count_3 = 0; __lfortran_count_3 < __lfortran_trips_3; __lfortran_count_3++, i__dc1 += (1 * ((int)__gpu_lanes))) {
+        for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, i__dc1 += (1 * ((int)__gpu_lanes))) {
             y[((int)(i__dc1) - (__lb_y_0)) + (__dim_y_0 * ((int)(h__dc) - (__lb_y_1)))] = (((((float)2) * o[((int)(i__dc1) - (1))]) - so) + c[((int)(i__dc1) - (1))]);
         }
         __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
