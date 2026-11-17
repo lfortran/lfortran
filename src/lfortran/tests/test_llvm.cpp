@@ -5419,6 +5419,40 @@ end function
     CHECK(r.result.i32 == 6);
 }
 
+TEST_CASE("FortranEvaluator global procedure pointer declaration") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(integer function f()
+f = 1
+end function
+)").ok);
+    // A procedure pointer declared at the top level of a cell lives in the
+    // translation unit itself (#16337).
+    REQUIRE(e.evaluate2("procedure(f), pointer :: p").ok);
+    // The same declaration in the cell that uses the module of its interface.
+    REQUIRE(e.evaluate2(R"(module pointer_baseline
+contains
+integer function g() bind(c)
+g = 2
+end function
+end module
+use pointer_baseline
+procedure(g), pointer :: q
+)").ok);
+#ifndef __EMSCRIPTEN__
+    // Procedure pointers do not work in the WASM interactive executor yet
+    // (#17138).
+    REQUIRE(e.evaluate2("p => f").ok);
+    REQUIRE(e.evaluate2("q => g").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("p() + 10 * q()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 21);
+#endif
+}
+
 TEST_CASE("FortranEvaluator interface body in a module used by another module") {
     CompilerOptions cu;
     cu.interactive = true;
