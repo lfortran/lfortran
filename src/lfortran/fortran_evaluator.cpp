@@ -610,6 +610,22 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
+    // Link what the cell runs before running any of it. A procedure that is
+    // defined nowhere, neither by this cell nor by an earlier one nor by the
+    // runtime, is found missing here: an error in the user's code, like an
+    // undefined reference at link time.
+    try {
+        if (has_setup) e.get_symbol_address(setup_fn);
+        if (has_program) e.get_symbol_address(program_fn);
+        if (return_type != "none") e.get_symbol_address(run_fn);
+    } catch (const UndefinedSymbolsError &error) {
+        for (const std::string &name : error.symbols()) {
+            diagnostics.add(diag::Diagnostic(
+                "undefined reference to '" + name + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+        }
+        return Error();
+    }
     if (has_setup) {
         e.execfn<void>(setup_fn);
     }

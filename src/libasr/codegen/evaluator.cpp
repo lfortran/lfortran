@@ -1083,6 +1083,9 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
     }
     return (intptr_t)addr.get();
 #else
+    // Forget what earlier lookups failed to find, so that a failure of this
+    // one names only what it is missing.
+    jit->takeMissingSymbols();
 #if LLVM_VERSION_MAJOR < 17
     llvm::Expected<llvm::JITEvaluatedSymbol>
 #else
@@ -1096,8 +1099,13 @@ intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {
         llvm::logAllUnhandledErrors(std::move(e), dest, "");
         std::string msg = std::string(dest.str().data(), dest.str().size());
         if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
-        throw LCompilersException("lookup() failed to find the symbol '"
-            + name + "', error: " + msg);
+        msg = "lookup() failed to find the symbol '" + name + "', error: "
+            + msg;
+        std::vector<std::string> missing = jit->takeMissingSymbols();
+        if (!missing.empty()) {
+            throw UndefinedSymbolsError(msg, missing);
+        }
+        throw LCompilersException(msg);
     }
 #if LLVM_VERSION_MAJOR < 17
     llvm::Expected<uint64_t> addr0 = s->getAddress();

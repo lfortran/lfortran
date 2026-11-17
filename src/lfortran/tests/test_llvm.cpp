@@ -6677,6 +6677,51 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         != std::string::npos);
 }
 
+TEST_CASE("FortranEvaluator execute: undefined procedure") {
+    // A procedure that is never defined is found missing when the JIT links
+    // the cell that first calls it. That is a user error, like an undefined
+    // reference at link time, and the session continues (#17046).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    auto cell = e.execute(R"(integer function c()
+interface
+    integer function nothere()
+    end function
+end interface
+c = nothere()
+end function
+)");
+    REQUIRE(cell.ok);
+    cell = e.execute("c()");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_name == "CompilerError");
+    CHECK(cell.error_value.find("undefined reference to 'nothere'")
+        != std::string::npos);
+    CHECK(cell.error_traceback.empty());
+    // A cell that does not need the procedure still runs.
+    cell = e.execute("40 + 2");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.text() == "42");
+    // The same when the cell that defines the caller also runs it.
+    cell = e.execute(R"(subroutine s_17046()
+interface
+    subroutine nothere2()
+    end subroutine
+end interface
+call nothere2()
+end subroutine
+call s_17046()
+)");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("undefined reference to 'nothere2'")
+        != std::string::npos);
+    cell = e.execute("6 * 7");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.text() == "42");
+}
+
 TEST_CASE("FortranEvaluator execute: formatted print of an array section") {
     // The items of an array section share one format, as in a compiled
     // program (#16712).

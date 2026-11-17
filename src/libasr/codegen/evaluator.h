@@ -44,6 +44,23 @@ std::string apply_macos_deployment_target(const std::string &triple);
 // is not a macOS or Darwin triple.
 std::string macos_platform_version(const std::string &triple);
 
+// The JIT could not link the code to run: it references symbols that are
+// defined nowhere, neither by an earlier module nor by the host process. Like
+// an undefined reference at link time, this is an error in the user's code.
+class UndefinedSymbolsError : public LCompilersException
+{
+    std::vector<std::string> m_symbols;
+public:
+    UndefinedSymbolsError(const std::string &msg,
+            const std::vector<std::string> &symbols)
+        : LCompilersException(msg), m_symbols{symbols}
+    { }
+    const std::vector<std::string> &symbols() const
+    {
+        return m_symbols;
+    }
+};
+
 struct LLVMTargetConfig {
     std::string triple;
     std::string cpu = "generic";
