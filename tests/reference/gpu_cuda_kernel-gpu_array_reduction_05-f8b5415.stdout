@@ -107,6 +107,9 @@ __device__ inline T __lfortran_lane_broadcast_block(T v, int lanes, unsigned mas
     return __lfortran_lane_broadcast(v, lanes, mask);
 }
 
+#include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
+
 // The operation of a reduction of elements of arrays: 0 adds, 1
 // multiplies, 2 takes the smaller, 3 the larger.
 template <int op, typename T>
@@ -118,9 +121,6 @@ __device__ inline T __lfortran_reduce_op(T v, T w) {
 // Whether this is the last of the `units` arrivals at the counter,
 // the first element of the scratch buffer, which it then leaves
 // zero for the next launch.
-#include <cooperative_groups.h>
-#include <cooperative_groups/reduce.h>
-
 // What a unit wrote before it arrives is seen by the last one
 // after it arrives: the add releases and acquires.
 __device__ inline bool __lfortran_reduce_arrive(void *scratch,
@@ -626,36 +626,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_24gpu_
     }
 }
 
-__device__ inline float _lcompilers_aint_f32_gpu_63(float a) {
-    float _lcompilers_aint_f32{};
-    if ((abs(a) <   9.22337203685477581e+18f)) {
-        _lcompilers_aint_f32 = ((float)((long)a));
-    } else {
-        _lcompilers_aint_f32 = a;
-    }
-    return _lcompilers_aint_f32;
-}
-
-__device__ inline float _lcompilers_aint_f321_gpu_64(float a) {
-    float _lcompilers_aint_f321{};
-    if ((abs(a) <   9.22337203685477581e+18f)) {
-        _lcompilers_aint_f321 = ((float)((long)a));
-    } else {
-        _lcompilers_aint_f321 = a;
-    }
-    return _lcompilers_aint_f321;
-}
-
-__device__ inline float _lcompilers_anint_f32_gpu_62(float a) {
-    float _lcompilers_anint_f32{};
-    if ((a >   0.00000000000000000e+00f)) {
-        _lcompilers_anint_f32 = _lcompilers_aint_f32_gpu_63((a +   5.00000000000000000e-01f));
-    } else {
-        _lcompilers_anint_f32 = _lcompilers_aint_f321_gpu_64((a -   5.00000000000000000e-01f));
-    }
-    return _lcompilers_anint_f32;
-}
-
 struct __ScalarArgs___lfortran_gpu_kernel_6_24gpu_array_reduction_05_m7produce {
     int k;
     int __dim_ss_0;
@@ -788,7 +758,11 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_6_24gpu_
             const long long __rc_threads = (long long)(__gpu_iterations);
             const bool __rc_take = (long long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread) < __rc_threads && __gpu_lane == 0;
             if (__rc_take) {
-                __lfortran_reduce_atomic_group<0>(&(ss[((int)(k) - (__lb_ss_0))]), __gpu_accumulator);
+                if (__gpu_lanes_n >= 32) {
+                    __lfortran_reduce_atomic<0>(&(ss[((int)(k) - (__lb_ss_0))]), __gpu_accumulator);
+                } else {
+                    __lfortran_reduce_atomic_group<0>(&(ss[((int)(k) - (__lb_ss_0))]), __gpu_accumulator);
+                }
             }
         }
     } else {
@@ -900,7 +874,11 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_6_24gpu_
             const long long __rc_threads = (long long)(__gpu_iterations);
             const bool __rc_take = (long long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread) < __rc_threads && __gpu_lane == 0;
             if (__rc_take) {
-                __lfortran_reduce_atomic_group<0>(&(ss[((int)(k) - (__lb_ss_0))]), __gpu_accumulator);
+                if (__gpu_lanes_n >= 32) {
+                    __lfortran_reduce_atomic<0>(&(ss[((int)(k) - (__lb_ss_0))]), __gpu_accumulator);
+                } else {
+                    __lfortran_reduce_atomic_group<0>(&(ss[((int)(k) - (__lb_ss_0))]), __gpu_accumulator);
+                }
             }
         }
     }

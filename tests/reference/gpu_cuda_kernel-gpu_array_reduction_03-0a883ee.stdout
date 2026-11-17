@@ -1,5 +1,8 @@
 #include <stdint.h>
 
+#include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
+
 // The operation of a reduction of elements of arrays: 0 adds, 1
 // multiplies, 2 takes the smaller, 3 the larger.
 template <int op, typename T>
@@ -11,9 +14,6 @@ __device__ inline T __lfortran_reduce_op(T v, T w) {
 // Whether this is the last of the `units` arrivals at the counter,
 // the first element of the scratch buffer, which it then leaves
 // zero for the next launch.
-#include <cooperative_groups.h>
-#include <cooperative_groups/reduce.h>
-
 // What a unit wrote before it arrives is seen by the last one
 // after it arrives: the add releases and acquires.
 __device__ inline bool __lfortran_reduce_arrive(void *scratch,

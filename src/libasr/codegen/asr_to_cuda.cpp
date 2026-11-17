@@ -86,7 +86,7 @@ struct CudaDialect {
             // The shared generator spells the maths unqualified, the way a
             // shading language does; on the host they live in namespace std.
             for (const char *fn : {"abs", "exp", "sqrt", "sin", "cos",
-                    "fmod", "fma", "pow", "min", "max"}) {
+                    "fmod", "fma", "pow", "min", "max", "round", "trunc"}) {
                 src << "using std::" << fn << ";\n";
             }
         }
@@ -414,12 +414,13 @@ struct CudaDialect {
             "__device__ inline T __lfortran_reduce_op(T v, T w) {\n"
             "    return op == 0 ? v + w : op == 1 ? v * w\n"
             "        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);\n"
-            "}\n\n"
+            "}\n\n";
+        std::string arrive =
             "// Whether this is the last of the `units` arrivals at the counter,\n"
             "// the first element of the scratch buffer, which it then leaves\n"
             "// zero for the next launch.\n";
         if (emulate_cpu) {
-            return h +
+            return h + arrive +
                 "// The threads run one after another.\n"
                 "__device__ inline bool __lfortran_reduce_arrive(void *scratch,\n"
                 "        long long units) {\n"
@@ -429,9 +430,8 @@ struct CudaDialect {
                 "    return true;\n"
                 "}\n\n";
         }
-        return h +
-            "#include <cooperative_groups.h>\n"
-            "#include <cooperative_groups/reduce.h>\n\n"
+        return "#include <cooperative_groups.h>\n"
+            "#include <cooperative_groups/reduce.h>\n\n" + h + arrive +
             "// What a unit wrote before it arrives is seen by the last one\n"
             "// after it arrives: the add releases and acquires.\n"
             "__device__ inline bool __lfortran_reduce_arrive(void *scratch,\n"
@@ -637,11 +637,24 @@ struct CudaDialect {
             << " < __rc_threads" << (lanes ? " && " + lane_index() + " == 0"
                 : std::string()) << ";\n";
         if (!atomic.empty()) {
+            // An iteration on a warp of lanes or more is alone in its warp
+            // to have a value: its first lane updates the target itself.
+            auto updates = [&](const std::string &indent,
+                    const std::string &helper) {
+                for (const GpuReduceCombineItem &item : atomic) {
+                    src << indent << helper << "<" << item.op << ">(&("
+                        << item.target << "), " << item.value << ");\n";
+                }
+            };
             src << i1 << "if (__rc_take) {\n";
-            for (const GpuReduceCombineItem &item : atomic) {
-                src << i2 << "__lfortran_reduce_atomic_group<" << item.op
-                    << ">(&(" << item.target << "), " << item.value
-                    << ");\n";
+            if (lanes) {
+                src << i2 << "if (__gpu_lanes_n >= 32) {\n";
+                updates(i3, "__lfortran_reduce_atomic");
+                src << i2 << "} else {\n";
+                updates(i3, "__lfortran_reduce_atomic_group");
+                src << i2 << "}\n";
+            } else {
+                updates(i2, "__lfortran_reduce_atomic_group");
             }
             src << i1 << "}\n";
         }

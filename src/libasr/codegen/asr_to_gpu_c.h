@@ -127,6 +127,8 @@ inline bool is_gpu_intercepted_intrinsic(const std::string &name) {
         "_lcompilers_dble_",
         "_lcompilers_int_",
         "_lcompilers_nint_",
+        "_lcompilers_anint_",
+        "_lcompilers_aint_",
         "_lcompilers_sqrt_",
         "_lcompilers_abs_",
         "_lcompilers_sin_",
@@ -6377,6 +6379,18 @@ public:
                         visit_expr(fc->m_args[0].m_value);
                     }
                     src << "))";
+                } else if (fn_name.find("_lcompilers_anint_") == 0
+                        || fn_name.find("_lcompilers_aint_") == 0) {
+                    // Rounds half away from zero, or toward zero, in the
+                    // argument's own type: one or two instructions, where
+                    // the lowered function tests the sign and the range
+                    // (and was left as a call where `nint` is spliced in).
+                    src << (fn_name.find("_lcompilers_anint_") == 0
+                        ? "round(" : "trunc(");
+                    if (fc->n_args > 0 && fc->m_args[0].m_value) {
+                        visit_expr(fc->m_args[0].m_value);
+                    }
+                    src << ")";
                 } else if (fn_name.find("_lcompilers_int_") == 0) {
                     std::string target = gpu_type(fc->m_type);
                     src << "((" << target << ")";
