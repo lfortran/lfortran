@@ -734,6 +734,25 @@ static inline lf_float128 real16_round_half_away(lf_float128 v) {
     return lf_f128_signbit(v) ? lf_f128_neg(f) : f;
 }
 
+// Exact conversion of an integral real(10) value (host long double) to
+// int64_t. Returns false if the value is NaN or outside the int64_t range.
+static inline bool real10_integral_to_int64(long double v, int64_t& out) {
+    if (!(v >= -0x1p63L && v < 0x1p63L)) {
+        return false;
+    }
+    out = static_cast<int64_t>(v);
+    return true;
+}
+
+// Whether `v` is in the range of integer(kind) for kind 1, 2, 4 or 8.
+static inline bool int64_fits_integer_kind(int64_t v, int kind) {
+    if (kind >= 8) {
+        return true;
+    }
+    int64_t bound = int64_t(1) << (8 * kind - 1);
+    return v >= -bound && v < bound;
+}
+
 // Exact conversion of an integral binary128 value to int64_t. Returns false if
 // the value is NaN or outside the int64_t range.
 static inline bool real16_integral_to_int64(lf_float128 v, int64_t& out) {

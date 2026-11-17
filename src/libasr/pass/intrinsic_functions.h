@@ -3483,8 +3483,25 @@ namespace Int {
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t* real_constant = ASR::down_cast<ASR::RealConstant_t>(
                 ASRUtils::expr_value(args[0]));
-            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
-                i = static_cast<int64_t>(lf_f128_to_double(ASRUtils::real_constant_get_r16(real_constant)));
+            int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+            if (arg_kind == 10 || arg_kind == 16) {
+                // Truncated in the precision of the argument, not through
+                // double
+                bool exact;
+                if (arg_kind == 10) {
+                    exact = ASRUtils::real10_integral_to_int64(truncl(
+                        ASRUtils::real_constant_get_r10(real_constant)), i);
+                } else {
+                    lf_float128 v = ASRUtils::real_constant_get_r16(real_constant);
+                    exact = ASRUtils::real16_integral_to_int64(lf_f128_signbit(v)
+                        ? lf_f128_ceiling(v) : lf_f128_floor(v), i);
+                }
+                int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+                if (!exact || !ASRUtils::int64_fits_integer_kind(i, kind)) {
+                    diag.semantic_error_label("Result of `int` overflows its kind("
+                        + std::to_string(kind) + ")", {loc}, "");
+                    return nullptr;
+                }
             } else {
                 i = static_cast<int64_t>(ASRUtils::real_constant_get_double(real_constant));
             }
@@ -3926,8 +3943,18 @@ namespace Nint {
             int64_t near_int;
             if (!ASRUtils::real16_integral_to_int64(
                     ASRUtils::real16_round_half_away(ASRUtils::real_expr_get_r16(args[0])), near_int)
-                    || (kind == 4 && (near_int < std::numeric_limits<int32_t>::min() ||
-                        near_int > std::numeric_limits<int32_t>::max()))) {
+                    || !ASRUtils::int64_fits_integer_kind(near_int, kind)) {
+                diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+                return nullptr;
+            }
+            return make_ConstantWithType(make_IntegerConstant_t, near_int, arg_type, loc);
+        }
+        // Kind 10 stores a pointer in m_r: round in long double, not double
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 10) {
+            int64_t near_int;
+            if (!ASRUtils::real10_integral_to_int64(roundl(ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), near_int)
+                    || !ASRUtils::int64_fits_integer_kind(near_int, kind)) {
                 diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
                 return nullptr;
             }
@@ -4038,13 +4065,24 @@ namespace Logical {
 namespace Floor {
 
     static ASR::expr_t *eval_Floor(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
             int64_t floored;
             if (!ASRUtils::real16_integral_to_int64(lf_f128_floor(ASRUtils::real_expr_get_r16(args[0])), floored)
-                    || (ASRUtils::extract_kind_from_ttype_t(t1) == 4
-                        && (floored < std::numeric_limits<int32_t>::min()
-                            || floored > std::numeric_limits<int32_t>::max()))) {
+                    || !ASRUtils::int64_fits_integer_kind(floored, kind)) {
+                diag.semantic_error_label("Result of `floor` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+                return nullptr;
+            }
+            return make_ConstantWithType(make_IntegerConstant_t, floored, t1, loc);
+        }
+        // Kind 10 stores a pointer in m_r: round in long double, not double
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 10) {
+            int64_t floored;
+            if (!ASRUtils::real10_integral_to_int64(floorl(ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), floored)
+                    || !ASRUtils::int64_fits_integer_kind(floored, kind)) {
+                diag.semantic_error_label("Result of `floor` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
                 return nullptr;
             }
             return make_ConstantWithType(make_IntegerConstant_t, floored, t1, loc);
@@ -4091,13 +4129,24 @@ namespace Floor {
 namespace Ceiling {
 
     static ASR::expr_t *eval_Ceiling(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
             int64_t ceiled;
             if (!ASRUtils::real16_integral_to_int64(lf_f128_ceiling(ASRUtils::real_expr_get_r16(args[0])), ceiled)
-                    || (ASRUtils::extract_kind_from_ttype_t(t1) == 4
-                        && (ceiled < std::numeric_limits<int32_t>::min()
-                            || ceiled > std::numeric_limits<int32_t>::max()))) {
+                    || !ASRUtils::int64_fits_integer_kind(ceiled, kind)) {
+                diag.semantic_error_label("Result of `ceiling` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
+                return nullptr;
+            }
+            return make_ConstantWithType(make_IntegerConstant_t, ceiled, t1, loc);
+        }
+        // Kind 10 stores a pointer in m_r: round in long double, not double
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 10) {
+            int64_t ceiled;
+            if (!ASRUtils::real10_integral_to_int64(ceill(ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), ceiled)
+                    || !ASRUtils::int64_fits_integer_kind(ceiled, kind)) {
+                diag.semantic_error_label("Result of `ceiling` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
                 return nullptr;
             }
             return make_ConstantWithType(make_IntegerConstant_t, ceiled, t1, loc);

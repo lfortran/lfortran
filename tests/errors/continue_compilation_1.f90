@@ -5204,3 +5204,21 @@ subroutine cc1_inquire_named_constant()
     inquire(10, round=cc1_inqnc_s)  ! {Error} round in inquire must be a definable variable
     inquire(iolength=cc1_inqnc_n) 1.0  ! {Error} iolength in inquire must be a definable variable
 end subroutine
+
+! The result of nint, floor, ceiling and int of a real(10) or real(16)
+! constant must fit its integer kind.
+subroutine cc1_extended_real_to_integer_overflow()
+    integer(1) :: cc1_ero_i1
+    integer(2) :: cc1_ero_i2
+    integer :: cc1_ero_i4
+    integer(8) :: cc1_ero_i8
+    cc1_ero_i2 = nint(40000.0_10, 2)  ! {Error} Result of `nint` overflows its kind(2)
+    cc1_ero_i2 = floor(40000.5_10, 2)  ! {Error} Result of `floor` overflows its kind(2)
+    cc1_ero_i1 = ceiling(300.5_10, 1)  ! {Error} Result of `ceiling` overflows its kind(1)
+    cc1_ero_i4 = int(3.0e9_10)  ! {Error} Result of `int` overflows its kind(4)
+    cc1_ero_i8 = int(1.0e19_10, 8)  ! {Error} Result of `int` overflows its kind(8)
+    cc1_ero_i2 = nint(40000.0_16, 2)  ! {Error} Result of `nint` overflows its kind(2)
+    cc1_ero_i4 = floor(3.0e9_16)  ! {Error} Result of `floor` overflows its kind(4)
+    cc1_ero_i1 = ceiling(300.5_16, 1)  ! {Error} Result of `ceiling` overflows its kind(1)
+    cc1_ero_i2 = int(-40000.5_16, 2)  ! {Error} Result of `int` overflows its kind(2)
+end subroutine
