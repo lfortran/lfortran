@@ -287,15 +287,14 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
             // A pointer component is associated, not assigned.  Only a null
             // default is handled, as elsewhere in this pass; the
-            // PointerNullConstant is rebuilt around the component so that
-            // codegen can resolve what it points at.
+            // PointerNullConstant is rebuilt around the component, and of
+            // its type, so that codegen can resolve what it points at.
             if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
                 return false;
             }
             ASR::expr_t* null_value = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc,
-                    ASRUtils::import_procedure_type(al,
-                        ASRUtils::expr_type(value), current_scope), target));
+                    ASRUtils::expr_type(target), target));
             out_stmts.push_back(al, ASRUtils::STMT(
                 ASRUtils::make_Associate_t_util(al, loc, target, null_value)));
             return true;
@@ -584,18 +583,16 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 if (ASRUtils::is_pointer(m_var->m_type)) {
                     // Only handle pointer-null defaults. We rebuild the
                     // PointerNullConstant using `member_expr` as its
-                    // `var_expr` so codegen can resolve the underlying
-                    // procedure interface (when the pointer targets a
-                    // procedure) without relying on a symbol from the
-                    // declaring module's scope.
+                    // `var_expr`, and its type, so codegen can resolve the
+                    // underlying procedure interface (when the pointer
+                    // targets a procedure) without relying on a symbol from
+                    // the declaring module's scope. The type of the default
+                    // itself can be the interface as a template declares it.
                     if (!ASR::is_a<ASR::PointerNullConstant_t>(
                             *m_var->m_symbolic_value)) continue;
                     ASR::expr_t* null_value = ASRUtils::EXPR(
                         ASR::make_PointerNullConstant_t(al, loc,
-                            ASRUtils::import_procedure_type(al,
-                                ASRUtils::expr_type(m_var->m_symbolic_value),
-                                current_scope),
-                            member_expr));
+                            ASRUtils::expr_type(member_expr), member_expr));
                     init_stmt = ASRUtils::STMT(
                         ASRUtils::make_Associate_t_util(al, loc,
                             member_expr, null_value));
