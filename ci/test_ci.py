@@ -2853,6 +2853,14 @@ class ApprovebotTests(unittest.TestCase):
         self.assertEqual(bot.next_action(labeled, self.entry(), "pending"), "done")
         # The head failed CI after its verdict.
         self.assertEqual(bot.next_action(labeled, self.entry(), "failure"), "retract")
+        # A needs-review verdict from an older policy is judged again.
+        review = self.pr(labels=[bot.REVIEW])
+        old_review = self.entry(label=bot.REVIEW, policy=bot.POLICY_VERSION - 1)
+        self.assertEqual(bot.next_action(review, old_review, "success"), "retract")
+        self.assertEqual(bot.next_action(review, self.entry(
+            label=bot.REVIEW, policy=bot.POLICY_VERSION), "success"), "done")
+        self.assertEqual(bot.next_action(labeled, self.entry(
+            policy=bot.POLICY_VERSION - 1), "success"), "done")
         self.assertEqual(bot.next_action(self.pr(head="H2", labels=[bot.APPROVED]),
                                          self.entry(), None), "retract")
         self.assertEqual(bot.next_action(self.pr(), self.entry(retracted="t"), "success"),

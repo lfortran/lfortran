@@ -29,7 +29,7 @@ APPROVED = "bot-approved"
 REVIEW = "needs-review"
 VERDICTS = {"approved": APPROVED, "review": REVIEW}
 AUTO_MERGE = "auto-merge"
-POLICY_VERSION = 3
+POLICY_VERSION = 4
 SIGNATURE = "-- approvebot (automated; runs on {login}'s account)"
 BUILD_FLAGS = ["-DCMAKE_CXX_FLAGS_DEBUG=-g -O2", "-DCMAKE_C_FLAGS_DEBUG=-g -O2"]
 # Changes to these require `pixi run build` (regenerates sources) instead of
@@ -178,7 +178,13 @@ def next_action(pr, entry, ci):
         if human_action(current, labels, "OPEN"):
             return "ack"
         # The verdict assumed the head would pass CI; a failure withdraws it.
-        return "retract" if ci == "failure" else "done"
+        if ci == "failure":
+            return "retract"
+        # A newer policy may approve what an older one sent to review. An
+        # older `bot-approved` stays: the maintainer is already looking at it.
+        if current["label"] == REVIEW and current.get("policy", 0) < POLICY_VERSION:
+            return "retract"
+        return "done"
     if current and AUTO_MERGE in labels:
         # A maintainer took the PR over; mergebot's rebases keep the label.
         return "hands-off: labeled auto-merge" if current.get("acked") else "ack"
