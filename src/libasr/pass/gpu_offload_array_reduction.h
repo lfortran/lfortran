@@ -2,6 +2,7 @@
 #define LIBASR_PASS_GPU_OFFLOAD_ARRAY_REDUCTION_H
 
 #include <libasr/asr.h>
+#include <libasr/asr_utils.h>
 
 #include <functional>
 #include <map>
@@ -45,6 +46,34 @@ void gpu_replace_array_reduction_elements(Allocator &al,
     std::vector<ASR::expr_t*> &accumulators,
     const std::function<ASR::expr_t*(size_t)> &new_accumulator);
 
+// Whether combining values of `type` with `op` gives the same result
+// whatever the order and the grouping: a sum of integers (which wraps the
+// same way in any order), and the largest or the smallest of integers or of
+// reals. Such a reduction of an element is combined into the element with
+// atomic updates, which leave `a(k)` before the loop combined with every
+// contribution, as Fortran says, and need nothing else.
+inline bool gpu_reduction_order_free(ASR::reduction_opType op,
+        ASR::ttype_t *type) {
+    switch (op) {
+        case ASR::reduction_opType::ReduceAdd:
+        case ASR::reduction_opType::ReduceSub:
+            return ASRUtils::is_integer(*type);
+        case ASR::reduction_opType::ReduceMIN:
+        case ASR::reduction_opType::ReduceMAX:
+            return ASRUtils::is_integer(*type) || ASRUtils::is_real(*type);
+        default:
+            return false;
+    }
+}
+
+// Whether a GpuReduceCombine combines `item` into its target with atomic
+// updates: an order-free operation, with no initial value to start from
+// (which would have to be stored before the first update).
+inline bool gpu_reduce_item_atomic(const ASR::gpu_reduce_item_t &item) {
+    return item.m_initial == nullptr && gpu_reduction_order_free(item.m_op,
+        ASRUtils::expr_type(item.m_target));
+}
+
 // An element of an array of a REDUCE that the statement right before the
 // loop assigns a constant: `s(1) = 0` before a loop that adds to `s(1)`.
 // The host would have to wait for the launches pending on `s` to assign
@@ -64,7 +93,9 @@ struct GpuReductionInitializer {
 // assignments of constants to elements of its arrays of a REDUCE of `+`,
 // `-`, `*`, `max` or `min` that come right before it, one per element,
 // whose subscripts are constants that the loop names an element at, and
-// records them for the loop.
+// records them for the loop. An element combined with atomic updates
+// (gpu_reduction_order_free) keeps its assignment: the updates start from
+// what it holds.
 void gpu_take_reduction_initializers(ASR::TranslationUnit_t &unit,
     std::map<const ASR::OMPRegion_t*, std::vector<GpuReductionInitializer>>
         &initializers);

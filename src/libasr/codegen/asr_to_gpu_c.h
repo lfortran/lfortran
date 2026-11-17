@@ -6,6 +6,7 @@
 #include <libasr/c_cpp_keywords.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_offload_array_reduction.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_wide_loads.h>
@@ -4158,6 +4159,13 @@ public:
     // a device function it calls.
     bool writing_kernel_body = false;
     void find_trailing_barriers(ASR::stmt_t **body, size_t n) {
+        // A combination of array reductions reads only what the first lane
+        // of each iteration holds, and waits for the others itself where it
+        // has to (asr_to_cuda.cpp), so the barriers before it are as good as
+        // the kernel's last.
+        while (n > 0 && ASR::is_a<ASR::GpuReduceCombine_t>(*body[n - 1])) {
+            n--;
+        }
         while (n > 0 && ASR::is_a<ASR::GpuLaneBarrier_t>(*body[n - 1])) {
             trailing_barriers.insert(body[--n]);
         }
@@ -4774,6 +4782,7 @@ public:
             code.value = expr_str(item.m_value);
             code.type = gpu_type(type);
             code.identity = reduce_identity(type, code.op);
+            code.atomic = gpu_reduce_item_atomic(item);
             // The constant the host no longer assigns before the loop, in
             // the launch's first chunk.
             if (item.m_initial != nullptr) {
@@ -4785,7 +4794,9 @@ public:
             items.push_back(code);
         }
         dialect.emit_reduce_combine(src, get_indent(), items,
-            expr_str(x.m_threads), expr_str(x.m_scratch), kernel_has_lanes());
+            expr_str(x.m_threads),
+            x.m_scratch == nullptr ? std::string() : expr_str(x.m_scratch),
+            kernel_has_lanes());
     }
 
     // `v = GpuLaneReduce(v)`: the variable and the operation (0 adds, 1

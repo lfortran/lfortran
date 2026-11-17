@@ -166,24 +166,30 @@ stmt
     | GpuWait()
     | GpuLaneBarrier()
     -- The end of a reduction into elements of arrays, combined on the
-    -- device. Every thread of the launch reaches it (none has returned),
-    -- each holding a contribution `values(j)` of each item; those of the
+    -- device. Every thread of the launch reaches it (none has returned), or,
+    -- when every item is combined with atomic updates, every thread that
+    -- has iterations, each holding a contribution `values(j)` of each item;
+    -- those of the
     -- threads numbered below `threads`, as the kernel numbers its threads
     -- (of an iteration on several lanes, whose lanes hold the same values,
     -- the first lane's), are combined in an order that does not depend on
     -- how the threads were scheduled, and the target is left as `target op
     -- (that combination)`: the target is an element of an array argument of
     -- the kernel, of an integer or real type of kind 4 or 8, and `op` adds,
-    -- multiplies, or takes the smaller or the larger. `scratch` is an
-    -- integer(8) array argument of the kernel that the launch holds as a
-    -- scratch buffer (GpuKernelLaunch.scratch) of at least 1 + n_items *
-    -- threads elements, which is zero when its memory is new, and the
-    -- combination leaves its first element, a counter, zero (see
-    -- asr_to_gpu_c.h). An item with an `initial` value is left as `initial
-    -- op (that combination)` instead by the first launch of a launch that
-    -- runs in chunks, the one for which `first` is not zero, or by the only
-    -- one when `first` is nil: the host assigns the target nothing before.
-    | GpuReduceCombine(gpu_reduce_item* items, expr threads, expr scratch, expr? first)
+    -- multiplies, or takes the smaller or the larger. An item whose
+    -- operation gives the same result in any order (gpu_reduce_item_atomic:
+    -- an integer sum, a maximum, a minimum) and that has no `initial` value
+    -- is combined into its target with atomic updates. The others need
+    -- `scratch`, an integer(8) array argument of the kernel that the launch
+    -- holds as a scratch buffer (GpuKernelLaunch.scratch) of at least 1 +
+    -- n_items * threads elements, which is zero when its memory is new, and
+    -- the combination leaves its first element, a counter, zero (see
+    -- asr_to_gpu_c.h); without them it is nil. An item with an `initial`
+    -- value is left as `initial op (that combination)` instead by the first
+    -- launch of a launch that runs in chunks, the one for which `first` is
+    -- not zero, or by the only one when `first` is nil: the host assigns the
+    -- target nothing before.
+    | GpuReduceCombine(gpu_reduce_item* items, expr threads, expr? scratch, expr? first)
     -- targets(j) = source(j) for the consecutive elements of one array that
     -- start at `source`: read as one vector when `array` starts at a
     -- multiple of 16 bytes and `aligned`, which says that the elements start

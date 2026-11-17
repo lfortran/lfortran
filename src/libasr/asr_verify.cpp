@@ -7,6 +7,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_offload_array_reduction.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 
 #include <algorithm>
@@ -4495,14 +4496,27 @@ public:
         require_id(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_threads)),
             "asr.verify.gpu_reduce_combine.threads",
             "GpuReduceCombine::m_threads must be an integer");
-        ASR::ttype_t *scratch = ASRUtils::expr_type(x.m_scratch);
-        require_id(ASR::is_a<ASR::Var_t>(*x.m_scratch)
-                && ASRUtils::is_array(scratch)
-                && ASRUtils::extract_n_dims_from_ttype(scratch) == 1
-                && ASRUtils::is_integer(*ASRUtils::extract_type(scratch))
-                && ASRUtils::extract_kind_from_ttype_t(scratch) == 8,
+        // The items not combined with atomic updates go through the scratch
+        // buffer.
+        bool needs_scratch = false;
+        for (size_t i = 0; i < x.n_items; i++) {
+            needs_scratch = needs_scratch
+                || !gpu_reduce_item_atomic(x.m_items[i]);
+        }
+        require_id(needs_scratch == (x.m_scratch != nullptr),
             "asr.verify.gpu_reduce_combine.scratch",
-            "GpuReduceCombine::m_scratch must be an integer(8) array");
+            "GpuReduceCombine::m_scratch is present exactly when an item is "
+            "not combined with atomic updates");
+        if (x.m_scratch != nullptr) {
+            ASR::ttype_t *scratch = ASRUtils::expr_type(x.m_scratch);
+            require_id(ASR::is_a<ASR::Var_t>(*x.m_scratch)
+                    && ASRUtils::is_array(scratch)
+                    && ASRUtils::extract_n_dims_from_ttype(scratch) == 1
+                    && ASRUtils::is_integer(*ASRUtils::extract_type(scratch))
+                    && ASRUtils::extract_kind_from_ttype_t(scratch) == 8,
+                "asr.verify.gpu_reduce_combine.scratch",
+                "GpuReduceCombine::m_scratch must be an integer(8) array");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuReduceCombine(x);
     }
 

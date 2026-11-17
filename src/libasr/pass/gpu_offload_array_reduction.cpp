@@ -389,6 +389,7 @@ private:
             a->m_target);
         if (!constant_subscripts(*element)) return false;
         ASR::symbol_t *array = nullptr;
+        ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd;
         for (size_t c = 0; c < region.n_clauses && array == nullptr; c++) {
             if (region.m_clauses[c]->type
                     != ASR::omp_clauseType::OMPReduction) {
@@ -413,10 +414,16 @@ private:
                                     clause->m_vars[v])->m_v))) {
                     array = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(clause->m_vars[v])->m_v);
+                    op = clause->m_operator;
                 }
             }
         }
         if (array == nullptr) return false;
+        // An element combined with atomic updates starts from what it holds,
+        // which the host assigns before the launch.
+        if (gpu_reduction_order_free(op, ASRUtils::expr_type(a->m_target))) {
+            return false;
+        }
         // The host evaluates the bounds of the loop before the launch, after
         // the assignment it no longer runs.
         for (size_t i = 0; i < region.n_body; i++) {

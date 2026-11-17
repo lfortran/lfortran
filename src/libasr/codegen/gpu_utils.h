@@ -369,8 +369,9 @@ struct GpuKernelParam {
 // One element a GpuReduceCombine combines into, as a dialect writes it out:
 // the element (`target`), the thread's contribution (`value`), their type,
 // the identity of the operation, the operation (0 adds, 1 multiplies, 2
-// takes the smaller, 3 the larger), and what the combination starts from:
-// `start`, an expression of the target, or the target when it is empty.
+// takes the smaller, 3 the larger), what the combination starts from:
+// `start`, an expression of the target, or the target when it is empty, and
+// whether it is combined with atomic updates (gpu_reduce_item_atomic).
 struct GpuReduceCombineItem {
     std::string target;
     std::string value;
@@ -378,6 +379,7 @@ struct GpuReduceCombineItem {
     std::string identity;
     int op;
     std::string start;
+    bool atomic = false;
 };
 
 // A declaration a kernel, a device function or a block makes ahead of its

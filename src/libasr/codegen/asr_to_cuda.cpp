@@ -430,6 +430,8 @@ struct CudaDialect {
                 "}\n\n";
         }
         return h +
+            "#include <cooperative_groups.h>\n"
+            "#include <cooperative_groups/reduce.h>\n\n"
             "// What a unit wrote before it arrives is seen by the last one\n"
             "// after it arrives: the add releases and acquires.\n"
             "__device__ inline bool __lfortran_reduce_arrive(void *scratch,\n"
@@ -458,6 +460,61 @@ struct CudaDialect {
             "    }\n"
             "    return v;\n"
             "}\n\n"
+            "// The target combined with `v` by an atomic update, for the\n"
+            "// operations whose result does not depend on the order: an integer\n"
+            "// sum, and the larger or the smaller of integers (natively) or of\n"
+            "// reals (by compare and swap of their bits).\n"
+            "template <int op>\n"
+            "__device__ inline void __lfortran_reduce_atomic(int *p, int v) {\n"
+            "    if (op == 0) atomicAdd(p, v);\n"
+            "    else if (op == 2) atomicMin(p, v);\n"
+            "    else atomicMax(p, v);\n"
+            "}\n\n"
+            "template <int op>\n"
+            "__device__ inline void __lfortran_reduce_atomic(long long *p, long long v) {\n"
+            "    if (op == 0) atomicAdd((unsigned long long*)p, (unsigned long long)v);\n"
+            "    else if (op == 2) atomicMin(p, v);\n"
+            "    else atomicMax(p, v);\n"
+            "}\n\n"
+            "template <int op>\n"
+            "__device__ inline void __lfortran_reduce_atomic(long *p, long v) {\n"
+            "    __lfortran_reduce_atomic<op>((long long*)p, (long long)v);\n"
+            "}\n\n"
+            "template <int op, typename T, typename U>\n"
+            "__device__ inline void __lfortran_reduce_atomic_bits(T *p, T v) {\n"
+            "    U *q = (U*)p;\n"
+            "    U old = *(volatile U*)q, assumed;\n"
+            "    do {\n"
+            "        assumed = old;\n"
+            "        T current;\n"
+            "        __builtin_memcpy(&current, &assumed, sizeof(T));\n"
+            "        T next = __lfortran_reduce_op<op>(current, v);\n"
+            "        U bits;\n"
+            "        __builtin_memcpy(&bits, &next, sizeof(T));\n"
+            "        if (bits == assumed) return;\n"
+            "        old = atomicCAS(q, assumed, bits);\n"
+            "    } while (old != assumed);\n"
+            "}\n\n"
+            "template <int op>\n"
+            "__device__ inline void __lfortran_reduce_atomic(float *p, float v) {\n"
+            "    __lfortran_reduce_atomic_bits<op, float, unsigned int>(p, v);\n"
+            "}\n\n"
+            "template <int op>\n"
+            "__device__ inline void __lfortran_reduce_atomic(double *p, double v) {\n"
+            "    __lfortran_reduce_atomic_bits<op, double, unsigned long long>(p, v);\n"
+            "}\n\n"
+            "// The threads of a warp that call it together combine their `v`, and\n"
+            "// the first of them updates the target: one atomic update per warp.\n"
+            "template <int op, typename T>\n"
+            "__device__ inline void __lfortran_reduce_atomic_group(T *p, T v) {\n"
+            "    namespace cg = cooperative_groups;\n"
+            "    cg::coalesced_group g = cg::coalesced_threads();\n"
+            "    T r;\n"
+            "    if (op == 0) r = cg::reduce(g, v, cg::plus<T>());\n"
+            "    else if (op == 2) r = cg::reduce(g, v, cg::less<T>());\n"
+            "    else r = cg::reduce(g, v, cg::greater<T>());\n"
+            "    if (g.thread_rank() == 0) __lfortran_reduce_atomic<op>(p, r);\n"
+            "}\n\n"
             "// `v` combined over the threads of the block, in every one: each warp\n"
             "// combines its own, and the warps' meet in shared memory in their\n"
             "// order.\n"
@@ -478,47 +535,63 @@ struct CudaDialect {
 
     // A GpuReduceCombine: the threads numbered below `threads` (as the
     // kernel numbers them: of a kernel with `lanes`, its iterations, whose
-    // first lane holds the values) combine their `items`, deterministically,
-    // and the last to finish applies the result to the targets.
+    // first lane holds the values) combine their `items` into the targets.
     //
-    // On a GPU the unit is a block: its threads combine their values in a
-    // fixed order (__lfortran_reduce_block; a block that runs one iteration
-    // on all its threads has the value in its first thread already), its
-    // first thread writes them to its part of the scratch buffer, after the
-    // counter, and arrives at the counter; the block that arrives last has
-    // its first warp combine the parts of all blocks, each lane every 32nd
-    // in the order of the blocks and the lanes in a fixed order, and apply
-    // them. Every thread of the launch reaches it, so the barriers of a
-    // block are met; a block whose threads are all past `threads` has
-    // nothing to combine and does not count. The parts are read past the
-    // cache of the multiprocessor (__ldcg), which may hold what another
-    // launch left there. On an H200, a launch of 1280 blocks that finish
-    // together takes about 2 us longer for it than one that only stores its
-    // results: the arrivals queue at the counter, and the last block reads
-    // the parts after its own arrival. The CPU emulation, which runs the
-    // threads one after another and has no barriers, makes each thread a
-    // unit.
+    // An item whose operation gives the same result in any order
+    // (gpu_reduce_item_atomic: an integer sum, a maximum, a minimum) is
+    // combined over the threads of a warp that have a value and reach it
+    // together, and the first of them adds it to the target with one atomic
+    // update: one per warp, or per iteration where an iteration has the
+    // lanes of a whole block. The result is the same whatever the order of
+    // the updates, and nothing else is needed: the threads that have no
+    // iterations need not reach it, as in a kernel that runs one iteration
+    // per thread (gpu_offload.cpp).
+    //
+    // For the others, the unit is a block: its threads combine their
+    // values in a fixed order (__lfortran_reduce_block; a block that runs
+    // one iteration on all its threads has the value in its first thread
+    // already), its first thread writes them to its part of `scratch`,
+    // after the counter, and arrives at the counter; the block that arrives
+    // last has its first warp combine the parts of all blocks, each lane
+    // every 32nd in the order of the blocks and the lanes in a fixed order,
+    // and apply them. Every thread of the launch reaches it, so the
+    // barriers of a block are met; a block whose threads are all past
+    // `threads` has nothing to combine and does not count. The parts are
+    // read past the cache of the multiprocessor (__ldcg), which may hold
+    // what another launch left there. On an H200, a launch of 1280 blocks
+    // that finish together takes about 2 us longer for it than one that
+    // only stores its results: the arrivals queue at the counter, and the
+    // last block reads the parts after its own arrival.
+    //
+    // The CPU emulation, which runs the threads one after another and has
+    // no barriers, combines each thread's values into an atomic item's
+    // target directly, and makes each thread a unit of the others.
     void emit_reduce_combine(std::stringstream &src, const std::string &in,
-            const std::vector<GpuReduceCombineItem> &items,
+            const std::vector<GpuReduceCombineItem> &all_items,
             const std::string &threads, const std::string &scratch,
             bool lanes) const {
+        std::vector<GpuReduceCombineItem> atomic, items;
+        for (const GpuReduceCombineItem &item : all_items) {
+            (item.atomic ? atomic : items).push_back(item);
+        }
         std::string m = std::to_string(items.size());
         auto part = [&](const std::string &unit, size_t j) {
             return "((" + items[j].type + "*)(" + scratch + " + 1 + ("
                 + unit + ") * " + m + " + " + std::to_string(j) + "))";
         };
+        auto op_of = [](const GpuReduceCombineItem &item) {
+            return "__lfortran_reduce_op<" + std::to_string(item.op) + ">(";
+        };
         auto combine = [&](size_t j, const std::string &into,
                 const std::string &value) {
-            return into + " = __lfortran_reduce_op<"
-                + std::to_string(items[j].op) + ">(" + into + ", " + value
+            return into + " = " + op_of(items[j]) + into + ", " + value
                 + ");\n";
         };
         // The target, from what it starts from.
         auto apply = [&](size_t j) {
-            return items[j].target + " = __lfortran_reduce_op<"
-                + std::to_string(items[j].op) + ">(" + (items[j].start.empty()
-                    ? items[j].target : items[j].start) + ", __rc_total"
-                + std::to_string(j) + ");\n";
+            return items[j].target + " = " + op_of(items[j])
+                + (items[j].start.empty() ? items[j].target : items[j].start)
+                + ", __rc_total" + std::to_string(j) + ");\n";
         };
         std::string i1 = in + "    ", i2 = i1 + "    ", i3 = i2 + "    ",
             i4 = i3 + "    ";
@@ -529,41 +602,63 @@ struct CudaDialect {
             src << i1 << "const long long __rc_slot = (long long)blockIdx.x "
                 "* blockDim.x + threadIdx.x;\n";
             src << i1 << "if (__rc_slot < __rc_threads) {\n";
-            for (size_t j = 0; j < items.size(); j++) {
-                src << i2 << "*" << part("__rc_slot", j) << " = "
-                    << items[j].value << ";\n";
+            for (const GpuReduceCombineItem &item : atomic) {
+                src << i2 << item.target << " = " << op_of(item)
+                    << item.target << ", " << item.value << ");\n";
             }
-            src << i2 << "if (__lfortran_reduce_arrive(" << scratch
-                << ", __rc_threads)) {\n";
-            for (size_t j = 0; j < items.size(); j++) {
-                src << i3 << items[j].type << " __rc_total" << j << " = "
-                    << items[j].identity << ";\n";
+            if (!items.empty()) {
+                for (size_t j = 0; j < items.size(); j++) {
+                    src << i2 << "*" << part("__rc_slot", j) << " = "
+                        << items[j].value << ";\n";
+                }
+                src << i2 << "if (__lfortran_reduce_arrive(" << scratch
+                    << ", __rc_threads)) {\n";
+                for (size_t j = 0; j < items.size(); j++) {
+                    src << i3 << items[j].type << " __rc_total" << j << " = "
+                        << items[j].identity << ";\n";
+                }
+                src << i3 << "for (long long __rc_u = 0; __rc_u < "
+                    "__rc_threads; __rc_u++) {\n";
+                for (size_t j = 0; j < items.size(); j++) {
+                    src << i4 << combine(j, "__rc_total" + std::to_string(j),
+                        "*" + part("__rc_u", j));
+                }
+                src << i3 << "}\n";
+                for (size_t j = 0; j < items.size(); j++) {
+                    src << i3 << apply(j);
+                }
+                src << i2 << "}\n";
             }
-            src << i3 << "for (long long __rc_u = 0; __rc_u < __rc_threads; "
-                "__rc_u++) {\n";
-            for (size_t j = 0; j < items.size(); j++) {
-                src << i4 << combine(j, "__rc_total" + std::to_string(j),
-                    "*" + part("__rc_u", j));
-            }
-            src << i3 << "}\n";
-            for (size_t j = 0; j < items.size(); j++) {
-                src << i3 << apply(j);
-            }
-            src << i2 << "}\n" << i1 << "}\n" << in << "}\n";
+            src << i1 << "}\n" << in << "}\n";
             return;
         }
+        src << i1 << "const bool __rc_take = (long long)"
+            << (lanes ? lane_global_thread_id() : global_thread_id())
+            << " < __rc_threads" << (lanes ? " && " + lane_index() + " == 0"
+                : std::string()) << ";\n";
+        if (!atomic.empty()) {
+            src << i1 << "if (__rc_take) {\n";
+            for (const GpuReduceCombineItem &item : atomic) {
+                src << i2 << "__lfortran_reduce_atomic_group<" << item.op
+                    << ">(&(" << item.target << "), " << item.value
+                    << ");\n";
+            }
+            src << i1 << "}\n";
+        }
+        if (items.empty()) {
+            src << in << "}\n";
+            return;
+        }
+        std::string i5 = i4 + "    ";
         src << i1 << "const long long __rc_per_block = (long long)"
             << (lanes ? lane_block_size() : block_size()) << ";\n";
         src << i1 << "const long long __rc_units = (__rc_threads + "
             "__rc_per_block - 1) / __rc_per_block;\n";
         src << i1 << "if ((long long)blockIdx.x < __rc_units) {\n";
-        src << i2 << "const bool __rc_take = (long long)"
-            << (lanes ? lane_global_thread_id() : global_thread_id())
-            << " < __rc_threads" << (lanes ? " && " + lane_index() + " == 0"
-                : std::string()) << ";\n";
         for (size_t j = 0; j < items.size(); j++) {
-            src << i2 << items[j].type << " __rc_value" << j << " = __rc_take ? ("
-                << items[j].value << ") : " << items[j].identity << ";\n";
+            src << i2 << items[j].type << " __rc_value" << j
+                << " = __rc_take ? (" << items[j].value << ") : "
+                << items[j].identity << ";\n";
         }
         // A block of one iteration, whose lanes are all its threads, has
         // its value in its first thread already.
@@ -591,7 +686,6 @@ struct CudaDialect {
             src << i4 << items[j].type << " __rc_total" << j << " = "
                 << items[j].identity << ";\n";
         }
-        std::string i5 = i4 + "    ";
         src << i4 << "for (long long __rc_u = threadIdx.x; __rc_u < "
             "__rc_units; __rc_u += 32) {\n";
         for (size_t j = 0; j < items.size(); j++) {

@@ -1287,7 +1287,14 @@ Each element the body names gets an accumulator of its own in every thread
 (`gpu_offload_array_reduction.cpp`), which replaces the element in the body;
 the kernel runs its iterations in a grid-stride loop that every thread of
 the launch finishes, and ends with a `GpuReduceCombine` of the accumulators.
-On an NVIDIA GPU the threads of each block combine theirs in a fixed order,
+Where the operation gives the same result in any order -- a sum of integers,
+a maximum or a minimum -- the threads of each warp combine theirs, and the
+warp adds the result to the element with one atomic update: the element
+keeps what it held before the loop combined with every contribution, as
+Fortran says, and nothing else is needed. A sum of reals is fixed-point
+summed this way where the program scales it to integers, as the RMSNorm of a
+transformer can (`ss(k) = ss(k) + nint(s * 2.0**24, int64)`). Otherwise,
+on an NVIDIA GPU the threads of each block combine theirs in a fixed order,
 the block writes the result to its part of a scratch buffer of the launch
 and arrives at a counter at the start of the buffer, and the block that
 arrives last combines the parts of all the blocks in the order of the blocks
@@ -1304,7 +1311,11 @@ and each thread is a part.
 A constant that the statement right before the loop assigns to such an
 element (`ss(1) = 0` above) would make the host wait for the launches that
 use `ss` before the loop, so the combination starts from it instead, and the
-host assigns it only when the loop has no iterations.
+host assigns it only when the loop has no iterations. An element combined
+with atomic updates starts from what it holds, so its assignment stays on
+the host; a program that wants no wait there clears the element on the
+device instead, as the loop that reads it can for the next one
+(`if (i == 1) ss(3 - k) = 0`, which the lanes of an iteration allow).
 
 An element an iteration chooses (`h(idx(i))`, a histogram) would need atomic
 updates, and is an error, as are the whole array, a section of it, a type

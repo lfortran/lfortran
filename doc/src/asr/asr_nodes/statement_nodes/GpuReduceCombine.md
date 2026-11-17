@@ -8,7 +8,7 @@ on the device.
 ### Syntax
 
 ```text
-GpuReduceCombine(gpu_reduce_item* items, expr threads, expr scratch,
+GpuReduceCombine(gpu_reduce_item* items, expr threads, expr? scratch,
     expr? first)
 gpu_reduce_item = (expr target, expr value, reduction_op op, expr? initial)
 ```
@@ -19,7 +19,7 @@ gpu_reduce_item = (expr target, expr value, reduction_op op, expr? initial)
 |----------|-------------|
 | `items` | the elements combined into (below). |
 | `threads` | the threads that contribute: those numbered below it, as the kernel numbers its threads. |
-| `scratch` | an `integer(8)` array argument of the kernel that the launch holds as a scratch buffer of at least `1 + size(items) * threads` elements (see [GpuKernelLaunch](GpuKernelLaunch.md)). |
+| `scratch` | an `integer(8)` array argument of the kernel that the launch holds as a scratch buffer of at least `1 + size(items) * threads` elements (see [GpuKernelLaunch](GpuKernelLaunch.md)), or `nil` when every item is combined with atomic updates (below). |
 | `first` | for a launch that may run in chunks and has an item with an `initial` value, the kernel parameter that is not zero in the first chunk, or `nil`. |
 
 An item has these members:
@@ -53,10 +53,14 @@ launch that runs in chunks (`first` not zero) or in the only one (`first` is
 neither allocates nor reads anything for it, so it does not wait for the
 launch.
 
-The device code generator lowers it (`asr_to_gpu_c.h`): on an NVIDIA GPU the
-threads of each block combine their values, the block writes the result to
-its part of `scratch` and arrives at a counter held in its first element, and
-the block that arrives last combines the parts of all the blocks in their
+The device code generator lowers it (`asr_to_gpu_c.h`). An item whose
+operation gives the same result in any order -- a sum of integers, the
+larger or the smaller of integers or reals -- and that has no `initial`
+value is combined over each warp and added to its target with one atomic
+update per warp (`gpu_reduce_item_atomic`). For the others, on an NVIDIA GPU
+the threads of each block combine their values, the block writes the result
+to its part of `scratch` and arrives at a counter held in its first element,
+and the block that arrives last combines the parts of all the blocks in their
 order and applies them to the targets, leaving the counter zero for the next
 launch of the kernel. The CPU emulation makes each thread a part. Only device
 code has one, and only for CUDA.
