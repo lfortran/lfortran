@@ -2301,6 +2301,7 @@ RUN(NAME maxloc_rank2_fold_01 LABELS gfortran llvm) # maxloc/minloc of rank-2 co
 RUN(NAME spread_rank2_fold_01 LABELS gfortran llvm) # spread of rank-2 and rank-3 constant arrays in PARAMETERs (#17876)
 RUN(NAME spread_rank2_fold_02 LABELS llvm) # interior-dim spread of constants in PARAMETERs (#17876); no gfortran label: GFortran 15.3 mis-folds it
 RUN(NAME spread_rank2_fold_03 LABELS gfortran llvm) # large spread of a rank-2 constant runs at run time and compiles quickly (#17876)
+RUN(NAME assignment_rank2_constant_kind_conversion_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_474 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc GFORTRAN_ARGS -fcoarray=single) # co_broadcast
 RUN(NAME intrinsics_475 LABELS gfortran llvm) # ishftc with SIZE keeps high bits of I
 RUN(NAME intrinsics_476 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # scale with a negative exponent

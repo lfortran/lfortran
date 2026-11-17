@@ -9238,7 +9238,23 @@ public:
                         // ArrayConstant (real(10), complex(10)).
                         value = constructor;
                     } else {
+                        ASR::ttype_t *source_type = ac->m_type;
                         ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
+                        // The folded array constructor is a rank-1 constant;
+                        // the converted constant keeps the shape of `value`
+                        ASR::dimension_t *source_dims = nullptr;
+                        size_t source_rank = ASRUtils::extract_dimensions_from_ttype(
+                            source_type, source_dims);
+                        if (source_rank > 1) {
+                            ASR::ttype_t *shaped_type = ASRUtils::TYPE(ASR::make_Array_t(al,
+                                ac->base.base.loc, ASRUtils::extract_type(ac->m_type),
+                                source_dims, source_rank,
+                                ASRUtils::extract_physical_type(ac->m_type),
+                                ASR::memory_spaceType::Global));
+                            ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::EXPR(
+                                ASRUtils::make_ArrayConstant_t_util(al, ac->base.base.loc,
+                                    ac->m_data, shaped_type, ac->m_storage_format)));
+                        }
                         value = ASRUtils::EXPR((ASR::asr_t*) ac);
                         LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                         if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
