@@ -1082,6 +1082,25 @@ public:
     // merges them only then; a Mach-O object file has no COMDATs and merges
     // weak definitions without one.
     bool odr_definitions_use_comdat = true;
+    // Whether this is the object file of a submodule, compiled without
+    // --separate-compilation (see defines_copy_of).
+    bool submodule_object = false;
+
+    // Whether this translation unit defines the procedures and variables of
+    // module `m` although another object file may define them too: a
+    // submodule read from its .smod file is defined by the submodule's own
+    // object file, and in the object file of a submodule an ordinary module
+    // is defined by the object file of the program that uses it. A copy is
+    // weak, so that the linker takes that definition, or one of the copies
+    // if there is none. It is not linkonce_odr: the SAVE variables of a
+    // procedure are local to each object file, so an inlined copy would
+    // count in storage of its own.
+    bool defines_copy_of(const ASR::Module_t &m) {
+        if (m.m_parent_module != nullptr) {
+            return m.m_loaded_from_mod;
+        }
+        return submodule_object && !m.m_intrinsic;
+    }
 
     #define load_non_array_non_character_pointers(expr, type, llvm_value) if( ASR::is_a<ASR::StructInstanceMember_t>(*expr) && \
         !ASRUtils::is_array(type) && \
@@ -2412,6 +2431,10 @@ public:
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
+
+        submodule_object = !compiler_options.separate_compilation
+            && !ASRUtils::main_program_present(x)
+            && ASRUtils::submodule_present(x);
 
         // Define LLVM types that we might need
         // Complex type is represented as an identified struct in LLVM
@@ -8107,9 +8130,12 @@ public:
                     ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
                     if (compiler_options.separate_compilation
-                            || compiler_options.interactive) {
+                            || compiler_options.interactive
+                            || ASRUtils::is_module_variable(x)) {
                         // Other translation units (or later interactive
-                        // cells) reference the descriptor by name.
+                        // cells) reference the descriptor by name; the
+                        // object file of a submodule does so for a variable
+                        // of its parent module.
                         llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(llvm::GlobalValue::ExternalLinkage);
                     }
                 }
@@ -8200,7 +8226,10 @@ public:
                         initial_string_value = "";
                     }
                     llvm::GlobalValue::LinkageTypes string_linkage;
-                    if (x.m_abi == ASR::abiType::BindC || compiler_options.separate_compilation) {
+                    // The object file of a submodule refers to a variable of
+                    // its parent module by name.
+                    if (x.m_abi == ASR::abiType::BindC || compiler_options.separate_compilation
+                            || ASRUtils::is_module_variable(x)) {
                         string_linkage = llvm::GlobalValue::ExternalLinkage;
                     } else {
                         string_linkage = llvm::GlobalValue::PrivateLinkage;
@@ -8719,6 +8748,40 @@ public:
         return ambient;
     }
 
+    // Emits a variable of a module this translation unit defines a copy of
+    // (see defines_copy_of). Every global the linker would export for it,
+    // its own and those of its character storage or class wrapper, is weak.
+    void visit_Variable_copy(const ASR::Variable_t &v) {
+        bool had_globals = !module->global_empty();
+        llvm::Module::global_iterator last_global;
+        if (had_globals) last_global = std::prev(module->global_end());
+        bool had_aliases = !module->alias_empty();
+        llvm::Module::alias_iterator last_alias;
+        if (had_aliases) last_alias = std::prev(module->alias_end());
+        visit_Variable(v);
+        auto make_weak = [](llvm::GlobalValue &g) {
+            if (!g.isDeclaration() && g.hasExternalLinkage()) {
+                g.setLinkage(llvm::GlobalValue::WeakAnyLinkage);
+            }
+        };
+        for (auto it = had_globals ? std::next(last_global) : module->global_begin();
+                it != module->global_end(); ++it) {
+            make_weak(*it);
+        }
+        for (auto it = had_aliases ? std::next(last_alias) : module->alias_begin();
+                it != module->alias_end(); ++it) {
+            make_weak(*it);
+        }
+        // Declared already if a procedure emitted earlier refers to it.
+        auto own = llvm_symtab.find(get_hash((ASR::asr_t*)&v));
+        if (own != llvm_symtab.end()) {
+            if (llvm::GlobalValue *g = llvm::dyn_cast<llvm::GlobalValue>(
+                    own->second->stripPointerCasts())) {
+                make_weak(*g);
+            }
+        }
+    }
+
     void visit_Module(const ASR::Module_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
@@ -8778,7 +8841,11 @@ public:
             ASR::Variable_t *v = down_cast<ASR::Variable_t>(
                     sym);
             if( v->m_storage != ASR::storage_typeType::Parameter ) {
-                visit_Variable(*v);
+                if (defines_copy_of(x)) {
+                    visit_Variable_copy(*v);
+                } else {
+                    visit_Variable(*v);
+                }
             }
         }
 
@@ -12729,6 +12796,20 @@ public:
 
             if (!prototype_only) {
                 define_function_entry(x);
+                {
+                    SymbolTable* mod_scope = x.m_symtab->parent;
+                    llvm::Function* F = builder->GetInsertBlock()->getParent();
+                    if (mod_scope && mod_scope->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*mod_scope->asr_owner) &&
+                            F->hasExternalLinkage()) {
+                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                            mod_scope->asr_owner);
+                        if (ASR::is_a<ASR::Module_t>(*owner) && defines_copy_of(
+                                *ASR::down_cast<ASR::Module_t>(owner))) {
+                            F->setLinkage(llvm::Function::WeakAnyLinkage);
+                        }
+                    }
+                }
                 predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
 
                 for (size_t i=0; i<x.n_body; i++) {
