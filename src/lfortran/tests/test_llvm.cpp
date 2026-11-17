@@ -5417,6 +5417,10 @@ TEST_CASE("FortranEvaluator implicit interface reference to an undefined procedu
         std::string message = rejected_cell_message(e, cu, cell);
         CHECK(message.find("Function 'c' not found") != std::string::npos);
     }
+    // An EXTERNAL declaration in an earlier cell does not define `q` either.
+    REQUIRE(e.evaluate2("external q").ok);
+    std::string message = rejected_cell_message(e, cu, "call q()");
+    CHECK(message.find("Function 'q' not found") != std::string::npos);
     LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("z0 + 2");
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 2);
@@ -5484,15 +5488,8 @@ TEST_CASE("FortranEvaluator reference to a procedure whose cell had a semantic e
     REQUIRE(e.evaluate2(R"(integer function fn()
 fn = 1
 end function
-subroutine sn(x)
-integer, intent(out) :: x
-x = 4
-end subroutine
 integer function ifn()
 ifn = 5
-end function
-real function rf()
-rf = 2.5
 end function
 )").ok);
     SUBCASE("subroutine") {
