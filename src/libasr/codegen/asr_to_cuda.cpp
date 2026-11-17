@@ -190,6 +190,15 @@ struct CudaDialect {
         src << indent << "unsigned __gpu_iteration_block = blockDim.x / "
             "(unsigned)__gpu_lanes_n;\n";
     }
+    // The test of the lanes most launches give a kernel whose lanes are a
+    // run-time value (gpu_vector_lanes.cpp): a warp, or all of them when
+    // it never gets as many.
+    std::string common_lanes_test(const std::string &lanes,
+            int64_t lanes_max) const {
+        if (emulate_cpu || hip) return "";
+        return "__scalar_args." + lanes + " == "
+            + std::to_string(std::min<int64_t>(lanes_max, 32));
+    }
     std::string lane_index() const { return "__gpu_lane"; }
     std::string lane_thread_index() const { return "__gpu_iteration_thread"; }
     std::string lane_block_size() const { return "__gpu_iteration_block"; }

@@ -2313,7 +2313,15 @@ int link_executable(const std::vector<std::string> &infiles,
                     // __syncthreads() reports that it cannot be honoured.
                     // The HIP driver is named the language too, since the
                     // suffix is CUDA's.
+                    // With --fast, the device code may use the fast
+                    // approximations of division, square root and the
+                    // transcendental functions, as the host code does (the
+                    // fast-math flags of asr_to_llvm.cpp).
+                    bool device_fast_math = compiler_options.po.fast
+                        && !compiler_options.po.no_fast_math
+                        && !emulate_cpu && !hip;
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"
+                        + (device_fast_math ? " --use_fast_math" : "")
                         + (emulate_cpu ? runtime_include + " -x c++"
                             : hip ? std::string(" -x hip") : std::string())
                         + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;

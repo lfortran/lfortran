@@ -4082,19 +4082,89 @@ public:
                 [&]() { emit_local_var_decl(var); }));
         }
 
+        trailing_barriers.clear();
+        find_trailing_barriers(x.m_body, x.n_body);
+        writing_kernel_body = true;
         std::string body = captured_source([&]() {
             for (size_t i = 0; i < x.n_body; i++) {
                 visit_stmt(x.m_body[i]);
             }
         });
-        src << gpu_referenced_declarations(kernel_declarations, body)
-            << body;
+        writing_kernel_body = false;
+        std::string code = gpu_referenced_declarations(kernel_declarations,
+            body) + body;
         kernel_declarations.clear();
+        std::string test = common_lanes_test(x);
+        if (test.empty()) {
+            src << code;
+        } else {
+            // The kernel twice: for the lanes most launches give it, which
+            // the device compiler then knows (its loops have constant steps
+            // and trip counts, its combinations stay in the warp), and for
+            // any other number.
+            std::string in = get_indent(), nested;
+            for (size_t i = 0; i < code.size(); i++) {
+                if (i == 0 || code[i - 1] == '\n') nested += "    ";
+                nested += code[i];
+            }
+            src << in << "if (" << test << ") {\n" << nested << in
+                << "} else {\n" << nested << in << "}\n";
+        }
 
         indent_level--;
         src << "}\n\n";
 
         dialect.emit_kernel_epilogue(src, name, kernel_params);
+    }
+
+    // The test, empty for none, of the lanes a launch most often gives the
+    // kernel `x`, when they are a run-time value: kernels that every
+    // launch gives the same lanes name them as a constant already
+    // (emit_lane_prologue).
+    std::string common_lanes_test(const ASR::Function_t &x) const {
+        const ASR::gpu_kernel_layout_t &layout = *x.m_gpu;
+        GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
+        if (layout.m_lanes == nullptr || (kernel_caps.lanes_wide > 0
+                && layout.m_lanes_max == kernel_caps.lanes_wide)) {
+            return "";
+        }
+        for (size_t i = 0; i < layout.n_scalars; i++) {
+            if (layout.m_scalars[i].m_member == nullptr
+                    && ASRUtils::symbol_get_past_external(
+                        layout.m_scalars[i].m_variable)
+                    == ASRUtils::symbol_get_past_external(layout.m_lanes)) {
+                return dialect.common_lanes_test(
+                    gpu_argument_name(layout.m_scalars[i], layout),
+                    layout.m_lanes_max);
+            }
+        }
+        return "";
+    }
+
+    // The lane barriers the kernel being written ends with: past them its
+    // threads return, so they wait for nothing.
+    std::set<const ASR::stmt_t*> trailing_barriers;
+    // Whether the statements being written are those of a kernel, not of
+    // a device function it calls.
+    bool writing_kernel_body = false;
+    void find_trailing_barriers(ASR::stmt_t **body, size_t n) {
+        while (n > 0 && ASR::is_a<ASR::GpuLaneBarrier_t>(*body[n - 1])) {
+            trailing_barriers.insert(body[--n]);
+        }
+        if (n == 0) return;
+        ASR::stmt_t *last = body[n - 1];
+        if (ASR::is_a<ASR::BlockCall_t>(*last)) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(last)->m_m);
+            if (ASR::is_a<ASR::Block_t>(*b)) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                find_trailing_barriers(block->m_body, block->n_body);
+            }
+        } else if (ASR::is_a<ASR::If_t>(*last)) {
+            ASR::If_t *i = ASR::down_cast<ASR::If_t>(last);
+            find_trailing_barriers(i->m_body, i->n_body);
+            find_trailing_barriers(i->m_orelse, i->n_orelse);
+        }
     }
 
     // Whether the vectors the GpuWideLoad statements in `body` read all
@@ -4671,7 +4741,11 @@ public:
                     << run[k].second << ">(" << names[k] << ", __lfortran_partial"
                     << id << "_" << k << "[__i]);\n";
             }
-            src << in << "    }\n" << in << "    __syncthreads();\n"
+            // The partial results are this combination's own: only when
+            // it runs again, in a loop, must the block first have read them.
+            src << in << "    }\n"
+                << (writing_kernel_body && loop_frames.empty() ? ""
+                    : in + "    __syncthreads();\n")
                 << in << "} else {\n";
             for (size_t k = 0; k < run.size(); k++) {
                 src << in << "    " << names[k] << " = __lfortran_lane_reduce<"
@@ -5363,6 +5437,7 @@ public:
             case ASR::stmtType::GpuLaneBarrier: {
                 LCOMPILERS_ASSERT(current_kernel_layout != nullptr
                     && current_kernel_layout->m_lanes != nullptr);
+                if (trailing_barriers.count(stmt)) break;
                 dialect.emit_lane_barrier(src, get_indent(),
                     ASRUtils::symbol_name(current_kernel_layout->m_lanes),
                     kernel_has_block_lanes());

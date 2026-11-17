@@ -148,78 +148,155 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_20gpu_lanes_defer_01_m11qmv_clamped __scalar_args)
 {
-    int groups = __scalar_args.groups;
-    int __dim_scales_0 = __scalar_args.__dim_scales_0;
-    int __lb_scales_0 = __scalar_args.__lb_scales_0;
-    int __lb_scales_1 = __scalar_args.__lb_scales_1;
-    int __dim_w_0 = __scalar_args.__dim_w_0;
-    int __lb_w_0 = __scalar_args.__lb_w_0;
-    int __lb_w_1 = __scalar_args.__lb_w_1;
-    int __dim_x_0 = __scalar_args.__dim_x_0;
-    int __lb_x_0 = __scalar_args.__lb_x_0;
-    int __dim_x_1 = __scalar_args.__dim_x_1;
-    int __lb_x_1 = __scalar_args.__lb_x_1;
-    int __dim_y_0 = __scalar_args.__dim_y_0;
-    int __lb_y_0 = __scalar_args.__lb_y_0;
-    int __lb_y_1 = __scalar_args.__lb_y_1;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    int __gpu_lanes_n = __gpu_lanes;
-    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
-    int __flat_idx;
-    int n__dc;
-    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
-    n__dc = (__flat_idx + 1);
-    {
-        int __gpu_residue_element;
-        int __gpu_residue_group;
-        float acc;
-        int g;
-        int m;
-        float total;
-        #pragma unroll 4
-        for (m = 1; m <= __dim_x_1; m++) {
-            total = ((float)0);
+    if (__scalar_args.__gpu_lanes == 16) {
+        int groups = __scalar_args.groups;
+        int __dim_scales_0 = __scalar_args.__dim_scales_0;
+        int __lb_scales_0 = __scalar_args.__lb_scales_0;
+        int __lb_scales_1 = __scalar_args.__lb_scales_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __dim_x_0 = __scalar_args.__dim_x_0;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __dim_x_1 = __scalar_args.__dim_x_1;
+        int __lb_x_1 = __scalar_args.__lb_x_1;
+        int __dim_y_0 = __scalar_args.__dim_y_0;
+        int __lb_y_0 = __scalar_args.__lb_y_0;
+        int __lb_y_1 = __scalar_args.__lb_y_1;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int n__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        n__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_element;
+            int __gpu_residue_group;
+            float acc;
+            int g;
+            int m;
+            float total;
             #pragma unroll 4
-            for (g = 1; g <= groups; g++) {
-                acc = ((float)0);
-                if ((__gpu_lanes > 1)) {
-                    if ((__gpu_lane != 0)) {
-                        acc =   0.00000000000000000e+00f;
+            for (m = 1; m <= __dim_x_1; m++) {
+                total = ((float)0);
+                #pragma unroll 4
+                for (g = 1; g <= groups; g++) {
+                    acc = ((float)0);
+                    if ((__gpu_lanes > 1)) {
+                        if ((__gpu_lane != 0)) {
+                            acc =   0.00000000000000000e+00f;
+                        }
+                        __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                        const int __lfortran_trips_0 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
+                        #pragma unroll 16
+                        for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        }
+                        acc = __lfortran_lane_reduce<0>(acc, __gpu_lanes_n, __gpu_lane_mask);
+                    } else {
+                        #pragma unroll 16
+                        for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        }
                     }
-                    __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                    const int __lfortran_trips_0 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
-                    #pragma unroll 16
-                    for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
-                        __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                    }
-                    acc = __lfortran_lane_reduce<0>(acc, __gpu_lanes_n, __gpu_lane_mask);
-                } else {
-                    #pragma unroll 16
-                    for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
-                        __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                    }
+                    total = (total + max((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc),   0.00000000000000000e+00f));
                 }
-                total = (total + max((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc),   0.00000000000000000e+00f));
+                if ((__gpu_lane == 0)) {
+                    y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+                }
+                __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
             }
-            if ((__gpu_lane == 0)) {
-                y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+        }
+    } else {
+        int groups = __scalar_args.groups;
+        int __dim_scales_0 = __scalar_args.__dim_scales_0;
+        int __lb_scales_0 = __scalar_args.__lb_scales_0;
+        int __lb_scales_1 = __scalar_args.__lb_scales_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __dim_x_0 = __scalar_args.__dim_x_0;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __dim_x_1 = __scalar_args.__dim_x_1;
+        int __lb_x_1 = __scalar_args.__lb_x_1;
+        int __dim_y_0 = __scalar_args.__dim_y_0;
+        int __lb_y_0 = __scalar_args.__lb_y_0;
+        int __lb_y_1 = __scalar_args.__lb_y_1;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int n__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        n__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_element;
+            int __gpu_residue_group;
+            float acc;
+            int g;
+            int m;
+            float total;
+            #pragma unroll 4
+            for (m = 1; m <= __dim_x_1; m++) {
+                total = ((float)0);
+                #pragma unroll 4
+                for (g = 1; g <= groups; g++) {
+                    acc = ((float)0);
+                    if ((__gpu_lanes > 1)) {
+                        if ((__gpu_lane != 0)) {
+                            acc =   0.00000000000000000e+00f;
+                        }
+                        __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                        const int __lfortran_trips_0 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
+                        #pragma unroll 16
+                        for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        }
+                        acc = __lfortran_lane_reduce<0>(acc, __gpu_lanes_n, __gpu_lane_mask);
+                    } else {
+                        #pragma unroll 16
+                        for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_22(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        }
+                    }
+                    total = (total + max((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc),   0.00000000000000000e+00f));
+                }
+                if ((__gpu_lane == 0)) {
+                    y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+                }
+                __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
             }
-            __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
         }
     }
 }
@@ -270,117 +347,233 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_1_20gpu_lanes_defer_01_m12qmv_quotient __scalar_args)
 {
-    int groups = __scalar_args.groups;
-    int __dim_offsets_0 = __scalar_args.__dim_offsets_0;
-    int __lb_offsets_0 = __scalar_args.__lb_offsets_0;
-    int __lb_offsets_1 = __scalar_args.__lb_offsets_1;
-    int __dim_scales_0 = __scalar_args.__dim_scales_0;
-    int __lb_scales_0 = __scalar_args.__lb_scales_0;
-    int __lb_scales_1 = __scalar_args.__lb_scales_1;
-    int __dim_w_0 = __scalar_args.__dim_w_0;
-    int __lb_w_0 = __scalar_args.__lb_w_0;
-    int __lb_w_1 = __scalar_args.__lb_w_1;
-    int __dim_x_0 = __scalar_args.__dim_x_0;
-    int __lb_x_0 = __scalar_args.__lb_x_0;
-    int __dim_x_1 = __scalar_args.__dim_x_1;
-    int __lb_x_1 = __scalar_args.__lb_x_1;
-    int __dim_y_0 = __scalar_args.__dim_y_0;
-    int __lb_y_0 = __scalar_args.__lb_y_0;
-    int __lb_y_1 = __scalar_args.__lb_y_1;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    int __gpu_lanes_n = __gpu_lanes;
-    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
-    int __flat_idx;
-    int n__dc;
-    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
-    n__dc = (__flat_idx + 1);
-    {
-        int __gpu_residue_element;
-        int __gpu_residue_group;
-        float acc;
-        int g;
-        int m;
-        float term;
-        float total;
-        #pragma unroll 4
-        for (m = 1; m <= __dim_x_1; m++) {
-            total = ((float)0);
-            if ((__gpu_lanes > 1)) {
-                if ((__gpu_lane != 0)) {
-                    total =   0.00000000000000000e+00f;
-                }
-            }
-            if ((__gpu_lanes == 16)) {
-                for (g = 1; g <= groups; g++) {
-                    acc = ((float)0);
-                    if ((__gpu_lanes > 1)) {
-                        if ((__gpu_lane != 0)) {
-                            acc =   0.00000000000000000e+00f;
-                        }
-                        __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                        __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                        acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                    } else {
-                        #pragma unroll 16
-                        for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
-                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        }
+    if (__scalar_args.__gpu_lanes == 16) {
+        int groups = __scalar_args.groups;
+        int __dim_offsets_0 = __scalar_args.__dim_offsets_0;
+        int __lb_offsets_0 = __scalar_args.__lb_offsets_0;
+        int __lb_offsets_1 = __scalar_args.__lb_offsets_1;
+        int __dim_scales_0 = __scalar_args.__dim_scales_0;
+        int __lb_scales_0 = __scalar_args.__lb_scales_0;
+        int __lb_scales_1 = __scalar_args.__lb_scales_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __dim_x_0 = __scalar_args.__dim_x_0;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __dim_x_1 = __scalar_args.__dim_x_1;
+        int __lb_x_1 = __scalar_args.__lb_x_1;
+        int __dim_y_0 = __scalar_args.__dim_y_0;
+        int __lb_y_0 = __scalar_args.__lb_y_0;
+        int __lb_y_1 = __scalar_args.__lb_y_1;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int n__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        n__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_element;
+            int __gpu_residue_group;
+            float acc;
+            int g;
+            int m;
+            float term;
+            float total;
+            #pragma unroll 4
+            for (m = 1; m <= __dim_x_1; m++) {
+                total = ((float)0);
+                if ((__gpu_lanes > 1)) {
+                    if ((__gpu_lane != 0)) {
+                        total =   0.00000000000000000e+00f;
                     }
-                    term = ((acc - (((__gpu_lane == 0)) ? (offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))]) : (  0.00000000000000000e+00f))) / scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))]);
-                    total = (total + term);
                 }
-            } else {
-                for (g = 1; g <= groups; g++) {
-                    acc = ((float)0);
-                    if ((__gpu_lanes > 1)) {
-                        if ((__gpu_lane != 0)) {
-                            acc =   0.00000000000000000e+00f;
-                        }
-                        __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                        const int __lfortran_trips_1 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
-                        #pragma unroll 16
-                        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                if ((__gpu_lanes == 16)) {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
                             __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
                             acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                             acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                             acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                             acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
                         }
-                    } else {
-                        #pragma unroll 16
-                        for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
-                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        }
+                        term = ((acc - (((__gpu_lane == 0)) ? (offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))]) : (  0.00000000000000000e+00f))) / scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))]);
+                        total = (total + term);
                     }
-                    term = ((acc - (((__gpu_lane == 0)) ? (offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))]) : (  0.00000000000000000e+00f))) / scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))]);
-                    total = (total + term);
+                } else {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                            const int __lfortran_trips_1 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
+                            #pragma unroll 16
+                            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        }
+                        term = ((acc - (((__gpu_lane == 0)) ? (offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))]) : (  0.00000000000000000e+00f))) / scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))]);
+                        total = (total + term);
+                    }
                 }
+                if ((__gpu_lanes > 1)) {
+                    total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+                }
+                if ((__gpu_lane == 0)) {
+                    y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+                }
+                __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
             }
-            if ((__gpu_lanes > 1)) {
-                total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+        }
+    } else {
+        int groups = __scalar_args.groups;
+        int __dim_offsets_0 = __scalar_args.__dim_offsets_0;
+        int __lb_offsets_0 = __scalar_args.__lb_offsets_0;
+        int __lb_offsets_1 = __scalar_args.__lb_offsets_1;
+        int __dim_scales_0 = __scalar_args.__dim_scales_0;
+        int __lb_scales_0 = __scalar_args.__lb_scales_0;
+        int __lb_scales_1 = __scalar_args.__lb_scales_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __dim_x_0 = __scalar_args.__dim_x_0;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __dim_x_1 = __scalar_args.__dim_x_1;
+        int __lb_x_1 = __scalar_args.__lb_x_1;
+        int __dim_y_0 = __scalar_args.__dim_y_0;
+        int __lb_y_0 = __scalar_args.__lb_y_0;
+        int __lb_y_1 = __scalar_args.__lb_y_1;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int n__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        n__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_element;
+            int __gpu_residue_group;
+            float acc;
+            int g;
+            int m;
+            float term;
+            float total;
+            #pragma unroll 4
+            for (m = 1; m <= __dim_x_1; m++) {
+                total = ((float)0);
+                if ((__gpu_lanes > 1)) {
+                    if ((__gpu_lane != 0)) {
+                        total =   0.00000000000000000e+00f;
+                    }
+                }
+                if ((__gpu_lanes == 16)) {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        }
+                        term = ((acc - (((__gpu_lane == 0)) ? (offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))]) : (  0.00000000000000000e+00f))) / scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))]);
+                        total = (total + term);
+                    }
+                } else {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                            const int __lfortran_trips_1 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
+                            #pragma unroll 16
+                            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_36(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        }
+                        term = ((acc - (((__gpu_lane == 0)) ? (offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))]) : (  0.00000000000000000e+00f))) / scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))]);
+                        total = (total + term);
+                    }
+                }
+                if ((__gpu_lanes > 1)) {
+                    total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+                }
+                if ((__gpu_lane == 0)) {
+                    y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+                }
+                __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
             }
-            if ((__gpu_lane == 0)) {
-                y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
-            }
-            __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
         }
     }
 }
@@ -436,117 +629,233 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_2_20gpu_lanes_defer_01_m7qmv_sum __scalar_args)
 {
-    int groups = __scalar_args.groups;
-    int __dim_offsets_0 = __scalar_args.__dim_offsets_0;
-    int __lb_offsets_0 = __scalar_args.__lb_offsets_0;
-    int __lb_offsets_1 = __scalar_args.__lb_offsets_1;
-    int __dim_scales_0 = __scalar_args.__dim_scales_0;
-    int __lb_scales_0 = __scalar_args.__lb_scales_0;
-    int __lb_scales_1 = __scalar_args.__lb_scales_1;
-    int __dim_sums_0 = __scalar_args.__dim_sums_0;
-    int __lb_sums_0 = __scalar_args.__lb_sums_0;
-    int __lb_sums_1 = __scalar_args.__lb_sums_1;
-    int __dim_w_0 = __scalar_args.__dim_w_0;
-    int __lb_w_0 = __scalar_args.__lb_w_0;
-    int __lb_w_1 = __scalar_args.__lb_w_1;
-    int __dim_x_0 = __scalar_args.__dim_x_0;
-    int __lb_x_0 = __scalar_args.__lb_x_0;
-    int __dim_x_1 = __scalar_args.__dim_x_1;
-    int __lb_x_1 = __scalar_args.__lb_x_1;
-    int __dim_y_0 = __scalar_args.__dim_y_0;
-    int __lb_y_0 = __scalar_args.__lb_y_0;
-    int __lb_y_1 = __scalar_args.__lb_y_1;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    int __gpu_lanes_n = __gpu_lanes;
-    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
-    int __flat_idx;
-    int n__dc;
-    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
-    n__dc = (__flat_idx + 1);
-    {
-        int __gpu_residue_element;
-        int __gpu_residue_group;
-        float acc;
-        int g;
-        int m;
-        float total;
-        #pragma unroll 4
-        for (m = 1; m <= __dim_x_1; m++) {
-            total = ((float)0);
-            if ((__gpu_lanes > 1)) {
-                if ((__gpu_lane != 0)) {
-                    total =   0.00000000000000000e+00f;
-                }
-            }
-            if ((__gpu_lanes == 16)) {
-                for (g = 1; g <= groups; g++) {
-                    acc = ((float)0);
-                    if ((__gpu_lanes > 1)) {
-                        if ((__gpu_lane != 0)) {
-                            acc =   0.00000000000000000e+00f;
-                        }
-                        __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                        __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                        acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                    } else {
-                        #pragma unroll 16
-                        for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
-                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        }
+    if (__scalar_args.__gpu_lanes == 16) {
+        int groups = __scalar_args.groups;
+        int __dim_offsets_0 = __scalar_args.__dim_offsets_0;
+        int __lb_offsets_0 = __scalar_args.__lb_offsets_0;
+        int __lb_offsets_1 = __scalar_args.__lb_offsets_1;
+        int __dim_scales_0 = __scalar_args.__dim_scales_0;
+        int __lb_scales_0 = __scalar_args.__lb_scales_0;
+        int __lb_scales_1 = __scalar_args.__lb_scales_1;
+        int __dim_sums_0 = __scalar_args.__dim_sums_0;
+        int __lb_sums_0 = __scalar_args.__lb_sums_0;
+        int __lb_sums_1 = __scalar_args.__lb_sums_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __dim_x_0 = __scalar_args.__dim_x_0;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __dim_x_1 = __scalar_args.__dim_x_1;
+        int __lb_x_1 = __scalar_args.__lb_x_1;
+        int __dim_y_0 = __scalar_args.__dim_y_0;
+        int __lb_y_0 = __scalar_args.__lb_y_0;
+        int __lb_y_1 = __scalar_args.__lb_y_1;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int n__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        n__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_element;
+            int __gpu_residue_group;
+            float acc;
+            int g;
+            int m;
+            float total;
+            #pragma unroll 4
+            for (m = 1; m <= __dim_x_1; m++) {
+                total = ((float)0);
+                if ((__gpu_lanes > 1)) {
+                    if ((__gpu_lane != 0)) {
+                        total =   0.00000000000000000e+00f;
                     }
-                    total = (total + ((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc) + (((__gpu_lane == 0)) ? ((offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))] * sums[((int)(g) - (__lb_sums_0)) + (__dim_sums_0 * ((int)(m) - (__lb_sums_1)))])) : (  0.00000000000000000e+00f))));
                 }
-            } else {
-                for (g = 1; g <= groups; g++) {
-                    acc = ((float)0);
-                    if ((__gpu_lanes > 1)) {
-                        if ((__gpu_lane != 0)) {
-                            acc =   0.00000000000000000e+00f;
-                        }
-                        __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
-                        const int __lfortran_trips_2 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
-                        #pragma unroll 16
-                        for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                if ((__gpu_lanes == 16)) {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
                             __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
                             acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                             acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                             acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
                             acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
                         }
-                    } else {
-                        #pragma unroll 16
-                        for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
-                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
-                        }
+                        total = (total + ((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc) + (((__gpu_lane == 0)) ? ((offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))] * sums[((int)(g) - (__lb_sums_0)) + (__dim_sums_0 * ((int)(m) - (__lb_sums_1)))])) : (  0.00000000000000000e+00f))));
                     }
-                    total = (total + ((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc) + (((__gpu_lane == 0)) ? ((offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))] * sums[((int)(g) - (__lb_sums_0)) + (__dim_sums_0 * ((int)(m) - (__lb_sums_1)))])) : (  0.00000000000000000e+00f))));
+                } else {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                            const int __lfortran_trips_2 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
+                            #pragma unroll 16
+                            for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        }
+                        total = (total + ((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc) + (((__gpu_lane == 0)) ? ((offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))] * sums[((int)(g) - (__lb_sums_0)) + (__dim_sums_0 * ((int)(m) - (__lb_sums_1)))])) : (  0.00000000000000000e+00f))));
+                    }
                 }
+                if ((__gpu_lanes > 1)) {
+                    total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+                }
+                if ((__gpu_lane == 0)) {
+                    y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+                }
+                __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
             }
-            if ((__gpu_lanes > 1)) {
-                total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+        }
+    } else {
+        int groups = __scalar_args.groups;
+        int __dim_offsets_0 = __scalar_args.__dim_offsets_0;
+        int __lb_offsets_0 = __scalar_args.__lb_offsets_0;
+        int __lb_offsets_1 = __scalar_args.__lb_offsets_1;
+        int __dim_scales_0 = __scalar_args.__dim_scales_0;
+        int __lb_scales_0 = __scalar_args.__lb_scales_0;
+        int __lb_scales_1 = __scalar_args.__lb_scales_1;
+        int __dim_sums_0 = __scalar_args.__dim_sums_0;
+        int __lb_sums_0 = __scalar_args.__lb_sums_0;
+        int __lb_sums_1 = __scalar_args.__lb_sums_1;
+        int __dim_w_0 = __scalar_args.__dim_w_0;
+        int __lb_w_0 = __scalar_args.__lb_w_0;
+        int __lb_w_1 = __scalar_args.__lb_w_1;
+        int __dim_x_0 = __scalar_args.__dim_x_0;
+        int __lb_x_0 = __scalar_args.__lb_x_0;
+        int __dim_x_1 = __scalar_args.__dim_x_1;
+        int __lb_x_1 = __scalar_args.__lb_x_1;
+        int __dim_y_0 = __scalar_args.__dim_y_0;
+        int __lb_y_0 = __scalar_args.__lb_y_0;
+        int __lb_y_1 = __scalar_args.__lb_y_1;
+        int __loop_end_0 = __scalar_args.__loop_end_0;
+        int __gpu_lanes = __scalar_args.__gpu_lanes;
+        int __gpu_lanes_n = __gpu_lanes;
+        unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+        int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+        unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+        unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+        int __flat_idx;
+        int n__dc;
+        if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+        n__dc = (__flat_idx + 1);
+        {
+            int __gpu_residue_element;
+            int __gpu_residue_group;
+            float acc;
+            int g;
+            int m;
+            float total;
+            #pragma unroll 4
+            for (m = 1; m <= __dim_x_1; m++) {
+                total = ((float)0);
+                if ((__gpu_lanes > 1)) {
+                    if ((__gpu_lane != 0)) {
+                        total =   0.00000000000000000e+00f;
+                    }
+                }
+                if ((__gpu_lanes == 16)) {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                            __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        }
+                        total = (total + ((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc) + (((__gpu_lane == 0)) ? ((offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))] * sums[((int)(g) - (__lb_sums_0)) + (__dim_sums_0 * ((int)(m) - (__lb_sums_1)))])) : (  0.00000000000000000e+00f))));
+                    }
+                } else {
+                    for (g = 1; g <= groups; g++) {
+                        acc = ((float)0);
+                        if ((__gpu_lanes > 1)) {
+                            if ((__gpu_lane != 0)) {
+                                acc =   0.00000000000000000e+00f;
+                            }
+                            __gpu_residue_group = ((((g - 1) * 64) + 1) + (((int)__gpu_lane) * 4));
+                            const int __lfortran_trips_2 = ((g * 64) - 3) >= __gpu_residue_group ? (int)((unsigned)(((g * 64) - 3) - __gpu_residue_group) / (unsigned)((4 * ((int)__gpu_lanes)))) + 1 : 0;
+                            #pragma unroll 16
+                            for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        } else {
+                            #pragma unroll 16
+                            for (__gpu_residue_group = (((g - 1) * 64) + 1); __gpu_residue_group <= ((g * 64) - 3); __gpu_residue_group += 4) {
+                                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))];
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 0)) * x[((int)(__gpu_residue_group) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 1)) * x[((int)((__gpu_residue_group + 1)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 2)) * x[((int)((__gpu_residue_group + 2)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                                acc = (acc + (((float)code_gpu_49(__gpu_residue_element, 3)) * x[((int)((__gpu_residue_group + 3)) - (__lb_x_0)) + (__dim_x_0 * ((int)(m) - (__lb_x_1)))]));
+                            }
+                        }
+                        total = (total + ((scales[((int)(g) - (__lb_scales_0)) + (__dim_scales_0 * ((int)(n__dc) - (__lb_scales_1)))] * acc) + (((__gpu_lane == 0)) ? ((offsets[((int)(g) - (__lb_offsets_0)) + (__dim_offsets_0 * ((int)(n__dc) - (__lb_offsets_1)))] * sums[((int)(g) - (__lb_sums_0)) + (__dim_sums_0 * ((int)(m) - (__lb_sums_1)))])) : (  0.00000000000000000e+00f))));
+                    }
+                }
+                if ((__gpu_lanes > 1)) {
+                    total = __lfortran_lane_reduce<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+                }
+                if ((__gpu_lane == 0)) {
+                    y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
+                }
+                __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
             }
-            if ((__gpu_lane == 0)) {
-                y[((int)(n__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m) - (__lb_y_1)))] = total;
-            }
-            __lfortran_lane_barrier(__gpu_lanes_n, __gpu_lane_mask);
         }
     }
 }

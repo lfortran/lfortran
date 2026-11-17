@@ -174,7 +174,6 @@ kernel void __lfortran_gpu_kernel_0_19gpu_lanes_unroll_01(
                 y_gpu[((int)(k_gpu) - (1)) + (1100 * ((int)(m__dc_gpu) - (1)))] = ((((float)2) * x_gpu[((int)(k_gpu) - (1)) + (1100 * ((int)(m__dc_gpu) - (1)))]) + t_gpu);
             }
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

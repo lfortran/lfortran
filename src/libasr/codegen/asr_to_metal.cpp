@@ -121,6 +121,9 @@ struct MetalDialect {
         return std::string(names[op]) + "(" + value + ")";
     }
     std::string lane_reduce_helper() const { return ""; }
+    std::string common_lanes_test(const std::string &, int64_t) const {
+        return "";
+    }
     std::string unroll_wide_pragma(bool = false) const { return unroll_pragma(); }
     // Reached only on a device that has wide loads (gpu_wide_loads.cpp).
     std::string wide_load(const std::string &indent,

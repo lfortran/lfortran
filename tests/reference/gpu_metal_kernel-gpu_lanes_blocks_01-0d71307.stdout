@@ -103,7 +103,6 @@ kernel void __lfortran_gpu_kernel_1_19gpu_lanes_blocks_01(
                 z_gpu[((int)(__gpu_sec_i_gpu) - (1)) + (300 * ((int)(i__dc1_gpu) - (1)))] = (w_gpu[((int)(__gpu_sec_i_gpu) - (1)) + (300 * ((int)(i__dc1_gpu) - (1)))] * u_gpu);
             }
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

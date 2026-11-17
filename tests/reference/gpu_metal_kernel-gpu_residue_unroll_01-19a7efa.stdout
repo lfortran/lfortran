@@ -497,7 +497,6 @@ kernel void __lfortran_gpu_kernel_1_23gpu_residue_unroll_01_m7project(
         if ((__gpu_lane == 0)) {
             y_gpu[((int)(n__dc_gpu) - (__lb_y_0_gpu))] = __gpu_sum_res_gpu;
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

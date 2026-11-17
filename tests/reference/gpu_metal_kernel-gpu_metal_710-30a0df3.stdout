@@ -78,7 +78,6 @@ kernel void __lfortran_gpu_kernel_0_13gpu_metal_7101s(
         if ((__gpu_lane == 0)) {
             y_gpu[((int)(j__dc_gpu) - (1))] = (t_gpu[((int)(1) - (1))] + t_gpu[((int)(m_gpu) - (1))]);
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 
@@ -212,7 +211,6 @@ kernel void __lfortran_gpu_kernel_1_13gpu_metal_7101s(
             u_gpu[((int)(m_gpu) - (1)) + (__workspace_extent_gpu * ((int)(n_gpu) - (1)))] = ((float)(2 * j__dc1_gpu));
             z_gpu[((int)(j__dc1_gpu) - (1))] = (u_gpu[((int)(1) - (1)) + (__workspace_extent_gpu * ((int)(1) - (1)))] + u_gpu[((int)(m_gpu) - (1)) + (__workspace_extent_gpu * ((int)(n_gpu) - (1)))]);
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

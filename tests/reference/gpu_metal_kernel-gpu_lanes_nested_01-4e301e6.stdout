@@ -291,7 +291,6 @@ kernel void __lfortran_gpu_kernel_0_21gpu_lanes_nested_01_m5nests(
             sums_gpu[((int)(1) - (__lb_sums_0_gpu)) + (__dim_sums_0_gpu * ((int)(h__dc_gpu) - (__lb_sums_1_gpu)))] = acc_gpu;
             sums_gpu[((int)(2) - (__lb_sums_0_gpu)) + (__dim_sums_0_gpu * ((int)(h__dc_gpu) - (__lb_sums_1_gpu)))] = ((float)0);
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 
@@ -551,7 +550,6 @@ kernel void __lfortran_gpu_kernel_1_21gpu_lanes_nested_01_m4norm(
                 y_gpu[((int)(d__dc1_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = normalized_gpu;
             }
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

@@ -142,7 +142,6 @@ kernel void __lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4dots(
         if ((__gpu_lane == 0)) {
             t_gpu[((int)(m__dc_gpu) - (__lb_t_0_gpu))] = ((((float)2) * __weighted_total_gpu) + ((float)1));
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 
@@ -385,7 +384,6 @@ kernel void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
                 y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
             }
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 
