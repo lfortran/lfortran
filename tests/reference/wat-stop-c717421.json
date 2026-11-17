@@ -1,0 +1,13 @@
+{
+    "basename": "wat-stop-c717421",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/stop.f90",
+    "infile_hash": "4992b783d9f3aeee0fc682e7600ed3b3e57f5d9e8ea4ef63ab0bbb4d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "wat-stop-c717421.stdout",
+    "stdout_hash": "2175995d8853f1828f13b71bcc545ff79862c1a40f6fd1cf906d48cb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

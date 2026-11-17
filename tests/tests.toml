@@ -854,6 +854,7 @@ wat = true
 filename = "stop.f90"
 asr = true
 llvm = true
+wat = true
 
 [[test]]
 filename = "stop1.f90"
