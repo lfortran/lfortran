@@ -288,6 +288,7 @@ compilation options, output options, link options and so on.
 * `-J <value>`, Where to save mod files
 * `-o <value>`, Specify the file to place the compiler's output into
 * `--static`, Create a static executable
+* `--pthread`, Link with the system threads library
 
 ### Compiler debugging
 
