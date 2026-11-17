@@ -5463,23 +5463,25 @@ fn = 1
 end function
 )").ok);
     // The generic interface refers to the interface body, so it stays and
-    // the cell compiles; as without an earlier `fn`, it then does not link.
-    LCompilers::LocationManager lm;
-    LCompilers::PassManager lpm;
-    lpm.use_default_passes();
-    LCompilers::diag::Diagnostics d;
-    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(R"(integer function c()
+    // the cell compiles; as without an earlier `fn`, a call of `c` then
+    // does not link.
+    REQUIRE(e.evaluate2(R"(integer function c()
 interface gen
 integer function fn()
 end function
 end interface
 c = gen()
 end function
-)", false, lm, lpm, d);
-#ifdef __EMSCRIPTEN__
-    // The WASM build does not look for undefined references.
-    CHECK(r.ok);
-#else
+)").ok);
+#ifndef __EMSCRIPTEN__
+    // In the WASM build an unresolved symbol is instead a JavaScript
+    // "Dynamic linking error" that aborts the process.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate("c()", false, lm, lpm, d);
     CHECK(!r.ok);
     cu.use_colors = false;
     CHECK(d.render(lm, cu).find("undefined reference to 'fn'")
@@ -5565,16 +5567,17 @@ end function
     // like #17138).
     // `fn` has the implicit type real, so the external procedure it
     // declares is not the earlier cell's integer `fn`: as without that
-    // `fn`, the cell does not link.
+    // `fn`, a call of `c` does not link.
+    REQUIRE(e.evaluate2(R"(real function c()
+external fn
+c = fn() / 2
+end function
+)").ok);
     LCompilers::LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     LCompilers::diag::Diagnostics d;
-    r = e.evaluate(R"(real function c()
-external fn
-c = fn() / 2
-end function
-)", false, lm, lpm, d);
+    r = e.evaluate("c()", false, lm, lpm, d);
     CHECK(!r.ok);
     cu.use_colors = false;
     CHECK(d.render(lm, cu).find("undefined reference to 'fn'")
@@ -6655,69 +6658,77 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         != std::string::npos);
 }
 
+#ifndef __EMSCRIPTEN__
+// The WASM build does not look for undefined references, and a call that
+// needs one aborts the process, so these are native only.
 TEST_CASE("FortranEvaluator execute: undefined procedure") {
     // A procedure that is never defined is a user error, like an undefined
-    // reference at link time. It is found when the cell that calls it is
-    // compiled, which then leaves no trace, and the session continues
-    // (#17046).
+    // reference at link time. A cell that only defines procedures may refer
+    // to one that a later cell defines, so it is found when a cell is to run
+    // code that needs it. That cell then leaves no trace, and the session
+    // continues (#17046).
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);
-    const std::string c_17046 = R"(integer function c()
+    auto cell = e.execute(R"(integer function c()
 interface
     integer function nothere()
     end function
 end interface
 c = nothere()
 end function
-)";
-    auto cell = e.execute(c_17046);
-    CHECK(!cell.ok);
-    CHECK(!cell.internal_error);
-    CHECK(cell.error_name == "CompilerError");
-    CHECK(cell.error_value.find("undefined reference to 'nothere'")
-        != std::string::npos);
-    CHECK(cell.error_traceback.empty());
-    // The procedure was not defined, and calling it is an ordinary error,
-    // every time.
+)");
+    REQUIRE(cell.ok);
+    // Calling it is an ordinary error, every time.
     for (int i = 0; i < 2; i++) {
         cell = e.execute("c()");
         CHECK(!cell.ok);
         CHECK(!cell.internal_error);
         CHECK(cell.error_name == "CompilerError");
-        CHECK(cell.error_value.find("'c' not found") != std::string::npos);
+        CHECK(cell.error_value.find("undefined reference to 'nothere'")
+            != std::string::npos);
         CHECK(cell.error_traceback.empty());
     }
     // A cell that does not need the procedure still runs.
     cell = e.execute("40 + 2");
     REQUIRE(cell.ok);
     CHECK(cell.value.text() == "42");
-    // A correct procedure defined in the same cell is not defined either.
-    cell = e.execute(c_17046 + R"(integer function good()
-good = 7
-end function
-)");
-    CHECK(!cell.ok);
-    CHECK(!cell.internal_error);
-    CHECK(cell.error_value.find("undefined reference to 'nothere'")
-        != std::string::npos);
-    cell = e.execute("good()");
-    CHECK(!cell.ok);
-    CHECK(!cell.internal_error);
-    CHECK(cell.error_value.find("'good' not found") != std::string::npos);
-    // Both can be defined once the cell is corrected.
-    cell = e.execute(R"(integer function c()
-c = 9
+    // A procedure defined in the same cell is linked with it, so calling
+    // it is the same error; one defined in another cell is not affected.
+    REQUIRE(e.execute(R"(integer function c2()
+interface
+    integer function nothere()
+    end function
+end interface
+c2 = nothere()
 end function
 integer function good()
 good = 7
 end function
-)");
+)").ok);
+    REQUIRE(e.execute(R"(integer function other()
+other = 5
+end function
+)").ok);
+    for (int i = 0; i < 2; i++) {
+        cell = e.execute("good()");
+        CHECK(!cell.ok);
+        CHECK(!cell.internal_error);
+        CHECK(cell.error_value.find("undefined reference to 'nothere'")
+            != std::string::npos);
+        cell = e.execute("other()");
+        REQUIRE(cell.ok);
+        CHECK(cell.value.text() == "5");
+    }
+    // The procedure can be defined again, correctly.
+    REQUIRE(e.execute(R"(integer function c()
+c = 9
+end function
+)").ok);
+    cell = e.execute("c() + other()");
     REQUIRE(cell.ok);
-    cell = e.execute("c() + good()");
-    REQUIRE(cell.ok);
-    CHECK(cell.value.text() == "16");
-    // The same when the cell that defines the caller also runs it: nothing
-    // of it runs.
+    CHECK(cell.value.text() == "14");
+    // When the cell that defines the caller also runs it, nothing of it
+    // runs and nothing of it is defined.
     std::string output;
     FortranEvaluator::CellIO io;
     io.output = [&](int, const std::string &text) { output += text; };
@@ -6736,10 +6747,105 @@ call s_17046()
     CHECK(cell.error_value.find("undefined reference to 'nothere2'")
         != std::string::npos);
     CHECK(output.find("not printed") == std::string::npos);
+    cell = e.execute("call s_17046()");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("'s_17046' not found") != std::string::npos);
     cell = e.execute("6 * 7");
     REQUIRE(cell.ok);
     CHECK(cell.value.text() == "42");
 }
+
+TEST_CASE("FortranEvaluator execute: bind(C) procedure defined after its caller") {
+    // A bind(C) name is not specific to a cell, so a procedure that a later
+    // cell defines with it satisfies an earlier caller.
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    REQUIRE(e.execute(R"(subroutine a()
+interface
+subroutine b() bind(C, name="bfun")
+end subroutine
+end interface
+call b()
+end subroutine
+)").ok);
+    REQUIRE(e.execute(R"(subroutine b() bind(C, name="bfun")
+print *, "in b"
+end subroutine
+)").ok);
+    auto cell = e.execute("call a()", false, io);
+    REQUIRE(cell.ok);
+    CHECK(output.find("in b") != std::string::npos);
+
+    output.clear();
+    REQUIRE(e.execute(R"(subroutine a2()
+interface
+integer(4) function g(x) bind(C, name="gfun")
+integer(4), value :: x
+end function
+end interface
+print *, g(3)
+end subroutine
+)").ok);
+    REQUIRE(e.execute(R"(integer(4) function g(x) bind(C, name="gfun")
+integer(4), value :: x
+g = 2*x
+end function
+)").ok);
+    cell = e.execute("call a2()", false, io);
+    REQUIRE(cell.ok);
+    CHECK(output.find("6") != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator execute: bind(C) procedure defined after a failed call") {
+    // Calling a procedure whose bind(C) callee is not defined yet is an
+    // ordinary error that leaves the session as it was: once the callee is
+    // defined, the call works (#17046).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    REQUIRE(e.execute(R"(subroutine a()
+interface
+subroutine b() bind(C, name="bfun_17046")
+end subroutine
+end interface
+call b()
+end subroutine
+integer function sibling()
+sibling = 3
+end function
+)").ok);
+    for (int i = 0; i < 2; i++) {
+        auto cell = e.execute("call a()", false, io);
+        CHECK(!cell.ok);
+        CHECK(!cell.internal_error);
+        CHECK(cell.error_value.find("undefined reference to 'bfun_17046'")
+            != std::string::npos);
+        cell = e.execute("sibling()");
+        CHECK(!cell.ok);
+        CHECK(!cell.internal_error);
+        CHECK(cell.error_value.find("undefined reference to 'bfun_17046'")
+            != std::string::npos);
+    }
+    CHECK(output.empty());
+    REQUIRE(e.execute(R"(subroutine b() bind(C, name="bfun_17046")
+print *, "in b"
+end subroutine
+)").ok);
+    auto cell = e.execute("call a()", false, io);
+    REQUIRE(cell.ok);
+    CHECK(output.find("in b") != std::string::npos);
+    cell = e.execute("sibling()");
+    REQUIRE(cell.ok);
+    CHECK(cell.value.text() == "3");
+}
+
+#endif // __EMSCRIPTEN__
 
 TEST_CASE("FortranEvaluator execute: formatted print of an array section") {
     // The items of an array section share one format, as in a compiled

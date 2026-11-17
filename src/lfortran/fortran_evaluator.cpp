@@ -603,24 +603,28 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
 #ifndef __EMSCRIPTEN__
-    // A procedure that is defined nowhere, neither by this cell nor by an
-    // earlier one nor by the runtime, is an error in the user's code, like an
-    // undefined reference at link time. It is found before the cell is added
-    // to the JIT, so the cell leaves no trace, as with a semantic error, and
-    // the user can define what is missing and enter the cell again.
-    std::vector<std::string> undefined
-        = get_llvm_evaluator().undefined_symbols(*m);
-    if (!undefined.empty()) {
-        if (symbol_table != cell_parent) {
-            cell_implicit_types.erase(symbol_table);
-            symbol_table = cell_parent;
+    // A procedure that is defined nowhere, neither by a cell nor by the
+    // runtime, is an error in the user's code, like an undefined reference at
+    // link time. A cell that only defines procedures may refer to one that a
+    // later cell defines, so it is only an error once code that needs it is
+    // to run. The cell is then not added to the JIT, so it leaves no trace,
+    // as with a semantic error, and the user can define what is missing and
+    // enter the cell again.
+    if (has_setup || has_program || return_type != "none") {
+        std::vector<std::string> undefined
+            = get_llvm_evaluator().undefined_symbols(*m);
+        if (!undefined.empty()) {
+            if (symbol_table != cell_parent) {
+                cell_implicit_types.erase(symbol_table);
+                symbol_table = cell_parent;
+            }
+            for (const std::string &name : undefined) {
+                diagnostics.add(diag::Diagnostic(
+                    "undefined reference to '" + name + "'",
+                    diag::Level::Error, diag::Stage::CodeGen));
+            }
+            return Error();
         }
-        for (const std::string &name : undefined) {
-            diagnostics.add(diag::Diagnostic(
-                "undefined reference to '" + name + "'",
-                diag::Level::Error, diag::Stage::CodeGen));
-        }
-        return Error();
     }
 #endif
 
