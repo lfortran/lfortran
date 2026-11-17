@@ -6071,6 +6071,36 @@ semantic error: arguments 'y' and 'x' of the 'atand' intrinsic must have the sam
 5089 |     cc1_a2k_r = atand(1.0d0, 1.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must have the same kind, found real(8) and real(4)
      |                 ^^^^^^^^^^^^^^^^^ 
 
+semantic error: `array` and `value` arguments of `findloc` must be in type conformance, but got integer(4) and logical(4)
+    --> tests/errors/continue_compilation_1.f90:5103:14
+     |
+5103 |     print *, findloc([1, 2], .true.)  ! {Error} `array` and `value` arguments of `findloc` must be in type conformance, but got integer(4) and logical(4)
+     |              ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `array` and `value` arguments of `findloc` must be in type conformance, but got logical(4) and complex(4)
+    --> tests/errors/continue_compilation_1.f90:5104:14
+     |
+5104 |     print *, findloc(cc1_ftc_l, (1.0, 0.0))  ! {Error} `array` and `value` arguments of `findloc` must be in type conformance, but got logical(4) and complex(4)
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `array` and `value` arguments of `findloc` must be in type conformance, but got real(4) and logical(4)
+    --> tests/errors/continue_compilation_1.f90:5105:14
+     |
+5105 |     print *, findloc(cc1_ftc_r, .false.)  ! {Error} `array` and `value` arguments of `findloc` must be in type conformance, but got real(4) and logical(4)
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `array` argument of `findloc` must be of intrinsic type, but got type(cc1_ftc_t)
+    --> tests/errors/continue_compilation_1.f90:5106:14
+     |
+5106 |     print *, findloc(cc1_ftc_x, 1)  ! {Error} `array` argument of `findloc` must be of intrinsic type, but got type(cc1_ftc_t)
+     |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `value` argument of `findloc` must be a scalar of integer, real, logical, character or complex type
+    --> tests/errors/continue_compilation_1.f90:5107:14
+     |
+5107 |     print *, findloc(cc1_ftc_r, [1, 2])  ! {Error} `value` argument of `findloc` must be a scalar of integer, real, logical, character or complex type
+     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

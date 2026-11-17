@@ -6,6 +6,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/casting_utils.h>
 
 #include <cmath>
 #include <string>
@@ -5035,6 +5036,114 @@ namespace MinLoc {
 
 namespace FindLoc {
 
+    /*
+     * The type and kind in which `findloc` compares the elements of `array`
+     * with `value`: those of `array_elem == value` (F2018 16.9.82,
+     * 10.1.5.5.1 and Table 10.2), i.e. the type and kind of
+     * `array_elem + value`. Logical operands compare in the larger kind.
+     * Returns false unless both element types are numeric or both logical.
+     */
+    static inline bool comparison_type(ASR::ttype_t* array_elt_type,
+            ASR::ttype_t* value_elt_type, ASR::ttypeType& type, int& kind) {
+        auto is_numeric = [](ASR::ttype_t* t) {
+            return ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t) ||
+                ASR::is_a<ASR::Complex_t>(*t);
+        };
+        int array_kind = extract_kind_from_ttype_t(array_elt_type);
+        int value_kind = extract_kind_from_ttype_t(value_elt_type);
+        if (array_elt_type->type == value_elt_type->type &&
+                (is_numeric(array_elt_type) ||
+                 ASR::is_a<ASR::Logical_t>(*array_elt_type))) {
+            type = array_elt_type->type;
+            kind = std::max(array_kind, value_kind);
+            return true;
+        }
+        if (!is_numeric(array_elt_type) || !is_numeric(value_elt_type)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Integer_t>(*array_elt_type)) {
+            type = value_elt_type->type;
+            kind = value_kind;
+        } else if (ASR::is_a<ASR::Integer_t>(*value_elt_type)) {
+            type = array_elt_type->type;
+            kind = array_kind;
+        } else {
+            // real and complex: complex, with the kind of the operand of
+            // greater precision
+            type = ASR::ttypeType::Complex;
+            kind = std::max(array_kind, value_kind);
+        }
+        return true;
+    }
+
+    // The intrinsic type `type` of kind `kind`, as `comparison_type` gives it
+    static inline ASR::ttype_t* make_comparison_type(Allocator& al,
+            const Location& loc, ASR::ttypeType type, int kind) {
+        switch (type) {
+            case ASR::ttypeType::Integer:
+                return TYPE(ASR::make_Integer_t(al, loc, kind));
+            case ASR::ttypeType::Real:
+                return TYPE(ASR::make_Real_t(al, loc, kind));
+            case ASR::ttypeType::Complex:
+                return TYPE(ASR::make_Complex_t(al, loc, kind));
+            case ASR::ttypeType::Logical:
+                return TYPE(ASR::make_Logical_t(al, loc, kind));
+            default:
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+        }
+    }
+
+    // Converts the scalar `value` to the type `type` that `comparison_type`
+    // gives with an explicit Cast. CastingUtil::perform_casting leaves an
+    // allocatable or pointer scalar unconverted, so such a `value` is cast
+    // here from its type
+    static inline ASR::expr_t* convert_value(Allocator& al, const Location& loc,
+            ASR::expr_t* value, ASR::ttype_t* type) {
+        ASR::ttype_t* value_type = expr_type(value);
+        if (!is_allocatable_or_pointer(value_type)) {
+            return CastingUtil::perform_casting(value, type, al, loc);
+        }
+        value_type = type_get_past_allocatable_pointer(value_type);
+        int value_kind = extract_kind_from_ttype_t(value_type);
+        int kind = extract_kind_from_ttype_t(type);
+        if (value_type->type == type->type && value_kind == kind) {
+            return value;
+        }
+        ASR::cast_kindType cast_kind;
+        switch (type->type) {
+            case ASR::ttypeType::Integer:
+                cast_kind = ASR::cast_kindType::IntegerToInteger;
+                break;
+            case ASR::ttypeType::Real:
+                cast_kind = is_integer(*value_type) ?
+                    ASR::cast_kindType::IntegerToReal :
+                    ASR::cast_kindType::RealToReal;
+                break;
+            case ASR::ttypeType::Complex:
+                if (is_integer(*value_type)) {
+                    cast_kind = ASR::cast_kindType::IntegerToComplex;
+                } else if (is_real(*value_type)) {
+                    if (value_kind != kind) {
+                        // Convert to the kind of the complex parts first
+                        value = convert_value(al, loc, value,
+                            TYPE(ASR::make_Real_t(al, loc, kind)));
+                    }
+                    cast_kind = ASR::cast_kindType::RealToComplex;
+                } else {
+                    cast_kind = ASR::cast_kindType::ComplexToComplex;
+                }
+                break;
+            case ASR::ttypeType::Logical:
+                cast_kind = ASR::cast_kindType::LogicalToLogical;
+                break;
+            default:
+                LCOMPILERS_ASSERT(false);
+                return value;
+        }
+        return EXPR(ASRUtils::make_Cast_t_value(al, loc, value, cast_kind, type));
+    }
+
     static inline void verify_args(const ASR::IntrinsicArrayFunction_t& x,
             diag::Diagnostics& diagnostics) {
         require_impl(x.n_args >= 2 && x.n_args <= 6, "`findloc` intrinsic "
@@ -5043,6 +5152,98 @@ namespace FindLoc {
             "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
         require_impl(x.m_args[1] != nullptr, "`value` argument of `findloc` "
             "intrinsic cannot be nullptr", x.base.base.loc, diagnostics);
+        if (x.m_args[0] && x.m_args[1]) {
+            ASR::ttype_t* value_elt_type = ASRUtils::extract_type(
+                expr_type(x.m_args[1]));
+            ASR::ttypeType type;
+            int kind;
+            if (comparison_type(ASRUtils::extract_type(expr_type(x.m_args[0])),
+                    value_elt_type, type, kind)) {
+                require_impl(value_elt_type->type == type &&
+                    extract_kind_from_ttype_t(value_elt_type) == kind,
+                    "`value` argument of `findloc` must be converted to the "
+                    "type and kind in which it is compared with `array`",
+                    x.base.base.loc, diagnostics);
+            }
+        }
+    }
+
+    // The constant element `e` of an integer, real(4/8) or complex(4/8)
+    // array converted to complex(kind), for kind 4 or 8
+    static inline bool complex_element(ASR::expr_t* e, int kind,
+            double& re, double& im) {
+        std::complex<double> c;
+        if (extract_value(e, c)) {
+            re = c.real();
+            im = c.imag();
+        } else if (extract_value(e, re)) {
+            im = 0;
+        } else {
+            return false;
+        }
+        if (kind == 4) {
+            re = static_cast<float>(re);
+            im = static_cast<float>(im);
+        }
+        return true;
+    }
+
+    // The constant element `e` of an integer or real array converted to
+    // real(kind), for kind 4, 8 or 10
+    static inline bool real_element(ASR::expr_t* e, int kind, long double& value) {
+        e = ASRUtils::expr_value(e);
+        if (!e) {
+            return false;
+        }
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            value = static_cast<long double>(
+                ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*e)) {
+            ASR::RealConstant_t* r = ASR::down_cast<ASR::RealConstant_t>(e);
+            int r_kind = extract_kind_from_ttype_t(r->m_type);
+            if (r_kind == 10) {
+                value = ASRUtils::real_constant_get_r10(r);
+            } else if (r_kind == 4 || r_kind == 8) {
+                value = r->m_r;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        if (kind == 4) {
+            value = static_cast<float>(value);
+        } else if (kind == 8) {
+            value = static_cast<double>(value);
+        } else if (kind != 10) {
+            return false;
+        }
+        return true;
+    }
+
+    // The constant element `e` of an integer or real array converted to
+    // real(16)
+    static inline bool real16_element(ASR::expr_t* e, lf_float128& value) {
+        e = ASRUtils::expr_value(e);
+        if (!e) {
+            return false;
+        }
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            value = lf_f128_from_int64(ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+            return true;
+        }
+        if (!ASR::is_a<ASR::RealConstant_t>(*e)) {
+            return false;
+        }
+        int kind = extract_kind_from_ttype_t(expr_type(e));
+        if (kind == 16) {
+            value = ASRUtils::real_expr_get_r16(e);
+        } else if (kind == 4 || kind == 8) {
+            value = lf_f128_from_double(ASR::down_cast<ASR::RealConstant_t>(e)->m_r);
+        } else {
+            return false;
+        }
+        return true;
     }
 
     static inline ASR::expr_t *eval_FindLoc(Allocator &al, const Location &loc,
@@ -5101,8 +5302,9 @@ namespace FindLoc {
                         }
                     }
                 }
-            } else if (ASRUtils::is_kind16_array_constant(array_value)) {
-                // real(16) elements are compared exactly, in binary128
+            } else if (is_real(*expr_type(value)) &&
+                    extract_kind_from_ttype_t(expr_type(value)) == 16) {
+                // real(16) comparisons are done exactly, in binary128
                 if (!ASR::is_a<ASR::RealConstant_t>(*value_value) ||
                         extract_kind_from_ttype_t(expr_type(value_value)) != 16) {
                     return nullptr;
@@ -5110,23 +5312,75 @@ namespace FindLoc {
                 lf_float128 ele = ASRUtils::real_expr_get_r16(value_value);
                 for (int i = 0; i < arr_size; i++) {
                     if (((bool*)mask_value_constant->m_data)[i] != 0) {
-                        lf_float128 ele2 = ASRUtils::real_expr_get_r16(
-                            ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i));
+                        lf_float128 ele2;
+                        if (!real16_element(ASRUtils::fetch_ArrayConstant_value(
+                                al, array_value_constant, i), ele2)) {
+                            return nullptr;
+                        }
                         if (lf_f128_eq(ele, ele2)) {
                             element_idx = i;
                             if (!(back_value_constant && back_value_constant->m_value)) break;
                         }
                     }
                 }
-            } else if (is_complex(*expr_type(array))) {
+            } else if (is_complex(*expr_type(value))) {
+                // `value` has the comparison type (see create_FindLoc), to
+                // which each element is converted
+                int cmp_kind = extract_kind_from_ttype_t(expr_type(value));
                 double re, im;
-                re = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(value_value));
-                im = ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(value_value));
+                if ((cmp_kind != 4 && cmp_kind != 8) ||
+                        !complex_element(value_value, cmp_kind, re, im)) {
+                    return nullptr;
+                }
                 for (int i = 0; i < arr_size; i++) {
                     if (((bool*)mask_value_constant->m_data)[i] != 0) {
-                        double re2 = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i)));
-                        double im2 = ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i)));
+                        double re2, im2;
+                        if (!complex_element(ASRUtils::fetch_ArrayConstant_value(
+                                al, array_value_constant, i), cmp_kind, re2, im2)) {
+                            return nullptr;
+                        }
                         if (re == re2 && im == im2) {
+                            element_idx = i;
+                            if (!(back_value_constant && back_value_constant->m_value)) break;
+                        }
+                    }
+                }
+            } else if (is_real(*expr_type(value))) {
+                // `value` has the comparison type (see create_FindLoc), to
+                // which each element is converted
+                int cmp_kind = extract_kind_from_ttype_t(expr_type(value));
+                long double ele;
+                if (!real_element(value_value, cmp_kind, ele)) {
+                    return nullptr;
+                }
+                for (int i = 0; i < arr_size; i++) {
+                    if (((bool*)mask_value_constant->m_data)[i] != 0) {
+                        long double ele2;
+                        if (!real_element(ASRUtils::fetch_ArrayConstant_value(
+                                al, array_value_constant, i), cmp_kind, ele2)) {
+                            return nullptr;
+                        }
+                        if (ele == ele2) {
+                            element_idx = i;
+                            if (!(back_value_constant && back_value_constant->m_value)) break;
+                        }
+                    }
+                }
+            } else if (is_integer(*expr_type(value))) {
+                // Compared as int64_t: a double cannot tell integer(8) values
+                // apart beyond 2**53
+                int64_t ele;
+                if (!extract_value(value_value, ele)) {
+                    return nullptr;
+                }
+                for (int i = 0; i < arr_size; i++) {
+                    if (((bool*)mask_value_constant->m_data)[i] != 0) {
+                        int64_t ele2;
+                        if (!extract_value(ASRUtils::fetch_ArrayConstant_value(
+                                al, array_value_constant, i), ele2)) {
+                            return nullptr;
+                        }
+                        if (ele == ele2) {
                             element_idx = i;
                             if (!(back_value_constant && back_value_constant->m_value)) break;
                         }
@@ -5134,11 +5388,7 @@ namespace FindLoc {
                 }
             } else {
                 double ele = 0;
-                if (is_integer(*ASRUtils::expr_type(value_value))) {
-                    ele = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value_value)->m_n);
-                } else if (is_real(*ASRUtils::expr_type(value))) {
-                    ele = ASR::down_cast<ASR::RealConstant_t>(value_value)->m_r;
-                } else if (is_logical(*ASRUtils::expr_type(value))) {
+                if (is_logical(*ASRUtils::expr_type(value))) {
                     ele = ASR::down_cast<ASR::LogicalConstant_t>(value_value)->m_value;
                 }
                 for (int i = 0; i < arr_size; i++) {
@@ -5167,40 +5417,39 @@ namespace FindLoc {
         int64_t array_value_id = 0, array_value_mask = 1, array_value_dim = 2, array_value_dim_mask = 3;
         int64_t overload_id = array_value_id;
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::expr_t* array = nullptr;
-        ASR::expr_t* value = nullptr;
-        if (is_real(*expr_type(args[0])) && is_integer(*expr_type(args[1]))) {
-            // Convert an integer value straight to the real type of `array`;
-            // promoting its integer kind to the array kind first would make
-            // e.g. an integer(16) value for a real(16) array
-            array = args[0];
-            value = args[1];
-            int array_kind = extract_kind_from_ttype_t(expr_type(array));
-            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, array_kind));
-            if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
-                int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-                if (array_kind == 16) {
-                    value = ASRUtils::make_RealConstant_r16(al, loc,
-                        lf_f128_from_int64(n), real_type);
-                } else {
-                    value = ASRUtils::make_RealConstant_util(al, loc,
-                        static_cast<double>(n), real_type);
-                }
-            } else {
-                value = EXPR(ASRUtils::make_Cast_t_value(al, loc, value,
-                    ASR::cast_kindType::IntegerToReal, real_type));
+        ASR::expr_t* array = args[0];
+        ASR::expr_t* value = args[1];
+        ASR::ttype_t *array_elt_type = ASRUtils::extract_type(expr_type(array));
+        ASR::ttype_t *value_elt_type = ASRUtils::extract_type(expr_type(value));
+        bool array_is_char = ASR::is_a<ASR::String_t>(*array_elt_type);
+        bool value_is_char = ASR::is_a<ASR::String_t>(*value_elt_type);
+        auto is_intrinsic_type = [](ASR::ttype_t* t) {
+            return ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t) ||
+                ASR::is_a<ASR::Complex_t>(*t) || ASR::is_a<ASR::Logical_t>(*t) ||
+                ASR::is_a<ASR::String_t>(*t);
+        };
+        if (!is_intrinsic_type(array_elt_type)) {
+            std::string array_str = type_to_str_fortran_expr(array_elt_type, array);
+            if (ASR::is_a<ASR::StructType_t>(*array_elt_type) &&
+                    !ASR::down_cast<ASR::StructType_t>(array_elt_type)->m_is_unlimited_polymorphic) {
+                array_str = (ASR::down_cast<ASR::StructType_t>(array_elt_type)->m_is_cstruct ?
+                    "type(" : "class(") + array_str + ")";
             }
-        } else if (extract_kind_from_ttype_t(expr_type(args[0])) != extract_kind_from_ttype_t(expr_type(args[1]))){
-            ASR::ttype_t *array_elt_type = ASRUtils::extract_type(expr_type(args[0]));
-            ASR::ttype_t *value_elt_type = ASRUtils::extract_type(expr_type(args[1]));
+            append_error(diag, "`array` argument of `findloc` must be of intrinsic "
+                "type, but got " + array_str, loc);
+            return nullptr;
+        }
+        ASR::ttypeType cmp_type;
+        int cmp_kind;
+        if (array_is_char || value_is_char) {
             // Character kinds cannot be promoted like integer/real kinds:
             // characters of different kinds (or a character vs a non-character
             // argument) are genuinely incompatible and must be reported as a
             // type-conformance error (matching gfortran) instead of proceeding
             // with mismatched kinds (which ICEs later).
-            bool array_is_char = ASR::is_a<ASR::String_t>(*array_elt_type);
-            bool value_is_char = ASR::is_a<ASR::String_t>(*value_elt_type);
-            if (array_is_char || value_is_char) {
+            if (!array_is_char || !value_is_char ||
+                    extract_kind_from_ttype_t(array_elt_type) !=
+                    extract_kind_from_ttype_t(value_elt_type)) {
                 std::string array_str = type_to_str_fortran_symbol(array_elt_type, nullptr, true);
                 std::string value_str = type_to_str_fortran_symbol(value_elt_type, nullptr, true);
                 if (array_is_char) {
@@ -5218,36 +5467,25 @@ namespace FindLoc {
                     array_str + " and " + value_str, loc);
                 return nullptr;
             }
-            Vec<ASR::expr_t*> args_;
-            args_.reserve(al, 2);
-            args_.push_back(al, args[0]);
-            args_.push_back(al, args[1]);
-            promote_arguments_kinds(al, loc, args_, diag, true);
-            array = args_[0];
-            value = args_[1];
-        }
-        else {
-            array = args[0];
-            value = args[1];
+        } else if (is_intrinsic_type(value_elt_type) &&
+                !comparison_type(array_elt_type, value_elt_type, cmp_type, cmp_kind)) {
+            // `array_elem == value` (or `.eqv.` for logical) must be valid:
+            // both numeric or both logical (F2018 16.9.82, Table 10.2)
+            append_error(diag, "`array` and `value` arguments of `findloc` "
+                "must be in type conformance, but got " +
+                type_to_str_fortran_symbol(array_elt_type, nullptr, true) + " and " +
+                type_to_str_fortran_symbol(value_elt_type, nullptr, true), loc);
+            return nullptr;
+        } else if (!is_array(expr_type(value)) &&
+                comparison_type(array_elt_type, value_elt_type, cmp_type, cmp_kind)) {
+            // Compare in the type and kind of `array_elem == value`: convert
+            // `value` here, and each element when the array is instantiated
+            value = convert_value(al, loc, value,
+                make_comparison_type(al, loc, cmp_type, cmp_kind));
         }
         ASR::ttype_t *array_type = expr_type(array);
         ASR::ttype_t *value_type = expr_type(value);
-        if (is_integer(*array_type) && is_real(*value_type)){
-            if (ASR::is_a<ASR::RealConstant_t>(*value)){
-                ASR::RealConstant_t *value_real = ASR::down_cast<ASR::RealConstant_t>(value);
-                value = EXPR(ASR::make_IntegerConstant_t(al, loc, static_cast<int64_t>(value_real->m_r),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type)))));
-            } else{
-                value = EXPR(ASR::make_Cast_t(al, loc, value, ASR::cast_kindType::RealToInteger,
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, extract_kind_from_ttype_t(value_type))), nullptr, nullptr ));
-            }
-        }
-        if (!is_array(array_type) && !is_integer(*array_type) && !is_real(*array_type) && !is_character(*array_type) && !is_logical(*array_type) && !is_complex(*array_type)) {
-            append_error(diag, "`array` argument of `findloc` must be an array of integer, "
-                "real, logical, character or complex type", loc);
-            return nullptr;
-        }
-        if (is_array(value_type) || ( !is_integer(*value_type) && !is_real(*value_type) && !is_character(*value_type) && !is_logical(*value_type) && !is_complex(*array_type))) {
+        if (is_array(expr_type(args[1])) || ( !is_integer(*value_type) && !is_real(*value_type) && !is_character(*value_type) && !is_logical(*value_type) && !is_complex(*value_type))) {
             append_error(diag, "`value` argument of `findloc` must be a scalar of integer, "
                 "real, logical, character or complex type", loc);
             return nullptr;
@@ -5436,6 +5674,16 @@ namespace FindLoc {
     ASR::expr_t* dim = args[2];
     ASR::expr_t *mask = args[3];
     ASR::expr_t *back = args[5];
+    // `value` has the type and kind in which the elements are compared
+    // (see create_FindLoc): convert each element to it
+    ASR::ttypeType cmp_type;
+    int cmp_kind;
+    bool convert_elements = comparison_type(array_elem_type,
+        value_elem_type, cmp_type, cmp_kind);
+    auto element = [&](ASR::expr_t *item) {
+        return convert_elements ? CastingUtil::perform_casting(item,
+            make_comparison_type(al, loc, cmp_type, cmp_kind), al, loc) : item;
+    };
     if (overload_id == 1) {
         ASR::expr_t *mask_new = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(mask)) ){
@@ -5446,7 +5694,7 @@ namespace FindLoc {
         }
         body.push_back(al, b.Assignment(result, b.i_t(0, ASRUtils::type_get_past_array(return_type))));
         body.push_back(al, b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
-            b.If(b.And(b.Eq(ArrayItem_02(array, i), value), b.Eq(mask_new, b.bool_t(1, logical))), {
+            b.If(b.And(b.Eq(element(ArrayItem_02(array, i)), value), b.Eq(mask_new, b.bool_t(1, logical))), {
                 b.Assignment(result, i),
                 b.If(b.NotEq(back, b.bool_t(1, logical)), {
                     b.Return()
@@ -5458,7 +5706,7 @@ namespace FindLoc {
         if (array_rank == 1) {
             body.push_back(al, b.Assignment(result, b.i_t(0, type)));
             body.push_back(al, b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
-                b.If(b.Eq(ArrayItem_02(array, i), value), {
+                b.If(b.Eq(element(ArrayItem_02(array, i)), value), {
                     b.Assignment(result, i),
                     b.If(b.NotEq(back, b.bool_t(1, logical)), {
                         b.Return()
@@ -5475,7 +5723,7 @@ namespace FindLoc {
                 b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
                     b.Assignment(found_value, b.bool_t(0, logical)),
                     b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
-                        b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ji), value), b.Or(b.Not(found_value), back)), {
+                        b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ji)), value), b.Or(b.Not(found_value), back)), {
                             b.Assignment(b.ArrayItem_01(result, {b.i_t(1, type)}), j),
                             b.Assignment(b.ArrayItem_01(result, {b.i_t(2, type)}), i),
                             b.Assignment(found_value, b.bool_t(1, logical)),
@@ -5491,7 +5739,7 @@ namespace FindLoc {
                     b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
                         b.Assignment(found_value, b.bool_t(0, logical)),
                         b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
-                            b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ji), value), b.Or(b.Not(found_value), back)), {
+                            b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ji)), value), b.Or(b.Not(found_value), back)), {
                                 b.Assignment(b.ArrayItem_01(result, {i}), j),
                                 b.Assignment(found_value, b.bool_t(1, logical)),
                             }, {}),
@@ -5504,7 +5752,7 @@ namespace FindLoc {
                     b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
                         b.Assignment(found_value, b.bool_t(0, logical)),
                         b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 2), {
-                            b.If(b.And(b.Eq(ArrayItem_02(array, idx_vars_ij), value), b.Or(b.Not(found_value), back)), {
+                            b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ij)), value), b.Or(b.Not(found_value), back)), {
                                 b.Assignment(b.ArrayItem_01(result, {i}), j),
                                 b.Assignment(found_value, b.bool_t(1, logical)),
                             }, {}),

@@ -2267,6 +2267,10 @@ RUN(NAME intrinsics_449 LABELS gfortran llvm) # storage_size with c_ptr
 RUN(NAME intrinsics_450 LABELS llvm) # storage_size struct alignment
 RUN(NAME intrinsics_451 LABELS gfortran llvm) # findloc with character ExpressionLength
 RUN(NAME intrinsics_452 LABELS gfortran llvm) # findloc with Pointer-wrapped ExpressionLength
+RUN(NAME findloc_value_kind_01 LABELS gfortran llvm)
+RUN(NAME findloc_value_mixed_01 LABELS llvm) # not gfortran: GFortran converts VALUE to the type and kind of ARRAY
+RUN(NAME findloc_int8_parameter_01 LABELS gfortran llvm)
+RUN(NAME findloc_value_component_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_453 LABELS gfortran llvm) # Lgt intrinsic as while loop condition
 RUN(NAME intrinsics_454 LABELS gfortran llvm) # all/any with array section and whole array
 RUN(NAME intrinsics_455 LABELS gfortran llvm) # intrinsic declaration scope isolation
@@ -5611,6 +5615,7 @@ RUN(NAME common_63 LABELS llvm flang) # not gfortran: GFortran 16.2 misses the o
 RUN(NAME common_array_section_01 LABELS gfortran llvm)
 RUN(NAME common_substring_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME common_substring_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_substring_int8_alloc_bounds_01 LABELS gfortran llvm)
 
 RUN(NAME statement_01 LABELS llvm gfortran llvmImplicit)
 RUN(NAME statement_02 LABELS gfortran llvmImplicit)

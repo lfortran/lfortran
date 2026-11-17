@@ -5088,3 +5088,21 @@ subroutine cc1_atan2_kind_errors()
     cc1_a2k_r = atan(cc1_a2k_y, cc1_a2k_x)  ! {Error} arguments 'y' and 'x' of the 'atan' intrinsic must have the same kind, found real(8) and real(4)
     cc1_a2k_r = atand(1.0d0, 1.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must have the same kind, found real(8) and real(4)
 end subroutine
+
+! `array` of `findloc` must be of intrinsic type and in type conformance with `value`
+subroutine cc1_findloc_type_conformance()
+    type :: cc1_ftc_t
+        integer :: k
+    end type
+    type(cc1_ftc_t) :: cc1_ftc_x(2)
+    logical :: cc1_ftc_l(2)
+    real :: cc1_ftc_r(2)
+    cc1_ftc_x%k = 1
+    cc1_ftc_l = .true.
+    cc1_ftc_r = 1.0
+    print *, findloc([1, 2], .true.)  ! {Error} `array` and `value` arguments of `findloc` must be in type conformance, but got integer(4) and logical(4)
+    print *, findloc(cc1_ftc_l, (1.0, 0.0))  ! {Error} `array` and `value` arguments of `findloc` must be in type conformance, but got logical(4) and complex(4)
+    print *, findloc(cc1_ftc_r, .false.)  ! {Error} `array` and `value` arguments of `findloc` must be in type conformance, but got real(4) and logical(4)
+    print *, findloc(cc1_ftc_x, 1)  ! {Error} `array` argument of `findloc` must be of intrinsic type, but got type(cc1_ftc_t)
+    print *, findloc(cc1_ftc_r, [1, 2])  ! {Error} `value` argument of `findloc` must be a scalar of integer, real, logical, character or complex type
+end subroutine
