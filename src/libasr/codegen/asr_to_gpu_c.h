@@ -4339,6 +4339,33 @@ public:
             && current_kernel_layout->m_lanes != nullptr;
     }
 
+    // Whether the vector `w` reads is one of a matrix (an array of two or
+    // more dimensions) that the kernel does not write, read where the lanes
+    // of an iteration share a loop: a row of the weights of a matrix-vector
+    // product. Such vectors are read in the order of the statements
+    // (dialect.wide_load), all at the start of a step of the loop.
+    bool wide_load_pinned(const ASR::GpuWideLoad_t &w) const {
+        if (!kernel_has_lanes()
+                || !ASR::is_a<ASR::ArrayItem_t>(*w.m_source)
+                || ASR::down_cast<ASR::ArrayItem_t>(w.m_source)->n_args < 2
+                || !ASR::is_a<ASR::Var_t>(*w.m_array)) {
+            return false;
+        }
+        ASR::symbol_t *array = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(w.m_array)->m_v);
+        for (size_t i = 0; i < current_kernel_layout->n_buffers; i++) {
+            const ASR::gpu_kernel_argument_t &a =
+                current_kernel_layout->m_buffers[i];
+            if (a.m_member == nullptr && a.m_kind
+                        == ASR::gpu_argument_kindType::GpuArray
+                    && ASRUtils::symbol_get_past_external(a.m_variable)
+                        == array) {
+                return !a.m_written;
+            }
+        }
+        return false;
+    }
+
     // Whether a launch may give an iteration of the kernel being written
     // the lanes of a whole block, more than a SIMD-group has.
     bool kernel_has_block_lanes() const {
@@ -5431,7 +5458,7 @@ public:
                 src << dialect.wide_load(get_indent(), targets,
                     expr_str(w->m_source), expr_str(w->m_array),
                     w->m_aligned ? expr_str(w->m_aligned) : "true",
-                    wide_assume_aligned);
+                    wide_assume_aligned, wide_load_pinned(*w));
                 break;
             }
             case ASR::stmtType::GpuLaneBarrier: {
