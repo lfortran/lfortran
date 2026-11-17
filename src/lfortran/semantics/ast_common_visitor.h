@@ -27269,12 +27269,14 @@ public:
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             check_hidden_derived_type_component_reference(loc, remote_sym);
             // An undeclared name becomes a procedure with an implicit
-            // interface, which is filed in the enclosing program unit. The
-            // statements of an interactive cell have no such unit, and the
-            // cell runs at once, so the procedure could never be defined.
+            // interface, which is filed in the enclosing program unit. In
+            // interactive mode, the statements of a cell have no such unit,
+            // and the cell runs at once, so the procedure could never be
+            // defined.
             SymbolTable* interface_scope = implicit_interface_scope();
-            bool in_program_unit = interface_scope->asr_owner
-                && ASR::is_a<ASR::symbol_t>(*interface_scope->asr_owner);
+            bool in_program_unit = !compiler_options.interactive
+                || (interface_scope->asr_owner
+                    && ASR::is_a<ASR::symbol_t>(*interface_scope->asr_owner));
             if (compiler_options.implicit_interface && !unmatched_generic
                     && in_program_unit) {
                 return nullptr;
