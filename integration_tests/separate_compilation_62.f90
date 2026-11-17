@@ -7,6 +7,8 @@ call reg(x, g)
 if (.not. associated(x%f)) error stop
 call x%f("abcde", n)
 if (n /= 5) error stop
+x%f => null()
+if (associated(x%f)) error stop
 print *, n
 contains
 subroutine g(name, n)
