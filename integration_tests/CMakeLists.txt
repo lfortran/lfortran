@@ -1939,6 +1939,7 @@ RUN(NAME intrinsics_145 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #
 RUN(NAME intrinsics_146 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # dprod
 RUN(NAME intrinsics_147 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
 RUN(NAME intrinsics_148 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH) # pack
+RUN(NAME pack_vector_derived_type_01 LABELS gfortran llvm) # pack with a vector of derived type (#17881)
 RUN(NAME intrinsics_149 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran NO_FAST_MATH) # unpack
 RUN(NAME unpack_scalar_field_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME unpack_scalar_field_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
