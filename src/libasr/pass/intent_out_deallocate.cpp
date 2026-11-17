@@ -33,6 +33,22 @@ public:
     void visit_Requirement(const ASR::Requirement_t &/*x*/) {}
 };
 
+// Returns `value` if it references only symbols named from `scope`,
+// otherwise a copy that references them through imports, as
+// import_procedure_type does for a procedure type. A default of a component
+// can name what only the type's own scope sees (`c_null_funptr` refers to
+// `c_funptr`), while a reset binding's procedure can be outside that scope.
+ASR::expr_t* import_expr_references(Allocator &al, ASR::expr_t* value,
+        SymbolTable* scope) {
+    ASRUtils::ProcedureTypeImporter checker(al, scope, false);
+    checker.replace_expr(value);
+    if (!checker.needed) return value;
+    ASR::expr_t* new_value = ASRUtils::ExprStmtDuplicator(al)
+        .duplicate_expr(value);
+    ASRUtils::ProcedureTypeImporter(al, scope, true).replace_expr(new_value);
+    return new_value;
+}
+
 }
 
 ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
@@ -199,14 +215,17 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             }
             ASR::expr_t* null_value = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc,
-                    ASRUtils::expr_type(value), target));
+                    ASRUtils::import_procedure_type(al,
+                        ASRUtils::expr_type(value), current_scope), target));
             out_stmts.push_back(al, ASRUtils::STMT(
                 ASRUtils::make_Associate_t_util(al, loc, target, null_value)));
             return true;
         }
         if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
             out_stmts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, target, value, nullptr, false, false, false, false)));
+                al, loc, target,
+                import_expr_references(al, value, current_scope), nullptr,
+                false, false, false, false)));
             return true;
         }
         ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(
@@ -494,7 +513,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                             *m_var->m_symbolic_value)) continue;
                     ASR::expr_t* null_value = ASRUtils::EXPR(
                         ASR::make_PointerNullConstant_t(al, loc,
-                            ASRUtils::expr_type(m_var->m_symbolic_value),
+                            ASRUtils::import_procedure_type(al,
+                                ASRUtils::expr_type(m_var->m_symbolic_value),
+                                current_scope),
                             member_expr));
                     init_stmt = ASRUtils::STMT(
                         ASRUtils::make_Associate_t_util(al, loc,
