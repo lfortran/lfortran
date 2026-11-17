@@ -1641,6 +1641,7 @@ RUN(NAME format_118 LABELS gfortran llvm)
 RUN(NAME format_119 LABELS gfortran llvm)
 RUN(NAME format_120 LABELS gfortran llvm) # trim() in an implied-DO output list with T and colon editing (#11408)
 RUN(NAME format_121 LABELS gfortran llvm)
+RUN(NAME format_z_real16_leak_01 LABELS gfortran llvm) # Z editing of real(16) must not leak (#17861)
 # GFortran 16 lacks the F2023 LZ/LZP/LZS descriptors (13.8.5).
 RUN(NAME format_leading_zero LABELS llvm)
 RUN(NAME submodule_01 LABELS gfortran)
