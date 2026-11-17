@@ -236,11 +236,16 @@ struct CudaDialect {
     }
     // `targets` are assigned the elements that start at `source` (`a[i]`),
     // read with __lfortran_wide_load in the prologue of the kernel source.
+    // A `pinned` vector is read where the statement is: nvcc otherwise
+    // spreads the reads of the rows of a step of a matrix-vector product
+    // across its arithmetic, where fewer of them are in flight at a time
+    // (the gate and up projections of Qwen3.8-27B took 3% longer).
     std::string wide_load(const std::string &indent,
             const std::vector<std::string> &targets,
             const std::string &source, const std::string &array,
-            const std::string &aligned, bool assume) const {
-        std::string out = indent + "__lfortran_wide_load("
+            const std::string &aligned, bool assume, bool pinned) const {
+        std::string out = indent + "__lfortran_wide_load"
+            + (pinned && !emulate_cpu && !hip ? "<true>" : "") + "("
             + (assume ? std::string("true") : wide_aligned(array, aligned))
             + ", &(" + source + ")";
         for (const std::string &t : targets) out += ", " + t;
@@ -257,10 +262,20 @@ struct CudaDialect {
             "// The 16 bytes that start at `p`: read at once when `ok` says `p` is a\n"
             "// multiple of 16, element by element, put together, when it is not.\n"
             "// The elements are taken out of the 16 bytes, so that the two ways\n"
-            "// meet before the elements are separated.\n"
-            "template <typename T>\n"
+            "// meet before the elements are separated. A `pinned` vector is read\n"
+            "// in the order of the statements (asm volatile).\n"
+            "template <bool pinned = false, typename T>\n"
             "__device__ __forceinline__ uint4 __lfortran_wide_vector(bool ok, const T* p) {\n"
-            "    if (ok) return *reinterpret_cast<const uint4*>(p);\n"
+            "    if (ok) {\n"
+            + std::string(emulate_cpu || hip ? "" :
+            "        if (pinned) {\n"
+            "            uint4 v;\n"
+            "            asm volatile(\"ld.global.v4.u32 {%0,%1,%2,%3}, [%4];\"\n"
+            "                : \"=r\"(v.x), \"=r\"(v.y), \"=r\"(v.z), \"=r\"(v.w) : \"l\"(p));\n"
+            "            return v;\n"
+            "        }\n")
+            + "        return *reinterpret_cast<const uint4*>(p);\n"
+            "    }\n"
             "    T t[16 / sizeof(T)];\n"
             "    #pragma unroll\n"
             "    for (int i = 0; i < 16 / (int)sizeof(T); i++) t[i] = p[i];\n"
@@ -268,21 +283,21 @@ struct CudaDialect {
             "    __builtin_memcpy(&v, t, 16);\n"
             "    return v;\n"
             "}\n\n"
-            "template <typename T>\n"
+            "template <bool pinned = false, typename T>\n"
             "__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b) {\n"
-            "    uint4 v = __lfortran_wide_vector(ok, p);\n"
+            "    uint4 v = __lfortran_wide_vector<pinned>(ok, p);\n"
             "    const T* e = reinterpret_cast<const T*>(&v);\n"
             "    a = e[0]; b = e[1];\n"
             "}\n\n"
-            "template <typename T>\n"
+            "template <bool pinned = false, typename T>\n"
             "__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b, T &c, T &d) {\n"
-            "    uint4 v = __lfortran_wide_vector(ok, p);\n"
+            "    uint4 v = __lfortran_wide_vector<pinned>(ok, p);\n"
             "    const T* e = reinterpret_cast<const T*>(&v);\n"
             "    a = e[0]; b = e[1]; c = e[2]; d = e[3];\n"
             "}\n\n"
-            "template <typename T>\n"
+            "template <bool pinned = false, typename T>\n"
             "__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a0, T &a1, T &a2, T &a3, T &a4, T &a5, T &a6, T &a7) {\n"
-            "    uint4 v = __lfortran_wide_vector(ok, p);\n"
+            "    uint4 v = __lfortran_wide_vector<pinned>(ok, p);\n"
             "    const T* e = reinterpret_cast<const T*>(&v);\n"
             "    a0 = e[0]; a1 = e[1]; a2 = e[2]; a3 = e[3]; a4 = e[4]; a5 = e[5]; a6 = e[6]; a7 = e[7];\n"
             "}\n\n";

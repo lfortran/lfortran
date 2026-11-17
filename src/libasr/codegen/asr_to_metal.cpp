@@ -129,7 +129,8 @@ struct MetalDialect {
     std::string wide_load(const std::string &indent,
             const std::vector<std::string> &targets,
             const std::string &source, const std::string &/*array*/,
-            const std::string &/*aligned*/, bool /*assume*/) const {
+            const std::string &/*aligned*/, bool /*assume*/,
+            bool /*pinned*/) const {
         std::string out;
         for (size_t i = 0; i < targets.size(); i++) {
             out += indent + targets[i] + " = (&(" + source + "))["
