@@ -5387,6 +5387,126 @@ end function
     CHECK(r.result.i32 == 7);
 }
 
+// Evaluates a cell that must be rejected and returns its rendered messages.
+static std::string rejected_cell_message(FortranEvaluator &e, CompilerOptions cu,
+        const std::string &code) {
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate(code, false, lm, lpm, d);
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    return d.render(lm, cu);
+}
+
+TEST_CASE("FortranEvaluator implicit interface reference to an undefined procedure in a cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.implicit_interface = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    // The statements of a cell run at once, so a procedure they reference
+    // has to be defined already; it cannot get an implicit interface.
+    for (const char *cell : {"call c()", "c()", "print *, c()", "z0 = c(1)",
+            "integer :: n = c()"}) {
+        INFO(cell);
+        std::string message = rejected_cell_message(e, cu, cell);
+        CHECK(message.find("Function 'c' not found") != std::string::npos);
+    }
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("z0 + 2");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 2);
+}
+
+TEST_CASE("FortranEvaluator call of a procedure whose cell was rejected") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.implicit_interface = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    // `fn` is a function, so it cannot be called as a subroutine.
+    rejected_cell_message(e, cu, R"(subroutine c()
+call fn()
+end subroutine
+)");
+    // `c` was never defined, so it cannot be called.
+    std::string message = rejected_cell_message(e, cu, "call c()");
+    CHECK(message.find("Function 'c' not found") != std::string::npos);
+    // The session stays usable.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("fn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 1);
+}
+
+TEST_CASE("FortranEvaluator reference to a procedure whose cell had a semantic error") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.implicit_interface = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+subroutine sn(x)
+integer, intent(out) :: x
+x = 4
+end subroutine
+integer function ifn()
+ifn = 5
+end function
+real function rf()
+rf = 2.5
+end function
+)").ok);
+    SUBCASE("subroutine") {
+        REQUIRE(e.evaluate2(R"(subroutine app(f)
+external f
+call f()
+end subroutine
+)").ok);
+        std::string message = rejected_cell_message(e, cu, R"(subroutine c()
+call app(qq)
+end subroutine
+)");
+        CHECK(message.find("Variable 'qq' is not declared") != std::string::npos);
+        message = rejected_cell_message(e, cu, "call c()");
+        CHECK(message.find("Function 'c' not found") != std::string::npos);
+    }
+    SUBCASE("function with ENTRY") {
+        REQUIRE(e.evaluate2(R"(integer function app(f)
+integer, external :: f
+app = f() + 1
+end function
+)").ok);
+        std::string message = rejected_cell_message(e, cu, R"(integer function c()
+c = app(qq) + 400
+return
+entry c2()
+c2 = 410
+end function
+)");
+        CHECK(message.find("Variable 'qq' is not declared") != std::string::npos);
+        message = rejected_cell_message(e, cu, "c()");
+        CHECK(message.find("Function 'c' not found") != std::string::npos);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("app(ifn)");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 6);
+    }
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("fn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 1);
+}
+
 TEST_CASE("FortranEvaluator interface body used by a contained procedure") {
     CompilerOptions cu;
     cu.interactive = true;
