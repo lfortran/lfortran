@@ -23779,6 +23779,19 @@ public:
                     }
                     CommonVisitorMethods::set_intrinsic_return_kind(al, x.base.base.loc, var_name,
                         args, compiler_options.po.default_integer_kind);
+                    if (restricted_expr_context == RestrictedExprContext::InitExpr) {
+                        // A structure constructor argument, such as `t(0)`
+                        // in `unpack(v, mask, t(0))`, is only a
+                        // StructConstructor here; fold it like an element
+                        // of an array constructor, so that the intrinsic
+                        // can be evaluated at compile time.
+                        for (size_t i = 0; i < args.size(); i++) {
+                            if (args[i] && ASR::is_a<ASR::StructConstructor_t>(*args[i])
+                                    && ASRUtils::is_value_constant(args[i])) {
+                                args.p[i] = fold_struct_constant_arg(args[i]);
+                            }
+                        }
+                    }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicArrayFunctionRegistry::get_create_function(var_name);
                     tmp = create_func(al, x.base.base.loc, args, diag);

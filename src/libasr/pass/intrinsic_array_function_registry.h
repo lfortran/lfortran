@@ -2899,6 +2899,11 @@ namespace Cshift {
                 str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                 m_eles.push_back(b.StringConstant(str, arr_type));
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(arr_type))) {
+            m_eles = constant_elements(al, args[0],
+                ASRUtils::get_fixed_size_of_array(arr->m_type));
+        } else {
+            return nullptr;
         }
         std::vector<int64_t> shifts;
         if ((int64_t) m_eles.size() != size ||
@@ -3152,7 +3157,11 @@ namespace Spread {
             ASR::ttype_t* arr_type = expr_type(args[0]);
             std::vector<ASR::expr_t *> m_eles;
             ASR::expr_t *value = nullptr;
-            if (is_kind16_real_or_complex(arr_type)) {
+            if (is_kind16_real_or_complex(arr_type) ||
+                    ASR::is_a<ASR::StructType_t>(*extract_type(arr_type))) {
+                // Copying the element constants keeps real(16) and
+                // complex(16) elements exact and handles derived-type
+                // (`StructConstant`) elements
                 std::vector<ASR::expr_t*> elements = constant_elements(al, args[0], array_size);
                 if (dim_val == 1) {
                     for (size_t i = 0; i < array_size; i++) {
@@ -3303,6 +3312,8 @@ namespace Spread {
                         m_eles.push_back(value);
                     }
                 }
+            } else {
+                return nullptr;
             }
             return b.ArrayConstant(m_eles, extract_type(type), false, type);
         }
@@ -3417,15 +3428,19 @@ namespace Spread {
 
         ASRBuilder b(al, loc);
         int overload_id = 2;
-        bool skip_compile_time_eval = false;
         if(ASR::is_a<ASR::Integer_t>(*type_source) || ASR::is_a<ASR::Real_t>(*type_source) ||
-            ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ){
+            ASR::is_a<ASR::String_t>(*type_source) || ASR::is_a<ASR::Logical_t>(*type_source) ||
+            ASR::is_a<ASR::Complex_t>(*type_source) ||
+            (ASR::is_a<ASR::StructType_t>(*type_source) && !ASRUtils::is_class_type(type_source)) ){
             // Case : When Scalar is passed as source in Spread()
             is_scalar = true;
             Vec<ASR::expr_t *> m_eles; m_eles.reserve(al, 1);
             m_eles.push_back(al, source);
             if (ASR::is_a<ASR::String_t>(*type_source)) {
-                skip_compile_time_eval = true;
+                // A constant source gets the constant's length, so that the
+                // `[source]` wrapper and the folded result have a fixed
+                // element length (the source's own length can be a run-time
+                // expression, e.g. for `trim("ab ")`).
                 ASR::expr_t* source_value = ASRUtils::expr_value(source);
                 if (source_value && ASR::is_a<ASR::StringConstant_t>(*source_value)) {
                     ASR::String_t* source_string = ASR::down_cast<ASR::String_t>(type_source);
@@ -3504,7 +3519,7 @@ namespace Spread {
         m_args.push_back(al, source); m_args.push_back(al, dim);
         m_args.push_back(al, ncopies);
         ASR::expr_t *value = nullptr;
-        if (all_args_evaluated(m_args, false, false, true) && !skip_compile_time_eval) {
+        if (all_args_evaluated(m_args, false, false, true)) {
             value = eval_Spread(al, loc, ret_type, m_args, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
@@ -3698,6 +3713,14 @@ namespace Eoshift {
             if(is_logical(*boundary_type)){
                 final_boundary = b.StringConstant(str, arr_type);
             }
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(arr_type))) {
+            // A derived-type `array` always has a `boundary` (there is no
+            // default one); use its `StructConstant` value
+            m_eles = constant_elements(al, args[0],
+                ASRUtils::get_fixed_size_of_array(arr->m_type));
+            final_boundary = ASRUtils::expr_value(args[2]);
+        } else {
+            return nullptr;
         }
         std::vector<int64_t> shifts;
         std::vector<ASR::expr_t *> boundaries;

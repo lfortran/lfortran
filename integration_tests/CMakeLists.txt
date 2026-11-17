@@ -1953,6 +1953,7 @@ RUN(NAME unpack_allocatable_mask_02 LABELS gfortran llvm EXTRA_ARGS --realloc-lh
 RUN(NAME unpack_parameter_01 LABELS gfortran llvm) # unpack of integer(1), integer(2) and character constants in a parameter (#17827)
 RUN(NAME unpack_parameter_02 LABELS gfortran llvm) # unpack with a rank-2 mask folded to the shape of the mask (#17310)
 RUN(NAME pack_char_param_fold_01 LABELS gfortran llvm) # pack of constant character arrays in parameters (#15051)
+RUN(NAME unpack_derived_type_param_01 LABELS gfortran llvm) # unpack with a scalar derived-type field in a parameter (#17878)
 RUN(NAME intrinsics_150 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskr
 RUN(NAME intrinsics_151 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # maskl
 RUN(NAME intrinsics_152 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # selected_real_kind
@@ -2310,6 +2311,9 @@ RUN(NAME intrinsics_496 LABELS gfortran llvm) # transpose/spread of deferred-len
 RUN(NAME intrinsics_497 LABELS gfortran llvm) # spread with ncopies from size() of a parameter array (#15327)
 RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_bits/max/min/ibset/btest of integer(8)
 RUN(NAME intrinsics_499 LABELS gfortran llvm fortran) # spread of a scalar source, printed by the Fortran backend
+RUN(NAME spread_scalar_struct_01 LABELS gfortran llvm) # spread of a scalar complex or derived-type source (#13597)
+RUN(NAME spread_scalar_char_param_01 LABELS gfortran llvm) # spread of a scalar character constant in initialization expressions
+RUN(NAME cshift_eoshift_struct_param_01 LABELS gfortran llvm) # cshift/eoshift of a derived-type array constant in a PARAMETER
 RUN(NAME intrinsics_502 LABELS gfortran llvm) # pack/count with a negated complex comparison of array sections (#15926)
 RUN(NAME intrinsics_503 LABELS gfortran llvm) # ibset constant folding at signed-kind boundaries
 RUN(NAME intrinsics_504 LABELS gfortran llvm) # ishft/shiftl/shiftr/shifta with |shift| == bit_size (#16451)
