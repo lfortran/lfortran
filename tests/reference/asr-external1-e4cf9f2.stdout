@@ -1,0 +1,452 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            f:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            f:
+                                (Variable
+                                    4
+                                    f
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    4
+                                    x
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    f
+                    (FunctionType
+                        [(Real 8)]
+                        (Real 8)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    [(Var 4 x)]
+                    [(Assignment
+                        (Var 4 f)
+                        (Var 4 x)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )]
+                    (Var 4 f)
+                    Public
+                    .true.
+                    .true.
+                    ()
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            
+                        })
+                    main
+                    []
+                    [(SubroutineCall
+                        1 sub
+                        ()
+                        []
+                        ()
+                        .false.
+                    )]
+                    ()
+                ),
+            sub:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            f_return_var_name:
+                                                (Variable
+                                                    3
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        (Real 8)
+                                        Source
+                                        ImplicitInterface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            f~fpcast:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            f~arg_0:
+                                                (Variable
+                                                    6
+                                                    f~arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            f~result:
+                                                (Variable
+                                                    6
+                                                    f~result
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 8)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    f~fpcast
+                                    (FunctionType
+                                        [(Real 8)]
+                                        (Real 8)
+                                        Source
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 f~arg_0)]
+                                    []
+                                    (Var 6 f~result)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            f~fpcast_ptr:
+                                (Variable
+                                    2
+                                    f~fpcast_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (FunctionType
+                                            [(Real 8)]
+                                            (Real 8)
+                                            Source
+                                            Interface
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                            Host
+                                        )
+                                    )
+                                    2 f~fpcast
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    sub
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    [(Associate
+                        (Var 2 f~fpcast_ptr)
+                        (FunctionPointerCast
+                            (Var 2 f)
+                            2 f~fpcast
+                            (FunctionType
+                                [(Real 8)]
+                                (Real 8)
+                                Source
+                                Interface
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                                []
+                                .false.
+                                Host
+                            )
+                            ()
+                        )
+                        NoPointerBounds
+                    )
+                    (Assignment
+                        (Var 2 y)
+                        (FunctionCall
+                            2 f~fpcast_ptr
+                            2 f
+                            [((RealConstant
+                                1.000000
+                                (Real 8)
+                            ))]
+                            (Real 8)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 y)
+                                    Sub
+                                    (RealConstant
+                                        1.000000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            GtE
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 y)]
+                            FormatFortran
+                            []
+                            ()
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

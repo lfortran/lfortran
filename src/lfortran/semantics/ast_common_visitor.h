@@ -7907,165 +7907,158 @@ public:
         }
     }
 
+    // An EXTERNAL statement is a standard implicit interface. It does not
+    // require --implicit-interface.
     void create_external_function(std::string sym, Location loc, ASR::ttype_t* determined_type = nullptr) {
-        if (compiler_options.implicit_interface) {
-            bool is_subroutine = false;
-            external_procedures.push_back(sym);
-            ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
-            ASR::symbol_t *local_sym = current_scope->get_symbol(sym);
-            // The EXTERNAL attribute makes `sym` a local name of this scope,
-            // which hides a generic interface accessible from the host (F2023
-            // 19.5.1.4). Such a generic does not define the characteristics of
-            // the external procedure.
-            if (sym_ && !local_sym && ASR::is_a<ASR::GenericProcedure_t>(
-                    *ASRUtils::symbol_get_past_external(sym_))) {
-                sym_ = nullptr;
+        bool is_subroutine = false;
+        external_procedures.push_back(sym);
+        ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+        ASR::symbol_t *local_sym = current_scope->get_symbol(sym);
+        // The EXTERNAL attribute makes `sym` a local name of this scope,
+        // which hides a generic interface accessible from the host (F2023
+        // 19.5.1.4). Such a generic does not define the characteristics of
+        // the external procedure.
+        if (sym_ && !local_sym && ASR::is_a<ASR::GenericProcedure_t>(
+                *ASRUtils::symbol_get_past_external(sym_))) {
+            sym_ = nullptr;
+        }
+        bool is_optional_dummy = (local_sym &&
+            ASR::is_a<ASR::Variable_t>(*local_sym) &&
+            ASR::down_cast<ASR::Variable_t>(local_sym)->m_presence ==
+                ASR::presenceType::Optional) ||
+            (!local_sym && assgnd_presence.count(sym) &&
+            assgnd_presence[sym] == ASR::presenceType::Optional &&
+            std::find(current_procedure_args.begin(),
+                current_procedure_args.end(), sym)
+                != current_procedure_args.end());
+        // Respect the default accessibility of the enclosing scope (e.g. a
+        // module `private` statement) as well as any explicit access already
+        // assigned to this name. An external procedure declared in a
+        // `private` module must be private, otherwise `use` would wrongly
+        // import it and later re-declarations (e.g. via an F77 `include`)
+        // would be reported as bogus redeclarations.
+        ASR::accessType ext_access = dflt_access;
+        if (assgnd_access.find(sym) != assgnd_access.end()) {
+            ext_access = assgnd_access[sym];
+        }
+        // Do not record `ext_access` back into `assgnd_access`: that map is
+        // never cleared between program units, so a `private` module would
+        // make the same-named external private in every later program unit
+        // of the same file.
+        if (assgnd_pointer.count(sym) > 0) {
+            // Without a declared type the pointer can be associated with
+            // a subroutine or with a function of any type, and a function
+            // referenced through it has its implicit type.
+            ASR::ttype_t *func_type = ASRUtils::make_opaque_procedure_type(
+                al, loc, determined_type);
+            std::string iface_name = "__" + sym + "_iface_implicit";
+            SymbolTable *parent_scope = current_scope->parent;
+            if (!parent_scope) parent_scope = current_scope;
+            ASR::symbol_t *iface_sym = parent_scope->get_symbol(iface_name);
+            if (!iface_sym) {
+                iface_sym = make_opaque_procedure_interface(loc, parent_scope,
+                    iface_name, func_type, ASR::accessType::Private);
             }
-            bool is_optional_dummy = (local_sym &&
-                ASR::is_a<ASR::Variable_t>(*local_sym) &&
-                ASR::down_cast<ASR::Variable_t>(local_sym)->m_presence ==
-                    ASR::presenceType::Optional) ||
-                (!local_sym && assgnd_presence.count(sym) &&
-                assgnd_presence[sym] == ASR::presenceType::Optional &&
-                std::find(current_procedure_args.begin(),
-                    current_procedure_args.end(), sym)
-                    != current_procedure_args.end());
-            // Respect the default accessibility of the enclosing scope (e.g. a
-            // module `private` statement) as well as any explicit access already
-            // assigned to this name. An external procedure declared in a
-            // `private` module must be private, otherwise `use` would wrongly
-            // import it and later re-declarations (e.g. via an F77 `include`)
-            // would be reported as bogus redeclarations.
-            ASR::accessType ext_access = dflt_access;
-            if (assgnd_access.find(sym) != assgnd_access.end()) {
-                ext_access = assgnd_access[sym];
-            }
-            // Do not record `ext_access` back into `assgnd_access`: that map is
-            // never cleared between program units, so a `private` module would
-            // make the same-named external private in every later program unit
-            // of the same file.
-            if (assgnd_pointer.count(sym) > 0) {
-                // Without a declared type the pointer can be associated with
-                // a subroutine or with a function of any type, and a function
-                // referenced through it has its implicit type.
-                ASR::ttype_t *func_type = ASRUtils::make_opaque_procedure_type(
-                    al, loc, determined_type);
-                std::string iface_name = "__" + sym + "_iface_implicit";
-                SymbolTable *parent_scope = current_scope->parent;
-                if (!parent_scope) parent_scope = current_scope;
-                ASR::symbol_t *iface_sym = parent_scope->get_symbol(iface_name);
-                if (!iface_sym) {
-                    iface_sym = make_opaque_procedure_interface(loc, parent_scope,
-                        iface_name, func_type, ASR::accessType::Private);
-                }
-                ASR::ttype_t *ptr_type = ASRUtils::TYPE(
-                    ASR::make_Pointer_t(al, loc, func_type));
-                SetChar variable_dependencies_vec;
-                variable_dependencies_vec.reserve(al, 1);
-                ASRUtils::collect_variable_dependencies(
-                    al, variable_dependencies_vec, ptr_type);
-                ASR::asr_t *var = ASRUtils::make_Variable_t_util(al, loc,
-                    current_scope, s2c(al, sym),
-                    variable_dependencies_vec.p,
-                    variable_dependencies_vec.size(),
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, ptr_type, iface_sym,
-                    ASR::abiType::Source, ext_access,
-                    ASR::presenceType::Required, false);
-                current_scope->add_or_overwrite_symbol(
-                    sym, ASR::down_cast<ASR::symbol_t>(var));
-                assgnd_pointer.erase(sym);
-                return;
-            }
-            SymbolTable *parent_scope = current_scope;
-            current_scope = al.make_new<SymbolTable>(parent_scope);
-            ASR::ttype_t *type = nullptr;
-            if (determined_type) {
-                // if explicit type provided, give preference to it.
-                type = determined_type;
-                if (sym_ && ASR::is_a<ASR::Function_t>(*sym_)) {
-                    ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
-                    if (!func_sym->m_return_var) {
-                        is_subroutine = true;
-                    }
-                }
-            } else if (sym_) {
-                if (ASR::is_a<ASR::Function_t>(*sym_)) {
-                    ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
-                    if (!func_sym->m_return_var) {
-                        is_subroutine = true;
-                    }
-                }
-                if (!is_subroutine) {
-                    type = ASRUtils::symbol_type(sym_);
-                }
-            } else if (compiler_options.implicit_typing) {
-                type = implicit_dictionary[std::string(1,sym[0])];
-                if (!type) {
-                    is_subroutine = true;
-                }
-            } else {
-                is_subroutine = true;
-            }
-            // add return var
-            std::string return_var_name = sym + "_return_var_name";
+            ASR::ttype_t *ptr_type = ASRUtils::TYPE(
+                ASR::make_Pointer_t(al, loc, func_type));
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
-            ASR::asr_t *return_var = nullptr;
-            ASR::expr_t *to_return = nullptr;
-            if (!is_subroutine) {
-                ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
-                return_var = ASRUtils::make_Variable_t_util(al, loc,
-                    current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
-                    variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                    nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                    ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
-                    false);
-                current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
-                to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                    ASR::down_cast<ASR::symbol_t>(return_var)));
-            }
-            tmp = ASRUtils::make_Function_t_util(
-                al, loc,
-                /* a_symtab */ current_scope,
-                /* a_name */ s2c(al, sym),
-                nullptr, 0,
-                /* a_args */ nullptr,
-                /* n_args */ 0,
-                /* a_body */ nullptr,
-                /* n_body */ 0,
-                /* a_return_var */ to_return,
+            ASRUtils::collect_variable_dependencies(
+                al, variable_dependencies_vec, ptr_type);
+            ASR::asr_t *var = ASRUtils::make_Variable_t_util(al, loc,
+                current_scope, s2c(al, sym),
+                variable_dependencies_vec.p,
+                variable_dependencies_vec.size(),
+                ASR::intentType::Local, nullptr, nullptr,
+                ASR::storage_typeType::Default, ptr_type, iface_sym,
                 ASR::abiType::Source, ext_access,
-                ASR::deftypeType::ImplicitInterface,
-                nullptr, false, false, false, false, false, nullptr, 0,
-                false, false, false);
-            current_scope = parent_scope;
-            if (is_optional_dummy) {
-                make_optional_procedure_dummy(sym,
-                    ASR::down_cast2<ASR::Function_t>(tmp), loc);
+                ASR::presenceType::Required, false);
+            current_scope->add_or_overwrite_symbol(
+                sym, ASR::down_cast<ASR::symbol_t>(var));
+            assgnd_pointer.erase(sym);
+            return;
+        }
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        ASR::ttype_t *type = nullptr;
+        if (determined_type) {
+            // if explicit type provided, give preference to it.
+            type = determined_type;
+            if (sym_ && ASR::is_a<ASR::Function_t>(*sym_)) {
+                ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
+                if (!func_sym->m_return_var) {
+                    is_subroutine = true;
+                }
+            }
+        } else if (sym_) {
+            if (ASR::is_a<ASR::Function_t>(*sym_)) {
+                ASR::Function_t* func_sym = ASR::down_cast<ASR::Function_t>(sym_);
+                if (!func_sym->m_return_var) {
+                    is_subroutine = true;
+                }
+            }
+            if (!is_subroutine) {
+                type = ASRUtils::symbol_type(sym_);
+            }
+        } else if (compiler_options.implicit_typing) {
+            type = implicit_dictionary[std::string(1,sym[0])];
+            if (!type) {
+                is_subroutine = true;
+            }
+        } else {
+            is_subroutine = true;
+        }
+        // add return var
+        std::string return_var_name = sym + "_return_var_name";
+        SetChar variable_dependencies_vec;
+        variable_dependencies_vec.reserve(al, 1);
+        ASR::asr_t *return_var = nullptr;
+        ASR::expr_t *to_return = nullptr;
+        if (!is_subroutine) {
+            ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type);
+            return_var = ASRUtils::make_Variable_t_util(al, loc,
+                current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
+                variable_dependencies_vec.size(), ASRUtils::intent_return_var,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
+                false);
+            current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
+            to_return = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                ASR::down_cast<ASR::symbol_t>(return_var)));
+        }
+        tmp = ASRUtils::make_Function_t_util(
+            al, loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, sym),
+            nullptr, 0,
+            /* a_args */ nullptr,
+            /* n_args */ 0,
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            /* a_return_var */ to_return,
+            ASR::abiType::Source, ext_access,
+            ASR::deftypeType::ImplicitInterface,
+            nullptr, false, false, false, false, false, nullptr, 0,
+            false, false, false);
+        current_scope = parent_scope;
+        if (is_optional_dummy) {
+            make_optional_procedure_dummy(sym,
+                ASR::down_cast2<ASR::Function_t>(tmp), loc);
+            return;
+        }
+        // The type that EXTERNAL or an earlier type declaration statement
+        // declares, not the type of a procedure accessible from the host.
+        if (local_sym == nullptr || ASR::is_a<ASR::Variable_t>(*local_sym)) {
+            ASR::ttype_t *declared_type = determined_type;
+            if (declared_type == nullptr && local_sym != nullptr) {
+                declared_type = ASRUtils::symbol_type(local_sym);
+            }
+            if (bind_external_to_cell_procedure(sym, declared_type)) {
+                if (local_sym != nullptr) parent_scope->erase_symbol(sym);
                 return;
             }
-            // The type that EXTERNAL or an earlier type declaration statement
-            // declares, not the type of a procedure accessible from the host.
-            if (local_sym == nullptr || ASR::is_a<ASR::Variable_t>(*local_sym)) {
-                ASR::ttype_t *declared_type = determined_type;
-                if (declared_type == nullptr && local_sym != nullptr) {
-                    declared_type = ASRUtils::symbol_type(local_sym);
-                }
-                if (bind_external_to_cell_procedure(sym, declared_type)) {
-                    if (local_sym != nullptr) parent_scope->erase_symbol(sym);
-                    return;
-                }
-            }
-            parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-        } else {
-            diag.add(Diagnostic(
-                "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
-                Level::Error, Stage::Semantic, {
-                    Label("",{loc})
-                }));
-            throw SemanticAbort();
         }
+        parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
     }
 
     void create_intrinsic_function_wrapper(const std::string& sym, Location loc) {
@@ -26521,14 +26514,13 @@ public:
                 check_implicit_none_external(var_name, v, x.base.base.loc);
             }
         }
-        if (compiler_options.implicit_interface && !is_external_procedure
-                && is_implicit_interface_decl(v)) {
+        if (!is_external_procedure && is_implicit_interface_decl(v)) {
             // `v` was declared `external` with no interface, so its argument
-            // list is unknown. Infer the concrete interface from this call's
-            // arguments, exactly like a locally declared external. A reference
-            // that passes no arguments infers a zero-argument interface; it
-            // must not be left resolving to the declaration itself, which is
-            // not a call target.
+            // list is unknown. Every reference infers a concrete interface
+            // from its actuals. That is standard Fortran and does not need
+            // --implicit-interface. A reference that passes no arguments
+            // infers a zero-argument interface; it must not be left resolving
+            // to the declaration itself, which is not a call target.
             is_external_procedure = true;
         }
         if (x.n_subargs > 0 && x.n_member == 0) {
@@ -26551,12 +26543,13 @@ public:
             if( !is_function ) {
                 return;
             }
-            if (compiler_options.implicit_interface && is_function &&
-                    (!v || ASRUtils::is_bare_implicit_interface(v))) {
-                // A reference to an undeclared name or to an external with an
-                // implicit interface. It goes through an interface built from
-                // this reference's actuals, returning the declared type of
-                // the name, or else its implicit type.
+            if (is_function && ((compiler_options.implicit_interface && !v)
+                    || ASRUtils::is_bare_implicit_interface(v))) {
+                // A reference to an undeclared name (only with
+                // --implicit-interface) or to a procedure declared EXTERNAL.
+                // It goes through an interface built from this reference's
+                // actuals, returning the declared type of the name, or else
+                // its implicit type.
                 ASR::ttype_t* type = nullptr;
                 bool is_subrout = false;
                 if (external_sym) {
@@ -26743,14 +26736,17 @@ public:
                 v = implicit_function_reference_target(x, var_name, canonical, old_type);
             }
         }
-        if (v && !compiler_options.implicit_interface && is_external_procedure) {
+        if (v && !implicit_call_done && !compiler_options.implicit_interface
+                && is_external_procedure && current_scope->parent) {
             /*
                 Case: ./integration_tests/external_01.f90
                 We have `enorm` declared outside current_scope. Check if it is a function
                 and if it is, then we need to remove template function `enorm` from current scope and external procedures.
+                A name that is only declared EXTERNAL has no such definition, and
+                resolve_symbol returns null.
             */
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);
-            if (ASR::is_a<ASR::Function_t>(*v2)) {
+            if (v2 && ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
                 ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);

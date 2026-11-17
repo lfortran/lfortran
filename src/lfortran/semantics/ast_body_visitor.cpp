@@ -10298,8 +10298,7 @@ public:
                 is_external = false;
             }
         }
-        if (compiler_options.implicit_interface && !is_external
-                && is_implicit_interface_decl(original_sym)) {
+        if (!is_external && is_implicit_interface_decl(original_sym)) {
             // Declared `external` with no interface: its argument list is
             // unknown, so infer the concrete interface from this call.
             is_external = true;
@@ -10312,15 +10311,15 @@ public:
                 return;
             }
             ASR::symbol_t* external_sym = is_external ? original_sym : nullptr;
-            original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
-            if (!original_sym && compiler_options.implicit_interface) {
-                // A declared external keeps its symbol; an undeclared name
-                // becomes an opaque procedure. The call itself goes through
-                // an interface built from its actuals below.
-                if (external_sym && ASR::is_a<ASR::Function_t>(
-                        *ASRUtils::symbol_get_past_external(external_sym))) {
-                    original_sym = external_sym;
-                } else {
+            // A name declared EXTERNAL already has an implicit interface.
+            // That is standard Fortran and does not need --implicit-interface,
+            // which only invents a procedure for a name that was never declared.
+            if (external_sym && ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(external_sym))) {
+                original_sym = external_sym;
+            } else {
+                original_sym = resolve_intrinsic_function(x.base.base.loc, sub_name);
+                if (!original_sym && compiler_options.implicit_interface) {
                     original_sym = get_or_create_opaque_procedure(sub_name,
                         x.base.base.loc);
                 }
@@ -10546,11 +10545,11 @@ public:
             case (ASR::symbolType::Function) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
-                if (compiler_options.implicit_interface
-                        && ASRUtils::is_bare_implicit_interface(final_sym)) {
-                    // A procedure with an implicit interface is called
-                    // through an interface built from this call's actuals.
-                    // Rules that need an explicit interface do not apply.
+                if (ASRUtils::is_bare_implicit_interface(final_sym)) {
+                    // A procedure declared EXTERNAL, or an undeclared name
+                    // accepted with --implicit-interface, is called through
+                    // an interface built from this call's actuals. Rules that
+                    // need an explicit interface do not apply.
                     original_sym = final_sym;
                     final_sym = implicit_call_target(x.base.base.loc, sub_name,
                         final_sym, args, nullptr);
@@ -10740,8 +10739,7 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-                    if (compiler_options.implicit_interface
-                            && ASRUtils::is_bare_implicit_interface(final_sym)) {
+                    if (ASRUtils::is_bare_implicit_interface(final_sym)) {
                         // A use-associated procedure with an implicit
                         // interface is called like a local one: through an
                         // interface built from this call's actuals.
