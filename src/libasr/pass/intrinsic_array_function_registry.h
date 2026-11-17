@@ -2775,16 +2775,108 @@ namespace Cshift {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
+    // The shape of a constant array seen along the dimension it is shifted
+    // along
+    struct FoldShiftLayout {
+        std::vector<int64_t> extents;
+        int64_t size = 1;    // number of elements
+        int64_t n = 1;       // extent of the shifted dimension
+        int64_t stride = 1;  // column-major stride of the shifted dimension
+        int64_t n_lines = 1; // number of 1-D sections along it
+    };
+
+    // The layout of the constant `array` shifted along `dim` (1 when `dim` is
+    // absent). Returns false when the shape or `dim` is not known at compile
+    // time or `dim` is out of range.
+    static inline bool fold_shift_layout(ASR::expr_t *array, ASR::expr_t *dim,
+            FoldShiftLayout &layout) {
+        ASR::dimension_t *dims = nullptr;
+        int64_t rank = (int64_t) ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(array), dims);
+        int64_t dim_val = 1;
+        if (dim && !extract_value(ASRUtils::expr_value(dim), dim_val)) {
+            return false;
+        }
+        if (dim_val < 1 || dim_val > rank) {
+            return false;
+        }
+        layout = FoldShiftLayout();
+        for (int64_t i = 0; i < rank; i++) {
+            int64_t extent = 0;
+            if (!dims[i].m_length || !extract_value(
+                    ASRUtils::expr_value(dims[i].m_length), extent)) {
+                return false;
+            }
+            extent = std::max<int64_t>(extent, 0);
+            layout.extents.push_back(extent);
+            layout.size *= extent;
+            if (i < dim_val - 1) {
+                layout.stride *= extent;
+            }
+            if (i == dim_val - 1) {
+                layout.n = extent;
+            } else {
+                layout.n_lines *= extent;
+            }
+        }
+        return true;
+    }
+
+    // The constant values of `x` for each 1-D section along the shifted
+    // dimension: `x` is a scalar, or an array with one element per section
+    // in array element order. Returns false when `x` has the wrong size.
+    static inline bool fold_line_values(Allocator &al, ASR::expr_t *x,
+            const FoldShiftLayout &layout, std::vector<ASR::expr_t*> &values) {
+        ASR::ttype_t *x_type = ASRUtils::expr_type(x);
+        if (ASRUtils::is_array(x_type) &&
+                ASRUtils::get_fixed_size_of_array(x_type) != layout.n_lines) {
+            return false;
+        }
+        values = constant_elements(al, x, layout.n_lines);
+        return true;
+    }
+
+    // The integer `shift` for each 1-D section along the shifted dimension
+    static inline bool fold_line_shifts(Allocator &al, ASR::expr_t *shift,
+            const FoldShiftLayout &layout, std::vector<int64_t> &shifts) {
+        std::vector<ASR::expr_t*> values;
+        if (!fold_line_values(al, shift, layout, values)) {
+            return false;
+        }
+        shifts.resize(values.size());
+        for (size_t i = 0; i < values.size(); i++) {
+            if (!extract_value(values[i], shifts[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Splits the column-major index `i` of an element of a non-empty array
+    // into its 0-based index `k` along the shifted dimension and the index
+    // `line` of the 1-D section along it that contains the element. The
+    // element `d` places further along that section has index
+    // `i + d * layout.stride`.
+    static inline void fold_split_index(const FoldShiftLayout &layout,
+            int64_t i, int64_t &k, int64_t &line) {
+        k = (i / layout.stride) % layout.n;
+        line = i % layout.stride + layout.stride * (i / (layout.stride * layout.n));
+    }
+
     static ASR::expr_t *eval_Cshift(Allocator &al, const Location &loc,
             ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRBuilder b(al, loc);
-        if (all_args_evaluated(args, false, true, true) &&
-            extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+        FoldShiftLayout layout;
+        if (!all_args_evaluated(args, false, true, true) ||
+                !fold_shift_layout(args[0], args.size() == 3 ? args[2] : nullptr, layout)) {
+            return nullptr;
+        }
+        int64_t size = layout.size;
         ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
         ASR::ttype_t* arr_type = expr_type(args[0]);
         std::vector<ASR::expr_t *> m_eles;
         if (is_integer(*arr_type)) {
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+            for (int64_t i = 0; i < size; i++) {
                 int64_t ele = 0;
                 if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                     m_eles.push_back(b.i_t(ele, arr_type));
@@ -2793,32 +2885,36 @@ namespace Cshift {
         } else if (is_real(*arr_type) || is_complex(*arr_type)) {
             // Copying the element constants keeps real(16) and complex(16)
             // elements exact
-            m_eles = constant_elements(al, args[0],
-                ASRUtils::get_fixed_size_of_array(arr->m_type));
+            m_eles = constant_elements(al, args[0], size);
         } else if (is_logical(*arr_type)) {
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+            for (int64_t i = 0; i < size; i++) {
                 bool ele = false;
                 if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                     m_eles.push_back(b.bool_t(ele, arr_type));
                 }
             }
         } else if (is_character(*arr_type)) {
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+            for (int64_t i = 0; i < size; i++) {
                 std::string str = "";
                 str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                 m_eles.push_back(b.StringConstant(str, arr_type));
             }
         }
-        int shift = 0;
-        int n = checked_integer_cast<int>(m_eles.size());
-        if (n > 0 && extract_value(expr_value(args[1]), shift)) {
-            shift = (shift % n + n) % n;
-            std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
+        std::vector<int64_t> shifts;
+        if ((int64_t) m_eles.size() != size ||
+                (size > 0 && !fold_line_shifts(al, args[1], layout, shifts))) {
+            return nullptr;
         }
-        return b.ArrayConstant(m_eles, extract_type(type), false);
-    } else {
-        return nullptr;
+        int64_t n = layout.n;
+        std::vector<ASR::expr_t *> res((size_t) size);
+        for (int64_t i = 0; i < size; i++) {
+            int64_t k = 0, line = 0;
+            fold_split_index(layout, i, k, line);
+            int64_t src = ((k + shifts[line] % n) % n + n) % n;
+            res[i] = m_eles[i + (src - k) * layout.stride];
         }
+        ASR::ttype_t *ele_type = extract_type(type);
+        return b.ArrayConstant(res, ele_type, false, b.Array(layout.extents, ele_type));
     }
 
     static inline ASR::asr_t* create_Cshift(Allocator& al, const Location& loc,
@@ -3561,15 +3657,21 @@ namespace Eoshift {
     static ASR::expr_t *eval_Eoshift(Allocator &al, const Location &loc,
             ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRBuilder b(al, loc);
-        if (all_args_evaluated(args, false, true, true) &&
-            extract_n_dims_from_ttype(expr_type(args[0])) == 1) {
+        Cshift::FoldShiftLayout layout;
+        // `boundary` is missing for types without a default boundary
+        if (args.size() < 3 || !args[2] ||
+                !all_args_evaluated(args, false, true, true) ||
+                !Cshift::fold_shift_layout(args[0], args.size() == 4 ? args[3] : nullptr, layout)) {
+            return nullptr;
+        }
+        int64_t size = layout.size;
         ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(args[0]));
         ASR::ttype_t* arr_type = expr_type(args[0]);
         ASR::expr_t *final_boundary = args[2];
         ASR::ttype_t* boundary_type = expr_type(args[2]);
         std::vector<ASR::expr_t *> m_eles;
         if (is_integer(*arr_type)) {
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+            for (int64_t i = 0; i < size; i++) {
                 int64_t ele = 0;
                 if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                     m_eles.push_back(b.i_t(ele, arr_type));
@@ -3578,10 +3680,9 @@ namespace Eoshift {
         } else if (is_real(*arr_type) || is_complex(*arr_type)) {
             // Copying the element constants keeps real(16) and complex(16)
             // elements exact
-            m_eles = constant_elements(al, args[0],
-                ASRUtils::get_fixed_size_of_array(arr->m_type));
+            m_eles = constant_elements(al, args[0], size);
         } else if (is_logical(*arr_type)) {
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+            for (int64_t i = 0; i < size; i++) {
                 bool ele = false;
                 if(extract_value(ASRUtils::fetch_ArrayConstant_value(al, arr, i), ele)) {
                     m_eles.push_back(b.bool_t(ele, arr_type));
@@ -3589,7 +3690,7 @@ namespace Eoshift {
             }
         } else if (is_character(*arr_type)) {
             std::string str = "";
-            for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(arr->m_type); i++) {
+            for (int64_t i = 0; i < size; i++) {
                 str = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, arr, i))->m_s;
                 m_eles.push_back(b.StringConstant(str, arr_type));
             }
@@ -3598,28 +3699,26 @@ namespace Eoshift {
                 final_boundary = b.StringConstant(str, arr_type);
             }
         }
-        int shift = 0;
-        if (extract_value(expr_value(args[1]), shift)) {
-            int n = checked_integer_cast<int>(m_eles.size());
-            shift = std::max(-n, std::min(shift, n));
-            if (shift < 0) {
-                std::rotate(m_eles.begin(), m_eles.begin() + m_eles.size() + shift, m_eles.end());
-                for(int j = 0; j < (-1*shift); j++) {
-                    m_eles[j] = final_boundary;
-                }
+        std::vector<int64_t> shifts;
+        std::vector<ASR::expr_t *> boundaries;
+        if ((int64_t) m_eles.size() != size || (size > 0 &&
+                (!Cshift::fold_line_shifts(al, args[1], layout, shifts) ||
+                 !Cshift::fold_line_values(al, final_boundary, layout, boundaries)))) {
+            return nullptr;
+        }
+        std::vector<ASR::expr_t *> res((size_t) size);
+        for (int64_t i = 0; i < size; i++) {
+            int64_t k = 0, line = 0;
+            Cshift::fold_split_index(layout, i, k, line);
+            int64_t shift = shifts[line];
+            if (shift >= -k && shift < layout.n - k) {
+                res[i] = m_eles[i + shift * layout.stride];
             } else {
-                std::rotate(m_eles.begin(), m_eles.begin() + shift, m_eles.end());
-                int i = checked_integer_cast<int>(m_eles.size()) - 1;
-                for(int j = 0; j < shift; j++) {
-                    m_eles[i] = final_boundary;
-                    i--;
-                }
+                res[i] = boundaries[line];
             }
         }
-        return b.ArrayConstant(m_eles, extract_type(type), false);
-    } else {
-        return nullptr;
-        }
+        ASR::ttype_t *ele_type = extract_type(type);
+        return b.ArrayConstant(res, ele_type, false, b.Array(layout.extents, ele_type));
     }
 
     static inline ASR::stmt_t* build_eoshift_array_shift_loop(
