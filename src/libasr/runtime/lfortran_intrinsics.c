@@ -20613,17 +20613,47 @@ void namelist_write_impl(nml_writer_t *w,
     write_str(w, " /\n");
 }
 
+// A null statement DELIM keeps the unit mode. Otherwise none/apostrophe/quote
+// select the mode for this write only and do not change the unit.
+// Returns -1 after reporting a value that is none of those three.
+static int nml_write_delim(const char *delim, int64_t delim_len,
+        int unit_delim, int32_t *iostat)
+{
+    if (delim == NULL) {
+        return unit_delim;
+    }
+    if (fortran_str_eq(delim, delim_len, "none")) {
+        return 0;
+    }
+    if (fortran_str_eq(delim, delim_len, "apostrophe")) {
+        return 1;
+    }
+    if (fortran_str_eq(delim, delim_len, "quote")) {
+        return 2;
+    }
+    if (iostat) {
+        *iostat = LFORTRAN_IOSTAT_NML_INVALID_DELIM;
+        return -1;
+    }
+    fprintf(stderr,
+        "Runtime Error: DELIM specifier in namelist WRITE has invalid value '%.*s'\n",
+        delim_len > 0 ? (int)delim_len : 0, delim);
+    exit(1);
+}
+
 LFORTRAN_API void _lfortran_namelist_write(
     int32_t unit_num,
     int32_t *iostat,
-    const lfortran_nml_group_t *group)
+    const lfortran_nml_group_t *group,
+    const char *delim,
+    int64_t delim_len)
 {
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    int delim;
+    int unit_delim;
     int decimal_mode;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &delim, NULL, NULL, NULL, &decimal_mode, NULL, NULL, NULL);
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, &unit_delim, NULL, NULL, NULL, &decimal_mode, NULL, NULL, NULL);
 
     if (filep && !write_access) {
         if (iostat) {
@@ -20649,12 +20679,17 @@ LFORTRAN_API void _lfortran_namelist_write(
         }
     }
 
+    int delim_mode = nml_write_delim(delim, delim_len, unit_delim, iostat);
+    if (delim_mode < 0) {
+        return;
+    }
+
     nml_writer_t w;
     memset(&w, 0, sizeof(w));
 
     w.fp = filep;
     w.is_file = true;
-    w.delim = delim; 
+    w.delim = delim_mode;
 
     namelist_write_impl(&w, group);
 
@@ -20666,8 +20701,15 @@ LFORTRAN_API void _lfortran_namelist_write_str_array(
     int64_t elem_len,
     int64_t n_elems,
     int32_t *iostat,
-    const lfortran_nml_group_t *group)
+    const lfortran_nml_group_t *group,
+    const char *delim,
+    int64_t delim_len)
 {
+    int delim_mode = nml_write_delim(delim, delim_len, 0, iostat);
+    if (delim_mode < 0) {
+        return;
+    }
+
     nml_writer_t w;
     memset(&w, 0, sizeof(w));
 
@@ -20678,7 +20720,7 @@ LFORTRAN_API void _lfortran_namelist_write_str_array(
     w.pos = 0;
 
     w.is_file = false;
-    w.delim = 0; 
+    w.delim = delim_mode; 
 
     namelist_write_impl(&w, group);
 

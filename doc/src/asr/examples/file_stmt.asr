@@ -221,6 +221,7 @@
             :pos nil
             :asynchronous nil
             :decimal nil
+            :delim nil
           )
           (FileBackspace
             :label -1

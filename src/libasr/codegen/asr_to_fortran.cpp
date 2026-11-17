@@ -2300,6 +2300,11 @@ public:
             if (x.m_end && nml_src.empty()) {
                 out += ", advance='no'";
             }
+            if (x.m_delim) {
+                visit_expr(*x.m_delim);
+                out += ", delim=";
+                out += src;
+            }
             out += ") ";
         };
 

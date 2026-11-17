@@ -71,6 +71,7 @@ their names.
   :pos nil
   :asynchronous nil
   :decimal nil
+  :delim nil
 )
 ```
 

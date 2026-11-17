@@ -95,6 +95,7 @@
             :pos nil
             :asynchronous nil
             :decimal nil
+            :delim nil
           )
         ]
         :global_init nil
