@@ -916,12 +916,13 @@ static inline lf_float128 complex_constant_im_r16(const ASR::ComplexConstant_t* 
 }
 
 // The real (or, if `imag`, the imaginary) part of `c` as a RealConstant of
-// `real_type`, which is exact when both are kind=16.
+// `real_type`. A kind=16 part is exact for real(16) and rounded once for
+// real(10) (see make_RealConstant_from_r16).
 static inline ASR::expr_t* complex_constant_part_to_real(Allocator& al,
         const Location& loc, const ASR::ComplexConstant_t* c, bool imag,
         ASR::ttype_t* real_type) {
-    if (complex_constant_is_r16(c) && extract_kind_from_ttype_t(real_type) == 16) {
-        return make_RealConstant_r16(al, loc,
+    if (complex_constant_is_r16(c)) {
+        return make_RealConstant_from_r16(al, loc,
             imag ? complex_constant_im_r16(c) : complex_constant_re_r16(c), real_type);
     }
     return make_RealConstant_util(al, loc,
