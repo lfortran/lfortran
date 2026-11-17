@@ -5422,6 +5422,8 @@ TEST_CASE("FortranEvaluator implicit interface reference to an undefined procedu
     CHECK(r.result.i32 == 2);
 }
 
+// This cell is rejected only by ASR verification, which runs only in assertion builds.
+#if defined(WITH_LFORTRAN_ASSERT)
 TEST_CASE("FortranEvaluator call of a procedure whose cell was rejected") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -5446,6 +5448,7 @@ end subroutine
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 1);
 }
+#endif
 
 TEST_CASE("FortranEvaluator reference to a procedure whose cell had a semantic error") {
     CompilerOptions cu;
