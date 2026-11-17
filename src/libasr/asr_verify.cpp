@@ -1902,9 +1902,13 @@ public:
 
             if (array_construct && array_construct->n_args > 0) {
                 for (size_t j = 0; j < array_construct->n_args; j++) {
+                    // An element is constant, or has a folded constant value,
+                    // as for `is_value_constant` of the array constructor.
+                    ASR::expr_t *element = array_construct->m_args[j];
                     require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                             (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])) ||
+                            (x.m_symbolic_value != nullptr && (ASRUtils::is_value_constant(element) ||
+                                ASRUtils::is_value_constant(ASRUtils::expr_value(element)))) ||
                             (_inside_template && x.m_storage == ASR::storage_typeType::Parameter &&
                                 ASRUtils::reads_valueless_parameter(x.m_symbolic_value)),
                             "Initialisation of " + std::string(x.m_name) +

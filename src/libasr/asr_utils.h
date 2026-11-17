@@ -905,6 +905,44 @@ static inline ASR::expr_t* make_ComplexConstant_c128(Allocator& al,
     return make_ComplexConstant_r16(al, loc, c.re, c.im, type);
 }
 
+// --- complex(10) value access ------------------------------------------------
+//
+// A complex(10) constant is not a ComplexConstant, whose parts cannot hold x87
+// values, but a ComplexConstructor from two real(10) constants (see
+// `expr_value`).
+
+// Whether `value` is a complex(10) constant; if so, `c` is set to its value.
+static inline bool extract_complex_r10(ASR::expr_t* value,
+        std::complex<long double>& c) {
+    if (!value || !ASR::is_a<ASR::ComplexConstructor_t>(*value)) {
+        return false;
+    }
+    ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(value);
+    ASR::expr_t* re = ASR::expr_value0(cc->m_re);
+    ASR::expr_t* im = ASR::expr_value0(cc->m_im);
+    if (extract_kind_from_ttype_t(cc->m_type) != 10 ||
+            !re || !ASR::is_a<ASR::RealConstant_t>(*re) ||
+            !im || !ASR::is_a<ASR::RealConstant_t>(*im) ||
+            extract_kind_from_ttype_t(ASR::expr_type0(re)) != 10 ||
+            extract_kind_from_ttype_t(ASR::expr_type0(im)) != 10) {
+        return false;
+    }
+    c = std::complex<long double>(
+        real_constant_get_r10(ASR::down_cast<ASR::RealConstant_t>(re)),
+        real_constant_get_r10(ASR::down_cast<ASR::RealConstant_t>(im)));
+    return true;
+}
+
+// Build the complex(10) constant of `type` with the value `c`.
+static inline ASR::expr_t* make_ComplexConstant_r10(Allocator& al,
+        const Location& loc, std::complex<long double> c, ASR::ttype_t* type) {
+    ASR::ttype_t* real_type = ASR::down_cast<ASR::ttype_t>(
+        ASR::make_Real_t(al, loc, 10));
+    return ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstructor_t(al, loc,
+        make_RealConstant_r10(al, loc, c.real(), real_type),
+        make_RealConstant_r10(al, loc, c.imag(), real_type), type, nullptr));
+}
+
 // Kind-aware counterpart of `ASR::make_ComplexConstant_t` taking two doubles:
 // for kind=16 the values are widened to binary128. This is the single supported
 // way to build a complex constant from host doubles when the kind may be 16.
@@ -1521,26 +1559,28 @@ static inline bool is_kind16_array_constant(ASR::expr_t* a_value) {
 }
 
 // Returns true if all arguments are evaluated
-// `allow_complex16` accepts complex(16) constants, for the callers that
-// evaluate them without rounding to a double.
+// `allow_wide_complex` accepts complex(10) and complex(16) constants, for the
+// callers that evaluate them without rounding to a double.
 // `allow_kind16_arrays` accepts real(16) and complex(16) array constants, for
 // the callers that evaluate such an array element by element.
 static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore_null=false,
-        bool allow_complex16=false, bool allow_kind16_arrays=false) {
+        bool allow_wide_complex=false, bool allow_kind16_arrays=false) {
     for (auto &a : args) {
         if (ignore_null && !a) continue;
         ASR::expr_t* a_value = ASRUtils::expr_value(a);
         if( !is_value_constant(a_value) ) {
             return false;
         }
-        // A complex(10) constant is a ComplexConstructor, whose value is
-        // never folded: it would lose precision.
-        if( a_value && ASR::is_a<ASR::ComplexConstructor_t>(*a_value) ) {
+        // A complex(10) constant is a ComplexConstructor of two real(10)
+        // constants, which would lose precision as a double.
+        std::complex<long double> c10;
+        if( a_value && ASR::is_a<ASR::ComplexConstructor_t>(*a_value) &&
+                !(allow_wide_complex && extract_complex_r10(a_value, c10)) ) {
             return false;
         }
         // Intrinsic folding evaluates complex values as doubles, which would
         // lose precision for complex(16).
-        if( !allow_complex16 && a_value && ASR::is_a<ASR::ComplexConstant_t>(*a_value) &&
+        if( !allow_wide_complex && a_value && ASR::is_a<ASR::ComplexConstant_t>(*a_value) &&
                 ASRUtils::complex_constant_is_r16(
                     ASR::down_cast<ASR::ComplexConstant_t>(a_value)) ) {
             return false;

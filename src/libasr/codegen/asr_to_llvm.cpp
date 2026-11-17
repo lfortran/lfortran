@@ -20176,7 +20176,17 @@ public:
         // Create <n x float> type, where `n` is the length of the `x` constant array
         int64_t simd_n = ASRUtils::get_fixed_size_of_array(x.m_type);
         llvm::Type* type_fxn = nullptr;
-        if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
+        llvm::DataLayout data_layout(module->getDataLayout());
+        // The elements are copied out as an array, so build them in one
+        // whenever a vector would lay them out differently: a vector packs
+        // its elements by their size in bits, which is smaller than their
+        // allocation size for x86_fp80 (real(10)), and it cannot hold
+        // structures (complex) at all.
+        bool array_layout = ASR::is_a<ASR::StructType_t>(*x_m_type)
+            || !llvm::VectorType::isValidElementType(el_type)
+            || static_cast<uint64_t>(data_layout.getTypeSizeInBits(el_type))
+                != static_cast<uint64_t>(data_layout.getTypeAllocSizeInBits(el_type));
+        if (array_layout) {
             type_fxn = llvm::ArrayType::get(el_type, simd_n > 0 ? simd_n : 0);
         } else if (simd_n <= 0) {
             type_fxn = llvm::ArrayType::get(el_type, 0);

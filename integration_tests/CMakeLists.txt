@@ -8028,6 +8028,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
     RUN(NAME real80_intrinsic_math_01 LABELS llvm) # sinpi etc. in parameters; GFortran does not have these intrinsics
+    RUN(NAME real80_array_constructor_01 LABELS gfortran llvm)
     RUN(NAME complex10_arith_01 LABELS gfortran llvm)
     RUN(NAME complex10_array_01 LABELS gfortran llvm)
     RUN(NAME complex10_intrinsic_math_01 LABELS gfortran llvm)
@@ -8043,6 +8044,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME complex10_parameter_array_01 LABELS gfortran llvm)
     RUN(NAME complex10_storage_size_01 LABELS gfortran llvm)
     RUN(NAME norm2_dim_real10_01 LABELS gfortran llvm) # norm2 with DIM of non-constant real(10) arrays (#17873)
+    RUN(NAME complex10_param_fold_01 LABELS gfortran llvm)
+    RUN(NAME complex10_param_fold_02 LABELS gfortran llvm)
+    RUN(NAME complex10_param_fold_03 LABELS gfortran llvm)
     # The value check waits on #17031.
     RUN(NAME separate_compilation_73 LABELS gfortran llvm
         EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)

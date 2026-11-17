@@ -2126,6 +2126,24 @@ semantic error: arguments of the 'atan2pi' intrinsic must have the same type and
 5082 |     real(8), parameter :: cc1_a2k_p = atan2pi(1.0, 1.0d0)  ! {Error} arguments of the 'atan2pi' intrinsic must have the same type and kind, found real(4) and real(8)
      |                                       ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: type mismatch in initialization: `complex` cannot be assigned to `logical[:]`
+    --> tests/errors/continue_compilation_1.f90:5113:32
+     |
+5113 |     logical :: cc1_lani_a(2) = cc1_lani_z  ! {Error} type mismatch in initialization: `complex` cannot be assigned to `logical[:]`
+     |                                ^^^^^^^^^^ 
+
+semantic error: type mismatch in initialization: `complex` cannot be assigned to `logical[:]`
+    --> tests/errors/continue_compilation_1.f90:5114:32
+     |
+5114 |     logical :: cc1_lani_b(2) = (1.0_8, 2.0_8)  ! {Error} type mismatch in initialization: `complex` cannot be assigned to `logical[:]`
+     |                                ^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in initialization: `real` cannot be assigned to `logical[:]`
+    --> tests/errors/continue_compilation_1.f90:5115:32
+     |
+5115 |     logical :: cc1_lani_c(2) = 1.5  ! {Error} type mismatch in initialization: `real` cannot be assigned to `logical[:]`
+     |                                ^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

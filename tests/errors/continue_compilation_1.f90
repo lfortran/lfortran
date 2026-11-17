@@ -5106,3 +5106,11 @@ subroutine cc1_findloc_type_conformance()
     print *, findloc(cc1_ftc_x, 1)  ! {Error} `array` argument of `findloc` must be of intrinsic type, but got type(cc1_ftc_t)
     print *, findloc(cc1_ftc_r, [1, 2])  ! {Error} `value` argument of `findloc` must be a scalar of integer, real, logical, character or complex type
 end subroutine
+
+! A real or complex scalar cannot initialize a logical array
+subroutine cc1_logical_array_numeric_init()
+    complex(10), parameter :: cc1_lani_z = (1.0_10, 2.0_10)
+    logical :: cc1_lani_a(2) = cc1_lani_z  ! {Error} type mismatch in initialization: `complex` cannot be assigned to `logical[:]`
+    logical :: cc1_lani_b(2) = (1.0_8, 2.0_8)  ! {Error} type mismatch in initialization: `complex` cannot be assigned to `logical[:]`
+    logical :: cc1_lani_c(2) = 1.5  ! {Error} type mismatch in initialization: `real` cannot be assigned to `logical[:]`
+end subroutine

@@ -605,6 +605,14 @@ static inline ASR::expr_t* compare_helper(Allocator &al, ASR::expr_t* left_value
         return ASRUtils::fold_compare_constants(al, left_value, right_value,
             asr_op, loc, logical_type);
     } else if (ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(left_value))) {
+        std::complex<long double> left_r10, right_r10;
+        if ((asr_op == ASR::cmpopType::Eq || asr_op == ASR::cmpopType::NotEq) &&
+                ASRUtils::extract_complex_r10(left_value, left_r10) &&
+                ASRUtils::extract_complex_r10(right_value, right_r10)) {
+            return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
+                (left_r10 == right_r10) == (asr_op == ASR::cmpopType::Eq),
+                logical_type));
+        }
         if (!ASR::is_a<ASR::ComplexConstant_t>(*left_value) ||
             !ASR::is_a<ASR::ComplexConstant_t>(*right_value)) {
             return nullptr;
@@ -1503,6 +1511,12 @@ static ASR::expr_t* negate_kind16_array_const(Allocator& al, const Location& loc
                         value = ASR::down_cast<ASR::expr_t>(
                                 ASRUtils::make_ComplexConstant_util(al, x.base.base.loc, std::real(result),
                                 std::imag(result), result_type));
+                    }
+                } else if (ASR::is_a<ASR::ComplexConstructor_t>(*ASRUtils::expr_value(operand))) {
+                    std::complex<long double> c;
+                    if (ASRUtils::extract_complex_r10(ASRUtils::expr_value(operand), c)) {
+                        value = ASRUtils::make_ComplexConstant_r10(al, x.base.base.loc,
+                            -c, result_type);
                     }
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand)) &&
                         ASRUtils::extract_kind_from_ttype_t(result_type) == 16) {
@@ -12788,11 +12802,21 @@ public:
                     if (value != nullptr) {
                         tmp_init = value;
                     }
+                    std::complex<long double> complex10_init;
+                    // A real or complex scalar cannot initialize a logical
+                    // array: leave it to the type check below instead of
+                    // broadcasting it.
+                    bool incompatible_scalar = (ASRUtils::is_real(*ASRUtils::expr_type(tmp_init))
+                            || ASRUtils::is_complex(*ASRUtils::expr_type(tmp_init)))
+                        && ASRUtils::is_logical(*ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable(type)));
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
+                        && !incompatible_scalar
                         && (ASR::is_a<ASR::IntegerConstant_t>(*tmp_init) || ASR::is_a<ASR::RealConstant_t>(*tmp_init)
                             || ASR::is_a<ASR::ComplexConstant_t>(*tmp_init) || ASR::is_a<ASR::RealUnaryMinus_t>(*tmp_init)
                             || ASR::is_a<ASR::IntegerUnaryMinus_t>(*tmp_init) || ASR::is_a<ASR::StringConstant_t>(*tmp_init)
-                            || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init)))
+                            || ASR::is_a<ASR::LogicalConstant_t>(*tmp_init)
+                            || ASRUtils::extract_complex_r10(tmp_init, complex10_init)))
                     {
                         /*
                             Case: integer :: x(2) = 1
@@ -12857,20 +12881,31 @@ public:
                                     al, init_expr->base.loc, nullptr, type,
                                     ASR::arraystorageType::ColMajor));
                             } else {
-                                init_expr = ASRUtils::expr_value(
-                                    ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
-                                        args.p, args.n, type, ASR::arraystorageType::ColMajor))
-                                );
+                                ASR::expr_t* array_constructor = ASRUtils::EXPR(
+                                    ASRUtils::make_ArrayConstructor_t_util(al, init_expr->base.loc,
+                                        args.p, args.n, type, ASR::arraystorageType::ColMajor));
+                                init_expr = ASRUtils::expr_value(array_constructor);
+                                if (init_expr == nullptr) {
+                                    // Elements an ArrayConstant cannot hold,
+                                    // such as complex(10) ones, stay an array
+                                    // constructor of the constant values, as
+                                    // written in `x(2) = [z, z]`.
+                                    init_expr = array_constructor;
+                                }
                             }
-                            LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
-                            // The folded constant has a rank 1 type; give it
-                            // the rank and bounds of the declared array, as
-                            // `integer :: x(2,2) = 1` is a 2x2 array. A
-                            // component default is filled into a structure
-                            // constructor, which checks its rank.
-                            ASR::down_cast<ASR::ArrayConstant_t>(init_expr)->m_type =
-                                ASRUtils::duplicate_type(al, type);
-                            value = init_expr;
+                            if (ASR::is_a<ASR::ArrayConstructor_t>(*init_expr)) {
+                                value = nullptr;
+                            } else {
+                                LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*init_expr));
+                                // The folded constant has a rank 1 type; give
+                                // it the rank and bounds of the declared array,
+                                // as `integer :: x(2,2) = 1` is a 2x2 array. A
+                                // component default is filled into a structure
+                                // constructor, which checks its rank.
+                                ASR::down_cast<ASR::ArrayConstant_t>(init_expr)->m_type =
+                                    ASRUtils::duplicate_type(al, type);
+                                value = init_expr;
+                            }
                         }
                     }
                     if (!is_compile_time && ASR::is_a<ASR::Array_t>(*type)
@@ -23676,13 +23711,13 @@ public:
                     }
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    // real, aimag, conjg and merge fold complex(16) values
-                    // exactly
-                    const bool exact_complex16_fold = (var_name == "real" ||
+                    // real, aimag, conjg and merge fold complex(10) and
+                    // complex(16) values exactly
+                    const bool wide_complex_fold = (var_name == "real" ||
                         var_name == "aimag" || var_name == "conjg" ||
                         var_name == "merge");
                     const bool are_all_args_evaluated {
-                        ASRUtils::all_args_evaluated(args, true, exact_complex16_fold, true) };
+                        ASRUtils::all_args_evaluated(args, true, wide_complex_fold, true) };
                     if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
                         ASR::ttype_t *int4_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                         args.p[2] = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 8, int4_type));

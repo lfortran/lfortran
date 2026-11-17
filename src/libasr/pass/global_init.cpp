@@ -258,6 +258,27 @@ class GlobalInitVisitor {
             if (ASR::is_a<ASR::Cast_t>(*init)) {
                 init = ASR::down_cast<ASR::Cast_t>(init)->m_arg;
             }
+            // An array constructor that has not folded to an array constant,
+            // such as one of complex(10) elements, which an array constant
+            // cannot hold, is built by executable code, and so is a reshape
+            // of one, however deeply nested. A procedure builds it in its own
+            // body; a module variable has no body to build it in.
+            ASR::expr_t *constructor = init;
+            while (ASR::is_a<ASR::ArrayReshape_t>(*constructor)) {
+                constructor = ASR::down_cast<ASR::ArrayReshape_t>(
+                    constructor)->m_array;
+            }
+            if (!local && ASR::is_a<ASR::ArrayConstructor_t>(*constructor) &&
+                    ASRUtils::expr_value(constructor) == nullptr &&
+                    ASRUtils::expr_value(v.m_symbolic_value) == nullptr &&
+                    (v.m_value == nullptr ||
+                        ASRUtils::expr_value(v.m_value) == nullptr) &&
+                    v.m_parent_symtab->asr_owner &&
+                    ASR::is_a<ASR::symbol_t>(*v.m_parent_symtab->asr_owner) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                        v.m_parent_symtab->asr_owner))) {
+                return true;
+            }
             // A saved structure local whose initializer is not a constant
             // the backend can lay out, such as `t(f)` with a procedure
             // target, is assigned once, the first time control reaches it.
