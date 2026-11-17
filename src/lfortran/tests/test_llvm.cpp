@@ -6751,6 +6751,16 @@ call s_17046()
     CHECK(!cell.ok);
     CHECK(!cell.internal_error);
     CHECK(cell.error_value.find("'s_17046' not found") != std::string::npos);
+    // The next cell takes the rejected cell's place, so its procedure gets
+    // the same mangled name, which must not count as already defined.
+    REQUIRE(e.execute(R"(subroutine s_17046()
+print *, "s_17046 defined"
+end subroutine
+)").ok);
+    output.clear();
+    cell = e.execute("call s_17046()", false, io);
+    REQUIRE(cell.ok);
+    CHECK(output.find("s_17046 defined") != std::string::npos);
     cell = e.execute("6 * 7");
     REQUIRE(cell.ok);
     CHECK(cell.value.text() == "42");
