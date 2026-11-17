@@ -61,8 +61,9 @@ examples use `--jobs 8`.
 1. **Status.** Run `python3 $BOT status`. Each open PR gets an `action`:
    - `classify`: ready, no required check failed (pending is fine), and
      without a current verdict.
-   - `retract`: the head moved since the verdict, or a required check
-     failed on it.
+   - `retract`: the head moved since the verdict, a required check failed
+     on it, or it is a `needs-review` verdict of an older policy version
+     (the entry's `policy`), which the current policy may approve.
    - `ack`: a human reacted to a verdict (the `human` field), or a
      classified PR was merged or closed (the `closed` list).
    - `done`, `wait: ...`, `skip: ...`, `hands-off: ...`: nothing to do.
@@ -78,8 +79,9 @@ examples use `--jobs 8`.
    for changes is `agree`. Never invent a reason.
 3. **Retractions.** For each `retract`, run
    `python3 $BOT retract N --reason "new head <sha>"` (or
-   `--reason "CI failed on <sha>"`). The next iteration classifies the new
-   head.
+   `--reason "CI failed on <sha>"`, or `--reason "policy v<old> -> v<new>"`).
+   If you retracted any, run `status` again: those PRs now show `classify`
+   unless their CI failed, and step 4 screens them in this iteration.
 4. **Screen every `classify` PR**, oldest first, one at a time. Screening
    has no cap, because it needs no build:
    1. `python3 $BOT facts N > .approvebot/work/N-facts.json`.
@@ -108,9 +110,10 @@ examples use `--jobs 8`.
       `.approvebot/main` to read source in (read only). It follows the
       policy and returns JSON:
       `{"verdict": "approved" | "review", "scope": "S1".."S6" | "-",
-      "kind": "C1".."C4" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
+      "kind": "C1".."C6" | "T1" | "T2" | "D1" | "-", "comment": "<markdown>"}`.
+      Two related fixes give both kinds, joined by `+` (for example `C5+C3`).
       Check that the answer cites the policy, and that a `bot-approved`
-      verdict meets every rule of its kind. If you doubt it, the verdict is
+      verdict meets every rule of its kind (of each kind, for two fixes). If you doubt it, the verdict is
       `review`. Judge every head afresh, even one that `cases.jsonl`
       already records: the cases are for replaying policy changes, not a
       cache of verdicts.
@@ -133,7 +136,7 @@ The comment is short. The maintainer reads it on GitHub to decide whether to
 apply `auto-merge`:
 
 ```markdown
-**approvebot: bot-approved** for head `<sha10>` (policy v3)
+**approvebot: bot-approved** for head `<sha10>` (policy v4)
 
 **Scope:** S1, fixes #N (<one line: what was wrong>).
 **Kind:** C3 / <shape>. Precedent: <the sibling code it follows>.
@@ -146,10 +149,12 @@ For `needs-review`, give the first rule that failed and, if useful, a
 suggested split:
 
 ```markdown
-**approvebot: needs-review** for head `<sha10>` (policy v3)
+**approvebot: needs-review** for head `<sha10>` (policy v4)
 
 **Reason:** <out of scope: ... | exclusion: ... | over the C3 budget: ... | unverifiable: ...>.
 ```
+
+For two related fixes, give a Kind line and an Evidence line for each fix.
 
 The comment must contain the head SHA (the script checks this). Do not
 paste logs or diffs into it, and do not sign it: `apply` appends the

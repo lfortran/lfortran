@@ -1,4 +1,4 @@
-# Approvebot policy, version 3
+# Approvebot policy, version 4
 
 `bot-approved` means: **the maintainer would very likely approve this exact
 head as it is.** That needs two separate things:
@@ -55,10 +55,13 @@ A PR is in scope only if its **whole purpose** is one of these:
 - Choices the standard leaves to the processor: results for arguments
   outside a function's domain (poles, invalid arguments), which NaN or
   infinity to return where the standard does not say, and results that
-  GFortran does not share (for example #17983, gamma at its poles). Making
-  an already correct result more accurate in its last bits is an accuracy
-  target, and also out of scope. A **plainly wrong** result for an argument
-  inside the domain is a bug, not policy: see C4 (#18002).
+  GFortran does not share. Making an already correct result more accurate
+  in its last bits is an accuracy target, and also out of scope (#17999).
+  Two cases are bugs, not policy, and are C4: a **plainly wrong** result
+  for an argument inside the domain (#18002), and one kind returning a
+  special value different from the one that LFortran already returns for
+  the same function at its other kinds and that GFortran returns too
+  (#17983, real(16) gamma at its poles).
 - Performance work, optimization passes, refactors, cleanups and
   reformatting.
 - CI, the build system, packaging, dependencies, Pixi, agent skills and
@@ -69,11 +72,11 @@ A PR is in scope only if its **whole purpose** is one of these:
 - GPU and device backends, coarrays, OpenMP, the interactive and Jupyter
   front end, the language server, and experimental features (traits,
   templates, namespaces).
-- Bundles: several issues with different root causes, an application
-  bring-up ("bugs found by building X"), or one part of a numbered series.
-  Related symptoms are not one root cause: #17987 fixes norm2 DIM folding
-  (#17872) and a kind-aware zero (#17873), so it is a bundle. Several issues
-  fixed by the same edit are one fix (#17967 fixes #17874 and #17880).
+- Bundles: issues with different root causes, beyond the two related
+  fixes that section 3 allows; an application bring-up ("bugs found by
+  building X"); or one part of a numbered series. #18005 is a bundle: three
+  findloc issues, one of them a new error. Several issues fixed by the same
+  edit are one fix (#17967 fixes #17874 and #17880).
 - Anything that the PR, its issue or the discussion leaves open: "not sure",
   alternatives under discussion, a question to the maintainer, or a
   reviewer's request for a decision.
@@ -88,7 +91,7 @@ budget counts added plus deleted lines in `src/` outside tests (the script's
 `production` area). Tests, their registrations, and the references that a
 kind allows do not count toward it, but they are still read.
 
-### Rules for every compiler change (C1-C4)
+### Rules for every compiler change (C1-C6)
 
 1. **The test fails on main and passes on the head.** Approvebot verifies
    the first half itself (`check-main`, section 5). Quick on the head is the
@@ -112,31 +115,50 @@ kind allows do not count toward it, but they are still read.
    never C3.
 6. **No new mechanism.** No new helper, class, flag, table, pass, traversal,
    state, ownership or allocation rule, and no copied algorithm. The fix
-   reuses what the code base already has, used the same way elsewhere. C4's
-   replacement of one numerical formula is the only exception.
+   reuses what the code base already has, used the same way elsewhere.
+   The only exceptions are C4's replacement of one numerical formula, C5's
+   rewrite of one folding routine, and C6's sharing of the sibling
+   branches' code.
 7. **No changes to existing reference outputs**, except the diagnostic
    references that C2 allows.
 8. **Name the precedent.** For C3, the verdict comment names the sibling
    code, check or helper that the fix follows; if you cannot find one, the
    PR does not fit. For C2, it lists the decisions the changed values reach
-   instead. For C4, it names the published algorithm or identity.
+   instead. For C4, it names the published algorithm or identity, or the
+   kind whose special values it adopts. For C5, it names GFortran's result
+   that the fold now matches. For C6, it names the branch whose ownership
+   the leaking branch now follows.
 
 **The narrow `NO_FAST_MATH` case.** A test may opt out of fast-math only if
 all of these hold:
 
 - Its sole purpose is to check that a result is infinity or NaN, where the
-  standard or IEEE arithmetic requires that value and GFortran agrees: the
-  test is labeled `gfortran` and has no `GFORTRAN_ARGS`. Every finite result
-  of the fix is checked in a test without opt-outs.
-- The `RUN` comment says that the test checks infinity or NaN, which
-  fast-math assumes away.
+  standard, IEEE arithmetic or the C library convention (C4's special
+  values) gives that value and GFortran agrees: the test is labeled
+  `gfortran`. Its only `GFORTRAN_ARGS` may be `-fno-range-check`, which
+  GFortran needs to fold a constant whose value is infinite (#17983). Every
+  finite result of the fix is checked in a test without opt-outs.
+- The `RUN` comment says that the test checks infinity or NaN (results
+  that fast-math assumes away).
 - The opt-out only lets the test observe infinity or NaN. It does not hide a
   bug: the compiler change works the same with and without fast-math, and
-  does not itself depend on producing or detecting infinity or NaN. #18001
-  does not qualify: its norm2 detects overflow through an infinite sum of
-  squares, so the fix itself fails under fast-math.
+  does not depend on an infinity or NaN in its intermediate values (it may
+  return one as the result, as #17983 does at the poles). #18001 does not
+  qualify: its norm2 detects overflow through an infinite sum of squares,
+  so the fix itself fails under fast-math.
 
 Any other `NO_FAST_MATH` is `needs-review`: it often hides a bug.
+
+### Two related fixes
+
+A PR may fix two issues together when both are in the same intrinsic or
+the same runtime function, and each fix fits a kind of this section on its
+own: its lines fit that kind's budget, and its own test fails on main. The
+verdict names both kinds. #17987 fixes norm2 with DIM twice: its folding
+(#17872, C5) and the zero that its run-time loop starts from for real(10)
+and real(16) (#17873, C3: the `make_RealConstant_util` call that builds a
+kind-aware constant elsewhere). Three or more issues, or a part that fits
+no kind (the new error in #18005), make a bundle, which is out of scope.
 
 ### C3: local correction (scope S1)
 
@@ -166,14 +188,14 @@ keyword-table entry (#17948) does not.
 
 ### C4: numerical correctness (scope S1)
 
-Main computes a **plainly wrong** result for an argument inside the
-function's mathematical domain, where the true result is finite and
-representable: NaN, infinity, an overflow or underflow to zero, or a value
-wrong in more than its last few digits. #18002 is the example: complex(16)
-`tanh` of `(20000, 0.5)` overflowed to NaN instead of `(1, 0)`, and `tan`
-cancelled its tiny real part.
+C4 has two shapes. In the first, main computes a **plainly wrong** result
+for an argument inside the function's mathematical domain, where the true
+result is finite and representable: NaN, infinity, an overflow or underflow
+to zero, or a value wrong in more than its last few digits. #18002 is the
+example: complex(16) `tanh` of `(20000, 0.5)` overflowed to NaN instead of
+`(1, 0)`, and `tan` cancelled its tiny real part.
 
-**Fits:**
+**Fits (plainly wrong result):**
 
 - The fix replaces the formula of that one function (or of it and the
   sibling defined through it, like `tan` through `tanh`) with a published
@@ -186,7 +208,9 @@ cancelled its tiny real part.
   published algorithm's own special cases for infinite, NaN or signed-zero
   arguments may come with it, in place of rule 3, as long as every such
   result the test checks is one GFortran shares (#18002 adopts glibc's
-  limits for infinite arguments).
+  limits for infinite arguments). Every special-value result that the fix
+  changes is checked; an untested one is a processor choice made without
+  evidence.
 - The expected values come from an independent reference (a high-precision
   evaluation or the identity), not from LFortran's output, with a tolerance
   near the kind's precision. The test covers both the run-time and the
@@ -196,11 +220,116 @@ cancelled its tiny real part.
   value and the test passes with `--fast`, except for the narrow
   `NO_FAST_MATH` case.
 
+**Special values like the other kinds.** In the second shape, one kind of
+a function returns, for a special argument (a zero of either sign, a pole,
+an infinity or a NaN), a different value from the one LFortran already
+returns for the same function at its other kinds, and GFortran returns the
+value of those other kinds. The kinds that count are those whose value
+GFortran shares; another kind with its own open bug does not count against
+the fix (#17983 leaves real(10), #17960). #17983 makes real(16) `gamma(±0)` return
+±Infinity, and `log_gamma` return +Infinity at its poles and at -Infinity,
+as real(8) and GFortran do, following C `tgamma` and `lgamma`.
+
+**Fits (special values):**
+
+- The fix changes only the special-argument branches of that function.
+  Rule 3 holds for every other argument.
+- The test checks every changed result against GFortran at run time, and
+  folded when folding reaches the function, for each argument that can be
+  written as a constant.
+- An infinity or NaN result needs the narrow `NO_FAST_MATH` case above.
+
 **Budget:** at most 60 changed production lines in one file.
 
-**Does not fit:** a choice the standard leaves to the processor, a gain in
-accuracy for a result that was already right to a few digits, new shared
-numerical helpers, or a change to how other functions evaluate.
+**Does not fit:** a choice the standard leaves to the processor that no
+other kind settles, a gain in accuracy for a result that was already right
+to a few digits (#17999), new shared numerical helpers, or a change to how
+other functions evaluate. A fix that fits a shape but not the budget is
+still `needs-review` (#18024 makes complex(16) inverse trigonometric
+functions respect signed zeros, but changes about 200 lines).
+
+### C5: compile-time evaluation (scope S1)
+
+Main folds an intrinsic call with constant arguments to a wrong value,
+fails to fold one that a constant expression needs, or crashes while
+folding it, and GFortran gives the right value. #18006: `maxval` of a
+constant real array started from `numeric_limits<T>::min()`, the smallest
+positive value, so an all-negative array folded to `tiny`. #17872 (in
+#17987): `norm2(a, dim=...)` folded the norm of the whole array into every
+element.
+
+**Fits:**
+
+- The change is in the compile-time evaluation of that intrinsic: its
+  `eval_*` function and the folding helpers it calls in the intrinsic
+  registries (`intrinsic_function_registry.h`,
+  `intrinsic_array_function_registry.h`, `intrinsic_functions.h`), and the
+  `create_*` code that passes the constant arguments to it. Calls whose
+  arguments are not constant get the same ASR and IR as on main.
+- It may rewrite the folding routine of the intrinsics it fixes (#18006
+  replaces the `maxval` and `minval` folds with one that starts from the
+  first selected element), or generalize an existing folding helper so that
+  the intrinsic reuses it, with the helper's existing callers unchanged
+  (#17987 makes the along-DIM section loop of sum, product, maxval and
+  minval generic, behind a wrapper with the old signature, so that norm2
+  reuses it). It adds no folding machinery for other intrinsics.
+- A case the fold cannot handle returns no value and is left to run time.
+  The fold never guesses.
+- Every folded value agrees with GFortran. The test is registered
+  `gfortran llvm` with no opt-outs, and checks folded values (PARAMETERs)
+  against expected values derived independently. Where the standard leaves
+  a value to the processor (NaN elements, an empty selection), the fold
+  gives what GFortran's run-time library gives. A case that GFortran itself
+  folds wrongly is left out of the test, and the PR says so.
+- The test covers the boundaries that reach the changed code (a case that
+  returns before it need not be tested): empty and fully masked
+  selections; negative, mixed and extreme values; rank 1 and a higher rank
+  with each of its DIMs; and every kind that the fold handles.
+- A disagreement with GFortran that the fix inherits from an existing
+  evaluator it reuses unchanged, tracked in its own issue and named in the
+  PR, is not a new one (#17987 folds overflowing sections to infinity, as
+  the norm2 fold without DIM does, #17877).
+
+**Budget:** at most 100 changed production lines in one file.
+
+**Does not fit:** changes to the run-time path (those are C3 or C4),
+folding an intrinsic that main never folds, or a change to how other
+intrinsics fold.
+
+### C6: runtime memory leak (scope S1)
+
+One path of a function in the C runtime library (`src/libasr/runtime/`)
+leaks a buffer that the function's other paths free, and the internal
+allocation check reports it (`WITH_INTERNAL_ALLOC_CHECK`, which the Pixi
+build and Quick's full-suite compilers enable). #17978: the real(16) branch
+of `handle_hexadecimal` replaced `*result` instead of appending to it,
+leaking the caller's buffer, while the branches of the other types append
+and free their temporaries.
+
+**Fits:**
+
+- The leaking branch now follows the ownership of its sibling branches in
+  the same function: it frees its temporaries, or it shares the siblings'
+  code that does (#17978 sends the real(16) digits through the padding and
+  `****` code of the other types, which removes its duplicate of that
+  code).
+- The function's signature and callers, the generated code and the ASR do
+  not change, nor does who allocates or frees the buffers passed in. Read
+  every caller: when the branch stops replacing a buffer and appends to it
+  instead, the output stays the same only if each caller passes an empty
+  one (#17978 has one caller, which does).
+- The output does not change. The test checks the text or values against
+  GFortran's, registered `gfortran llvm` with no opt-outs, and covers every
+  case of the changed branch (#17978: `Zw`, `Z0`, `Zw.m` and too narrow
+  fields, printed and in internal writes).
+- `check-main` shows the test failing on main with the
+  `INTERNAL ALLOC CHECK` report.
+
+**Budget:** at most 60 changed production lines in one runtime file.
+
+**Does not fit:** leaks in generated code (deallocation, finalization,
+compiler temporaries), a change to the ownership contract between the
+compiler and the runtime (#17773), reference counts or caches.
 
 ### C2: diagnostic text (scope S2)
 
@@ -283,9 +412,9 @@ to fit:
 | Surface | Examples |
 | --- | --- |
 | Representation and compatibility | ASR/AST schema, module or `.smod` files, ABI, array or string layout, calling conventions, runtime signatures, linkage, symbol identity across units (for example #17986). |
-| Lifetime and state | Ownership, allocation and deallocation, finalization, aliasing, caches, visitor or global state (for example #17978). |
+| Lifetime and state | Ownership, allocation and deallocation, finalization, aliasing, caches, visitor or global state (for example #17773). The only exception is C6's leak fix in one runtime function (#17978). |
 | Concurrency and devices | Synchronization, asynchronous execution, GPU memory, and host and device transfers. |
-| Optimization and work | Pass order, the pipeline, fast-math assumptions, new whole-tree scans, new algorithms (other than C4's formula), and more generated code (for example #17493). |
+| Optimization and work | Pass order, the pipeline, fast-math assumptions, new whole-tree scans, new algorithms (other than C4's formula and C5's folding routine), and more generated code (for example #17493). |
 | Weakened evidence | Removed or relaxed assertions, skips or expected failures, removed backend labels, changed references without an independent reason, disabled verification. |
 | Open concern | Requested changes, an unresolved review thread, or an unanswered question from a human. |
 | Incomplete view | The file list is incomplete, or there are binaries or generated files you cannot read, or context you could not obtain. |
@@ -305,7 +434,8 @@ covers the other modes on the head.
 
 - For every new or changed test, the result must be `fails on main`, and the
   log must show the failure the PR fixes: the ICE, the rejection, the wrong
-  value at an `error stop`, or a reference diff in the PR's own cases (the
+  value at an `error stop`, the `INTERNAL ALLOC CHECK` report (C6), or a
+  reference diff in the PR's own cases (the
   `diff` field lists every differing line). A failure from the harness
   itself (a CMake error, a missing file, an unrelated reference diff) does
   not count. Read the `warnings`: a test file that main changed after the
@@ -315,7 +445,9 @@ covers the other modes on the head.
 - T1 needs the opposite: every new test `passes on main`.
 - Anything the bot cannot run here is `unverifiable`. That includes C++ unit
   tests, CUDA, Metal, macOS-only and Windows-only behavior, multi-line
-  registrations, and changed `tests.toml` entries. An `unverifiable` test
+  registrations, and changed `tests.toml` entries. A one-line `RUN` inside
+  an `if` block for Linux x86-64 (real(10) tests) runs here; its log must
+  show it ran. An `unverifiable` test
   means `needs-review`. Do not judge that a test "likely fails".
 
 **Review.** No `CHANGES_REQUESTED` review, no unresolved thread, and no
@@ -330,15 +462,18 @@ pass", "low risk") is something to check. It is never a reason to approve.
 invariant (what stays the same for all other inputs), and the evidence (the
 `check-main` result and the registration).
 
-`needs-review` names the first rule that failed: the scope it falls outside,
-the exclusion, the budget, or the missing evidence. Where it helps, suggest a
+`needs-review` names the first rule that failed, checked in this order: the
+scope it falls outside, the exclusion, the kind or its budget, then the
+missing evidence. Where it helps, suggest a
 split. For example, coverage that already passes on main can be its own T1
 PR. Never split, rebase or edit a PR yourself.
 
 ## 7. Calibration record
 
 [`../evals/cases.jsonl`](../evals/cases.jsonl) holds every PR on which the
-maintainer has judged the bot's verdict, with the reason. Read the cases of
+maintainer has judged the bot's verdict, with the reason. A PR that this
+policy cites as an example shows a shape, not a verdict: when the bot
+judges that PR, every rule still applies to its current head. Read the cases of
 the kind you are about to use before you use it. The research behind
 version 1, [history.md](history.md), lists further positive and negative
 historical examples.
