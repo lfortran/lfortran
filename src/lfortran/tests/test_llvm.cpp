@@ -6991,6 +6991,42 @@ static void run_cell(FortranEvaluator &e, const std::string &code,
     REQUIRE_MESSAGE(cell.ok, cell.error_text());
 }
 
+// The module of a type with defined output, and the code that writes a value
+// of that type with it, in separate cells (#17915).
+TEST_CASE("FortranEvaluator execute: defined output in a later cell") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    run_cell(e, R"(module dm_17915
+implicit none
+type :: shown
+    integer :: n
+contains
+    procedure :: show
+    generic :: write(formatted) => show
+end type
+contains
+subroutine show(dtv, unit, iotype, v_list, iostat, iomsg)
+    class(shown), intent(in) :: dtv
+    integer, intent(in) :: unit
+    character(*), intent(in) :: iotype
+    integer, intent(in) :: v_list(:)
+    integer, intent(out) :: iostat
+    character(*), intent(inout) :: iomsg
+    write(unit, '(a,i0)', iostat=iostat) 'n=', dtv%n
+end subroutine
+end module
+)", io);
+    run_cell(e, "use dm_17915\nprint '(dt)', shown(3)", io);
+    CHECK(output == "n=3\n");
+    output.clear();
+    run_cell(e, "type(shown) :: x", io);
+    run_cell(e, "x%n = 4\nwrite(*, '(dt)') x", io);
+    CHECK(output == "n=4\n");
+}
+
 #ifndef _WIN32
 // The cell runs on a thread of its own while the caller passes its output on.
 // That thread must have the stack the cell had on the main thread, not the

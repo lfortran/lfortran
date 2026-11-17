@@ -115,11 +115,14 @@ public:
     // derived type or procedure that is local to a procedure is not visible
     // from there, and then the callback goes into that procedure.
     // `unit_name` receives the name of the program unit of the statement.
+    // The translation unit of an interactive cell has the scope of the
+    // earlier cells as its parent; those are already compiled, so the
+    // search stops at the translation unit.
     SymbolTable* callback_scope(SymbolTable* scope, ASR::symbol_t* struct_sym,
             ASR::symbol_t* procedure, std::string &unit_name) {
         SymbolTable* s = scope;
         unit_name = "";
-        while (s->parent != nullptr) {
+        while (s->parent != nullptr && !ASRUtils::is_tu_scope(s)) {
             ASR::symbol_t* owner = scope_owner(s);
             if (owner && (ASR::is_a<ASR::Module_t>(*owner) ||
                     ASR::is_a<ASR::Program_t>(*owner))) {
