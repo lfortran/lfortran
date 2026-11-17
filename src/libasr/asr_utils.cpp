@@ -4753,7 +4753,10 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
     ASR::expr_t* value = nullptr;
 
-    if (ASRUtils::expr_value(a_arg)) {
+    // Only a scalar constant is folded here; the cast of an array constant
+    // is left without a value.
+    if (ASRUtils::expr_value(a_arg) &&
+            !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_arg))) {
         // calculate value
         if (a_kind == ASR::cast_kindType::RealToInteger) {
             ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
@@ -15236,6 +15239,15 @@ void promote_arguments_kinds(Allocator &al, const Location &loc,
             args.p[i] = ASRUtils::make_RealConstant_util(al, loc,
                 ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
                 target_type);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
+            // A real(10) constant widened to real(16) exactly
+            ASR::expr_t* cast = EXPR(ASRUtils::make_Cast_t_value(
+                al, loc, args[i], cast_kind, target_type));
+            if (ASRUtils::expr_value(cast)) {
+                args.p[i] = ASRUtils::expr_value(cast);
+            } else {
+                args.p[i] = cast;
+            }
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
             args.p[i] = EXPR(ASR::make_IntegerConstant_t(
                 al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,
