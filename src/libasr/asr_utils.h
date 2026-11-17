@@ -4146,6 +4146,14 @@ class SymbolDuplicator {
 
     ASR::symbol_t* duplicate_Struct(ASR::Struct_t* struct_type_t,
         SymbolTable* destination_symtab);
+
+    // An Enum and a Union are a scope of member variables plus their names;
+    // the copy gets copies of the members, everything else is carried over.
+    ASR::symbol_t* duplicate_Enum(ASR::Enum_t* enum_t,
+        SymbolTable* destination_symtab);
+
+    ASR::symbol_t* duplicate_Union(ASR::Union_t* union_t,
+        SymbolTable* destination_symtab);
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(
             al, genericProcedure->base.base.loc, destination_symtab,

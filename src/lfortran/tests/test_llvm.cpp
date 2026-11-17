@@ -6120,6 +6120,74 @@ end module
     CHECK(e.evaluate2(cell).ok);
 }
 
+TEST_CASE("FortranEvaluator a cell declaring an enum") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    // The enumerators are imported into the scope holding the enumeration,
+    // so their copies must name the copied enumeration, not the original.
+    const char *cell = R"(module m_enum
+implicit none
+enum, bind(c)
+    enumerator :: a = 1, b
+end enum
+end module
+)";
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(cell);
+    CHECK(r.ok);
+    r = e.evaluate2(cell);
+    CHECK(r.ok);
+    r = e.evaluate2("use m_enum");
+    CHECK(r.ok);
+    r = e.evaluate2("a + 10*b");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 21);
+    // An enumeration declared by the cell itself
+    r = e.evaluate2(R"(enum, bind(c)
+    enumerator :: c, d
+end enum
+)");
+    CHECK(r.ok);
+    r = e.evaluate2("c + 10*d");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 10);
+}
+
+TEST_CASE("FortranEvaluator a cell declaring a union") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    const char *cell = R"(module m_union
+implicit none
+_lfortran_union_type :: u_t
+    integer :: x
+    real :: r
+end _lfortran_union_type
+end module
+)";
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(cell);
+    CHECK(r.ok);
+    r = e.evaluate2(cell);
+    CHECK(r.ok);
+    // A later cell declares an entity of the copied union type
+    r = e.evaluate2(R"(integer function f()
+use m_union
+type(u_t) :: u
+u%x = 7
+f = u%x
+end function
+)");
+    CHECK(r.ok);
+    r = e.evaluate2("f()");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 7);
+}
+
 TEST_CASE("FortranEvaluator re-run a cell declaring an operator") {
     CompilerOptions cu;
     cu.interactive = true;
