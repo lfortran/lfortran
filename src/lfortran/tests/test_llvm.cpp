@@ -6949,6 +6949,72 @@ end subroutine
     CHECK(cell.value.text() == "42");
 }
 
+TEST_CASE("FortranEvaluator execute: earlier procedures after a rejected cell") {
+    // The passes of a rejected cell rewrite the earlier cells' procedures in
+    // place, so the session goes back to the copy of them taken before: an
+    // optional argument may still be omitted, and a function returning a
+    // deferred-length character is still a function (#17046).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    REQUIRE(e.execute(R"(subroutine opt(a, b)
+integer, intent(in) :: a
+integer, intent(in), optional :: b
+if (present(b)) then
+    print *, "ab", a, b
+else
+    print *, "a", a
+end if
+end subroutine
+)").ok);
+    REQUIRE(e.execute(R"(subroutine w()
+interface
+subroutine nothere_17046()
+end subroutine
+end interface
+call nothere_17046()
+end subroutine
+)").ok);
+    auto cell = e.execute("call w()");
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("undefined reference to 'nothere_17046'")
+        != std::string::npos);
+    cell = e.execute("call opt(2)", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    cell = e.execute("call opt(3, 4)", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(output.find("a 2") != std::string::npos);
+    CHECK(output.find("ab 3 4") != std::string::npos);
+
+    output.clear();
+    REQUIRE(e.execute(R"(function cf() result(r)
+character(len=:), allocatable :: r
+interface
+subroutine bl() bind(C, name="dfun_17046")
+end subroutine
+end interface
+call bl()
+r = "cf"
+end function
+)").ok);
+    cell = e.execute("print *, cf()", false, io);
+    CHECK(!cell.ok);
+    CHECK(!cell.internal_error);
+    CHECK(cell.error_value.find("undefined reference to 'dfun_17046'")
+        != std::string::npos);
+    REQUIRE(e.execute(R"(subroutine b() bind(C, name="dfun_17046")
+print *, "in b"
+end subroutine
+)").ok);
+    cell = e.execute("print *, cf()", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(output.find("in b") != std::string::npos);
+    CHECK(output.find("cf") != std::string::npos);
+}
+
 #endif // __EMSCRIPTEN__
 
 TEST_CASE("FortranEvaluator execute: formatted print of an array section") {

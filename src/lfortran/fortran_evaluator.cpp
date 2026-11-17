@@ -602,6 +602,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         }
     }
 
+    if (compiler_options.interactive) {
+        drop_redefinitions(*m);
+    }
+
 #ifndef __EMSCRIPTEN__
     // A procedure that is defined nowhere, neither by a cell nor by the
     // runtime, is an error in the user's code, like an undefined reference at
@@ -614,9 +618,26 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         std::vector<std::string> undefined
             = get_llvm_evaluator().undefined_symbols(*m);
         if (!undefined.empty()) {
-            if (symbol_table != cell_parent) {
+            if (compiler_options.interactive) {
+                // The passes of this cell have rewritten the earlier cells'
+                // symbols in place (see snapshot_cell_scope), so the session
+                // goes back to the copy of them taken before the passes ran.
+                SymbolTable *restored = symbol_table->parent;
+                auto previous = cell_implicit_types.find(cell_parent);
+                std::map<std::string, ASR::ttype_t*> implicit_types;
+                if (previous != cell_implicit_types.end()) {
+                    implicit_types = std::move(previous->second);
+                    cell_implicit_types.erase(previous);
+                }
                 cell_implicit_types.erase(symbol_table);
-                symbol_table = cell_parent;
+                cell_implicit_types[restored] = std::move(implicit_types);
+                symbol_table = restored;
+                // What drop_redefinitions() kept is not in the JIT either.
+                for (llvm::Function &fn : *m->m_m) {
+                    if (!fn.isDeclaration() && !fn.hasLocalLinkage()) {
+                        defined_symbols.erase(fn.getName().str());
+                    }
+                }
             }
             for (const std::string &name : undefined) {
                 diagnostics.add(diag::Diagnostic(
@@ -627,10 +648,6 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         }
     }
 #endif
-
-    if (compiler_options.interactive) {
-        drop_redefinitions(*m);
-    }
 
     // LLVM -> Machine code -> Execution
 #ifdef __EMSCRIPTEN__
