@@ -376,48 +376,47 @@ T find_iall(size_t size, T* data, bool* mask = nullptr) {
     return result;
 }
 
-template<typename T>
-T find_minval(size_t size, T* data, bool* mask = nullptr) {
-    T result = std::numeric_limits<T>::max();
-    if (mask) {
-        for (size_t i = 0; i < size; i++) {
-            if (mask[i] && data[i] < result) {
-                result = data[i];
-            }
+// MINVAL (is_max = false) or MAXVAL (is_max = true) of the elements selected
+// by `mask`. The reduction starts from the first selected element that is not
+// a NaN and skips NaNs. If nothing is selected the result is the largest
+// (MINVAL) or the most negative (MAXVAL) value of T, and if every selected
+// element is a NaN the result is a NaN.
+template<typename T, bool is_max>
+T find_minval_maxval(size_t size, T* data, bool* mask) {
+    T result = is_max ? std::numeric_limits<T>::lowest() : std::numeric_limits<T>::max();
+    bool selected = false, found = false;
+    for (size_t i = 0; i < size; i++) {
+        if (mask && !mask[i]) continue;
+        selected = true;
+        if constexpr (std::is_floating_point<T>::value) {
+            if (std::isnan(data[i])) continue;
         }
-    } else {
-        for (size_t i = 0; i < size; i++) {
-            if (data[i] < result) {
-                result = data[i];
-            }
+        if (!found || (is_max ? data[i] > result : data[i] < result)) {
+            result = data[i];
+            found = true;
         }
     }
+    if (selected && !found) {
+        // only reachable for a floating point T
+        return std::numeric_limits<T>::quiet_NaN();
+    }
     return result;
+}
+
+template<typename T>
+T find_minval(size_t size, T* data, bool* mask = nullptr) {
+    return find_minval_maxval<T, false>(size, data, mask);
 }
 
 template<typename T>
 T find_maxval(size_t size, T* data, bool* mask = nullptr) {
-    T result = std::numeric_limits<T>::min();
-    if (mask) {
-        for (size_t i = 0; i < size; i++) {
-            if (mask[i] && data[i] > result) {
-                result = data[i];
-            }
-        }
-    } else {
-        for (size_t i = 0; i < size; i++) {
-            if (data[i] > result) {
-                result = data[i];
-            }
-        }
-    }
-    return result;
+    return find_minval_maxval<T, true>(size, data, mask);
 }
 
 // Folds sum, product, maxval and minval of a real(16) or complex(16) array
-// constant exactly, in binary128. Returns nullptr when the reduction is left
-// to run time (a NaN operand, or nothing selected by the mask for maxval and
-// minval).
+// constant exactly, in binary128. Nothing selected by the mask gives -huge
+// for maxval and +huge for minval. Returns nullptr when the reduction is left
+// to run time (a NaN operand).
 static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &loc,
         ASR::ttype_t *t, ASR::ArrayConstant_t *a, size_t size, const bool *mask_data,
         ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
@@ -470,6 +469,10 @@ static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &
             re = zero; im = zero;
         } else if (intrinsic_func_id == F::Product) {
             re = one; im = zero;
+        } else if (intrinsic_func_id == F::MaxVal) {
+            return ASRUtils::get_minimum_value_with_given_type(al, t);
+        } else if (intrinsic_func_id == F::MinVal) {
+            return ASRUtils::get_maximum_value_with_given_type(al, t);
         } else {
             return nullptr;
         }
@@ -861,13 +864,11 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
-                        float result = std::numeric_limits<float>::max();
-                        result = find_minval(size, (float*)(a->m_data), mask_data);
+                        float result = find_minval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
                     } else if (kind == 8) {
-                        double result = std::numeric_limits<double>::max();
-                        result = find_minval(size, (double*)(a->m_data), mask_data);
+                        double result = find_minval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
                     }
@@ -891,13 +892,11 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                         loc, result, t));
                 } else if (ASR::is_a<ASR::RealConstant_t>(*args_value0)) {
                     if (kind == 4) {
-                        float result = std::numeric_limits<float>::min();
-                        result = find_maxval(size, (float*)(a->m_data), mask_data);
+                        float result = find_maxval(size, (float*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
                     } else if (kind == 8) {
-                        double result = std::numeric_limits<double>::min();
-                        result = find_maxval(size, (double*)(a->m_data), mask_data);
+                        double result = find_maxval(size, (double*)(a->m_data), mask_data);
                         value = ASRUtils::EXPR(ASR::make_RealConstant_t(al,
                             loc, result, t));
                     }
