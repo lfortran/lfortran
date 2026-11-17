@@ -6125,8 +6125,6 @@ TEST_CASE("FortranEvaluator a cell declaring an enum") {
     cu.interactive = true;
     cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator e(cu);
-    // The enumerators are imported into the scope holding the enumeration,
-    // so their copies must name the copied enumeration, not the original.
     const char *cell = R"(module m_enum
 implicit none
 enum, bind(c)
@@ -6154,6 +6152,85 @@ end enum
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
     CHECK(r.result.i32 == 10);
+}
+
+TEST_CASE("FortranEvaluator copied enumerator imports name the copied enum") {
+    using namespace LCompilers;
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator e(cu);
+    LocationManager lm;
+    diag::Diagnostics diagnostics;
+    // The enumerators are imported, as ExternalSymbols naming the enumeration
+    // rather than a module, into the scope holding the enumeration and into
+    // a cell using the module that holds it. Their copies in the snapshot a
+    // cell hands to the next one must name the copied enumeration's members,
+    // not the original ones the ASR passes are given.
+    auto enum_of = [](SymbolTable *scope) -> ASR::Enum_t* {
+        for (auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::Enum_t>(*item.second)) {
+                return ASR::down_cast<ASR::Enum_t>(item.second);
+            }
+        }
+        return nullptr;
+    };
+    auto import_of = [](SymbolTable *scope, const char *name)
+            -> ASR::ExternalSymbol_t* {
+        ASR::symbol_t *s = scope->get_symbol(name);
+        REQUIRE(s != nullptr);
+        REQUIRE(ASR::is_a<ASR::ExternalSymbol_t>(*s));
+        return ASR::down_cast<ASR::ExternalSymbol_t>(s);
+    };
+    auto module_of = [](SymbolTable *scope) -> ASR::Module_t* {
+        ASR::symbol_t *s = scope->get_symbol("m_enum");
+        REQUIRE(s != nullptr);
+        REQUIRE(ASR::is_a<ASR::Module_t>(*s));
+        return ASR::down_cast<ASR::Module_t>(s);
+    };
+    // An enumeration in a module
+    auto r = e.get_asr2(R"(module m_enum
+implicit none
+enum, bind(c)
+    enumerator :: a = 1, b
+end enum
+end module
+)", lm, diagnostics);
+    REQUIRE(r.ok);
+    // A cell using the module
+    r = e.get_asr2("use m_enum", lm, diagnostics);
+    REQUIRE(r.ok);
+    // An enumeration declared by the cell itself
+    r = e.get_asr2(R"(enum, bind(c)
+    enumerator :: c, d
+end enum
+)", lm, diagnostics);
+    REQUIRE(r.ok);
+    r = e.get_asr2("integer :: unused", lm, diagnostics);
+    REQUIRE(r.ok);
+    // The snapshot of the three earlier cells, newest first
+    SymbolTable *enum_cell = r.result->m_symtab->parent;
+    SymbolTable *use_cell = enum_cell->parent;
+    SymbolTable *module_cell = use_cell->parent;
+
+    ASR::Module_t *m = module_of(module_cell);
+    ASR::Enum_t *m_enum = enum_of(m->m_symtab);
+    REQUIRE(m_enum != nullptr);
+    CHECK(import_of(m->m_symtab, "a")->m_external
+        == m_enum->m_symtab->get_symbol("a"));
+    CHECK(import_of(m->m_symtab, "b")->m_external
+        == m_enum->m_symtab->get_symbol("b"));
+    CHECK(import_of(use_cell, "a")->m_external
+        == m_enum->m_symtab->get_symbol("a"));
+    CHECK(import_of(use_cell, "b")->m_external
+        == m_enum->m_symtab->get_symbol("b"));
+
+    ASR::Enum_t *cell_enum = enum_of(enum_cell);
+    REQUIRE(cell_enum != nullptr);
+    CHECK(import_of(enum_cell, "c")->m_external
+        == cell_enum->m_symtab->get_symbol("c"));
+    CHECK(import_of(enum_cell, "d")->m_external
+        == cell_enum->m_symtab->get_symbol("d"));
 }
 
 TEST_CASE("FortranEvaluator a cell declaring a union") {
