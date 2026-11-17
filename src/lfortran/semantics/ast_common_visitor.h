@@ -27271,15 +27271,16 @@ public:
             // An undeclared name becomes a procedure with an implicit
             // interface, which is filed in the enclosing program unit. A
             // reference made directly in the top-level scope of an
-            // interactive cell has no program unit to file it in (filing it
-            // in the translation unit crashes), so it is reported as not
-            // found. A reference inside a top-level BLOCK or ASSOCIATE keeps
-            // the fallback, and the JIT linker resolves the procedure.
+            // interactive cell, whose owner is the cell's translation unit,
+            // has no program unit to file it in (filing it in the
+            // translation unit crashes), so it is reported as not found. A
+            // reference in any other scope, such as a top-level BLOCK or
+            // ASSOCIATE, keeps the fallback, and the JIT linker resolves
+            // the procedure.
             SymbolTable* reference_scope = statement_function_parent_scope
                 ? statement_function_parent_scope : current_scope;
             bool in_cell_top_level = compiler_options.interactive
-                && !(reference_scope->asr_owner
-                    && ASR::is_a<ASR::symbol_t>(*reference_scope->asr_owner));
+                && ASRUtils::is_tu_scope(reference_scope);
             if (compiler_options.implicit_interface && !unmatched_generic
                     && !in_cell_top_level) {
                 return nullptr;
