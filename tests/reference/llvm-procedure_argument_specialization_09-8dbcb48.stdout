@@ -21,6 +21,11 @@ target datalayout = "..."
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [10 x i8] c"%s %.*s%s\00", align 1
 @__module_procedure_argument_specialization_09_host_host.__lcompilers_frame_slots.__struct_init = internal global i1 false
+@parameter_arg = internal unnamed_addr constant double 0.000000e+00
+@parameter_arg.1 = internal unnamed_addr constant double 1.000000e+00
+@parameter_arg.2 = internal unnamed_addr constant double 2.000000e+00
+@parameter_arg.3 = internal unnamed_addr constant double 5.000000e-01
+@parameter_arg.4 = internal unnamed_addr constant i32 1000
 @9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -85,8 +90,6 @@ FINALIZE_SYMTABLE_integrate:                      ; preds = %return
 
 define void @__module_procedure_argument_specialization_09_host_host(double* %p, double* %q, double* %r, i32* %n, double* %res) {
 .entry:
-  %call_arg_value1 = alloca double, align 8
-  %call_arg_value = alloca double, align 8
   %i = alloca i32, align 4
   %array_size = alloca i32, align 4
   %__lcompilers_frame = alloca %procedure_argument_specialization_09_host.__lcompilers_frame_host.18, align 8
@@ -135,9 +138,7 @@ struct_init_done:                                 ; preds = %loop.end, %.entry
   call void @host.__module_procedure_argument_specialization_09_host___lcompilers_acquire_frame_slot(%procedure_argument_specialization_09_host.__lcompilers_frame_host.18* %__lcompilers_frame, i32* %__lcompilers_frame_slot)
   call void @host.__module_procedure_argument_specialization_09_host_f__lcompilers_value_select(i32* %__lcompilers_frame_slot, double (double*)** %f__lcompilers_value_pointer)
   %13 = load double (double*)*, double (double*)** %f__lcompilers_value_pointer, align 8
-  store double 0.000000e+00, double* %call_arg_value, align 8
-  store double 1.000000e+00, double* %call_arg_value1, align 8
-  %14 = call double @__module_procedure_argument_specialization_09_integ_integrate(double (double*)* %13, double* %call_arg_value, double* %call_arg_value1, i32* %n)
+  %14 = call double @__module_procedure_argument_specialization_09_integ_integrate(double (double*)* %13, double* @parameter_arg, double* @parameter_arg.1, i32* %n)
   store double %14, double* %res, align 1
   %15 = load i32, i32* %__lcompilers_held_frame_slot, align 4
   %16 = icmp ne i32 %15, 0
@@ -653,17 +654,9 @@ define i32 @main(i32 %0, i8** %1) {
   %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
   %3 = alloca i64, align 8
-  %call_arg_value3 = alloca i32, align 4
-  %call_arg_value2 = alloca double, align 8
-  %call_arg_value1 = alloca double, align 8
-  %call_arg_value = alloca double, align 8
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %res = alloca double, align 8
-  store double 1.000000e+00, double* %call_arg_value, align 8
-  store double 2.000000e+00, double* %call_arg_value1, align 8
-  store double 5.000000e-01, double* %call_arg_value2, align 8
-  store i32 1000, i32* %call_arg_value3, align 4
-  call void @__module_procedure_argument_specialization_09_host_host(double* %call_arg_value, double* %call_arg_value1, double* %call_arg_value2, i32* %call_arg_value3, double* %res)
+  call void @__module_procedure_argument_specialization_09_host_host(double* @parameter_arg.1, double* @parameter_arg.2, double* @parameter_arg.3, i32* @parameter_arg.4, double* %res)
   %4 = load double, double* %res, align 8
   %5 = fsub double %4, 0x3FF5555555555555
   %6 = fsub double %5, 5.000000e-01

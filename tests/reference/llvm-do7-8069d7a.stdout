@@ -2,9 +2,10 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
+@parameter_arg = internal unnamed_addr constant i32 5
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca i32, align 4
   %i = alloca i32, align 4
@@ -12,8 +13,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 true, label %do_loop.body, label %do_loop.end
 
 do_loop.body:                                     ; preds = %do_loop.head, %.entry
-  store i32 5, i32* %call_arg_value, align 4
-  %2 = call i32 @do7.f(i32* %call_arg_value)
+  %2 = call i32 @do7.f(i32* @parameter_arg)
   store i32 %2, i32* %a, align 4
   br label %do_loop.head
 
