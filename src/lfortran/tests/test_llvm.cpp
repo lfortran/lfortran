@@ -7027,6 +7027,55 @@ end module
     CHECK(output == "n=4\n");
 }
 
+// A module procedure, and an external subroutine of a later cell, that write a
+// value with defined output, called from later cells (#17916).
+TEST_CASE("FortranEvaluator execute: module procedure with defined output") {
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    run_cell(e, R"(module dm_17916
+implicit none
+type :: shown
+    integer :: n
+contains
+    procedure :: show
+    generic :: write(formatted) => show
+end type
+contains
+subroutine show(dtv, unit, iotype, v_list, iostat, iomsg)
+    class(shown), intent(in) :: dtv
+    integer, intent(in) :: unit
+    character(*), intent(in) :: iotype
+    integer, intent(in) :: v_list(:)
+    integer, intent(out) :: iostat
+    character(*), intent(inout) :: iomsg
+    write(unit, '(a,i0)', iostat=iostat) 'n=', dtv%n
+end subroutine
+subroutine p(n)
+integer, intent(in) :: n
+print '(dt)', shown(n)
+end subroutine
+end module
+)", io);
+    run_cell(e, "use dm_17916", io);
+    run_cell(e, "call p(3)", io);
+    CHECK(output == "n=3\n");
+    output.clear();
+    run_cell(e, "call p(5)", io);
+    CHECK(output == "n=5\n");
+    output.clear();
+    run_cell(e, R"(subroutine q(y)
+use dm_17916
+type(shown), intent(in) :: y
+print '(dt)', y
+end subroutine
+)", io);
+    run_cell(e, "call q(shown(7))", io);
+    CHECK(output == "n=7\n");
+}
+
 #ifndef _WIN32
 // The cell runs on a thread of its own while the caller passes its output on.
 // That thread must have the stack the cell had on the main thread, not the
