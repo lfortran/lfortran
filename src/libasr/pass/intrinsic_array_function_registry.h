@@ -490,12 +490,14 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
 // With `dim` and an array of rank > 1 the result is an array: each element
 // is the reduction of a rank-1 section of `array` (and of an array `mask`)
 // along `dim`, in column-major order of the other dimensions. Every section
-// is folded by the evaluation without `dim`, so all types and kinds, masks
-// and zero-size sections are folded the same way as there. Returns nullptr
-// when any section is left to run time.
-static inline ASR::expr_t *eval_ArrIntrinsic_along_dim(Allocator & al,
+// is folded by `eval_section(section_args, element_type)`, the evaluation
+// without `dim`, so all types and kinds, masks and zero-size sections are
+// folded the same way as there. Returns nullptr when any section is left to
+// run time.
+template <typename EvalSection>
+static inline ASR::expr_t *eval_reduction_along_dim(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
-    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    EvalSection eval_section) {
     if (args.size() < 2 || !args[0] || !ASR::is_a<ASR::ArrayConstant_t>(*args[0]) ||
             !args[1] || !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
         return nullptr;
@@ -565,13 +567,22 @@ static inline ASR::expr_t *eval_ArrIntrinsic_along_dim(Allocator & al,
         } else if (mask) {
             section_args.push_back(al, mask);
         }
-        ASR::expr_t *value = eval_ArrIntrinsic(al, loc, element_type, section_args,
-            diag, intrinsic_func_id);
+        ASR::expr_t *value = eval_section(section_args, element_type);
         if (!value) return nullptr;
         results.push_back(value);
     }
     return b.ArrayConstant(results, element_type, false,
         b.Array(result_extents, element_type));
+}
+
+static inline ASR::expr_t *eval_ArrIntrinsic_along_dim(Allocator & al,
+    const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
+    diag::Diagnostics& diag, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    return eval_reduction_along_dim(al, loc, t, args,
+        [&](Vec<ASR::expr_t*>& section_args, ASR::ttype_t *element_type) {
+            return eval_ArrIntrinsic(al, loc, element_type, section_args,
+                diag, intrinsic_func_id);
+        });
 }
 
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
@@ -6738,14 +6749,20 @@ namespace Norm2 {
     }
 
     static inline ASR::expr_t *eval_Norm2(Allocator &al,
-        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         ASR::expr_t* array = args[0];
+        if (ASRUtils::is_array(return_type)) {
+            // With `dim` (args[1]) each element of the result is the norm of
+            // a rank-1 section of `array` along `dim`.
+            return ArrIntrinsic::eval_reduction_along_dim(al, loc, return_type, args,
+                [&](Vec<ASR::expr_t*>& section_args, ASR::ttype_t *element_type) {
+                    return eval_Norm2(al, loc, element_type, section_args, diag);
+                });
+        }
         if (ASRUtils::is_kind16_array_constant(array)) {
             // The squares are summed in array element order and the square
             // root taken exactly, in binary128, like the run time
-            // implementation. The `dim` reduction and a non-finite result are
-            // left to run time.
-            if (ASRUtils::is_array(return_type)) return nullptr;
+            // implementation. A non-finite result is left to run time.
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
             size_t size = ASRUtils::get_fixed_size_of_array(arr->m_type);
             lf_float128 norm = lf_f128_from_double(0.0);
@@ -6827,11 +6844,9 @@ namespace Norm2 {
 
         ASR::expr_t *value = nullptr;
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-        ASR::expr_t *array_value = ASRUtils::expr_value(array);
-        arg_values.push_back(al, array_value);
-        if( array ) {
-            ASR::expr_t *array_value = ASRUtils::expr_value(array);
-            arg_values.push_back(al, array_value);
+        arg_values.push_back(al, ASRUtils::expr_value(array));
+        if( dim_ ) {
+            arg_values.push_back(al, ASRUtils::expr_value(dim_));
         }
         ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array)));
