@@ -33,19 +33,84 @@ public:
     void visit_Requirement(const ASR::Requirement_t &/*x*/) {}
 };
 
+// The symbols that a default value of a component references, imported into
+// `scope` (with `do_import`) or only recorded as needing it, the way
+// ASRUtils::ProcedureTypeImporter does for a procedure type. A default can
+// name what only the type's own scope sees (`c_null_ptr`, or the `c_funptr`
+// that `c_null_funptr` refers to), while a reset binding's procedure can be
+// outside that scope. Unlike a procedure type, a default can also be an
+// array constant whose elements are expressions.
+class DefaultValueImporter
+        : public ASR::BaseExprReplacer<DefaultValueImporter> {
+    Allocator &al;
+    SymbolTable* scope;
+    bool do_import;
+
+    ASR::symbol_t* named(ASR::symbol_t* sym) {
+        if (ASRUtils::is_named_from(sym, scope)) return sym;
+        needed = true;
+        return do_import ? ASRUtils::import_symbol(al, sym, scope,
+            ASR::accessType::Private, "1_") : sym;
+    }
+
+public:
+    bool needed = false;
+
+    DefaultValueImporter(Allocator &al_, SymbolTable* scope_,
+            bool do_import_)
+        : al(al_), scope(scope_), do_import(do_import_) {}
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::BaseExprReplacer<DefaultValueImporter>::replace_FunctionCall(x);
+        x->m_name = named(x->m_name);
+        if (x->m_original_name) x->m_original_name = named(x->m_original_name);
+    }
+
+    void replace_Var(ASR::Var_t* x) {
+        x->m_v = named(x->m_v);
+    }
+
+    // The member types of a derived type belong to its Struct.
+    void replace_StructType(ASR::StructType_t* /*x*/) {}
+
+    void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
+        ASR::BaseExprReplacer<DefaultValueImporter>::replace_ArrayConstant(x);
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(x->m_type);
+        if (!ASR::is_a<ASR::StructType_t>(*elem_type) &&
+                !ASR::is_a<ASR::CPtr_t>(*elem_type)) {
+            return;
+        }
+        size_t n = x->m_n_data / sizeof(ASR::expr_t*);
+        ASR::expr_t** data = (ASR::expr_t**)x->m_data;
+        if (!do_import) {
+            for (size_t i = 0; i < n; i++) {
+                if (data[i] != nullptr) replace_expr(data[i]);
+            }
+            return;
+        }
+        // A copied array constant shares its elements with the original.
+        ASR::expr_t** new_data = al.allocate<ASR::expr_t*>(n);
+        for (size_t i = 0; i < n; i++) {
+            new_data[i] = data[i];
+            if (data[i] == nullptr) continue;
+            new_data[i] = ASRUtils::ExprStmtDuplicator(al)
+                .duplicate_expr(data[i]);
+            replace_expr(new_data[i]);
+        }
+        x->m_data = new_data;
+    }
+};
+
 // Returns `value` if it references only symbols named from `scope`,
-// otherwise a copy that references them through imports, as
-// import_procedure_type does for a procedure type. A default of a component
-// can name what only the type's own scope sees (`c_null_funptr` refers to
-// `c_funptr`), while a reset binding's procedure can be outside that scope.
+// otherwise a copy that references them through imports.
 ASR::expr_t* import_expr_references(Allocator &al, ASR::expr_t* value,
         SymbolTable* scope) {
-    ASRUtils::ProcedureTypeImporter checker(al, scope, false);
+    DefaultValueImporter checker(al, scope, false);
     checker.replace_expr(value);
     if (!checker.needed) return value;
     ASR::expr_t* new_value = ASRUtils::ExprStmtDuplicator(al)
         .duplicate_expr(value);
-    ASRUtils::ProcedureTypeImporter(al, scope, true).replace_expr(new_value);
+    DefaultValueImporter(al, scope, true).replace_expr(new_value);
     return new_value;
 }
 
