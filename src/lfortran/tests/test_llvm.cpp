@@ -6991,6 +6991,10 @@ static void run_cell(FortranEvaluator &e, const std::string &code,
     REQUIRE_MESSAGE(cell.ok, cell.error_text());
 }
 
+// These hang on Windows, as does any call of an earlier cell's procedure that
+// takes a polymorphic argument, see
+// https://github.com/lfortran/lfortran/issues/12494.
+#ifndef _WIN32
 // The module of a type with defined output, and the code that writes a value
 // of that type with it, in separate cells (#17915).
 TEST_CASE("FortranEvaluator execute: defined output in a later cell") {
@@ -7075,6 +7079,7 @@ end subroutine
     run_cell(e, "call q(shown(7))", io);
     CHECK(output == "n=7\n");
 }
+#endif
 
 #ifndef _WIN32
 // The cell runs on a thread of its own while the caller passes its output on.
