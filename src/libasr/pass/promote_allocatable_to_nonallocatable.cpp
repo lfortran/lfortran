@@ -563,13 +563,15 @@ class PromoteAllocatableToNonAllocatable:
                 if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
                     var_sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
                 }
-                // A variable declared in the translation unit, as an interactive
-                // cell does, has no symbol owner. It is not a module variable.
+                // Only a procedure's or a program's own variable can be
+                // promoted. A module variable, and a variable declared in the
+                // translation unit (an interactive cell's, which has no symbol
+                // owner), outlive the procedure that allocates them.
                 ASR::symbol_t* owner = (var_sym != nullptr
                         && ASR::is_a<ASR::Variable_t>(*var_sym))
                     ? ASRUtils::get_asr_owner(var_sym) : nullptr;
-                bool in_module = owner != nullptr
-                    && ASR::is_a<ASR::Module_t>(*owner);
+                bool is_global = owner == nullptr
+                    || ASR::is_a<ASR::Module_t>(*owner);
                 if( var_sym != nullptr &&
                     is_allocatable_array &&
                     !is_deferred_len_character_array &&
@@ -579,7 +581,7 @@ class PromoteAllocatableToNonAllocatable:
                     // host, whose allocation outlives this procedure.
                     ASRUtils::has_own_storage(*ASR::down_cast<ASR::Variable_t>(
                         var_sym)) &&
-                    !in_module &&
+                    !is_global &&
                     (!device_only || in_device) &&
                     (ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local ||
                      (in_device && ASRUtils::expr_intent(alloc_arg.m_a) ==
