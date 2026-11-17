@@ -5422,7 +5422,31 @@ TEST_CASE("FortranEvaluator implicit interface reference to an undefined procedu
     CHECK(r.result.i32 == 2);
 }
 
-// This cell is rejected only by ASR verification, which runs only in assertion builds.
+TEST_CASE("FortranEvaluator implicit interface reference in a cell BLOCK") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.implicit_interface = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(subroutine s(x) bind(c, name="csub")
+integer, intent(out) :: x
+x = 42
+end subroutine
+)").ok);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    // Inside a BLOCK, `csub` gets an implicit interface; the JIT linker
+    // resolves it to the subroutine of the first cell.
+    REQUIRE(e.evaluate2(R"(block
+call csub(z0)
+end block
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("z0");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 42);
+}
+
+// This cell is rejected only by ASR verification, which runs only in
+// assertion builds; semantics does not diagnose it yet (#13804).
 #if defined(WITH_LFORTRAN_ASSERT)
 TEST_CASE("FortranEvaluator call of a procedure whose cell was rejected") {
     CompilerOptions cu;

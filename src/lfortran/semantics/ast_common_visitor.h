@@ -27269,16 +27269,19 @@ public:
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             check_hidden_derived_type_component_reference(loc, remote_sym);
             // An undeclared name becomes a procedure with an implicit
-            // interface, which is filed in the enclosing program unit. In
-            // interactive mode, the statements of a cell have no such unit,
-            // and the cell runs at once, so the procedure could never be
-            // defined.
-            SymbolTable* interface_scope = implicit_interface_scope();
-            bool in_program_unit = !compiler_options.interactive
-                || (interface_scope->asr_owner
-                    && ASR::is_a<ASR::symbol_t>(*interface_scope->asr_owner));
+            // interface, which is filed in the enclosing program unit. A
+            // reference made directly in the top-level scope of an
+            // interactive cell has no program unit to file it in (filing it
+            // in the translation unit crashes), so it is reported as not
+            // found. A reference inside a top-level BLOCK or ASSOCIATE keeps
+            // the fallback, and the JIT linker resolves the procedure.
+            SymbolTable* reference_scope = statement_function_parent_scope
+                ? statement_function_parent_scope : current_scope;
+            bool in_cell_top_level = compiler_options.interactive
+                && !(reference_scope->asr_owner
+                    && ASR::is_a<ASR::symbol_t>(*reference_scope->asr_owner));
             if (compiler_options.implicit_interface && !unmatched_generic
-                    && in_program_unit) {
+                    && !in_cell_top_level) {
                 return nullptr;
             } else {
                 is_coarray_or_atomic(remote_sym, loc);
