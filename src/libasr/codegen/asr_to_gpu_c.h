@@ -4207,6 +4207,46 @@ public:
         return out;
     }
 
+    // Whether the iterations of a loop with these statements combine values
+    // across the lanes of an iteration (GpuLaneReduce, a lane barrier)
+    // outside the loops inside it, and one of those reads vectors: the
+    // grid-stride loop of a kernel with a reduction, whose iterations are
+    // whole iterations of the offloaded loop. Written twice for the test of
+    // whether its vectors start at a multiple of 16 bytes, it would have its
+    // combinations, their shared memory and their barriers twice; the loops
+    // inside it that read the vectors are written twice instead (a
+    // matrix-vector product took 9% longer).
+    bool combines_lanes_around_loops(ASR::stmt_t **body, size_t n_body) {
+        class Found : public ASR::BaseWalkVisitor<Found> {
+        public:
+            bool combines = false;
+            bool loop_reads_vectors = false;
+            void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &) {
+                combines = true;
+            }
+            void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &) {
+                combines = true;
+            }
+            void visit_DoLoop(const ASR::DoLoop_t &x) {
+                loop_reads_vectors = loop_reads_vectors
+                    || holds_wide_load(x.m_body, x.n_body);
+            }
+            void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+                loop_reads_vectors = loop_reads_vectors
+                    || holds_wide_load(x.m_body, x.n_body);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        } found;
+        for (size_t i = 0; i < n_body; i++) found.visit_stmt(*body[i]);
+        return found.combines && found.loop_reads_vectors;
+    }
+
     // Writes a counted loop, a `do` statement.
     void emit_do_loop(ASR::stmt_t *stmt) {
         ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
@@ -5560,6 +5600,10 @@ public:
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 std::string aligned = wide_versioned ? std::string()
                     : wide_loads_aligned(dl->m_body, dl->n_body);
+                if (!aligned.empty()
+                        && combines_lanes_around_loops(dl->m_body, dl->n_body)) {
+                    aligned.clear();
+                }
                 if (aligned.empty()) {
                     emit_do_loop(stmt);
                     break;
