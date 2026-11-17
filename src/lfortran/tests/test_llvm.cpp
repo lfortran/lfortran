@@ -5143,6 +5143,31 @@ TEST_CASE("FortranEvaluator earlier cell's function with a getter in its result 
     CHECK(r.result.i32 == 3);
 }
 
+// A procedure calling an earlier cell's function whose result bound reads a
+// use-associated variable through a getter of that cell depends on the
+// getter, which the type of the call names.
+TEST_CASE("FortranEvaluator later procedure calling a function with a getter in its result bound") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("module mrepl6; integer :: n = 3; end module").ok);
+    REQUIRE(e.evaluate2("function ff6() result(r); use mrepl6, only: n; "
+        "real :: r(n); r = 1; end function").ok);
+    REQUIRE(e.evaluate2("function gg6() result(s); real :: s; "
+        "s = sum(ff6()); end function").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("gg6()");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 3);
+    REQUIRE(e.evaluate2("subroutine ss6(s); real, intent(out) :: s; "
+        "s = 2 * sum(ff6()); end subroutine").ok);
+    REQUIRE(e.evaluate2("real :: s6").ok);
+    REQUIRE(e.evaluate2("call ss6(s6)").ok);
+    r = e.evaluate2("s6");
+    REQUIRE(r.ok);
+    CHECK(r.result.f32 == 6);
+}
 
 // The bound of an earlier cell's function result can only be evaluated
 // through a helper function, which the cell calling the function creates.
