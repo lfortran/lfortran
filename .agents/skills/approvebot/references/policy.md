@@ -128,6 +128,34 @@ kind allows do not count toward it, but they are still read.
    kind whose special values it adopts. For C5, it names GFortran's result
    that the fold now matches. For C6, it names the branch whose ownership
    the leaking branch now follows.
+9. **The test covers what the change could get wrong.** Beyond the
+   reported case, the test covers every input that reaches the changed code
+   and could expose the kind of mistake that the change could make. Derive
+   these inputs from what the change touches, not from a fixed checklist:
+   - A changed starting value or comparison needs inputs where it decides
+     the result. #18006 changes where `maxval` and `minval` start, so it
+     needs all-negative arrays (with a positive element the old start
+     never decided the result), masks that select nothing, and NaN
+     elements first, in the middle, and as the only selected values.
+   - A changed loop, index or extent needs its edges: zero length, lower
+     bounds other than 1, exact multiples, the last element. #17949 clamps
+     a shift to the extent; #17987 newly folds norm2 through the loop over
+     DIM, so it needs zero-length sections of a constant array.
+   - Code that depends on the kind, rank or type needs every one that
+     reaches it.
+   - A fix that only builds a constant or adds a table entry needs no edge
+     cases (#17948, the kind-aware zero in #17987).
+
+   The edges listed are examples; whether an input could expose a mistake
+   decides. An input that cannot reach the changed code, or whose result
+   the change cannot affect, need not be tested: `norm2` squares its
+   elements, so their sign is irrelevant to a change in how it is folded.
+   An existing test on main counts when it reaches the changed code the
+   same way (a run-time test does not cover a fold). A case that the kind
+   itself leaves out of the test, such as a value that GFortran folds
+   wrongly (C5), is not missing. The verdict comment names the inputs that
+   the change could get wrong and the test cases that cover them. A missing
+   one is `needs-review`, with the missing case as the suggestion.
 
 **The narrow `NO_FAST_MATH` case.** A test may opt out of fast-math only if
 all of these hold:
@@ -180,11 +208,8 @@ These shapes fit. The descriptions come from approved PRs:
 | Lower-case a Fortran name | An identifier that is stored or looked up as written is lower-cased with the existing `to_lower`, as a sibling construct already does. This never applies to strings, `bind(c, name=)`, file names or link names. | #17358: SELECT TYPE and SELECT RANK lower-case the associate name, like `visit_AssociateBlock`. |
 
 **Tests:** the new integration test asserts the corrected value, not only
-that compilation succeeds. It covers more than the reported shape: the
-boundaries (zero size, lower bounds other than 1, exact multiples, extreme
-values) and every kind, rank or type that reaches the changed code. Covering
-every kind is required only where the changed code depends on the kind. A
-keyword-table entry (#17948) does not.
+that compilation succeeds, and covers what the change could get wrong
+(rule 9).
 
 ### C4: numerical correctness (scope S1)
 
@@ -281,10 +306,8 @@ element.
   a value to the processor (NaN elements, an empty selection), the fold
   gives what GFortran's run-time library gives. A case that GFortran itself
   folds wrongly is left out of the test, and the PR says so.
-- The test covers the boundaries that reach the changed code (a case that
-  returns before it need not be tested): empty and fully masked
-  selections; negative, mixed and extreme values; rank 1 and a higher rank
-  with each of its DIMs; and every kind that the fold handles.
+- The test covers what the change could get wrong (rule 9), for every
+  kind that the changed fold handles.
 - A disagreement with GFortran that the fix inherits from an existing
   evaluator it reuses unchanged, tracked in its own issue and named in the
   PR, is not a new one (#17987 folds overflowing sections to infinity, as

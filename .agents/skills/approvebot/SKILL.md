@@ -141,6 +141,7 @@ apply `auto-merge`:
 **Scope:** S1, fixes #N (<one line: what was wrong>).
 **Kind:** C3 / <shape>. Precedent: <the sibling code it follows>.
 **Invariant:** <what stays the same for every other input>.
+**Coverage:** <the inputs the change could get wrong, and the test cases that cover them>.
 **Evidence:** `<test>` fails on main `<sha10>` (<how: ICE text / wrong value>);
 registered `gfortran llvm` with no mode opt-outs; required checks <green | pending>.
 ```
