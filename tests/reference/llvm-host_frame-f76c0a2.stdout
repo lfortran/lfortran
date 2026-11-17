@@ -4,6 +4,7 @@ target datalayout = "..."
 
 %string_descriptor = type { i8*, i64 }
 %frame.4 = type { i32* }
+%frame.4_class = type <{ i32 (...)**, %frame.4* }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
@@ -60,6 +61,17 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_outer
 
 FINALIZE_SYMTABLE_outer:                          ; preds = %return
+  ret void
+}
+
+define internal void @outer.__libasr_intent_out_reset_frame(%frame.4_class* %self) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___libasr_intent_out_reset_frame
+
+FINALIZE_SYMTABLE___libasr_intent_out_reset_frame: ; preds = %return
   ret void
 }
 

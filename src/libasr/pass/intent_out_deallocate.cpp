@@ -18,21 +18,14 @@ namespace {
 // reset (add_reset_bindings). No Fortran name starts with an underscore.
 constexpr const char* reset_binding_name = "__libasr_intent_out_reset";
 
-// The derived types of a translation unit, outside of templates, and whether
-// it has a polymorphic entity anywhere.
+// The derived types of a translation unit, outside of templates.
 class ResetTypeCollector : public ASR::BaseWalkVisitor<ResetTypeCollector> {
 public:
     std::vector<ASR::Struct_t*> structs;
-    bool has_polymorphic = false;
 
     void visit_Struct(const ASR::Struct_t &x) {
         structs.push_back(const_cast<ASR::Struct_t*>(&x));
         ASR::BaseWalkVisitor<ResetTypeCollector>::visit_Struct(x);
-    }
-
-    void visit_StructType(const ASR::StructType_t &x) {
-        if (!x.m_is_cstruct) has_polymorphic = true;
-        ASR::BaseWalkVisitor<ResetTypeCollector>::visit_StructType(x);
     }
 
     // An uninstantiated template has no code of its own.
@@ -107,9 +100,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 !ASR::is_a<ASR::Program_t>(*owner)) {
             return false;
         }
-        std::set<ASR::Struct_t*> visited;
         for (ASR::Struct_t* s = st; s != nullptr; ) {
-            if (!visited.insert(s).second) return false;
             // A parameterized type has a layout only once it is specialized.
             if (s->n_kind_params > 0 ||
                     ASRUtils::is_unlimited_polymorphic_type(&s->base) ||
@@ -119,12 +110,18 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                         &s->base)) {
                 return false;
             }
+            // The types of an intrinsic module (team_type, ...), which any
+            // unit that uses the module sees, keep the declared-type reset.
+            ASR::symbol_t* s_owner = ASRUtils::get_asr_owner(&s->base);
+            if (s_owner != nullptr && ASR::is_a<ASR::Module_t>(*s_owner) &&
+                    ASR::down_cast<ASR::Module_t>(s_owner)->m_intrinsic) {
+                return false;
+            }
             if (s->m_parent == nullptr) break;
             ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
                 s->m_parent);
-            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
-                return false;
-            }
+            LCOMPILERS_ASSERT(parent != nullptr &&
+                ASR::is_a<ASR::Struct_t>(*parent));
             s = ASR::down_cast<ASR::Struct_t>(parent);
         }
         return true;
@@ -891,16 +888,16 @@ public:
     // parent's, so a call through a polymorphic object reaches the one of its
     // dynamic type.
     //
-    // A type gets the binding in every unit that has a polymorphic entity,
-    // whether or not the unit has an intent(out) dummy: a unit without one
-    // never lays out a vtable, and all the others have to lay out the same
-    // one. Module files are written before this pass, so the procedure of a
-    // module's type is a private procedure of each unit that sees the type,
-    // not a procedure of the module.
+    // A type gets the binding in every unit that sees it, whether or not the
+    // unit has a polymorphic entity or an intent(out) dummy: any unit can
+    // lay out the type's vtable (to copy an object of the type, say), and
+    // all of them have to lay out the same one. Module files are written
+    // before this pass, so the procedure of a module's type is a private
+    // procedure of each unit that sees the type, not a procedure of the
+    // module.
     void add_reset_bindings(ASR::TranslationUnit_t &unit) {
         ResetTypeCollector collector;
         collector.visit_TranslationUnit(unit);
-        if (!collector.has_polymorphic) return;
         std::set<ASR::Struct_t*> seen;
         // The parent of a type can be loaded from a module without being
         // in this unit's scope.
@@ -909,10 +906,9 @@ public:
             if (!seen.insert(st).second || st->m_parent == nullptr) continue;
             ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
                 st->m_parent);
-            if (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
-                collector.structs.push_back(
-                    ASR::down_cast<ASR::Struct_t>(parent));
-            }
+            LCOMPILERS_ASSERT(parent != nullptr &&
+                ASR::is_a<ASR::Struct_t>(*parent));
+            collector.structs.push_back(ASR::down_cast<ASR::Struct_t>(parent));
         }
         seen.clear();
         for (ASR::Struct_t* st : collector.structs) {
