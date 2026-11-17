@@ -1515,6 +1515,7 @@ RUN(NAME complex16_cmplx_kind_const_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_02 LABELS gfortran llvm)
 RUN(NAME complex16_tanh_overflow_01 LABELS gfortran llvm)
+RUN(NAME complex16_inverse_trig_signed_zero_01 LABELS gfortran llvm NO_FAST_MATH)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
