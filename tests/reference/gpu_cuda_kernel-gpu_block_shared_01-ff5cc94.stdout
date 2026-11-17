@@ -238,7 +238,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
         }
         #pragma unroll 16
         for (__gpu_lane_count = 1; __gpu_lane_count <= 16; __gpu_lane_count++) {
-            j = ((1 + (((int)__gpu_lane_part) * 1)) + ((__gpu_lane_count - 1) * (1 * 4)));
+            j = ((1 + (((int)__gpu_lane_part) * (1 * 16))) + ((__gpu_lane_count - 1) * 1));
             t = (t + (w[((int)(i__dc) - (__lb_w_0)) + (__dim_w_0 * ((int)(j) - (__lb_w_1))) + ((__dim_w_0 * __dim_w_1) * ((int)(h__dc) - (__lb_w_2)))] * a[((int)(j) - (1))]));
         }
         __gpu_lane_parts[((int)((__gpu_lane + 1)) - (1))] = t;
