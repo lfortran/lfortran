@@ -3824,15 +3824,17 @@ namespace Aint {
     static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        // Truncated in the precision of the argument, then converted to the
+        // result kind
         if (kind == 16) {
             lf_float128 v = ASRUtils::real_expr_get_r16(args[0]);
-            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_signbit(v) ? lf_f128_ceiling(v) : lf_f128_floor(v), arg_type);
+            return ASRUtils::make_RealConstant_from_r16(al, loc, lf_f128_signbit(v) ? lf_f128_ceiling(v) : lf_f128_floor(v), arg_type);
         }
         // Kind 10 stores a pointer in m_r, not the numeric value.
         if (kind == 10) {
             long double rv = ASRUtils::real_constant_get_r10(
                 ASR::down_cast<ASR::RealConstant_t>(args[0]));
-            return ASRUtils::make_RealConstant_r10(al, loc, truncl(rv), arg_type);
+            return ASRUtils::make_RealConstant_from_r10(al, loc, truncl(rv), arg_type);
         }
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         ASRUtils::ASRBuilder b(al, loc);
@@ -3867,14 +3869,16 @@ namespace Anint {
     static ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        // Rounded in the precision of the argument, then converted to the
+        // result kind
         if (kind == 16) {
-            return ASRUtils::make_RealConstant_r16(al, loc, ASRUtils::real16_round_half_away(ASRUtils::real_expr_get_r16(args[0])), arg_type);
+            return ASRUtils::make_RealConstant_from_r16(al, loc, ASRUtils::real16_round_half_away(ASRUtils::real_expr_get_r16(args[0])), arg_type);
         }
         // Kind 10 stores a pointer in m_r, not the numeric value.
         if (kind == 10) {
             long double rv = ASRUtils::real_constant_get_r10(
                 ASR::down_cast<ASR::RealConstant_t>(args[0]));
-            return ASRUtils::make_RealConstant_r10(al, loc, roundl(rv), arg_type);
+            return ASRUtils::make_RealConstant_from_r10(al, loc, roundl(rv), arg_type);
         }
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         ASRUtils::ASRBuilder b(al, loc);
