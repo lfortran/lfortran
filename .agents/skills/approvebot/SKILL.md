@@ -1,8 +1,9 @@
 ---
 name: approvebot
 description: >
-  Classify the maintainer's own ready LFortran PRs (non-draft, CI not failed) as
-  `bot-approved` or `needs-review`, posting a signed comment with the reason.
+  Classify ready LFortran PRs by Push Access members with write access
+  (non-draft, CI not failed) as `bot-approved` or `needs-review`, posting a
+  signed comment with the reason.
   `bot-approved` means the maintainer would very likely approve that exact
   head: the change is in scope (we want it) and fits a narrow, listed kind
   whose test is proven to fail on a local build of main. It journals every
@@ -13,15 +14,24 @@ description: >
   pushes to a PR. Not for code review (pr-review) or merging (mergebot).
 compatibility: >
   Requires gh authenticated as the maintainer (triage access to
-  lfortran/lfortran), git, Pixi, about 15 GB of disk for a build of main,
-  and a runtime that can spawn subagents.
+  lfortran/lfortran, and permission to list the push-access team), git,
+  Pixi, about 15 GB of disk for a build of main, and a runtime that can
+  spawn subagents.
 ---
 
 # Approvebot
 
-Approvebot gives each of the maintainer's ready PRs exactly one verdict
-label for its current head. It runs on the maintainer's GitHub account and
-signs its comments `-- approvebot (automated; runs on <login>'s account)`.
+Approvebot gives each ready PR by a Push Access member with write access
+exactly one verdict label for its current head. It runs on the maintainer's
+GitHub account and signs its comments
+`-- approvebot (automated; runs on <login>'s account)`.
+
+The authors are members of the `push-access` team who have write or admin
+permission on `lfortran/lfortran`. The script resolves that set on each run
+with mergebot's `can_write` check, so a new teammate with merge rights is
+included without editing this skill. `status` prints the resolved
+`authors`. Merge rights here are the same roles mergebot accepts on an
+`auto-merge` label: `admin` and `write`.
 
 | Label | Meaning |
 | --- | --- |
@@ -58,7 +68,8 @@ examples use `--jobs 8`.
 
 ## One iteration
 
-1. **Status.** Run `python3 $BOT status`. Each open PR gets an `action`:
+1. **Status.** Run `python3 $BOT status`. The JSON lists `authors`, the
+   logins classified this run. Each open PR gets an `action`:
    - `classify`: ready, no required check failed (pending is fine), and
      without a current verdict.
    - `retract`: the head moved since the verdict, a required check failed

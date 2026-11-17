@@ -20,7 +20,9 @@ PRs that the maintainer reviews and merges ([calibration.md](calibration.md)).
 
 ## 1. Eligibility (checked by the script)
 
-- Authored by an account in the script's `AUTHORS`, open, not a draft, and
+- Authored by a member of the `push-access` team who has write or admin
+  permission on this repository. The script resolves that set each run
+  (`authors`, using mergebot's write check). Open, not a draft, and
   targeting `main`.
 - No required check has failed on the current head. Pending checks are
   fine.

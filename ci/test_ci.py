@@ -2798,6 +2798,16 @@ class ApprovebotTests(unittest.TestCase):
         entry.update(overrides)
         return entry
 
+    def test_select_authors(self):
+        writers = {"certik", "assem2002", "rebcabin"}
+        # rebcabin can merge but is outside the team, so the member list
+        # never includes that login. A teammate without merge rights drops out.
+        selected = self.bot.select_authors(
+            ["certik", "assem2002", "reader-only"], lambda login: login in writers)
+        self.assertEqual(selected, {"certik", "assem2002"})
+        self.assertEqual(self.bot.select_authors(["reader-only"], lambda login: False),
+                         set())
+
     def test_areas(self):
         area = self.bot.area
         self.assertEqual(area("src/libasr/pass/intrinsic_array_function_registry.h"),
