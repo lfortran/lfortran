@@ -5421,6 +5421,18 @@ TEST_CASE("FortranEvaluator implicit interface reference to an undefined procedu
     REQUIRE(e.evaluate2("external q").ok);
     std::string message = rejected_cell_message(e, cu, "call q()");
     CHECK(message.find("Function 'q' not found") != std::string::npos);
+    // The specification part of a procedure defined in a cell is not the
+    // cell's top-level scope, so it keeps the specification function
+    // diagnostic.
+    message = rejected_cell_message(e, cu, R"(subroutine s13(n)
+integer, intent(in) :: n
+real :: w(nf(n))
+w = 1
+end subroutine
+)");
+    CHECK(message.find("so it is not a specification function")
+        != std::string::npos);
+    CHECK(message.find("not found") == std::string::npos);
     LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("z0 + 2");
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 2);
