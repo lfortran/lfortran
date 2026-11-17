@@ -5073,3 +5073,18 @@ subroutine cc1_specific_intrinsic_name_errors()
     cc1_sn_d = dsign(1d0, a=2d0)  ! {Error} No matching signature found for intrinsic dsign
     cc1_sn_d = realpart(cc1_sn_z, [4, 4])  ! {Error} `kind` argument of `realpart` intrinsic must be a scalar
 end subroutine
+
+! The x argument of atan2, atan2d and atan2pi, and of the two-argument forms
+! of atan, atand and atanpi, must have the same kind as the y argument.
+subroutine cc1_atan2_kind_errors()
+    real(8) :: cc1_a2k_y
+    real :: cc1_a2k_x, cc1_a2k_r
+    real(8), parameter :: cc1_a2k_p = atan2pi(1.0, 1.0d0)  ! {Error} arguments of the 'atan2pi' intrinsic must have the same type and kind, found real(4) and real(8)
+    cc1_a2k_y = 1.0d0
+    cc1_a2k_x = 1.0
+    cc1_a2k_r = atan2(cc1_a2k_y, cc1_a2k_x)  ! {Error} arguments of the 'atan2' intrinsic must have the same type and kind, found real(8) and real(4)
+    cc1_a2k_r = atan2(1.0, 1.0d0)  ! {Error} arguments of the 'atan2' intrinsic must have the same type and kind, found real(4) and real(8)
+    cc1_a2k_r = atan2d(cc1_a2k_x, cc1_a2k_y)  ! {Error} arguments of the 'atan2d' intrinsic must have the same type and kind, found real(4) and real(8)
+    cc1_a2k_r = atan(cc1_a2k_y, cc1_a2k_x)  ! {Error} arguments 'y' and 'x' of the 'atan' intrinsic must have the same kind, found real(8) and real(4)
+    cc1_a2k_r = atand(1.0d0, 1.0)  ! {Error} arguments 'y' and 'x' of the 'atand' intrinsic must have the same kind, found real(8) and real(4)
+end subroutine
