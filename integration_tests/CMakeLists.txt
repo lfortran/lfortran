@@ -2330,6 +2330,7 @@ RUN(NAME eoshift_default_boundary_char_01 LABELS gfortran llvm) # eoshift of a c
 RUN(NAME intrinsics_520 LABELS gfortran llvm) # x= keyword for sind and atand (#17843)
 RUN(NAME real16_gamma_01 LABELS gfortran llvm) # real(16) gamma/log_gamma/erfc_scaled of non-constant arguments (#15736, #17463)
 RUN(NAME real16_gamma_02 LABELS gfortran llvm) # real(16) gamma/log_gamma within 2 ulp, folded and at run time (#17825)
+RUN(NAME real16_gamma_poles_01 LABELS gfortran llvm NO_FAST_MATH GFORTRAN_ARGS -fno-range-check) # real(16) gamma/log_gamma return infinity at their poles, folded and at run time (#17857)
 RUN(NAME real16_intrinsics_rounding_01 LABELS gfortran llvm) # real(16) exp, hyperbolic and ** correctly rounded when folded (#17825)
 RUN(NAME real16_intrinsics_rounding_02 LABELS gfortran llvm) # real(16) sin, cos, tan correctly rounded when folded (#17825)
 RUN(NAME real16_intrinsics_rounding_03 LABELS gfortran llvm) # real(16) erf, erfc correctly rounded when folded (#17825)
