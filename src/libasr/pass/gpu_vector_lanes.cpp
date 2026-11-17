@@ -155,7 +155,8 @@ it never broadcast), it assigns no private array (a lane-private copy the
 others would miss) and every private scalar it assigns is an integer, a
 real or a logical of 4 bytes. Nor is a kernel rewritten that assigns an
 element of a kernel argument that every iteration assigns (no subscript
-depends on the iteration): an array declared outside the loop that each
+depends on the iteration, and no test such as `if (i == 1)` lets one
+iteration alone assign it): an array declared outside the loop that each
 iteration defines before using it, as a temporary. Fortran gives each
 iteration its own, but a launch passes one array to all threads, so the
 iterations race on it; lanes that wait for each other would make that show
@@ -692,6 +693,9 @@ struct KernelInfo {
     // first worse (a quantized matrix-vector product took 5% longer).
     bool shared_only = false;
     int lanes_count = 1;
+    // The values each private integer scalar of the kernel is assigned,
+    // BLOCKs included (single_iteration_test).
+    std::map<ASR::symbol_t*, std::vector<ASR::expr_t*>> definitions;
     // The contributions of a combination of array reductions
     // (GpuReduceCombine), which takes the first lane's: only the first lane
     // needs their values, so a statement that assigns nothing else runs on
@@ -798,6 +802,127 @@ public:
     }
 };
 
+// Whether `e` gives every iteration a value of its own: the number the
+// kernel gives the iteration (GpuBlockIndex * GpuBlockSize +
+// GpuThreadIndex), or such a value plus or minus something the iteration
+// does not change, or a scalar assigned once, one of those (the loop index,
+// `i = __flat_idx + 1`).
+bool iteration_number(const KernelInfo &k, ASR::expr_t *e, int depth = 0) {
+    if (e == nullptr || depth > 16) return false;
+    auto past_casts = [](ASR::expr_t *x) {
+        while (ASR::is_a<ASR::Cast_t>(*x) && ASR::down_cast<ASR::Cast_t>(x)
+                ->m_kind == ASR::cast_kindType::IntegerToInteger) {
+            x = ASR::down_cast<ASR::Cast_t>(x)->m_arg;
+        }
+        return x;
+    };
+    e = past_casts(e);
+    if (ASR::is_a<ASR::Var_t>(*e)) {
+        auto d = k.definitions.find(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v));
+        return d != k.definitions.end() && d->second.size() == 1
+            && iteration_number(k, d->second[0], depth + 1);
+    }
+    if (!ASR::is_a<ASR::IntegerBinOp_t>(*e)) return false;
+    auto *op = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+    ASR::expr_t *l = past_casts(op->m_left), *r = past_casts(op->m_right);
+    if (op->m_op == ASR::binopType::Add) {
+        auto block_start = [&](ASR::expr_t *x) {
+            if (!ASR::is_a<ASR::IntegerBinOp_t>(*x)) return false;
+            auto *m = ASR::down_cast<ASR::IntegerBinOp_t>(x);
+            ASR::expr_t *a = past_casts(m->m_left), *b = past_casts(m->m_right);
+            return m->m_op == ASR::binopType::Mul
+                && ((ASR::is_a<ASR::GpuBlockIndex_t>(*a)
+                        && ASR::is_a<ASR::GpuBlockSize_t>(*b))
+                    || (ASR::is_a<ASR::GpuBlockSize_t>(*a)
+                        && ASR::is_a<ASR::GpuBlockIndex_t>(*b)));
+        };
+        if ((ASR::is_a<ASR::GpuThreadIndex_t>(*l) && block_start(r))
+                || (ASR::is_a<ASR::GpuThreadIndex_t>(*r) && block_start(l))) {
+            return true;
+        }
+        return (iteration_number(k, l, depth + 1) && !reads_iteration(k, r))
+            || (iteration_number(k, r, depth + 1) && !reads_iteration(k, l));
+    }
+    if (op->m_op == ASR::binopType::Sub) {
+        return iteration_number(k, l, depth + 1) && !reads_iteration(k, r);
+    }
+    return false;
+}
+
+// Whether the test of an `if` holds in one iteration at most: an iteration
+// number, as iteration_number, equal to something the iteration does not
+// change (`if (i == 1)`).
+bool single_iteration_test(const KernelInfo &k, ASR::expr_t *test) {
+    if (!ASR::is_a<ASR::IntegerCompare_t>(*test)) return false;
+    auto *c = ASR::down_cast<ASR::IntegerCompare_t>(test);
+    if (c->m_op != ASR::cmpopType::Eq) return false;
+    return (iteration_number(k, c->m_left) && !reads_iteration(k, c->m_right))
+        || (iteration_number(k, c->m_right)
+            && !reads_iteration(k, c->m_left));
+}
+
+// Whether a statement holds a loop.
+bool holds_loop(const ASR::stmt_t &s) {
+    class Loops : public ASR::BaseWalkVisitor<Loops> {
+    public:
+        bool found = false;
+        std::set<ASR::symbol_t*> blocks;
+        void visit_DoLoop(const ASR::DoLoop_t &) { found = true; }
+        void visit_WhileLoop(const ASR::WhileLoop_t &) { found = true; }
+        void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &) {
+            found = true;
+        }
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!blocks.insert(b).second) return;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+            for (size_t i = 0; i < block->n_body; i++) {
+                visit_stmt(*block->m_body[i]);
+            }
+        }
+    } loops;
+    loops.visit_stmt(s);
+    return loops.found;
+}
+
+// The values the private integer scalars of a kernel are assigned.
+class ScalarDefinitions : public ASR::BaseWalkVisitor<ScalarDefinitions> {
+public:
+    KernelInfo &k;
+    std::set<ASR::symbol_t*> blocks;
+    explicit ScalarDefinitions(KernelInfo &k_) : k(k_) {}
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            ASR::symbol_t *s = root_of(x.m_target);
+            if (k.private_scalar(s)
+                    && ASRUtils::is_integer(*ASRUtils::symbol_type(s))) {
+                k.definitions[s].push_back(x.m_value);
+            }
+        }
+        BaseWalkVisitor::visit_Assignment(x);
+    }
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        // A loop variable takes many values.
+        if (x.m_head.m_v) {
+            ASR::symbol_t *s = root_of(x.m_head.m_v);
+            if (s != nullptr) {
+                k.definitions[s].push_back(nullptr);
+                k.definitions[s].push_back(nullptr);
+            }
+        }
+        BaseWalkVisitor::visit_DoLoop(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
 // Whether a statement may assign an element of a kernel argument at a
 // place every iteration assigns: a temporary declared outside the loop,
 // which each iteration defines before it reads it. Each iteration should
@@ -862,6 +987,15 @@ public:
     }
     void visit_If(const ASR::If_t &x) {
         if (stop_record(x.base, nullptr)) return;
+        // What one iteration alone assigns (`if (i == 1) a(1) = 0`) is no
+        // temporary every iteration defines.
+        if (single_iteration_test(k, x.m_test)) {
+            visit_expr(*x.m_test);
+            for (size_t i = 0; i < x.n_orelse; i++) {
+                visit_stmt(*x.m_orelse[i]);
+            }
+            return;
+        }
         BaseWalkVisitor::visit_If(x);
     }
     void call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
@@ -2520,6 +2654,14 @@ private:
             }
             case ASR::stmtType::If:
                 if (stop_record(*s, nullptr)) return Role::Replicate;
+                // What one iteration alone does (`if (i == 1) a(1) = 0`) is
+                // a statement of its own, which its assignments, of places
+                // no other iteration assigns, are not taken apart from.
+                if (single_iteration_test(k,
+                        ASR::down_cast<ASR::If_t>(s)->m_test)
+                        && !holds_loop(*s)) {
+                    break;
+                }
                 if (nested_decide(s, frames)) {
                     Effects test(k);
                     test.visit_expr(*ASR::down_cast<ASR::If_t>(s)->m_test);
@@ -4016,6 +4158,12 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
                 k.first_lane_scalars.insert(ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(c->m_items[j].m_value)->m_v));
             }
+        }
+    }
+    {
+        ScalarDefinitions definitions(k);
+        for (size_t i = 0; i < kernel.n_body; i++) {
+            definitions.visit_stmt(*kernel.m_body[i]);
         }
     }
     for (bool added = true; added;) {
