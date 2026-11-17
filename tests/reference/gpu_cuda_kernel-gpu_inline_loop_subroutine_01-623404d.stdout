@@ -272,7 +272,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_31gpu_
                 z[((int)(j__dc) - (__lb_z_0))] = r;
             }
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

@@ -288,7 +288,6 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_25g
             }
             out[((int)(d__dc) - (__lb_out_0)) + (__dim_out_0 * ((int)(h__dc) - (__lb_out_1)))] = (acc / total);
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

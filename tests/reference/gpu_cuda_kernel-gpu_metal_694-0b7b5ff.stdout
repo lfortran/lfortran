@@ -226,7 +226,6 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_1_13g
         }
         y[((long)((((long)__lb_y_0) + (__gpu_mm_i - ((long)__lb_a_0)))) - (__lb_y_0)) + (__dim_y_0 * ((long)((unsigned int)((j__dc) - (__lb_y_1)))))] = (__gpu_mm_acc + z[((long)((((long)__lb_z_0) + (__gpu_mm_i - ((long)__lb_a_0)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))]);
     }
-    __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_694 {
@@ -512,6 +511,5 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_5_13g
             c[((long)((((long)__lb_c_0) + (__gpu_mm_i1 - ((long)__lb_p_0)))) - (__lb_c_0)) + (__dim_c_0 * ((long)((((long)__lb_c_1) + (__gpu_mm_j1 - ((long)__lb_q_1)))) - (__lb_c_1))) + ((((long)(__dim_c_0)) * __dim_c_1) * ((long)((unsigned int)((l__dc) - (__lb_c_2)))))] = __gpu_mm_acc2;
         }
     }
-    __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
 }
 

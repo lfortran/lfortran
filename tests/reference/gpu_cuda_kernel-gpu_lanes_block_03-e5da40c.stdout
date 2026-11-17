@@ -239,7 +239,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
                     v = __lfortran_lane_combine<2>(v, __lfortran_partial0_4[__i]);
                     w = __lfortran_lane_combine<1>(w, __lfortran_partial0_5[__i]);
                 }
-                __syncthreads();
             } else {
                 m = __lfortran_lane_reduce<0>(m, __gpu_lanes_n, __gpu_lane_mask);
                 q = __lfortran_lane_reduce<3>(q, __gpu_lanes_n, __gpu_lane_mask);
@@ -267,7 +266,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
             ks[((int)(j__dc) - (__lb_ks_0))] = m;
             kmax[((int)(j__dc) - (__lb_kmax_0))] = q;
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

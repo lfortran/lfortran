@@ -330,7 +330,6 @@ extern "C" __global__ void __launch_bounds__(256, 4) __lfortran_gpu_kernel_0_18g
                 a1 = __lfortran_lane_combine<0>(a1, __lfortran_partial0_0[__i]);
                 a2 = __lfortran_lane_combine<0>(a2, __lfortran_partial0_1[__i]);
             }
-            __syncthreads();
         } else {
             a1 = __lfortran_lane_reduce<0>(a1, __gpu_lanes_n, __gpu_lane_mask);
             a2 = __lfortran_lane_reduce<0>(a2, __gpu_lanes_n, __gpu_lane_mask);
@@ -339,7 +338,6 @@ extern "C" __global__ void __launch_bounds__(256, 4) __lfortran_gpu_kernel_0_18g
             y[((int)(n) - (__lb_y_0))] = a1;
             y[((int)((n + 1)) - (__lb_y_0))] = a2;
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -623,7 +621,6 @@ extern "C" __global__ void __launch_bounds__(64, 14) __lfortran_gpu_kernel_1_18g
                 a3 = __lfortran_lane_combine<0>(a3, __lfortran_partial1_2[__i]);
                 a4 = __lfortran_lane_combine<0>(a4, __lfortran_partial1_3[__i]);
             }
-            __syncthreads();
         } else {
             a1 = __lfortran_lane_reduce<0>(a1, __gpu_lanes_n, __gpu_lane_mask);
             a2 = __lfortran_lane_reduce<0>(a2, __gpu_lanes_n, __gpu_lane_mask);
@@ -636,7 +633,6 @@ extern "C" __global__ void __launch_bounds__(64, 14) __lfortran_gpu_kernel_1_18g
             y[((int)((n + 2)) - (__lb_y_0))] = a3;
             y[((int)((n + 3)) - (__lb_y_0))] = a4;
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

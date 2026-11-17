@@ -203,7 +203,6 @@ kernel void __lfortran_gpu_kernel_0_19gpu_lanes_reduce_03(
             cnt_gpu[((int)(j__dc_gpu) - (1))] = ((float)count_gpu);
             s_gpu[((int)(j__dc_gpu) - (1))] = total_gpu;
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

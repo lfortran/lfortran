@@ -156,7 +156,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_17gpu_
             }
             out[((int)(i__dc) - (__lb_out_0))] = a[((int)((((i__dc) % (n)) + 1)) - (1))];
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -210,7 +209,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_17gpu_
         if ((__gpu_lane == 0)) {
             out[((int)(i__dc1) - (__lb_out_0))] = b[((int)((((i__dc1) % (((n - m) + 1))) + m)) - (__gpu_private_shape2))];
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -277,7 +275,6 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_2_17g
             c[((int)((((i__dc2) % (n)) + 1)) - (1)) + (__gpu_private_shape3 * ((int)(2) - (1)))] = (-(i__dc2));
             out[((int)(i__dc2) - (__lb_out_0))] = (c[((int)((((i__dc2) % (n)) + 1)) - (1)) + (__gpu_private_shape3 * ((int)(1) - (1)))] + c[((int)(((((i__dc2 + 1)) % (n)) + 1)) - (1)) + (__gpu_private_shape3 * ((int)(2) - (1)))]);
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -327,7 +324,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_17gpu_
         if ((__gpu_lane == 0)) {
             out[((int)(i__dc3) - (__lb_out_0))] = d[((int)((((i__dc3) % (n)) + 1)) - (1))];
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -381,7 +377,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_17gpu_
         if ((__gpu_lane == 0)) {
             out[((int)(i__dc4) - (__lb_out_0))] = (e[((int)((((i__dc4) % (((n - m) + 1))) + m)) - (__gpu_private_shape6))] - (((i__dc4) % (((n - m) + 1))) + m));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

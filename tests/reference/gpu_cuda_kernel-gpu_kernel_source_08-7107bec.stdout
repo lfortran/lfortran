@@ -237,7 +237,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_
         if ((__gpu_lane == 0)) {
             y[((int)(j__dc2) - (1))] = (w1[((int)(1) - (1)) + (60000 * ((int)(j__dc2) - (1)))] + ((float)((3 * j__dc2) + m)));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -284,7 +283,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_20gpu_
         if ((__gpu_lane == 0)) {
             y[((int)(j__dc3) - (1))] = (w2[((int)(1) - (1)) + (120000 * ((int)(j__dc3) - (1)))] + ((float)((4 * j__dc3) + m)));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

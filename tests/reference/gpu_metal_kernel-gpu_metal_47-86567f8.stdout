@@ -76,7 +76,6 @@ kernel void __lfortran_gpu_kernel_0_3m475learn(
                 a_gpu[((int)(__gpu_bc_i_gpu) - (1))] =   0.00000000000000000e+00;
             }
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

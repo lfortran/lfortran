@@ -173,7 +173,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_26gpu_
         if ((__gpu_lane == 0)) {
             t[((int)(m__dc) - (__lb_t_0))] = ((((float)2) * __weighted_total) + ((float)1));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 
@@ -270,7 +269,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_
         for (int __lfortran_count_6 = 0; __lfortran_count_6 < __lfortran_trips_6; __lfortran_count_6++, d__dc += (1 * ((int)__gpu_lanes))) {
             y[((int)(d__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m__dc) - (__lb_y_1)))] = (widen_gpu_30(x[((int)(d__dc) - (__lb_x_0)) + (__dim_x_0 * ((int)(m__dc) - (__lb_x_1)))]) * total);
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

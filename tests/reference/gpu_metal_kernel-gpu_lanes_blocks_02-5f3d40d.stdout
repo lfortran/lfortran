@@ -88,7 +88,6 @@ kernel void __lfortran_gpu_kernel_0_21gpu_lanes_blocks_02_m5scale(
         if ((__gpu_lane == 0)) {
             first_gpu[((int)(h__dc_gpu) - (__lb_first_0_gpu)) + (__dim_first_0_gpu * ((int)(token__dc_gpu) - (__lb_first_1_gpu)))] = found_gpu;
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

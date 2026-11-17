@@ -217,7 +217,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_26gpu_
                     m = __lfortran_lane_combine<3>(m, __lfortran_partial0_0[__i]);
                     s = __lfortran_lane_combine<0>(s, __lfortran_partial0_1[__i]);
                 }
-                __syncthreads();
             } else {
                 m = __lfortran_lane_reduce<3>(m, __gpu_lanes_n, __gpu_lane_mask);
                 s = __lfortran_lane_reduce<0>(s, __gpu_lanes_n, __gpu_lane_mask);
@@ -250,7 +249,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_26gpu_
         if ((__gpu_lane == 0)) {
             o[((int)(v__dc) - (__lb_o_0)) + (__dim_o_0 * ((int)(h__dc) - (__lb_o_1)))] = ((s + m) + (((float)2) * t));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

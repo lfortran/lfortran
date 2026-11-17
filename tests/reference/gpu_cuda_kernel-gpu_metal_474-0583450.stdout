@@ -139,7 +139,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
         for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, k += (1 * ((int)__gpu_lanes))) {
             g[((int)(k) - (1)) + (64 * ((int)(j__dc) - (1)))] = ((float)((j__dc + ((m + 1) - k)) + it));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

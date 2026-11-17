@@ -236,7 +236,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_18gpu_
             if ((__gpu_lane == 0)) {
                 total[((int)(r__dc1) - (1))] = s;
             }
-            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
         }
     }
 }
@@ -276,7 +275,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_18gpu_
         for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, d += (1 * ((int)__gpu_lanes))) {
             o[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))] = ((((float)2) * q[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))]) + ((float)position));
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

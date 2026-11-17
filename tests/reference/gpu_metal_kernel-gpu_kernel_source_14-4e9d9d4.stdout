@@ -126,7 +126,6 @@ kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_14(
                     g_gpu[((int)(__gpu_sec_i_gpu) - (1)) + (4 * ((int)(j__dc_gpu) - (1)))] = t_gpu[((int)(__gpu_sec_i_gpu) - (1))];
                 }
             }
-            if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
         }
     }
 }
@@ -260,7 +259,6 @@ kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_14(
                 g_gpu[((int)(__gpu_sec_i1_gpu) - (1)) + (4 * ((int)(j__dc1_gpu) - (1)))] = u_gpu[((int)(__gpu_sec_i1_gpu) - (1))];
             }
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

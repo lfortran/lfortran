@@ -316,7 +316,6 @@ kernel void __lfortran_gpu_kernel_0_20gpu_lanes_reuse_01_m6scores(
         if ((__gpu_lane == 0)) {
             last_gpu[((int)(h__dc_gpu) - (__lb_last_0_gpu)) + (__dim_last_0_gpu * ((int)(token__dc_gpu) - (__lb_last_1_gpu)))] = t_gpu;
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

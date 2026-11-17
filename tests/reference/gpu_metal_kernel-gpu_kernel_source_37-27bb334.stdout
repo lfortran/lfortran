@@ -304,7 +304,6 @@ kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_37(
         if ((__gpu_lane == 0)) {
             out_gpu[((int)(i__dc1_gpu) - (1))] = __gpu_sum_res_gpu;
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

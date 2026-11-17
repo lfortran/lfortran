@@ -234,7 +234,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_25gpu_
         for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, i__dc2 += (1 * ((int)__gpu_lanes))) {
             qn[((int)(i__dc2) - (__lb_qn_0)) + (__dim_qn_0 * ((int)(col) - (__lb_qn_1)))] = (qk[((int)(i__dc2) - (__lb_qk_0)) + (__dim_qk_0 * ((int)(col) - (__lb_qk_1)))] * rrms);
         }
-        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }
 }
 

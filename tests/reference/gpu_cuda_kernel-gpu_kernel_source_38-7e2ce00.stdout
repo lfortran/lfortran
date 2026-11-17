@@ -167,7 +167,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
             if ((__gpu_lane == 0)) {
                 out[((int)(i__dc) - (1))] = __gpu_sum_res;
             }
-            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
         }
     }
 }
