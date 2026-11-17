@@ -4949,7 +4949,11 @@ public:
                     run.push_back({var, op});
                 }
             }
-            if (run.size() < 2) {
+            // A kernel whose every launch gives an iteration the lanes of a
+            // block (kernel_fixed_lanes) combines one value this way too,
+            // inline, behind one barrier, rather than in
+            // __lfortran_block_reduce, which waits at two.
+            if (run.size() < (current_fixed_lanes > 32 ? 1u : 2u)) {
                 visit_stmt(body[i]);
                 continue;
             }
@@ -5688,6 +5692,10 @@ public:
                 LCOMPILERS_ASSERT(current_kernel_layout != nullptr
                     && current_kernel_layout->m_lanes != nullptr);
                 if (trailing_barriers.count(stmt)) break;
+                if (current_fixed_lanes > 32) {
+                    dialect.emit_block_barrier(src, get_indent());
+                    break;
+                }
                 dialect.emit_lane_barrier(src, get_indent(),
                     ASRUtils::symbol_name(current_kernel_layout->m_lanes),
                     kernel_has_block_lanes());

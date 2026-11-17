@@ -169,6 +169,13 @@ struct MetalDialect {
             "mem_flags::mem_device | mem_flags::mem_threadgroup);\n";
     }
 
+    // The threads of the threadgroup wait for each other.
+    void emit_block_barrier(std::stringstream &src,
+            const std::string &indent) const {
+        src << indent << "threadgroup_barrier(mem_flags::mem_device | "
+            "mem_flags::mem_threadgroup);\n";
+    }
+
     // Metal's short loops are unrolled in the ASR (gpu_sequential_unroll).
     std::string unroll_pragma(bool /*deep*/ = false) const { return ""; }
     std::string unroll_few_pragma() const { return ""; }
