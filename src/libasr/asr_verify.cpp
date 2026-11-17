@@ -4445,6 +4445,67 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
     }
 
+    // The combination of a reduction of elements of arrays on the device
+    // (gpu_offload_array_reduction.h): only device code has one, every item
+    // combines a contribution into an element of its type, an integer or a
+    // real of kind 4 or 8, with an operation the device combines, and the
+    // scratch buffer is an integer(8) array.
+    void visit_GpuReduceCombine(const GpuReduceCombine_t &x) {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        require_id(fn != nullptr && ASRUtils::is_device_only_function(*fn),
+            "asr.verify.gpu_reduce_combine.device_code",
+            "GpuReduceCombine is only allowed in device code");
+        for (size_t i = 0; i < x.n_items; i++) {
+            const ASR::gpu_reduce_item_t &item = x.m_items[i];
+            require_id(ASR::is_a<ASR::ArrayItem_t>(
+                    *ASRUtils::get_past_array_physical_cast(item.m_target)),
+                "asr.verify.gpu_reduce_combine.target",
+                "GpuReduceCombine item target must be an element of an "
+                "array");
+            ASR::ttype_t *t = ASRUtils::expr_type(item.m_target);
+            int kind = ASRUtils::extract_kind_from_ttype_t(t);
+            require_id((ASRUtils::is_integer(*t) || ASRUtils::is_real(*t))
+                    && (kind == 4 || kind == 8)
+                    && ASRUtils::check_equal_type(t,
+                        ASRUtils::expr_type(item.m_value), item.m_target,
+                        item.m_value),
+                "asr.verify.gpu_reduce_combine.type",
+                "GpuReduceCombine item must be an integer or a real of kind "
+                "4 or 8, and its value of the same type");
+            require_id(item.m_initial == nullptr
+                    || (ASRUtils::expr_value(item.m_initial) != nullptr
+                        && ASRUtils::check_equal_type(t,
+                            ASRUtils::expr_type(item.m_initial),
+                            item.m_target, item.m_initial)),
+                "asr.verify.gpu_reduce_combine.initial",
+                "GpuReduceCombine item initial value must be a constant of "
+                "the type of its target");
+            require_id(item.m_op == ASR::reduction_opType::ReduceAdd
+                    || item.m_op == ASR::reduction_opType::ReduceMul
+                    || item.m_op == ASR::reduction_opType::ReduceMIN
+                    || item.m_op == ASR::reduction_opType::ReduceMAX,
+                "asr.verify.gpu_reduce_combine.op",
+                "GpuReduceCombine item must add, multiply, or take the "
+                "minimum or the maximum");
+        }
+        require_id(x.m_first == nullptr
+                || ASRUtils::is_integer(*ASRUtils::expr_type(x.m_first)),
+            "asr.verify.gpu_reduce_combine.first",
+            "GpuReduceCombine::m_first must be an integer");
+        require_id(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_threads)),
+            "asr.verify.gpu_reduce_combine.threads",
+            "GpuReduceCombine::m_threads must be an integer");
+        ASR::ttype_t *scratch = ASRUtils::expr_type(x.m_scratch);
+        require_id(ASR::is_a<ASR::Var_t>(*x.m_scratch)
+                && ASRUtils::is_array(scratch)
+                && ASRUtils::extract_n_dims_from_ttype(scratch) == 1
+                && ASRUtils::is_integer(*ASRUtils::extract_type(scratch))
+                && ASRUtils::extract_kind_from_ttype_t(scratch) == 8,
+            "asr.verify.gpu_reduce_combine.scratch",
+            "GpuReduceCombine::m_scratch must be an integer(8) array");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuReduceCombine(x);
+    }
+
     // The lanes of an iteration exist only in a kernel laid out to run
     // each iteration on several of them (gpu_vector_lanes.cpp).
     bool in_kernel_with_lanes() {

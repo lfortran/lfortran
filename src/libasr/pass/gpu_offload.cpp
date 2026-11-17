@@ -21,6 +21,7 @@
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
+#include <libasr/pass/gpu_offload_array_reduction.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_host_association.h>
@@ -716,6 +717,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // kernel local.
     std::set<std::string> reduction_names;
     for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
+    for (auto &r : pending_array_reductions) {
+        reduction_names.insert(ASRUtils::symbol_name(r.array));
+    }
 
     std::set<std::string> live_vars;
     for (auto *names : {&assigned_vars, &may_define}) {
@@ -2558,10 +2562,20 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // its slot once, after the loop: in the slot itself every iteration
     // would read and write memory.
     bool strided = false;
-    if (has_accumulators && liveouts.scalars.empty()) {
+    bool array_reductions = !pending_array_reductions.empty();
+    if ((has_accumulators || array_reductions)
+            && liveouts.scalars.empty()) {
         GpuOffloadedLoopLeaves cycles(nullptr);
         cycles.transform_stmts(body_copy.p, body_copy.n);
         strided = cycles.offloaded_cycles == 0;
+    }
+    // A reduction of an array is combined at the end of a grid-stride loop,
+    // which every thread of the launch reaches (GpuReduceCombine).
+    if (array_reductions && !strided) {
+        report_not_offloaded(loc, GpuDecline(
+            GpuDeclineReason::ArrayReductionLoop,
+            ASRUtils::symbol_name(pending_array_reductions[0].array)));
+        return;
     }
     // On a device whose warps combine values, the threads of a warp fold
     // their accumulators with shuffles and the warp owns one slot, for the
@@ -2616,6 +2630,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 slot_replacer.visit_stmt(*body_copy.p[i]);
             }
         }
+    }
+
+    // Each element of an array of a reduction that the body names gets an
+    // accumulator, as a scalar of a grid-stride loop does: the body adds to
+    // it in place of the element, and the threads' accumulators are
+    // combined into the element at the end of the kernel (below). The
+    // elements are kept, still naming the host's symbols, for that.
+    struct ArrayAccumulators {
+        std::vector<ASR::ArrayItem_t*> elements;
+        std::vector<ASR::expr_t*> accumulators;
+    };
+    std::vector<ArrayAccumulators> array_accumulators(
+        pending_array_reductions.size());
+    for (size_t ri = 0; ri < pending_array_reductions.size(); ri++) {
+        auto &r = pending_array_reductions[ri];
+        gpu_replace_array_reduction_elements(al, r.array, body_copy.p,
+            body_copy.n, array_accumulators[ri].elements,
+            array_accumulators[ri].accumulators, [&](size_t) {
+                return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    gpu_new_variable(al, loc, kernel_scope,
+                        kernel_scope->get_unique_name("__gpu_accumulator"),
+                        ASRUtils::duplicate_type(al, r.element_type))));
+            });
     }
 
     // 3. Replace Var references in copied body to point to kernel scope
@@ -2720,11 +2757,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         return value > 0 && (value & (value - 1)) == 0;
     };
     bool tiled = device_caps.tile_width > 0 && n_dims >= 2
-        && slot_index == nullptr
+        && slot_index == nullptr && !array_reductions
         && is_power_of_two(device_caps.tile_width)
         && is_power_of_two(device_caps.threads_per_block)
         && device_caps.threads_per_block % device_caps.tile_width == 0;
     LCOMPILERS_ASSERT(!(strided && tiled));
+    // The scratch buffer of an array reduction, if any (GpuLaunchPlan).
+    int reduce_scratch_arg = -1, reduce_scratch_extent_arg = -1;
+    size_t reduce_items = 0;
+    std::vector<ASR::stmt_t*> unstarted;
     // The number of iterations and the stride of the grid-stride loop.
     ASR::expr_t *stride_total = nullptr, *stride_var = nullptr;
     std::vector<ASR::expr_t*> host_starts, host_ends;
@@ -2843,7 +2884,17 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // (device_launch_expand.cpp), whatever the argument passed here.
     ASR::expr_t *first_chunk_flag = nullptr;
     ASR::symbol_t *first_chunk_parameter = nullptr;
-    if (chunk_fixed_iterations > 0 && has_accumulators) {
+    // So does one whose combination of array reductions starts from the
+    // constants the host no longer assigns before the loop.
+    std::vector<GpuReductionInitializer> initializers;
+    {
+        auto found = reduction_initializers.find(&region);
+        if (found != reduction_initializers.end()) {
+            initializers = found->second;
+        }
+    }
+    if (chunk_fixed_iterations > 0
+            && (has_accumulators || !initializers.empty())) {
         first_chunk_parameter = gpu_new_variable(al, loc, kernel_scope,
             "__gpu_first_chunk", ASRUtils::duplicate_type(al, int_type),
             ASR::intentType::InOut);
@@ -3081,9 +3132,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             limit, stride_total, ASRUtils::duplicate_type(al, index_type),
             nullptr)));
         // The threads past the stride are not done: the threads of a warp
-        // combine their accumulators together, so these take part with the
-        // identity, and run no iterations.
-        if (!warp_slots) {
+        // combine their accumulators together, and every thread of the
+        // launch reaches the combination of an array reduction, so these
+        // take part with the identity, and run no iterations.
+        if (!warp_slots && !array_reductions) {
             return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                 flat_idx, ASR::cmpopType::GtE, stride_var,
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
@@ -3106,7 +3158,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // For a warp that owns a slot: whether this thread is the warp's first,
     // and in the launch (those past the stride only take part).
     ASR::expr_t *owns_slot = nullptr;
-    if (warp_slots) {
+    if (!warp_slots && array_reductions && slot_index != nullptr) {
+        // A thread past the stride, which stays for the combination of an
+        // array reduction, has no slot of a reduction of a scalar.
+        owns_slot = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+            flat_idx, ASR::cmpopType::Lt, stride_var,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+    } else if (warp_slots) {
         auto bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         auto index_const = [&](int64_t value) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
@@ -3139,8 +3197,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 gpu_reduction_identity(al, loc, r.op, r.scalar_type),
                 nullptr, false, false, false, false)));
         }
-        if (warp_slots && starts.n > 0) {
-            // Only the first thread of the warp starts its slot.
+        if (owns_slot != nullptr && starts.n > 0) {
+            // Only the first thread of the warp starts its slot (or, past
+            // the stride, no thread).
             Vec<ASR::stmt_t*> first_only = starts;
             starts.reserve(al, 1);
             starts.n = 0;
@@ -3169,6 +3228,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         auto &r = pending_reductions[ri];
         assign(local_accumulators[ri],
             gpu_reduction_identity(al, loc, r.op, r.scalar_type));
+    }
+    for (size_t ri = 0; ri < pending_array_reductions.size(); ri++) {
+        auto &r = pending_array_reductions[ri];
+        for (ASR::expr_t *acc : array_accumulators[ri].accumulators) {
+            assign(acc, gpu_reduction_identity(al, loc, r.op,
+                r.element_type));
+        }
     }
     // In a grid-stride loop, what follows runs once per iteration: from
     // here on the kernel body is the loop's body (see below).
@@ -3638,7 +3704,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.push_back(al, do_loop(stride_iteration, rest_start,
             index_binop(stride_total, ASR::binopType::Sub, it_const(1)),
             stride_var, loop_body));
-        if (warp_slots) {
+        if (warp_slots || array_reductions) {
             Vec<ASR::stmt_t*> loops;
             loops.reserve(al, kernel_body.n - loops_start);
             for (size_t i = loops_start; i < kernel_body.n; i++) {
@@ -3672,6 +3738,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         nullptr, false, false, false, false)));
                 combines.push_back(al, gpu_reduction_combine(al, loc, r.op,
                     slot, acc, r.scalar_type));
+            } else if (owns_slot != nullptr) {
+                combines.push_back(al, gpu_reduction_combine(al, loc, r.op,
+                    slot, acc, r.scalar_type));
             } else {
                 kernel_body.push_back(al, gpu_reduction_combine(al, loc,
                     r.op, slot, acc, r.scalar_type));
@@ -3680,6 +3749,125 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         if (combines.n > 0) {
             kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
                 nullptr, owns_slot, combines.p, combines.n, nullptr, 0)));
+        }
+        // Every thread of the launch hands its accumulators of the
+        // elements of arrays to the combination, which applies them to the
+        // elements (GpuReduceCombine). Their scratch buffer is an argument
+        // of the kernel, an extent the launch sets, of an array of the host
+        // that is never allocated: only the device holds it
+        // (GpuKernelLaunch.scratch).
+        if (array_reductions) {
+            // The initializers an item starts from.
+            std::set<size_t> started;
+            Vec<ASR::gpu_reduce_item_t> items;
+            items.reserve(al, 4);
+            for (size_t ri = 0; ri < pending_array_reductions.size(); ri++) {
+                auto &r = pending_array_reductions[ri];
+                ArrayAccumulators &a = array_accumulators[ri];
+                for (size_t j = 0; j < a.elements.size(); j++) {
+                    ASR::gpu_reduce_item_t item;
+                    item.loc = loc;
+                    item.m_target = ASRUtils::EXPR((ASR::asr_t*)a.elements[j]);
+                    item.m_value = a.accumulators[j];
+                    item.m_op = r.op == ASR::reduction_opType::ReduceSub
+                        ? ASR::reduction_opType::ReduceAdd : r.op;
+                    item.m_initial = nullptr;
+                    for (size_t k = 0; k < initializers.size(); k++) {
+                        const GpuReductionInitializer &init = initializers[k];
+                        if (init.array != r.array) continue;
+                        bool same = init.element->n_args
+                            == a.elements[j]->n_args;
+                        for (size_t d = 0; same && d < init.element->n_args;
+                                d++) {
+                            same = ASRUtils::expr_equal(
+                                init.element->m_args[d].m_right,
+                                a.elements[j]->m_args[d].m_right);
+                        }
+                        if (same) {
+                            item.m_initial = init.value;
+                            started.insert(k);
+                        }
+                    }
+                    items.push_back(al, item);
+                }
+            }
+            ASR::ttype_t *word_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                loc, 8));
+            ASR::ttype_t *extent_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, device_caps.offset_kind));
+            ASR::symbol_t *extent = gpu_new_variable(al, loc, kernel_scope,
+                kernel_scope->get_unique_name("__gpu_reduce_extent"),
+                extent_type, ASR::intentType::InOut);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                1, ASRUtils::duplicate_type(al, extent_type),
+                ASR::integerbozType::Decimal));
+            dim.m_length = ASRUtils::EXPR(ASR::make_Var_t(al, loc, extent));
+            dims.push_back(al, dim);
+            ASR::symbol_t *scratch = gpu_new_variable(al, loc, kernel_scope,
+                kernel_scope->get_unique_name("__gpu_reduce_scratch"),
+                ASRUtils::TYPE(ASR::make_Array_t(al, loc, word_type, dims.p,
+                    dims.n, ASR::array_physical_typeType::DescriptorArray,
+                    ASR::memory_spaceType::Global)), ASR::intentType::InOut);
+            // The host's array, deferred-shape and never allocated.
+            Vec<ASR::dimension_t> deferred;
+            deferred.reserve(al, 1);
+            ASR::dimension_t no_dim;
+            no_dim.loc = loc;
+            no_dim.m_start = nullptr;
+            no_dim.m_length = nullptr;
+            deferred.push_back(al, no_dim);
+            ASR::symbol_t *host_scratch = gpu_new_variable(al, loc,
+                current_scope, current_scope->get_unique_name(
+                    "__gpu_reduce_scratch"), ASRUtils::TYPE(
+                    ASR::make_Allocatable_t(al, loc, ASRUtils::TYPE(
+                        ASR::make_Array_t(al, loc,
+                            ASRUtils::duplicate_type(al, word_type), deferred.p,
+                            deferred.n,
+                            ASR::array_physical_typeType::DescriptorArray,
+                            ASR::memory_spaceType::Global)))));
+            kernel_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                scratch)));
+            ASR::call_arg_t scratch_arg;
+            scratch_arg.loc = loc;
+            scratch_arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                host_scratch));
+            call_args.push_back(al, scratch_arg);
+            reduce_scratch_arg = static_cast<int>(call_args.n) - 1;
+            kernel_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                extent)));
+            // The launch replaces this with the extent it sizes.
+            ASR::call_arg_t extent_arg;
+            extent_arg.loc = loc;
+            extent_arg.m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, ASRUtils::duplicate_type(al, extent_type),
+                ASR::integerbozType::Decimal));
+            call_args.push_back(al, extent_arg);
+            reduce_scratch_extent_arg = static_cast<int>(call_args.n) - 1;
+            reduce_items = items.n;
+            ASR::stmt_t *combine = ASRUtils::STMT(
+                ASR::make_GpuReduceCombine_t(al, loc, items.p, items.n,
+                    stride_var, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                        scratch)), started.empty() ? nullptr
+                        : first_chunk_flag));
+            // An assignment taken from before the loop whose element no
+            // item has, if the rewrites of the body spelled it differently,
+            // is run by the host before the launch after all.
+            std::vector<GpuReductionInitializer> kept;
+            for (size_t k = 0; k < initializers.size(); k++) {
+                if (started.count(k)) {
+                    kept.push_back(initializers[k]);
+                } else {
+                    unstarted.push_back(initializers[k].assignment);
+                }
+            }
+            initializers = kept;
+            // The elements still name the host's symbols.
+            sym_replacer.visit_stmt(*combine);
+            kernel_body.push_back(al, combine);
         }
     }
 
@@ -3745,6 +3933,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.first_chunk_parameter = first_chunk_parameter;
     plan.strided = strided;
     plan.warp_slots = warp_slots;
+    plan.reduce_scratch_arg = reduce_scratch_arg;
+    plan.reduce_scratch_extent_arg = reduce_scratch_extent_arg;
+    plan.reduce_items = reduce_items;
+    for (const GpuReductionInitializer &init : initializers) {
+        plan.reduce_initializers.push_back(init.assignment);
+    }
+    plan.host_initializers = unstarted;
     plan.tile_dims[0] = tiled ? order[0] : 0;
     plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);
@@ -3807,6 +4002,7 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& pass_options) {
     if (!gpu_device_capabilities(pass_options).device_selected()) return;
     GpuOffloadVisitor v(al, pass_options, unit);
+    gpu_take_reduction_initializers(unit, v.reduction_initializers);
     v.asr_changed = true;
     while (v.asr_changed) {
         v.asr_changed = false;

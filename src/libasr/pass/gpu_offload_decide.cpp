@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_offload_array_reduction.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_visitor.h>
@@ -45,6 +46,7 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
     // accumulator is something a thread can hold and the operator is one
     // the fold can spell. Anything else is an error.
     pending_reductions.clear();
+    pending_array_reductions.clear();
     for (size_t i = 0; i < region.n_clauses; i++) {
         if (region.m_clauses[i]->type !=
                 ASR::omp_clauseType::OMPReduction) {
@@ -66,6 +68,66 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
             }
             ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(var)->m_v;
             ASR::ttype_t *type = ASRUtils::expr_type(var);
+            // An array is combined on the device (gpu_offload_array_
+            // reduction.h), element by element, where the device can.
+            if (ASRUtils::is_array(type)) {
+                std::string name = ASRUtils::symbol_name(sym);
+                if (!device_caps.array_reductions) {
+                    report_not_offloaded(loc, GpuDecline(
+                        GpuDeclineReason::ArrayReductionDevice, name));
+                    return false;
+                }
+                ASR::ttype_t *element = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(type));
+                int kind = ASRUtils::extract_kind_from_ttype_t(element);
+                bool op_ok = clause->m_operator
+                        == ASR::reduction_opType::ReduceAdd
+                    || clause->m_operator == ASR::reduction_opType::ReduceSub
+                    || clause->m_operator == ASR::reduction_opType::ReduceMul
+                    || clause->m_operator == ASR::reduction_opType::ReduceMIN
+                    || clause->m_operator == ASR::reduction_opType::ReduceMAX;
+                if (!(ASRUtils::is_integer(*element)
+                            || ASRUtils::is_real(*element))
+                        || (kind != 4 && kind != 8) || !op_ok
+                        || !device_caps.has_scalar_type(element)) {
+                    report_not_offloaded(loc, GpuDecline(
+                        GpuDeclineReason::ArrayReductionType, name,
+                        element));
+                    return false;
+                }
+                std::set<ASR::symbol_t*> indices;
+                for (size_t d = 0; d < nest.n_heads(); d++) {
+                    if (nest.head(d).m_v != nullptr
+                            && ASR::is_a<ASR::Var_t>(*nest.head(d).m_v)) {
+                        indices.insert(ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(nest.head(d).m_v)
+                                ->m_v));
+                    }
+                }
+                if (!gpu_array_reduction_elements_invariant(sym, nest.body,
+                        nest.n_body, indices)) {
+                    report_not_offloaded(loc, GpuDecline(
+                        GpuDeclineReason::ArrayReductionElement, name));
+                    return false;
+                }
+                // The kernel runs its iterations in a grid-stride loop,
+                // which a cycle of the loop would leave (gpu_offload.cpp).
+                GpuOffloadedLoopLeaves cycles(nullptr);
+                for (size_t b = 0; b < nest.n_body; b++) {
+                    cycles.visit_stmt(*nest.body[b]);
+                }
+                if (cycles.offloaded_cycles > 0) {
+                    report_not_offloaded(loc, GpuDecline(
+                        GpuDeclineReason::ArrayReductionLoop, name));
+                    return false;
+                }
+                GpuArrayReductionInfo info;
+                info.array = ASRUtils::symbol_get_past_external(sym);
+                info.op = clause->m_operator;
+                info.element_type = element;
+                pending_array_reductions.push_back(info);
+                continue;
+            }
             // An array accumulator would need one array per thread, which
             // is a different shape of buffer than this builds.
             if (ASRUtils::is_array(type) ||

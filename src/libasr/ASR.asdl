@@ -165,6 +165,25 @@ stmt
     -- back: the host may then change what the kernels only read.
     | GpuWait()
     | GpuLaneBarrier()
+    -- The end of a reduction into elements of arrays, combined on the
+    -- device. Every thread of the launch reaches it (none has returned),
+    -- each holding a contribution `values(j)` of each item; those of the
+    -- threads numbered below `threads`, as the kernel numbers its threads
+    -- (of an iteration on several lanes, whose lanes hold the same values,
+    -- the first lane's), are combined in an order that does not depend on
+    -- how the threads were scheduled, and the target is left as `target op
+    -- (that combination)`: the target is an element of an array argument of
+    -- the kernel, of an integer or real type of kind 4 or 8, and `op` adds,
+    -- multiplies, or takes the smaller or the larger. `scratch` is an
+    -- integer(8) array argument of the kernel that the launch holds as a
+    -- scratch buffer (GpuKernelLaunch.scratch) of at least 1 + n_items *
+    -- threads elements, which is zero when its memory is new, and the
+    -- combination leaves its first element, a counter, zero (see
+    -- asr_to_gpu_c.h). An item with an `initial` value is left as `initial
+    -- op (that combination)` instead by the first launch of a launch that
+    -- runs in chunks, the one for which `first` is not zero, or by the only
+    -- one when `first` is nil: the host assigns the target nothing before.
+    | GpuReduceCombine(gpu_reduce_item* items, expr threads, expr scratch, expr? first)
     -- targets(j) = source(j) for the consecutive elements of one array that
     -- start at `source`: read as one vector when `array` starts at a
     -- multiple of 16 bytes and `aligned`, which says that the elements start
@@ -397,6 +416,10 @@ gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size, expr? allocation_if, symbol? allocation_parameter, bool allocation_on_true)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
+-- One element `target` of a GpuReduceCombine, combined with `op` from the
+-- contributions `value` of the threads, starting from `initial`, a constant,
+-- if there is one, or else from what the target holds.
+gpu_reduce_item = (expr target, expr value, reduction_op op, expr? initial)
 -- A dimension of the iteration space of a GpuKernelLaunch that the launch
 -- may split into chunks, each run as a launch of its kernel over a box of
 -- the space: the kernel parameters that hold its bounds, which each launch

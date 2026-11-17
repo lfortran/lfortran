@@ -45,6 +45,7 @@ GpuDiscard
 GpuKeep
 GpuKernelLaunch
 GpuLaneBarrier
+GpuReduceCombine
 GpuSync
 GpuWait
 GpuWideLoad

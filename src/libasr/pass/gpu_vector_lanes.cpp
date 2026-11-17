@@ -1037,6 +1037,12 @@ public:
             case ASR::stmtType::BlockCall:
                 BaseWalkVisitor::visit_stmt(x);
                 return;
+            case ASR::stmtType::GpuReduceCombine:
+                // Every lane reaches it, and it takes the values of the
+                // first lane of each iteration (asr_to_gpu_c.h): it runs on
+                // all of them.
+                BaseWalkVisitor::visit_stmt(x);
+                return;
             default:
                 unknown = true;
                 return;

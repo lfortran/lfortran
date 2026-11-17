@@ -13,6 +13,7 @@
 #include <libasr/containers.h>
 #include <libasr/utils.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_offload_array_reduction.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
@@ -609,6 +610,27 @@ public:
     // clauses are read and consumed by the kernel draft below.
     std::vector<GpuReductionInfo> pending_reductions;
 
+    // One `reduce(op:a)` of an array `a` of an offloaded loop
+    // (gpu_offload_array_reduction.h), whose iterations reference elements
+    // of `a` that every iteration names the same. Each such element has an
+    // accumulator, a private scalar of each thread, as a scalar has; the
+    // kernel runs a grid-stride loop, and at its end every thread hands its
+    // accumulators to a GpuReduceCombine, which combines those of all
+    // threads on the device and applies them to the elements. The host
+    // neither allocates nor folds anything, so it does not wait for the
+    // launch.
+    struct GpuArrayReductionInfo {
+        ASR::symbol_t *array;
+        ASR::reduction_opType op;
+        ASR::ttype_t *element_type;
+    };
+    std::vector<GpuArrayReductionInfo> pending_array_reductions;
+    // The constants the statements right before a loop assign to elements
+    // its array reductions combine into, which the combination starts from
+    // instead (gpu_take_reduction_initializers).
+    std::map<const ASR::OMPRegion_t*, std::vector<GpuReductionInitializer>>
+        reduction_initializers;
+
     // A loop head as the host still spells it, saved before the kernel
     // extraction replaces the head expressions in place. The launch sizes
     // the grid from these.
@@ -661,6 +683,20 @@ public:
         // The threads of a warp combine their accumulators, and the warp
         // owns one slot (GpuDeviceCapabilities::reduction_warp_slots).
         bool warp_slots = false;
+        // A kernel that combines array reductions on the device
+        // (GpuReduceCombine): the call arguments that hand it its scratch
+        // buffer and the buffer's extent, which the launch sizes, and the
+        // number of elements the kernel combines (-1 and 0 without).
+        int reduce_scratch_arg = -1;
+        int reduce_scratch_extent_arg = -1;
+        size_t reduce_items = 0;
+        // The assignments of constants to elements the combination starts
+        // from, which the host runs when the loop has no iterations, and
+        // those taken from before the loop (gpu_take_reduction_initializers)
+        // whose elements the kernel does not combine into after all, which
+        // the host runs before the launch.
+        std::vector<ASR::stmt_t*> reduce_initializers;
+        std::vector<ASR::stmt_t*> host_initializers;
     };
 
     void decline(const ASR::OMPRegion_t &x);

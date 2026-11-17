@@ -78,6 +78,11 @@ public:
         needs_lane_reduce = true;
         ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBarrier(x);
     }
+    bool needs_reduce_combine = false;
+    void visit_GpuReduceCombine(const ASR::GpuReduceCombine_t &x) {
+        needs_reduce_combine = true;
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuReduceCombine(x);
+    }
     // The type of an integer power device code computes, by kind.
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -3220,6 +3225,7 @@ public:
     bool needs_erfc_helper = false;
     bool needs_lane_reduce_helper = false;
     bool needs_wide_load_helper = false;
+    bool needs_reduce_combine_helper = false;
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
 
     void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
@@ -3242,6 +3248,7 @@ public:
         needs_erfc_helper = scanner.needs_erfc;
         needs_lane_reduce_helper = scanner.needs_lane_reduce;
         needs_wide_load_helper = scanner.needs_wide_load;
+        needs_reduce_combine_helper = scanner.needs_reduce_combine;
         integer_power_types = scanner.integer_power_types;
     }
 
@@ -3279,6 +3286,9 @@ public:
         emit_integer_power_helpers();
         if (needs_lane_reduce_helper) src << dialect.lane_reduce_helper();
         if (needs_wide_load_helper) src << dialect.wide_load_helper();
+        if (needs_reduce_combine_helper) {
+            src << dialect.reduce_combine_helper();
+        }
         if (needs_erf_helper) {
             src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
             src << dialect.device_fn_qualifier()
@@ -4688,6 +4698,56 @@ public:
         src << ") {\n";
     }
 
+    // The identity of the operation `op` of a GpuReduceCombine (0 adds, 1
+    // multiplies, 2 takes the smaller, 3 the larger) in `type`: what a
+    // thread that contributes nothing hands over. The extremes are the
+    // largest finite values, as a reduction of a scalar starts from
+    // (gpu_reduction_identity).
+    std::string reduce_identity(ASR::ttype_t *type, int op) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(type);
+        std::string t = gpu_type(type);
+        if (ASRUtils::is_real(*type)) {
+            double huge = kind == 8 ? 1.7976931348623157e308 : 3.40282347e38;
+            double value = op == 0 ? 0.0 : op == 1 ? 1.0
+                : op == 2 ? huge : -huge;
+            return "((" + t + ")" + dialect.real_literal(value, kind) + ")";
+        }
+        std::string largest = kind == 8 ? "9223372036854775807LL"
+            : "2147483647";
+        std::string value = op == 0 ? "0" : op == 1 ? "1"
+            : op == 2 ? largest : "(-" + largest + " - 1)";
+        return "((" + t + ")" + value + ")";
+    }
+
+    // GpuReduceCombine, which the dialect writes out: it knows how the
+    // threads of a block can combine values and wait for each other.
+    void emit_reduce_combine(const ASR::GpuReduceCombine_t &x) {
+        std::vector<GpuReduceCombineItem> items;
+        for (size_t i = 0; i < x.n_items; i++) {
+            const ASR::gpu_reduce_item_t &item = x.m_items[i];
+            ASR::ttype_t *type = ASRUtils::expr_type(item.m_target);
+            GpuReduceCombineItem code;
+            code.op = item.m_op == ASR::reduction_opType::ReduceAdd ? 0
+                : item.m_op == ASR::reduction_opType::ReduceMul ? 1
+                : item.m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
+            code.target = expr_str(item.m_target);
+            code.value = expr_str(item.m_value);
+            code.type = gpu_type(type);
+            code.identity = reduce_identity(type, code.op);
+            // The constant the host no longer assigns before the loop, in
+            // the launch's first chunk.
+            if (item.m_initial != nullptr) {
+                code.start = x.m_first == nullptr ? expr_str(item.m_initial)
+                    : "(" + expr_str(x.m_first) + " != 0 ? "
+                        + expr_str(item.m_initial) + " : " + code.target
+                        + ")";
+            }
+            items.push_back(code);
+        }
+        dialect.emit_reduce_combine(src, get_indent(), items,
+            expr_str(x.m_threads), expr_str(x.m_scratch), kernel_has_lanes());
+    }
+
     // `v = GpuLaneReduce(v)`: the variable and the operation (0 adds, 1
     // multiplies, 2 takes the smallest, 3 the largest).
     static bool lane_reduce_assignment(ASR::stmt_t *stmt, ASR::expr_t *&var,
@@ -5459,6 +5519,11 @@ public:
                     expr_str(w->m_source), expr_str(w->m_array),
                     w->m_aligned ? expr_str(w->m_aligned) : "true",
                     wide_assume_aligned, wide_load_pinned(*w));
+                break;
+            }
+            case ASR::stmtType::GpuReduceCombine: {
+                emit_reduce_combine(
+                    *ASR::down_cast<ASR::GpuReduceCombine_t>(stmt));
                 break;
             }
             case ASR::stmtType::GpuLaneBarrier: {

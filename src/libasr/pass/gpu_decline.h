@@ -173,6 +173,16 @@ struct GpuDeviceCapabilities {
     // threads than the host could fold the slots of.
     bool reduction_warp_slots = false;
 
+    // Whether a REDUCE of an array, whose elements every iteration names
+    // the same, is combined on the device (GpuReduceCombine): the threads
+    // of a block combine what they accumulated, each block leaves its part
+    // in a scratch buffer of the launch, and the block that finishes last,
+    // which an atomic counter tells, combines the parts in the order of the
+    // blocks and applies them to the elements. The host never reads them,
+    // so it does not wait for the launch. Where it is not, such a loop is
+    // an error.
+    bool array_reductions = false;
+
     // Whether a launch of more iterations than the chunk limit
     // (PassOptions::gpu_chunk_limit) runs its kernel once per chunk of the
     // iteration space (device_launch_expand.cpp). Where it does not, one
@@ -243,6 +253,17 @@ enum class GpuDeclineReason {
     // which the pass never reached.
     LoopNotLowered,
     ReductionClause,
+    // A REDUCE of an array (`name`), which the device combines in place
+    // (gpu_offload.cpp): on a device that does not, of a type or an
+    // operation it does not combine (`type`, the element type), referenced
+    // other than as elements every iteration names the same (`a(k)`, not
+    // `a(i)`, which would need atomic updates), or in a loop that does not
+    // run in a grid-stride loop (a cycle of the loop, or a scalar it defines
+    // that is used after it).
+    ArrayReductionDevice,
+    ArrayReductionType,
+    ArrayReductionElement,
+    ArrayReductionLoop,
     LoopWithoutIndex,
     IncompleteLoopHead,
     // A loop index of an integer kind wider than the device numbers the

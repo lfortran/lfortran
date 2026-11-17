@@ -1265,6 +1265,53 @@ An assignment whose every element is assigned again before anything reads it
 (`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
 this, by the `dead_array_store` pass, so it costs no launch at all.
 
+### Reductions of arrays
+
+A reduction of a scalar (`reduce(+: s)`) gives each thread an accumulator,
+the threads of a warp combine theirs, and the host folds one slot per warp
+into `s` once the launch is done, so the host waits for the launch. A
+reduction of an array (`reduce(+: ss)`) whose iterations name the same
+elements of it -- `ss(1)`, or `ss(k)` for a `k` the loop does not change --
+is combined on the device instead, and the host does not wait: a later
+launch can read the elements, as the next RMSNorm of a transformer reads the
+sum of the squares of the residual its update computes.
+
+```fortran
+ss(1) = 0
+do concurrent (i = 1:n) reduce(+: ss)
+    ss(1) = ss(1) + x(i)*x(i)
+end do
+```
+
+Each element the body names gets an accumulator of its own in every thread
+(`gpu_offload_array_reduction.cpp`), which replaces the element in the body;
+the kernel runs its iterations in a grid-stride loop that every thread of
+the launch finishes, and ends with a `GpuReduceCombine` of the accumulators.
+On an NVIDIA GPU the threads of each block combine theirs in a fixed order,
+the block writes the result to its part of a scratch buffer of the launch
+and arrives at a counter at the start of the buffer, and the block that
+arrives last combines the parts of all the blocks in the order of the blocks
+and applies them to the elements (`ss(1) = ss(1) + total`). The result is the
+same, bit for bit, however the blocks were scheduled. A launch that runs in
+chunks combines each chunk into the elements in turn. The runtime keeps the
+scratch buffer of a kernel from one launch to the next, zero when it is new,
+and the last block leaves the counter zero again, so a launch allocates and
+copies nothing for it. Where an iteration runs on several lanes, the first
+lane's accumulators count, and the statements that only add to them run on
+the first lane alone. The CPU emulation runs the threads one after another,
+and each thread is a part.
+
+A constant that the statement right before the loop assigns to such an
+element (`ss(1) = 0` above) would make the host wait for the launches that
+use `ss` before the loop, so the combination starts from it instead, and the
+host assigns it only when the loop has no iterations.
+
+An element an iteration chooses (`h(idx(i))`, a histogram) would need atomic
+updates, and is an error, as are the whole array, a section of it, a type
+other than an integer or a real of kind 4 or 8, an operation other than `+`,
+`-`, `*`, `max` and `min`, a loop that cycles or defines a scalar used after
+it, and a device other than CUDA (Metal and HIP).
+
 ### Fast math in device code
 
 With `--fast` (and without `--no-fast-math`) the CUDA and HIP device code

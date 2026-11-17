@@ -404,6 +404,213 @@ struct CudaDialect {
             "}\n\n";
     }
 
+    // The definitions a GpuReduceCombine names, written once ahead of the
+    // kernels.
+    std::string reduce_combine_helper() const {
+        std::string h =
+            "// The operation of a reduction of elements of arrays: 0 adds, 1\n"
+            "// multiplies, 2 takes the smaller, 3 the larger.\n"
+            "template <int op, typename T>\n"
+            "__device__ inline T __lfortran_reduce_op(T v, T w) {\n"
+            "    return op == 0 ? v + w : op == 1 ? v * w\n"
+            "        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);\n"
+            "}\n\n"
+            "// Whether this is the last of the `units` arrivals at the counter,\n"
+            "// the first element of the scratch buffer, which it then leaves\n"
+            "// zero for the next launch.\n";
+        if (emulate_cpu) {
+            return h +
+                "// The threads run one after another.\n"
+                "__device__ inline bool __lfortran_reduce_arrive(void *scratch,\n"
+                "        long long units) {\n"
+                "    unsigned int *counter = (unsigned int*)scratch;\n"
+                "    if ((long long)++*counter < units) return false;\n"
+                "    *counter = 0u;\n"
+                "    return true;\n"
+                "}\n\n";
+        }
+        return h +
+            "// What a unit wrote before it arrives is seen by the last one\n"
+            "// after it arrives: the add releases and acquires.\n"
+            "__device__ inline bool __lfortran_reduce_arrive(void *scratch,\n"
+            "        long long units) {\n"
+            "    unsigned int *counter = (unsigned int*)scratch;\n"
+            "    unsigned int done;\n"
+            "#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700\n"
+            "    asm volatile(\"atom.add.acq_rel.gpu.u32 %0, [%1], 1;\"\n"
+            "        : \"=r\"(done) : \"l\"(counter) : \"memory\");\n"
+            "#else\n"
+            "    __threadfence();\n"
+            "    done = atomicAdd(counter, 1u);\n"
+            "    __threadfence();\n"
+            "#endif\n"
+            "    if ((long long)done < units - 1) return false;\n"
+            "    *counter = 0u;\n"
+            "    return true;\n"
+            "}\n\n"
+            "// `v` combined over the 32 threads of a warp, in every one.\n"
+            "template <int op, typename T>\n"
+            "__device__ inline T __lfortran_reduce_warp(T v) {\n"
+            "    #pragma unroll\n"
+            "    for (int offset = 16; offset > 0; offset >>= 1) {\n"
+            "        v = __lfortran_reduce_op<op>(v,\n"
+            "            __shfl_xor_sync(0xffffffffu, v, offset, 32));\n"
+            "    }\n"
+            "    return v;\n"
+            "}\n\n"
+            "// `v` combined over the threads of the block, in every one: each warp\n"
+            "// combines its own, and the warps' meet in shared memory in their\n"
+            "// order.\n"
+            "template <int op, typename T>\n"
+            "__device__ __noinline__ T __lfortran_reduce_block(T v) {\n"
+            "    v = __lfortran_reduce_warp<op>(v);\n"
+            "    __shared__ T partial[32];\n"
+            "    if ((threadIdx.x & 31u) == 0) partial[threadIdx.x >> 5] = v;\n"
+            "    __syncthreads();\n"
+            "    T r = partial[0];\n"
+            "    for (unsigned i = 1; i < (blockDim.x >> 5); i++) {\n"
+            "        r = __lfortran_reduce_op<op>(r, partial[i]);\n"
+            "    }\n"
+            "    __syncthreads();\n"
+            "    return r;\n"
+            "}\n\n";
+    }
+
+    // A GpuReduceCombine: the threads numbered below `threads` (as the
+    // kernel numbers them: of a kernel with `lanes`, its iterations, whose
+    // first lane holds the values) combine their `items`, deterministically,
+    // and the last to finish applies the result to the targets.
+    //
+    // On a GPU the unit is a block: its threads combine their values in a
+    // fixed order (__lfortran_reduce_block; a block that runs one iteration
+    // on all its threads has the value in its first thread already), its
+    // first thread writes them to its part of the scratch buffer, after the
+    // counter, and arrives at the counter; the block that arrives last has
+    // its first warp combine the parts of all blocks, each lane every 32nd
+    // in the order of the blocks and the lanes in a fixed order, and apply
+    // them. Every thread of the launch reaches it, so the barriers of a
+    // block are met; a block whose threads are all past `threads` has
+    // nothing to combine and does not count. The parts are read past the
+    // cache of the multiprocessor (__ldcg), which may hold what another
+    // launch left there. On an H200, a launch of 1280 blocks that finish
+    // together takes about 2 us longer for it than one that only stores its
+    // results: the arrivals queue at the counter, and the last block reads
+    // the parts after its own arrival. The CPU emulation, which runs the
+    // threads one after another and has no barriers, makes each thread a
+    // unit.
+    void emit_reduce_combine(std::stringstream &src, const std::string &in,
+            const std::vector<GpuReduceCombineItem> &items,
+            const std::string &threads, const std::string &scratch,
+            bool lanes) const {
+        std::string m = std::to_string(items.size());
+        auto part = [&](const std::string &unit, size_t j) {
+            return "((" + items[j].type + "*)(" + scratch + " + 1 + ("
+                + unit + ") * " + m + " + " + std::to_string(j) + "))";
+        };
+        auto combine = [&](size_t j, const std::string &into,
+                const std::string &value) {
+            return into + " = __lfortran_reduce_op<"
+                + std::to_string(items[j].op) + ">(" + into + ", " + value
+                + ");\n";
+        };
+        // The target, from what it starts from.
+        auto apply = [&](size_t j) {
+            return items[j].target + " = __lfortran_reduce_op<"
+                + std::to_string(items[j].op) + ">(" + (items[j].start.empty()
+                    ? items[j].target : items[j].start) + ", __rc_total"
+                + std::to_string(j) + ");\n";
+        };
+        std::string i1 = in + "    ", i2 = i1 + "    ", i3 = i2 + "    ",
+            i4 = i3 + "    ";
+        src << in << "{\n";
+        src << i1 << "const long long __rc_threads = (long long)(" << threads
+            << ");\n";
+        if (emulate_cpu) {
+            src << i1 << "const long long __rc_slot = (long long)blockIdx.x "
+                "* blockDim.x + threadIdx.x;\n";
+            src << i1 << "if (__rc_slot < __rc_threads) {\n";
+            for (size_t j = 0; j < items.size(); j++) {
+                src << i2 << "*" << part("__rc_slot", j) << " = "
+                    << items[j].value << ";\n";
+            }
+            src << i2 << "if (__lfortran_reduce_arrive(" << scratch
+                << ", __rc_threads)) {\n";
+            for (size_t j = 0; j < items.size(); j++) {
+                src << i3 << items[j].type << " __rc_total" << j << " = "
+                    << items[j].identity << ";\n";
+            }
+            src << i3 << "for (long long __rc_u = 0; __rc_u < __rc_threads; "
+                "__rc_u++) {\n";
+            for (size_t j = 0; j < items.size(); j++) {
+                src << i4 << combine(j, "__rc_total" + std::to_string(j),
+                    "*" + part("__rc_u", j));
+            }
+            src << i3 << "}\n";
+            for (size_t j = 0; j < items.size(); j++) {
+                src << i3 << apply(j);
+            }
+            src << i2 << "}\n" << i1 << "}\n" << in << "}\n";
+            return;
+        }
+        src << i1 << "const long long __rc_per_block = (long long)"
+            << (lanes ? lane_block_size() : block_size()) << ";\n";
+        src << i1 << "const long long __rc_units = (__rc_threads + "
+            "__rc_per_block - 1) / __rc_per_block;\n";
+        src << i1 << "if ((long long)blockIdx.x < __rc_units) {\n";
+        src << i2 << "const bool __rc_take = (long long)"
+            << (lanes ? lane_global_thread_id() : global_thread_id())
+            << " < __rc_threads" << (lanes ? " && " + lane_index() + " == 0"
+                : std::string()) << ";\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i2 << items[j].type << " __rc_value" << j << " = __rc_take ? ("
+                << items[j].value << ") : " << items[j].identity << ";\n";
+        }
+        // A block of one iteration, whose lanes are all its threads, has
+        // its value in its first thread already.
+        src << i2 << "if (__rc_per_block > 1) {\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i3 << "__rc_value" << j << " = __lfortran_reduce_block<"
+                << items[j].op << ">(__rc_value" << j << ");\n";
+        }
+        src << i2 << "}\n";
+        src << i2 << "if (threadIdx.x < 32u) {\n";
+        src << i3 << "int __rc_last = 0;\n";
+        src << i3 << "if (threadIdx.x == 0) {\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i4 << "*" << part("(long long)blockIdx.x", j)
+                << " = __rc_value" << j << ";\n";
+        }
+        src << i4 << "__rc_last = __lfortran_reduce_arrive(" << scratch
+            << ", __rc_units);\n";
+        src << i3 << "}\n";
+        // The first warp of the last block combines the parts of all
+        // blocks; the warp barrier orders its loads after the arrival.
+        src << i3 << "__syncwarp();\n";
+        src << i3 << "if (__shfl_sync(0xffffffffu, __rc_last, 0)) {\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i4 << items[j].type << " __rc_total" << j << " = "
+                << items[j].identity << ";\n";
+        }
+        std::string i5 = i4 + "    ";
+        src << i4 << "for (long long __rc_u = threadIdx.x; __rc_u < "
+            "__rc_units; __rc_u += 32) {\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i5 << combine(j, "__rc_total" + std::to_string(j),
+                "__ldcg(" + part("__rc_u", j) + ")");
+        }
+        src << i4 << "}\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i4 << "__rc_total" << j << " = __lfortran_reduce_warp<"
+                << items[j].op << ">(__rc_total" << j << ");\n";
+        }
+        src << i4 << "if (threadIdx.x == 0) {\n";
+        for (size_t j = 0; j < items.size(); j++) {
+            src << i5 << apply(j);
+        }
+        src << i4 << "}\n" << i3 << "}\n" << i2 << "}\n" << i1 << "}\n"
+            << in << "}\n";
+    }
+
     // Small innermost loops are unrolled by 16, as nvfortran does, so that
     // a thread keeps that many iterations' loads in flight. The CPU
     // emulation's host compiler has its own unrolling, and HIP unrolls such
