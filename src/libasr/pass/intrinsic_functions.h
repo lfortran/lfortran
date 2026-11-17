@@ -6201,25 +6201,32 @@ namespace Cmplx {
                 ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value)->m_n));
         } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
             ASR::RealConstant_t* r = ASR::down_cast<ASR::RealConstant_t>(value);
-            v = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 16 ?
-                ASRUtils::real_constant_get_r16(r) : lf_f128_from_double(r->m_r);
+            // kind=10 and kind=16 m_r is a pointer to the value's bytes
+            int kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
+            v = kind == 16 ? ASRUtils::real_constant_get_r16(r)
+                : kind == 10 ? lf_f128_from_long_double(
+                    ASRUtils::real_constant_get_r10(r))
+                : lf_f128_from_double(r->m_r);
         } else {
             return false;
         }
         return true;
     }
 
-    // The value of the real or integer constant `arg` as a double.
-    static inline bool cmplx_part_double(ASR::expr_t* arg, double &v) {
+    // The value of the real or integer constant `arg` as a double, rounded
+    // once to the real kind `kind` of the result.
+    static inline bool cmplx_part_double(ASR::expr_t* arg, int kind, double &v) {
         ASR::expr_t* value = ASRUtils::expr_value(arg);
         if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
             v = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
         } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)) {
             v = static_cast<double>(ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value)->m_n);
         } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+            // kind=10 and kind=16 m_r is a pointer to the value's bytes
             ASR::RealConstant_t* r = ASR::down_cast<ASR::RealConstant_t>(value);
-            v = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 16 ?
-                lf_f128_to_double(ASRUtils::real_constant_get_r16(r)) : r->m_r;
+            v = ASRUtils::extract_kind_from_ttype_t(r->m_type) == 10
+                ? ASRUtils::real10_to_kind_double(ASRUtils::real_constant_get_r10(r), kind)
+                : ASRUtils::real_constant_get_double(r);
         } else {
             return false;
         }
@@ -6257,11 +6264,12 @@ namespace Cmplx {
         }
         double arg1_val = 0.0;
         double arg2_val = 0.0;
-        if (!cmplx_part_double(args[0], arg1_val)) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        if (!cmplx_part_double(args[0], kind, arg1_val)) {
             append_error(diag, "Invalid first argument to `cmplx` intrinsic", loc);
             return nullptr;
         }
-        if (!cmplx_part_double(args[1], arg2_val)) {
+        if (!cmplx_part_double(args[1], kind, arg2_val)) {
             append_error(diag, "Invalid second argument to `cmplx` intrinsic", loc);
             return nullptr;
         }
