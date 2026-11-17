@@ -1309,6 +1309,41 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
     }
 }
 
+// A copied procedure keeps the expressions of its types, and those can call
+// a procedure of the cell scope that declares it: the getter through which
+// an array bound reads a use-associated variable, for instance. Left
+// pointing at the original, a later cell copies the call into the type of
+// its own reference to the procedure and names a symbol of a scope that is
+// not in its chain. Point every call of a procedure of a copied cell scope
+// at the copy of that procedure.
+class RelinkCellScopeReferences
+    : public ASR::BaseWalkVisitor<RelinkCellScopeReferences>
+{
+    // Each copied cell scope, by the scope it was copied from.
+    const std::map<SymbolTable*, SymbolTable*> &copies;
+
+    void relink(ASR::symbol_t *&sym) {
+        if (sym == nullptr) return;
+        auto copy = copies.find(ASRUtils::symbol_parent_symtab(sym));
+        if (copy == copies.end()) return;
+        ASR::symbol_t *s = copy->second->get_symbol(ASRUtils::symbol_name(sym));
+        if (s != nullptr) sym = s;
+    }
+
+public:
+    RelinkCellScopeReferences(const std::map<SymbolTable*, SymbolTable*> &copies)
+        : copies(copies) {
+        visit_compile_time_value = true;
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::FunctionCall_t &c = const_cast<ASR::FunctionCall_t&>(x);
+        relink(c.m_name);
+        relink(c.m_original_name);
+        ASR::BaseWalkVisitor<RelinkCellScopeReferences>::visit_FunctionCall(x);
+    }
+};
+
 } // namespace
 
 SymbolTable* FortranEvaluator::snapshot_cell_scope(ASR::TranslationUnit_t &asr)
@@ -1391,6 +1426,17 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
         duplicator.duplicate_symbol(item.second, copy);
     }
     relink_copied_symbols(al, copy, copy);
+    // The earlier cell scopes are copied already, oldest first, at the same
+    // depth as the scopes they were copied from.
+    std::map<SymbolTable*, SymbolTable*> copies;
+    for (SymbolTable *s = scope, *c = copy; s != nullptr && c != nullptr;
+            s = s->parent, c = c->parent) {
+        copies[s] = c;
+    }
+    RelinkCellScopeReferences relink(copies);
+    for (auto &item : copy->get_scope()) {
+        relink.visit_symbol(*item.second);
+    }
     return copy;
 }
 

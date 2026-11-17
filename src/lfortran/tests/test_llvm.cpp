@@ -5121,6 +5121,28 @@ end subroutine
     CHECK(r.result.f64 == 12.0);
 }
 
+// The type of a procedure of an earlier cell can call a procedure of that
+// cell: the getter through which the bound of a function result reads a
+// use-associated variable. A later cell copies that call into the type of
+// its own call of the procedure, so it must name the getter of the scope
+// later cells see.
+TEST_CASE("FortranEvaluator earlier cell's function with a getter in its result bound") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("module mrepl4; integer :: n = 3; end module").ok);
+    REQUIRE(e.evaluate2("function ff() result(r); use mrepl4, only: n; "
+        "real :: r(n); r = 1; end function").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("sum(ff())");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 3);
+    r = e.evaluate2("size(ff())");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 3);
+}
+
 TEST_CASE("FortranEvaluator interface body to an earlier cell's function as actual argument") {
     CompilerOptions cu;
     cu.interactive = true;
