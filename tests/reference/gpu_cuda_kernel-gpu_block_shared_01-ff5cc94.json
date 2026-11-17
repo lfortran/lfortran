@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_block_shared_01-ff5cc94",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_block_shared_01.f90",
+    "infile_hash": "2a6190d33b622d30875b5a00583ff9395847b207052432d995b03e8c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_block_shared_01-ff5cc94.stdout",
+    "stdout_hash": "f09b996f1edc84249f9312270e5060ab1af86ad68f255127debdd19d",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

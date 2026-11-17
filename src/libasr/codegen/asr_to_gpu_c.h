@@ -10,6 +10,7 @@
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_wide_loads.h>
+#include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/codegen/gpu_symbol_map.h>
 #include <libasr/codegen/c_utils.h>
 #include <libasr/codegen/c_loop_control.h>
@@ -563,6 +564,9 @@ public:
     // The layout of the kernel whose arguments are currently bound, the
     // one `emit_kernel_signature` wrote the parameter list from.
     const ASR::gpu_kernel_layout_t *current_kernel_layout = nullptr;
+    // The lanes every launch gives an iteration of the kernel being written
+    // (kernel_fixed_lanes), or zero.
+    int64_t current_fixed_lanes = 0;
 
     // A loop of the device code being written, innermost last. `leave`
     // names the variable an exit (1) or a cycle (2) of the loop sets when
@@ -1145,7 +1149,12 @@ public:
                     return;
                 }
             }
-            src << get_indent() << elem_type << " "
+            // An array of the iteration that the lanes of a block share
+            // (gpu_vector_lanes.cpp) is the block's.
+            std::string space = arr->m_memory_space
+                    == ASR::memory_spaceType::Shared
+                ? space_prefix(arr->m_memory_space) : std::string();
+            src << get_indent() << space << elem_type << " "
                 << sanitize_name(std::string(var->m_name));
             if (is_alloc) {
                 // Use pre-scanned compile-time size, runtime
@@ -3616,6 +3625,7 @@ public:
         array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
+        current_fixed_lanes = 0;
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -4020,6 +4030,7 @@ public:
         array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
+        current_fixed_lanes = 0;
     }
 
     // What `emit` writes to `src`, which it leaves as it was.
@@ -4130,15 +4141,29 @@ public:
         dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
+    // The lanes every launch gives an iteration of the kernel `x`, or zero
+    // when a launch decides: a kernel that reads vectors of 16 bytes on a
+    // block of caps.lanes_wide threads, or one whose arrays of the
+    // iteration the block shares, on all the threads of a block
+    // (gpu_vector_lanes.cpp).
+    int64_t kernel_fixed_lanes(const ASR::Function_t &x) const {
+        if (x.m_gpu == nullptr || x.m_gpu->m_lanes == nullptr) return 0;
+        if (gpu_kernel_block_shared(x)) return x.m_gpu->m_lanes_max;
+        GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
+        if (kernel_caps.lanes_wide > 0
+                && x.m_gpu->m_lanes_max == kernel_caps.lanes_wide) {
+            return kernel_caps.lanes_wide;
+        }
+        return 0;
+    }
+
     // The test, empty for none, of the lanes a launch most often gives the
     // kernel `x`, when they are a run-time value: kernels that every
     // launch gives the same lanes name them as a constant already
     // (emit_lane_prologue).
     std::string common_lanes_test(const ASR::Function_t &x) const {
         const ASR::gpu_kernel_layout_t &layout = *x.m_gpu;
-        GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
-        if (layout.m_lanes == nullptr || (kernel_caps.lanes_wide > 0
-                && layout.m_lanes_max == kernel_caps.lanes_wide)) {
+        if (layout.m_lanes == nullptr || kernel_fixed_lanes(x) > 0) {
             return "";
         }
         for (size_t i = 0; i < layout.n_scalars; i++) {
@@ -4706,7 +4731,11 @@ public:
             if (!wide && !unroll_text.empty() && kernel_has_lanes()
                     && ASRUtils::extract_value(ASRUtils::expr_value(
                         head.m_end), end_value) && end_value > 0) {
-                int64_t per_lane = (end_value + 31) / 32;
+                // The lanes of a warp, or of a kernel whose every launch
+                // gives an iteration the same number.
+                int64_t lanes = current_fixed_lanes > 0
+                    ? current_fixed_lanes : 32;
+                int64_t per_lane = (end_value + lanes - 1) / lanes;
                 if (per_lane < 16) {
                     unroll_text = "#pragma unroll "
                         + std::to_string(std::max<int64_t>(per_lane, 1));
