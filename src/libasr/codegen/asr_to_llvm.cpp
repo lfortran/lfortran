@@ -15175,12 +15175,23 @@ public:
                 return;
             }
 
+            // `array(i) = transfer(scalar, array(i))` is one element of a
+            // byte copy when the scalar is a whole object larger than one
+            // element (a derived type, or a value whose kind differs from
+            // the element). Element i is the bytes at offset
+            // (i - lbound) * sizeof(element). A same-size scalar element,
+            // as in `lhs(i) = transfer(rhs(i), lhs(i))`, is not re-indexed:
+            // its bytes are the element itself.
+            // A derived type's kind is reported as 4, so kind equality
+            // cannot be the test.
             if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target) &&
                 !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(bc->m_source)) &&
-                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(bc->m_source)) !=
+                (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
+                        ASRUtils::expr_type(bc->m_source))) ||
+                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(bc->m_source)) !=
                     ASRUtils::extract_kind_from_ttype_t(
-                        ASRUtils::type_get_past_array(bc->m_type))) {
+                        ASRUtils::type_get_past_array(bc->m_type)))) {
                 ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                 if (ai->n_args == 1 && ai->m_args[0].m_right) {
                     bool is_assignment_target_copy = is_assignment_target;
@@ -15194,11 +15205,14 @@ public:
 
                     visit_expr_wrapper(bc->m_source, true);
                     llvm::Value* source_val = tmp;
+                    ASR::ttype_t* src_past_ptr = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(bc->m_source));
                     llvm::Value* source_alloca;
-                    if (source_val->getType()->isPointerTy()) {
+                    if (source_val->getType()->isPointerTy() &&
+                            !ASR::is_a<ASR::CPtr_t>(*src_past_ptr)) {
                         source_alloca = source_val;
                     } else {
-                        source_alloca = builder->CreateAlloca(
+                        source_alloca = llvm_utils->CreateAlloca(
                             source_val->getType(), nullptr, "transfer_source");
                         builder->CreateStore(source_val, source_alloca);
                     }
@@ -15207,8 +15221,6 @@ public:
                         x.m_target,
                         ASRUtils::type_get_past_array(bc->m_type),
                         module.get());
-                    llvm::Value* src_as_elem_ptr = builder->CreateBitCast(
-                        source_alloca, elem_type->getPointerTo());
 
                     // Map target index to zero-based source chunk index using
                     // the target array lower bound (not always 1).
@@ -15228,12 +15240,185 @@ public:
                     llvm::Value* zero_based = builder->CreateSub(
                         idx, lower_bound);
                     zero_based = builder->CreateZExtOrTrunc(
-                        zero_based, llvm::Type::getInt32Ty(context));
-                    llvm::Value* elem_ptr = builder->CreateGEP(
-                        elem_type, src_as_elem_ptr, zero_based);
-                    llvm::Value* elem_val = llvm_utils->CreateLoad2(
-                        elem_type, elem_ptr);
-                    LLVM::CreateStore(*builder, elem_val, dest_ptr);
+                        zero_based, llvm::Type::getInt64Ty(context));
+                    // Copy min(sizeof(source) - byte_offset, sizeof(element))
+                    // bytes so a partial or out-of-range element never reads
+                    // past the source object; trailing bytes stay zero.
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    llvm::Type* source_object_type = llvm_utils->get_type_from_ttype_t_util(
+                        bc->m_source, src_past_ptr, module.get());
+                    uint64_t source_bytes = data_layout.getTypeAllocSize(
+                        source_object_type);
+                    uint64_t element_bytes = data_layout.getTypeAllocSize(elem_type);
+                    llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* byte_offset = builder->CreateMul(
+                        zero_based,
+                        llvm::ConstantInt::get(i64_ty, element_bytes));
+                    llvm::Value* src_len_val = llvm::ConstantInt::get(i64_ty, source_bytes);
+                    llvm::Value* in_source = builder->CreateICmpULT(
+                        byte_offset, src_len_val);
+                    LLVM::CreateStore(*builder,
+                        llvm::Constant::getNullValue(elem_type), dest_ptr);
+                    llvm_utils->create_if_else(in_source, [&]() {
+                        llvm::Value* avail = builder->CreateSub(src_len_val, byte_offset);
+                        llvm::Value* elem_sz_val = llvm::ConstantInt::get(i64_ty, element_bytes);
+                        llvm::Value* copy_bytes = builder->CreateSelect(
+                            builder->CreateICmpULT(avail, elem_sz_val), avail, elem_sz_val);
+                        llvm::Value* src_i8 = builder->CreateBitCast(
+                            source_alloca, llvm_utils->i8_ptr);
+                        llvm::Value* src_off_i8 = builder->CreateGEP(
+                            llvm::Type::getInt8Ty(context), src_i8, byte_offset);
+                        llvm::Value* dst_i8 = builder->CreateBitCast(
+                            dest_ptr, llvm_utils->i8_ptr);
+                        builder->CreateMemCpy(
+                            dst_i8, llvm::MaybeAlign(1),
+                            src_off_i8, llvm::MaybeAlign(1),
+                            copy_bytes);
+                    }, []() {});
+                    return;
+                }
+            }
+
+            // transfer() into a scalar derived type is a byte copy of
+            // min(sizeof(source), sizeof(result)). A normal struct
+            // assignment would deep-copy allocatable components; the
+            // descriptor (or the pointer to it) must be copied as bits.
+            {
+                ASR::ttype_t* tgt_ty = ASRUtils::expr_type(x.m_target);
+                ASR::ttype_t* tgt_base = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(tgt_ty));
+                if (!ASRUtils::is_array(tgt_ty) &&
+                        ASR::is_a<ASR::StructType_t>(*tgt_base) &&
+                        !ASRUtils::is_class_type(tgt_base) &&
+                        !ASRUtils::is_string_only(ASRUtils::expr_type(bc->m_source))) {
+                    if (ASRUtils::is_allocatable(tgt_ty)) {
+                        check_and_allocate_scalar(x.m_target);
+                    }
+                    llvm::Type* dest_llvm = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, tgt_base, module.get());
+                    bool is_assignment_target_copy = is_assignment_target;
+                    is_assignment_target = true;
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 0;
+                    visit_expr(*x.m_target);
+                    ptr_loads = ptr_loads_copy;
+                    is_assignment_target = is_assignment_target_copy;
+                    llvm::Value* dest_ptr = tmp;
+                    if (LLVM::is_llvm_pointer(*tgt_ty)) {
+                        dest_ptr = llvm_utils->CreateLoad2(
+                            dest_llvm->getPointerTo(), dest_ptr);
+                    }
+
+                    ASR::ttype_t* src_ty = ASRUtils::expr_type(bc->m_source);
+                    ASR::ttype_t* src_base = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(src_ty));
+                    ptr_loads = (ASRUtils::is_array(src_ty) &&
+                        ASRUtils::extract_physical_type(src_base) ==
+                            ASR::array_physical_typeType::DescriptorArray) ? 1 : 0;
+                    visit_expr(*bc->m_source);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* src_ptr = tmp;
+                    llvm::Value* src_desc = nullptr;
+                    llvm::Type* src_desc_llvm = nullptr;
+                    if (ASRUtils::is_array(src_ty) &&
+                            ASR::is_a<ASR::Array_t>(*src_base) &&
+                            ASR::down_cast<ASR::Array_t>(src_base)->m_physical_type ==
+                                ASR::array_physical_typeType::DescriptorArray) {
+                        src_desc = src_ptr;
+                        src_desc_llvm = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, src_base, module.get());
+                        llvm::Type* src_el = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, ASRUtils::extract_type(src_ty), module.get());
+                        src_ptr = llvm_utils->CreateLoad2(src_el->getPointerTo(),
+                            arr_descr->get_pointer_to_data(
+                                bc->m_source, src_ty, src_ptr, module.get()));
+                        llvm::Value* offset = arr_descr->get_offset(
+                            src_desc_llvm, src_desc);
+                        src_ptr = llvm_utils->create_ptr_gep2(
+                            src_el, src_ptr, offset);
+                    } else if (ASRUtils::is_array(src_ty) &&
+                            ASR::is_a<ASR::Array_t>(*src_base) &&
+                            ASR::down_cast<ASR::Array_t>(src_base)->m_physical_type ==
+                                ASR::array_physical_typeType::FixedSizeArray) {
+                        llvm::Type* src_llvm = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, src_base, module.get());
+                        src_ptr = llvm_utils->create_gep2(src_llvm, src_ptr, 0);
+                    }
+                    llvm::DataLayout data_layout(module->getDataLayout());
+                    uint64_t dest_bytes = data_layout.getTypeAllocSize(dest_llvm);
+                    llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+                    llvm::Value* dest_bytes_val = llvm::ConstantInt::get(i64_ty, dest_bytes);
+                    llvm::Value* src_bytes_val = dest_bytes_val;
+                    if (!ASRUtils::is_array(src_ty)) {
+                        llvm::Type* src_llvm = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, src_base, module.get());
+                        if (src_ptr->getType() == src_llvm) {
+                            llvm::Value* spilled = llvm_utils->CreateAlloca(
+                                src_llvm, nullptr, "transfer_struct_src");
+                            builder->CreateStore(src_ptr, spilled);
+                            src_ptr = spilled;
+                        } else if (LLVM::is_llvm_pointer(*src_ty) &&
+                                src_ptr->getType() == src_llvm->getPointerTo()->getPointerTo()) {
+                            src_ptr = llvm_utils->CreateLoad2(
+                                src_llvm->getPointerTo(), src_ptr);
+                        }
+                        uint64_t src_bytes = data_layout.getTypeAllocSize(src_llvm);
+                        src_bytes_val = llvm::ConstantInt::get(i64_ty, src_bytes);
+                    } else {
+                        int64_t n = ASRUtils::get_fixed_size_of_array(src_ty);
+                        llvm::Type* src_el = llvm_utils->get_type_from_ttype_t_util(
+                            bc->m_source, ASRUtils::extract_type(src_ty), module.get());
+                        uint64_t el_bytes = data_layout.getTypeAllocSize(src_el);
+                        if (n > 0) {
+                            src_bytes_val = llvm::ConstantInt::get(
+                                i64_ty, static_cast<uint64_t>(n) * el_bytes);
+                        } else if (src_desc != nullptr && src_desc_llvm != nullptr) {
+                            llvm::Value* num_elems = llvm_utils->arr_api->get_array_size(
+                                src_desc_llvm, src_desc, nullptr, 8);
+                            src_bytes_val = builder->CreateMul(
+                                builder->CreateZExtOrTrunc(num_elems, i64_ty),
+                                llvm::ConstantInt::get(i64_ty, el_bytes));
+                        } else {
+                            ASR::dimension_t* m_dims = nullptr;
+                            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                src_ty, m_dims);
+                            if (n_dims > 0) {
+                                llvm::Value* total_elems = llvm::ConstantInt::get(i64_ty, 1);
+                                bool have_all_dims = true;
+                                for (size_t d = 0; d < n_dims; d++) {
+                                    if (!m_dims[d].m_length) {
+                                        have_all_dims = false;
+                                        break;
+                                    }
+                                    visit_expr_wrapper(m_dims[d].m_length, true);
+                                    llvm::Value* dim_len = builder->CreateSExtOrTrunc(
+                                        tmp, i64_ty);
+                                    dim_len = builder->CreateSelect(
+                                        builder->CreateICmpSLT(dim_len,
+                                            llvm::ConstantInt::get(i64_ty, 0)),
+                                        llvm::ConstantInt::get(i64_ty, 0), dim_len);
+                                    total_elems = builder->CreateMul(total_elems, dim_len);
+                                }
+                                if (have_all_dims) {
+                                    src_bytes_val = builder->CreateMul(
+                                        total_elems, llvm::ConstantInt::get(i64_ty, el_bytes));
+                                }
+                            }
+                        }
+                    }
+                    llvm::Value* nbytes_val = builder->CreateSelect(
+                        builder->CreateICmpULT(src_bytes_val, dest_bytes_val),
+                        src_bytes_val, dest_bytes_val);
+                    llvm::Value* dest_i8 = builder->CreateBitCast(
+                        dest_ptr, llvm_utils->i8_ptr);
+                    llvm::Value* src_i8 = builder->CreateBitCast(
+                        src_ptr, llvm_utils->i8_ptr);
+                    builder->CreateMemSet(dest_i8, builder->getInt8(0),
+                        dest_bytes_val, llvm::MaybeAlign(1));
+                    builder->CreateMemCpy(
+                        dest_i8, llvm::MaybeAlign(1),
+                        src_i8, llvm::MaybeAlign(1),
+                        nbytes_val);
                     return;
                 }
             }

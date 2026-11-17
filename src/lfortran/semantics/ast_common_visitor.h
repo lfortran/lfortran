@@ -22723,7 +22723,12 @@ public:
                 ASR::ttype_t* src_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(source)));
                 ASR::ttype_t* src_elem = ASRUtils::type_get_past_array(src_type);
-                int64_t src_bytes = ASRUtils::get_type_byte_size(src_elem);
+                int64_t src_bytes = ASR::is_a<ASR::StructType_t>(*src_elem)
+                    ? ASRUtils::get_struct_expr_byte_size(source)
+                    : -1;
+                if (src_bytes <= 0) {
+                    src_bytes = ASRUtils::get_type_byte_size(src_elem);
+                }
                 ASR::expr_t* src_len_expr = nullptr;
                 // If compile time size known, assign mold for better memory usage
                 // Else, mold-size is set to default(64) for runtime-sized sources or dynamically calculated
@@ -22778,7 +22783,12 @@ public:
                 if( src_bytes > 0 ) {
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
-                    int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
+                    int64_t mold_bytes = ASR::is_a<ASR::StructType_t>(*mold_elem_type)
+                        ? ASRUtils::get_struct_expr_byte_size(mold)
+                        : -1;
+                    if (mold_bytes <= 0) {
+                        mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
+                    }
                     if( mold_bytes > 0 ) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
                     }
@@ -22786,7 +22796,12 @@ public:
                     // For runtime-sized strings with known length expression, use it
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
                         ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
-                    int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
+                    int64_t mold_bytes = ASR::is_a<ASR::StructType_t>(*mold_elem_type)
+                        ? ASRUtils::get_struct_expr_byte_size(mold)
+                        : -1;
+                    if (mold_bytes <= 0) {
+                        mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
+                    }
                     if( mold_bytes > 0 ) {
                         // Calculate: ceiling(src_len_expr / mold_bytes)
                         // = (src_len_expr + mold_bytes - 1) / mold_bytes
