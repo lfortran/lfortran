@@ -425,30 +425,29 @@ T find_maxval(size_t size, T* data, bool* mask = nullptr) {
 }
 
 // Folds sum, product, maxval and minval of a real(16) or complex(16) array
-// constant exactly, in binary128. Nothing selected by the mask gives -huge
-// for maxval and +huge for minval. Returns nullptr when the reduction is left
-// to run time (a NaN operand).
-static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &loc,
+// constant exactly, in its host value type `T` (see ASRUtils::ExtendedReal).
+// Nothing selected by the mask gives -huge for maxval and +huge for minval.
+// Returns nullptr when the reduction is left to run time (a NaN operand).
+template <typename T>
+static inline ASR::expr_t *eval_extended_reduction(Allocator &al, const Location &loc,
         ASR::ttype_t *t, ASR::ArrayConstant_t *a, size_t size, const bool *mask_data,
         ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
     using F = ASRUtils::IntrinsicArrayFunctions;
+    using R = ASRUtils::ExtendedReal<T>;
     bool is_complex = ASRUtils::is_complex(*ASRUtils::extract_type(t));
-    lf_float128 zero = lf_f128_from_double(0.0), one = lf_f128_from_double(1.0);
-    lf_float128 re = zero, im = zero;
+    T zero = R::from_double(0.0), one = R::from_double(1.0);
+    T re = zero, im = zero;
     bool seen = false;
     for (size_t i = 0; i < size; i++) {
         if (mask_data && !mask_data[i]) continue;
         ASR::expr_t* e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
-        lf_float128 x_re, x_im = zero;
+        T x_re, x_im = zero;
         if (is_complex) {
-            ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(e);
-            if (!ASRUtils::complex_constant_is_r16(c)) return nullptr;
-            x_re = ASRUtils::complex_constant_re_r16(c);
-            x_im = ASRUtils::complex_constant_im_r16(c);
+            if (!R::get_complex(e, x_re, x_im)) return nullptr;
         } else {
-            x_re = ASRUtils::real_expr_get_r16(e);
+            x_re = R::get(e);
         }
-        if (lf_f128_isnan(x_re) || lf_f128_isnan(x_im)) return nullptr;
+        if (R::isnan(x_re) || R::isnan(x_im)) return nullptr;
         if (!seen && intrinsic_func_id != F::Sum) {
             re = x_re; im = x_im;
             seen = true;
@@ -457,20 +456,20 @@ static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &
         seen = true;
         switch (intrinsic_func_id) {
             case F::Sum:
-                re = lf_f128_add(re, x_re);
-                im = lf_f128_add(im, x_im);
+                re = R::add(re, x_re);
+                im = R::add(im, x_im);
                 break;
             case F::Product: {
-                lf_float128 new_re = lf_f128_sub(lf_f128_mul(re, x_re), lf_f128_mul(im, x_im));
-                lf_float128 new_im = lf_f128_add(lf_f128_mul(re, x_im), lf_f128_mul(im, x_re));
+                T new_re = R::sub(R::mul(re, x_re), R::mul(im, x_im));
+                T new_im = R::add(R::mul(re, x_im), R::mul(im, x_re));
                 re = new_re; im = new_im;
                 break;
             }
             case F::MaxVal:
-                if (lf_f128_cmp(x_re, re) > 0) re = x_re;
+                if (R::cmp(x_re, re) > 0) re = x_re;
                 break;
             case F::MinVal:
-                if (lf_f128_cmp(x_re, re) < 0) re = x_re;
+                if (R::cmp(x_re, re) < 0) re = x_re;
                 break;
             default: return nullptr;
         }
@@ -489,9 +488,9 @@ static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &
         }
     }
     if (is_complex) {
-        return ASRUtils::make_ComplexConstant_r16(al, loc, re, im, t);
+        return R::make_complex(al, loc, re, im, t);
     }
-    return ASRUtils::make_RealConstant_r16(al, loc, re, t);
+    return R::make(al, loc, re, t);
 }
 
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
@@ -681,7 +680,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
              intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Product ||
              intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal ||
              intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal)) {
-        return eval_kind16_reduction(al, loc, t, a, size,
+        return eval_extended_reduction<lf_float128>(al, loc, t, a, size,
             mask ? (bool*)(mask->m_data) : nullptr, intrinsic_func_id);
     }
     switch( intrinsic_func_id ) {
@@ -1806,9 +1805,9 @@ static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
 // the elements `first + k * stride` (k = 0, ..., extent - 1), of the maximum
 // (is_max) or minimum of the elements selected by `mask`: the first one, or
 // the last one with `back`; -1 when `mask` selects no element. real(16)
-// elements are compared exactly, in binary128. Returns false to leave the
-// location to run time (a selected real(16) NaN or an element that is not a
-// constant).
+// elements are compared exactly, in their host value type. Returns false to
+// leave the location to run time (a selected real(16) NaN or an element that
+// is not a constant).
 static inline bool maxminloc_section_index(Allocator &al, ASR::ArrayConstant_t *arr,
         int64_t first, int64_t stride, int64_t extent, const std::vector<bool> &mask,
         bool is_max, bool back, int64_t &result) {
@@ -1833,14 +1832,21 @@ static inline bool maxminloc_section_index(Allocator &al, ASR::ArrayConstant_t *
             result = k;
         }
     };
-    if (ASRUtils::is_kind16_array_constant(&arr->base)) {
+    // Compares the elements exactly, in their host value type `T` (see
+    // ASRUtils::ExtendedReal)
+    auto select_extended = [&](auto zero) {
+        using T = decltype(zero);
+        using R = ASRUtils::ExtendedReal<T>;
         select([&](ASR::expr_t *e) {
-            lf_float128 v = ASRUtils::real_expr_get_r16(e);
-            if (lf_f128_isnan(v)) foldable = false;
+            T v = R::get(e);
+            if (R::isnan(v)) foldable = false;
             return v;
-        }, [](const lf_float128 &x, const lf_float128 &y) {
-            return lf_f128_cmp(x, y);
+        }, [](const T &x, const T &y) {
+            return R::cmp(x, y);
         });
+    };
+    if (ASRUtils::is_kind16_array_constant(&arr->base)) {
+        select_extended(lf_float128{});
     } else if (ASRUtils::is_character(*arr->m_type)) {
         select([](ASR::expr_t *e) {
             return std::string(ASR::down_cast<ASR::StringConstant_t>(e)->m_s);
@@ -2601,15 +2607,6 @@ namespace Shape {
     }
 
 } // namespace Shape
-
-// Whether the elements of `type` are real(16) or complex(16). `spread` and
-// `pack` fold such arrays by copying the element constants, which keeps them
-// exact, instead of reading the elements as doubles.
-static inline bool is_kind16_real_or_complex(ASR::ttype_t* type) {
-    ASR::ttype_t* t = ASRUtils::extract_type(type);
-    return (ASRUtils::is_real(*t) || ASRUtils::is_complex(*t)) &&
-        ASRUtils::extract_kind_from_ttype_t(t) == 16;
-}
 
 // The first `n` elements of the constant array `x` in array element order,
 // as constants of its element type. A scalar constant `x` gives `n` copies
@@ -7427,7 +7424,7 @@ namespace Pack {
 
         // Copying the element constants keeps real(16) and complex(16)
         // elements exact and also folds character arrays
-        if (is_kind16_real_or_complex(type_a) || ASRUtils::is_character(*type_a)) {
+        if (is_extended_real_or_complex(type_a) || ASRUtils::is_character(*type_a)) {
             std::vector<ASR::expr_t*> a = constant_elements(al, array, dim_array), c, res;
             if (is_vector_present) {
                 c = constant_elements(al, vector, dim_vector);
@@ -8064,9 +8061,12 @@ namespace DotProduct {
         }
     }
 
-    // Folds dot_product of real(16) or complex(16) array constants exactly.
-    static inline ASR::expr_t *eval_kind16_dot_product(Allocator &al, const Location &loc,
+    // Folds dot_product of real(16) or complex(16) array constants exactly, in
+    // their host value type `T` (see ASRUtils::ExtendedReal).
+    template <typename T>
+    static inline ASR::expr_t *eval_extended_dot_product(Allocator &al, const Location &loc,
             ASR::ttype_t *return_type, ASR::expr_t *vector_a, ASR::expr_t *vector_b, int dim) {
+        using R = ASRUtils::ExtendedReal<T>;
         vector_a = ASRUtils::expr_value(vector_a);
         vector_b = ASRUtils::expr_value(vector_b);
         if (!vector_a || !vector_b) return nullptr;
@@ -8083,33 +8083,26 @@ namespace DotProduct {
         ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
         ASR::ArrayConstant_t *b_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_b);
         bool is_complex = ASRUtils::is_complex(*ASRUtils::extract_type(return_type));
-        lf_float128 re = lf_f128_from_double(0.0), im = lf_f128_from_double(0.0);
+        T re = R::from_double(0.0), im = R::from_double(0.0);
         for (int i = 0; i < dim; i++) {
             ASR::expr_t *ea = ASRUtils::fetch_ArrayConstant_value(al, a_const, i);
             ASR::expr_t *eb = ASRUtils::fetch_ArrayConstant_value(al, b_const, i);
             if (is_complex) {
-                ASR::ComplexConstant_t *ca = ASR::down_cast<ASR::ComplexConstant_t>(ea);
-                ASR::ComplexConstant_t *cb = ASR::down_cast<ASR::ComplexConstant_t>(eb);
-                if (!ASRUtils::complex_constant_is_r16(ca) ||
-                        !ASRUtils::complex_constant_is_r16(cb)) {
+                T ar, ai, br, bi;
+                if (!R::get_complex(ea, ar, ai) || !R::get_complex(eb, br, bi)) {
                     return nullptr;
                 }
-                lf_float128 ar = ASRUtils::complex_constant_re_r16(ca);
-                lf_float128 ai = ASRUtils::complex_constant_im_r16(ca);
-                lf_float128 br = ASRUtils::complex_constant_re_r16(cb);
-                lf_float128 bi = ASRUtils::complex_constant_im_r16(cb);
                 // conjg(a) * b
-                re = lf_f128_add(re, lf_f128_add(lf_f128_mul(ar, br), lf_f128_mul(ai, bi)));
-                im = lf_f128_add(im, lf_f128_sub(lf_f128_mul(ar, bi), lf_f128_mul(ai, br)));
+                re = R::add(re, R::add(R::mul(ar, br), R::mul(ai, bi)));
+                im = R::add(im, R::sub(R::mul(ar, bi), R::mul(ai, br)));
             } else {
-                re = lf_f128_add(re, lf_f128_mul(ASRUtils::real_expr_get_r16(ea),
-                    ASRUtils::real_expr_get_r16(eb)));
+                re = R::add(re, R::mul(R::get(ea), R::get(eb)));
             }
         }
         if (is_complex) {
-            return ASRUtils::make_ComplexConstant_r16(al, loc, re, im, return_type);
+            return R::make_complex(al, loc, re, im, return_type);
         }
-        return ASRUtils::make_RealConstant_r16(al, loc, re, return_type);
+        return R::make(al, loc, re, return_type);
     }
 
     static inline ASR::expr_t *eval_DotProduct(Allocator & al,
@@ -8140,7 +8133,8 @@ namespace DotProduct {
         bool kind16_b = kind_b == 16 && (ASRUtils::is_real(*type_b) || ASRUtils::is_complex(*type_b));
         if (kind16_a || kind16_b) {
             if (!(kind16_a && kind16_b)) return nullptr;
-            return eval_kind16_dot_product(al, loc, return_type, vector_a, vector_b, dim);
+            return eval_extended_dot_product<lf_float128>(al, loc, return_type,
+                vector_a, vector_b, dim);
         }
 
         if (ASRUtils::is_real(*type_a)) {

@@ -1309,9 +1309,17 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
     return ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc, res_data, type, arr->m_storage_format));
 }
 
-// Negates the elements of a real(16) or complex(16) array constant, which
-// are not stored as host floating point values.
-static ASR::expr_t* negate_kind16_array_const(Allocator& al, const Location& loc,
+// The negation of the real(16) constant `e` (see ASRUtils::ExtendedReal).
+template <typename T>
+static ASR::expr_t* negate_extended_real(Allocator& al, const Location& loc,
+        ASR::expr_t* e, ASR::ttype_t* type) {
+    using R = ASRUtils::ExtendedReal<T>;
+    return R::make(al, loc, R::neg(R::get(e)), type);
+}
+
+// Negates the elements of a real(16) or complex(16) array constant, which are
+// not stored as host floating point values of the element type.
+static ASR::expr_t* negate_extended_array_const(Allocator& al, const Location& loc,
         ASR::ArrayConstant_t* arr, ASR::ttype_t* type) {
     int64_t arr_size = ASRUtils::get_fixed_size_of_array(type);
     if (arr_size == -1) return nullptr;
@@ -1320,9 +1328,7 @@ static ASR::expr_t* negate_kind16_array_const(Allocator& al, const Location& loc
     for (int64_t i = 0; i < arr_size; i++) {
         ASR::expr_t* e = ASRUtils::fetch_ArrayConstant_value(al, arr, i);
         if (ASR::is_a<ASR::RealConstant_t>(*e)) {
-            values.push_back(al, ASRUtils::make_RealConstant_r16(al, loc,
-                lf_f128_neg(ASRUtils::real_constant_get_r16(
-                    ASR::down_cast<ASR::RealConstant_t>(e))), elem_type));
+            values.push_back(al, negate_extended_real<lf_float128>(al, loc, e, elem_type));
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
             ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(e);
             values.push_back(al, ASRUtils::make_ComplexConstant_r16(al, loc,
@@ -1488,7 +1494,7 @@ static ASR::expr_t* negate_kind16_array_const(Allocator& al, const Location& loc
                     } else if (kind == 8) {
                         value = eval_unary_array_const<double>(al, x.base.base.loc, arr_const, result_type, USubOp<double>());
                     } else if (kind == 16) {
-                        value = negate_kind16_array_const(al, x.base.base.loc, arr_const, result_type);
+                        value = negate_extended_array_const(al, x.base.base.loc, arr_const, result_type);
                     }
                 }
             }
@@ -1520,7 +1526,7 @@ static ASR::expr_t* negate_kind16_array_const(Allocator& al, const Location& loc
                     }
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand)) &&
                         ASRUtils::extract_kind_from_ttype_t(result_type) == 16) {
-                    value = negate_kind16_array_const(al, x.base.base.loc,
+                    value = negate_extended_array_const(al, x.base.base.loc,
                         ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand)),
                         result_type);
                 }

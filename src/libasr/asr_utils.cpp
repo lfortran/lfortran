@@ -13327,8 +13327,8 @@ void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int64_
                 case 4: ((float*)x->m_data)[i] = static_cast<float>(value_real->m_r); break;
                 case 8: ((double*)x->m_data)[i] = value_real->m_r; break;
                 case 16:
-                    std::memcpy(static_cast<uint8_t*>(x->m_data) + 16*i,
-                        real_constant_get_r16_bytes(value_real), 16);
+                    set_extended_real_element<lf_float128>(static_cast<uint8_t*>(
+                        x->m_data) + 16*i, value_real);
                     break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
@@ -13695,7 +13695,7 @@ void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* 
             switch (kind) {
                 case 4: return set_data_real(new float[n_args], a_args, n_args);
                 case 8: return set_data_real(new double[n_args], a_args, n_args);
-                case 16: return set_data_real16(new uint8_t[16*n_args], a_args, n_args);
+                case 16: return set_data_extended_real<lf_float128>(a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }

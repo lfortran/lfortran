@@ -102,13 +102,9 @@ public:
   // Whether a cast of the constant array `value` to `dest_type` involves a
   // real(16) or complex(16) element, which the casts of the raw data of an
   // array constant do not handle.
-  static bool is_kind16_array_cast(ASR::expr_t *value, ASR::ttype_t *dest_type) {
-      auto is_kind16 = [](ASR::ttype_t *t) {
-          t = ASRUtils::extract_type(t);
-          return (ASRUtils::is_real(*t) || ASRUtils::is_complex(*t))
-              && ASRUtils::extract_kind_from_ttype_t(t) == 16;
-      };
-      return is_kind16(ASRUtils::expr_type(value)) || is_kind16(dest_type);
+  static bool is_extended_array_cast(ASR::expr_t *value, ASR::ttype_t *dest_type) {
+      return ASRUtils::is_extended_real_or_complex(ASRUtils::expr_type(value))
+          || ASRUtils::is_extended_real_or_complex(dest_type);
   }
 
   // The constant array `array` converted to the element type `dest_type`, by
@@ -230,7 +226,7 @@ public:
         ASR::expr_t *value=nullptr;
         ASR::expr_t *source_value = ASRUtils::expr_value(*convert_can);
         if (source_value && ASR::is_a<ASR::ArrayConstant_t>(*source_value)
-                && is_kind16_array_cast(source_value, dest_type2)) {
+                && is_extended_array_cast(source_value, dest_type2)) {
             value = fold_array_cast_by_element(al, a_loc,
                 ASR::down_cast<ASR::ArrayConstant_t>(source_value), dest_type2, diag);
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
