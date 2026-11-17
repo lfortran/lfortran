@@ -1031,18 +1031,27 @@ std::unique_ptr<LLVMModule> LLVMEvaluator::parse_module2(const std::string &sour
 }
 
 namespace {
-// The symbols that `m` uses and does not define. Those that need no
-// definition (intrinsics, extern_weak) are not included.
-std::vector<std::string> external_refs(llvm::Module &m) {
+// The symbols that `m` uses and that the JIT resolves elsewhere: those it
+// does not define, and those it defines that `jit_symbols` already assigns to
+// an earlier module, since the JIT keeps the first definition of a name (a
+// redefinition whose body is dropped, a weak or linkonce duplicate). Those
+// that need no definition (intrinsics, extern_weak) are not included, nor
+// are uses by constant expressions that nothing uses, which make no
+// relocation.
+std::vector<std::string> external_refs(llvm::Module &m,
+        const std::map<std::string, size_t> &jit_symbols) {
     std::vector<std::string> refs;
     for (llvm::GlobalValue &gv : m.global_values()) {
-        if (!gv.isDeclaration() || gv.use_empty() || !gv.hasName()
-                || gv.hasExternalWeakLinkage()) {
+        if (!gv.hasName() || gv.hasExternalWeakLinkage()) continue;
+        if (!gv.isDeclaration() && (gv.hasLocalLinkage()
+                || jit_symbols.count(gv.getName().str()) == 0)) {
             continue;
         }
         if (llvm::Function *fn = llvm::dyn_cast<llvm::Function>(&gv)) {
             if (fn->isIntrinsic()) continue;
         }
+        gv.removeDeadConstantUsers();
+        if (gv.use_empty()) continue;
         refs.push_back(gv.getName().str());
     }
     return refs;
@@ -1068,7 +1077,7 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     configure_module(*mod);
     mod->setDataLayout(jit->getDataLayout());
     JITModule jm;
-    jm.refs = external_refs(*mod);
+    jm.refs = external_refs(*mod, jit_symbols);
     jm.linkable = jm.refs.empty();
     std::vector<std::string> defined;
     for (llvm::GlobalValue &gv : mod->global_values()) {
@@ -1140,8 +1149,16 @@ std::vector<std::string> LLVMEvaluator::undefined_symbols(LLVMModule &m) {
     std::set<std::string> seen;
     std::vector<size_t> visited;
     std::deque<std::string> names;
-    for (const std::string &name : external_refs(*m.m_m)) {
+    for (const std::string &name : external_refs(*m.m_m, jit_symbols)) {
         names.push_back(name);
+    }
+    // A name that `m` defines first resolves to `m`, added to the JIT next.
+    for (llvm::GlobalValue &gv : m.m_m->global_values()) {
+        if (!gv.isDeclaration() && gv.hasName() && !gv.hasLocalLinkage()
+                && !gv.hasAvailableExternallyLinkage()
+                && jit_symbols.count(gv.getName().str()) == 0) {
+            seen.insert(gv.getName().str());
+        }
     }
     while (!names.empty()) {
         std::string name = names.front();

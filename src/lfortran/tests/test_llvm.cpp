@@ -6845,6 +6845,110 @@ end subroutine
     CHECK(cell.value.text() == "3");
 }
 
+TEST_CASE("FortranEvaluator execute: common block and a deferred bind(C) callee") {
+    // Every later cell declares the common block of the waiting procedure
+    // without using it, so it does not need that procedure's callee (#17046).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    REQUIRE(e.execute(R"(subroutine a()
+real :: x
+common /blk/ x
+interface
+subroutine b() bind(C, name="cfun_17046")
+end subroutine
+end interface
+x = 1
+call b()
+end subroutine
+)").ok);
+    auto cell = e.execute("40+2");
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(cell.value.text() == "42");
+    REQUIRE(e.execute("integer :: k").ok);
+    REQUIRE(e.execute("k = 5").ok);
+    cell = e.execute("k");
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(cell.value.text() == "5");
+    cell = e.execute(R"(subroutine b() bind(C, name="cfun_17046")
+print *, "in b"
+end subroutine
+call a()
+)", false, io);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(output.find("in b") != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator execute: redefined broken bind(C) procedure") {
+    // The JIT keeps the first definition of a bind(C) procedure, so a cell
+    // that defines it again and calls it needs the first one (#17046).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    REQUIRE(e.execute(R"(subroutine b() bind(C, name="rfun_17046")
+interface
+subroutine nothere_17046()
+end subroutine
+end interface
+call nothere_17046()
+end subroutine
+)").ok);
+    for (int i = 0; i < 2; i++) {
+        auto cell = e.execute(R"(subroutine b() bind(C, name="rfun_17046")
+print *, "fixed"
+end subroutine
+call b()
+)");
+        CHECK(!cell.ok);
+        CHECK(!cell.internal_error);
+        CHECK(cell.error_value.find("undefined reference to 'nothere_17046'")
+            != std::string::npos);
+    }
+    auto cell = e.execute("40+2");
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(cell.value.text() == "42");
+}
+
+TEST_CASE("FortranEvaluator execute: type info shared with a broken procedure") {
+    // The type information that select type uses is defined in every cell
+    // that needs it, and the JIT keeps the first definition, so a procedure
+    // of a later cell needs the module of the broken one (#17046).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    REQUIRE(e.execute(R"(subroutine s(x)
+class(*), intent(in) :: x
+interface
+subroutine nothere_17046()
+end subroutine
+end interface
+select type (x)
+type is (integer)
+print *, x
+end select
+call nothere_17046()
+end subroutine
+)").ok);
+    REQUIRE(e.execute(R"(subroutine t(y)
+class(*), intent(in) :: y
+select type (y)
+type is (integer)
+print *, y + 1
+end select
+end subroutine
+)").ok);
+    for (int i = 0; i < 2; i++) {
+        auto cell = e.execute("call t(5)");
+        CHECK(!cell.ok);
+        CHECK(!cell.internal_error);
+        CHECK(cell.error_value.find("undefined reference to 'nothere_17046'")
+            != std::string::npos);
+    }
+    auto cell = e.execute("40+2");
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    CHECK(cell.value.text() == "42");
+}
+
 #endif // __EMSCRIPTEN__
 
 TEST_CASE("FortranEvaluator execute: formatted print of an array section") {
