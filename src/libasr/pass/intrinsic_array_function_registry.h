@@ -7085,7 +7085,9 @@ namespace Pack {
         std::vector<bool> b(dim_array);
         populate_vector(al, b, mask, dim_array);
 
-        if (is_kind16_real_or_complex(type_a)) {
+        // Copying the element constants keeps real(16) and complex(16)
+        // elements exact and also folds character arrays
+        if (is_kind16_real_or_complex(type_a) || ASRUtils::is_character(*type_a)) {
             std::vector<ASR::expr_t*> a = constant_elements(al, array, dim_array), c, res;
             if (is_vector_present) {
                 c = constant_elements(al, vector, dim_vector);
