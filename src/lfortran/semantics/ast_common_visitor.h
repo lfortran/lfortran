@@ -22837,12 +22837,20 @@ public:
                                     reinterpret_cast<uint8_t*>(&val_i64) + sizeof(val_i64));
                 }
             } else if (ASR::is_a<ASR::RealConstant_t>(*source_value)) {
-                if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(source)) == 4) {
-                    float val = static_cast<float>(ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r);
+                ASR::RealConstant_t* r = ASR::down_cast<ASR::RealConstant_t>(source_value);
+                int source_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(source));
+                if (source_kind == 10) {
+                    // The storage of a real(10) value depends on the target
+                    return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+                } else if (source_kind == 16) {
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(r);
+                    source_bits.assign(bytes, bytes + 16);
+                } else if (source_kind == 4) {
+                    float val = static_cast<float>(r->m_r);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 } else {
-                    double val = ASR::down_cast<ASR::RealConstant_t>(source_value)->m_r;
+                    double val = r->m_r;
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val),
                                     reinterpret_cast<uint8_t*>(&val) + sizeof(val));
                 }
@@ -22896,7 +22904,17 @@ public:
                         return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
                     }
                 } else if (ASRUtils::is_real(*source_type)) {
-                    if (kind == 4) {
+                    if (kind == 10) {
+                        // The storage of a real(10) value depends on the target
+                        return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+                    } else if (kind == 16) {
+                        for (size_t i=0; i < n_elements; i++) {
+                            const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(
+                                ASR::down_cast<ASR::RealConstant_t>(
+                                    ASRUtils::fetch_ArrayConstant_value(al, const_source, i)));
+                            source_bits.insert(source_bits.end(), bytes, bytes + 16);
+                        }
+                    } else if (kind == 4) {
                         for (size_t i=0; i < n_elements; i++) {
                             float val = static_cast<float>(ASR::down_cast<ASR::RealConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, const_source, i))->m_r);
                             source_bits.insert(source_bits.end(),

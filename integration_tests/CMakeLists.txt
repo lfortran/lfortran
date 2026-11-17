@@ -1511,6 +1511,7 @@ RUN(NAME cshift_eoshift_shift_overflow_01 LABELS gfortran llvm) # cshift/eoshift
 RUN(NAME spread_int8_fold_01 LABELS gfortran llvm) # spread of an integer(8) PARAMETER array keeps 64-bit elements (#17874)
 RUN(NAME cshift_eoshift_int8_fold_01 LABELS gfortran llvm) # cshift/eoshift of an integer(8) PARAMETER array keep 64-bit elements (#17880)
 RUN(NAME cshift_eoshift_rank2_fold_01 LABELS gfortran llvm) # cshift/eoshift folding of constant arrays of any rank (#17250)
+RUN(NAME real16_transfer_fold_01 LABELS gfortran llvm)
 RUN(NAME complex16_cmplx_kind_const_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_01 LABELS gfortran llvm)
 RUN(NAME complex16_param_fold_02 LABELS gfortran llvm)
@@ -8051,6 +8052,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real10_elemental_scalar_fold_01 LABELS gfortran llvm)
     RUN(NAME real10_kind_conversion_scalar_fold_01 LABELS gfortran llvm)
     RUN(NAME real10_cmplx_scalar_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_transfer_fold_01 LABELS gfortran llvm)
     # The value check waits on #17031.
     RUN(NAME separate_compilation_73 LABELS gfortran llvm
         EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)
