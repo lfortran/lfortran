@@ -100,18 +100,23 @@ private:
 
 public:
   // Whether a cast of the constant array `value` to `dest_type` involves a
-  // real(16) or complex(16) element, which the casts of the raw data of an
-  // array constant do not handle.
+  // real(10), real(16) or complex(16) element, which the casts of the raw
+  // data of an array constant do not handle.
   static bool is_extended_array_cast(ASR::expr_t *value, ASR::ttype_t *dest_type) {
       return ASRUtils::is_extended_real_or_complex(ASRUtils::expr_type(value))
           || ASRUtils::is_extended_real_or_complex(dest_type);
   }
 
   // The constant array `array` converted to the element type `dest_type`, by
-  // converting each of its elements, or nullptr if an element does not fold.
+  // converting each of its elements, or nullptr if an element does not fold
+  // or an array constant cannot hold `dest_type` (complex(10)).
   static ASR::expr_t* fold_array_cast_by_element(Allocator &al,
           const Location &a_loc, ASR::ArrayConstant_t *array,
           ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
+      if (!ASRUtils::is_array_constant_element_type(
+              ASRUtils::extract_type(dest_type))) {
+          return nullptr;
+      }
       size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
       Vec<ASR::expr_t*> elements; elements.reserve(al, array_size);
       for (size_t i = 0; i < array_size; i++) {

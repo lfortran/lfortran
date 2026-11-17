@@ -424,10 +424,11 @@ T find_maxval(size_t size, T* data, bool* mask = nullptr) {
     return find_minval_maxval<T, true>(size, data, mask);
 }
 
-// Folds sum, product, maxval and minval of a real(16) or complex(16) array
-// constant exactly, in its host value type `T` (see ASRUtils::ExtendedReal).
-// Nothing selected by the mask gives -huge for maxval and +huge for minval.
-// Returns nullptr when the reduction is left to run time (a NaN operand).
+// Folds sum, product, maxval and minval of a real(10), real(16) or
+// complex(16) array constant exactly, in its host value type `T` (see
+// ASRUtils::ExtendedReal). Nothing selected by the mask gives -huge for
+// maxval and +huge for minval. Returns nullptr when the reduction is left to
+// run time (a NaN operand).
 template <typename T>
 static inline ASR::expr_t *eval_extended_reduction(Allocator &al, const Location &loc,
         ASR::ttype_t *t, ASR::ArrayConstant_t *a, size_t size, const bool *mask_data,
@@ -739,14 +740,21 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
         }
     }
     bool *mask_data = nullptr;
-    if (ASRUtils::is_kind16_array_constant(array) && !ASRUtils::is_array(t) &&
+    bool is_kind16 = ASRUtils::is_kind16_array_constant(array);
+    bool is_real10 = ASRUtils::is_real10_array_constant(array);
+    if ((is_kind16 || is_real10) && !ASRUtils::is_array(t) &&
             (intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Sum ||
              intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Product ||
              intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal ||
              intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal)) {
-        return eval_extended_reduction<lf_float128>(al, loc, t, a, size,
-            mask ? (bool*)(mask->m_data) : nullptr, intrinsic_func_id);
+        bool *reduction_mask = mask ? (bool*)(mask->m_data) : nullptr;
+        return is_kind16
+            ? eval_extended_reduction<lf_float128>(al, loc, t, a, size,
+                reduction_mask, intrinsic_func_id)
+            : eval_extended_reduction<long double>(al, loc, t, a, size,
+                reduction_mask, intrinsic_func_id);
     }
+    if (is_real10) return nullptr;
     switch( intrinsic_func_id ) {
         case ASRUtils::IntrinsicArrayFunctions::Sum: {
             if (mask) mask_data = (bool*)(mask->m_data);
@@ -1868,10 +1876,10 @@ static inline void verify_MaxMinLoc_args(const ASR::IntrinsicArrayFunction_t& x,
 // Sets `result` to the 0-based position, within the section of `arr` made of
 // the elements `first + k * stride` (k = 0, ..., extent - 1), of the maximum
 // (is_max) or minimum of the elements selected by `mask`: the first one, or
-// the last one with `back`; -1 when `mask` selects no element. real(16)
-// elements are compared exactly, in their host value type. Returns false to
-// leave the location to run time (a selected real(16) NaN or an element that
-// is not a constant).
+// the last one with `back`; -1 when `mask` selects no element. real(10) and
+// real(16) elements are compared exactly, in their host value type. Returns
+// false to leave the location to run time (a selected real(10) or real(16)
+// NaN or an element that is not a constant).
 static inline bool maxminloc_section_index(Allocator &al, ASR::ArrayConstant_t *arr,
         int64_t first, int64_t stride, int64_t extent, const std::vector<bool> &mask,
         bool is_max, bool back, int64_t &result) {
@@ -1911,6 +1919,8 @@ static inline bool maxminloc_section_index(Allocator &al, ASR::ArrayConstant_t *
     };
     if (ASRUtils::is_kind16_array_constant(&arr->base)) {
         select_extended(lf_float128{});
+    } else if (ASRUtils::is_real10_array_constant(&arr->base)) {
+        select_extended(0.0L);
     } else if (ASRUtils::is_character(*arr->m_type)) {
         select([](ASR::expr_t *e) {
             return std::string(ASR::down_cast<ASR::StringConstant_t>(e)->m_s);
@@ -5948,7 +5958,15 @@ namespace MatMul {
                 v = static_cast<T>(ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
                 return true;
             }
-            if constexpr (!std::is_integral_v<T>) {
+            if constexpr (std::is_same_v<T, long double>) {
+                // A real(10) constant holds a host `long double`
+                if (ASR::is_a<ASR::RealConstant_t>(*e)) {
+                    ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(e);
+                    if (ASRUtils::extract_kind_from_ttype_t(r->m_type) != 10) return false;
+                    v = ASRUtils::real_constant_get_r10(r);
+                    return true;
+                }
+            } else if constexpr (!std::is_integral_v<T>) {
                 if (ASR::is_a<ASR::RealConstant_t>(*e)) {
                     v = static_cast<T>(ASR::down_cast<ASR::RealConstant_t>(e)->m_r);
                     return true;
@@ -6041,6 +6059,8 @@ namespace MatMul {
                 } else if constexpr (is_std_complex<T>::value) {
                     value = EXPR(ASRUtils::make_ComplexConstant_util(al, loc,
                         s.real(), s.imag(), elem_type));
+                } else if constexpr (std::is_same_v<T, long double>) {
+                    value = ASRUtils::make_RealConstant_r10(al, loc, s, elem_type);
                 } else {
                     value = ASRUtils::make_RealConstant_util(al, loc, s, elem_type);
                 }
@@ -6189,6 +6209,9 @@ namespace MatMul {
                 consts[0], consts[1], n, k, m, diag);
         } else if (is_real(*elem_type) && kind == 8) {
             return eval_MatMul_values<double>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_real(*elem_type) && kind == 10) {
+            return eval_MatMul_values<long double>(al, loc, return_type,
                 consts[0], consts[1], n, k, m, diag);
         } else if (is_complex(*elem_type) && kind == 4) {
             return eval_MatMul_values<std::complex<float>>(al, loc, return_type,
@@ -7147,6 +7170,16 @@ namespace Norm2 {
             });
             if (lf_f128_isnan(norm) || lf_f128_isinf(norm)) return nullptr;
             return ASRUtils::make_RealConstant_r16(al, loc, norm, return_type);
+        } else if (ASRUtils::is_real10_array_constant(array)) {
+            // The same, in long double
+            ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
+            size_t size = ASRUtils::get_fixed_size_of_array(arr->m_type);
+            long double norm = scaled_norm2<long double>(size, [&](size_t i) {
+                return ASRUtils::real_constant_get_r10(ASR::down_cast<ASR::RealConstant_t>(
+                    ASRUtils::fetch_ArrayConstant_value(al, arr, i)));
+            });
+            if (!std::isfinite(norm)) return nullptr;
+            return ASRUtils::make_RealConstant_r10(al, loc, norm, return_type);
         }
         if (array && ASR::is_a<ASR::ArrayConstant_t>(*array)) {
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
@@ -7477,8 +7510,8 @@ namespace Pack {
         std::vector<bool> b(dim_array);
         populate_vector(al, b, mask, dim_array);
 
-        // Copying the element constants keeps real(16) and complex(16)
-        // elements exact and also folds character arrays
+        // Copying the element constants keeps real(10), real(16) and
+        // complex(16) elements exact and also folds character arrays
         if (is_extended_real_or_complex(type_a) || ASRUtils::is_character(*type_a)) {
             std::vector<ASR::expr_t*> a = constant_elements(al, array, dim_array), c, res;
             if (is_vector_present) {
@@ -8116,8 +8149,8 @@ namespace DotProduct {
         }
     }
 
-    // Folds dot_product of real(16) or complex(16) array constants exactly, in
-    // their host value type `T` (see ASRUtils::ExtendedReal).
+    // Folds dot_product of real(10), real(16) or complex(16) array constants
+    // exactly, in their host value type `T` (see ASRUtils::ExtendedReal).
     template <typename T>
     static inline ASR::expr_t *eval_extended_dot_product(Allocator &al, const Location &loc,
             ASR::ttype_t *return_type, ASR::expr_t *vector_a, ASR::expr_t *vector_b, int dim) {
@@ -8189,6 +8222,13 @@ namespace DotProduct {
         if (kind16_a || kind16_b) {
             if (!(kind16_a && kind16_b)) return nullptr;
             return eval_extended_dot_product<lf_float128>(al, loc, return_type,
+                vector_a, vector_b, dim);
+        }
+        bool real10_a = kind == 10 && ASRUtils::is_real(*type_a);
+        bool real10_b = kind_b == 10 && ASRUtils::is_real(*type_b);
+        if (real10_a || real10_b) {
+            if (!(real10_a && real10_b)) return nullptr;
+            return eval_extended_dot_product<long double>(al, loc, return_type,
                 vector_a, vector_b, dim);
         }
 

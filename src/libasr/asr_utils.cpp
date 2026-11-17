@@ -13358,6 +13358,10 @@ void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int64_
             switch (kind) {
                 case 4: ((float*)x->m_data)[i] = static_cast<float>(value_real->m_r); break;
                 case 8: ((double*)x->m_data)[i] = value_real->m_r; break;
+                case 10:
+                    set_extended_real_element<long double>(static_cast<uint8_t*>(
+                        x->m_data) + sizeof(long double)*i, value_real);
+                    break;
                 case 16:
                     set_extended_real_element<lf_float128>(static_cast<uint8_t*>(
                         x->m_data) + 16*i, value_real);
@@ -13443,6 +13447,9 @@ std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int64_t i)
             switch (kind) {
                 case 4: return to_string_with_precision(((float*)data)[i], 8);
                 case 8: return to_string_with_precision(((double*)data)[i], 16);
+                case 10: return to_string_with_precision(load_long_double(
+                    static_cast<const uint8_t*>(data) + sizeof(long double)*i),
+                    std::numeric_limits<long double>::max_digits10 - 1);
                 case 16: return float128_to_string(
                     static_cast<const uint8_t*>(data) + 16*i);
                 default:
@@ -13536,6 +13543,10 @@ ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc
                                     ((float*)data)[i], type)); break;
                 case 8: value = EXPR(ASR::make_RealConstant_t(al, loc,
                                     ((double*)data)[i], type)); break;
+                case 10: value = make_RealConstant_r10(al, loc,
+                                    load_long_double(static_cast<const uint8_t*>(data)
+                                        + sizeof(long double)*i),
+                                    type); break;
                 case 16: value = make_RealConstant_r16(al, loc,
                                     load_float128(static_cast<const uint8_t*>(data) + 16*i),
                                     type); break;
@@ -13727,6 +13738,7 @@ void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* 
             switch (kind) {
                 case 4: return set_data_real(new float[n_args], a_args, n_args);
                 case 8: return set_data_real(new double[n_args], a_args, n_args);
+                case 10: return set_data_extended_real<long double>(a_args, n_args);
                 case 16: return set_data_extended_real<lf_float128>(a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
@@ -13816,6 +13828,10 @@ int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) {
         return n_args * sizeof(bool);
     }
     int64_t element_size = ASRUtils::extract_kind_from_ttype_t(a_type);
+    // A real(10) element is stored as a host `long double`
+    if (ASR::is_a<ASR::Real_t>(*a_type) && element_size == 10) {
+        return n_args * sizeof(long double);
+    }
     if (ASR::is_a<ASR::Complex_t>(*a_type)) {
         element_size *= 2;
     }
@@ -13965,20 +13981,16 @@ ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = true;
-    // Compile-time aggregation of real(10) arrays into a packed ArrayConstant
-    // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value do
-    // not pack x87 element buffers, whereas a kind=10 RealConstant stores its
-    // value behind a pointer in m_r (see real_constant_get_r10_bytes in
-    // asr_utils.h), and a complex(10) constant is a ComplexConstructor. Let the
-    // array initialise at runtime instead: an ArrayConstructor that lowers
-    // element by element.
+    // A complex(10) constant is a ComplexConstructor, which an ArrayConstant
+    // cannot hold. Let such an array initialise at runtime instead: an
+    // ArrayConstructor that lowers element by element.
     {
         ASR::ttype_t* elt_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(a_type));
         if (ASRUtils::is_array(elt_type)) {
             elt_type = ASR::down_cast<ASR::Array_t>(elt_type)->m_type;
         }
-        if ((ASRUtils::is_real(*elt_type) || ASRUtils::is_complex(*elt_type)) &&
+        if (ASRUtils::is_complex(*elt_type) &&
             ASRUtils::extract_kind_from_ttype_t(elt_type) == 10) {
             all_expr_evaluated = false;
         }

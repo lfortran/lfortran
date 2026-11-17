@@ -8065,6 +8065,19 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real10_integer_power_scalar_fold_01 LABELS gfortran llvm)
     RUN(NAME real16_real10_scalar_min_max_01 LABELS gfortran llvm)
     RUN(NAME complex16_real10_part_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_array_constant_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_array_constant_fold_02 LABELS gfortran llvm
+        EXTRAFILES real10_array_constant_fold_02_mod.f90)
+    RUN(NAME real10_elemental_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_kind_conversion_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_cmplx_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_array_intrinsic_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_aint_kind_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_floor_ceiling_nint_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_int_modulo_cmplx_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_real16_min_max_01 LABELS gfortran llvm)
+    RUN(NAME real10_out_of_range_degrees_powi_fold_01 LABELS gfortran llvm)
+    RUN(NAME real10_rank2_constant_kind_conversion_01 LABELS gfortran llvm)
     # The value check waits on #17031.
     RUN(NAME separate_compilation_73 LABELS gfortran llvm
         EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)

@@ -112,12 +112,10 @@ public:
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(
                 element_type);
             if(!ASRUtils::extract_value(str->m_len, kind)){LCOMPILERS_ASSERT(false)}
-        } else if (ASR::is_a<ASR::Logical_t>(*element_type)) {
-            kind = sizeof(bool);
-        } else if (ASR::is_a<ASR::Complex_t>(*element_type)) {
-            kind = 2 * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         } else {
-            kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+            // The byte size of one element
+            kind = static_cast<int>(
+                ASRUtils::get_ArrayConstant_data_size(1, element_type));
         }
         // m_n_data is the byte size of the data, so dividing by the element
         // size gives the element count, except for a pointer-backed constant

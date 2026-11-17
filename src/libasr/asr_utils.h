@@ -30,6 +30,7 @@
 #include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <libasr/runtime/lfortran_complex128.h>
 
+#include <cmath>
 #include <complex>
 #include <string>
 
@@ -313,6 +314,11 @@ static inline double real_constant_pack_r10(const uint8_t* bytes) {
     std::memcpy(&m_r, &addr, sizeof(addr));
     return m_r;
 }
+
+// The number of bytes of a host `long double` that hold its value: the x87
+// extended format keeps 80 bits in a larger, padded storage.
+constexpr size_t real10_value_size =
+    std::numeric_limits<long double>::digits == 64 ? 10 : sizeof(long double);
 
 static inline ASR::expr_t* make_RealConstant_r10(Allocator& al,
         const Location& loc, long double v, ASR::ttype_t* type) {
@@ -940,13 +946,47 @@ static inline ASR::expr_t* make_ComplexConstant_r16(Allocator& al,
         real_constant_pack_r16(re_bytes), real_constant_pack_r16(im_bytes), type));
 }
 
-// The exact host value type `T` of a real(16) constant: `lf_float128`.
-// `ExtendedReal<T>` gives the access and the arithmetic needed to fold the
-// constants of such a kind exactly, so that every kind whose constants are
-// not host doubles shares one implementation of each fold. A member function
-// `cmp(a, b)` is negative, zero or positive as `a` is less than, equal to or
-// greater than `b` (neither a NaN).
+// The exact host value type `T` of a real(10) or real(16) constant: `long
+// double` for real(10) and `lf_float128` for real(16). `ExtendedReal<T>`
+// gives the access and the arithmetic needed to fold the constants of either
+// kind exactly, so that both kinds share one implementation of each fold.
 template <typename T> struct ExtendedReal;
+
+template <> struct ExtendedReal<long double> {
+    static constexpr int kind = 10;
+    // The bytes of an array constant element, and those that hold its value
+    static constexpr size_t element_size = sizeof(long double);
+    static constexpr size_t value_size = real10_value_size;
+    static const uint8_t* bytes(const ASR::RealConstant_t* c) {
+        return real_constant_get_r10_bytes(c);
+    }
+    static long double get(const ASR::expr_t* e) {
+        return real_constant_get_r10(ASR::down_cast<ASR::RealConstant_t>(e));
+    }
+    static ASR::expr_t* make(Allocator& al, const Location& loc, long double v,
+            ASR::ttype_t* type) {
+        return make_RealConstant_r10(al, loc, v, type);
+    }
+    // A complex(10) constant is a ComplexConstructor, never folded
+    static bool get_complex(const ASR::expr_t* /*e*/, long double& /*re*/,
+            long double& /*im*/) {
+        return false;
+    }
+    static ASR::expr_t* make_complex(Allocator& /*al*/, const Location& /*loc*/,
+            long double /*re*/, long double /*im*/, ASR::ttype_t* /*type*/) {
+        return nullptr;
+    }
+    static long double from_double(double d) { return d; }
+    static long double add(long double a, long double b) { return a + b; }
+    static long double sub(long double a, long double b) { return a - b; }
+    static long double mul(long double a, long double b) { return a * b; }
+    static long double neg(long double a) { return -a; }
+    static bool isnan(long double a) { return std::isnan(a); }
+    static bool eq(long double a, long double b) { return a == b; }
+    // Negative, zero or positive as `a` (not a NaN) is less than, equal to or
+    // greater than `b` (not a NaN)
+    static int cmp(long double a, long double b) { return (a > b) - (a < b); }
+};
 
 template <> struct ExtendedReal<lf_float128> {
     static constexpr int kind = 16;
@@ -1657,17 +1697,28 @@ static inline bool is_kind16_array_constant(ASR::expr_t* a_value) {
         ASRUtils::extract_kind_from_ttype_t(elem_type) == 16;
 }
 
-// Whether the elements of `type` are real(16) or complex(16), whose constants
-// are not stored as host floating point values of their type (see
+// Returns true if the expression is an array constant of real(10) elements
+static inline bool is_real10_array_constant(ASR::expr_t* a_value) {
+    if( !a_value || !ASR::is_a<ASR::ArrayConstant_t>(*a_value) ) {
+        return false;
+    }
+    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(a_value));
+    return ASR::is_a<ASR::Real_t>(*elem_type) &&
+        ASRUtils::extract_kind_from_ttype_t(elem_type) == 10;
+}
+
+// Whether the elements of `type` are real(10), real(16) or complex(16), whose
+// constants are not stored as host floating point values of their type (see
 // ExtendedReal)
 static inline bool is_extended_real_or_complex(ASR::ttype_t* type) {
     ASR::ttype_t* t = ASRUtils::extract_type(type);
-    return (ASR::is_a<ASR::Real_t>(*t) || ASR::is_a<ASR::Complex_t>(*t)) &&
-        ASRUtils::extract_kind_from_ttype_t(t) == 16;
+    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+    return (ASR::is_a<ASR::Real_t>(*t) && (kind == 10 || kind == 16)) ||
+        (ASR::is_a<ASR::Complex_t>(*t) && kind == 16);
 }
 
-// Returns true if the expression is an array constant of real(16) or
-// complex(16) elements
+// Returns true if the expression is an array constant of real(10), real(16)
+// or complex(16) elements
 static inline bool is_extended_array_constant(ASR::expr_t* a_value) {
     return a_value && ASR::is_a<ASR::ArrayConstant_t>(*a_value) &&
         is_extended_real_or_complex(ASRUtils::expr_type(a_value));
@@ -1676,8 +1727,8 @@ static inline bool is_extended_array_constant(ASR::expr_t* a_value) {
 // Returns true if all arguments are evaluated
 // `allow_wide_complex` accepts complex(10) and complex(16) constants, for the
 // callers that evaluate them without rounding to a double.
-// `allow_extended_arrays` accepts real(16) and complex(16) array constants,
-// for the callers that evaluate such an array element by element.
+// `allow_extended_arrays` accepts real(10), real(16) and complex(16) array
+// constants, for the callers that evaluate such an array element by element.
 static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore_null=false,
         bool allow_wide_complex=false, bool allow_extended_arrays=false) {
     for (auto &a : args) {
@@ -1701,7 +1752,8 @@ static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore
             return false;
         }
         // The array intrinsics read the elements of an array constant as
-        // doubles, which would lose precision for real(16) and complex(16).
+        // doubles, which would lose precision for real(10), real(16) and
+        // complex(16).
         if( !allow_extended_arrays && is_extended_array_constant(a_value) ) {
             return false;
         }
@@ -4704,6 +4756,7 @@ inline bool is_array_constant_element_type(ASR::ttype_t* type) {
         case ASR::ttypeType::UnsignedInteger:
             return kind == 1 || kind == 2 || kind == 4 || kind == 8;
         case ASR::ttypeType::Real:
+            return kind == 4 || kind == 8 || kind == 10 || kind == 16;
         case ASR::ttypeType::Complex:
             return kind == 4 || kind == 8 || kind == 16;
         case ASR::ttypeType::Logical:
@@ -4772,15 +4825,22 @@ inline lf_float128 load_float128(const uint8_t* bytes) {
     return v;
 }
 
+// The host `long double` value of a real(10) array constant element
+inline long double load_long_double(const uint8_t* bytes) {
+    long double v;
+    std::memcpy(&v, bytes, sizeof(long double));
+    return v;
+}
+
 inline std::string float128_to_string(const uint8_t* bytes) {
     char buf[64];
     lf_f128_to_str(buf, load_float128(bytes));
     return buf;
 }
 
-// Stores the value of the real(16) constant `c` (see ExtendedReal) in the
-// array constant element at `element`. Padding bytes of an element beyond
-// its value are zeroed, so the data is deterministic.
+// Stores the value of the real(10) or real(16) constant `c` (see
+// ExtendedReal) in the array constant element at `element`. The padding bytes
+// of a real(10) element are zeroed, so the data is deterministic.
 template <typename T>
 inline void set_extended_real_element(uint8_t* element, const ASR::RealConstant_t* c) {
     using R = ExtendedReal<T>;
@@ -4790,8 +4850,9 @@ inline void set_extended_real_element(uint8_t* element, const ASR::RealConstant_
     std::memcpy(element, R::bytes(c), R::value_size);
 }
 
-// The data of a real(16) array constant: the payload of each element (see
-// make_RealConstant_r16), ExtendedReal<T>::element_size bytes per element.
+// The data of a real(10) or real(16) array constant: the payload of each
+// element (see make_RealConstant_r10 and make_RealConstant_r16),
+// ExtendedReal<T>::element_size bytes per element.
 template <typename T>
 inline void* set_data_extended_real(ASR::expr_t** a_args, size_t n_args) {
     constexpr size_t element_size = ExtendedReal<T>::element_size;

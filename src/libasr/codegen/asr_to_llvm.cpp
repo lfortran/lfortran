@@ -20270,13 +20270,8 @@ public:
         } else if (ASRUtils::is_real(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                ASR::RealConstant_t *real_const = down_cast<ASR::RealConstant_t>(el);
-                if (ASRUtils::extract_kind_from_ttype_t(x_m_type) == 16) {
-                    values.push_back(binary128_constant(
-                        ASRUtils::real_constant_get_r16_bytes(real_const)));
-                } else {
-                    values.push_back(llvm::ConstantFP::get(el_type, real_const->m_r));
-                }
+                values.push_back(real_constant_to_llvm(
+                    *down_cast<ASR::RealConstant_t>(el)));
             }
         } else if (ASRUtils::is_logical(*x_m_type)) {
             int a_kind = ASRUtils::extract_kind_from_ttype_t(x_m_type);
