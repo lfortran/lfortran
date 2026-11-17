@@ -192,7 +192,12 @@ A reduction loop right after a distributed loop over the same iterations,
 which reads what that loop assigns only where it assigns it, is joined
 into it (fold_reduction): each lane accumulates the elements it has just
 computed (the norms of the vectors a phase works out) in the same pass,
-and the lanes combine what they hold after it.
+and the lanes combine what they hold after it. And in a kernel with arrays
+the block shares, the elements of the arguments the kernel only reads that
+the iteration reads after earlier phases and their barriers (the gates of
+a step, the weights of its last phase, the elements of a column a lane
+keeps in registers) are read at the start of the iteration (EarlyLoads),
+where the loads of the first phase hide them.
 
 A kernel is rewritten only if it has a loop to distribute, and only if all
 of the following holds of every single statement: it does not return (a
@@ -1814,6 +1819,19 @@ public:
     // several lanes (plan_parts), which needs all the lanes of the block.
     bool has_parts() const { return !parted.empty(); }
 
+    // A loop the lanes share out, one iteration per lane in turn
+    // (distribute): its start and step as they were, and its number of
+    // iterations, known at compile time.
+    struct LaneLoop {
+        ASR::expr_t *start;
+        ASR::expr_t *step;
+        int64_t trips;
+    };
+    std::map<ASR::stmt_t*, LaneLoop> lane_loops;
+    // The counted loops that read the elements a lane keeps in registers
+    // (hold): the variable first, then the element into the register.
+    std::set<ASR::stmt_t*> held_loops;
+
     // The arrays of the iteration that the block shares
     // (KernelInfo::block_arrays) which a loop the lanes share out assigns
     // elements of: the lanes assign them together.
@@ -2785,6 +2803,10 @@ private:
         ASR::expr_t *step = d->m_head.m_increment;
         ASR::expr_t *lane = b.i2i_t(lane_index(loc), type);
         ASR::expr_t *lanes = b.i2i_t(lanes_var(loc), type);
+        int64_t trips = 0;
+        if (constant_bounds(d, trips)) {
+            lane_loops[&d->base] = {d->m_head.m_start, step, trips};
+        }
         d->m_head.m_start = b.Add(d->m_head.m_start, b.Mul(lane, step));
         d->m_head.m_increment = b.Mul(step, lanes);
         out.push_back(al, &d->base);
@@ -3552,6 +3574,7 @@ private:
             body1.push_back(al, first->m_body[i]);
         }
         first->m_body = body1.p;
+        held_loops.insert(&first->base);
         first->n_body = body1.n;
         Replace r2(b, element, held, count2);
         Vec<ASR::stmt_t*> body2;
@@ -5024,6 +5047,506 @@ private:
     }
 };
 
+// Reads the elements of kernel arguments that the iteration of a kernel
+// with arrays the block shares only reads at the start of the statement
+// list they are read in, as soon as the scalars of their subscripts have
+// their values (EarlyLoads::run): the gates of a gated delta rule, read
+// once the phases before them and their barriers are done, or the
+// elements of a phase of one iteration per lane, wait for memory there,
+// where the loads of the first phase could have hidden them. An element is
+// read early when
+//
+// * its array is an argument of the kernel that nothing in the kernel
+//   assigns (an assignment, a procedure's dummy that is not `intent(in)`,
+//   an atomic), and no pointer is associated in the kernel;
+// * it is read in a statement of the list, in a block it runs, or in the
+//   body of a loop the lanes share out (distribute) of at most as many
+//   iterations as the block has lanes, which each lane runs once at most:
+//   it is read by the lanes that have an iteration (`lane < trips`), with
+//   the loop's variable worked out from the lane;
+// * every scalar its subscripts name, but that variable, is a scalar
+//   argument, or is assigned only by statements of the list before it, and
+//   nothing between where it is read and where it is read early returns:
+//   the element is the one the statement reads, and reading it cannot fail
+//   where the statement would not.
+//
+// The value is held in a new scalar, at most early_loads_max of them.
+class EarlyLoads {
+public:
+    EarlyLoads(Allocator &al_, const KernelInfo &k_,
+        const std::map<ASR::stmt_t*, LaneRewriter::LaneLoop> &loops_,
+        const std::set<ASR::stmt_t*> &held_, int64_t lanes_)
+        : al(al_), k(k_), loops(loops_), held(held_), lanes(lanes_) {}
+
+    void run(ASR::Function_t &kernel) {
+        // What the kernel assigns, and whether it associates a pointer.
+        SharedAccess access(k);
+        bool associates = false;
+        for (size_t i = 0; i < kernel.n_body; i++) {
+            access.visit_stmt(*kernel.m_body[i]);
+            Effects e(k);
+            e.visit_stmt(*kernel.m_body[i]);
+            associates |= e.associates;
+        }
+        if (associates) return;
+        written = access.writes;
+        class Assigned : public ASR::BaseWalkVisitor<Assigned> {
+        public:
+            std::map<ASR::symbol_t*, int> count;
+            std::set<ASR::symbol_t*> blocks;
+            void visit_Assignment(const ASR::Assignment_t &x) {
+                if (ASR::is_a<ASR::Var_t>(*x.m_target)) count[root_of(x.m_target)]++;
+                BaseWalkVisitor::visit_Assignment(x);
+            }
+            void visit_DoLoop(const ASR::DoLoop_t &x) {
+                if (x.m_head.m_v) count[root_of(x.m_head.m_v)]++;
+                BaseWalkVisitor::visit_DoLoop(x);
+            }
+            void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+                for (size_t h = 0; h < x.n_head; h++) {
+                    if (x.m_head[h].m_v) count[root_of(x.m_head[h].m_v)]++;
+                }
+                BaseWalkVisitor::visit_DoConcurrentLoop(x);
+            }
+            void call_args(ASR::call_arg_t *args, size_t n) {
+                for (size_t i = 0; i < n; i++) {
+                    if (args[i].m_value && ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        count[root_of(args[i].m_value)] += 2;
+                    }
+                }
+            }
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                call_args(x.m_args, x.n_args);
+                BaseWalkVisitor::visit_SubroutineCall(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!blocks.insert(b).second) return;
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                for (size_t i = 0; i < block->n_body; i++) visit_stmt(*block->m_body[i]);
+            }
+        } assigned;
+        for (size_t i = 0; i < kernel.n_body; i++) assigned.visit_stmt(*kernel.m_body[i]);
+        assignments = assigned.count;
+        fn = &kernel;
+        list(kernel.m_body, kernel.n_body, {});
+    }
+
+private:
+    Allocator &al;
+    const KernelInfo &k;
+    const std::map<ASR::stmt_t*, LaneRewriter::LaneLoop> &loops;
+    const std::set<ASR::stmt_t*> &held;
+    int64_t lanes;
+    ASR::Function_t *fn = nullptr;
+    std::set<ASR::symbol_t*> written;
+    std::map<ASR::symbol_t*, int> assignments;
+    int hoisted = 0;
+    static constexpr int early_loads_max = 16;
+    // The scalars that keep their value in the list being looked at.
+    std::set<ASR::symbol_t*> stable;
+
+    // An element read early: where in the list, and of which loop of one
+    // iteration per lane (nullptr for none).
+    struct Candidate {
+        ASR::expr_t **at;
+        size_t position;
+        ASR::stmt_t *loop;
+    };
+
+    bool read_only(ASR::expr_t *e) const {
+        if (!ASR::is_a<ASR::ArrayItem_t>(*e)) return false;
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+        if (!ASR::is_a<ASR::Var_t>(*item->m_v)) return false;
+        ASR::symbol_t *a = root_of(item->m_v);
+        ASR::ttype_t *t = ASRUtils::expr_type(e);
+        return a && k.params.count(a) && !k.workspaces.count(a)
+            && !written.count(a) && ASRUtils::is_array(ASRUtils::symbol_type(a))
+            && !ASRUtils::is_pointer(ASRUtils::symbol_type(a))
+            && (ASRUtils::is_integer(*t) || ASRUtils::is_real(*t));
+    }
+
+    // The elements an expression reads that may be read early, with the
+    // places that hold them.
+    void elements(ASR::expr_t *&e, std::vector<ASR::expr_t**> &found) {
+        class Walk : public ASR::BaseExprReplacer<Walk> {
+        public:
+            EarlyLoads &o;
+            std::vector<ASR::expr_t**> &found;
+            Walk(EarlyLoads &o_, std::vector<ASR::expr_t**> &f) : o(o_), found(f) {}
+            void replace_ArrayItem(ASR::ArrayItem_t *x) {
+                if (o.read_only(&x->base)) {
+                    found.push_back(current_expr);
+                    return;
+                }
+                BaseExprReplacer::replace_ArrayItem(x);
+            }
+        } walk(*this, found);
+        walk.current_expr = &e;
+        walk.replace_expr(e);
+    }
+
+    // The values the assignments of a statement list (and the blocks it
+    // runs) read.
+    void assignments_of(ASR::stmt_t **body, size_t n,
+            std::vector<ASR::expr_t**> &found) {
+        for (size_t i = 0; i < n; i++) {
+            if (ASR::is_a<ASR::Assignment_t>(*body[i])) {
+                elements(ASR::down_cast<ASR::Assignment_t>(body[i])->m_value,
+                    found);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
+                assignments_of(block->m_body, block->n_body, found);
+            }
+        }
+    }
+
+    // Whether a statement may leave the iteration.
+    static bool leaves(const ASR::stmt_t &s) {
+        class Walk : public ASR::BaseWalkVisitor<Walk> {
+        public:
+            bool found = false;
+            void visit_Return(const ASR::Return_t &) { found = true; }
+            void visit_If(const ASR::If_t &x) {
+                if (gpu_stop_record_status(x.base)) found = true;
+                BaseWalkVisitor::visit_If(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) visit_stmt(*block->m_body[i]);
+            }
+        } walk;
+        walk.visit_stmt(s);
+        return walk.found;
+    }
+
+    // The scalars assigned only by the statements of `body` before `p`.
+    std::set<ASR::symbol_t*> assigned_before(ASR::stmt_t **body, size_t p) {
+        std::map<ASR::symbol_t*, int> count;
+        for (size_t q = 0; q < p; q++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*body[q])) continue;
+            auto *a = ASR::down_cast<ASR::Assignment_t>(body[q]);
+            if (ASR::is_a<ASR::Var_t>(*a->m_target)) count[root_of(a->m_target)]++;
+        }
+        std::set<ASR::symbol_t*> found;
+        for (auto &c : count) {
+            auto n = assignments.find(c.first);
+            if (n != assignments.end() && n->second == c.second) {
+                found.insert(c.first);
+            }
+        }
+        return found;
+    }
+
+    // `stable`: the scalars that keep their value in the whole list.
+    void list(ASR::stmt_t **&body, size_t &n_body,
+            const std::set<ASR::symbol_t*> &stable_) {
+        stable = stable_;
+        // The blocks of the list are lists of their own.
+        for (size_t i = 0; i < n_body; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
+                std::set<ASR::symbol_t*> inner = assigned_before(body, i);
+                inner.insert(stable_.begin(), stable_.end());
+                list(block->m_body, block->n_body, inner);
+            }
+        }
+        stable = stable_;
+        lane_scalars_first(body, n_body);
+        std::vector<std::vector<ASR::stmt_t*>> early(n_body + 1);
+        bool any = false;
+        for (size_t p = 0; p < n_body && hoisted < early_loads_max; p++) {
+            ASR::stmt_t *s = body[p];
+            std::vector<ASR::expr_t**> found;
+            ASR::stmt_t *loop = nullptr;
+            auto l = loops.find(s);
+            if (ASR::is_a<ASR::Assignment_t>(*s)
+                    || ASR::is_a<ASR::BlockCall_t>(*s)) {
+                assignments_of(&body[p], 1, found);
+            } else if (held.count(s)) {
+                size_t from = 0;
+                ASR::stmt_t *x = read_held_early(body, p, from);
+                if (x) {
+                    early[from].push_back(x);
+                    any = true;
+                }
+                continue;
+            } else if (l != loops.end() && l->second.trips <= lanes
+                    && l->second.trips > 0) {
+                auto *d = ASR::down_cast<ASR::DoLoop_t>(s);
+                assignments_of(d->m_body, d->n_body, found);
+                loop = s;
+            }
+            for (ASR::expr_t **at : found) {
+                if (hoisted >= early_loads_max) break;
+                size_t from = 0;
+                if (!available(body, p, *at, loop, from)) continue;
+                // Something to read it ahead of: a loop or a barrier.
+                bool ahead = false;
+                for (size_t q = from; q < p; q++) {
+                    if (!ASR::is_a<ASR::Assignment_t>(*body[q])) ahead = true;
+                }
+                if (!ahead) continue;
+                early[from].push_back(read_early(at, loop));
+                any = true;
+            }
+        }
+        if (!any) return;
+        Vec<ASR::stmt_t*> out;
+        out.reserve(al, n_body + hoisted);
+        for (size_t i = 0; i <= n_body; i++) {
+            for (ASR::stmt_t *x : early[i]) out.push_back(al, x);
+            if (i < n_body) out.push_back(al, body[i]);
+        }
+        body = out.p;
+        n_body = out.n;
+    }
+
+    // Moves the assignments of the list to scalars assigned nowhere else,
+    // of values worked out from the lane alone (which lane of the block
+    // takes which column of a phase, plan_parts), to the start of the
+    // list: the elements a lane reads at those subscripts are then known
+    // there.
+    void lane_scalars_first(ASR::stmt_t **body, size_t n_body) {
+        class Lane : public ASR::BaseWalkVisitor<Lane> {
+        public:
+            const std::set<ASR::symbol_t*> &moved;
+            const KernelInfo &k;
+            bool lane = false, other = false;
+            Lane(const std::set<ASR::symbol_t*> &m, const KernelInfo &k_)
+                : moved(m), k(k_) {}
+            void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t &) { lane = true; }
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+                if (moved.count(s) || (k.params.count(s)
+                        && !ASRUtils::is_array(ASRUtils::symbol_type(s)))) {
+                    lane |= moved.count(s) > 0;
+                    return;
+                }
+                other = true;
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &) { other = true; }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) { other = true; }
+        };
+        std::set<ASR::symbol_t*> moved;
+        std::vector<ASR::stmt_t*> first, rest;
+        for (size_t q = 0; q < n_body; q++) {
+            ASR::stmt_t *s = body[q];
+            if (ASR::is_a<ASR::Assignment_t>(*s)) {
+                auto *a = ASR::down_cast<ASR::Assignment_t>(s);
+                ASR::symbol_t *x = ASR::is_a<ASR::Var_t>(*a->m_target)
+                    ? root_of(a->m_target) : nullptr;
+                auto n = x ? assignments.find(x) : assignments.end();
+                Lane lane(moved, k);
+                lane.visit_expr(*a->m_value);
+                if (x && k.private_scalar(x) && n != assignments.end()
+                        && n->second == 1 && lane.lane && !lane.other) {
+                    moved.insert(x);
+                    first.push_back(s);
+                    continue;
+                }
+            }
+            rest.push_back(s);
+        }
+        if (first.empty()) return;
+        size_t q = 0;
+        for (ASR::stmt_t *s : first) body[q++] = s;
+        for (ASR::stmt_t *s : rest) body[q++] = s;
+    }
+
+    // The loop that reads the elements a lane keeps in registers, ahead of
+    // the counted loop body[p] that reads them (held_loops): a copy of its
+    // first two statements, when what their subscripts read is known
+    // earlier and nothing in between assigns the array or names the loop's
+    // variables. The counted loop then reads them no more.
+    ASR::stmt_t* read_held_early(ASR::stmt_t **body, size_t p,
+            size_t &from) {
+        auto *l = ASR::down_cast<ASR::DoLoop_t>(body[p]);
+        if (l->n_body < 2 || hoisted >= early_loads_max) return nullptr;
+        auto *v = ASR::down_cast<ASR::Assignment_t>(l->m_body[0]);
+        auto *h = ASR::down_cast<ASR::Assignment_t>(l->m_body[1]);
+        if (!ASR::is_a<ASR::ArrayItem_t>(*h->m_value)) return nullptr;
+        ASR::symbol_t *j = root_of(v->m_target);
+        ASR::symbol_t *count = root_of(l->m_head.m_v);
+        ASR::symbol_t *array = root_of(h->m_value);
+        class Scalars : public ASR::BaseWalkVisitor<Scalars> {
+        public:
+            std::set<ASR::symbol_t*> found;
+            bool other = false;
+            void visit_Var(const ASR::Var_t &x) {
+                found.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) { other = true; }
+        } scalars;
+        scalars.visit_expr(*v->m_value);
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(h->m_value);
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step
+                    || item->m_args[i].m_right == nullptr
+                    || reads_array_element(item->m_args[i].m_right)) {
+                return nullptr;
+            }
+            scalars.visit_expr(*item->m_args[i].m_right);
+        }
+        if (scalars.other) return nullptr;
+        from = 0;
+        for (ASR::symbol_t *x : scalars.found) {
+            if (x == j || x == count || x == array) continue;
+            if (!ASR::is_a<ASR::Variable_t>(*x)) return nullptr;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    || stable.count(x)) {
+                continue;
+            }
+            auto n = assignments.find(x);
+            int total = n == assignments.end() ? 0 : n->second;
+            if (total == 0) {
+                if (k.params.count(x) || !k.local(x)) continue;
+                return nullptr;
+            }
+            int before = 0;
+            for (size_t q = 0; q < p; q++) {
+                if (!ASR::is_a<ASR::Assignment_t>(*body[q])) continue;
+                auto *a = ASR::down_cast<ASR::Assignment_t>(body[q]);
+                if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                        && root_of(a->m_target) == x) {
+                    before++;
+                    from = std::max(from, q + 1);
+                }
+            }
+            if (before != total) return nullptr;
+        }
+        bool ahead = false;
+        for (size_t q = from; q < p; q++) {
+            SharedAccess access(k);
+            access.visit_stmt(*body[q]);
+            if (access.writes.count(array) || leaves(*body[q])
+                    || mentions(*body[q], j) || mentions(*body[q], count)) {
+                return nullptr;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*body[q])) ahead = true;
+        }
+        if (!ahead) return nullptr;
+        hoisted++;
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.allow_procedure_calls = true;
+        ASR::do_loop_head_t head = l->m_head;
+        head.m_start = dup.duplicate_expr(head.m_start);
+        head.m_end = dup.duplicate_expr(head.m_end);
+        if (head.m_increment) head.m_increment = dup.duplicate_expr(head.m_increment);
+        Vec<ASR::stmt_t*> reads;
+        reads.reserve(al, 2);
+        reads.push_back(al, dup.duplicate_stmt(l->m_body[0]));
+        reads.push_back(al, l->m_body[1]);
+        Vec<ASR::stmt_t*> rest;
+        rest.reserve(al, l->n_body - 1);
+        rest.push_back(al, l->m_body[0]);
+        for (size_t i = 2; i < l->n_body; i++) rest.push_back(al, l->m_body[i]);
+        l->m_body = rest.p;
+        l->n_body = rest.n;
+        return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, l->base.base.loc,
+            nullptr, head, reads.p, reads.n, nullptr, 0));
+    }
+
+    // Whether the element at `at`, read by body[p], may be read early, and
+    // the first position it may be read at.
+    bool available(ASR::stmt_t **body, size_t p, ASR::expr_t *e,
+            ASR::stmt_t *loop, size_t &from) {
+        ASR::symbol_t *v = loop
+            ? root_of(ASR::down_cast<ASR::DoLoop_t>(loop)->m_head.m_v) : nullptr;
+        class Scalars : public ASR::BaseWalkVisitor<Scalars> {
+        public:
+            std::set<ASR::symbol_t*> found;
+            bool other = false;
+            void visit_Var(const ASR::Var_t &x) {
+                found.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                other = true;
+                BaseWalkVisitor::visit_ArrayItem(x);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) { other = true; }
+        } scalars;
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step
+                    || item->m_args[i].m_right == nullptr) {
+                return false;
+            }
+            scalars.visit_expr(*item->m_args[i].m_right);
+        }
+        if (scalars.other) return false;
+        from = 0;
+        for (ASR::symbol_t *x : scalars.found) {
+            if (x == v || x == root_of(item->m_v)) continue;
+            if (!ASR::is_a<ASR::Variable_t>(*x)) return false;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x);
+            if (var->m_storage == ASR::storage_typeType::Parameter) continue;
+            if (stable.count(x)) continue;
+            auto n = assignments.find(x);
+            int total = n == assignments.end() ? 0 : n->second;
+            if (total == 0) {
+                if (k.params.count(x) || !k.local(x)) continue;
+                return false;
+            }
+            // Assigned only by statements of the list before it.
+            int before = 0;
+            for (size_t q = 0; q < p; q++) {
+                if (ASR::is_a<ASR::Assignment_t>(*body[q])) {
+                    auto *a = ASR::down_cast<ASR::Assignment_t>(body[q]);
+                    if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                            && root_of(a->m_target) == x) {
+                        before++;
+                        from = std::max(from, q + 1);
+                    }
+                }
+            }
+            if (before != total) return false;
+        }
+        for (size_t q = from; q < p; q++) {
+            if (leaves(*body[q])) return false;
+        }
+        return true;
+    }
+
+    // The statement that reads the element at `at` into a new scalar,
+    // which then stands in its place.
+    ASR::stmt_t* read_early(ASR::expr_t **at, ASR::stmt_t *loop) {
+        ASR::expr_t *e = *at;
+        const Location &loc = e->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t *x = b.Variable(fn->m_symtab,
+            fn->m_symtab->get_unique_name("__gpu_early"),
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(e)),
+            ASR::intentType::Local);
+        hoisted++;
+        *at = x;
+        if (loop == nullptr) return b.Assignment(x, e);
+        auto *d = ASR::down_cast<ASR::DoLoop_t>(loop);
+        const LaneRewriter::LaneLoop &l = loops.at(loop);
+        ASR::symbol_t *v = root_of(d->m_head.m_v);
+        ASR::ttype_t *type = ASRUtils::expr_type(d->m_head.m_v);
+        ASRUtils::ExprStmtDuplicator copy(al);
+        copy.allow_procedure_calls = true;
+        ASR::expr_t *lane = ASRUtils::EXPR(ASR::make_GpuLaneIndex_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+        ASR::expr_t *value = b.Add(copy.duplicate_expr(l.start),
+            b.Mul(b.i2i_t(lane, type), copy.duplicate_expr(l.step)));
+        GpuDuplicator dup(al, fn->m_symtab);
+        dup.value_map[v] = value;
+        ASR::expr_t *early = dup.duplicate_expr(e);
+        ASR::expr_t *lane2 = ASRUtils::EXPR(ASR::make_GpuLaneIndex_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+        return b.If(b.Lt(lane2, b.i32(static_cast<int32_t>(l.trips))),
+            {b.Assignment(x, early)}, {});
+    }
+};
+
 // The site and code of every stop test of the kernel.
 class StopScalars : public ASR::BaseWalkVisitor<StopScalars> {
 public:
@@ -5353,6 +5876,9 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         kernel.m_gpu->m_lanes_max = lanes;
         k.fixed_lanes = lanes;
         shared->apply(kernel.m_body, kernel.n_body);
+        EarlyLoads early(al, k, shared->lane_loops, shared->held_loops,
+            lanes);
+        early.run(kernel);
         for (ASR::symbol_t *s : k.block_arrays) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
             ASR::ttype_t *t = ASRUtils::duplicate_type(al, v->m_type);

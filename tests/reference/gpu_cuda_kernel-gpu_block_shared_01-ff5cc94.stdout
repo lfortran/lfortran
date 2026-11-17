@@ -184,6 +184,9 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
         float sb;
         float so;
         float t;
+        __gpu_lane_slot = (__gpu_lane - ((__gpu_lane / 64) * 64));
+        __gpu_lane_part = (__gpu_lane / 64);
+        i__dc = (1 + (((int)__gpu_lane_slot) * 1));
         sa = ((float)0);
         sb = ((float)0);
         if ((__gpu_lane != 0)) {
@@ -223,9 +226,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
             sa = __lfortran_lane_reduce<0>(sa, __gpu_lanes_n, __gpu_lane_mask);
             sb = __lfortran_lane_reduce<0>(sb, __gpu_lanes_n, __gpu_lane_mask);
         }
-        __gpu_lane_slot = (__gpu_lane - ((__gpu_lane / 64) * 64));
-        __gpu_lane_part = (__gpu_lane / 64);
-        i__dc = (1 + (((int)__gpu_lane_slot) * 1));
         t = ((float)0);
         if ((__gpu_lane_part != 0)) {
             t =   0.00000000000000000e+00f;
