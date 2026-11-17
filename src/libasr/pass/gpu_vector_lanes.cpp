@@ -692,6 +692,11 @@ struct KernelInfo {
     // first worse (a quantized matrix-vector product took 5% longer).
     bool shared_only = false;
     int lanes_count = 1;
+    // The contributions of a combination of array reductions
+    // (GpuReduceCombine), which takes the first lane's: only the first lane
+    // needs their values, so a statement that assigns nothing else runs on
+    // it alone, and they are not handed to the others.
+    std::set<ASR::symbol_t*> first_lane_scalars;
 
     bool local(ASR::symbol_t *s) const {
         if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
@@ -2208,9 +2213,17 @@ private:
         Effects e(k);
         for (ASR::stmt_t *s : stmts) e.visit_stmt(*s);
         out.push_back(al, b.If(b.Eq(lane_index(loc), b.i32(0)), stmts, {}));
+        // Statements that only add to contributions of the first lane have
+        // nothing for the others to wait for.
+        bool others_need = e.shared_effect || std::any_of(e.scalars.begin(),
+            e.scalars.end(), [&](ASR::symbol_t *v) {
+                return k.first_lane_scalars.count(v) == 0;
+            });
+        if (!others_need) return;
         out.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
             loc)));
         for (ASR::symbol_t *s : e.scalars) {
+            if (k.first_lane_scalars.count(s)) continue;
             ASR::expr_t *v = b.Var(s);
             out.push_back(al, b.Assignment(v, ASRUtils::EXPR(
                 ASR::make_GpuLaneBroadcast_t(al, loc, v,
@@ -2536,6 +2549,17 @@ private:
             failed = true;
             return Role::Replicate;
         }
+        // A contribution to a combination of array reductions, such as the
+        // sum of the squares of what the first lane just stored, which the
+        // others would otherwise wait for before they read it.
+        if (!e.shared_effect && !e.scalars.empty() && !e.returns
+                && !e.private_array && !e.associates
+                && std::all_of(e.scalars.begin(), e.scalars.end(),
+                    [&](ASR::symbol_t *v) {
+                        return k.first_lane_scalars.count(v) > 0;
+                    })) {
+            return Role::Single;
+        }
         if (!e.shared_effect) return Role::Replicate;
         // Run on the first lane alone. What it assigns has to reach the
         // others, and a return would leave them without it.
@@ -2548,6 +2572,7 @@ private:
         if (leaves.found) failed = true;
         if (writes_shared_temporary(k, *s)) failed = true;
         for (ASR::symbol_t *v : e.scalars) {
+            if (k.first_lane_scalars.count(v)) continue;
             ASR::ttype_t *t = ASRUtils::symbol_type(v);
             if (!(ASRUtils::is_integer(*t) || ASRUtils::is_real(*t)
                     || ASRUtils::is_logical(*t))
@@ -3981,6 +4006,17 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     StopScalars stops(k.stop_scalars);
     for (size_t i = 0; i < kernel.n_body; i++) {
         stops.visit_stmt(*kernel.m_body[i]);
+    }
+    for (size_t i = 0; i < kernel.n_body; i++) {
+        if (!ASR::is_a<ASR::GpuReduceCombine_t>(*kernel.m_body[i])) continue;
+        ASR::GpuReduceCombine_t *c = ASR::down_cast<ASR::GpuReduceCombine_t>(
+            kernel.m_body[i]);
+        for (size_t j = 0; j < c->n_items; j++) {
+            if (ASR::is_a<ASR::Var_t>(*c->m_items[j].m_value)) {
+                k.first_lane_scalars.insert(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(c->m_items[j].m_value)->m_v));
+            }
+        }
     }
     for (bool added = true; added;) {
         IterationScalars iteration(k);
