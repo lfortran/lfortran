@@ -96,6 +96,19 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     // The binding that resets an object of each type that has one.
     std::map<ASR::Struct_t*, ASR::symbol_t*> reset_bindings;
 
+    // Whether `st` is a specialization of a parameterized type: no ordinary
+    // component is a named constant, but its kind parameters are.
+    static bool has_kind_param_component(ASR::Struct_t* st) {
+        for (auto& m : st->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*m.second) &&
+                    ASR::down_cast<ASR::Variable_t>(m.second)->m_storage ==
+                        ASR::storage_typeType::Parameter) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Whether `st` gets a reset binding. This depends only on the type and
     // its ancestors, so that every translation unit that sees the type
     // agrees on its bindings, and so on the layout of its vtable.
@@ -117,8 +130,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             return false;
         }
         for (ASR::Struct_t* s = st; s != nullptr; ) {
-            // A parameterized type has a layout only once it is specialized.
-            if (s->n_kind_params > 0 ||
+            // A parameterized type has a layout only once it is specialized,
+            // and its specializations keep the declared-type reset too.
+            if (s->n_kind_params > 0 || has_kind_param_component(s) ||
                     ASRUtils::is_unlimited_polymorphic_type(&s->base) ||
                     s->m_abi == ASR::abiType::BindC || s->m_is_sequence ||
                     ASRUtils::is_iso_c_ptr_type_symbol(tu_scope, &s->base) ||
