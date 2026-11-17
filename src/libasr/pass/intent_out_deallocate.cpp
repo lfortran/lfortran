@@ -1,3 +1,4 @@
+#include <map>
 #include <set>
 
 #include <libasr/asr.h>
@@ -11,6 +12,36 @@
 
 
 namespace LCompilers {
+namespace {
+
+// The name of the binding through which a polymorphic intent(out) dummy is
+// reset (add_reset_bindings). No Fortran name starts with an underscore.
+constexpr const char* reset_binding_name = "__libasr_intent_out_reset";
+
+// The derived types of a translation unit, outside of templates, and whether
+// it has a polymorphic entity anywhere.
+class ResetTypeCollector : public ASR::BaseWalkVisitor<ResetTypeCollector> {
+public:
+    std::vector<ASR::Struct_t*> structs;
+    bool has_polymorphic = false;
+
+    void visit_Struct(const ASR::Struct_t &x) {
+        structs.push_back(const_cast<ASR::Struct_t*>(&x));
+        ASR::BaseWalkVisitor<ResetTypeCollector>::visit_Struct(x);
+    }
+
+    void visit_StructType(const ASR::StructType_t &x) {
+        if (!x.m_is_cstruct) has_polymorphic = true;
+        ASR::BaseWalkVisitor<ResetTypeCollector>::visit_StructType(x);
+    }
+
+    // An uninstantiated template has no code of its own.
+    void visit_Template(const ASR::Template_t &/*x*/) {}
+    void visit_Requirement(const ASR::Requirement_t &/*x*/) {}
+};
+
+}
+
 ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
     if (st == nullptr) return nullptr;
     ASR::Function_t *elemental = nullptr;
@@ -46,9 +77,59 @@ ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
 // - We intentionally skip compiler-generated intrinsic implementations
 //   (`deftype == Implementation`) to avoid changing their internal ownership
 //   conventions.
+//
+// - A scalar polymorphic dummy is cleaned up and default-initialized
+//   according to its dynamic type, by calling a binding that every derived
+//   type gets for it (add_reset_bindings).
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
+    // The binding that resets an object of each type that has one.
+    std::map<ASR::Struct_t*, ASR::symbol_t*> reset_bindings;
+
+    // Whether `st` gets a reset binding. This depends only on the type and
+    // its ancestors, so that every translation unit that sees the type
+    // agrees on its bindings, and so on the layout of its vtable.
+    static bool can_have_reset_binding(SymbolTable* tu_scope,
+            ASR::Struct_t* st) {
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&st->base);
+        if (owner == nullptr) return false;
+        if (ASR::is_a<ASR::Function_t>(*owner)) {
+            // Only a procedure this unit defines can hold the procedure
+            // that the binding names.
+            ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(owner));
+            if (ftype->m_abi == ASR::abiType::ExternalUndefined ||
+                    ftype->m_deftype != ASR::deftypeType::Implementation) {
+                return false;
+            }
+        } else if (!ASR::is_a<ASR::Module_t>(*owner) &&
+                !ASR::is_a<ASR::Program_t>(*owner)) {
+            return false;
+        }
+        std::set<ASR::Struct_t*> visited;
+        for (ASR::Struct_t* s = st; s != nullptr; ) {
+            if (!visited.insert(s).second) return false;
+            // A parameterized type has a layout only once it is specialized.
+            if (s->n_kind_params > 0 ||
+                    ASRUtils::is_unlimited_polymorphic_type(&s->base) ||
+                    s->m_abi == ASR::abiType::BindC || s->m_is_sequence ||
+                    ASRUtils::is_iso_c_ptr_type_symbol(tu_scope, &s->base) ||
+                    ASRUtils::is_iso_c_funptr_type_symbol(tu_scope,
+                        &s->base)) {
+                return false;
+            }
+            if (s->m_parent == nullptr) break;
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                s->m_parent);
+            if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
+                return false;
+            }
+            s = ASR::down_cast<ASR::Struct_t>(parent);
+        }
+        return true;
+    }
+
     static bool struct_hierarchy_has_finalizer(ASR::Struct_t* st) {
         while (st != nullptr) {
             if (st->n_member_functions > 0) return true;
@@ -804,6 +885,100 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 public:
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
 
+    // Give every derived type of `unit` a binding to a procedure that
+    // deallocates the allocatable components of an object of that type and
+    // applies its default initialization. Each type's binding overrides its
+    // parent's, so a call through a polymorphic object reaches the one of its
+    // dynamic type.
+    //
+    // A type gets the binding in every unit that has a polymorphic entity,
+    // whether or not the unit has an intent(out) dummy: a unit without one
+    // never lays out a vtable, and all the others have to lay out the same
+    // one. Module files are written before this pass, so the procedure of a
+    // module's type is a private procedure of each unit that sees the type,
+    // not a procedure of the module.
+    void add_reset_bindings(ASR::TranslationUnit_t &unit) {
+        ResetTypeCollector collector;
+        collector.visit_TranslationUnit(unit);
+        if (!collector.has_polymorphic) return;
+        std::set<ASR::Struct_t*> seen;
+        // The parent of a type can be loaded from a module without being
+        // in this unit's scope.
+        for (size_t i = 0; i < collector.structs.size(); i++) {
+            ASR::Struct_t* st = collector.structs[i];
+            if (!seen.insert(st).second || st->m_parent == nullptr) continue;
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            if (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
+                collector.structs.push_back(
+                    ASR::down_cast<ASR::Struct_t>(parent));
+            }
+        }
+        seen.clear();
+        for (ASR::Struct_t* st : collector.structs) {
+            if (!seen.insert(st).second ||
+                    !can_have_reset_binding(unit.m_symtab, st)) {
+                continue;
+            }
+            // A type of an earlier unit of an interactive session may have
+            // its binding already.
+            ASR::symbol_t* existing = st->m_symtab->get_symbol(
+                reset_binding_name);
+            if (existing != nullptr) {
+                LCOMPILERS_ASSERT(
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*existing));
+                reset_bindings[st] = existing;
+                continue;
+            }
+            ASR::symbol_t* owner = ASRUtils::get_asr_owner(&st->base);
+            SymbolTable* proc_scope = ASR::is_a<ASR::Module_t>(*owner)
+                ? unit.m_symtab : st->m_symtab->parent;
+            const Location &loc = st->base.base.loc;
+            std::string proc_name = proc_scope->get_unique_name(
+                std::string(reset_binding_name) + "_" + st->m_name, false);
+            SymbolTable* fn_scope = al.make_new<SymbolTable>(proc_scope);
+            ASR::symbol_t* type_decl = ASRUtils::import_type_declaration(al,
+                &st->base, fn_scope);
+            ASR::symbol_t* self = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, fn_scope,
+                    s2c(al, "self"), nullptr, 0, ASR::intentType::InOut,
+                    nullptr, nullptr, ASR::storage_typeType::Default,
+                    ASRUtils::make_StructType_t_util(al, loc, type_decl,
+                        false),
+                    type_decl, ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            fn_scope->add_symbol("self", self);
+            ASR::expr_t* self_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, self));
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            emit_struct_cleanup_stmts(self_expr, st, fn_scope, loc,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), body);
+            emit_struct_default_init_stmts(self_expr, st, fn_scope, loc,
+                body);
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, self_expr);
+            ASR::symbol_t* proc = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Function_t_util(al, loc, fn_scope,
+                    s2c(al, proc_name), nullptr, 0, args.p, args.n,
+                    body.p, body.n, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Private,
+                    ASR::deftypeType::Implementation, nullptr, false, false,
+                    false, false, false, nullptr, 0, false, false, false));
+            proc_scope->add_symbol(proc_name, proc);
+            // Public, so that the binding of an extension declared in
+            // another module overrides it.
+            ASR::symbol_t* binding = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_StructMethodDeclaration_t(al, loc, st->m_symtab,
+                    s2c(al, reset_binding_name), nullptr,
+                    s2c(al, proc_name), proc, ASR::abiType::Source, false,
+                    false, ASR::accessType::Public));
+            st->m_symtab->add_symbol(reset_binding_name, binding);
+            reset_bindings[st] = binding;
+        }
+    }
+
     // What an intent(out) dummy of derived type gets on entry, less the
     // finalization; see initialize_function_result_on_entry.
     void emit_function_result_entry_stmts(ASR::Function_t &fn,
@@ -978,24 +1153,44 @@ public:
                 emit_struct_component_finalize_stmts(var_expr,
                     struct_type, xx.m_symtab, loc, entry_stmts);
             }
-            if (has_finalizer || entry_stmts.size() > 0) {
-                // Finalization leaves the dummy with whatever its final
-                // subroutines left behind, so its default initialization
-                // is applied afterwards (F2018 8.5.10).  A component that
-                // was finalized needs this as much as a dummy that was.
-                emit_struct_default_init_stmts(var_expr, struct_type,
-                    xx.m_symtab, loc, entry_stmts);
+            // The components that the dynamic type of a polymorphic dummy
+            // adds are known only to the binding that resets it, which
+            // also cleans up and initializes the declared type's ones.
+            auto reset_binding = is_polymorphic
+                ? reset_bindings.find(struct_type) : reset_bindings.end();
+            Vec<ASR::stmt_t*> cleanup;
+            cleanup.reserve(al, 1);
+            if (reset_binding != reset_bindings.end()) {
+                ASR::symbol_t* local_binding = ASRUtils::import_symbol(al,
+                    reset_binding->second, xx.m_symtab,
+                    ASR::accessType::Private, "1_");
+                Vec<ASR::call_arg_t> call_args;
+                call_args.reserve(al, 1);
+                ASR::call_arg_t call_arg;
+                call_arg.loc = loc;
+                call_arg.m_value = var_expr;
+                call_args.push_back(al, call_arg);
+                cleanup.push_back(al, ASRUtils::STMT(
+                    ASR::make_SubroutineCall_t(al, loc, local_binding,
+                        local_binding, call_args.p, call_args.n, var_expr,
+                        false)));
+            } else {
+                if (has_finalizer || entry_stmts.size() > 0) {
+                    // Finalization leaves the dummy with whatever its final
+                    // subroutines left behind, so its default initialization
+                    // is applied afterwards (F2018 8.5.10).  A component that
+                    // was finalized needs this as much as a dummy that was.
+                    emit_struct_default_init_stmts(var_expr, struct_type,
+                        xx.m_symtab, loc, entry_stmts);
+                }
+                emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
+                    loc, logical_type, cleanup);
             }
             for (size_t k = 0; k < entry_stmts.size(); k++) {
                 ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
                     var_expr, arg_var->m_presence, entry_stmts[k]);
                 dealloc_stmts.push_back(al, wrapped_stmt);
             }
-
-            Vec<ASR::stmt_t*> cleanup;
-            cleanup.reserve(al, 1);
-            emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
-                loc, logical_type, cleanup);
             for (size_t k = 0; k < cleanup.size(); k++) {
                 ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
                     var_expr, arg_var->m_presence, cleanup[k]);
@@ -1111,6 +1306,7 @@ void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
     // Deallocate intent(out) allocatable arguments at function entry
     IntentOutDeallocateVisitor iod(al);
+    iod.add_reset_bindings(unit);
     iod.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);
