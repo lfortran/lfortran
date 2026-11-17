@@ -1555,6 +1555,10 @@ filename = "boz1.f90"
 tokens = true
 
 [[test]]
+filename = "show_tokens_01.f90"
+tokens = true
+
+[[test]]
 filename = "derived_type1.f90"
 asr = true
 

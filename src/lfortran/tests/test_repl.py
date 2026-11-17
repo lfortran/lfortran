@@ -122,6 +122,24 @@ def check_cell_output(lfortran):
                 "(code %d):\n%s" % (code, out))
 
 
+def check_all_tokens(lfortran):
+    # The prompt converts the tokens of every cell to text to see if it is
+    # complete; that must work for every token (#15849).
+    cells = ["byte :: b = 3_1", "logical :: l = .true. .xor. .false.",
+        "doublecomplex :: z", "subroutine s(q)" + NEW_LINE
+        + "integer, intent(in out) :: q" + NEW_LINE + "end subroutine",
+        "b + 1", "l"]
+    with working_directory() as cwd:
+        code, out = run_repl(lfortran, cwd, cells)
+        if code != 0 or "Exiting." not in out or "error" in out:
+            sys.exit("the prompt did not exit cleanly (code %d):\n%s"
+                % (code, out))
+        for expected in [r"^4\r?$", r"^True\r?$"]:
+            if not re.search(expected, out, re.M):
+                sys.exit("expected %r in the prompt output:\n%s"
+                    % (expected, out))
+
+
 class PtyRepl:
     """The prompt on a pseudo-terminal, typed at as by a user."""
 
@@ -456,6 +474,7 @@ def main():
     args = parser.parse_args()
     check_keeps_files_in_cwd(os.path.abspath(args.lfortran))
     check_cell_output(os.path.abspath(args.lfortran))
+    check_all_tokens(os.path.abspath(args.lfortran))
     check_read_from_terminal(os.path.abspath(args.lfortran))
     check_interrupt_at_prompt(os.path.abspath(args.lfortran))
     check_compiled_read_from_terminal(os.path.abspath(args.lfortran))
