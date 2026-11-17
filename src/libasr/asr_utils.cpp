@@ -4944,6 +4944,26 @@ static std::complex<T> complex_smith_div(T p, T q, T r, T s) {
     return std::complex<T>((p * ratio + q) / denom, (q * ratio - p) / denom);
 }
 
+// `x**n` by repeated multiplication (binary exponentiation), with a negative
+// `n` giving `1/x**(-n)`: the algorithm of llvm.powi, so that a folded constant
+// equals the value computed at run time.
+template<typename T>
+static T real_integer_pow(T x, int64_t n) {
+    uint64_t u = n < 0 ? 0 - static_cast<uint64_t>(n) : static_cast<uint64_t>(n);
+    T r = 1;
+    while (true) {
+        if (u & 1) {
+            r *= x;
+        }
+        u >>= 1;
+        if (u == 0) {
+            break;
+        }
+        x *= x;
+    }
+    return n < 0 ? 1 / r : r;
+}
+
 // `(re, im)**n` by repeated multiplication (binary exponentiation), with a
 // negative `n` giving `1/(re, im)**(-n)`. The backends compute complex**integer
 // with the same algorithm, so that a folded constant equals the value computed
@@ -5042,7 +5062,12 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
             const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
             long double lv{};
             std::memcpy(&lv, l_bytes, sizeof(long double));
-            long double res = std::pow(lv, (long double)right_value);
+            // The backend computes real(10)**integer with llvm.powi, which
+            // takes a 32-bit exponent
+            long double res = right_value >= std::numeric_limits<int32_t>::min()
+                    && right_value <= std::numeric_limits<int32_t>::max()
+                ? real_integer_pow(lv, right_value)
+                : std::pow(lv, (long double)right_value);
             return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
         }
         double left_value = lc->m_r;
