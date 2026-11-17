@@ -6371,6 +6371,60 @@ semantic error: iolength in inquire must be a definable variable
 5205 |     inquire(iolength=cc1_inqnc_n) 1.0  ! {Error} iolength in inquire must be a definable variable
      |                      ^^^^^^^^^^^ 
 
+semantic error: Result of `nint` overflows its kind(2)
+    --> tests/errors/continue_compilation_1.f90:5215:18
+     |
+5215 |     cc1_ero_i2 = nint(40000.0_10, 2)  ! {Error} Result of `nint` overflows its kind(2)
+     |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `floor` overflows its kind(2)
+    --> tests/errors/continue_compilation_1.f90:5216:18
+     |
+5216 |     cc1_ero_i2 = floor(40000.5_10, 2)  ! {Error} Result of `floor` overflows its kind(2)
+     |                  ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `ceiling` overflows its kind(1)
+    --> tests/errors/continue_compilation_1.f90:5217:18
+     |
+5217 |     cc1_ero_i1 = ceiling(300.5_10, 1)  ! {Error} Result of `ceiling` overflows its kind(1)
+     |                  ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `int` overflows its kind(4)
+    --> tests/errors/continue_compilation_1.f90:5218:18
+     |
+5218 |     cc1_ero_i4 = int(3.0e9_10)  ! {Error} Result of `int` overflows its kind(4)
+     |                  ^^^^^^^^^^^^^ 
+
+semantic error: Result of `int` overflows its kind(8)
+    --> tests/errors/continue_compilation_1.f90:5219:18
+     |
+5219 |     cc1_ero_i8 = int(1.0e19_10, 8)  ! {Error} Result of `int` overflows its kind(8)
+     |                  ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `nint` overflows its kind(2)
+    --> tests/errors/continue_compilation_1.f90:5220:18
+     |
+5220 |     cc1_ero_i2 = nint(40000.0_16, 2)  ! {Error} Result of `nint` overflows its kind(2)
+     |                  ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `floor` overflows its kind(4)
+    --> tests/errors/continue_compilation_1.f90:5221:18
+     |
+5221 |     cc1_ero_i4 = floor(3.0e9_16)  ! {Error} Result of `floor` overflows its kind(4)
+     |                  ^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `ceiling` overflows its kind(1)
+    --> tests/errors/continue_compilation_1.f90:5222:18
+     |
+5222 |     cc1_ero_i1 = ceiling(300.5_16, 1)  ! {Error} Result of `ceiling` overflows its kind(1)
+     |                  ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Result of `int` overflows its kind(2)
+    --> tests/errors/continue_compilation_1.f90:5223:18
+     |
+5223 |     cc1_ero_i2 = int(-40000.5_16, 2)  ! {Error} Result of `int` overflows its kind(2)
+     |                  ^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

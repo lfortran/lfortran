@@ -30,6 +30,7 @@
 #include <libasr/runtime/lfortran_float128_quadmath.h>
 #include <libasr/runtime/lfortran_complex128.h>
 
+#include <cmath>
 #include <complex>
 #include <string>
 
@@ -313,6 +314,11 @@ static inline double real_constant_pack_r10(const uint8_t* bytes) {
     std::memcpy(&m_r, &addr, sizeof(addr));
     return m_r;
 }
+
+// The number of bytes of a host `long double` that hold its value: the x87
+// extended format keeps 80 bits in a larger, padded storage.
+constexpr size_t real10_value_size =
+    std::numeric_limits<long double>::digits == 64 ? 10 : sizeof(long double);
 
 static inline ASR::expr_t* make_RealConstant_r10(Allocator& al,
         const Location& loc, long double v, ASR::ttype_t* type) {
@@ -632,6 +638,41 @@ static inline bool real16_is_zero(const lf_float128& v) {
     return true;
 }
 
+// The real(10) value `v` rounded once to real(kind), kind 4 or 8, as the
+// double that holds a real(4) or real(8) constant. Rounding through double
+// would round twice for real(4).
+static inline double real10_to_kind_double(long double v, int kind) {
+    return kind == 4 ? static_cast<double>(static_cast<float>(v))
+        : static_cast<double>(v);
+}
+
+// A RealConstant of the kind of `type` from the real(10) value `v`: exact
+// for real(10) and real(16), rounded once for real(8) and real(4).
+static inline ASR::expr_t* make_RealConstant_from_r10(Allocator& al,
+        const Location& loc, long double v, ASR::ttype_t* type) {
+    int kind = extract_kind_from_ttype_t(type);
+    if (kind == 10) {
+        return make_RealConstant_r10(al, loc, v, type);
+    } else if (kind == 16) {
+        return make_RealConstant_r16(al, loc, lf_f128_from_long_double(v), type);
+    }
+    return make_RealConstant_util(al, loc, real10_to_kind_double(v, kind), type);
+}
+
+// A RealConstant of the kind of `type` from the real(16) value `v`: exact
+// for real(16), rounded to nearest for real(10), and through double for
+// real(8) and real(4).
+static inline ASR::expr_t* make_RealConstant_from_r16(Allocator& al,
+        const Location& loc, lf_float128 v, ASR::ttype_t* type) {
+    int kind = extract_kind_from_ttype_t(type);
+    if (kind == 16) {
+        return make_RealConstant_r16(al, loc, v, type);
+    } else if (kind == 10) {
+        return make_RealConstant_r10(al, loc, lf_f128_to_long_double(v), type);
+    }
+    return make_RealConstant_util(al, loc, lf_f128_to_double(v), type);
+}
+
 // 2**n as a binary128 value for n in [-16494, 16383] (down to the smallest
 // subnormal).
 static inline lf_float128 real16_pow2(int n) {
@@ -697,6 +738,25 @@ static inline lf_float128 real16_round_half_away(lf_float128 v) {
         f = lf_f128_add(f, lf_f128_from_int64(1));
     }
     return lf_f128_signbit(v) ? lf_f128_neg(f) : f;
+}
+
+// Exact conversion of an integral real(10) value (host long double) to
+// int64_t. Returns false if the value is NaN or outside the int64_t range.
+static inline bool real10_integral_to_int64(long double v, int64_t& out) {
+    if (!(v >= -0x1p63L && v < 0x1p63L)) {
+        return false;
+    }
+    out = static_cast<int64_t>(v);
+    return true;
+}
+
+// Whether `v` is in the range of integer(kind) for kind 1, 2, 4 or 8.
+static inline bool int64_fits_integer_kind(int64_t v, int kind) {
+    if (kind >= 8) {
+        return true;
+    }
+    int64_t bound = int64_t(1) << (8 * kind - 1);
+    return v >= -bound && v < bound;
 }
 
 // Exact conversion of an integral binary128 value to int64_t. Returns false if
@@ -862,12 +922,13 @@ static inline lf_float128 complex_constant_im_r16(const ASR::ComplexConstant_t* 
 }
 
 // The real (or, if `imag`, the imaginary) part of `c` as a RealConstant of
-// `real_type`, which is exact when both are kind=16.
+// `real_type`. A kind=16 part is exact for real(16) and rounded once for
+// real(10) (see make_RealConstant_from_r16).
 static inline ASR::expr_t* complex_constant_part_to_real(Allocator& al,
         const Location& loc, const ASR::ComplexConstant_t* c, bool imag,
         ASR::ttype_t* real_type) {
-    if (complex_constant_is_r16(c) && extract_kind_from_ttype_t(real_type) == 16) {
-        return make_RealConstant_r16(al, loc,
+    if (complex_constant_is_r16(c)) {
+        return make_RealConstant_from_r16(al, loc,
             imag ? complex_constant_im_r16(c) : complex_constant_re_r16(c), real_type);
     }
     return make_RealConstant_util(al, loc,
@@ -884,6 +945,84 @@ static inline ASR::expr_t* make_ComplexConstant_r16(Allocator& al,
     return ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, loc,
         real_constant_pack_r16(re_bytes), real_constant_pack_r16(im_bytes), type));
 }
+
+// The exact host value type `T` of a real(10) or real(16) constant: `long
+// double` for real(10) and `lf_float128` for real(16). `ExtendedReal<T>`
+// gives the access and the arithmetic needed to fold the constants of either
+// kind exactly, so that both kinds share one implementation of each fold.
+template <typename T> struct ExtendedReal;
+
+template <> struct ExtendedReal<long double> {
+    static constexpr int kind = 10;
+    // The bytes of an array constant element, and those that hold its value
+    static constexpr size_t element_size = sizeof(long double);
+    static constexpr size_t value_size = real10_value_size;
+    static const uint8_t* bytes(const ASR::RealConstant_t* c) {
+        return real_constant_get_r10_bytes(c);
+    }
+    static long double get(const ASR::expr_t* e) {
+        return real_constant_get_r10(ASR::down_cast<ASR::RealConstant_t>(e));
+    }
+    static ASR::expr_t* make(Allocator& al, const Location& loc, long double v,
+            ASR::ttype_t* type) {
+        return make_RealConstant_r10(al, loc, v, type);
+    }
+    // A complex(10) constant is a ComplexConstructor, never folded
+    static bool get_complex(const ASR::expr_t* /*e*/, long double& /*re*/,
+            long double& /*im*/) {
+        return false;
+    }
+    static ASR::expr_t* make_complex(Allocator& /*al*/, const Location& /*loc*/,
+            long double /*re*/, long double /*im*/, ASR::ttype_t* /*type*/) {
+        return nullptr;
+    }
+    static long double from_double(double d) { return d; }
+    static long double add(long double a, long double b) { return a + b; }
+    static long double sub(long double a, long double b) { return a - b; }
+    static long double mul(long double a, long double b) { return a * b; }
+    static long double neg(long double a) { return -a; }
+    static bool isnan(long double a) { return std::isnan(a); }
+    static bool eq(long double a, long double b) { return a == b; }
+    // Negative, zero or positive as `a` (not a NaN) is less than, equal to or
+    // greater than `b` (not a NaN)
+    static int cmp(long double a, long double b) { return (a > b) - (a < b); }
+};
+
+template <> struct ExtendedReal<lf_float128> {
+    static constexpr int kind = 16;
+    static constexpr size_t element_size = 16;
+    static constexpr size_t value_size = 16;
+    static const uint8_t* bytes(const ASR::RealConstant_t* c) {
+        return real_constant_get_r16_bytes(c);
+    }
+    static lf_float128 get(const ASR::expr_t* e) {
+        return real_expr_get_r16(e);
+    }
+    static ASR::expr_t* make(Allocator& al, const Location& loc, lf_float128 v,
+            ASR::ttype_t* type) {
+        return make_RealConstant_r16(al, loc, v, type);
+    }
+    // The parts of the complex constant `e`, or false if it is not complex(16)
+    static bool get_complex(const ASR::expr_t* e, lf_float128& re, lf_float128& im) {
+        const ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(e);
+        if (!complex_constant_is_r16(c)) return false;
+        re = complex_constant_re_r16(c);
+        im = complex_constant_im_r16(c);
+        return true;
+    }
+    static ASR::expr_t* make_complex(Allocator& al, const Location& loc,
+            lf_float128 re, lf_float128 im, ASR::ttype_t* type) {
+        return make_ComplexConstant_r16(al, loc, re, im, type);
+    }
+    static lf_float128 from_double(double d) { return lf_f128_from_double(d); }
+    static lf_float128 add(lf_float128 a, lf_float128 b) { return lf_f128_add(a, b); }
+    static lf_float128 sub(lf_float128 a, lf_float128 b) { return lf_f128_sub(a, b); }
+    static lf_float128 mul(lf_float128 a, lf_float128 b) { return lf_f128_mul(a, b); }
+    static lf_float128 neg(lf_float128 a) { return lf_f128_neg(a); }
+    static bool isnan(lf_float128 a) { return lf_f128_isnan(a); }
+    static bool eq(lf_float128 a, lf_float128 b) { return lf_f128_eq(a, b); }
+    static int cmp(lf_float128 a, lf_float128 b) { return lf_f128_cmp(a, b); }
+};
 
 // Whether `value` is a kind=16 ComplexConstant; if so, `c` is set to its
 // value.
@@ -1558,13 +1697,40 @@ static inline bool is_kind16_array_constant(ASR::expr_t* a_value) {
         ASRUtils::extract_kind_from_ttype_t(elem_type) == 16;
 }
 
+// Returns true if the expression is an array constant of real(10) elements
+static inline bool is_real10_array_constant(ASR::expr_t* a_value) {
+    if( !a_value || !ASR::is_a<ASR::ArrayConstant_t>(*a_value) ) {
+        return false;
+    }
+    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(a_value));
+    return ASR::is_a<ASR::Real_t>(*elem_type) &&
+        ASRUtils::extract_kind_from_ttype_t(elem_type) == 10;
+}
+
+// Whether the elements of `type` are real(10), real(16) or complex(16), whose
+// constants are not stored as host floating point values of their type (see
+// ExtendedReal)
+static inline bool is_extended_real_or_complex(ASR::ttype_t* type) {
+    ASR::ttype_t* t = ASRUtils::extract_type(type);
+    int kind = ASRUtils::extract_kind_from_ttype_t(t);
+    return (ASR::is_a<ASR::Real_t>(*t) && (kind == 10 || kind == 16)) ||
+        (ASR::is_a<ASR::Complex_t>(*t) && kind == 16);
+}
+
+// Returns true if the expression is an array constant of real(10), real(16)
+// or complex(16) elements
+static inline bool is_extended_array_constant(ASR::expr_t* a_value) {
+    return a_value && ASR::is_a<ASR::ArrayConstant_t>(*a_value) &&
+        is_extended_real_or_complex(ASRUtils::expr_type(a_value));
+}
+
 // Returns true if all arguments are evaluated
 // `allow_wide_complex` accepts complex(10) and complex(16) constants, for the
 // callers that evaluate them without rounding to a double.
-// `allow_kind16_arrays` accepts real(16) and complex(16) array constants, for
-// the callers that evaluate such an array element by element.
+// `allow_extended_arrays` accepts real(10), real(16) and complex(16) array
+// constants, for the callers that evaluate such an array element by element.
 static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore_null=false,
-        bool allow_wide_complex=false, bool allow_kind16_arrays=false) {
+        bool allow_wide_complex=false, bool allow_extended_arrays=false) {
     for (auto &a : args) {
         if (ignore_null && !a) continue;
         ASR::expr_t* a_value = ASRUtils::expr_value(a);
@@ -1586,8 +1752,9 @@ static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore
             return false;
         }
         // The array intrinsics read the elements of an array constant as
-        // doubles, which would lose precision for real(16) and complex(16).
-        if( !allow_kind16_arrays && is_kind16_array_constant(a_value) ) {
+        // doubles, which would lose precision for real(10), real(16) and
+        // complex(16).
+        if( !allow_extended_arrays && is_extended_array_constant(a_value) ) {
             return false;
         }
     }
@@ -4589,6 +4756,7 @@ inline bool is_array_constant_element_type(ASR::ttype_t* type) {
         case ASR::ttypeType::UnsignedInteger:
             return kind == 1 || kind == 2 || kind == 4 || kind == 8;
         case ASR::ttypeType::Real:
+            return kind == 4 || kind == 8 || kind == 10 || kind == 16;
         case ASR::ttypeType::Complex:
             return kind == 4 || kind == 8 || kind == 16;
         case ASR::ttypeType::Logical:
@@ -4657,17 +4825,41 @@ inline lf_float128 load_float128(const uint8_t* bytes) {
     return v;
 }
 
+// The host `long double` value of a real(10) array constant element
+inline long double load_long_double(const uint8_t* bytes) {
+    long double v;
+    std::memcpy(&v, bytes, sizeof(long double));
+    return v;
+}
+
 inline std::string float128_to_string(const uint8_t* bytes) {
     char buf[64];
     lf_f128_to_str(buf, load_float128(bytes));
     return buf;
 }
 
-// The data of a real(16) array constant: 16 bytes of binary128 per element.
-inline void* set_data_real16(uint8_t* data, ASR::expr_t** a_args, size_t n_args) {
+// Stores the value of the real(10) or real(16) constant `c` (see
+// ExtendedReal) in the array constant element at `element`. The padding bytes
+// of a real(10) element are zeroed, so the data is deterministic.
+template <typename T>
+inline void set_extended_real_element(uint8_t* element, const ASR::RealConstant_t* c) {
+    using R = ExtendedReal<T>;
+    // A constant of another kind holds no pointer to the value's bytes
+    LCOMPILERS_ASSERT(extract_kind_from_ttype_t(c->m_type) == R::kind);
+    std::memset(element, 0, R::element_size);
+    std::memcpy(element, R::bytes(c), R::value_size);
+}
+
+// The data of a real(10) or real(16) array constant: the payload of each
+// element (see make_RealConstant_r10 and make_RealConstant_r16),
+// ExtendedReal<T>::element_size bytes per element.
+template <typename T>
+inline void* set_data_extended_real(ASR::expr_t** a_args, size_t n_args) {
+    constexpr size_t element_size = ExtendedReal<T>::element_size;
+    uint8_t* data = new uint8_t[element_size*n_args];
     for (size_t i = 0; i < n_args; i++) {
-        std::memcpy(data + 16*i, real_constant_get_r16_bytes(
-            ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i]))), 16);
+        set_extended_real_element<T>(data + element_size*i,
+            ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(a_args[i])));
     }
     return data;
 }

@@ -4753,7 +4753,10 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
     ASR::expr_t* value = nullptr;
 
-    if (ASRUtils::expr_value(a_arg)) {
+    // Only a scalar constant is folded here; the cast of an array constant
+    // is left without a value.
+    if (ASRUtils::expr_value(a_arg) &&
+            !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(a_arg))) {
         // calculate value
         if (a_kind == ASR::cast_kindType::RealToInteger) {
             ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
@@ -4778,41 +4781,45 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             // kind=16 m_r is a pointer payload (see
             // real_constant_get_r16_bytes), never a double: read it with
             // real_constant_get_r16 and build kind=16 results with
-            // make_RealConstant_r16. Kind=10 sources are not folded into
-            // kind=16, as their long double would be narrowed through double.
+            // make_RealConstant_r16. kind=10 m_r is a pointer to the long
+            // double bytes, read with real_constant_get_r10.
             if (src_kind == 16 && dest_kind == 16) {
                 value = ASRUtils::make_RealConstant_r16(al, a_loc,
                     ASRUtils::real_constant_get_r16(rc), a_type);
             } else if (src_kind == 16) {
-                // Only real(8) is folded: going through a double would round
-                // twice for real(4) and lose bits for real(10).
-                if (dest_kind == 8) {
+                // real(4) is not folded: going through a double would round
+                // twice.
+                lf_float128 v = ASRUtils::real_constant_get_r16(rc);
+                if (dest_kind == 10) {
+                    value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                        lf_f128_to_long_double(v), a_type);
+                } else if (dest_kind == 8) {
                     value = ASRUtils::make_RealConstant_util(al, a_loc,
-                        lf_f128_to_double(ASRUtils::real_constant_get_r16(rc)),
-                        a_type);
+                        lf_f128_to_double(v), a_type);
                 }
             } else if (dest_kind == 16) {
-                if (src_kind != 10) {
-                    value = ASRUtils::make_RealConstant_r16(al, a_loc,
-                        lf_f128_from_double(rc->m_r), a_type);
-                }
+                value = ASRUtils::make_RealConstant_r16(al, a_loc, src_kind == 10
+                    ? lf_f128_from_long_double(ASRUtils::real_constant_get_r10(rc))
+                    : lf_f128_from_double(rc->m_r), a_type);
+            } else if (src_kind == 10) {
+                // Rounded once, not through double for real(4)
+                value = ASRUtils::make_RealConstant_from_r10(al, a_loc,
+                    ASRUtils::real_constant_get_r10(rc), a_type);
             } else {
-                // kind=10 m_r is a pointer to the long double bytes, so
-                // read it with real_constant_get_r10 and build a kind=10
-                // result with make_RealConstant_util.
-                double v = src_kind == 10
-                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
-                value = ASRUtils::make_RealConstant_util(al, a_loc, v, a_type);
+                value = ASRUtils::make_RealConstant_util(al, a_loc, rc->m_r, a_type);
             }
         } else if (a_kind == ASR::cast_kindType::RealToComplex) {
             ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
                                   ASRUtils::expr_value(a_arg));
             int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
-            if (dest_kind == 10 || (dest_kind == 16 && src_kind == 10)) {
-                // A complex(10) constant is a ComplexConstructor; a conversion
-                // between real(10) and real(16) is left to run time.
+            if (dest_kind == 10) {
+                // A complex(10) constant is a ComplexConstructor
                 value = make_wide_complex_from_real(al, a_loc, &rc->base, a_type);
+            } else if (src_kind == 10 && dest_kind == 16) {
+                value = ASRUtils::make_ComplexConstant_r16(al, a_loc,
+                    lf_f128_from_long_double(ASRUtils::real_constant_get_r10(rc)),
+                    lf_f128_from_double(0.0), a_type);
             } else if (src_kind == 16 && dest_kind == 16) {
                 value = ASRUtils::make_ComplexConstant_r16(al, a_loc,
                     ASRUtils::real_constant_get_r16(rc), lf_f128_from_double(0.0), a_type);
@@ -4940,6 +4947,26 @@ static std::complex<T> complex_smith_div(T p, T q, T r, T s) {
     return std::complex<T>((p * ratio + q) / denom, (q * ratio - p) / denom);
 }
 
+// `x**n` by repeated multiplication (binary exponentiation), with a negative
+// `n` giving `1/x**(-n)`: the algorithm of llvm.powi, so that a folded constant
+// equals the value computed at run time.
+template<typename T>
+static T real_integer_pow(T x, int64_t n) {
+    uint64_t u = n < 0 ? 0 - static_cast<uint64_t>(n) : static_cast<uint64_t>(n);
+    T r = 1;
+    while (true) {
+        if (u & 1) {
+            r *= x;
+        }
+        u >>= 1;
+        if (u == 0) {
+            break;
+        }
+        x *= x;
+    }
+    return n < 0 ? 1 / r : r;
+}
+
 // `(re, im)**n` by repeated multiplication (binary exponentiation), with a
 // negative `n` giving `1/(re, im)**(-n)`. The backends compute complex**integer
 // with the same algorithm, so that a folded constant equals the value computed
@@ -5038,7 +5065,12 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
             const uint8_t* l_bytes = ASRUtils::real_constant_get_r10_bytes(lc);
             long double lv{};
             std::memcpy(&lv, l_bytes, sizeof(long double));
-            long double res = std::pow(lv, (long double)right_value);
+            // The backend computes real(10)**integer with llvm.powi, which
+            // takes a 32-bit exponent
+            long double res = right_value >= std::numeric_limits<int32_t>::min()
+                    && right_value <= std::numeric_limits<int32_t>::max()
+                ? real_integer_pow(lv, right_value)
+                : std::pow(lv, (long double)right_value);
             return ASRUtils::make_RealConstant_r10(al, left->base.loc, res, dest_type);
         }
         double left_value = lc->m_r;
@@ -13326,9 +13358,13 @@ void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int64_
             switch (kind) {
                 case 4: ((float*)x->m_data)[i] = static_cast<float>(value_real->m_r); break;
                 case 8: ((double*)x->m_data)[i] = value_real->m_r; break;
+                case 10:
+                    set_extended_real_element<long double>(static_cast<uint8_t*>(
+                        x->m_data) + sizeof(long double)*i, value_real);
+                    break;
                 case 16:
-                    std::memcpy(static_cast<uint8_t*>(x->m_data) + 16*i,
-                        real_constant_get_r16_bytes(value_real), 16);
+                    set_extended_real_element<lf_float128>(static_cast<uint8_t*>(
+                        x->m_data) + 16*i, value_real);
                     break;
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
@@ -13411,6 +13447,9 @@ std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int64_t i)
             switch (kind) {
                 case 4: return to_string_with_precision(((float*)data)[i], 8);
                 case 8: return to_string_with_precision(((double*)data)[i], 16);
+                case 10: return to_string_with_precision(load_long_double(
+                    static_cast<const uint8_t*>(data) + sizeof(long double)*i),
+                    std::numeric_limits<long double>::max_digits10 - 1);
                 case 16: return float128_to_string(
                     static_cast<const uint8_t*>(data) + 16*i);
                 default:
@@ -13504,6 +13543,10 @@ ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc
                                     ((float*)data)[i], type)); break;
                 case 8: value = EXPR(ASR::make_RealConstant_t(al, loc,
                                     ((double*)data)[i], type)); break;
+                case 10: value = make_RealConstant_r10(al, loc,
+                                    load_long_double(static_cast<const uint8_t*>(data)
+                                        + sizeof(long double)*i),
+                                    type); break;
                 case 16: value = make_RealConstant_r16(al, loc,
                                     load_float128(static_cast<const uint8_t*>(data) + 16*i),
                                     type); break;
@@ -13695,7 +13738,8 @@ void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* 
             switch (kind) {
                 case 4: return set_data_real(new float[n_args], a_args, n_args);
                 case 8: return set_data_real(new double[n_args], a_args, n_args);
-                case 16: return set_data_real16(new uint8_t[16*n_args], a_args, n_args);
+                case 10: return set_data_extended_real<long double>(a_args, n_args);
+                case 16: return set_data_extended_real<lf_float128>(a_args, n_args);
                 default:
                     throw LCompilersException("Unsupported kind for real array constant.");
             }
@@ -13784,6 +13828,10 @@ int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) {
         return n_args * sizeof(bool);
     }
     int64_t element_size = ASRUtils::extract_kind_from_ttype_t(a_type);
+    // A real(10) element is stored as a host `long double`
+    if (ASR::is_a<ASR::Real_t>(*a_type) && element_size == 10) {
+        return n_args * sizeof(long double);
+    }
     if (ASR::is_a<ASR::Complex_t>(*a_type)) {
         element_size *= 2;
     }
@@ -13933,20 +13981,16 @@ ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
 
     LCOMPILERS_ASSERT(ASRUtils::is_array(a_type));
     bool all_expr_evaluated = true;
-    // Compile-time aggregation of real(10) arrays into a packed ArrayConstant
-    // is not supported: set_ArrayConstant_data / fetch_ArrayConstant_value do
-    // not pack x87 element buffers, whereas a kind=10 RealConstant stores its
-    // value behind a pointer in m_r (see real_constant_get_r10_bytes in
-    // asr_utils.h), and a complex(10) constant is a ComplexConstructor. Let the
-    // array initialise at runtime instead: an ArrayConstructor that lowers
-    // element by element.
+    // A complex(10) constant is a ComplexConstructor, which an ArrayConstant
+    // cannot hold. Let such an array initialise at runtime instead: an
+    // ArrayConstructor that lowers element by element.
     {
         ASR::ttype_t* elt_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(a_type));
         if (ASRUtils::is_array(elt_type)) {
             elt_type = ASR::down_cast<ASR::Array_t>(elt_type)->m_type;
         }
-        if ((ASRUtils::is_real(*elt_type) || ASRUtils::is_complex(*elt_type)) &&
+        if (ASRUtils::is_complex(*elt_type) &&
             ASRUtils::extract_kind_from_ttype_t(elt_type) == 10) {
             all_expr_evaluated = false;
         }
@@ -15207,6 +15251,15 @@ void promote_arguments_kinds(Allocator &al, const Location &loc,
             args.p[i] = ASRUtils::make_RealConstant_util(al, loc,
                 ASR::down_cast<ASR::RealConstant_t>(args[i])->m_r,
                 target_type);
+        } else if (ASR::is_a<ASR::RealConstant_t>(*args[i])) {
+            // A real(10) constant widened to real(16) exactly
+            ASR::expr_t* cast = EXPR(ASRUtils::make_Cast_t_value(
+                al, loc, args[i], cast_kind, target_type));
+            if (ASRUtils::expr_value(cast)) {
+                args.p[i] = ASRUtils::expr_value(cast);
+            } else {
+                args.p[i] = cast;
+            }
         } else if (ASR::is_a<ASR::IntegerConstant_t>(*args[i])) {
             args.p[i] = EXPR(ASR::make_IntegerConstant_t(
                 al, loc, ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n,

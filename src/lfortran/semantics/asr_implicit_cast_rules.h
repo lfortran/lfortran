@@ -100,22 +100,23 @@ private:
 
 public:
   // Whether a cast of the constant array `value` to `dest_type` involves a
-  // real(16) or complex(16) element, which the casts of the raw data of an
-  // array constant do not handle.
-  static bool is_kind16_array_cast(ASR::expr_t *value, ASR::ttype_t *dest_type) {
-      auto is_kind16 = [](ASR::ttype_t *t) {
-          t = ASRUtils::extract_type(t);
-          return (ASRUtils::is_real(*t) || ASRUtils::is_complex(*t))
-              && ASRUtils::extract_kind_from_ttype_t(t) == 16;
-      };
-      return is_kind16(ASRUtils::expr_type(value)) || is_kind16(dest_type);
+  // real(10), real(16) or complex(16) element, which the casts of the raw
+  // data of an array constant do not handle.
+  static bool is_extended_array_cast(ASR::expr_t *value, ASR::ttype_t *dest_type) {
+      return ASRUtils::is_extended_real_or_complex(ASRUtils::expr_type(value))
+          || ASRUtils::is_extended_real_or_complex(dest_type);
   }
 
   // The constant array `array` converted to the element type `dest_type`, by
-  // converting each of its elements, or nullptr if an element does not fold.
+  // converting each of its elements, or nullptr if an element does not fold
+  // or an array constant cannot hold `dest_type` (complex(10)).
   static ASR::expr_t* fold_array_cast_by_element(Allocator &al,
           const Location &a_loc, ASR::ArrayConstant_t *array,
           ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
+      if (!ASRUtils::is_array_constant_element_type(
+              ASRUtils::extract_type(dest_type))) {
+          return nullptr;
+      }
       size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
       Vec<ASR::expr_t*> elements; elements.reserve(al, array_size);
       for (size_t i = 0; i < array_size; i++) {
@@ -230,7 +231,7 @@ public:
         ASR::expr_t *value=nullptr;
         ASR::expr_t *source_value = ASRUtils::expr_value(*convert_can);
         if (source_value && ASR::is_a<ASR::ArrayConstant_t>(*source_value)
-                && is_kind16_array_cast(source_value, dest_type2)) {
+                && is_extended_array_cast(source_value, dest_type2)) {
             value = fold_array_cast_by_element(al, a_loc,
                 ASR::down_cast<ASR::ArrayConstant_t>(source_value), dest_type2, diag);
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
@@ -369,16 +370,20 @@ public:
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                     int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
                     int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
-                    if (src_kind == 10 || dest_kind == 10) {
+                    if (src_kind == 10) {
                         // kind=10 m_r is a pointer to the long double bytes.
-                        // A cast between kind=10 and kind=16 is left to run time.
-                        value = nullptr;
-                        if (src_kind != 16 && dest_kind != 16) {
-                            double rval = src_kind == 10
-                                ? ASRUtils::real_constant_get_r10(r) : r->m_r;
-                            value = ASRUtils::make_RealConstant_util(al, a_loc,
-                                rval, dest_type2);
-                        }
+                        // Widening to kind=16 is exact; the narrowing
+                        // conversions round once, to the destination kind.
+                        value = ASRUtils::make_RealConstant_from_r10(al, a_loc,
+                            ASRUtils::real_constant_get_r10(r), dest_type2);
+                    } else if (src_kind == 16 && dest_kind == 10) {
+                        value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                            lf_f128_to_long_double(
+                                ASRUtils::real_constant_get_r16(r)), dest_type2);
+                    } else if (dest_kind == 10) {
+                        // real(4) and real(8) values are exact in real(10)
+                        value = ASRUtils::make_RealConstant_util(al, a_loc,
+                            r->m_r, dest_type2);
                     } else if (src_kind == 16) {
                         // kind=16 m_r is a pointer to the binary128 bytes.
                         lf_float128 v = ASRUtils::real_constant_get_r16(r);
