@@ -278,6 +278,7 @@ static int input_scan(FILE *file, const char *format, ...)
 /* ---- real(16) / binary128 support ---- */
 #include "lfortran_float128_quadmath.h"
 #include "lfortran_float128.c"
+#include "lfortran_trig.h"
 #include "lfortran_complex128.h"
 /* ----------------------------------------------------- */
 /* --- Memory debug implementation (Compiler's side) --- */
@@ -7601,6 +7602,290 @@ LFORTRAN_API int64_t _lfortran_dishftc(int64_t val, int64_t shift_signed, int64_
                                   (uint32_t)bits_size);
 }
 
+// Trigonometric functions in degrees ------------------------------------------
+//
+// sind, cosd and tand reduce their argument exactly: |x| = 90*n + r with r
+// in [-45, 45] and no rounding error, so that every exact point is exact
+// (sind(n*360 + 30) = 0.5, cosd(90) = 0, tand(45) = 1, ...), sind and cosd
+// of an odd multiple of 45 are sqrt(1/2) correctly rounded, and large
+// arguments keep their accuracy. r*pi/180 is formed as a double-word
+// bh + bl, and the libm function of bh is corrected by bl. The signs of
+// zero and infinity follow the binary128 lf_f128_sind, lf_f128_cosd and
+// lf_f128_tand (and GFortran). The compiler folds constant expressions with
+// these same functions (lfortran_trig.h). real(4) evaluates in real(8), where
+// the reduction of every real(4) argument is equally exact, and rounds once.
+
+// pi/180 = TRIG_D2R_HI + TRIG_D2R_LO to about 2^-108 relative
+static const double TRIG_D2R_HI = 0.017453292519943295;
+static const double TRIG_D2R_LO = 2.9486522708701687e-19;
+
+// sqrt(1/2) correctly rounded: sin and cos of 45 degrees and a quarter turn
+static const double TRIG_SQRT1_2 = 0.7071067811865476;
+
+// sin(bh + bl) for |bh| <= ~pi/4 and |bl| <= ~ulp(bh): the bl correction
+// uses a short series for cos(bh).
+static double trig_sin_dw(double bh, double bl)
+{
+    double u = bh * bh;
+    return sin(bh) + bl * (1.0 - u * (0.5 - u / 24.0));
+}
+
+// cos(bh + bl), as trig_sin_dw
+static double trig_cos_dw(double bh, double bl)
+{
+    double u = bh * bh;
+    return cos(bh) - bl * bh * (1.0 - u * (1.0 / 6.0 - u / 120.0));
+}
+
+// tan(bh + bl) for even n and tan(bh + bl + pi/2) = -1/tan(bh + bl) for
+// odd n; the reciprocal is compensated for its rounding error.
+static double trig_tan_dw(int n, double bh, double bl)
+{
+    double t = tan(bh);
+    double dt = bl * (1.0 + t * t);
+    if ((n & 1) == 0) return t + dt;
+    double q = 1.0 / t;
+    double e = fma(-q, t, 1.0) - q * dt;
+    return -(q + q * e);
+}
+
+// |x| = 90*n + r with r in [-45, 45] (up to rounding of the quotient, which
+// only moves r slightly past 45), r exact, for finite x; returns n mod 4.
+static int trig_rem_90(double ax, double *r)
+{
+    // ax mod 360 is exact; below 2^52, ax - 90*q is exact directly.
+    if (ax >= 4503599627370496.0) ax = fmod(ax, 360.0);
+    double q = floor(ax / 90.0 + 0.5);
+    *r = ax - 90.0 * q;
+    return (int)((int64_t)q & 3);
+}
+
+// r * pi/180 as a double-word bh + bl
+static void trig_deg_to_rad(double r, double *bh, double *bl)
+{
+    *bh = r * TRIG_D2R_HI;
+    *bl = fma(r, TRIG_D2R_HI, -*bh) + r * TRIG_D2R_LO;
+}
+
+// sin of r degrees, |r| <= ~45; exact for r = 0 and r = +-30, correctly
+// rounded for r = +-45
+static double trig_sin_deg(double r)
+{
+    if (r == 0.0) return r;
+    if (r == 30.0) return 0.5;
+    if (r == -30.0) return -0.5;
+    if (r == 45.0) return TRIG_SQRT1_2;
+    if (r == -45.0) return -TRIG_SQRT1_2;
+    double bh, bl;
+    trig_deg_to_rad(r, &bh, &bl);
+    return trig_sin_dw(bh, bl);
+}
+
+// cos of r degrees, |r| <= ~45; exact for r = 0, correctly rounded for
+// r = +-45
+static double trig_cos_deg(double r)
+{
+    if (r == 0.0) return 1.0;
+    if (r == 45.0 || r == -45.0) return TRIG_SQRT1_2;
+    double bh, bl;
+    trig_deg_to_rad(r, &bh, &bl);
+    return trig_cos_dw(bh, bl);
+}
+
+LFORTRAN_API double _lfortran_dsind(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, s;
+    int n = trig_rem_90(fabs(x), &r);
+    switch (n) {
+        case 0:  s = trig_sin_deg(r); break;
+        case 1:  s = trig_cos_deg(r); break;
+        case 2:  s = -trig_sin_deg(r); break;
+        default: s = -trig_cos_deg(r); break;
+    }
+    return signbit(x) ? -s : s;
+}
+
+LFORTRAN_API float _lfortran_ssind(float x)
+{
+    return (float)_lfortran_dsind(x);
+}
+
+LFORTRAN_API double _lfortran_dcosd(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    double r;
+    int n = trig_rem_90(fabs(x), &r);
+    // cos(90 + 180k degrees) is exactly +0.
+    if ((n & 1) && r == 0.0) return 0.0;
+    switch (n) {
+        case 0:  return trig_cos_deg(r);
+        case 1:  return -trig_sin_deg(r);
+        case 2:  return -trig_cos_deg(r);
+        default: return trig_sin_deg(r);
+    }
+}
+
+LFORTRAN_API float _lfortran_scosd(float x)
+{
+    return (float)_lfortran_dcosd(x);
+}
+
+LFORTRAN_API double _lfortran_dtand(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, t;
+    int n = trig_rem_90(fabs(x), &r);
+    if (r == 0.0) {
+        // A pole at an odd multiple of 90 degrees: +inf at 90, -inf at 270.
+        if (n & 1) return (signbit(x) != 0) != (n == 3) ? -INFINITY : INFINITY;
+        t = 0.0;
+    } else if (r == 45.0 || r == -45.0) {
+        t = ((r > 0) != ((n & 1) != 0)) ? 1.0 : -1.0;
+    } else {
+        double bh, bl;
+        trig_deg_to_rad(r, &bh, &bl);
+        t = trig_tan_dw(n, bh, bl);
+    }
+    return signbit(x) ? -t : t;
+}
+
+LFORTRAN_API float _lfortran_stand(float x)
+{
+    return (float)_lfortran_dtand(x);
+}
+
+// Trigonometric functions in half revolutions ---------------------------------
+//
+// sinpi, cospi and tanpi reduce their argument exactly, |x| = n/2 + r with r
+// in [-1/4, 1/4], and evaluate as sind, cosd and tand with r*pi formed as a
+// double-word. The signs of zero and infinity follow IEEE 754 sinPi, cosPi
+// and tanPi, like the binary128 lf_f128_sinpi, lf_f128_cospi and
+// lf_f128_tanpi. The compiler folds constant expressions with these same
+// functions (lfortran_trig.h).
+
+// pi = TRIG_PI_HI + TRIG_PI_LO to about 2^-107 relative
+static const double TRIG_PI_HI = 3.141592653589793;
+static const double TRIG_PI_LO = 1.2246467991473532e-16;
+
+// |x| = n/2 + r with r in [-1/4, 1/4], n and r exact, for finite x; returns
+// n mod 4.
+static int trig_rem_half(double ax, double *r)
+{
+    // 2^53 and above are even integers.
+    if (ax >= 9007199254740992.0) {
+        *r = 0.0;
+        return 0;
+    }
+    // t = 2*ax, its fraction t - floor(t) and q + 1 are exact, so q is t
+    // rounded to nearest and r is exact, in any rounding mode (t + 0.5 is
+    // not: it rounds, e.g. to a tie for ax just below 1/4).
+    double t = 2.0 * ax;
+    double q = floor(t);
+    if (t - q >= 0.5) q += 1.0;
+    *r = ax - 0.5 * q;
+    return (int)((int64_t)q & 3);
+}
+
+// r * pi as a double-word bh + bl
+static void trig_halfrev_to_rad(double r, double *bh, double *bl)
+{
+    *bh = r * TRIG_PI_HI;
+    *bl = fma(r, TRIG_PI_HI, -*bh) + r * TRIG_PI_LO;
+}
+
+// sin of r half turns, |r| <= 1/4; correctly rounded for r = +-1/4
+static double trig_sin_halfrev(double r)
+{
+    if (r == 0.25) return TRIG_SQRT1_2;
+    if (r == -0.25) return -TRIG_SQRT1_2;
+    double bh, bl;
+    trig_halfrev_to_rad(r, &bh, &bl);
+    return trig_sin_dw(bh, bl);
+}
+
+// cos of r half turns, |r| <= 1/4; correctly rounded for r = +-1/4
+static double trig_cos_halfrev(double r)
+{
+    if (r == 0.25 || r == -0.25) return TRIG_SQRT1_2;
+    double bh, bl;
+    trig_halfrev_to_rad(r, &bh, &bl);
+    return trig_cos_dw(bh, bl);
+}
+
+LFORTRAN_API double _lfortran_dsinpi(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, s;
+    int n = trig_rem_half(fabs(x), &r);
+    // sin(pi*k) is exactly 0, with the sign of x.
+    if ((n & 1) == 0 && r == 0.0) return signbit(x) ? -0.0 : 0.0;
+    switch (n) {
+        case 0:  s = trig_sin_halfrev(r); break;
+        case 1:  s = trig_cos_halfrev(r); break;
+        case 2:  s = -trig_sin_halfrev(r); break;
+        default: s = -trig_cos_halfrev(r); break;
+    }
+    return signbit(x) ? -s : s;
+}
+
+LFORTRAN_API float _lfortran_ssinpi(float x)
+{
+    return (float)_lfortran_dsinpi(x);
+}
+
+LFORTRAN_API double _lfortran_dcospi(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    double r;
+    int n = trig_rem_half(fabs(x), &r);
+    // cos(pi*(k + 1/2)) is exactly +0.
+    if ((n & 1) && r == 0.0) return 0.0;
+    switch (n) {
+        case 0:  return trig_cos_halfrev(r);
+        case 1:  return -trig_sin_halfrev(r);
+        case 2:  return -trig_cos_halfrev(r);
+        default: return trig_sin_halfrev(r);
+    }
+}
+
+LFORTRAN_API float _lfortran_scospi(float x)
+{
+    return (float)_lfortran_dcospi(x);
+}
+
+LFORTRAN_API double _lfortran_dtanpi(double x)
+{
+    if (isnan(x) || isinf(x)) return x - x;
+    if (x == 0.0) return x;
+    double r, t;
+    int n = trig_rem_half(fabs(x), &r);
+    int negative = signbit(x) != 0;
+    if (r == 0.0) {
+        // tan(pi*k) is +0 for even k and -0 for odd k, times the sign of x;
+        // tan(pi*(k + 1/2)) is +inf for even k and -inf for odd k.
+        if (n & 1) return negative != (n == 3) ? -INFINITY : INFINITY;
+        return negative != (n == 2) ? -0.0 : 0.0;
+    }
+    if (r == 0.25 || r == -0.25) {
+        // tan(pi*(k/2 + 1/4)) is exactly +-1.
+        t = ((r > 0) != ((n & 1) != 0)) ? 1.0 : -1.0;
+    } else {
+        double bh, bl;
+        trig_halfrev_to_rad(r, &bh, &bl);
+        t = trig_tan_dw(n, bh, bl);
+    }
+    return negative ? -t : t;
+}
+
+LFORTRAN_API float _lfortran_stanpi(float x)
+{
+    return (float)_lfortran_dtanpi(x);
+}
+
 // sin -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_ssin(float x)
@@ -7621,18 +7906,6 @@ LFORTRAN_API float_complex_t _lfortran_csin(float_complex_t x)
 LFORTRAN_API double_complex_t _lfortran_zsin(double_complex_t x)
 {
     return csin(x);
-}
-
-LFORTRAN_API float _lfortran_ssind(float x)
-{
-    float radians = (float)((x * PI) / 180.0);
-    return (float)sin(radians);
-}
-
-LFORTRAN_API double _lfortran_dsind(double x)
-{
-    double radians = (x * PI) / 180.0;
-    return sin(radians);
 }
 
 // cos -------------------------------------------------------------------------
@@ -7657,18 +7930,6 @@ LFORTRAN_API double_complex_t _lfortran_zcos(double_complex_t x)
     return ccos(x);
 }
 
-LFORTRAN_API float _lfortran_scosd(float x)
-{
-    float radians = (float)((x * PI) / 180.0);
-    return (float)cos(radians);
-}
-
-LFORTRAN_API double _lfortran_dcosd(double x)
-{
-    double radians = (x * PI) / 180.0;
-    return cos(radians);
-}
-
 // tan -------------------------------------------------------------------------
 
 LFORTRAN_API float _lfortran_stan(float x)
@@ -7689,18 +7950,6 @@ LFORTRAN_API float_complex_t _lfortran_ctan(float_complex_t x)
 LFORTRAN_API double_complex_t _lfortran_ztan(double_complex_t x)
 {
     return ctan(x);
-}
-
-LFORTRAN_API float _lfortran_stand(float x)
-{
-    float radians = (float)((x * PI) / 180.0);
-    return (float)tan(radians);
-}
-
-LFORTRAN_API double _lfortran_dtand(double x)
-{
-    double radians = (x * PI) / 180.0;
-    return tan(radians);
 }
 
 // sinh ------------------------------------------------------------------------
@@ -19125,77 +19374,6 @@ LFORTRAN_API void _lfortran_string_read_c128_array(char *str, int64_t len, char 
 
 #ifndef _MSC_VER
 
-static long double f128_to_long_double(lf_float128 v) {
-#if LDBL_MANT_DIG == 64
-    uint64_t lo, hi;
-    memcpy(&lo, v.bytes, sizeof(lo));
-    memcpy(&hi, v.bytes + 8, sizeof(hi));
-    uint64_t sign = hi >> 63;
-    uint64_t exponent = (hi >> 48) & 0x7FFF;
-    uint64_t frac_hi = hi & 0xFFFFFFFFFFFFULL;
-    uint64_t mant = 0;
-    if (exponent == 0x7FFF) {
-        if ((frac_hi | lo) != 0) {
-            mant = (3ULL << 62) | (frac_hi << 14) | (lo >> 50);
-        } else {
-            mant = 1ULL << 63;
-        }
-    } else {
-        // The 63 fraction bits kept, and the 49 below them to round away.
-        uint64_t kept = (frac_hi << 15) | (lo >> 49);
-        uint64_t rest = lo & ((1ULL << 49) - 1);
-        if (exponent == 0) {
-            mant = kept;
-        } else {
-            mant = (1ULL << 63) | kept;
-        }
-        uint64_t half = 1ULL << 48;
-        if (rest > half || (rest == half && (mant & 1))) {
-            mant++;
-            if (mant == 0) {
-                mant = 1ULL << 63;
-                exponent++;
-            } else if (exponent == 0 && (mant >> 63)) {
-                exponent = 1;
-            }
-        }
-        if (exponent == 0x7FFF) {
-            mant = 1ULL << 63;
-        }
-    }
-    uint16_t sign_exponent = (uint16_t)((sign << 15) | exponent);
-    long double out = 0;
-    memcpy(&out, &mant, sizeof(mant));
-    memcpy((char*)&out + 8, &sign_exponent, sizeof(sign_exponent));
-    return out;
-#else
-    return (long double)lf_f128_to_double(v);
-#endif
-}
-
-static lf_float128 long_double_to_f128(long double v) {
-#if LDBL_MANT_DIG == 64
-    uint64_t mant;
-    uint16_t sign_exponent;
-    memcpy(&mant, &v, sizeof(mant));
-    memcpy(&sign_exponent, (const char*)&v + 8, sizeof(sign_exponent));
-    uint64_t sign = sign_exponent >> 15;
-    uint64_t exponent = sign_exponent & 0x7FFF;
-    uint64_t fraction = mant & 0x7FFFFFFFFFFFFFFFULL;
-    if (exponent == 0 && (mant >> 63)) {
-        exponent = 1;
-    }
-    uint64_t lo = fraction << 49;
-    uint64_t hi = (sign << 63) | (exponent << 48) | (fraction >> 15);
-    lf_float128 out;
-    memcpy(out.bytes, &lo, sizeof(lo));
-    memcpy(out.bytes + 8, &hi, sizeof(hi));
-    return out;
-#else
-    return lf_f128_from_double((double)v);
-#endif
-}
-
 static bool unit_is_unformatted(int32_t unit_num) {
     if (unit_num == -1) return false;
     bool unit_file_bin = false;
@@ -19208,13 +19386,13 @@ static bool unit_is_unformatted(int32_t unit_num) {
 }
 
 static struct _lfortran_complex_128 c80_to_c128(const struct _lfortran_complex_80 *c) {
-    return c128_make(long_double_to_f128(load_real10(&c->re)),
-        long_double_to_f128(load_real10(&c->im)));
+    return c128_make(lf_f128_from_long_double(load_real10(&c->re)),
+        lf_f128_from_long_double(load_real10(&c->im)));
 }
 
 static void c128_to_c80(struct _lfortran_complex_80 *c, struct _lfortran_complex_128 v) {
-    store_real10_storage(&c->re, f128_to_long_double(v.re));
-    store_real10_storage(&c->im, f128_to_long_double(v.im));
+    store_real10_storage(&c->re, lf_f128_to_long_double(v.re));
+    store_real10_storage(&c->im, lf_f128_to_long_double(v.im));
 }
 
 LFORTRAN_API void _lfortran_read_complex_float80(struct _lfortran_complex_80 *p, int32_t unit_num, int32_t *iostat)

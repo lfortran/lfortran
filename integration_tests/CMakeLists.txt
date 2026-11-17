@@ -2337,6 +2337,10 @@ RUN(NAME intrinsics_519 LABELS gfortran llvm) # digits/maxexponent/minexponent o
 RUN(NAME eoshift_default_boundary_complex_01 LABELS gfortran llvm) # eoshift of a complex array without BOUNDARY (#16933)
 RUN(NAME eoshift_default_boundary_char_01 LABELS gfortran llvm) # eoshift of a character array without BOUNDARY (#14677)
 RUN(NAME intrinsics_520 LABELS gfortran llvm) # x= keyword for sind and atand (#17843)
+RUN(NAME trig_degree_reduction_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sind/cosd/tand exact argument reduction (#3912)
+RUN(NAME trig_halfrev_reduction_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # sinpi/cospi/tanpi exact argument reduction (#3912); GFortran does not have these intrinsics
+RUN(NAME trig_degree_reduction_real10_01 LABELS gfortran llvm) # real(10) sind/cosd/tand folding (#3912)
+RUN(NAME trig_halfrev_reduction_real10_01 LABELS llvm) # real(10) sinpi/cospi/tanpi folding (#3912); GFortran does not have these intrinsics
 RUN(NAME real16_gamma_01 LABELS gfortran llvm) # real(16) gamma/log_gamma/erfc_scaled of non-constant arguments (#15736, #17463)
 RUN(NAME real16_gamma_02 LABELS gfortran llvm) # real(16) gamma/log_gamma within 2 ulp, folded and at run time (#17825)
 RUN(NAME real16_gamma_poles_01 LABELS gfortran llvm NO_FAST_MATH GFORTRAN_ARGS -fno-range-check) # real(16) gamma/log_gamma return infinity at their poles, folded and at run time (#17857)

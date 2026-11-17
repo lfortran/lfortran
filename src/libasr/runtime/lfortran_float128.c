@@ -2266,8 +2266,14 @@ static int f128_rem_half(lf_float128 a, lf_float128 *r) {
     if (p.is_zero || p.exp >= 113) { *r = f128_make_zero(0); return 0; }
     /* ax mod 2, exact */
     ax = f_sub(ax, f128_scale(lf_f128_floor(f128_scale(ax, -1)), 1));
-    int64_t n = __fixtfdi_lf_impl(lf_f128_floor(f_add(f128_scale(ax, 1),
-                                                      f128_half())));
+    /* 2*ax rounded to nearest, exactly: 2*ax + 1/2 would round, e.g. to a
+     * tie for ax just below 1/4. */
+    lf_float128 t = f128_scale(ax, 1);
+    lf_float128 q = lf_f128_floor(t);
+    if (f128_cmp_internal(f_sub(t, q), f128_half()) >= 0) {
+        q = f_add(q, f128_one());
+    }
+    int64_t n = __fixtfdi_lf_impl(q);
     *r = f_sub(ax, f128_scale(f_int(n), -1));   /* exact */
     return (int)(n & 3);
 }
@@ -3611,6 +3617,9 @@ lf_f128_abi lf_tandq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f
 lf_f128_abi lf_asindq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_asind(lf_f128_from_abi(a))); }
 lf_f128_abi lf_acosdq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_acosd(lf_f128_from_abi(a))); }
 lf_f128_abi lf_atandq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_atand(lf_f128_from_abi(a))); }
+lf_f128_abi lf_sinpiq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_sinpi(lf_f128_from_abi(a))); }
+lf_f128_abi lf_cospiq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_cospi(lf_f128_from_abi(a))); }
+lf_f128_abi lf_tanpiq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_tanpi(lf_f128_from_abi(a))); }
 #endif
 
 /* ========================================================================
@@ -3834,6 +3843,9 @@ _LF_SHIM1(lf_tandq,         lf_f128_tand)
 _LF_SHIM1(lf_asindq,        lf_f128_asind)
 _LF_SHIM1(lf_acosdq,        lf_f128_acosd)
 _LF_SHIM1(lf_atandq,        lf_f128_atand)
+_LF_SHIM1(lf_sinpiq,        lf_f128_sinpi)
+_LF_SHIM1(lf_cospiq,        lf_f128_cospi)
+_LF_SHIM1(lf_tanpiq,        lf_f128_tanpi)
 #if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
@@ -3939,6 +3951,108 @@ int lf_f128_eq(lf_float128 a, lf_float128 b) {
 }
 
 #endif /* LFORTRAN_HAVE_REAL128 */
+
+/* ========================================================================
+ * Q2. Host long double <-> binary128 (kind 10 <-> kind 16)
+ *
+ * A kind-10 value is a host long double: the x87 extended format (64-bit
+ * significand), a double (53) or binary128 itself (113); other formats,
+ * such as IBM double-double, are rejected at compile time. Widening is
+ * exact; narrowing rounds once, to nearest even, subnormals included.
+ * x87 extended and binary128 share the exponent bias and range, so the x87
+ * conversions only move and round the significand.
+ * ======================================================================== */
+
+lf_float128 lf_f128_from_long_double(long double v) {
+#if LDBL_MANT_DIG == 64
+    uint64_t mant;
+    uint16_t sign_exponent;
+    memcpy(&mant, &v, sizeof(mant));
+    memcpy(&sign_exponent, (const char*)&v + 8, sizeof(sign_exponent));
+    uint64_t exponent = sign_exponent & 0x7FFF;
+    uint64_t fraction = mant & 0x7FFFFFFFFFFFFFFFULL;
+    uint64_t hi = (uint64_t)(sign_exponent >> 15) << 63;
+    uint64_t lo = fraction << 49;
+    if (exponent == 0x7FFF) {
+        /* Inf, or a NaN, which stays a (quiet) NaN */
+        hi |= (0x7FFFULL << 48) | (fraction >> 15);
+        if (fraction != 0) hi |= 1ULL << 47;
+    } else {
+        /* A pseudo-denormal (exponent 0 with the integer bit set) is the
+         * minimum normal. */
+        if (exponent == 0 && (mant >> 63)) exponent = 1;
+        hi |= (exponent << 48) | (fraction >> 15);
+    }
+    lf_float128 out;
+    memcpy(out.bytes, &lo, sizeof(lo));
+    memcpy(out.bytes + 8, &hi, sizeof(hi));
+    return out;
+#elif LDBL_MANT_DIG == 113
+    lf_float128 out;
+    memcpy(out.bytes, &v, sizeof(out.bytes));
+    return out;
+#elif LDBL_MANT_DIG == 53
+    /* Exact for a 53-bit long double */
+    return lf_f128_from_double((double)v);
+#else
+#error "unsupported long double format"
+#endif
+}
+
+long double lf_f128_to_long_double(lf_float128 v) {
+#if LDBL_MANT_DIG == 64
+    uint64_t lo, hi;
+    memcpy(&lo, v.bytes, sizeof(lo));
+    memcpy(&hi, v.bytes + 8, sizeof(hi));
+    uint64_t sign = hi >> 63;
+    uint64_t exponent = (hi >> 48) & 0x7FFF;
+    uint64_t frac_hi = hi & 0xFFFFFFFFFFFFULL;
+    uint64_t mant = 0;
+    if (exponent == 0x7FFF) {
+        if ((frac_hi | lo) != 0) {
+            mant = (3ULL << 62) | (frac_hi << 14) | (lo >> 50);
+        } else {
+            mant = 1ULL << 63;
+        }
+    } else {
+        /* The 63 fraction bits kept, and the 49 below them to round away. */
+        uint64_t kept = (frac_hi << 15) | (lo >> 49);
+        uint64_t rest = lo & ((1ULL << 49) - 1);
+        if (exponent == 0) {
+            mant = kept;
+        } else {
+            mant = (1ULL << 63) | kept;
+        }
+        uint64_t half = 1ULL << 48;
+        if (rest > half || (rest == half && (mant & 1))) {
+            mant++;
+            if (mant == 0) {
+                mant = 1ULL << 63;
+                exponent++;
+            } else if (exponent == 0 && (mant >> 63)) {
+                exponent = 1;
+            }
+        }
+        if (exponent == 0x7FFF) {
+            mant = 1ULL << 63;
+        }
+    }
+    uint16_t sign_exponent = (uint16_t)((sign << 15) | exponent);
+    long double out = 0;
+    memcpy(&out, &mant, sizeof(mant));
+    memcpy((char*)&out + 8, &sign_exponent, sizeof(sign_exponent));
+    return out;
+#elif LDBL_MANT_DIG == 113
+    long double out;
+    memcpy(&out, v.bytes, sizeof(v.bytes));
+    return out;
+#elif LDBL_MANT_DIG == 53
+    /* Rounds once for a 53-bit long double */
+    return (long double)lf_f128_to_double(v);
+#else
+#error "unsupported long double format"
+#endif
+}
 
 /* ========================================================================
  * R. format_float128_fortran — Fortran print formatting for real(16)

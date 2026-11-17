@@ -88,6 +88,9 @@ static inline void lf_f128_to_str(char *buf, lf_float128 v) {
 lf_float128 lf_f128_from_double(double d);
 lf_float128 lf_f128_from_int64(int64_t i);
 double       lf_f128_to_double(lf_float128 v);
+/* Host long double (kind 10): exact widening, correctly rounded narrowing */
+lf_float128 lf_f128_from_long_double(long double v);
+long double  lf_f128_to_long_double(lf_float128 v);
 
 /* ── Basic arithmetic (kind-aware compile-time folding) ──────────────────── */
 lf_float128 lf_f128_add(lf_float128 a, lf_float128 b);
