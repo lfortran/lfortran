@@ -819,32 +819,26 @@ namespace Fix {
 
 } // namespace Fix
 
-// Kind 10 stores a pointer in RealConstant::m_r. Fold only the trig
-// functions that need it here; the empty variant leaves every other
-// create_trig evaluator unchanged.
-#define create_trig_eval_r10_0(...)
-#define create_trig_eval_r10_1(stdeval, al, loc, t, args)                       \
-    if (ASR::is_a<ASR::RealConstant_t>(*args[0]) &&                             \
-            ASRUtils::extract_kind_from_ttype_t(t) == 10) {                     \
-        long double rv = ASRUtils::real_constant_get_r10(                       \
-            ASR::down_cast<ASR::RealConstant_t>(args[0]));                      \
-        long double val = ::stdeval##l(rv);                                     \
-        return ASRUtils::make_RealConstant_r10(al, loc, val, t);                \
-    }
-
 // `X` is the name of the function in the IntrinsicElementalFunctions enum and
 // we use the same name for `create_X` and other places
 // `stdeval` is the name of the function in the `std` namespace for compile
 //  numerical time evaluation
 // `lcompilers_name` is the name that we use in the C runtime library
-// `fold_r10` is 1 to fold kind 10 with long double, 0 to leave it unfolded
-#define create_trig_impl(X, stdeval, lcompilers_name, fold_r10)                 \
+// Kind 10 stores a pointer in RealConstant::m_r: it is folded with the long
+// double variant of `stdeval`.
+#define create_trig(X, stdeval, lcompilers_name)                                \
 namespace X {                                                                   \
     static inline ASR::expr_t *eval_##X(Allocator &al, const Location &loc,     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                           \
             diag::Diagnostics& /*diag*/) {                                      \
         LCOMPILERS_ASSERT(args.size() == 1);                                    \
-        create_trig_eval_r10_##fold_r10(stdeval, al, loc, t, args)              \
+        if (ASR::is_a<ASR::RealConstant_t>(*args[0]) &&                         \
+                ASRUtils::extract_kind_from_ttype_t(t) == 10) {                 \
+            long double rv = ASRUtils::real_constant_get_r10(                   \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                  \
+            long double val = ::stdeval##l(rv);                                 \
+            return ASRUtils::make_RealConstant_r10(al, loc, val, t);            \
+        }                                                                       \
         lf_complex128 c16;                                                      \
         if( ASRUtils::extract_complex_r16(args[0], c16) ) {                     \
             return ASRUtils::make_ComplexConstant_c128(al, loc,                 \
@@ -888,15 +882,12 @@ namespace X {                                                                   
     }                                                                           \
 } // namespace X
 
-#define create_trig(X, stdeval, lcompilers_name)                                \
-    create_trig_impl(X, stdeval, lcompilers_name, 0)
-
-create_trig_impl(Sin, sin, sin, 1)
+create_trig(Sin, sin, sin)
 create_trig(Cos, cos, cos)
 create_trig(Tan, tan, tan)
 create_trig(Asin, asin, asin)
-create_trig_impl(Acos, acos, acos, 1)
-create_trig_impl(Atan, atan, atan, 1)
+create_trig(Acos, acos, acos)
+create_trig(Atan, atan, atan)
 create_trig(Sinh, sinh, sinh)
 create_trig(Cosh, cosh, cosh)
 create_trig(Tanh, tanh, tanh)
@@ -925,6 +916,17 @@ namespace Log {
                 return nullptr;
             }
             return ASRUtils::make_ComplexConstant_r10(al, loc, std::log(c10), t);
+        }
+        if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&
+                ASRUtils::extract_kind_from_ttype_t(t) == 10 ) {
+            // kind=10 m_r is a pointer to the long double bytes
+            long double val = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            if (val <= 0.0L) {
+                append_error(diag, "Argument of `log` cannot be less than or equal to zero", loc);
+                return nullptr;
+            }
+            return ASRUtils::make_RealConstant_r10(al, loc, ::logl(val), t);
         }
         if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&
                 ASRUtils::extract_kind_from_ttype_t(t) == 16 ) {
@@ -8806,6 +8808,13 @@ namespace Exp {
         std::complex<long double> c10;
         if( ASRUtils::extract_complex_r10(args[0], c10) ) {
             return ASRUtils::make_ComplexConstant_r10(al, loc, std::exp(c10), t);
+        }
+        if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&
+                ASRUtils::extract_kind_from_ttype_t(t) == 10 ) {
+            // kind=10 m_r is a pointer to the long double bytes
+            return ASRUtils::make_RealConstant_r10(al, loc, ::expl(
+                ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), t);
         }
         if( ASR::is_a<ASR::RealConstant_t>(*args[0]) &&
                 ASRUtils::extract_kind_from_ttype_t(t) == 16 ) {
