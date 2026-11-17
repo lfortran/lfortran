@@ -1972,12 +1972,6 @@ static inline void set_function_result_lbounds_to_one(Allocator& al,
 
 void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
 
-// Ordinary modules are compiled with the program that uses them. When a
-// translation unit also contains a submodule, only the submodule's procedures
-// belong in that translation unit's object.
-void mark_non_submodule_modules_as_external(
-    const LCompilers::ASR::TranslationUnit_t &u);
-
 // Returns a string as long as `string_type` with every character equal to
 // `fill`, or nullptr when that length is not known at compile time.
 ASR::expr_t* get_string_filled_with_char(Allocator& al,

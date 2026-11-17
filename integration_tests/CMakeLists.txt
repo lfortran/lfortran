@@ -8127,6 +8127,11 @@ if (TEST submodule_object_01)
     set_tests_properties(submodule_object_01 PROPERTIES
         ENVIRONMENT "LFORTRAN=${CMAKE_Fortran_COMPILER}")
 endif()
+RUN(NAME submodule_object_02 LABELS gfortran llvm)
+if (TEST submodule_object_02)
+    set_tests_properties(submodule_object_02 PROPERTIES
+        ENVIRONMENT "LFORTRAN=${CMAKE_Fortran_COMPILER}")
+endif()
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)

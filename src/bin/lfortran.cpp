@@ -1361,20 +1361,9 @@ int compile_src_to_object_file(const std::string &infile,
     // that a BLOCK DATA program unit uses
     if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c
             && (compiler_options.generate_code_for_global_procedures
-                || LCompilers::ASRUtils::block_data_present(*asr)
-                || LCompilers::ASRUtils::submodule_present(*asr))
+                || LCompilers::ASRUtils::block_data_present(*asr))
             && !compiler_options.separate_compilation) {
-        // A submodule file can also define ordinary modules. Those modules
-        // are compiled with the program that uses them, just like modules
-        // loaded from .mod files. Only the submodule's own procedures belong
-        // in this object.
-        if (LCompilers::ASRUtils::submodule_present(*asr)
-                && !compiler_options.generate_code_for_global_procedures
-                && !LCompilers::ASRUtils::block_data_present(*asr)) {
-            LCompilers::ASRUtils::mark_non_submodule_modules_as_external(*asr);
-        } else {
-            LCompilers::ASRUtils::mark_modules_as_external(*asr);
-        }
+        LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
     diagnostics.diagnostics.clear();
