@@ -729,6 +729,9 @@ public:
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
+    // Labels whose statement has already been generated. A goto to one of
+    // them is a backward edge and polls; a forward goto does not.
+    std::set<uint64_t> reached_goto_targets;
     // The constructs that contain each labeled statement of the procedure
     // being generated (see GoToTargetScopes).
     std::map<uint64_t, std::vector<const ASR::stmt_t*>> goto_target_scopes;
@@ -1210,8 +1213,54 @@ public:
         loop_or_block_end_names.pop_back();
     }
 
+    // Load the cell-interrupt flag and, when it is set, call the runtime.
+    // The call returns while a statement is deferred and otherwise longjmps
+    // out of the cell. Nothing is emitted unless this compilation is an
+    // interruptible interactive session.
+    void emit_interrupt_poll() {
+        if (!llvm_utils->cell_interrupts_enabled()) return;
+        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        llvm::GlobalVariable *flag = module->getGlobalVariable(
+            "_lfortran_cell_interrupt", true);
+        if (!flag) {
+            flag = new llvm::GlobalVariable(*module, llvm_utils->i32, false,
+                llvm::GlobalValue::ExternalLinkage, nullptr,
+                "_lfortran_cell_interrupt");
+#if LLVM_VERSION_MAJOR >= 10
+            flag->setAlignment(llvm::Align(4));
+#else
+            flag->setAlignment(4);
+#endif
+        }
+        llvm::LoadInst *load = llvm::cast<llvm::LoadInst>(
+            llvm_utils->CreateLoad2(llvm_utils->i32, flag));
+        load->setOrdering(llvm::AtomicOrdering::Monotonic);
+#if LLVM_VERSION_MAJOR >= 10
+        load->setAlignment(llvm::Align(4));
+#else
+        load->setAlignment(4);
+#endif
+        llvm::Value *requested = builder->CreateICmpNE(load,
+            llvm::ConstantInt::get(llvm_utils->i32, 0));
+        llvm::BasicBlock *stop_bb = llvm::BasicBlock::Create(context,
+            "interrupt_stop", fn);
+        llvm::BasicBlock *cont_bb = llvm::BasicBlock::Create(context,
+            "interrupt_cont", fn);
+        builder->CreateCondBr(requested, stop_bb, cont_bb);
+        builder->SetInsertPoint(stop_bb);
+        llvm::Function *stop = LLVM::get_or_declare_function(*module,
+            "_lfortran_stop_if_interrupted", llvm_utils->void_type, {});
+        builder->CreateCall(stop, {});
+        builder->CreateBr(cont_bb);
+        builder->SetInsertPoint(cont_bb);
+    }
+
+    // `poll` is set for a loop that is a Fortran loop. The loops that walk
+    // one statement's temporaries stay quiet: stopping inside one of them
+    // would abandon a statement.
     template <typename Cond, typename Body>
-    void create_loop(char *name, Cond condition, Body loop_body) {
+    void create_loop(char *name, Cond condition, Body loop_body,
+            bool poll = false) {
 
         std::string loop_name;
         if (name) {
@@ -1232,6 +1281,9 @@ public:
 
         // head
         start_new_block(loophead); {
+            if (poll) {
+                emit_interrupt_poll();
+            }
             llvm::Value* cond = llvm_utils->to_i1(condition());
             builder->CreateCondBr(cond, loopbody, loopend);
         }
@@ -8864,6 +8916,7 @@ public:
         set_api_lp->set_is_set_present(false);
         set_api_sc->set_is_set_present(false);
         llvm_goto_targets.clear();
+        reached_goto_targets.clear();
         // Generate code for the main program.
         // In interactive mode (REPL, Jupyter) the program is not a process
         // entry point: the evaluator calls it directly, and several cells may
@@ -8915,6 +8968,7 @@ public:
         procedure_host = nullptr;
         visit_procedures(x);
         llvm_goto_targets.clear();
+        reached_goto_targets.clear();
 
         builder->SetInsertPoint(BB);
         // Clear alloca pool after nested functions are processed, before main body
@@ -8997,6 +9051,8 @@ public:
         }
         proc_return = llvm::BasicBlock::Create(context, "return");
         predeclare_goto_targets(F, x.m_body, x.n_body);
+        // A request that arrived during setup stops before the first statement.
+        emit_interrupt_poll();
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
         }
@@ -11838,6 +11894,7 @@ public:
         set_api_lp->set_is_set_present(false);
         set_api_sc->set_is_set_present(false);
         llvm_goto_targets.clear();
+        reached_goto_targets.clear();
         instantiate_function(x);
         if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface) {
             // Interface does not have an implementation and it is already
@@ -12197,6 +12254,7 @@ public:
             }
         }
         llvm_goto_targets.clear();
+        reached_goto_targets.clear();
         current_sret_arg = nullptr;
         // Clear alloca pool for each new function to avoid cross-function references
         call_arg_alloca_pool.clear();
@@ -12763,6 +12821,10 @@ public:
             if (!prototype_only) {
                 define_function_entry(x);
                 predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
+                // Before the body, so a request stops a call before it works.
+                // The generated lbound/ubound bodies are not user procedures
+                // and do not poll.
+                emit_interrupt_poll();
 
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
@@ -17844,6 +17906,7 @@ public:
                 llvm_goto_targets[x.m_label] = new_target;
             }
             start_new_block(llvm_goto_targets[x.m_label]);
+            reached_goto_targets.insert(x.m_label);
         }
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
         ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
@@ -18966,6 +19029,11 @@ public:
         pop_loop_targets();
 
         start_new_block(latch);
+        // Between iterations, before the trip counter moves. A CYCLE branches
+        // to `latch`, so it polls too. The poll may split this block; the
+        // remaining-counter PHI's back edge comes from the block that continues.
+        emit_interrupt_poll();
+        llvm::BasicBlock *latch_tail = builder->GetInsertBlock();
         llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
         LLVM::CreateStore(*builder,
             builder->CreateNSWAdd(current, step), v_ptr);
@@ -18975,7 +19043,7 @@ public:
         } else {
             last = builder->CreateICmpEQ(remaining, zero);
             remaining->addIncoming(builder->CreateSub(remaining,
-                llvm::ConstantInt::get(iv_type, 1)), latch);
+                llvm::ConstantInt::get(iv_type, 1)), latch_tail);
         }
         disable_runtime_unrolling(
             builder->CreateCondBr(last, orelse_bb, body_bb));
@@ -19007,7 +19075,7 @@ public:
             // so it never runs its loop-else.
             create_loop(x.m_name, [&]() {
                 return llvm::ConstantInt::getTrue(context);
-            }, generate_body);
+            }, generate_body, true);
             return;
         }
         generate_counted_do_loop(x.m_head, x.m_name, generate_body,
@@ -19052,7 +19120,7 @@ public:
                 this->visit_stmt(*x.m_body[i]);
             }
             enclosing_constructs.pop_back();
-        });
+        }, true);
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
         strings_to_be_deallocated.p = strings_to_be_deallocated_copy;
@@ -19202,6 +19270,12 @@ public:
             }
             leave_innermost_blocks(kept_blocks);
         }
+        // A forward target is not reached yet. predeclare_goto_targets has
+        // already inserted every label's block, so a parented block is not
+        // a backward edge.
+        if (reached_goto_targets.count(x.m_target_id)) {
+            emit_interrupt_poll();
+        }
         builder->CreateBr(target);
         llvm::BasicBlock *bb = llvm::BasicBlock::Create(context, "unreachable_after_goto");
         start_new_block(bb);
@@ -19213,7 +19287,8 @@ public:
             llvm_goto_targets[x.m_id] = new_target;
         }
         llvm::BasicBlock *target = llvm_goto_targets[x.m_id];
-        start_new_block(target); 
+        start_new_block(target);
+        reached_goto_targets.insert(x.m_id);
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {

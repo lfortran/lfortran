@@ -65,7 +65,74 @@ static int lfortran_fileno(FILE *fp) {
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/runtime/lfortran_stdin.h>
+#include <libasr/runtime/lfortran_interrupt.h>
 #include <libasr/config.h>
+
+/* Interrupting an interactive cell (lfortran_interrupt.h). Supported where
+   the evaluator can interrupt cells: native Linux and macOS. */
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(COMPILE_TO_WASM) \
+        && !defined(__EMSCRIPTEN__)
+#include <setjmp.h>
+
+LFORTRAN_API int _lfortran_cell_interrupt;
+/* The cell's thread: where a stop returns to, and how many statements that
+   must finish are running. */
+static _Thread_local jmp_buf *interrupt_env;
+static _Thread_local int interrupt_defer;
+
+LFORTRAN_API void _lfortran_set_cell_interrupt(int requested)
+{
+    __atomic_store_n(&_lfortran_cell_interrupt, requested ? 1 : 0,
+        __ATOMIC_RELAXED);
+}
+
+LFORTRAN_API int _lfortran_cell_interrupt_requested(void)
+{
+    return __atomic_load_n(&_lfortran_cell_interrupt, __ATOMIC_RELAXED);
+}
+
+LFORTRAN_API void _lfortran_set_interrupt_env(void *env)
+{
+    interrupt_env = (jmp_buf *)env;
+    interrupt_defer = 0;
+}
+
+LFORTRAN_API void _lfortran_interrupt_defer_enter(void)
+{
+    if (interrupt_env) interrupt_defer++;
+}
+
+LFORTRAN_API void _lfortran_interrupt_defer_leave(void)
+{
+    if (interrupt_env && interrupt_defer > 0) interrupt_defer--;
+}
+
+LFORTRAN_API void _lfortran_stop_if_interrupted(void)
+{
+    jmp_buf *env = interrupt_env;
+    if (env == NULL || interrupt_defer > 0
+            || !_lfortran_cell_interrupt_requested()) {
+        return;
+    }
+    interrupt_env = NULL;
+    interrupt_defer = 0;
+    longjmp(*env, 1);
+}
+#else
+LFORTRAN_API int _lfortran_cell_interrupt;
+LFORTRAN_API void _lfortran_set_cell_interrupt(int requested)
+{
+    _lfortran_cell_interrupt = requested ? 1 : 0;
+}
+LFORTRAN_API int _lfortran_cell_interrupt_requested(void)
+{
+    return _lfortran_cell_interrupt;
+}
+LFORTRAN_API void _lfortran_set_interrupt_env(void *env) { (void)env; }
+LFORTRAN_API void _lfortran_interrupt_defer_enter(void) {}
+LFORTRAN_API void _lfortran_interrupt_defer_leave(void) {}
+LFORTRAN_API void _lfortran_stop_if_interrupted(void) {}
+#endif
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
@@ -624,6 +691,9 @@ static size_t _internal_alloc_capacity = 0;
    they are made, so a live record can be attributed to the statement that
    was executing when it was made. */
 static uint64_t _internal_alloc_serial = 0;
+/* Allocations older than this were abandoned by an interrupted cell
+   (_lfortran_reset_after_interrupt); they are not reported. */
+static uint64_t _internal_alloc_abandoned_serial = 0;
 
 static void _internal_alloc_record_add(void *ptr, size_t size,
                                        const char *file, int line)
@@ -742,7 +812,10 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
     uint64_t in_flight_serial = dtio_in_flight_alloc_serial();
     size_t n_leaks = 0;
     for (size_t i = 0; i < _internal_alloc_count; i++) {
-        if (_internal_alloc_table[i].serial < in_flight_serial) n_leaks++;
+        if (_internal_alloc_table[i].serial < in_flight_serial
+                && _internal_alloc_table[i].serial >= _internal_alloc_abandoned_serial) {
+            n_leaks++;
+        }
     }
     int has_leaks = (n_leaks > 0);
     if (has_leaks) {
@@ -751,7 +824,8 @@ LFORTRAN_API void _lfortran_internal_alloc_finalize(void)
                 n_leaks);
         for (size_t i = 0; i < _internal_alloc_count; i++) {
             _internal_alloc_record *r = &_internal_alloc_table[i];
-            if (r->serial >= in_flight_serial) continue;
+            if (r->serial >= in_flight_serial
+                    || r->serial < _internal_alloc_abandoned_serial) continue;
             fprintf(stderr,
                     "  LEAK: %zu bytes at %s:%d (ptr=%p)\n",
                     r->size, r->file, r->line, r->ptr);
@@ -5227,8 +5301,12 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
     int32_t iostat = 0;
     char iomsg[256];
     memset(iomsg, ' ', sizeof(iomsg));
+    /* The procedure runs inside this I/O statement. A poll in it must
+       not abandon the statement; the next poll after it returns will. */
+    _lfortran_interrupt_defer_enter();
     dtio_procs[k](dtv, &unit, iotype, &n_v, v_list, &iostat, iomsg,
         iotype_len, (int64_t)sizeof(iomsg));
+    _lfortran_interrupt_defer_leave();
 
     dtio_capture_depth--;
     if (dtio_capture_depth == 0) {
@@ -21711,4 +21789,15 @@ __lfortran_dynamic_cast(const void* static_ptr,
     }
 
     return (void*) dst_ptr;
+}
+
+LFORTRAN_API void _lfortran_reset_after_interrupt(void)
+{
+#ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+    /* What the interrupted cell allocated and did not free is abandoned;
+       later cells must not be blamed for it. */
+    _internal_alloc_abandoned_serial = _internal_alloc_serial;
+#else
+    (void)0;
+#endif
 }

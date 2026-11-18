@@ -7917,6 +7917,307 @@ end function
 }
 #endif
 
+namespace {
+// Runs `code`, which writes "@" once it is about to wait or loop forever,
+// and interrupts it then. The marker, not a delay, decides when, so the
+// test does not depend on the machine's speed.
+FortranEvaluator::CellResult interrupt_at_marker(FortranEvaluator &e,
+        const std::string &code, std::string &output) {
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    io.interrupt_requested = [&]() {
+        return output.find('@') != std::string::npos;
+    };
+    return e.execute(code, false, io);
+}
+
+std::string cell_value(FortranEvaluator &e, const std::string &code) {
+    auto cell = e.execute(code, false, {});
+    CAPTURE(code);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    return cell.value.text();
+}
+
+std::string cell_output(FortranEvaluator &e, const std::string &code) {
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    auto cell = e.execute(code, false, io);
+    CAPTURE(code);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    return output;
+}
+
+void check_interrupted(const FortranEvaluator::CellResult &cell) {
+    CHECK(!cell.ok);
+    CHECK(cell.interrupted);
+    CHECK(cell.error_name == "KeyboardInterrupt");
+    CHECK(cell.error_text() == "cell execution interrupted\n");
+}
+}
+
+TEST_CASE("FortranEvaluator interrupt: running cells stop and the session stays usable") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.realloc_lhs_arrays = true;
+    FortranEvaluator e(cu);
+    run_cell(e, R"(
+module interrupt_m
+implicit none
+type :: point
+    real(8) :: x, y
+    integer, allocatable :: tags(:)
+end type
+integer :: counter = 0
+real(8), allocatable :: data(:)
+type(point) :: p
+contains
+recursive integer function fib(n) result(r)
+    integer, intent(in) :: n
+    if (n < 2) then
+        r = n
+    else
+        r = fib(n - 1) + fib(n - 2)
+    end if
+end function
+subroutine bump()
+    counter = counter + 1
+end subroutine
+end module
+)");
+    run_cell(e, "use interrupt_m");
+    run_cell(e, "data = [1, 2, 3, 4, 5]; p%x = 1; p%y = 2; p%tags = [7, 8]");
+    run_cell(e, "integer :: i, j, k; integer(8) :: s; real(8) :: x; "
+        "character(len=64) :: buf; character(len=:), allocatable :: str; "
+        "integer, allocatable :: a(:)");
+    const std::vector<std::string> cells = {
+        // Counted, nested
+        "print *, '@'\ns = 0\ndo i = 1, huge(i)\n  do j = 1, huge(j)\n"
+            "    s = s + i*j\n  end do\nend do",
+        "print *, '@'\nk = 0\ndo while (k >= 0)\n  k = mod(k + 1, 1000)\nend do",
+        "print *, '@'\nk = 0\ndo\n  k = mod(k + 7, 13)\n  if (k < 0) exit\nend do",
+        "subroutine spin(k)\ninteger :: k\n10 k = mod(k + 1, 97)\n"
+            "if (k >= 0) goto 10\nend subroutine\nprint *, '@'\nk = 0\ncall spin(k)",
+        "print *, '@'\ndo\n  k = fib(25)\nend do",
+        // No loop: only the poll on entry to fib can stop this.
+        "print *, '@'\nk = fib(50)",
+        // Mostly in the runtime
+        "print *, '@'\ndo i = 1, huge(i)\n  write(buf, '(i0,1x,f12.5)') i, real(i, 8) / 3\n"
+            "  read(buf, *) k, x\nend do",
+        "subroutine scribble()\ninteger :: u, i\nopen(newunit=u, status='scratch')\n"
+            "print *, '@'\ndo i = 1, huge(i)\n  write(u, *) i, 'line'\n"
+            "  if (mod(i, 1000) == 0) rewind(u)\nend do\nend subroutine\ncall scribble()",
+        // A poll stops between statements, so the assignment has finished.
+        // The session-level cases are in the test below; these use locals.
+        "subroutine churn()\ninteger, allocatable :: b(:)\nprint *, '@'\ndo\n"
+            "  allocate(b(1000))\n  b = 1\n  deallocate(b)\n  b = [1, 2, 3]\n"
+            "  b = [b, b, b]\n  deallocate(b)\nend do\nend subroutine\ncall churn()",
+        "subroutine strings()\ncharacter(len=:), allocatable :: t\nprint *, '@'\ndo\n"
+            "  t = 'hello'\n  t = trim(adjustl('  ' // t // ' world')) // repeat('x', 10)\n"
+            "end do\nend subroutine\ncall strings()",
+        "print *, '@'\nx = 0.5d0\ndo\n  x = sin(x) + sqrt(abs(x)) + exp(-x) + log(1 + abs(x))\n"
+            "  x = mod(x, 10.0d0)\nend do",
+        "print *, '@'\ndo\n  call bump()\nend do",
+        "subroutine tags()\ntype(point) :: q\nq%tags = [7]\nprint *, '@'\ndo\n"
+            "  q%tags = [q%tags, 1]\n  if (size(q%tags) > 100) q%tags = [7, 8]\nend do\n"
+            "end subroutine\ncall tags()",
+    };
+    for (size_t n = 0; n < cells.size(); n++) {
+        CAPTURE(cells[n]);
+        std::string output;
+        check_interrupted(interrupt_at_marker(e, cells[n], output));
+        CHECK(output.find("after") == std::string::npos);
+        // Earlier procedures, variables, allocatables and derived types
+        CHECK(cell_value(e, "fib(10)") == "55");
+        CHECK(cell_value(e, "sum(data)") == "15.0");
+        CHECK(cell_value(e, "p%x + p%y") == "3.0");
+        CHECK(cell_value(e, "p%tags(1)") == "7");
+        CHECK(cell_output(e, "print '(i0)', fib(12)") == "144\n");
+        run_cell(e, "a = [1, 2, 3]; str = 'abc' // 'def'");
+        CHECK(cell_value(e, "sum(a) + len(str)") == "12");
+        // New declarations
+        std::string name = "later_" + std::to_string(n);
+        run_cell(e, "integer :: " + name + " = 3");
+        CHECK(cell_value(e, name + " * 2") == "6");
+    }
+}
+
+static std::string dtio_program(const std::string &name, bool loop) {
+    return "module " + name + R"(_m
+implicit none
+type :: shown
+    integer :: n
+contains
+    procedure :: show
+    generic :: write(formatted) => show
+end type
+contains
+subroutine show(dtv, unit, iotype, v_list, iostat, iomsg)
+    class(shown), intent(in) :: dtv
+    integer, intent(in) :: unit
+    character(*), intent(in) :: iotype
+    integer, intent(in) :: v_list(:)
+    integer, intent(out) :: iostat
+    character(*), intent(inout) :: iomsg
+    write(unit, '(a,i0)', iostat=iostat) 'n=', dtv%n
+end subroutine
+end module
+program )" + name + "\nuse " + name + R"(_m
+implicit none
+)" + (loop
+    ? "print *, '@'\ndo\n  print '(dt)', shown(3)\nend do\n"
+    : "print '(dt)', shown(3)\n") + R"(print '(a)', 'next'
+end program
+)";
+}
+
+// The defined-output procedure runs inside the PRINT, so a poll in it is
+// deferred. The caller's loop stops between prints, and the statement after
+// the loop does not run.
+TEST_CASE("FortranEvaluator interrupt: in a defined output procedure") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    check_interrupted(interrupt_at_marker(e, dtio_program("dtio_a", true), output));
+    CHECK(output.find("next") == std::string::npos);
+    CHECK(cell_output(e, "print '(a)', 'one'\nprint '(a)', 'two'") == "one\ntwo\n");
+    CHECK(cell_output(e, dtio_program("dtio_b", false)) == "n=3\nnext\n");
+}
+
+// A poll stops between statements. The next cell can use what the
+// interrupted cell was assigning, including to deallocate it.
+TEST_CASE("FortranEvaluator interrupt: session allocatables stay usable") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.realloc_lhs_arrays = true;
+    FortranEvaluator e(cu);
+    run_cell(e, R"(
+module session_hold
+implicit none
+type :: box
+    integer, allocatable :: c(:)
+end type
+type(box) :: x, y
+integer, allocatable :: v(:), a(:), b(:)
+integer :: i
+contains
+recursive integer function fib(n) result(r)
+    integer, intent(in) :: n
+    if (n < 2) then
+        r = n
+    else
+        r = fib(n - 1) + fib(n - 2)
+    end if
+end function
+subroutine spin(k)
+    integer :: k
+10  k = mod(k + 1, 97)
+    if (k >= 0) goto 10
+end subroutine
+end module
+)");
+    run_cell(e, "use session_hold");
+    const std::vector<std::pair<std::string, std::string>> cases = {
+        {"print *, '@'\ndo i = 1, huge(i)\nend do",
+            "i = 4\nif (i /= 4) error stop"},
+        {"print *, '@'\ndo while (.true.)\nend do",
+            "i = 5\nif (i /= 5) error stop"},
+        {"print *, '@'\ndo\nif (.false.) exit\nend do",
+            "i = 6\nif (i /= 6) error stop"},
+        {"print *, '@'\ncall spin(i)",
+            "if (fib(10) /= 55) error stop"},
+        {"print *, '@'\ni = fib(50)",
+            "if (fib(10) /= 55) error stop"},
+        {"print *, '@'\ndo\n  allocate(v(4))\n  v = [1, 2, 3, 4]\n"
+            "  deallocate(v)\nend do",
+            "if (allocated(v)) deallocate(v)\nallocate(v(3))\nv = [1, 2, 3]\n"
+            "if (sum(v) /= 6) error stop\ndeallocate(v)"},
+        {"allocate(a(2))\na = [1, 2]\nprint *, '@'\ndo\n"
+            "  call move_alloc(a, b)\n  call move_alloc(b, a)\nend do",
+            "if (allocated(a)) deallocate(a)\nif (allocated(b)) deallocate(b)\n"
+            "allocate(a(2), b(2))\na = [3, 4]\nb = [5, 6]\n"
+            "if (sum(a) + sum(b) /= 18) error stop\ndeallocate(a, b)"},
+        {"y%c = [1, 2, 3]\nprint *, '@'\ndo\n  x = y\nend do",
+            "x = y\nif (sum(x%c) /= 6) error stop"},
+        {"allocate(v(0))\nprint *, '@'\ndo i = 1, huge(i)\n  v = [v, i]\nend do",
+            "if (allocated(v)) deallocate(v)\nallocate(v(3))\nv = [4, 5, 6]\n"
+            "if (sum(v) /= 15) error stop\ndeallocate(v)"},
+    };
+    for (const auto &item : cases) {
+        CAPTURE(item.first);
+        std::string output;
+        check_interrupted(interrupt_at_marker(e, item.first, output));
+        run_cell(e, item.second);
+    }
+}
+
+TEST_CASE("FortranEvaluator interrupt: a request belongs to its cell") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    run_cell(e, "integer :: n = 1");
+    // Requested before its code runs: the cell does not run it.
+    FortranEvaluator::CellIO io;
+    io.interrupt_requested = []() { return true; };
+    check_interrupted(e.execute("n = 2", false, io));
+    // A cell that only declares or inspects has nothing to stop.
+    CHECK(e.execute("%%showast\nn = 3", false, io).ok);
+    // The next cells run.
+    CHECK(cell_value(e, "n") == "1");
+    io.interrupt_requested = []() { return false; };
+    run_cell(e, "n = 4", io);
+    CHECK(cell_value(e, "n") == "4");
+}
+
+TEST_CASE("FortranEvaluator interrupt: at arbitrary times") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.realloc_lhs_arrays = true;
+    FortranEvaluator e(cu);
+    run_cell(e, R"(
+module interrupt_random
+implicit none
+integer :: total = 0
+contains
+! A poll stops between iterations, after each assignment has finished.
+subroutine work(n)
+    integer, intent(in) :: n
+    integer :: i
+    character(len=32) :: b
+    character(len=:), allocatable :: text
+    integer, allocatable :: v(:)
+    allocate(v(0))
+    do i = 1, n
+        v = [v, i]
+        if (size(v) > 50) v = [integer ::]
+        write(b, '(i0)') i
+        text = trim(b) // '-' // trim(b)
+        if (len(text) > 30) text = ''
+        total = total + 1
+    end do
+    if (size(v) > 51 .or. len(text) > 30) error stop
+end subroutine
+end module
+)");
+    run_cell(e, "use interrupt_random");
+    // When each one stops depends on timing. The session must survive every
+    // outcome, and the next cell can call the same procedure again.
+    for (int i = 0; i < 30; i++) {
+        auto start = std::chrono::steady_clock::now();
+        auto delay = std::chrono::microseconds(i * 700);
+        FortranEvaluator::CellIO io;
+        io.output = [](int, const std::string &) {};
+        io.interrupt_requested = [&]() {
+            return std::chrono::steady_clock::now() - start > delay;
+        };
+        auto cell = e.execute("call work(200000)", false, io);
+        if (!cell.ok) check_interrupted(cell);
+        run_cell(e, "call work(10)");
+        CHECK(cell_value(e, "total > 0") == "True");
+    }
+}
+
 static void check_input(const std::string &code,
         std::vector<std::string> records, int expected_calls = -1) {
     CompilerOptions cu = execute_options();

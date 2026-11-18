@@ -155,6 +155,10 @@ struct CompilerOptions {
 
     bool fixed_form = false;
     bool interactive = false;
+    // Emit the polls that let an interactive cell be interrupted (set by
+    // FortranEvaluator when it can interrupt cells; see
+    // doc/src/interactive_evaluation.md).
+    bool cell_interrupts = false;
     bool c_preprocessor = false;
     std::vector<std::string> c_preprocessor_defines;
     bool prescan = true;
