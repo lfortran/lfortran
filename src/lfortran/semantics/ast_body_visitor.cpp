@@ -3666,6 +3666,15 @@ public:
             }
             a_values_vec.push_back(al, expr);
         }
+        if (a_unit && ASRUtils::is_character(*ASRUtils::expr_type(a_unit))
+                && !formatted && a_nml == nullptr) {
+            diag.add(Diagnostic(
+                "unformatted I/O is not allowed for an internal file",
+                Level::Error, Stage::Semantic, {
+                    Label("", {a_unit->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (_type == AST::decl_stmtType::Read) {
             expand_implied_do_loops_for_read(a_values_vec, post_stmts, a_fmt != nullptr);
         }

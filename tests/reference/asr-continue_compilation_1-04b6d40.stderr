@@ -6425,6 +6425,42 @@ semantic error: Result of `int` overflows its kind(2)
 5223 |     cc1_ero_i2 = int(-40000.5_16, 2)  ! {Error} Result of `int` overflows its kind(2)
      |                  ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: unformatted I/O is not allowed for an internal file
+    --> tests/errors/continue_compilation_1.f90:5230:11
+     |
+5230 |     write(cc1_ifu_s) 1  ! {Error} unformatted I/O is not allowed for an internal file
+     |           ^^^^^^^^^ 
+
+semantic error: unformatted I/O is not allowed for an internal file
+    --> tests/errors/continue_compilation_1.f90:5231:16
+     |
+5231 |     write(unit=cc1_ifu_s) 1  ! {Error} unformatted I/O is not allowed for an internal file
+     |                ^^^^^^^^^ 
+
+semantic error: unformatted I/O is not allowed for an internal file
+    --> tests/errors/continue_compilation_1.f90:5232:10
+     |
+5232 |     read(cc1_ifu_s) cc1_ifu_i  ! {Error} unformatted I/O is not allowed for an internal file
+     |          ^^^^^^^^^ 
+
+semantic error: unformatted I/O is not allowed for an internal file
+    --> tests/errors/continue_compilation_1.f90:5233:15
+     |
+5233 |     read(unit=cc1_ifu_s) cc1_ifu_i  ! {Error} unformatted I/O is not allowed for an internal file
+     |               ^^^^^^^^^ 
+
+semantic error: unformatted I/O is not allowed for an internal file
+    --> tests/errors/continue_compilation_1.f90:5234:11
+     |
+5234 |     write(cc1_ifu_s(1:20)) 1  ! {Error} unformatted I/O is not allowed for an internal file
+     |           ^^^^^^^^^^^^^^^ 
+
+semantic error: unformatted I/O is not allowed for an internal file
+    --> tests/errors/continue_compilation_1.f90:5235:11
+     |
+5235 |     write(cc1_ifu_lines) 1  ! {Error} unformatted I/O is not allowed for an internal file
+     |           ^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
