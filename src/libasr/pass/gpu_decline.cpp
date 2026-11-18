@@ -152,6 +152,10 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         // 2**18 threads, at 3.5 TB/s with 2**17, and at 1.6 TB/s with 2**16,
         // where the kernel's strides collide in the memory channels.
         caps.reduction_threads = caps.reduction_warp_slots ? 262144 : 65536;
+        // An NVIDIA GPU and the CPU emulation of one (asr_to_gpu_c.h,
+        // GpuReduceCombine). HIP's wavefronts of 64 threads and Metal have
+        // no lowering of it yet.
+        caps.array_reductions = true;
     }
     if (pass_options.gpu_offload_hip) {
         // ROCm's device compiler does not unroll a loop whose trip count it
@@ -237,6 +241,24 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "the loop was not lowered for the gpu";
         case GpuDeclineReason::ReductionClause:
             return "a reduction has no gpu lowering yet";
+        case GpuDeclineReason::ArrayReductionDevice:
+            return "the reduction of array '" + decline.name + "' has no "
+                "lowering for this gpu yet; only cuda combines a reduction "
+                "of an array on the device";
+        case GpuDeclineReason::ArrayReductionType:
+            return "the reduction of array '" + decline.name + "' of "
+                + type_name + " has no gpu lowering: the gpu combines a "
+                "reduction of an array of integer or real of kind 4 or 8 "
+                "with +, -, *, max or min only";
+        case GpuDeclineReason::ArrayReductionElement:
+            return "array '" + decline.name + "' of a reduction is "
+                "referenced other than as an element whose subscripts are "
+                "the same in every iteration; elements an iteration "
+                "chooses would need atomic updates";
+        case GpuDeclineReason::ArrayReductionLoop:
+            return "the reduction of array '" + decline.name + "' is in a "
+                "loop that cycles, or that defines a scalar used after "
+                "it, which has no gpu lowering yet";
         case GpuDeclineReason::LoopWithoutIndex:
             return "the loop has no index";
         case GpuDeclineReason::IncompleteLoopHead:

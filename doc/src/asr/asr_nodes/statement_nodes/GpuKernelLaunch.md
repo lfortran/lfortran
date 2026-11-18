@@ -101,7 +101,10 @@ copies nothing in or out. The actual argument is an allocatable array of the
 launching procedure, not allocated before the launch. When `read_back` is
 present, the host allocates the actual with `read_back` elements after the
 launch, at most `size`, and copies the leading elements of the buffer into
-it; otherwise the actual stays unallocated.
+it; otherwise the actual stays unallocated. The CUDA runtime keeps the
+memory of a scratch buffer from one launch of the kernel to the next, and
+gives it zero when it is new: the counter of a
+[GpuReduceCombine](GpuReduceCombine.md) relies on that.
 
 A kernel that can `stop` records the statement a thread reached in the
 status buffer `stop_status`. The statements of `stop_replay` read it and run

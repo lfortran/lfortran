@@ -121,6 +121,16 @@ struct MetalDialect {
         return std::string(names[op]) + "(" + value + ")";
     }
     std::string lane_reduce_helper() const { return ""; }
+    // Metal has no lowering of a reduction of an array on the device
+    // (GpuDeviceCapabilities::array_reductions), so the offload pass
+    // declines such a loop before a kernel is built.
+    std::string reduce_combine_helper() const { return ""; }
+    void emit_reduce_combine(std::stringstream &, const std::string &,
+            const std::vector<GpuReduceCombineItem> &, const std::string &,
+            const std::string &, bool) const {
+        throw CodeGenError("gpu offload: Metal has no lowering of a "
+            "reduction of an array");
+    }
     std::string common_lanes_test(const std::string &, int64_t) const {
         return "";
     }

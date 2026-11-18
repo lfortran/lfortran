@@ -327,6 +327,9 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         + plan.liveout_scalars.size() + plan.private_shapes.n);
     Vec<ASR::stmt_t*> prelude;
     prelude.reserve(al, 2 * plan.n_dims + 2);
+    // An assignment taken from before the loop that the combination could
+    // not start from runs where it was.
+    for (ASR::stmt_t *s : plan.host_initializers) prelude.push_back(al, s);
     // The limits of the loops are evaluated once, as the loop evaluates
     // them before its first iteration, into host variables that everything
     // below reads: the component fit, the kernel's arguments and the grid.
@@ -678,6 +681,39 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             "lfortran_gpu_end_host_allocations"));
     }
 
+    // The scratch buffer of the combination of array reductions
+    // (GpuReduceCombine): a counter, then a part of each element per thread
+    // of the grid-stride loop that takes part, at most
+    // device_caps.reduction_threads of a launch or of each of its chunks.
+    // The runtime keeps the memory from one launch of the kernel to the
+    // next, so this allocates nothing once it has grown to its size.
+    Vec<ASR::gpu_scratch_buffer_t> scratch;
+    scratch.reserve(al, 1);
+    if (plan.reduce_scratch_arg >= 0) {
+        LCOMPILERS_ASSERT(plan.strided && plan.reduce_scratch_extent_arg >= 0);
+        ASR::expr_t *limit = b.i_t(device_caps.reduction_threads, count_type);
+        ASR::expr_t *size = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_reduce_size"),
+            ASRUtils::duplicate_type(al, count_type), ASR::intentType::Local);
+        launch_stmts.push_back(al, b.Assignment(size, b.Add(b.i_t(1,
+            count_type), b.Mul(b.i_t(plan.reduce_items, count_type),
+                ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    b.Gt(thread_count, limit), limit, thread_count,
+                    count_type, nullptr))))));
+        ASR::call_arg_t &extent =
+            plan.call_args.p[plan.reduce_scratch_extent_arg];
+        ASR::ttype_t *extent_type = ASRUtils::expr_type(extent.m_value);
+        extent.m_value = ASRUtils::extract_kind_from_ttype_t(extent_type)
+                == ASRUtils::extract_kind_from_ttype_t(count_type)
+            ? size : b.i2i_t(size, extent_type);
+        ASR::gpu_scratch_buffer_t buffer;
+        buffer.loc = loc;
+        buffer.m_argument_index = plan.reduce_scratch_arg;
+        buffer.m_size = size;
+        buffer.m_read_back = nullptr;
+        scratch.push_back(al, buffer);
+    }
+
     Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
     chunk_dimensions.reserve(al, split_dims.size());
     for (size_t d : split_dims) {
@@ -692,8 +728,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             thread_count, block_size_const,
-            plan.call_args.p, plan.call_args.n, component_fit, nullptr,
-            0, nullptr, nullptr, 0, overwritten.p, overwritten.n,
+            plan.call_args.p, plan.call_args.n, component_fit, scratch.p,
+            scratch.n, nullptr, nullptr, 0, overwritten.p, overwritten.n,
             overwritten_if.p, overwritten_if.n, chunk_dimensions.p,
             chunk_dimensions.n, plan.chunk_fixed_iterations,
             plan.first_chunk_parameter)));
@@ -761,9 +797,15 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 dealloc_args.p, dealloc_args.n, nullptr, nullptr)));
     }
 
+    // The elements of array reductions that the source assigned constants
+    // right before the loop are assigned them by the combination; with no
+    // iterations, nothing launches, and the host assigns them.
+    Vec<ASR::stmt_t*> no_launch;
+    no_launch.reserve(al, plan.reduce_initializers.size());
+    for (ASR::stmt_t *s : plan.reduce_initializers) no_launch.push_back(al, s);
     prelude.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
         b.Gt(thread_count, b.i_t(0, ASRUtils::expr_type(thread_count))),
-        launch_stmts.p, launch_stmts.n, nullptr, 0)));
+        launch_stmts.p, launch_stmts.n, no_launch.p, no_launch.n)));
 
     pass_result.reserve(al, prelude.n);
     for (size_t i = 0; i < prelude.n; i++) {

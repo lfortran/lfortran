@@ -1,0 +1,230 @@
+#include <stdint.h>
+
+#include <cooperative_groups.h>
+#include <cooperative_groups/reduce.h>
+
+// The operation of a reduction of elements of arrays: 0 adds, 1
+// multiplies, 2 takes the smaller, 3 the larger.
+template <int op, typename T>
+__device__ inline T __lfortran_reduce_op(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
+// Whether this is the last of the `units` arrivals at the counter,
+// the first element of the scratch buffer, which it then leaves
+// zero for the next launch.
+// What a unit wrote before it arrives is seen by the last one
+// after it arrives: the add releases and acquires.
+__device__ inline bool __lfortran_reduce_arrive(void *scratch,
+        long long units) {
+    unsigned int *counter = (unsigned int*)scratch;
+    unsigned int done;
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700
+    asm volatile("atom.add.acq_rel.gpu.u32 %0, [%1], 1;"
+        : "=r"(done) : "l"(counter) : "memory");
+#else
+    __threadfence();
+    done = atomicAdd(counter, 1u);
+    __threadfence();
+#endif
+    if ((long long)done < units - 1) return false;
+    *counter = 0u;
+    return true;
+}
+
+// `v` combined over the 32 threads of a warp, in every one.
+template <int op, typename T>
+__device__ inline T __lfortran_reduce_warp(T v) {
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset >>= 1) {
+        v = __lfortran_reduce_op<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, 32));
+    }
+    return v;
+}
+
+// The target combined with `v` by an atomic update, for the
+// operations whose result does not depend on the order: an integer
+// sum, and the larger or the smaller of integers (natively) or of
+// reals (by compare and swap of their bits).
+template <int op>
+__device__ inline void __lfortran_reduce_atomic(int *p, int v) {
+    if (op == 0) atomicAdd(p, v);
+    else if (op == 2) atomicMin(p, v);
+    else atomicMax(p, v);
+}
+
+template <int op>
+__device__ inline void __lfortran_reduce_atomic(long long *p, long long v) {
+    if (op == 0) atomicAdd((unsigned long long*)p, (unsigned long long)v);
+    else if (op == 2) atomicMin(p, v);
+    else atomicMax(p, v);
+}
+
+template <int op>
+__device__ inline void __lfortran_reduce_atomic(long *p, long v) {
+    __lfortran_reduce_atomic<op>((long long*)p, (long long)v);
+}
+
+template <int op, typename T, typename U>
+__device__ inline void __lfortran_reduce_atomic_bits(T *p, T v) {
+    U *q = (U*)p;
+    U old = *(volatile U*)q, assumed;
+    do {
+        assumed = old;
+        T current;
+        __builtin_memcpy(&current, &assumed, sizeof(T));
+        T next = __lfortran_reduce_op<op>(current, v);
+        U bits;
+        __builtin_memcpy(&bits, &next, sizeof(T));
+        if (bits == assumed) return;
+        old = atomicCAS(q, assumed, bits);
+    } while (old != assumed);
+}
+
+template <int op>
+__device__ inline void __lfortran_reduce_atomic(float *p, float v) {
+    __lfortran_reduce_atomic_bits<op, float, unsigned int>(p, v);
+}
+
+template <int op>
+__device__ inline void __lfortran_reduce_atomic(double *p, double v) {
+    __lfortran_reduce_atomic_bits<op, double, unsigned long long>(p, v);
+}
+
+// The threads of a warp that call it together combine their `v`, and
+// the first of them updates the target: one atomic update per warp.
+template <int op, typename T>
+__device__ inline void __lfortran_reduce_atomic_group(T *p, T v) {
+    namespace cg = cooperative_groups;
+    cg::coalesced_group g = cg::coalesced_threads();
+    T r;
+    if (op == 0) r = cg::reduce(g, v, cg::plus<T>());
+    else if (op == 2) r = cg::reduce(g, v, cg::less<T>());
+    else r = cg::reduce(g, v, cg::greater<T>());
+    if (g.thread_rank() == 0) __lfortran_reduce_atomic<op>(p, r);
+}
+
+// `v` combined over the threads of the block, in every one: each warp
+// combines its own, and the warps' meet in shared memory in their
+// order.
+template <int op, typename T>
+__device__ __noinline__ T __lfortran_reduce_block(T v) {
+    v = __lfortran_reduce_warp<op>(v);
+    __shared__ T partial[32];
+    if ((threadIdx.x & 31u) == 0) partial[threadIdx.x >> 5] = v;
+    __syncthreads();
+    T r = partial[0];
+    for (unsigned i = 1; i < (blockDim.x >> 5); i++) {
+        r = __lfortran_reduce_op<op>(r, partial[i]);
+    }
+    __syncthreads();
+    return r;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0_22gpu_array_reduction_03 {
+    int __gpu_reduce_extent;
+};
+
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_22gpu_array_reduction_03(
+    float* __restrict__ mx,
+    float* __restrict__ ss,
+    float* __restrict__ x,
+    long* __restrict__ __gpu_reduce_scratch,
+    __ScalarArgs___lfortran_gpu_kernel_0_22gpu_array_reduction_03 __scalar_args)
+{
+    int __flat_idx;
+    float __gpu_accumulator;
+    float __gpu_accumulator1;
+    float __gpu_accumulator2;
+    int __gpu_group;
+    int __gpu_iteration;
+    int __gpu_iterations;
+    int __gpu_stride;
+    int i__dc;
+    __gpu_iterations = 1000;
+    __gpu_stride = (((__gpu_iterations > 262144)) ? (262144) : (__gpu_iterations));
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __gpu_accumulator =   0.00000000000000000e+00f;
+    __gpu_accumulator1 =   0.00000000000000000e+00f;
+    __gpu_accumulator2 =  -3.40282346999999984e+38f;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) < __gpu_stride)) {
+        const int __lfortran_end_0 = (((__gpu_iterations - ((blockIdx.x * blockDim.x) + threadIdx.x)) / (4 * __gpu_stride)) - 1);
+        for (__gpu_group = 0; __gpu_group <= __lfortran_end_0; __gpu_group++) {
+            __gpu_iteration = (((blockIdx.x * blockDim.x) + threadIdx.x) + (__gpu_group * (4 * __gpu_stride)));
+            __flat_idx = __gpu_iteration;
+            i__dc = (__flat_idx + 1);
+            __gpu_accumulator = (__gpu_accumulator + (x[((int)(i__dc) - (1))] * x[((int)(i__dc) - (1))]));
+            __gpu_accumulator1 = (__gpu_accumulator1 + x[((int)(i__dc) - (1))]);
+            __gpu_accumulator2 = max(__gpu_accumulator2, x[((int)(i__dc) - (1))]);
+            __gpu_iteration = (__gpu_iteration + __gpu_stride);
+            __flat_idx = __gpu_iteration;
+            i__dc = (__flat_idx + 1);
+            __gpu_accumulator = (__gpu_accumulator + (x[((int)(i__dc) - (1))] * x[((int)(i__dc) - (1))]));
+            __gpu_accumulator1 = (__gpu_accumulator1 + x[((int)(i__dc) - (1))]);
+            __gpu_accumulator2 = max(__gpu_accumulator2, x[((int)(i__dc) - (1))]);
+            __gpu_iteration = (__gpu_iteration + __gpu_stride);
+            __flat_idx = __gpu_iteration;
+            i__dc = (__flat_idx + 1);
+            __gpu_accumulator = (__gpu_accumulator + (x[((int)(i__dc) - (1))] * x[((int)(i__dc) - (1))]));
+            __gpu_accumulator1 = (__gpu_accumulator1 + x[((int)(i__dc) - (1))]);
+            __gpu_accumulator2 = max(__gpu_accumulator2, x[((int)(i__dc) - (1))]);
+            __gpu_iteration = (__gpu_iteration + __gpu_stride);
+            __flat_idx = __gpu_iteration;
+            i__dc = (__flat_idx + 1);
+            __gpu_accumulator = (__gpu_accumulator + (x[((int)(i__dc) - (1))] * x[((int)(i__dc) - (1))]));
+            __gpu_accumulator1 = (__gpu_accumulator1 + x[((int)(i__dc) - (1))]);
+            __gpu_accumulator2 = max(__gpu_accumulator2, x[((int)(i__dc) - (1))]);
+        }
+        #pragma unroll 16
+        for (__gpu_iteration = (((blockIdx.x * blockDim.x) + threadIdx.x) + (((__gpu_iterations - ((blockIdx.x * blockDim.x) + threadIdx.x)) / (4 * __gpu_stride)) * (4 * __gpu_stride))); __gpu_stride > 0 ? __gpu_iteration <= (__gpu_iterations - 1) : __gpu_iteration >= (__gpu_iterations - 1); __gpu_iteration += __gpu_stride) {
+            __flat_idx = __gpu_iteration;
+            i__dc = (__flat_idx + 1);
+            __gpu_accumulator = (__gpu_accumulator + (x[((int)(i__dc) - (1))] * x[((int)(i__dc) - (1))]));
+            __gpu_accumulator1 = (__gpu_accumulator1 + x[((int)(i__dc) - (1))]);
+            __gpu_accumulator2 = max(__gpu_accumulator2, x[((int)(i__dc) - (1))]);
+        }
+    }
+    {
+        const long long __rc_threads = (long long)(__gpu_stride);
+        const bool __rc_take = (long long)(blockIdx.x * blockDim.x + threadIdx.x) < __rc_threads;
+        if (__rc_take) {
+            __lfortran_reduce_atomic_group<3>(&(mx[((int)(2) - (1))]), __gpu_accumulator2);
+        }
+        const long long __rc_per_block = (long long)blockDim.x;
+        const long long __rc_units = (__rc_threads + __rc_per_block - 1) / __rc_per_block;
+        if ((long long)blockIdx.x < __rc_units) {
+            float __rc_value0 = __rc_take ? (__gpu_accumulator) : ((float)  0.00000000000000000e+00f);
+            float __rc_value1 = __rc_take ? (__gpu_accumulator1) : ((float)  0.00000000000000000e+00f);
+            if (__rc_per_block > 1) {
+                __rc_value0 = __lfortran_reduce_block<0>(__rc_value0);
+                __rc_value1 = __lfortran_reduce_block<0>(__rc_value1);
+            }
+            if (threadIdx.x < 32u) {
+                int __rc_last = 0;
+                if (threadIdx.x == 0) {
+                    *((float*)(__gpu_reduce_scratch + 1 + ((long long)blockIdx.x) * 2 + 0)) = __rc_value0;
+                    *((float*)(__gpu_reduce_scratch + 1 + ((long long)blockIdx.x) * 2 + 1)) = __rc_value1;
+                    __rc_last = __lfortran_reduce_arrive(__gpu_reduce_scratch, __rc_units);
+                }
+                __syncwarp();
+                if (__shfl_sync(0xffffffffu, __rc_last, 0)) {
+                    float __rc_total0 = ((float)  0.00000000000000000e+00f);
+                    float __rc_total1 = ((float)  0.00000000000000000e+00f);
+                    for (long long __rc_u = threadIdx.x; __rc_u < __rc_units; __rc_u += 32) {
+                        __rc_total0 = __lfortran_reduce_op<0>(__rc_total0, __ldcg(((float*)(__gpu_reduce_scratch + 1 + (__rc_u) * 2 + 0))));
+                        __rc_total1 = __lfortran_reduce_op<0>(__rc_total1, __ldcg(((float*)(__gpu_reduce_scratch + 1 + (__rc_u) * 2 + 1))));
+                    }
+                    __rc_total0 = __lfortran_reduce_warp<0>(__rc_total0);
+                    __rc_total1 = __lfortran_reduce_warp<0>(__rc_total1);
+                    if (threadIdx.x == 0) {
+                        ss[((int)(1) - (1))] = __lfortran_reduce_op<0>(ss[((int)(1) - (1))], __rc_total0);
+                        ss[((int)(3) - (1))] = __lfortran_reduce_op<0>(ss[((int)(3) - (1))], __rc_total1);
+                    }
+                }
+            }
+        }
+    }
+}
+

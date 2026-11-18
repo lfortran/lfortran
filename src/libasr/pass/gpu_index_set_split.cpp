@@ -10,6 +10,7 @@
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -528,6 +529,22 @@ public:
         {
             GpuAffineBuilder wb = base;
             walk(bp, bn, wb, single, [&](ASR::If_t *x, GpuAffineBuilder &bb) {
+                // A test that only decides whether an element of an array
+                // is assigned a constant (`if (i == 1) a(1) = 0`, the one
+                // iteration that clears it) selects no formula: splitting
+                // it off would save a compare, and cost a frame.
+                if (x->n_orelse == 0 && std::all_of(x->m_body,
+                        x->m_body + x->n_body, [](ASR::stmt_t *t) {
+                            if (!ASR::is_a<ASR::Assignment_t>(*t)) {
+                                return false;
+                            }
+                            auto *a = ASR::down_cast<ASR::Assignment_t>(t);
+                            return ASR::is_a<ASR::ArrayItem_t>(*a->m_target)
+                                && ASRUtils::expr_value(a->m_value)
+                                    != nullptr;
+                        })) {
+                    return;
+                }
                 std::vector<Leaf> ls;
                 leaves(x->m_test, bb, ls);
                 for (auto &l : ls) {

@@ -2544,6 +2544,20 @@ public:
         src = r;
     }
 
+    void visit_GpuReduceCombine(const ASR::GpuReduceCombine_t &x) {
+        std::string r = indent;
+        r += "gpu reduce combine";
+        for (size_t i = 0; i < x.n_items; i++) {
+            visit_expr(*x.m_items[i].m_target);
+            r += " " + src;
+            visit_expr(*x.m_items[i].m_value);
+            r += " <- " + src;
+        }
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &/*x*/) {
         std::string r = indent;
         r += "gpu lane barrier";

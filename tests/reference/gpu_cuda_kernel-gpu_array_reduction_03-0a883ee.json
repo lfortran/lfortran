@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_array_reduction_03-0a883ee",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_array_reduction_03.f90",
+    "infile_hash": "fb3207ad0916e3328f4d86212578376b0a62ef0a0a51988f26923e86",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_array_reduction_03-0a883ee.stdout",
+    "stdout_hash": "026982419e8f8b38e41099d84314f1f3f1c0f7899515600f174c45fe",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

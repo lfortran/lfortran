@@ -53,7 +53,10 @@ default stream ordering every copy and launch:
   slot keeps as well. What a launch leaves there is dead once it ends (a part
   the host reads back is read before the next launch is made), and the
   stream runs the launches one after another, so every launch of the kernel
-  uses the same memory, however many of them are still pending.
+  uses the same memory, however many of them are still pending. The memory
+  is zero when the slot gets it, so a kernel can keep a counter there that
+  each launch leaves zero, without a copy or a clear at each launch (the
+  combination of a reduction of elements of arrays, GpuReduceCombine).
 * Memory a launch may still use is freed only at the next sync.
 
 That is the copy memory model, which every device has. A device that shares
@@ -1489,9 +1492,16 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         }
         for (int i = 0; i < k->n_args; i++) {
             if (k->kind[i] != ARG_SCRATCH) continue;
+            void *previous = k->cache->buffers[i];
             k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
                 : slot_buffer(k->cache, i, k->buffer_sizes[i]);
             k->cache->filled_by[i] = NULL;
+            if (k->buffer_device_ptrs[i] != NULL
+                    && k->buffer_device_ptrs[i] != previous) {
+                check(cudaMemsetAsync(k->buffer_device_ptrs[i], 0,
+                    k->cache->capacities[i], 0), "cudaMemsetAsync");
+                device_busy = 1;
+            }
         }
     } while (syncs != n_syncs);
 

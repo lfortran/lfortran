@@ -1,0 +1,59 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: array 'h' of a reduction is referenced other than as an element whose subscripts are the same in every iteration; elements an iteration chooses would need atomic updates
+  --> tests/../integration_tests/gpu_decline_53.f90:22:5 - 24:10
+   |
+22 |        do concurrent (i = 1:100) reduce(+: h)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+24 |        end do
+   | ...^^^^^^^^^^ array 'h' of a reduction is referenced other than as an element whose subscripts are the same in every iteration; elements an iteration chooses would need atomic updates
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: array 's' of a reduction is referenced other than as an element whose subscripts are the same in every iteration; elements an iteration chooses would need atomic updates
+  --> tests/../integration_tests/gpu_decline_53.f90:28:5 - 30:10
+   |
+28 |        do concurrent (i = 1:100) reduce(+: s)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+30 |        end do
+   | ...^^^^^^^^^^ array 's' of a reduction is referenced other than as an element whose subscripts are the same in every iteration; elements an iteration chooses would need atomic updates
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the reduction of array 'flags' of logical(4) has no gpu lowering: the gpu combines a reduction of an array of integer or real of kind 4 or 8 with +, -, *, max or min only
+  --> tests/../integration_tests/gpu_decline_53.f90:34:5 - 36:10
+   |
+34 |        do concurrent (i = 1:100) reduce(.or.: flags)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+36 |        end do
+   | ...^^^^^^^^^^ the reduction of array 'flags' of logical(4) has no gpu lowering: the gpu combines a reduction of an array of integer or real of kind 4 or 8 with +, -, *, max or min only
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the reduction of array 'm' of integer(4) has no gpu lowering: the gpu combines a reduction of an array of integer or real of kind 4 or 8 with +, -, *, max or min only
+  --> tests/../integration_tests/gpu_decline_53.f90:40:5 - 42:10
+   |
+40 |        do concurrent (i = 1:100) reduce(iand: m)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+42 |        end do
+   | ...^^^^^^^^^^ the reduction of array 'm' of integer(4) has no gpu lowering: the gpu combines a reduction of an array of integer or real of kind 4 or 8 with +, -, *, max or min only
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the reduction of array 's' is in a loop that cycles, or that defines a scalar used after it, which has no gpu lowering yet
+  --> tests/../integration_tests/gpu_decline_53.f90:46:5 - 49:10
+   |
+46 |        do concurrent (i = 1:100) reduce(+: s)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+49 |        end do
+   | ...^^^^^^^^^^ the reduction of array 's' is in a loop that cycles, or that defines a scalar used after it, which has no gpu lowering yet
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the reduction of array 's' is in a loop that cycles, or that defines a scalar used after it, which has no gpu lowering yet
+  --> tests/../integration_tests/gpu_decline_53.f90:54:5 - 57:10
+   |
+54 |        do concurrent (i = 1:100) reduce(+: s)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+57 |        end do
+   | ...^^^^^^^^^^ the reduction of array 's' is in a loop that cycles, or that defines a scalar used after it, which has no gpu lowering yet

@@ -6,6 +6,7 @@
 #include <libasr/c_cpp_keywords.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_offload_array_reduction.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_wide_loads.h>
@@ -78,6 +79,11 @@ public:
         needs_lane_reduce = true;
         ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBarrier(x);
     }
+    bool needs_reduce_combine = false;
+    void visit_GpuReduceCombine(const ASR::GpuReduceCombine_t &x) {
+        needs_reduce_combine = true;
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuReduceCombine(x);
+    }
     // The type of an integer power device code computes, by kind.
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -121,6 +127,8 @@ inline bool is_gpu_intercepted_intrinsic(const std::string &name) {
         "_lcompilers_dble_",
         "_lcompilers_int_",
         "_lcompilers_nint_",
+        "_lcompilers_anint_",
+        "_lcompilers_aint_",
         "_lcompilers_sqrt_",
         "_lcompilers_abs_",
         "_lcompilers_sin_",
@@ -3220,6 +3228,7 @@ public:
     bool needs_erfc_helper = false;
     bool needs_lane_reduce_helper = false;
     bool needs_wide_load_helper = false;
+    bool needs_reduce_combine_helper = false;
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
 
     void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
@@ -3242,6 +3251,7 @@ public:
         needs_erfc_helper = scanner.needs_erfc;
         needs_lane_reduce_helper = scanner.needs_lane_reduce;
         needs_wide_load_helper = scanner.needs_wide_load;
+        needs_reduce_combine_helper = scanner.needs_reduce_combine;
         integer_power_types = scanner.integer_power_types;
     }
 
@@ -3279,6 +3289,9 @@ public:
         emit_integer_power_helpers();
         if (needs_lane_reduce_helper) src << dialect.lane_reduce_helper();
         if (needs_wide_load_helper) src << dialect.wide_load_helper();
+        if (needs_reduce_combine_helper) {
+            src << dialect.reduce_combine_helper();
+        }
         if (needs_erf_helper) {
             src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
             src << dialect.device_fn_qualifier()
@@ -4148,6 +4161,13 @@ public:
     // a device function it calls.
     bool writing_kernel_body = false;
     void find_trailing_barriers(ASR::stmt_t **body, size_t n) {
+        // A combination of array reductions reads only what the first lane
+        // of each iteration holds, and waits for the others itself where it
+        // has to (asr_to_cuda.cpp), so the barriers before it are as good as
+        // the kernel's last.
+        while (n > 0 && ASR::is_a<ASR::GpuReduceCombine_t>(*body[n - 1])) {
+            n--;
+        }
         while (n > 0 && ASR::is_a<ASR::GpuLaneBarrier_t>(*body[n - 1])) {
             trailing_barriers.insert(body[--n]);
         }
@@ -4195,6 +4215,46 @@ public:
             out += (out.empty() ? "" : " && ") + c;
         }
         return out;
+    }
+
+    // Whether the iterations of a loop with these statements combine values
+    // across the lanes of an iteration (GpuLaneReduce, a lane barrier)
+    // outside the loops inside it, and one of those reads vectors: the
+    // grid-stride loop of a kernel with a reduction, whose iterations are
+    // whole iterations of the offloaded loop. Written twice for the test of
+    // whether its vectors start at a multiple of 16 bytes, it would have its
+    // combinations, their shared memory and their barriers twice; the loops
+    // inside it that read the vectors are written twice instead (a
+    // matrix-vector product took 9% longer).
+    bool combines_lanes_around_loops(ASR::stmt_t **body, size_t n_body) {
+        class Found : public ASR::BaseWalkVisitor<Found> {
+        public:
+            bool combines = false;
+            bool loop_reads_vectors = false;
+            void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &) {
+                combines = true;
+            }
+            void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &) {
+                combines = true;
+            }
+            void visit_DoLoop(const ASR::DoLoop_t &x) {
+                loop_reads_vectors = loop_reads_vectors
+                    || holds_wide_load(x.m_body, x.n_body);
+            }
+            void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+                loop_reads_vectors = loop_reads_vectors
+                    || holds_wide_load(x.m_body, x.n_body);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        } found;
+        for (size_t i = 0; i < n_body; i++) found.visit_stmt(*body[i]);
+        return found.combines && found.loop_reads_vectors;
     }
 
     // Writes a counted loop, a `do` statement.
@@ -4686,6 +4746,59 @@ public:
             src << " -= " << -step;
         }
         src << ") {\n";
+    }
+
+    // The identity of the operation `op` of a GpuReduceCombine (0 adds, 1
+    // multiplies, 2 takes the smaller, 3 the larger) in `type`: what a
+    // thread that contributes nothing hands over. The extremes are the
+    // largest finite values, as a reduction of a scalar starts from
+    // (gpu_reduction_identity).
+    std::string reduce_identity(ASR::ttype_t *type, int op) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(type);
+        std::string t = gpu_type(type);
+        if (ASRUtils::is_real(*type)) {
+            double huge = kind == 8 ? 1.7976931348623157e308 : 3.40282347e38;
+            double value = op == 0 ? 0.0 : op == 1 ? 1.0
+                : op == 2 ? huge : -huge;
+            return "((" + t + ")" + dialect.real_literal(value, kind) + ")";
+        }
+        std::string largest = kind == 8 ? "9223372036854775807LL"
+            : "2147483647";
+        std::string value = op == 0 ? "0" : op == 1 ? "1"
+            : op == 2 ? largest : "(-" + largest + " - 1)";
+        return "((" + t + ")" + value + ")";
+    }
+
+    // GpuReduceCombine, which the dialect writes out: it knows how the
+    // threads of a block can combine values and wait for each other.
+    void emit_reduce_combine(const ASR::GpuReduceCombine_t &x) {
+        std::vector<GpuReduceCombineItem> items;
+        for (size_t i = 0; i < x.n_items; i++) {
+            const ASR::gpu_reduce_item_t &item = x.m_items[i];
+            ASR::ttype_t *type = ASRUtils::expr_type(item.m_target);
+            GpuReduceCombineItem code;
+            code.op = item.m_op == ASR::reduction_opType::ReduceAdd ? 0
+                : item.m_op == ASR::reduction_opType::ReduceMul ? 1
+                : item.m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
+            code.target = expr_str(item.m_target);
+            code.value = expr_str(item.m_value);
+            code.type = gpu_type(type);
+            code.identity = reduce_identity(type, code.op);
+            code.atomic = gpu_reduce_item_atomic(item);
+            // The constant the host no longer assigns before the loop, in
+            // the launch's first chunk.
+            if (item.m_initial != nullptr) {
+                code.start = x.m_first == nullptr ? expr_str(item.m_initial)
+                    : "(" + expr_str(x.m_first) + " != 0 ? "
+                        + expr_str(item.m_initial) + " : " + code.target
+                        + ")";
+            }
+            items.push_back(code);
+        }
+        dialect.emit_reduce_combine(src, get_indent(), items,
+            expr_str(x.m_threads),
+            x.m_scratch == nullptr ? std::string() : expr_str(x.m_scratch),
+            kernel_has_lanes());
     }
 
     // `v = GpuLaneReduce(v)`: the variable and the operation (0 adds, 1
@@ -5461,6 +5574,11 @@ public:
                     wide_assume_aligned, wide_load_pinned(*w));
                 break;
             }
+            case ASR::stmtType::GpuReduceCombine: {
+                emit_reduce_combine(
+                    *ASR::down_cast<ASR::GpuReduceCombine_t>(stmt));
+                break;
+            }
             case ASR::stmtType::GpuLaneBarrier: {
                 LCOMPILERS_ASSERT(current_kernel_layout != nullptr
                     && current_kernel_layout->m_lanes != nullptr);
@@ -5495,6 +5613,10 @@ public:
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
                 std::string aligned = wide_versioned ? std::string()
                     : wide_loads_aligned(dl->m_body, dl->n_body);
+                if (!aligned.empty()
+                        && combines_lanes_around_loops(dl->m_body, dl->n_body)) {
+                    aligned.clear();
+                }
                 if (aligned.empty()) {
                     emit_do_loop(stmt);
                     break;
@@ -6253,6 +6375,21 @@ public:
                     // Rounds half away from zero, as Fortran does.
                     std::string target = gpu_type(fc->m_type);
                     src << "((" << target << ")round(";
+                    if (fc->n_args > 0 && fc->m_args[0].m_value) {
+                        visit_expr(fc->m_args[0].m_value);
+                    }
+                    src << "))";
+                } else if (fn_name.find("_lcompilers_anint_") == 0
+                        || fn_name.find("_lcompilers_aint_") == 0) {
+                    // Rounds half away from zero, or toward zero, in the
+                    // argument's own type, then converts to the kind of
+                    // the result: one or two instructions, where the
+                    // lowered function tests the sign and the range (and
+                    // was left as a call where `nint` is spliced in).
+                    std::string target = gpu_type(fc->m_type);
+                    src << "((" << target << ")"
+                        << (fn_name.find("_lcompilers_anint_") == 0
+                            ? "round(" : "trunc(");
                     if (fc->n_args > 0 && fc->m_args[0].m_value) {
                         visit_expr(fc->m_args[0].m_value);
                     }

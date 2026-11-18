@@ -59,7 +59,10 @@ A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
 device holds, is set with lfortran_gpu_set_scratch_arg and read back
 after the launch with lfortran_gpu_read_scratch_arg when the launch says so.
 Per-thread workspaces use the same interface but are never read back. The
-runtime owns this storage and may reuse it across launches.
+runtime owns this storage and reuses it across the launches of the kernel;
+it is zero when the runtime first gives it, and what a launch leaves in it
+is what the next launch of the kernel finds there unless the runtime gives
+it new, zero, memory (the counter of GpuReduceCombine relies on that).
 
 The finalized Function.gpu layout fixes the buffer order, scalar fields and
 workspace bindings. This pass expands that contract without deciding whether

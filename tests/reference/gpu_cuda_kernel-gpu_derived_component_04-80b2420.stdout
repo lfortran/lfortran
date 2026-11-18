@@ -85,36 +85,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_
     r[((int)(i__dc) - (__lb_r_0))] = (__gpu_private_p.x + __gpu_private_p.y);
 }
 
-__device__ inline float _lcompilers_aint_f32_gpu_35(float a) {
-    float _lcompilers_aint_f32{};
-    if ((abs(a) <   9.22337203685477581e+18f)) {
-        _lcompilers_aint_f32 = ((float)((long)a));
-    } else {
-        _lcompilers_aint_f32 = a;
-    }
-    return _lcompilers_aint_f32;
-}
-
-__device__ inline float _lcompilers_aint_f321_gpu_36(float a) {
-    float _lcompilers_aint_f321{};
-    if ((abs(a) <   9.22337203685477581e+18f)) {
-        _lcompilers_aint_f321 = ((float)((long)a));
-    } else {
-        _lcompilers_aint_f321 = a;
-    }
-    return _lcompilers_aint_f321;
-}
-
-__device__ inline float _lcompilers_anint_f32_gpu_34(float a) {
-    float _lcompilers_anint_f32{};
-    if ((a >   0.00000000000000000e+00f)) {
-        _lcompilers_anint_f32 = _lcompilers_aint_f32_gpu_35((a +   5.00000000000000000e-01f));
-    } else {
-        _lcompilers_anint_f32 = _lcompilers_aint_f321_gpu_36((a -   5.00000000000000000e-01f));
-    }
-    return _lcompilers_anint_f32;
-}
-
 struct __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t {
     int __dim_a_0;
     int __lb_a_0;

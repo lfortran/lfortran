@@ -113,6 +113,7 @@ set(SRC
     pass/gpu_offload_stop.cpp
     pass/gpu_offload_component_fit.cpp
     pass/gpu_offload_designator.cpp
+    pass/gpu_offload_array_reduction.cpp
     pass/gpu_offload_preflight.cpp
     pass/gpu_offload_rewrite.cpp
     pass/gpu_offload_collect.cpp
