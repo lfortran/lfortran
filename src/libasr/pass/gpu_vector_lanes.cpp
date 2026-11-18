@@ -3060,8 +3060,20 @@ private:
         int64_t trips;
         int64_t parts;
         std::map<ASR::stmt_t*, std::vector<Accumulator>> loops;
+        // The loops of the body that hold such loops, which every lane of
+        // the iteration goes through (over the heads of a query).
+        std::set<ASR::stmt_t*> containers;
+        // Whether the lanes of an iteration are consecutive lanes of a
+        // warp, which combine what they accumulate with shuffles: `parts`
+        // is a power of two up to a SIMD-group.
+        bool groups;
     };
     std::map<ASR::stmt_t*, Parts> parted;
+    // The fewest lanes per iteration that combine with shuffles rather than
+    // through shared memory (Parts::groups): two lanes per column of a
+    // state read along it at half the width of a warp, which costs more
+    // than the barriers it saves.
+    static constexpr int64_t parts_groups_min = 8;
 
     // The number of iterations of `d`, when its bounds and step are
     // constants.
@@ -3102,27 +3114,48 @@ private:
         }
         int64_t trips = 0;
         if (!constant_bounds(l, trips) || trips < 1
-                || 2*trips > k.block_lanes || k.block_lanes % trips != 0) {
+                || 2*trips > k.block_lanes) {
             return;
         }
-        int64_t parts = k.block_lanes / trips;
-        if (parts > k.lanes_count) return;
+        int64_t parts = std::min<int64_t>(k.block_lanes / trips,
+            k.lanes_count);
         Effects e(k);
         for (size_t i = 0; i < l->n_body; i++) e.visit_stmt(*l->m_body[i]);
         if (e.unknown || e.returns || !e.statuses.empty()) return;
-        Parts plan{trips, parts, {}};
-        for (size_t i = 0; i < l->n_body; i++) {
-            ASR::stmt_t *s = l->m_body[i];
-            if (ASR::is_a<ASR::Assignment_t>(*s)) continue;
-            if (!ASR::is_a<ASR::DoLoop_t>(*s)) return;
-            frames.push_back({l->m_body, l->n_body, i, &l->base});
-            std::vector<Accumulator> accumulators;
-            bool split = splittable(ASR::down_cast<ASR::DoLoop_t>(s), parts,
-                frames, accumulators);
-            frames.pop_back();
-            if (split) plan.loops[s] = accumulators;
+        Parts plan{trips, parts, {}, {},
+            (parts & (parts - 1)) == 0 && parts >= parts_groups_min};
+        if (plan_list(l->m_body, l->n_body, &l->base, frames, plan)
+                && !plan.loops.empty()) {
+            parted[&l->base] = plan;
         }
-        if (!plan.loops.empty()) parted[&l->base] = plan;
+    }
+
+    // The loops of a list of the body of a loop planned by plan_parts that
+    // its lanes share out, and the loops that hold such loops, which every
+    // lane goes through: false when the list holds other statements than
+    // assignments and loops.
+    bool plan_list(ASR::stmt_t **body, size_t n_body, ASR::stmt_t *owner,
+            std::vector<Frame> &frames, Parts &plan) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*s)) continue;
+            if (!ASR::is_a<ASR::DoLoop_t>(*s)) return false;
+            auto *d = ASR::down_cast<ASR::DoLoop_t>(s);
+            frames.push_back({body, n_body, i, owner});
+            std::vector<Accumulator> accumulators;
+            bool ok = true;
+            if (splittable(d, plan.parts, frames, accumulators)) {
+                plan.loops[s] = accumulators;
+            } else if (d->n_orelse == 0 && d->m_head.m_v
+                    && k.private_scalar(root_of(d->m_head.m_v))) {
+                size_t before = plan.loops.size();
+                ok = plan_list(d->m_body, d->n_body, s, frames, plan);
+                if (plan.loops.size() > before) plan.containers.insert(s);
+            }
+            frames.pop_back();
+            if (!ok) return false;
+        }
+        return true;
     }
 
     // Whether the lanes of an iteration share out the loop `d` of its body,
@@ -3276,17 +3309,63 @@ private:
             k.fn->m_symtab->get_unique_name("__gpu_lane_part"), int4,
             ASR::intentType::Local);
         ASR::expr_t *trips = b.i32(static_cast<int32_t>(plan.trips));
-        out.push_back(al, b.Assignment(slot, b.Sub(lane_index(loc),
-            b.Mul(b.Div(lane_index(loc), trips), trips))));
-        out.push_back(al, b.Assignment(part, b.Div(lane_index(loc), trips)));
+        if (plan.groups) {
+            // Lane `parts*slot + part`; the lanes past the last group take
+            // the last iteration again, as the lanes of a warp all have to
+            // run its shuffles.
+            ASR::expr_t *parts = b.i32(static_cast<int32_t>(plan.parts));
+            out.push_back(al, b.Assignment(slot, b.Min(b.Div(lane_index(loc),
+                parts), b.i32(static_cast<int32_t>(plan.trips - 1)))));
+            out.push_back(al, b.Assignment(part, b.Sub(lane_index(loc),
+                b.Mul(b.Div(lane_index(loc), parts), parts))));
+        } else {
+            out.push_back(al, b.Assignment(slot, b.Sub(lane_index(loc),
+                b.Mul(b.Div(lane_index(loc), trips), trips))));
+            out.push_back(al, b.Assignment(part, b.Div(lane_index(loc),
+                trips)));
+        }
         out.push_back(al, b.Assignment(d->m_head.m_v, b.Add(d->m_head.m_start,
             b.Mul(b.i2i_t(slot, type), step))));
-        share_parts(d, plan, part);
+        share_parts(d->m_body, d->n_body, plan, part);
         std::set<ASR::symbol_t*> read;
-        for (size_t i = 0; i < d->n_body; i++) {
-            ASR::stmt_t *s = d->m_body[i];
+        parts_list(d->m_body, d->n_body, plan, slot, part, read, false, out);
+        finish_distributed(d, out);
+    }
+
+    // The statements of a list of the body of a loop planned by plan_parts
+    // (distribute_parts), written to `out`: the loops the lanes share out
+    // with the combination of what they accumulate after them (behind
+    // another barrier inside a loop of the body, which writes the shared
+    // memory of the combination again), and the loops that hold them with
+    // their bodies written so. Where the lanes of the block are not a whole
+    // number of parts of each iteration, the lanes past the last part
+    // (`part` >= `parts`) skip the loops: they start their accumulators at
+    // the identity, and take the combination as the others.
+    void parts_list(ASR::stmt_t **body, size_t n_body, const Parts &plan,
+            ASR::expr_t *slot, ASR::expr_t *part,
+            std::set<ASR::symbol_t*> &read, bool nested,
+            Vec<ASR::stmt_t*> &out) {
+        bool idle = !plan.groups && plan.trips*plan.parts < k.block_lanes;
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            const Location &loc = s->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
             SharedAccess access(k);
             access.visit_stmt(*s);
+            if (plan.containers.count(s)) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(s);
+                Vec<ASR::stmt_t*> inner;
+                inner.reserve(al, c->n_body + 8);
+                std::set<ASR::symbol_t*> inner_read = read;
+                parts_list(c->m_body, c->n_body, plan, slot, part,
+                    inner_read, true, inner);
+                c->m_body = inner.p;
+                c->n_body = inner.n;
+                read.insert(inner_read.begin(), inner_read.end());
+                read.insert(access.reads.begin(), access.reads.end());
+                out.push_back(al, s);
+                continue;
+            }
             auto split = plan.loops.find(s);
             if (split == plan.loops.end()) {
                 read.insert(access.reads.begin(), access.reads.end());
@@ -3307,8 +3386,28 @@ private:
             if (!starts.empty()) {
                 out.push_back(al, b.If(b.NotEq(part, b.i32(0)), starts, {}));
             }
-            out.push_back(al, s);
+            if (idle) {
+                out.push_back(al, b.If(b.Lt(part,
+                    b.i32(static_cast<int32_t>(plan.parts))), {s}, {}));
+            } else {
+                out.push_back(al, s);
+            }
             if (accumulators.empty()) {
+                if (!access.writes.empty()) {
+                    out.push_back(al, ASRUtils::STMT(
+                        ASR::make_GpuLaneBarrier_t(al, loc)));
+                    read.clear();
+                }
+                continue;
+            }
+            if (plan.groups) {
+                for (const Accumulator &a : accumulators) {
+                    ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
+                    out.push_back(al, b.Assignment(b.Var(a.variable),
+                        ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
+                            b.Var(a.variable), a.op, plan.parts,
+                            ASRUtils::duplicate_type(al, t), nullptr))));
+                }
                 if (!access.writes.empty()) {
                     out.push_back(al, ASRUtils::STMT(
                         ASR::make_GpuLaneBarrier_t(al, loc)));
@@ -3350,8 +3449,11 @@ private:
                 }
                 out.push_back(al, b.Assignment(b.Var(a.variable), total));
             }
+            if (nested) {
+                out.push_back(al, ASRUtils::STMT(
+                    ASR::make_GpuLaneBarrier_t(al, loc)));
+            }
         }
-        finish_distributed(d, out);
     }
 
     ASR::expr_t* copy_expr(ASR::expr_t *e) {
@@ -3372,19 +3474,40 @@ private:
     // which the unrolled loops keep in registers, instead of reading it
     // again: the first stores each element it reads there, and the second
     // its new value, before it assigns the element.
-    void share_parts(ASR::DoLoop_t *d, const Parts &plan, ASR::expr_t *part) {
-        struct Counted {
-            ASR::DoLoop_t *loop;
-            ASR::expr_t *count;
-            int64_t trips;
-        };
+    struct Counted {
+        ASR::DoLoop_t *loop;
+        ASR::expr_t *count;
+        int64_t trips;
+    };
+
+    // Whether a lane of the block may take no part of an iteration (lanes
+    // past the last part, which skip the shared-out loops), while
+    // share_parts runs: their elements are not read outside those loops.
+    bool idle_parts = false;
+
+    std::vector<Counted> share_parts(ASR::stmt_t **&d_body, size_t &d_n,
+            const Parts &plan, ASR::expr_t *part) {
+        idle_parts = !plan.groups
+            && plan.trips*plan.parts < k.block_lanes;
         std::vector<Counted> counted;
+        std::vector<std::pair<size_t, ASR::stmt_t*>> before;
         // One count for the loops of a kind of variable: loops that count
         // the same iterations then work out their variable the same way.
         std::map<int, ASR::expr_t*> counts;
-        for (size_t i = 0; i < d->n_body; i++) {
-            if (!plan.loops.count(d->m_body[i])) continue;
-            auto *l = ASR::down_cast<ASR::DoLoop_t>(d->m_body[i]);
+        for (size_t i = 0; i < d_n; i++) {
+            if (plan.containers.count(d_body[i])) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(d_body[i]);
+                std::vector<Counted> inner = share_parts(c->m_body, c->n_body,
+                    plan, part);
+                for (const Counted &x : inner) {
+                    if (ASR::stmt_t *copy = hold_invariant(c, x)) {
+                        before.push_back({i, copy});
+                    }
+                }
+                continue;
+            }
+            if (!plan.loops.count(d_body[i])) continue;
+            auto *l = ASR::down_cast<ASR::DoLoop_t>(d_body[i]);
             const Location &loc = l->base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *lt = ASRUtils::expr_type(l->m_head.m_v);
@@ -3412,12 +3535,21 @@ private:
             // A lane takes a contiguous part of the iterations: its
             // elements of a column are next to each other, as the lanes
             // of a hand-written kernel take halves of it (3% faster on an
-            // H200 than every other element).
-            ASR::expr_t *first = b.Add(copy_expr(l->m_head.m_start),
-                b.Mul(b.i2i_t(part, lt), b.Mul(copy_expr(lstep),
-                    b.i_t(trips / plan.parts, lt))));
+            // H200 than every other element). The lanes of a group, which
+            // are consecutive lanes of a warp (Parts::groups), take every
+            // `parts`-th iteration instead, so that a warp reads
+            // consecutive elements together.
+            ASR::expr_t *first = plan.groups
+                ? b.Add(copy_expr(l->m_head.m_start),
+                    b.Mul(b.i2i_t(part, lt), copy_expr(lstep)))
+                : b.Add(copy_expr(l->m_head.m_start),
+                    b.Mul(b.i2i_t(part, lt), b.Mul(copy_expr(lstep),
+                        b.i_t(trips / plan.parts, lt))));
+            ASR::expr_t *by = plan.groups
+                ? b.Mul(copy_expr(lstep), b.i_t(plan.parts, lt))
+                : copy_expr(lstep);
             body.push_back(al, b.Assignment(l->m_head.m_v, b.Add(first,
-                b.Mul(b.Sub(count, b.i_t(1, lt)), copy_expr(lstep)))));
+                b.Mul(b.Sub(count, b.i_t(1, lt)), by))));
             for (size_t j = 0; j < l->n_body; j++) {
                 body.push_back(al, l->m_body[j]);
             }
@@ -3431,10 +3563,134 @@ private:
         }
         for (size_t a = 0; a + 1 < counted.size(); a++) {
             for (size_t c = a + 1; c < counted.size(); c++) {
-                hold_elements(d, counted[a].loop, counted[c].loop,
+                hold_elements(d_body, d_n, counted[a].loop, counted[c].loop,
                     counted[a].count, counted[c].count, counted[a].trips);
             }
         }
+        if (!before.empty()) {
+            Vec<ASR::stmt_t*> list;
+            list.reserve(al, d_n + before.size());
+            size_t next = 0;
+            for (size_t i = 0; i < d_n; i++) {
+                while (next < before.size() && before[next].first == i) {
+                    list.push_back(al, before[next++].second);
+                }
+                list.push_back(al, d_body[i]);
+            }
+            d_body = list.p;
+            d_n = list.n;
+        }
+        return counted;
+    }
+
+    // The elements that the counted loop `x` (share_parts), which runs in
+    // every iteration of the loop `c` of the body around it (over the heads
+    // of a query), reads the same of in each of them -- a subscript list
+    // that names neither the variable of `c` nor what `c` assigns, of an
+    // array `c` does not assign -- read once ahead of `c` into a private
+    // array, indexed by the count, which the unrolled loops keep in
+    // registers: the key of a position, for the scores of all the heads.
+    // Returns the loop that reads them, or nullptr.
+    ASR::stmt_t* hold_invariant(ASR::DoLoop_t *c, const Counted &x) {
+        ASR::DoLoop_t *l = x.loop;
+        if (idle_parts || l->n_body < 2) return nullptr;
+        Effects e(k);
+        e.visit_stmt(c->base);
+        std::set<ASR::symbol_t*> changed = e.scalars;
+        changed.insert(root_of(c->m_head.m_v));
+        auto *v = ASR::down_cast<ASR::Assignment_t>(l->m_body[0]);
+        ASR::symbol_t *j = root_of(v->m_target);
+        // The count and the variable of `x` itself are worked out the same
+        // way ahead of `c`.
+        changed.erase(root_of(x.count));
+        changed.erase(j);
+        if (mentions_any(v->m_value, changed)) return nullptr;
+        std::set<ASR::symbol_t*> assigned = assigned_arrays(c->m_body,
+            c->n_body);
+        Designators names;
+        for (size_t i = 1; i < l->n_body; i++) names.visit_stmt(*l->m_body[i]);
+        for (ASR::expr_t *item : names.items) {
+            ASR::symbol_t *array = root_of(item);
+            if (array == nullptr || assigned.count(array)
+                    || !ASR::is_a<ASR::Var_t>(*ASR::down_cast<ASR::ArrayItem_t>(
+                        item)->m_v)) {
+                continue;
+            }
+            ASR::expr_t *element = nullptr;
+            bool written = false;
+            if (!element_of(l, array, element, written) || written
+                    || element != item) {
+                continue;
+            }
+            auto *a = ASR::down_cast<ASR::ArrayItem_t>(element);
+            bool invariant = true;
+            for (size_t i = 0; i < a->n_args; i++) {
+                for (ASR::symbol_t *s : changed) {
+                    if (s != j && mentions(a->m_args[i].m_right, s)) {
+                        invariant = false;
+                    }
+                }
+            }
+            ASR::ttype_t *t = ASRUtils::expr_type(element);
+            if (!invariant || !(ASRUtils::is_real(*t)
+                    || ASRUtils::is_integer(*t))
+                    || x.trips*ASRUtils::extract_kind_from_ttype_t(t)
+                        > held_bytes_max) {
+                continue;
+            }
+            const Location &loc = element->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = b.i32(1);
+            dim.m_length = b.i32(static_cast<int32_t>(x.trips));
+            dims.push_back(al, dim);
+            ASR::expr_t *held = b.Variable(k.fn->m_symtab,
+                k.fn->m_symtab->get_unique_name("__gpu_lane_held"),
+                ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, t), dims.p, dims.n,
+                    ASR::array_physical_typeType::FixedSizeArray,
+                    ASR::memory_spaceType::Thread)), ASR::intentType::Local);
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.allow_procedure_calls = true;
+            ASR::expr_t *source = dup.duplicate_expr(element);
+            class Replace : public ASR::BaseExprReplacer<Replace> {
+            public:
+                ASRUtils::ASRBuilder &b;
+                ASR::expr_t *element, *held, *count;
+                Replace(ASRUtils::ASRBuilder &b_, ASR::expr_t *e_,
+                    ASR::expr_t *h_, ASR::expr_t *c_)
+                    : b(b_), element(e_), held(h_), count(c_) {}
+                void replace_ArrayItem(ASR::ArrayItem_t *y) {
+                    if (same_expr(&y->base, element)) {
+                        *current_expr = b.ArrayItem_01(held, {count});
+                        return;
+                    }
+                    BaseExprReplacer::replace_ArrayItem(y);
+                }
+            } r(b, element, held, x.count);
+            for (size_t i = 1; i < l->n_body; i++) {
+                auto *s = ASR::down_cast<ASR::Assignment_t>(l->m_body[i]);
+                r.current_expr = &s->m_value;
+                r.replace_expr(s->m_value);
+            }
+            ASR::do_loop_head_t head = l->m_head;
+            head.m_start = dup.duplicate_expr(head.m_start);
+            head.m_end = dup.duplicate_expr(head.m_end);
+            head.m_increment = dup.duplicate_expr(head.m_increment);
+            Vec<ASR::stmt_t*> reads;
+            reads.reserve(al, 2);
+            reads.push_back(al, dup.duplicate_stmt(l->m_body[0]));
+            reads.push_back(al, b.Assignment(b.ArrayItem_01(held, {x.count}),
+                source));
+            ASR::stmt_t *copy = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
+                loc, nullptr, head, reads.p, reads.n, nullptr, 0));
+            held_loops.insert(copy);
+            return copy;
+        }
+        return nullptr;
     }
 
     // The elements an array is read at in the body of a counted loop of
@@ -3466,7 +3722,7 @@ private:
     // same iterations) assigns in a private array of registers
     // (share_parts), when nothing in between names the array or changes
     // what its subscripts read.
-    void hold_elements(ASR::DoLoop_t *d, ASR::DoLoop_t *first,
+    void hold_elements(ASR::stmt_t **d_body, size_t d_n, ASR::DoLoop_t *first,
             ASR::DoLoop_t *second, ASR::expr_t *count1, ASR::expr_t *count2,
             int64_t trips) {
         auto *v1 = ASR::down_cast<ASR::Assignment_t>(first->m_body[0]);
@@ -3506,17 +3762,17 @@ private:
                 }
                 changed.insert(e.scalars.begin(), e.scalars.end());
             }
-            size_t at1 = d->n_body, at2 = d->n_body;
-            for (size_t i = 0; i < d->n_body; i++) {
-                if (d->m_body[i] == &first->base) at1 = i;
-                if (d->m_body[i] == &second->base) at2 = i;
+            size_t at1 = d_n, at2 = d_n;
+            for (size_t i = 0; i < d_n; i++) {
+                if (d_body[i] == &first->base) at1 = i;
+                if (d_body[i] == &second->base) at2 = i;
             }
-            bool kept = at1 < at2 && at2 < d->n_body;
+            bool kept = at1 < at2 && at2 < d_n;
             for (size_t i = at1 + 1; kept && i < at2; i++) {
                 Effects e(k);
-                e.visit_stmt(*d->m_body[i]);
+                e.visit_stmt(*d_body[i]);
                 changed.insert(e.scalars.begin(), e.scalars.end());
-                if (mentions(*d->m_body[i], array)) kept = false;
+                if (mentions(*d_body[i], array)) kept = false;
             }
             auto *item = ASR::down_cast<ASR::ArrayItem_t>(e1);
             for (size_t i = 0; kept && i < item->n_args; i++) {
@@ -3588,7 +3844,7 @@ private:
             body1.push_back(al, first->m_body[i]);
         }
         first->m_body = body1.p;
-        held_loops.insert(&first->base);
+        if (!idle_parts) held_loops.insert(&first->base);
         first->n_body = body1.n;
         Replace r2(b, element, held, count2);
         Vec<ASR::stmt_t*> body2;
