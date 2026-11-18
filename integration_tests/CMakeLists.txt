@@ -2659,6 +2659,7 @@ RUN(NAME bindc_iso_fb_10 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_10c.c)
 RUN(NAME bindc_iso_fb_11 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_11c.c)
 RUN(NAME bindc_iso_fb_12 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_12c.c)
 RUN(NAME bindc_iso_fb_13 LABELS llvm EXTRAFILES bindc_iso_fb_13c.c) # no gfortran: its CFI_is_contiguous checks the stride of extent-1 dimensions
+RUN(NAME bindc_iso_fb_15 LABELS gfortran llvm EXTRAFILES bindc_iso_fb_15c.c) # a bind(C) procedure reallocates a character-array pointer from C
 RUN(NAME bindc_cfi_alloc_copyback_03 LABELS llvm EXTRAFILES bindc_cfi_alloc_copyback_03c.c)
 RUN(NAME bindc_cfi_alloc_copyback_04 LABELS gfortran llvm EXTRAFILES bindc_cfi_alloc_copyback_04c.c)
 RUN(NAME bindc_cfi_alloc_copyback_05 LABELS gfortran llvm EXTRAFILES bindc_cfi_alloc_copyback_05c.c)
@@ -3662,6 +3663,10 @@ RUN(NAME allocate_79 LABELS gfortran llvm) # allocate with source= and no shape 
 RUN(NAME allocate_80 LABELS gfortran llvm) # allocate(source=) from a deferred-length character scalar (#3640)
 RUN(NAME allocate_81 LABELS gfortran llvm) # allocate(mold=) and allocate(source=) with derived-type array components (#5400)
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
+RUN(NAME char_array_pointer_01 LABELS gfortran llvm) # allocate an associated character-array pointer (#16206, #13623, #17885)
+RUN(NAME char_array_pointer_02 LABELS gfortran llvm) # c_f_pointer into an associated character-array pointer (#17884)
+RUN(NAME char_array_pointer_03 LABELS gfortran llvm) # pointer assignment copies the string descriptor of a character array
+RUN(NAME char_array_pointer_04 LABELS gfortran llvm EXTRAFILES char_array_pointer_04c.c EXTRA_ARGS --separate-compilation) # a module character-array pointer used from a C main
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)

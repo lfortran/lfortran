@@ -2251,6 +2251,21 @@ namespace LCompilers {
         }, [](){});
     }
 
+    void LLVMUtils::copy_to_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
+        llvm::Type* string_desc_type, llvm::Value* src_str_desc) {
+        llvm::Value* own_str_desc = CreateLoad2(string_desc_type->getPointerTo(),
+            arr_api->get_pointer_to_data(array_desc_type, array_desc));
+        builder->CreateStore(CreateLoad2(string_desc_type, src_str_desc), own_str_desc);
+    }
+
+    void LLVMUtils::disassociate_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
+        llvm::Type* string_desc_type) {
+        llvm::Value* own_str_desc = CreateLoad2(string_desc_type->getPointerTo(),
+            arr_api->get_pointer_to_data(array_desc_type, array_desc));
+        builder->CreateStore(llvm::ConstantPointerNull::get(i8_ptr),
+            create_gep2(string_desc_type, own_str_desc, 0));
+    }
+
     llvm::Value* LLVMUtils::ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,
         llvm::Type* desc_type, llvm::Value* desc_ptr) {
         llvm::Value* desc = CreateLoad2(desc_type->getPointerTo(), desc_ptr);
@@ -4312,12 +4327,28 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         dest_wrapper = CreateLoad2(wrapper_type->getPointerTo(),
                             create_gep2(descr_type, dest_descr, 0));
                     }
+                    // A character array keeps its own string descriptor too.
+                    const bool char_elem = ASRUtils::is_character(*pointer_type->m_type);
+                    llvm::Type* str_desc_type = nullptr;
+                    llvm::Value* dest_str_desc = nullptr;
+                    if (char_elem) {
+                        str_desc_type = get_type_from_ttype_t_util(src_expr,
+                            ASRUtils::extract_type(pointer_type->m_type), module);
+                        dest_str_desc = CreateLoad2(str_desc_type->getPointerTo(),
+                            create_gep2(descr_type, dest_descr, 0));
+                    }
                     llvm::DataLayout data_layout(module->getDataLayout());
                     uint64_t descr_size = data_layout.getTypeAllocSize(descr_type);
                     llvm::Value* size_val = llvm::ConstantInt::get(
                         context, llvm::APInt(64, descr_size));
                     builder->CreateMemCpy(dest_descr, llvm::MaybeAlign(),
                                           src_descr, llvm::MaybeAlign(), size_val);
+                    if (char_elem) {
+                        llvm::Value* dest_data = create_gep2(descr_type, dest_descr, 0);
+                        llvm::Value* src_str_desc = CreateLoad2(str_desc_type->getPointerTo(), dest_data);
+                        builder->CreateStore(dest_str_desc, dest_data);
+                        copy_to_own_string_descriptor(descr_type, dest_descr, str_desc_type, src_str_desc);
+                    }
                     if (class_elem) {
                         llvm::Value* dest_data = create_gep2(descr_type, dest_descr, 0);
                         llvm::Value* src_wrapper = CreateLoad2(

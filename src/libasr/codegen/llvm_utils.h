@@ -470,6 +470,12 @@ class ASRToLLVMVisitor;
             llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
             void ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type);
+            // Copies `src_str_desc` into the string descriptor the array descriptor owns.
+            void copy_to_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
+                llvm::Type* string_desc_type, llvm::Value* src_str_desc);
+            // Sets the data of the string descriptor the array descriptor owns to null.
+            void disassociate_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
+                llvm::Type* string_desc_type);
             // Stores a new heap descriptor in `desc_ptr` if it is null; returns the descriptor.
             llvm::Value* ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,
                 llvm::Type* desc_type, llvm::Value* desc_ptr);
@@ -1498,6 +1504,15 @@ class ASRToLLVMVisitor;
                             builder_->CreateStore(llvm::ConstantPointerNull::get(
                                 llvm::cast<llvm::PointerType>(wrapper_ptr_type)), data_ptr);
                         });
+                    }
+                    if(in_struct && ASRUtils::is_character(*t_past)
+                            && ASRUtils::is_array_physically_descriptor(t_past)) {
+                        // The pointer owns its string descriptor (not the data it points to).
+                        llvm_utils_->create_if_else(builder_->CreateIsNotNull(ptr), [&]() {
+                            llvm_utils_->lfortran_free_nocheck(llvm_utils_->CreateLoad2(
+                                llvm_utils_->string_descriptor->getPointerTo(),
+                                llvm_utils_->create_gep2(get_llvm_type(t_past, struct_sym), ptr, 0)));
+                        }, [](){});
                     }
                     if(in_struct) { llvm_utils_->lfortran_free_nocheck(ptr); }
                 }
