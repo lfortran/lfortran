@@ -6382,15 +6382,18 @@ public:
                 } else if (fn_name.find("_lcompilers_anint_") == 0
                         || fn_name.find("_lcompilers_aint_") == 0) {
                     // Rounds half away from zero, or toward zero, in the
-                    // argument's own type: one or two instructions, where
-                    // the lowered function tests the sign and the range
-                    // (and was left as a call where `nint` is spliced in).
-                    src << (fn_name.find("_lcompilers_anint_") == 0
-                        ? "round(" : "trunc(");
+                    // argument's own type, then converts to the kind of
+                    // the result: one or two instructions, where the
+                    // lowered function tests the sign and the range (and
+                    // was left as a call where `nint` is spliced in).
+                    std::string target = gpu_type(fc->m_type);
+                    src << "((" << target << ")"
+                        << (fn_name.find("_lcompilers_anint_") == 0
+                            ? "round(" : "trunc(");
                     if (fc->n_args > 0 && fc->m_args[0].m_value) {
                         visit_expr(fc->m_args[0].m_value);
                     }
-                    src << ")";
+                    src << "))";
                 } else if (fn_name.find("_lcompilers_int_") == 0) {
                     std::string target = gpu_type(fc->m_type);
                     src << "((" << target << ")";
