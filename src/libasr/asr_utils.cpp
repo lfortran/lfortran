@@ -15630,8 +15630,8 @@ void ReplaceFunctionParamWithArg::replace_type(ASR::ttype_t* t) {
 void ReplaceArgVisitor::replace_FunctionCall(ASR::FunctionCall_t* x) {
     ASR::symbol_t* f = ASRUtils::symbol_get_past_external(x->m_name);
     ASR::symbol_t* owner = f ? ASRUtils::get_asr_owner(f) : nullptr;
-    if (owner && ASR::is_a<ASR::Function_t>(*f)) {
-        if (ASR::is_a<ASR::Module_t>(*owner)) {
+    if (f && ASR::is_a<ASR::Function_t>(*f)) {
+        if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
             // Import a module function as external only if necessary
             ASR::symbol_t* new_es = import_symbol(al, x->m_name, current_scope);
             // The following substitutes args from the current scope
@@ -15665,7 +15665,9 @@ void ReplaceArgVisitor::replace_FunctionCall(ASR::FunctionCall_t* x) {
                     al, current_module_dependencies);
             }
         } else {
-            // A function of a program or procedure: nothing to import
+            // A function of a program or procedure, or of the translation
+            // unit (such as the getter through which a bound reads a
+            // use-associated variable): nothing to import
             ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_FunctionCall(x);
             ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
         }

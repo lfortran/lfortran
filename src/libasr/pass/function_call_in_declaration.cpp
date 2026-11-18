@@ -117,6 +117,11 @@ public:
     ASR::expr_t* call_for_return_var = nullptr;
     Vec<ASR::expr_t*>* newargsp = nullptr;
     ASR::TranslationUnit_t &tt;
+    // Where the helper functions are created when the procedure whose type
+    // is rewritten is not in this translation unit, see
+    // rewrite_enclosing_unit_signatures. Null: in the global scope of the
+    // procedure.
+    SymbolTable* helper_scope = nullptr;
 
     struct ArgInfo {
         int arg_number;
@@ -277,7 +282,7 @@ public:
 
         std::vector<ArgInfo> indices = get_arg_indices_used::get(&x->base, current_scope);
 
-        SymbolTable* global_scope = current_scope->get_tu_scope();
+        SymbolTable* global_scope = helper_scope ? helper_scope : current_scope->get_tu_scope();
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         // The hoisted expression may name a type declared inside a program,
         // which nothing in the global scope can reach and no ExternalSymbol
@@ -379,7 +384,7 @@ public:
         if (!assignment_value) return;
 
         std::vector<ArgInfo> indices = get_arg_indices_used::get(x, current_scope);
-        SymbolTable* global_scope = current_scope->parent;
+        SymbolTable* global_scope = helper_scope ? helper_scope : current_scope->parent;
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         // The hoisted expression may name a type declared inside a program,
         // which nothing in the global scope can reach and no ExternalSymbol
@@ -1326,11 +1331,70 @@ public:
 
 };
 
+/*
+    A translation unit can be compiled in the scope of an enclosing one, as
+    interactive evaluation does, and call the procedures declared there. The
+    types of the calls are built from the signatures of those procedures,
+    which this pass rewrote in the translation unit that declares them, not in
+    this one. Rewrite them here too, with the helper functions created in this
+    translation unit, which is the one compiled.
+*/
+class EnclosingUnitProcedureCollector
+    : public ASR::BaseWalkVisitor<EnclosingUnitProcedureCollector>
+{
+    SymbolTable* unit_scope;
+
+    void collect(ASR::symbol_t* name) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(name);
+        if (sym == nullptr) return;
+        // A type-bound call names the binding, not the procedure.
+        sym = ASRUtils::symbol_get_past_StructMethodDeclaration(sym);
+        if (!ASR::is_a<ASR::Function_t>(*sym)) return;
+        if (ASRUtils::symbol_parent_symtab(sym)->get_tu_scope() == unit_scope) return;
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
+        if (std::find(procedures.begin(), procedures.end(), f) == procedures.end()) {
+            procedures.push_back(f);
+        }
+    }
+
+public:
+    std::vector<ASR::Function_t*> procedures;
+
+    EnclosingUnitProcedureCollector(SymbolTable* unit_scope)
+        : unit_scope(unit_scope) {}
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        collect(x.m_name);
+        ASR::BaseWalkVisitor<EnclosingUnitProcedureCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        collect(x.m_name);
+        ASR::BaseWalkVisitor<EnclosingUnitProcedureCollector>::visit_SubroutineCall(x);
+    }
+};
+
+static void rewrite_enclosing_unit_signatures(FunctionTypeVisitor &v,
+        ASR::TranslationUnit_t &unit) {
+    if (unit.m_symtab->parent == nullptr) return;
+    EnclosingUnitProcedureCollector collector(unit.m_symtab);
+    collector.visit_TranslationUnit(unit);
+    v.replacer.helper_scope = unit.m_symtab;
+    for (ASR::Function_t* f : collector.procedures) {
+        v.current_scope = f->m_symtab;
+        v.visit_FunctionType(*ASR::down_cast<ASR::FunctionType_t>(
+            f->m_function_signature));
+    }
+    v.replacer.helper_scope = nullptr;
+    v.current_scope = nullptr;
+}
+
 void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& /*pass_options*/) {
     FunctionTypeVisitor v(al, unit);
     PassUtils::make_new_tu_functions_private(unit, [&]() {
         v.visit_TranslationUnit(unit);
+        rewrite_enclosing_unit_signatures(v, unit);
     });
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);

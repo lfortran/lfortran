@@ -5121,6 +5121,94 @@ end subroutine
     CHECK(r.result.f64 == 12.0);
 }
 
+// The type of a procedure of an earlier cell can call a procedure of that
+// cell: the getter through which the bound of a function result reads a
+// use-associated variable. A later cell copies that call into the type of
+// its own call of the procedure, so it must name the getter of the scope
+// later cells see.
+TEST_CASE("FortranEvaluator earlier cell's function with a getter in its result bound") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("module mrepl4; integer :: n = 3; end module").ok);
+    REQUIRE(e.evaluate2("function ff() result(r); use mrepl4, only: n; "
+        "real :: r(n); r = 1; end function").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("sum(ff())");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 3);
+    r = e.evaluate2("size(ff())");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 3);
+}
+
+// A procedure calling an earlier cell's function whose result bound reads a
+// use-associated variable through a getter of that cell depends on the
+// getter, which the type of the call names.
+TEST_CASE("FortranEvaluator later procedure calling a function with a getter in its result bound") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("module mrepl6; integer :: n = 3; end module").ok);
+    REQUIRE(e.evaluate2("function ff6() result(r); use mrepl6, only: n; "
+        "real :: r(n); r = 1; end function").ok);
+    REQUIRE(e.evaluate2("function gg6() result(s); real :: s; "
+        "s = sum(ff6()); end function").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("gg6()");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 3);
+    REQUIRE(e.evaluate2("subroutine ss6(s); real, intent(out) :: s; "
+        "s = 2 * sum(ff6()); end subroutine").ok);
+    REQUIRE(e.evaluate2("real :: s6").ok);
+    REQUIRE(e.evaluate2("call ss6(s6)").ok);
+    r = e.evaluate2("s6");
+    REQUIRE(r.ok);
+    CHECK(r.result.f32 == 6);
+}
+
+// The bound of an earlier cell's function result can only be evaluated
+// through a helper function, which the cell calling the function creates.
+TEST_CASE("FortranEvaluator earlier cell's function with a result bound needing a helper") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("function fc(a) result(r); integer, intent(in) :: a(:); "
+        "integer :: r(maxval(shape(a))); r = a + 1; end function").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("sum(fc([1, 2, 3]))");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("sum(fc([1, 2, 3, 4]))");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 14);
+
+    REQUIRE(e.evaluate2("module mfc; contains; function gc(a) result(r); "
+        "integer, intent(in) :: a(:); integer :: r(maxval(shape(a))); "
+        "r = 2 * a; end function; end module").ok);
+    REQUIRE(e.evaluate2("use mfc").ok);
+    REQUIRE(e.evaluate2("integer :: x(3)").ok);
+    REQUIRE(e.evaluate2("x = gc([1, 2, 3])").ok);
+    r = e.evaluate2("sum(x)");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 12);
+
+    // A type-bound call names the binding of the function.
+    REQUIRE(e.evaluate2("module mtc; type :: tc; contains; "
+        "procedure, nopass :: f => hc; end type; contains; "
+        "function hc(a) result(r); integer, intent(in) :: a(:); "
+        "integer :: r(maxval(shape(a))); r = a + 1; end function; "
+        "end module").ok);
+    REQUIRE(e.evaluate2("use mtc").ok);
+    REQUIRE(e.evaluate2("type(tc) :: y").ok);
+    r = e.evaluate2("sum(y%f([1, 2, 3]))");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 9);
+}
+
 TEST_CASE("FortranEvaluator interface body to an earlier cell's function as actual argument") {
     CompilerOptions cu;
     cu.interactive = true;

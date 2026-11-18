@@ -595,10 +595,23 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         LCOMPILERS_ASSERT(xx.m_##attr != nullptr);    \
     }    \
 
+// Whether `symtab` belongs to a translation unit compiled in the scope of
+// the one `scope` belongs to. In interactive mode the procedures of earlier
+// cells are edited too (see EditProcedureVisitor::visit_TranslationUnit),
+// and their types can call a helper function that the cell being compiled
+// created for them (see function_call_in_declaration). That reference is
+// already right, and no name resolved from the earlier cell reaches it.
+static inline bool is_in_enclosed_unit(SymbolTable* symtab, SymbolTable* scope) {
+    SymbolTable* unit = symtab->get_tu_scope();
+    SymbolTable* scope_unit = scope->get_tu_scope();
+    return unit != scope_unit && ASRUtils::is_parent(scope_unit, unit);
+}
+
 #define edit_symbol_pointer(attr) ASR::symbol_t* x_sym = x->m_##attr;    \
     SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);    \
     if( x_sym_symtab->get_counter() != current_scope->get_counter() &&    \
-        !ASRUtils::is_parent(x_sym_symtab, current_scope) ) {    \
+        !ASRUtils::is_parent(x_sym_symtab, current_scope) &&    \
+        !is_in_enclosed_unit(x_sym_symtab, current_scope) ) {    \
         std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));    \
         x->m_##attr = current_scope->resolve_symbol(x_sym_name);    \
         LCOMPILERS_ASSERT(x->m_##attr != nullptr);    \
