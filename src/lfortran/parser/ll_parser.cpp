@@ -351,6 +351,7 @@ struct LL {
         // The expressions after the first one, up to the loop variable
         ast_t *y = nullptr;
         Vec<ast_t*> rest;
+        rest.from_pointer_n(nullptr, 0);
         size_t n = 1;
         for (;;) {
             if (is_name(K[i]) && K[i+1] == TK_EQUAL) {
@@ -2524,7 +2525,9 @@ struct LL {
 
     // Is the current token one of the operators of operator_type?
     bool operator_type(intrinsicopType &op) {
+        // OPERATOR() takes a location like the other macros, and ignores it
         Location l = Lc[i];
+        (void)l;
         switch (K[i]) {
             case TK_PLUS: op = OPERATOR(PLUS, l); break;
             case TK_MINUS: op = OPERATOR(MINUS, l); break;
@@ -2563,8 +2566,7 @@ struct LL {
         if (t == KW_OPERATOR) {
             i += 2;
             if (accept(TK_RBRACKET_OLD)) {
-                Location l = Lc[i];
-                op = OPERATOR(DIV, l);
+                op = intrinsicopType::DIV;
                 return Generic::Op;
             }
             if (K[i] == TK_DEF_OP) {
