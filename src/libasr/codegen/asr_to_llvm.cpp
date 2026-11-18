@@ -13842,8 +13842,9 @@ public:
                 target_section->m_v, target_elem_type, module.get());
             llvm::Type* str_desc_ptr_type = str_desc_type->getPointerTo();
             own_str_desc = llvm_utils->CreateAlloca(str_desc_ptr_type, nullptr, "own_str_desc");
-            builder->CreateStore(llvm::ConstantPointerNull::get(
-                llvm::cast<llvm::PointerType>(str_desc_ptr_type)), own_str_desc);
+            // For the stack descriptor made below when the pointer has none.
+            builder->CreateStore(llvm_utils->CreateAlloca(str_desc_type, nullptr,
+                "section_str_desc"), own_str_desc);
             llvm::Value* current_desc = llvm_utils->CreateLoad2(
                 target_type_llvm->getPointerTo(), target_desc);
             llvm_utils->create_if_else(builder->CreateIsNotNull(current_desc), [&]() {

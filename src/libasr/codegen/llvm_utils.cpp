@@ -2253,15 +2253,9 @@ namespace LCompilers {
 
     void LLVMUtils::copy_to_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
         llvm::Type* string_desc_type, llvm::Value* src_str_desc) {
-        ensure_string_descriptor_on_heap(array_desc_type, array_desc, string_desc_type);
         llvm::Value* own_str_desc = CreateLoad2(string_desc_type->getPointerTo(),
             arr_api->get_pointer_to_data(array_desc_type, array_desc));
-        create_if_else(builder->CreateIsNull(src_str_desc), [&]() {
-            builder->CreateStore(llvm::ConstantPointerNull::get(i8_ptr),
-                create_gep2(string_desc_type, own_str_desc, 0));
-        }, [&]() {
-            builder->CreateStore(CreateLoad2(string_desc_type, src_str_desc), own_str_desc);
-        });
+        builder->CreateStore(CreateLoad2(string_desc_type, src_str_desc), own_str_desc);
     }
 
     void LLVMUtils::disassociate_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
