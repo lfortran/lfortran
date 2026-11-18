@@ -2891,8 +2891,8 @@ public:
             m_values = r->m_values; n_values = r->n_values;
         }
 
-        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec, *a_pad, *a_asynchronous, *a_decimal;
-        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = a_pad = a_asynchronous = a_decimal = nullptr;
+        ASR::expr_t *a_unit, *a_fmt, *a_iomsg, *a_iostat, *a_size, *a_id, *a_separator, *a_end, *a_fmt_constant, *a_advance, *a_pos, *a_rec, *a_pad, *a_asynchronous, *a_decimal, *a_delim;
+        a_unit = a_fmt = a_iomsg = a_iostat = a_size = a_id = a_separator = a_end = a_fmt_constant = a_advance = a_pos = a_rec = a_pad = a_asynchronous = a_decimal = a_delim = nullptr;
         ASR::stmt_t *overloaded_stmt = nullptr;
         ASR::symbol_t *a_nml = nullptr;
         std::string read_write = "";
@@ -3397,7 +3397,7 @@ public:
                         body.push_back(al, ASRUtils::STMT(
                             ASR::make_FileWrite_t(al, loc, 0, a_unit,
                             nullptr, nullptr, nullptr,
-                            nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr, a_asynchronous, a_decimal)));
+                            nullptr, 0, nullptr, newline, nullptr, formatted, a_nml, a_rec, nullptr, a_asynchronous, a_decimal, nullptr)));
                         newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
                                 body.size(), nullptr, 0));
                     }
@@ -3552,6 +3552,39 @@ public:
                 if (!ASRUtils::is_character(*ASRUtils::expr_type(a_asynchronous))) {
                     diag.add(Diagnostic(
                         "`asynchronous` must be of type String",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else if (m_arg_str == std::string("delim")) {
+                // delim= applies to output. A read that names it stays ignored.
+                if (_type != AST::decl_stmtType::Write) {
+                    continue;
+                }
+                if (a_delim != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `delim` found)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (kwarg.m_value == nullptr) {
+                    diag.add(Diagnostic(
+                        "`delim` must be a scalar character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_delim = ASRUtils::EXPR(tmp);
+                ASR::ttype_t *a_delim_type = ASRUtils::expr_type(a_delim);
+                if (!ASRUtils::is_character(*a_delim_type)
+                        || ASRUtils::is_array(a_delim_type)) {
+                    diag.add(Diagnostic(
+                        "`delim` must be a scalar character",
                         Level::Error, Stage::Semantic, {
                             Label("", {kwarg.m_value->base.loc})
                         }));
@@ -3999,7 +4032,7 @@ public:
             if (format_statements.find(label) == format_statements.end()) {
                 if (_type == AST::decl_stmtType::Write) {
                     tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit, a_iomsg, a_iostat,
-                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos, a_asynchronous, a_decimal);
+                        a_id, a_values_vec.p, a_values_vec.size(), a_separator, a_end, nullptr, true, a_nml, a_rec, a_pos, a_asynchronous, a_decimal, a_delim);
                     print_statements[tmp] = std::make_pair(&w->base, label);
                     if (dtio_bindings.size() > 0) {
                         format_label_dtio[tmp] = std::make_pair(dtio_bindings, dtio_unit);
@@ -4060,7 +4093,7 @@ public:
             separate_leading_blank = list_directed_leading_blank;
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
             a_iomsg, a_iostat, a_id, a_values_vec.p,
-            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos, a_asynchronous, a_decimal);
+            a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, nullptr, a_pos, a_asynchronous, a_decimal, a_delim);
         } else if ( _type == AST::decl_stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
@@ -4079,7 +4112,7 @@ public:
             }
             tmp = ASR::make_FileWrite_t(al, loc, m_label, a_unit,
                 a_iomsg, a_iostat, a_id, a_values_vec.p,
-                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos, a_asynchronous, a_decimal);
+                a_values_vec.size(), a_separator, a_end, overloaded_stmt, formatted, a_nml, a_rec, a_pos, a_asynchronous, a_decimal, a_delim);
         } else if( _type == AST::decl_stmtType::Read ) {
             if (formatted && a_fmt_constant) {
                 // For READ, do not wrap values in StringFormat (which is for
@@ -11022,7 +11055,7 @@ public:
         args.reserve(al, 1);
         args.push_back(al, space);
         return ASR::make_FileWrite_t(al, loc, 0, nullptr, nullptr,
-            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr, nullptr, nullptr);
+            nullptr, nullptr, args.p, args.size(), nullptr, empty_string, nullptr, true, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     }
 
     void check_io_item_not_function(ASR::expr_t *expr) {
@@ -11160,7 +11193,7 @@ public:
                 if (sym && ASR::is_a<ASR::Namelist_t>(*ASRUtils::symbol_get_past_external(sym))) {
                     tmp = ASR::make_FileWrite_t(al, x.base.base.loc, x.m_label,
                         nullptr, nullptr, nullptr, nullptr, nullptr, 0,
-                        nullptr, nullptr, nullptr, false, sym, nullptr, nullptr, nullptr, nullptr);
+                        nullptr, nullptr, nullptr, false, sym, nullptr, nullptr, nullptr, nullptr, nullptr);
                     return;
                 }
             }

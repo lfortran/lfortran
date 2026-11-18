@@ -481,7 +481,9 @@ typedef struct {
 LFORTRAN_API void _lfortran_namelist_write(
     int32_t unit_num,
     int32_t *iostat,
-    const lfortran_nml_group_t *group
+    const lfortran_nml_group_t *group,
+    const char *delim,
+    int64_t delim_len
 );
 
 LFORTRAN_API void _lfortran_namelist_write_str_array(
@@ -489,7 +491,9 @@ LFORTRAN_API void _lfortran_namelist_write_str_array(
     int64_t elem_len,
     int64_t n_elems,
     int32_t *iostat,
-    const lfortran_nml_group_t *group
+    const lfortran_nml_group_t *group,
+    const char *delim,
+    int64_t delim_len
 );
 
 LFORTRAN_API void _lfortran_namelist_read(
@@ -557,6 +561,7 @@ LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_in
 #define LFORTRAN_IOSTAT_NML_TYPE_MISMATCH           5016  // Type mismatch during read
 #define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
 #define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
+#define LFORTRAN_IOSTAT_NML_INVALID_DELIM           5019  // WRITE DELIM= is not none/apostrophe/quote
 
 // A defined output procedure as the formatter calls it (a callback the
 // `dtio_callbacks` pass builds for each binding of a StringFormat): the

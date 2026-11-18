@@ -10,7 +10,7 @@ Transfers data from expressions to a unit.
 FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id,
     expr* values, expr? separator, expr? end, stmt? overloaded,
     bool is_formatted, symbol? nml, expr? rec, expr? pos,
-    expr? asynchronous, expr? decimal)
+    expr? asynchronous, expr? decimal, expr? delim)
 ```
 
 ### Arguments
@@ -32,6 +32,7 @@ FileWrite(int label, expr? unit, expr? iomsg, expr? iostat, expr? id,
 | `pos` | the file position for a stream access write. |
 | `asynchronous` | `yes` for an asynchronous transfer. |
 | `decimal` | the decimal edit mode of the transfer: `comma` writes a comma as the decimal symbol and separates list-directed values with a semicolon, `point` writes a point. It overrides the mode the unit was connected with, and is unset when the statement names none. |
+| `delim` | the delimiter around character values in list-directed and namelist output: `quote` writes quotes, `apostrophe` writes apostrophes, and `none` writes the values undelimited. It overrides the mode the unit was connected with, and is unset when the statement names none. |
 
 ### Return values
 
@@ -71,6 +72,7 @@ their names.
   :pos nil
   :asynchronous nil
   :decimal nil
+  :delim nil
 )
 ```
 

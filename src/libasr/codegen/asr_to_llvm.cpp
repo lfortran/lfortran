@@ -25860,6 +25860,16 @@ public:
             // Build namelist descriptor and call _lfortran_namelist_write
             llvm::Value* nml_group = build_namelist_descriptor(x.m_nml, true);
 
+            // A null DELIM leaves the unit's delimiter unchanged.
+            llvm::Value *delim_data;
+            llvm::Value *delim_len;
+            if (x.m_delim) {
+                std::tie(delim_data, delim_len) = get_string_data_and_length(x.m_delim);
+            } else {
+                delim_data = llvm::Constant::getNullValue(character_type);
+                delim_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+            }
+
             std::string func_name;
             if (is_string_array) {
                 func_name = "_lfortran_namelist_write_str_array";
@@ -25881,13 +25891,17 @@ public:
                     llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt64Ty(context),
                     llvm_utils->i32->getPointerTo(),
-                    group_type->getPointerTo()
+                    group_type->getPointerTo(),
+                    character_type,
+                    llvm::Type::getInt64Ty(context)
                 };
             } else {
                 args = {
                     llvm::Type::getInt32Ty(context),
                     llvm_utils->i32->getPointerTo(),
-                    group_type->getPointerTo()
+                    group_type->getPointerTo(),
+                    character_type,
+                    llvm::Type::getInt64Ty(context)
                 };
             }
             llvm::Function* fn = LLVM::get_or_declare_function(*module, func_name,
@@ -25918,9 +25932,10 @@ public:
                     llvm::APInt(64, n_elems_val)
                 );
 
-                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group});
+                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group,
+                    delim_data, delim_len});
             } else {
-                builder->CreateCall(fn, {unit_val, iostat, nml_group});
+                builder->CreateCall(fn, {unit_val, iostat, nml_group, delim_data, delim_len});
             }
 
             return;

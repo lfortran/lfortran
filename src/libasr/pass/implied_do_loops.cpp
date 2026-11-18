@@ -1061,6 +1061,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         ASR::expr_t* m_iostat = nullptr;
         ASR::expr_t* m_pos = nullptr;
         ASR::expr_t* m_decimal = nullptr;
+        ASR::expr_t* m_delim = nullptr;
         bool m_is_formatted = true;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
@@ -1094,6 +1095,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             m_iostat = nullptr;
             m_pos = nullptr;
             m_decimal = nullptr;
+            m_delim = nullptr;
             m_is_formatted = true;
         }
 
@@ -1546,7 +1548,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 } else {
                     // this will be file_write
                     LCOMPILERS_ASSERT(file_write);
-                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr, nullptr, m_decimal));
+                    stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc, 0, m_unit, nullptr, nullptr, nullptr, print_values.p, print_values.size(), nullptr, nullptr, nullptr, true, nullptr, nullptr, nullptr, nullptr, m_decimal, m_delim));
                 }
                 do_loop_body.push_back(al, stmt);
             }
@@ -1578,7 +1580,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc,
                     0, m_unit, m_iomsg, m_iostat, nullptr,
                     args.p, args.size(), nullptr, nullptr, nullptr,
-                    m_is_formatted, nullptr, m_rec, m_pos, nullptr, m_decimal));
+                    m_is_formatted, nullptr, m_rec, m_pos, nullptr, m_decimal, m_delim));
                 do_loop_body.push_back(al, stmt);
             }
 
@@ -2335,6 +2337,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             m_iostat = x.m_iostat;
             m_pos = x.m_pos;
             m_decimal = x.m_decimal;
+            m_delim = x.m_delim;
             m_is_formatted = x.m_is_formatted;
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
