@@ -2020,12 +2020,15 @@ static int multiprocessor_count(void) {
 // n blocks each takes about n times as long as a wave of one, and the last
 // wave as long as a full one: the launch takes about ceil(waves) * n. A
 // version that lets more blocks share a multiprocessor pays when it saves
-// a wave. On an H200 (132 multiprocessors), a q8 matrix-vector product of
-// 4120 blocks takes 3 waves of 14 or 2 of 16 (42 against 32: 28.0 us
-// against 27.0), one of 8704 blocks 5 of either (70 against 80: 52 us
-// against 55), one of 62,080 blocks 34 or 30 (476 against 480: 322 us
-// against 339). The kernel itself when it has one version, or when the
-// device does not tell its occupancy.
+// a wave. The more blocks a multiprocessor holds, the more loads they keep
+// in flight, which pays for a few more blocks in the waves: the version
+// with more blocks is taken up to 1/64 more. On an H200 (132
+// multiprocessors), a q8 matrix-vector product of 4120 blocks takes 3
+// waves of 14 or 2 of 16 (42 against 32: 27.1 us against 26.1), one of
+// 8704 blocks 5 of either (70 against 80: 52.0 us against 52.4), one of
+// 62,080 blocks 34 or 30 (476 against 480: 325 us against 318). The
+// kernel itself when it has one version, or when the device does not tell
+// its occupancy.
 static kernel_func_t launch_version(lfortran_gpu_kernel *k,
         long long blocks, int threads) {
     kernel_entry *e = k->entry;
@@ -2058,7 +2061,7 @@ static kernel_func_t launch_version(lfortran_gpu_kernel *k,
         long long wave = (long long)e->occupancy[v] * multiprocessors;
         cost[v] = (blocks + wave - 1) / wave * e->occupancy[v];
     }
-    return cost[1] < cost[0] ? e->variant : k->func;
+    return cost[1] * 64 <= cost[0] * 65 ? e->variant : k->func;
 #endif
 }
 

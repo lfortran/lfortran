@@ -2,8 +2,9 @@ module gpu_lanes_variants_01_m
 ! A kernel whose iteration is a block of lanes that read vectors of 16 bytes
 ! has a second version, held to fewer registers so that more of its blocks
 ! share a multiprocessor, and each launch runs the version whose last wave of
-! blocks is fuller for its number of blocks (on an H200, 4120 blocks of four
-! rows take the second, 3584 the first).
+! blocks is fuller for its number of blocks, the second one up to 1/64 less
+! full (on an H200, 4120 blocks of four rows take the second, 3584 the
+! first).
 use, intrinsic :: iso_fortran_env, only: int16, int32
 implicit none
 contains
