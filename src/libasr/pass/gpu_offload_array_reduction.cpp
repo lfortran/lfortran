@@ -267,8 +267,14 @@ public:
     ASR::symbol_t *array;
     std::vector<ASR::ArrayItem_t*> elements;
     std::set<ASR::symbol_t*> blocks;
+    // The names of the array, elements' included.
+    size_t names = 0;
 
     explicit ArrayElements(ASR::symbol_t *array_) : array(array_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (ASRUtils::symbol_get_past_external(x.m_v) == array) names++;
+    }
 
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
         if (names_array(x.m_v, array)) {
@@ -293,6 +299,23 @@ bool constant_subscripts(const ASR::ArrayItem_t &x) {
                 || x.m_args[i].m_right == nullptr
                 || !ASRUtils::extract_value(
                     ASRUtils::expr_value(x.m_args[i].m_right), value)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Whether two elements at constant subscripts are the same element.
+bool same_constant_element(const ASR::ArrayItem_t &a,
+        const ASR::ArrayItem_t &b) {
+    if (a.n_args != b.n_args) return false;
+    for (size_t i = 0; i < a.n_args; i++) {
+        int64_t x = 0, y = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(
+                    a.m_args[i].m_right), x)
+                || !ASRUtils::extract_value(ASRUtils::expr_value(
+                    b.m_args[i].m_right), y)
+                || x != y) {
             return false;
         }
     }
@@ -436,17 +459,27 @@ private:
             return false;
         }
         for (const GpuReductionInitializer &t : taken) {
-            if (t.array == array && same_element(*t.element, *element)) {
+            if (t.array == array && same_constant_element(*t.element,
+                    *element)) {
                 return false;
             }
         }
+        // The loop names the array only as elements at constant subscripts,
+        // the element assigned written one way: the reduction then has one
+        // item for it, which starts from the value, and no other item
+        // combines into it after that one.
         ArrayElements named(array);
         for (size_t i = 0; i < region.n_body; i++) {
             named.visit_stmt(*region.m_body[i]);
         }
+        if (named.names != named.elements.size()) return false;
         bool found = false;
         for (ASR::ArrayItem_t *e : named.elements) {
-            found = found || same_element(*e, *element);
+            if (!constant_subscripts(*e)) return false;
+            if (same_constant_element(*e, *element)) {
+                if (!same_element(*e, *element)) return false;
+                found = true;
+            }
         }
         if (!found) return false;
         init.assignment = s;

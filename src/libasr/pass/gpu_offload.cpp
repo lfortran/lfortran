@@ -4084,11 +4084,13 @@ void pass_replace_gpu_offload(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& pass_options) {
     if (!gpu_device_capabilities(pass_options).device_selected()) return;
     GpuOffloadVisitor v(al, pass_options, unit);
-    gpu_take_reduction_initializers(unit, v.reduction_initializers);
     v.asr_changed = true;
     while (v.asr_changed) {
         v.asr_changed = false;
         v.mark_regions_device_code_runs();
+        // After the marking: a loop that device code runs is serial and
+        // keeps the assignments before it.
+        gpu_take_reduction_initializers(unit, v.reduction_initializers);
         v.visit_TranslationUnit(unit);
         // A loop this pass cannot lower is an error, and the compilation
         // stops after the pass. What was drafted for that loop is not
