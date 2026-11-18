@@ -80,7 +80,18 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     // on the module or the procedures that declare its interface. A specific
     // procedure that shares the name of its generic interface is stored
     // under a disambiguated name, from which its own name is recovered.
-    std::string update_name(std::string curr_name, bool global = false) {
+    //
+    // With separate compilation, the ID of the unit is appended only to the
+    // name of an entity that is compiled into every unit that uses it: a
+    // compiler-generated procedure or an entity of an intrinsic module named
+    // by `--intrinsic-module-mangling` (`per_unit`). Any other entity, such
+    // as a global procedure or a module, its procedures and variables, can
+    // be referenced from other units, so its name must be the same in every
+    // unit: it does not depend on the unit, as with `--mangle-underscore`.
+    std::string update_name(std::string curr_name, bool global = false,
+            bool per_unit = false) {
+        std::string unit_id = per_unit
+            ? lcompilers_unique_ID_separate_compilation : "";
         if (startswith(curr_name, "_lpython") || startswith(curr_name, "_lfortran") ) {
             return curr_name;
         } else if (startswith(curr_name, "_lcompilers_") && current_scope) {
@@ -88,17 +99,16 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             uint64_t hash = get_hash(current_scope->asr_owner);
             return module_name + curr_name + "_" + std::to_string(hash) + "_" + lcompilers_unique_ID_separate_compilation;
         } else if (global) {
-            return ASRUtils::strip_genericprocedure_suffix(curr_name) + "_"
-                + lcompilers_unique_ID_separate_compilation;
+            return ASRUtils::strip_genericprocedure_suffix(curr_name) + "_";
         } else if (parent_function_name.size() > 0) {
             // add parent function name to suffix
             std::string name = module_name + curr_name + "_";
             for (auto &a: parent_function_name) {
                 name += a + "_";
             }
-            return name + lcompilers_unique_ID_separate_compilation;
+            return name + unit_id;
         }
-        return module_name + curr_name + "_" + lcompilers_unique_ID_separate_compilation;
+        return module_name + curr_name + "_" + unit_id;
     }
 
     // The global name of an external procedure can be the name of another
@@ -178,7 +188,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         if (all_symbols_mangling || module_name_mangling || should_mangle) {
             sym_to_renamed[sym] = update_name(x.m_name);
         } else if ( intrinsic_module_name_mangling && x.m_intrinsic ) {
-            sym_to_renamed[sym] = update_name(x.m_name);
+            sym_to_renamed[sym] = update_name(x.m_name, false, true);
         }
         if ((global_symbols_mangling && startswith(x.m_name, "_global_symbols"))) {
             should_mangle = true;
@@ -188,7 +198,8 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 // mangle functions / variables declared inside intrinsic modules
                 ASR::symbol_t *sym = a.second;
                 if (sym_to_renamed.find(sym) == sym_to_renamed.end()) {
-                    sym_to_renamed[sym] = update_name(ASRUtils::symbol_name(sym));
+                    sym_to_renamed[sym] = update_name(
+                        ASRUtils::symbol_name(sym), false, true);
                 }
             }
             visit_symbol(*a.second);
@@ -254,7 +265,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 // so it keeps the ID of the unit.
                 sym_to_renamed[sym] = module_name + x.m_name;
             } else {
-                sym_to_renamed[sym] = update_name(x.m_name);
+                sym_to_renamed[sym] = update_name(x.m_name, false, true);
             }
         }
         if (mangle_underscore_external) {
