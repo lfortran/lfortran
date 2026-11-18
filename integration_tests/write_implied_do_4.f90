@@ -1,8 +1,9 @@
 program write_implied_do_4
 ! An unformatted WRITE whose list has an implied-DO of items of different
-! types with a run-time bound: error conditions, zero-trip loops and CONVERT=.
+! types with a run-time bound: error conditions, zero-trip loops, CONVERT=
+! and a UNIT= expression that is evaluated once.
 implicit none
-integer :: i, n, m, k(2), k2(2), last, ios, sz, marker
+integer :: i, n, m, k(2), k2(2), last, ios, sz, marker, calls
 real(8) :: z(2), z2(2)
 character(len=80) :: msg
 n = 2
@@ -61,5 +62,39 @@ print *, marker, m
 ! The record length 28 and the value 2, big endian
 if (marker /= 469762048 .or. m /= 33554432) &
     error stop "convert=: not big endian"
+
+! The unit is identified once per statement: a function that gives the unit
+! is called once, however many iterations the loop has
+calls = 0
+open(10, file='write_implied_do_4.bin', form='unformatted', status='replace')
+write(unit_of()) n, (z(i), k(i), i=1,n), 3
+print *, calls
+if (calls /= 1) error stop "unit function: not called once"
+ios = 1
+write(unit_of(), iostat=ios) (z(i), k(i), i=1,n), n
+print *, calls
+if (calls /= 2) error stop "unit function with iostat=: not called once"
+if (ios /= 0) error stop "unit function with iostat=: error"
+close(10)
+open(10, file='write_implied_do_4.bin', form='unformatted', status='old')
+z2 = 0
+k2 = 0
+read(10) m, (z2(i), k2(i), i=1,m), last
+if (m /= 2 .or. any(z2 /= z) .or. any(k2 /= k) .or. last /= 3) &
+    error stop "unit function: wrong values"
+z2 = 0
+k2 = 0
+read(10) (z2(i), k2(i), i=1,n), m
+if (m /= 2 .or. any(z2 /= z) .or. any(k2 /= k)) &
+    error stop "unit function with iostat=: wrong values"
+close(10, status='delete')
 print *, "ok"
+
+contains
+
+integer function unit_of()
+calls = calls + 1
+unit_of = 10
+end function
+
 end program

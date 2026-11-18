@@ -1642,9 +1642,22 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         // so on, and a last part with the remaining items (possibly none) that
         // completes the record. Only the first part positions the unit, and
         // with IOSTAT= a first part is always written, possibly without items,
-        // so that IOSTAT= is set before any later part checks it.
+        // so that IOSTAT= is set before any later part checks it. The unit is
+        // identified once per statement (F2023 12.6.4.1): a unit expression
+        // other than a variable or a constant, such as a function reference,
+        // is evaluated once into a variable before the parts, which all use
+        // that variable.
         void split_unformatted_write(const ASR::FileWrite_t &x) {
             const Location& loc = x.base.base.loc;
+            if (m_unit && !ASR::is_a<ASR::Var_t>(*m_unit)
+                    && !ASRUtils::expr_value(m_unit)) {
+                std::string name = current_scope->get_unique_name(
+                    "__implied_do_unit");
+                ASR::stmt_t* assign = nullptr;
+                m_unit = PassUtils::create_auxiliary_variable_for_expr(m_unit,
+                    name, al, current_scope, assign);
+                pass_result.push_back(al, assign);
+            }
             bool first_part = true;
             Vec<ASR::expr_t*> part;
             part.reserve(al, x.n_values);
