@@ -5538,6 +5538,10 @@ x = 42
 end subroutine
 )").ok);
     REQUIRE(e.evaluate2("integer :: z0").ok);
+#ifndef __EMSCRIPTEN__
+    // In the WASM build this cell does not load ("function index ... is out
+    // of bounds", #17138): the implicit-interface call of `csub` goes
+    // through a procedure pointer.
     // Inside a BLOCK, `csub` gets an implicit interface; the JIT linker
     // resolves it to the subroutine of the first cell.
     REQUIRE(e.evaluate2(R"(block
@@ -5547,6 +5551,7 @@ end block
     LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("z0");
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 42);
+#endif
 }
 
 // This cell is rejected only by ASR verification, which runs only in
