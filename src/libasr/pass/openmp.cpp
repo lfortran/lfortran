@@ -618,15 +618,27 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             // A procedure of the translation unit is visible everywhere.
             return;
         }
-        ASR::symbol_t* func_sym = nullptr;
-        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-            func_sym = import_procedure_implementation(al, copies, current_scope, x.m_name);
-        } else {
-            func_sym = resolve_symbol_within(current_scope, outermost_scope,
-                ASRUtils::symbol_name(x.m_name));
-            if (func_sym == nullptr &&
-                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
-                func_sym = current_scope->resolve_symbol(fn->m_name);
+        // The outline is parented at the translation unit, so it does not
+        // contain a callee declared in the caller. Import one that is not
+        // already there. A local interface has no body to import; duplicate
+        // the declaration. Any other procedure is imported from its module,
+        // or copied into one when a program or procedure contains it. Do not
+        // resolve the name outside the outline: a module sibling is not in
+        // that parent chain.
+        ASR::symbol_t* func_sym = resolve_symbol_within(current_scope, outermost_scope,
+            ASRUtils::symbol_name(x.m_name));
+        if (func_sym == nullptr) {
+            ASR::deftypeType deftype = ASRUtils::get_FunctionType(fn)->m_deftype;
+            ASR::symbol_t* proc_owner = ASRUtils::get_asr_owner(&fn->base);
+            bool in_module = proc_owner != nullptr
+                && ASR::is_a<ASR::Module_t>(*proc_owner);
+            if (!in_module && (deftype == ASR::deftypeType::Interface
+                    || deftype == ASR::deftypeType::ImplicitInterface)) {
+                func_sym = import_procedure_declaration(al, copies, current_scope,
+                    &fn->base);
+            } else {
+                func_sym = import_procedure_implementation(al, copies,
+                    current_scope, x.m_name);
             }
         }
         if (copies.failed) return;
@@ -661,11 +673,11 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
 
 // The symbol in `scope` for `proc`, a procedure with a body used by code moved
 // into `scope`. A module procedure is imported from its module. A procedure
-// contained in a program cannot be imported from the program, so it is copied,
-// once, into a module of its own, and the procedures, interfaces and
-// declarations the copy refers to are imported into it the same way. The
-// copy is recorded in `copies`. The program keeps its own procedure, which
-// the rest of the program refers to.
+// contained in a program or in another procedure cannot be imported from
+// there, so it is copied, once, into a module of its own, and the procedures,
+// interfaces and declarations the copy refers to are imported into it the
+// same way. The copy is recorded in `copies`. The original procedure stays
+// where it is; the rest of the program refers to it.
 static ASR::symbol_t* import_procedure_implementation(Allocator &al,
         OpenMPOutlineState &copies, SymbolTable* scope, ASR::symbol_t* proc) {
     if (copies.failed) return nullptr;
@@ -679,10 +691,15 @@ static ASR::symbol_t* import_procedure_implementation(Allocator &al,
     }
     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(target);
     ASR::symbol_t* owner = ASRUtils::get_asr_owner(target);
-    if (owner != nullptr && ASR::is_a<ASR::Program_t>(*owner)) {
+    if (owner != nullptr && (ASR::is_a<ASR::Program_t>(*owner)
+            || ASR::is_a<ASR::Function_t>(*owner))) {
         ASR::symbol_t*& copy = copies.procedure_copies[fn];
         if (copy == nullptr) {
-            SymbolTable* tu_scope = ASRUtils::symbol_parent_symtab(target)->parent;
+            // A procedure contained in a module procedure is not a direct
+            // child of the translation unit. A program procedure is.
+            SymbolTable* owner_scope = ASRUtils::symbol_parent_symtab(target);
+            SymbolTable* tu_scope = ASR::is_a<ASR::Function_t>(*owner)
+                ? owner_scope->get_tu_scope() : owner_scope->parent;
             SymbolTable* module_scope = al.make_new<SymbolTable>(tu_scope);
             ASRUtils::SymbolDuplicator duplicator(al);
             ASR::symbol_t* moved = duplicator.duplicate_Function(fn, module_scope);
