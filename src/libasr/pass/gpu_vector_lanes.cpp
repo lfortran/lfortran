@@ -602,10 +602,11 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
                 return header ? Access::Read : Access::Write;
             }
             // A loop whose body assigns `s` before it reads it, as a loop
-            // inside it over `s` does: what `s` held before is not read in
-            // it, and if it runs no iteration, is read only after it.
+            // inside it over `s` does, or reads it only in such loops of its
+            // own: what `s` held before is not read in it, and if it runs no
+            // iteration, is read only after it.
             if (!header && d->n_orelse == 0 && first_access(d->m_body, 0,
-                    d->n_body, s) == Access::Write) {
+                    d->n_body, s) != Access::Read) {
                 continue;
             }
         } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*x)) {
@@ -620,8 +621,21 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
             if (index) return header ? Access::Read : Access::Write;
             // As for a loop above: a body that assigns `s` first.
             if (!header && first_access(d->m_body, 0, d->n_body, s)
-                    == Access::Write) {
+                    != Access::Read) {
                 continue;
+            }
+        } else if (ASR::is_a<ASR::If_t>(*x)) {
+            // An `if` both of whose branches assign `s` before they read it
+            // (the cosine and sine of a rotation, by the part of a vector);
+            // or that reads it in neither.
+            auto *c = ASR::down_cast<ASR::If_t>(x);
+            if (!mentions(c->m_test, s)) {
+                Access a = first_access(c->m_body, 0, c->n_body, s);
+                Access b = first_access(c->m_orelse, 0, c->n_orelse, s);
+                if (a == Access::Write && b == Access::Write) {
+                    return Access::Write;
+                }
+                if (a != Access::Read && b != Access::Read) continue;
             }
         }
         if (mentions(*x, s)) return Access::Read;
@@ -3632,7 +3646,16 @@ private:
                     // A `do concurrent` of the iteration says its own
                     // iterations are the ones to share out, and the plain
                     // loop with the sum inside it stays on each lane.
-                    if (prefers_inner_reduction(
+                    // In a kernel whose iteration has the lanes of a block,
+                    // one of at least a SIMD-group of iterations known at
+                    // compile time (the dimensions of a head) is shared out
+                    // as it is, with each sum inside it on one lane.
+                    int64_t known = 0;
+                    bool wide = k.block_lanes > 0 && concurrent_loops.count(s)
+                        && constant_bounds(ASR::down_cast<ASR::DoLoop_t>(s),
+                            known)
+                        && known >= k.lanes_count;
+                    if (!wide && prefers_inner_reduction(
                             ASR::down_cast<ASR::DoLoop_t>(s), frames)) {
                         if (concurrent_loops.count(s)
                                 && share_either(s, frames)) {
@@ -4904,7 +4927,34 @@ private:
             alone.n)));
     }
 
+    // Whether every element `items` names of the array of `w` has, at one
+    // subscript, the same expression as `w`, which tells the iterations of
+    // the loop over `v` apart.
+    bool own_slice(ASR::expr_t *w, const std::vector<ASR::expr_t*> &items,
+            ASR::symbol_t *v, const std::set<ASR::symbol_t*> &changed) {
+        auto *x = ASR::down_cast<ASR::ArrayItem_t>(w);
+        std::vector<ASR::symbol_t*> wp = path_of(w);
+        for (size_t k = 0; k < x->n_args; k++) {
+            ASR::expr_t *sub = x->m_args[k].m_right;
+            if (!injective(sub, v, changed)) continue;
+            bool all = true;
+            for (ASR::expr_t *item : items) {
+                if (!overlapping(path_of(item), wp)) continue;
+                auto *y = ASR::down_cast<ASR::ArrayItem_t>(item);
+                if (y->n_args != x->n_args || !same_expr(y->m_v, x->m_v)
+                        || y->m_args[k].m_left || y->m_args[k].m_step
+                        || !same_expr(y->m_args[k].m_right, sub)) {
+                    all = false;
+                    break;
+                }
+            }
+            if (all) return true;
+        }
+        return false;
+    }
+
     bool distributable(ASR::DoLoop_t *d, std::vector<Frame> &frames) {
+        std::set<ASR::expr_t*> sliced;
         if (d->n_orelse > 0 || d->m_head.m_v == nullptr) return false;
         ASR::symbol_t *v = root_of(d->m_head.m_v);
         if (!k.private_scalar(v)) return false;
@@ -5008,18 +5058,31 @@ private:
             bool same = false;
             for (ASR::expr_t *w : written) {
                 if (overlapping(path_of(w), path_of(a->m_target))) {
-                    if (!same_expr(w, a->m_target)) return false;
+                    if (!same_expr(w, a->m_target)) {
+                        sliced.insert(w);
+                    }
                     same = true;
                 }
             }
             if (!same) written.push_back(a->m_target);
         }
-        // Each of them is read at that subscript list only.
+        // Each of them is read at that subscript list only, or, for an
+        // array assigned at several (`x(d, i)` and `x(d, 7)`), named only
+        // at subscript lists that all have the same subscript, which tells
+        // the iterations apart, in one place: each iteration has a slice
+        // of its own.
         Designators names;
         names.visit_expr(*d->m_head.m_v);
         for (size_t i = 0; i < d->n_body; i++) names.visit_stmt(*d->m_body[i]);
         for (ASR::expr_t *w : written) {
             std::vector<ASR::symbol_t*> wp = path_of(w);
+            if (sliced.count(w)) {
+                if (!own_slice(w, names.items, v, changed)) return false;
+                for (ASR::expr_t *whole : names.wholes) {
+                    if (overlapping(path_of(whole), wp)) return false;
+                }
+                continue;
+            }
             for (ASR::expr_t *item : names.items) {
                 if (overlapping(path_of(item), wp) && !same_expr(item, w)
                         && !disjoint(item, w, changed)) {
@@ -5666,12 +5729,12 @@ constexpr int64_t block_array_bytes_max = 32 * 1024;
 // The arrays of the iteration of `kernel` that may live in the shared
 // memory of a block whose threads are all lanes of the one iteration: its
 // locals, or those of a block it runs outside every loop (a block inside a
-// loop has one of each per iteration of that loop), of constant extents
-// and of at least as many elements as a SIMD-group has lanes, of integers,
-// reals or logicals, with no initial value, and named only by their
-// elements and their shape (not handed whole to a procedure or a pointer,
-// whose memory space they would change). Together they fit
-// block_array_bytes_max.
+// loop has one of each per iteration of that loop), of constant extents,
+// of integers, reals or logicals, with no initial value, and named only by
+// their elements and their shape (not handed whole to a procedure or a
+// pointer, whose memory space they would change). Together they fit
+// block_array_bytes_max; share_block_arrays keeps the small ones only
+// with a large one.
 std::vector<ASR::symbol_t*> block_array_candidates(
         const ASR::Function_t &kernel, const KernelInfo &k,
         const GpuDeviceCapabilities &caps) {
@@ -5739,7 +5802,7 @@ std::vector<ASR::symbol_t*> block_array_candidates(
                     && length > 0;
                 elements *= length;
             }
-            if (!constant || elements < caps.lanes_per_iteration) continue;
+            if (!constant) continue;
             int64_t size = elements
                 * ASRUtils::extract_kind_from_ttype_t(a->m_type);
             if (bytes + size > block_array_bytes_max) continue;
@@ -5768,6 +5831,10 @@ std::unique_ptr<LaneRewriter> share_block_arrays(Allocator &al,
     while (!trial.empty()) {
         k.block_arrays = trial;
         k.block_lanes = caps.lanes_block;
+        // The lanes of the one iteration of a block share a sum that reads
+        // across the columns of an array as well: no other iteration reads
+        // along its rows next to it.
+        k.scattered_reductions = true;
         // The iteration never runs on one lane.
         k.shared_only = true;
         std::vector<Frame> frames;
@@ -5780,6 +5847,15 @@ std::unique_ptr<LaneRewriter> share_block_arrays(Allocator &al,
                 && rewrite->lane_limit == 0) {
             used = rewrite->distributed_block_arrays();
         }
+        // Arrays of fewer elements than a SIMD-group has lanes (the norms
+        // of a few heads) only join one that has as many: the loops over
+        // them alone do not keep a block's lanes busy.
+        bool large = false;
+        for (ASR::symbol_t *a : used) {
+            large |= ASRUtils::get_fixed_size_of_array(
+                ASRUtils::symbol_type(a)) >= caps.lanes_per_iteration;
+        }
+        if (!large) used.clear();
         if (used == trial) return rewrite;
         rewrite->restore();
         rewrite.reset();
@@ -5787,6 +5863,7 @@ std::unique_ptr<LaneRewriter> share_block_arrays(Allocator &al,
     }
     k.block_arrays.clear();
     k.block_lanes = 0;
+    k.scattered_reductions = false;
     k.shared_only = shared_only;
     return rewrite;
 }
