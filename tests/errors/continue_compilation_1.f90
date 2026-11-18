@@ -5262,3 +5262,13 @@ subroutine cc1_typed_external_section_or_keyword(n, l)
     l = cc1_tesk_f1(1:2)  ! {Error} Type mismatch in assignment
     l = cc1_tesk_f2(x=n)  ! {Error} Array reference is not allowed on scalar variable
 end subroutine
+
+! A value of a DATA implied-DO must have a type that can initialize the
+! element, as in the other DATA forms: integer cannot initialize logical.
+subroutine cc1_data_implied_do_type_errors()
+    integer :: i
+    real :: cc1_didt_x(2)
+    logical :: cc1_didt_l(2)
+    data (cc1_didt_x(i), i=1,2) / 1, 'a' /  ! {Error} Cannot initialize real(4) variable with character(len=1) value in DATA statement
+    data (cc1_didt_l(i), i=1,2) / 1, 0 /  ! {Error} Cannot initialize logical(4) variable with integer(4) value in DATA statement
+end subroutine

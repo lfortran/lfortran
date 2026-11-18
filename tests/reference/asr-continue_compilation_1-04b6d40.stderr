@@ -6500,6 +6500,18 @@ semantic error: Array reference is not allowed on scalar variable
 5263 |     l = cc1_tesk_f2(x=n)  ! {Error} Array reference is not allowed on scalar variable
      |         ^^^^^^^^^^^^^^^^ 
 
+semantic error: Cannot initialize real(4) variable with character(len=1) value in DATA statement
+    --> tests/errors/continue_compilation_1.f90:5272:38
+     |
+5272 |     data (cc1_didt_x(i), i=1,2) / 1, 'a' /  ! {Error} Cannot initialize real(4) variable with character(len=1) value in DATA statement
+     |                                      ^^^ 
+
+semantic error: Cannot initialize logical(4) variable with integer(4) value in DATA statement
+    --> tests/errors/continue_compilation_1.f90:5273:35
+     |
+5273 |     data (cc1_didt_l(i), i=1,2) / 1, 0 /  ! {Error} Cannot initialize logical(4) variable with integer(4) value in DATA statement
+     |                                   ^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
