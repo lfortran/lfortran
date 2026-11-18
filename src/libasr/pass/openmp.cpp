@@ -2955,45 +2955,11 @@ class ParallelRegionVisitor :
             }
             reduction_variables.clear();
 
-            for(auto it:involved_symbols) {
-                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
-                ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first);
-                LCOMPILERS_ASSERT(sym != nullptr);
-                if(c.variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate || ASRUtils::is_array(ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(actual_sym)))) {
-                    continue;
-                }
-                ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, ASRUtils::symbol_type(actual_sym)));
-                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
-                if(local_var->m_intent == ASR::intentType::In || local_var->m_storage == ASR::storage_typeType::Parameter) {
-                    continue;
-                }
-                ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
-                                        ASR::make_Variable_t(al, local_var->base.base.loc, local_var->m_parent_symtab,
-                                        s2c(al, local_var->m_parent_symtab->get_unique_name("ptr_" + it.first)), local_var->m_dependencies, local_var->n_dependencies,
-                                        local_var->m_intent, nullptr, nullptr,
-                                        ASR::storage_typeType::Default, ptr_type, local_var->m_type_declaration,
-                                        local_var->m_abi, local_var->m_access, local_var->m_presence,
-                                        local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
-                                        local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_asynchronous, local_var->m_is_protected,
-                                        ASR::pass_attrType::NotMethod, nullptr,
-                                        local_var->m_codims, local_var->n_codims)
-                                        );
-                ASR::Variable_t* tmp_var = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                current_scope->add_symbol(tmp_var->m_name, tmp_sym);
-                // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
-                nested_lowered_body.push_back(b.CPtrToPointer(
-                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                    sym, ASRUtils::symbol_type(sym), nullptr)),
-                    b.Var(current_scope->get_symbol(tmp_var->m_name)),
-                    nullptr
-                ));
-
-                nested_lowered_body.push_back(b.Assignment(
-                    b.Var(actual_sym),
-                    b.Var(current_scope->get_symbol(tmp_var->m_name))
-                ));
-            }
-
+            // A shared scalar is the address stored in the thread data. The
+            // outlined procedure associates its own pointer with that address
+            // and reads and writes the original through it, so there is
+            // nothing to copy back. A pointer temporary cloned from a dummy
+            // keeps that dummy's intent, which LLVM does not allocate.
 
             remove_original_statement = true;
         }
@@ -4245,52 +4211,10 @@ class ParallelRegionVisitor :
                 ));
             }
             reduction_variables.clear();
-            
-            // Handle shared variables (similar to parallel)
-            for(auto it:involved_symbols) {
-                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
-                ASR::symbol_t* sym = current_scope->get_symbol(
-                    std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first);
-                LCOMPILERS_ASSERT(sym != nullptr);
-                if(c.variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate || 
-                ASRUtils::is_array(ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(actual_sym)))) {
-                    continue;
-                }
-                ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, 
-                    ASRUtils::symbol_type(actual_sym)));
-                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
-                if(local_var->m_intent == ASR::intentType::In || 
-                local_var->m_storage == ASR::storage_typeType::Parameter) {
-                    continue;
-                }
-                ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_Variable_t(al, local_var->base.base.loc, local_var->m_parent_symtab,
-                    s2c(al, local_var->m_parent_symtab->get_unique_name("ptr_" + it.first)), 
-                    local_var->m_dependencies, local_var->n_dependencies,
-                    local_var->m_intent, nullptr, nullptr,
-                    ASR::storage_typeType::Default, ptr_type, local_var->m_type_declaration,
-                    local_var->m_abi, local_var->m_access, local_var->m_presence,
-                    local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
-                    local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_asynchronous, local_var->m_is_protected,
-                    ASR::pass_attrType::NotMethod, nullptr,
-                    local_var->m_codims, local_var->n_codims)
-                );
-                ASR::Variable_t* tmp_var = ASR::down_cast<ASR::Variable_t>(tmp_sym);
-                current_scope->add_symbol(tmp_var->m_name, tmp_sym);
-                
-                nested_lowered_body.push_back(b.CPtrToPointer(
-                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                    sym, ASRUtils::symbol_type(sym), nullptr)),
-                    b.Var(current_scope->get_symbol(tmp_var->m_name)),
-                    nullptr
-                ));
-                
-                nested_lowered_body.push_back(b.Assignment(
-                    b.Var(actual_sym),
-                    b.Var(current_scope->get_symbol(tmp_var->m_name))
-                ));
-            }
-            
+
+            // Same as visit_OMPParallel: the outlined procedure already uses
+            // the shared scalar through the address in the thread data.
+
             remove_original_statement = true;
         }
 
