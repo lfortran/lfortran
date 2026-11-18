@@ -1868,9 +1868,10 @@ of Qwen3.8-27B on an H200 that stores 4 rows per iteration took 0.3 to 1%
 longer when its lanes stored a row each, also with the lane read again
 from the thread index after the loop of the sums, which left that loop as
 it was; one that also adds them to the rows of another vector, and scales
-them by a third, 1.5% shorter. The statements of the first group, with each such integer expression `e` turned into
-`e + g*step` and each such scalar into the one of group `g`, are then the
-statements of group `g` (`generic`), which lane g runs: after the lanes
+them by a third, 1.5% shorter. The statements of the first group, with
+each such integer expression `e` turned into `e + g*step` and each such
+scalar into the one of group `g`, are then the statements of group `g`
+(`generic`), which lane g runs: after the lanes
 combined the sums of four rows of a matrix-vector product, four lanes
 finish a row each, as a hand-written kernel does, instead of the first
 lane finishing the four. `reordered` groups are made of statements that
@@ -3516,8 +3517,8 @@ private:
     }
 
     // The first lane runs the statements, the others wait for it and take
-    // the private scalars it assigned. Whether they wait.
-    bool emit_single(const std::vector<ASR::stmt_t*> &stmts,
+    // the private scalars it assigned.
+    void emit_single(const std::vector<ASR::stmt_t*> &stmts,
             Vec<ASR::stmt_t*> &out) {
         const Location &loc = stmts[0]->base.loc;
         ASRUtils::ASRBuilder b(al, loc);
@@ -3540,7 +3541,6 @@ private:
                 ASR::make_GpuLaneBroadcast_t(al, loc, v,
                     ASRUtils::symbol_type(s), nullptr))));
         }
-        return true;
     }
 
     // A run of single statements, as what the lanes share out (groups of
@@ -3720,7 +3720,8 @@ private:
             for (ASR::stmt_t *s : part.stmts) t.visit_stmt(*s);
             wait_if(t.meets(unwaited.named, unwaited.assigned));
             if (part.kind == RunPart::Kind::Alone) {
-                if (emit_single(part.stmts, out)) unwaited.clear();
+                emit_single(part.stmts, out);
+                unwaited.clear();
                 continue;
             }
             auto *x = ASR::down_cast<ASR::If_t>(part.stmts[0]);

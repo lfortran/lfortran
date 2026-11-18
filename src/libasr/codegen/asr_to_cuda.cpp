@@ -178,13 +178,9 @@ struct CudaDialect {
     // occupancy, which lets more of its blocks share a multiprocessor, and
     // the blocks: empty and zero when there is none. A thread is given
     // registers in steps of 8, so the next step has 8 fewer than the
-    // bound of kernel_qualifier leaves. The runtime launches whichever
-    // version fills the waves of the multiprocessors better for the
-    // blocks of the launch (lfortran_gpu_cuda.c): on an H200, the q8
-    // matrix-vector product of 16,480 rows (4 per block, 14 or 16 blocks
-    // per multiprocessor, 2.23 or 1.95 waves of 132) took 28.0 us with 14
-    // and 27.0 with 16, while one of 34,816 rows (4.7 or 4.1 waves) took
-    // 52 and 55.
+    // bound of kernel_qualifier leaves. The runtime picks the version for
+    // the blocks of each launch from the waves of the multiprocessors each
+    // takes (launch_version in lfortran_gpu_cuda.c).
     std::pair<std::string, int64_t> occupancy_variant(
             int64_t threads_per_block, bool few_blocks,
             int64_t lane_vectors) const {
