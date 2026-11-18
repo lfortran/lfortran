@@ -9,3 +9,15 @@ semantic error: the procedure 'f' has an implicit interface, so it is not a spec
    |
 15 |     real :: work(f(n))
    |                  ^^^^ 
+
+semantic error: the procedure 'nf' has an implicit interface, so it is not a specification function and cannot be referenced in a specification expression
+  --> tests/errors/implicit_interface_specification_function.f90:18:15
+   |
+18 | character(len=nf()) function implicit_interface_specification_function_len()
+   |               ^^^^ 
+
+semantic error: the procedure 'kf' has an implicit interface, so it is not a specification function and cannot be referenced in a specification expression
+  --> tests/errors/implicit_interface_specification_function.f90:22:11
+   |
+22 | real(kind=kf()) function implicit_interface_specification_function_kind()
+   |           ^^^^ 

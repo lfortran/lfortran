@@ -14,3 +14,11 @@ subroutine implicit_interface_specification_function_dummy(f, n)
     integer, external :: f
     real :: work(f(n))
 end subroutine
+
+character(len=nf()) function implicit_interface_specification_function_len()
+    implicit_interface_specification_function_len = "abc"
+end function
+
+real(kind=kf()) function implicit_interface_specification_function_kind()
+    implicit_interface_specification_function_kind = 1
+end function
