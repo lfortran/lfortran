@@ -1959,6 +1959,7 @@ static void replay_launch_or_issue(kernel_func_t func, dim3 grid, dim3 block,
         int n_args, void **args, const size_t *sizes) {
     (void)n_args;
     (void)sizes;
+    (void)replay_overlap;
     issue_launch(func, grid, block, args, 0);
 }
 #endif
