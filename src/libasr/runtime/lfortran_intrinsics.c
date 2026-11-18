@@ -12037,10 +12037,11 @@ static void list_directed_input_init(list_directed_input *in, FILE *filep,
     in->lsep = in->decimal_mode == 1 ? ';' : ',';
 }
 
-// An item that fails ends its READ statement, whose end-of-statement
-// processing (_lfortran_empty_read) is then skipped: the values of a repeat
-// that the statement did not take are dropped here instead, so that the
-// next READ on the unit does not take them.
+// When an item fails, the end-of-statement processing (_lfortran_empty_read)
+// is skipped if no later item of the READ statement succeeds, so the values
+// of a pending repeat could reach the next READ on the unit. They are dropped
+// here as soon as an item fails; later items of the same statement then read
+// new values from the unit.
 // Returns whether the item was read.
 static bool list_directed_item_end(const list_directed_input *in,
         int32_t *iostat) {
