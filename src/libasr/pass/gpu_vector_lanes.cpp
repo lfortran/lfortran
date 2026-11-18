@@ -5056,9 +5056,12 @@ private:
 // where the loads of the first phase could have hidden them. An element is
 // read early when
 //
-// * its array is an argument of the kernel that nothing in the kernel
-//   assigns (an assignment, a procedure's dummy that is not `intent(in)`,
-//   an atomic), and no pointer is associated in the kernel;
+// * its array is an argument of the kernel that nothing before it in the
+//   kernel assigns (an assignment, a procedure's dummy that is not
+//   `intent(in)`, an atomic), nor the loop it is read in, and no pointer is
+//   associated in the kernel: the lanes that may assign it only do so
+//   after they read it (the state of a recurrence, which each lane reads
+//   and then writes);
 // * it is read in a statement of the list, in a block it runs, or in the
 //   body of a loop the lanes share out (distribute) of at most as many
 //   iterations as the block has lanes, which each lane runs once at most:
@@ -5079,17 +5082,14 @@ public:
         : al(al_), k(k_), loops(loops_), held(held_), lanes(lanes_) {}
 
     void run(ASR::Function_t &kernel) {
-        // What the kernel assigns, and whether it associates a pointer.
-        SharedAccess access(k);
+        // Whether the kernel associates a pointer.
         bool associates = false;
         for (size_t i = 0; i < kernel.n_body; i++) {
-            access.visit_stmt(*kernel.m_body[i]);
             Effects e(k);
             e.visit_stmt(*kernel.m_body[i]);
             associates |= e.associates;
         }
         if (associates) return;
-        written = access.writes;
         class Assigned : public ASR::BaseWalkVisitor<Assigned> {
         public:
             std::map<ASR::symbol_t*, int> count;
@@ -5139,7 +5139,8 @@ private:
     const std::set<ASR::stmt_t*> &held;
     int64_t lanes;
     ASR::Function_t *fn = nullptr;
-    std::set<ASR::symbol_t*> written;
+    // The arrays the statements before the list being looked at assign.
+    std::set<ASR::symbol_t*> prior;
     std::map<ASR::symbol_t*, int> assignments;
     int hoisted = 0;
     static constexpr int early_loads_max = 16;
@@ -5161,7 +5162,7 @@ private:
         ASR::symbol_t *a = root_of(item->m_v);
         ASR::ttype_t *t = ASRUtils::expr_type(e);
         return a && k.params.count(a) && !k.workspaces.count(a)
-            && !written.count(a) && ASRUtils::is_array(ASRUtils::symbol_type(a))
+            && ASRUtils::is_array(ASRUtils::symbol_type(a))
             && !ASRUtils::is_pointer(ASRUtils::symbol_type(a))
             && (ASRUtils::is_integer(*t) || ASRUtils::is_real(*t));
     }
@@ -5245,6 +5246,7 @@ private:
     void list(ASR::stmt_t **&body, size_t &n_body,
             const std::set<ASR::symbol_t*> &stable_) {
         stable = stable_;
+        std::set<ASR::symbol_t*> prior_ = prior;
         // The blocks of the list are lists of their own.
         for (size_t i = 0; i < n_body; i++) {
             if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
@@ -5253,15 +5255,29 @@ private:
                         ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
                 std::set<ASR::symbol_t*> inner = assigned_before(body, i);
                 inner.insert(stable_.begin(), stable_.end());
+                prior = prior_;
+                for (size_t q = 0; q < i; q++) {
+                    SharedAccess access(k);
+                    access.visit_stmt(*body[q]);
+                    prior.insert(access.writes.begin(), access.writes.end());
+                }
                 list(block->m_body, block->n_body, inner);
             }
         }
         stable = stable_;
+        prior = prior_;
         lane_scalars_first(body, n_body);
         std::vector<std::vector<ASR::stmt_t*>> early(n_body + 1);
         bool any = false;
+        // The arrays assigned before the statement looked at.
+        std::set<ASR::symbol_t*> assigned = prior;
         for (size_t p = 0; p < n_body && hoisted < early_loads_max; p++) {
             ASR::stmt_t *s = body[p];
+            if (p > 0) {
+                SharedAccess access(k);
+                access.visit_stmt(*body[p - 1]);
+                assigned.insert(access.writes.begin(), access.writes.end());
+            }
             std::vector<ASR::expr_t**> found;
             ASR::stmt_t *loop = nullptr;
             auto l = loops.find(s);
@@ -5270,7 +5286,7 @@ private:
                 assignments_of(&body[p], 1, found);
             } else if (held.count(s)) {
                 size_t from = 0;
-                ASR::stmt_t *x = read_held_early(body, p, from);
+                ASR::stmt_t *x = read_held_early(body, p, from, assigned);
                 if (x) {
                     early[from].push_back(x);
                     any = true;
@@ -5282,8 +5298,18 @@ private:
                 assignments_of(d->m_body, d->n_body, found);
                 loop = s;
             }
+            SharedAccess own(k);
+            own.visit_stmt(*s);
             for (ASR::expr_t **at : found) {
                 if (hoisted >= early_loads_max) break;
+                // Nothing before it assigns its array, nor the loop it is
+                // read in (where an iteration may assign the element before
+                // it reads it).
+                ASR::symbol_t *array = root_of(*at);
+                if (assigned.count(array)
+                        || (loop && own.writes.count(array))) {
+                    continue;
+                }
                 size_t from = 0;
                 if (!available(body, p, *at, loop, from)) continue;
                 // Something to read it ahead of: a loop or a barrier.
@@ -5365,7 +5391,7 @@ private:
     // earlier and nothing in between assigns the array or names the loop's
     // variables. The counted loop then reads them no more.
     ASR::stmt_t* read_held_early(ASR::stmt_t **body, size_t p,
-            size_t &from) {
+            size_t &from, const std::set<ASR::symbol_t*> &assigned) {
         auto *l = ASR::down_cast<ASR::DoLoop_t>(body[p]);
         if (l->n_body < 2 || hoisted >= early_loads_max) return nullptr;
         auto *v = ASR::down_cast<ASR::Assignment_t>(l->m_body[0]);
@@ -5393,7 +5419,7 @@ private:
             }
             scalars.visit_expr(*item->m_args[i].m_right);
         }
-        if (scalars.other) return nullptr;
+        if (scalars.other || assigned.count(array)) return nullptr;
         from = 0;
         for (ASR::symbol_t *x : scalars.found) {
             if (x == j || x == count || x == array) continue;
