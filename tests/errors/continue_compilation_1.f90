@@ -5272,3 +5272,18 @@ subroutine cc1_data_implied_do_type_errors()
     data (cc1_didt_x(i), i=1,2) / 1, 'a' /  ! {Error} Cannot initialize real(4) variable with character(len=1) value in DATA statement
     data (cc1_didt_l(i), i=1,2) / 1, 0 /  ! {Error} Cannot initialize logical(4) variable with integer(4) value in DATA statement
 end subroutine
+
+! EOR= is only allowed in a READ statement.
+subroutine cc1_write_eor()
+    integer :: cc1_we_x
+    cc1_we_x = 1
+    write (*, '(i0)', advance='no', eor=10) cc1_we_x  ! {Error} `eor` is only supported for READ statements
+10  continue
+end subroutine
+
+! A READ with ERR= and an undefined FORMAT label is diagnosed once.
+subroutine cc1_read_err_bad_format()
+    integer :: cc1_rebf_x
+    read (*, 300, err=10) cc1_rebf_x  ! {Error} The label 300 does not point to any format statement
+10  continue
+end subroutine
