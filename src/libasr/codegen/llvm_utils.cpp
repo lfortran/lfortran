@@ -10973,10 +10973,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             return v;
         };
 
+        // Defined assignment runs inside the assignment statement. A poll in
+        // the procedure must not abandon that statement.
+        llvm_utils->emit_interrupt_defer(true);
         builder->CreateCall(assign_fn, {
             adjust_arg(dest, fn_lhs_is_class),
             adjust_arg(src, fn_rhs_is_class)
         });
+        llvm_utils->emit_interrupt_defer(false);
         return true;
     }
 

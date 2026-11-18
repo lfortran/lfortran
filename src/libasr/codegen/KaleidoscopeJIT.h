@@ -34,13 +34,10 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
 #endif
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
-#include <utility>
-#include <vector>
 
 #if LLVM_VERSION_MAJOR >= 13
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
@@ -64,12 +61,6 @@
 namespace llvm {
 namespace orc {
 
-// The machine code a JIT emitted, as [begin, end) address ranges, one per
-// object. The thread that adds and looks up modules changes it; a signal
-// handler on that same thread reads it while JIT code runs, which never
-// changes it.
-using JITCodeRanges = std::vector<std::pair<uintptr_t, uintptr_t>>;
-
 #ifdef __EMSCRIPTEN__
 // There is no ORC JIT to run under Emscripten, and its LLVM is built without
 // RTTI, while LFortran keeps RTTI for xeus: a subclass's typeinfo would refer
@@ -79,7 +70,6 @@ using JITSectionMemoryManager = SectionMemoryManager;
 // The GNU unwinder indexes an object's entire min/max PC range. Keep its code
 // sections together so another object's code cannot fall inside that range.
 class ContiguousSectionMemoryManager final : public SectionMemoryManager {
-  JITCodeRanges *Ranges;
   uint8_t *CodeBase = nullptr;
   uintptr_t CodeSize = 0;
   uintptr_t CodeOffset = 0;
@@ -89,28 +79,7 @@ class ContiguousSectionMemoryManager final : public SectionMemoryManager {
   using SectionAlignment = uint32_t;
 #endif
 
-  // The ranges of this object, whose memory goes away with it.
-  JITCodeRanges Own;
-  void addRange(const uint8_t *Begin, uintptr_t Size) {
-    if (Ranges && Begin && Size) {
-      uintptr_t B = reinterpret_cast<uintptr_t>(Begin);
-      Ranges->emplace_back(B, B + Size);
-      Own.emplace_back(B, B + Size);
-    }
-  }
-
 public:
-  explicit ContiguousSectionMemoryManager(JITCodeRanges *Ranges = nullptr)
-      : Ranges(Ranges) {}
-
-  ~ContiguousSectionMemoryManager() override {
-    if (!Ranges) return;
-    for (const auto &Range : Own) {
-      auto It = std::find(Ranges->begin(), Ranges->end(), Range);
-      if (It != Ranges->end()) Ranges->erase(It);
-    }
-  }
-
   bool needsToReserveAllocationSpace() override { return true; }
 
   void reserveAllocationSpace(uintptr_t Size, SectionAlignment CodeAlign,
@@ -126,7 +95,6 @@ public:
     unsigned Alignment = CodeAlign;
 #endif
     CodeBase = SectionMemoryManager::allocateCodeSection(Size, Alignment, 0, "");
-    addRange(CodeBase, Size);
   }
 
   uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment,
@@ -142,10 +110,8 @@ public:
     // RuntimeDyld reserves room for every code section, so this is not
     // expected. Never hand out memory past the reservation; a separate
     // mapping only loses the contiguity.
-    uint8_t *Code = SectionMemoryManager::allocateCodeSection(
-        Size, Alignment, SectionID, SectionName);
-    addRange(Code, Size);
-    return Code;
+    return SectionMemoryManager::allocateCodeSection(Size, Alignment,
+                                                     SectionID, SectionName);
   }
 };
 
@@ -154,8 +120,6 @@ using JITSectionMemoryManager = ContiguousSectionMemoryManager;
 
 class KaleidoscopeJIT {
 private:
-  // Declared first: the object layer's memory managers refer to it.
-  JITCodeRanges CodeRanges;
 #if LLVM_VERSION_MAJOR >= 8
   std::unique_ptr<ExecutionSession> ES;
   RTDyldObjectLinkingLayer ObjectLayer;
@@ -179,14 +143,6 @@ private:
   IRCompileLayer<decltype(ObjectLayer), SimpleCompiler> CompileLayer;
 #endif
 
-  std::unique_ptr<JITSectionMemoryManager> makeMemoryManager() {
-#ifdef __EMSCRIPTEN__
-    return std::make_unique<JITSectionMemoryManager>();
-#else
-    return std::make_unique<JITSectionMemoryManager>(&CodeRanges);
-#endif
-  }
-
 public:
 #if LLVM_VERSION_MAJOR >= 8
   KaleidoscopeJIT(std::unique_ptr<ExecutionSession> ES, JITTargetMachineBuilder JTMB, DataLayout DL)
@@ -194,10 +150,10 @@ public:
         ES(std::move(ES)),
 #if LLVM_VERSION_MAJOR >= 21
         ObjectLayer(*this->ES,
-                    [this](const llvm::MemoryBuffer &) { return makeMemoryManager(); }),
+                    [](const llvm::MemoryBuffer &) { return std::make_unique<JITSectionMemoryManager>(); }),
 #else
         ObjectLayer(*this->ES,
-                    [this]() { return makeMemoryManager(); }),
+                    []() { return std::make_unique<JITSectionMemoryManager>(); }),
 #endif
 #if LLVM_VERSION_MAJOR >= 10
         CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
@@ -261,8 +217,7 @@ public:
         TM(std::move(TM_)), DL(TM->createDataLayout()),
         ObjectLayer(ES, [this](VModuleKey) {
           return RTDyldObjectLinkingLayer::Resources{
-              std::shared_ptr<RuntimeDyld::MemoryManager>(makeMemoryManager()),
-              Resolver};
+              std::make_shared<JITSectionMemoryManager>(), Resolver};
         }),
         CompileLayer(ObjectLayer, SimpleCompiler(*TM)) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
@@ -315,8 +270,6 @@ public:
   }
 
   const DataLayout &getDataLayout() const { return DL; }
-
-  const JITCodeRanges &getCodeRanges() const { return CodeRanges; }
 
 #if LLVM_VERSION_MAJOR >= 8
   Error addModule(std::unique_ptr<Module> M, std::unique_ptr<LLVMContext> &Ctx) {

@@ -8007,14 +8007,16 @@ end module
         "subroutine spin(k)\ninteger :: k\n10 k = mod(k + 1, 97)\n"
             "if (k >= 0) goto 10\nend subroutine\nprint *, '@'\nk = 0\ncall spin(k)",
         "print *, '@'\ndo\n  k = fib(25)\nend do",
+        // No loop: only the poll on entry to fib can stop this.
+        "print *, '@'\nk = fib(50)",
         // Mostly in the runtime
         "print *, '@'\ndo i = 1, huge(i)\n  write(buf, '(i0,1x,f12.5)') i, real(i, 8) / 3\n"
             "  read(buf, *) k, x\nend do",
         "subroutine scribble()\ninteger :: u, i\nopen(newunit=u, status='scratch')\n"
             "print *, '@'\ndo i = 1, huge(i)\n  write(u, *) i, 'line'\n"
             "  if (mod(i, 1000) == 0) rewind(u)\nend do\nend subroutine\ncall scribble()",
-        // An interrupt may leave a variable whose storage was being
-        // replaced referring to freed memory, so these work on locals.
+        // A poll stops between statements, so the assignment has finished.
+        // The session-level cases are in the test below; these use locals.
         "subroutine churn()\ninteger, allocatable :: b(:)\nprint *, '@'\ndo\n"
             "  allocate(b(1000))\n  b = 1\n  deallocate(b)\n  b = [1, 2, 3]\n"
             "  b = [b, b, b]\n  deallocate(b)\nend do\nend subroutine\ncall churn()",
@@ -8057,7 +8059,7 @@ end module
     }
 }
 
-static std::string dtio_program(const std::string &name, int n) {
+static std::string dtio_program(const std::string &name, bool loop) {
     return "module " + name + R"(_m
 implicit none
 type :: shown
@@ -8074,36 +8076,97 @@ subroutine show(dtv, unit, iotype, v_list, iostat, iomsg)
     integer, intent(in) :: v_list(:)
     integer, intent(out) :: iostat
     character(*), intent(inout) :: iomsg
-    integer :: k
     write(unit, '(a,i0)', iostat=iostat) 'n=', dtv%n
-    if (dtv%n < 0) then
-        write(0, '(a)') '@'
-        k = 0
-        do while (k >= 0)
-            k = mod(k + 1, 1000)
-        end do
-    end if
 end subroutine
 end module
 program )" + name + "\nuse " + name + R"(_m
 implicit none
-print '(dt)', shown()" + std::to_string(n) + R"()
-print '(a)', 'next'
+)" + (loop
+    ? "print *, '@'\ndo\n  print '(dt)', shown(3)\nend do\n"
+    : "print '(dt)', shown(3)\n") + R"(print '(a)', 'next'
 end program
 )";
 }
 
-// The interrupt abandons the parent PRINT of a defined output procedure,
-// which the runtime keeps state for.
+// The defined-output procedure runs inside the PRINT, so a poll in it is
+// deferred. The caller's loop stops between prints, and the statement after
+// the loop does not run.
 TEST_CASE("FortranEvaluator interrupt: in a defined output procedure") {
     if (!FortranEvaluator::interrupt_supported()) return;
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);
     std::string output;
-    check_interrupted(interrupt_at_marker(e, dtio_program("dtio_a", -1), output));
+    check_interrupted(interrupt_at_marker(e, dtio_program("dtio_a", true), output));
     CHECK(output.find("next") == std::string::npos);
     CHECK(cell_output(e, "print '(a)', 'one'\nprint '(a)', 'two'") == "one\ntwo\n");
-    CHECK(cell_output(e, dtio_program("dtio_b", 3)) == "n=3\nnext\n");
+    CHECK(cell_output(e, dtio_program("dtio_b", false)) == "n=3\nnext\n");
+}
+
+// A poll stops between statements. The next cell can use what the
+// interrupted cell was assigning, including to deallocate it.
+TEST_CASE("FortranEvaluator interrupt: session allocatables stay usable") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.realloc_lhs_arrays = true;
+    FortranEvaluator e(cu);
+    run_cell(e, R"(
+module session_hold
+implicit none
+type :: box
+    integer, allocatable :: c(:)
+end type
+type(box) :: x, y
+integer, allocatable :: v(:), a(:), b(:)
+integer :: i
+contains
+recursive integer function fib(n) result(r)
+    integer, intent(in) :: n
+    if (n < 2) then
+        r = n
+    else
+        r = fib(n - 1) + fib(n - 2)
+    end if
+end function
+subroutine spin(k)
+    integer :: k
+10  k = mod(k + 1, 97)
+    if (k >= 0) goto 10
+end subroutine
+end module
+)");
+    run_cell(e, "use session_hold");
+    const std::vector<std::pair<std::string, std::string>> cases = {
+        {"print *, '@'\ndo i = 1, huge(i)\nend do",
+            "i = 4\nif (i /= 4) error stop"},
+        {"print *, '@'\ndo while (.true.)\nend do",
+            "i = 5\nif (i /= 5) error stop"},
+        {"print *, '@'\ndo\nif (.false.) exit\nend do",
+            "i = 6\nif (i /= 6) error stop"},
+        {"print *, '@'\ncall spin(i)",
+            "if (fib(10) /= 55) error stop"},
+        {"print *, '@'\ni = fib(50)",
+            "if (fib(10) /= 55) error stop"},
+        {"print *, '@'\ndo\n  allocate(v(4))\n  v = [1, 2, 3, 4]\n"
+            "  deallocate(v)\nend do",
+            "if (allocated(v)) deallocate(v)\nallocate(v(3))\nv = [1, 2, 3]\n"
+            "if (sum(v) /= 6) error stop\ndeallocate(v)"},
+        {"allocate(a(2))\na = [1, 2]\nprint *, '@'\ndo\n"
+            "  call move_alloc(a, b)\n  call move_alloc(b, a)\nend do",
+            "if (allocated(a)) deallocate(a)\nif (allocated(b)) deallocate(b)\n"
+            "allocate(a(2), b(2))\na = [3, 4]\nb = [5, 6]\n"
+            "if (sum(a) + sum(b) /= 18) error stop\ndeallocate(a, b)"},
+        {"y%c = [1, 2, 3]\nprint *, '@'\ndo\n  x = y\nend do",
+            "x = y\nif (sum(x%c) /= 6) error stop"},
+        {"allocate(v(0))\nprint *, '@'\ndo i = 1, huge(i)\n  v = [v, i]\nend do",
+            "if (allocated(v)) deallocate(v)\nallocate(v(3))\nv = [4, 5, 6]\n"
+            "if (sum(v) /= 15) error stop\ndeallocate(v)"},
+    };
+    for (const auto &item : cases) {
+        CAPTURE(item.first);
+        std::string output;
+        check_interrupted(interrupt_at_marker(e, item.first, output));
+        run_cell(e, item.second);
+    }
 }
 
 TEST_CASE("FortranEvaluator interrupt: a READ waiting for input stops") {
@@ -8166,8 +8229,7 @@ module interrupt_random
 implicit none
 integer :: total = 0
 contains
-! Its allocatables are local: an interrupt may leave one that it was
-! reassigning referring to freed memory, which a later cell must not use.
+! A poll stops between iterations, after each assignment has finished.
 subroutine work(n)
     integer, intent(in) :: n
     integer :: i
@@ -8188,8 +8250,8 @@ end subroutine
 end module
 )");
     run_cell(e, "use interrupt_random");
-    // Whether and where each one stops depends on timing; the session must
-    // survive every outcome.
+    // When each one stops depends on timing. The session must survive every
+    // outcome, and the next cell can call the same procedure again.
     for (int i = 0; i < 30; i++) {
         auto start = std::chrono::steady_clock::now();
         auto delay = std::chrono::microseconds(i * 700);

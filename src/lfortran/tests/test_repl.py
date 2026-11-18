@@ -395,10 +395,9 @@ def check_interrupt_at_prompt(lfortran):
         sys.exit("the prompt left the terminal in raw mode:\n%s" % out)
 
 
-# A foreign call that keeps waiting through the signals that stop a cell
-# (system() waits for its command again when a signal interrupts it), so that
-# the kernel cannot stop it before it returns. The command must not keep the
-# terminal open after its kernel has ended.
+# A foreign call that a cell poll cannot stop: one system() call runs until
+# the command exits, so the kernel cannot stop the cell before it returns.
+# The command must not keep the terminal open after its kernel has ended.
 FOREIGN_WAIT = NEW_LINE.join([
     "module foreign_wait",
     "use iso_c_binding, only: c_int, c_char, c_null_char",

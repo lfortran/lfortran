@@ -436,6 +436,31 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
             llvm::Value* lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr);
 
+            // Interactive cells on Linux and macOS (x86-64 and AArch64) poll a
+            // runtime flag. Batch compilation and OpenMP do not, so their LLVM
+            // stays unchanged.
+            bool cell_interrupts_enabled() const {
+#if defined(_WIN32) || defined(__EMSCRIPTEN__) \
+        || !((defined(__linux__) || defined(__APPLE__)) \
+            && (defined(__x86_64__) || defined(__aarch64__)))
+                return false;
+#else
+                return compiler_options.interactive && !compiler_options.openmp;
+#endif
+            }
+
+            // While this is entered, a poll inside a procedure called from the
+            // middle of a statement returns instead of abandoning the cell.
+            void emit_interrupt_defer(bool enter) {
+                if (!cell_interrupts_enabled()) return;
+                const char *name = enter
+                    ? "_lfortran_interrupt_defer_enter"
+                    : "_lfortran_interrupt_defer_leave";
+                llvm::Function *fn = LLVM::get_or_declare_function(
+                    *module, name, void_type, {});
+                builder->CreateCall(fn, {});
+            }
+
             // Emit a local getter under native --fast; otherwise cache in entry.
             llvm::Value* get_allocator(llvm::Module* mod);
 
@@ -1348,6 +1373,9 @@ class ASRToLLVMVisitor;
             int rank = ASRUtils::extract_n_dims_from_ttype(type);
             int dummy_rank = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(final_proc->m_args[0]));
+            // The final subroutine runs inside the statement that is leaving
+            // the entity. A poll in it must not abandon that statement.
+            llvm_utils_->emit_interrupt_defer(true);
             if (rank == 0) {
                 builder_->CreateCall(final_fn, {builder_->CreateBitCast(ptr,
                     final_fn->getFunctionType()->getParamType(0))});
@@ -1357,6 +1385,7 @@ class ASRToLLVMVisitor;
             } else {
                 call_final_per_element(final_fn, ptr, type, struct_sym);
             }
+            llvm_utils_->emit_interrupt_defer(false);
         }
 
         /**

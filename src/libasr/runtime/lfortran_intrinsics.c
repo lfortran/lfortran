@@ -17,7 +17,11 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#include <setjmp.h>
 #include <sys/stat.h>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 #if !defined(_WIN32)
 #include <fcntl.h>
 #if defined(__linux__) && defined(__GLIBC__) && !defined(__EMSCRIPTEN__)
@@ -73,12 +77,24 @@ static int lfortran_fileno(FILE *fp) {
 #if defined(_MSC_VER)
 static __declspec(thread) lfortran_cancel_requested cancel_requested;
 static __declspec(thread) lfortran_cancel_stop cancel_stop;
+static __declspec(thread) jmp_buf *interrupt_env;
+static __declspec(thread) int interrupt_defer;
 #elif defined(COMPILE_TO_WASM)
 static lfortran_cancel_requested cancel_requested;
 static lfortran_cancel_stop cancel_stop;
+static jmp_buf *interrupt_env;
+static int interrupt_defer;
 #else
 static _Thread_local lfortran_cancel_requested cancel_requested;
 static _Thread_local lfortran_cancel_stop cancel_stop;
+static _Thread_local jmp_buf *interrupt_env;
+static _Thread_local int interrupt_defer;
+#endif
+
+#if defined(_MSC_VER)
+LFORTRAN_API long _lfortran_cell_interrupt;
+#else
+LFORTRAN_API int _lfortran_cell_interrupt;
 #endif
 
 LFORTRAN_API void _lfortran_set_cancel_hooks(lfortran_cancel_requested requested,
@@ -86,6 +102,58 @@ LFORTRAN_API void _lfortran_set_cancel_hooks(lfortran_cancel_requested requested
 {
     cancel_requested = requested;
     cancel_stop = stop;
+}
+
+LFORTRAN_API void _lfortran_set_cell_interrupt(int requested)
+{
+#if defined(_MSC_VER)
+    _InterlockedExchange(&_lfortran_cell_interrupt, requested ? 1 : 0);
+#else
+    __atomic_store_n(&_lfortran_cell_interrupt, requested ? 1 : 0,
+        __ATOMIC_RELAXED);
+#endif
+}
+
+LFORTRAN_API int _lfortran_cell_interrupt_requested(void)
+{
+#if defined(_MSC_VER)
+    return _lfortran_cell_interrupt;
+#else
+    return __atomic_load_n(&_lfortran_cell_interrupt, __ATOMIC_RELAXED);
+#endif
+}
+
+LFORTRAN_API void _lfortran_set_interrupt_env(void *env)
+{
+    interrupt_env = (jmp_buf *)env;
+    if (env == NULL) interrupt_defer = 0;
+}
+
+LFORTRAN_API void _lfortran_interrupt_defer_enter(void)
+{
+    if (interrupt_env) interrupt_defer++;
+}
+
+LFORTRAN_API void _lfortran_interrupt_defer_leave(void)
+{
+    if (interrupt_env && interrupt_defer > 0) interrupt_defer--;
+}
+
+LFORTRAN_API void _lfortran_stop_if_interrupted(void)
+{
+    int requested;
+    jmp_buf *env;
+    if (interrupt_env == NULL || interrupt_defer > 0) return;
+#if defined(_MSC_VER)
+    requested = _lfortran_cell_interrupt;
+#else
+    requested = __atomic_load_n(&_lfortran_cell_interrupt, __ATOMIC_RELAXED);
+#endif
+    if (!requested) return;
+    env = interrupt_env;
+    interrupt_env = NULL;
+    interrupt_defer = 0;
+    longjmp(*env, 1);
 }
 
 // Where a runtime call of an output or formatted input statement begins, an
@@ -654,7 +722,9 @@ static size_t _internal_alloc_capacity = 0;
    was executing when it was made. */
 static uint64_t _internal_alloc_serial = 0;
 /* Allocations older than this were abandoned by an interrupted cell
-   (_lfortran_reset_after_interrupt); they are not reported. */
+   (_lfortran_reset_after_interrupt); they are not reported. The cell
+   stops between statements, so this only covers what it had allocated
+   and not freed. */
 static uint64_t _internal_alloc_abandoned_serial = 0;
 
 static void _internal_alloc_record_add(void *ptr, size_t size,
@@ -5264,8 +5334,12 @@ static char* dtio_call(lfortran_allocator_t* al, char** result,
     int32_t iostat = 0;
     char iomsg[256];
     memset(iomsg, ' ', sizeof(iomsg));
+    /* The procedure runs inside this I/O statement. A poll in it must
+       not abandon the statement; the next poll after it returns will. */
+    _lfortran_interrupt_defer_enter();
     dtio_procs[k](dtv, &unit, iotype, &n_v, v_list, &iostat, iomsg,
         iotype_len, (int64_t)sizeof(iomsg));
+    _lfortran_interrupt_defer_leave();
 
     dtio_capture_depth--;
     if (dtio_capture_depth == 0) {
@@ -10917,13 +10991,21 @@ LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
 #if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
     if (cancel_requested) {
-        // A signal ends nanosleep() early; a cancelled cell stops then.
-        struct timespec remaining = {seconds > 0 ? seconds : 0, 0};
-        while (nanosleep(&remaining, &remaining) < 0 && errno == EINTR) {
+        /* No signal wakes this sleep. Check the request between short
+           slices, then stop the cell once the wait holds nothing. */
+        int64_t left_ms = (seconds > 0 ? (int64_t)seconds : 0) * 1000;
+        while (left_ms > 0) {
+            struct timespec slice;
+            int step = left_ms > 10 ? 10 : (int)left_ms;
             if (cancel_requested()) {
                 cancel_stop();
                 return;
             }
+            slice.tv_sec = 0;
+            slice.tv_nsec = (long)step * 1000000L;
+            while (nanosleep(&slice, &slice) < 0 && errno == EINTR) {
+            }
+            left_ms -= step;
         }
         return;
     }
@@ -21820,31 +21902,11 @@ __lfortran_dynamic_cast(const void* static_ptr,
 
 LFORTRAN_API void _lfortran_reset_after_interrupt(void)
 {
-    // A defined output procedure that was running: its parent statement's
-    // capture frames point into abandoned stack frames.
-    dtio_capture_depth = 0;
-    internal_free(dtio_capture_stack);
-    dtio_capture_stack = NULL;
-    dtio_capture_capacity = 0;
-    dtio_error_iostat = 0;
-    dtio_error_iomsg_pending = false;
-    // State of an I/O statement that spans several runtime calls.
-    transfer_decimal_mode = -1;
-    lf_cross_record_null = 0;
-    lf_comma_flag = 0;
-    for (int32_t i = 0; i <= last_index_used; i++) {
-        struct UNIT_FILE *uf = &unit_to_file[i];
-        uf->lf_child_io_mode = 0;
-        uf->lf_list_dir_null_remaining = 0;
-        if (uf->seq_unf_record_len > 0 && uf->filep) {
-            // Skip the rest of a partly read record and its end marker.
-            fseek(uf->filep, (long)uf->seq_unf_pending + (long)sizeof(int32_t),
-                SEEK_CUR);
-        }
-        uf->seq_unf_pending = 0;
-        uf->seq_unf_record_len = 0;
-    }
 #ifdef LFORTRAN_INTERNAL_ALLOC_CHECK
+    /* The cell stopped between statements. What it allocated and did not
+       free is abandoned; later cells must not be blamed for it. */
     _internal_alloc_abandoned_serial = _internal_alloc_serial;
+#else
+    (void)0;
 #endif
 }

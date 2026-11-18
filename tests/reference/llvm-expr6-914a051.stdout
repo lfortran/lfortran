@@ -2,18 +2,31 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
+@_lfortran_cell_interrupt = external global i32, align 4
+
 define float @__lfortran_evaluate_1() {
 .entry:
   %__lfortran_evaluate_11 = alloca i32, align 4
   %__lfortran_evaluate_12 = alloca float, align 4
+  %0 = load atomic i32, i32* @_lfortran_cell_interrupt monotonic, align 4
+  %1 = icmp ne i32 %0, 0
+  br i1 %1, label %interrupt_stop, label %interrupt_cont
+
+interrupt_stop:                                   ; preds = %.entry
+  call void @_lfortran_stop_if_interrupted()
+  br label %interrupt_cont
+
+interrupt_cont:                                   ; preds = %interrupt_stop, %.entry
   store i32 8, i32* %__lfortran_evaluate_11, align 4
   store float 0x4015333340000000, float* %__lfortran_evaluate_12, align 4
   br label %return
 
-return:                                           ; preds = %.entry
+return:                                           ; preds = %interrupt_cont
   br label %FINALIZE_SYMTABLE___lfortran_evaluate_1
 
 FINALIZE_SYMTABLE___lfortran_evaluate_1:          ; preds = %return
-  %0 = load float, float* %__lfortran_evaluate_12, align 4
-  ret float %0
+  %2 = load float, float* %__lfortran_evaluate_12, align 4
+  ret float %2
 }
+
+declare void @_lfortran_stop_if_interrupted()

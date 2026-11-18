@@ -24,10 +24,38 @@ void _lfortran_set_cancel_hooks(lfortran_cancel_requested requested,
     lfortran_cancel_stop stop);
 
 /*
- * After an interrupted cell, on the thread that ran it: clears the state of
- * the runtime calls that the cell abandoned, such as an I/O statement that
- * spans several of them, so that later cells start clean.
+ * The cell's thread polls `_lfortran_cell_interrupt` between statements.
+ * `set_cell_interrupt` publishes a request. `set_interrupt_env` installs the
+ * `jmp_buf` (a pointer to it) that `stop_if_interrupted` jumps to; NULL
+ * disarms it. While the defer counter is nonzero, a poll returns instead of
+ * jumping, so a call into user code from the middle of a statement can
+ * finish. `reset_after_interrupt` tells the allocation checker to ignore
+ * what the abandoned cell allocated.
  */
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void _lfortran_set_cell_interrupt(int requested);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+int _lfortran_cell_interrupt_requested(void);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void _lfortran_set_interrupt_env(void *env);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void _lfortran_interrupt_defer_enter(void);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void _lfortran_interrupt_defer_leave(void);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+void _lfortran_stop_if_interrupted(void);
 #ifdef _WIN32
 __declspec(dllexport)
 #endif

@@ -379,7 +379,7 @@ namespace LCompilers {
 #ifdef HAVE_LFORTRAN_LLVM
 namespace {
 // Thrown on the cell's thread when an interrupt stopped its JIT code. It is
-// thrown only after run_preemptible() has returned, so it never unwinds
+// thrown only after run_interruptible() has returned, so it never unwinds
 // through JIT or runtime frames, and execute_cell() catches it.
 struct CellInterrupted {};
 
@@ -389,7 +389,8 @@ int cancel_requested_hook() { return LLVMEvaluator::interrupted_here(); }
 void cancel_stop_hook() { LLVMEvaluator::stop_if_interrupted(); }
 #endif
 
-// Calls the function `name` of the JIT with `args`, preemptibly.
+// Calls the function `name` of the JIT with `args`. An interrupt abandons
+// the call at a poll and returns here.
 #ifdef __EMSCRIPTEN__
 template <typename T, typename... Args>
 T run_cell_code(WasmLFortranExecutor &e, const std::string &name, Args... args) {
@@ -404,14 +405,14 @@ T run_cell_code(LLVMEvaluator &e, const std::string &name, Args... args) {
     // An interrupt abandons `call`'s frame, which must not own anything.
     if constexpr (std::is_void<T>::value) {
         auto call = [&]() { f(args...); };
-        if (!e.run_preemptible([](void *c) {
+        if (!e.run_interruptible([](void *c) {
                 (*static_cast<decltype(call) *>(c))(); }, &call)) {
             throw CellInterrupted();
         }
     } else {
         T result{};
         auto call = [&]() { result = f(args...); };
-        if (!e.run_preemptible([](void *c) {
+        if (!e.run_interruptible([](void *c) {
                 (*static_cast<decltype(call) *>(c))(); }, &call)) {
             throw CellInterrupted();
         }
@@ -874,7 +875,7 @@ std::string FortranEvaluator::CellResult::error_text() const {
 
 bool FortranEvaluator::interrupt_supported() {
 #if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
-    return LLVMEvaluator::preemption_supported();
+    return LLVMEvaluator::interrupt_supported();
 #else
     return false;
 #endif
@@ -907,7 +908,8 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     };
 #ifndef __EMSCRIPTEN__
     CellMailbox mailbox;
-    // The caller interrupts the cell's thread (LLVMEvaluator::run_preemptible).
+    // The caller sets a flag; the cell's thread stops at its next poll
+    // (LLVMEvaluator::run_interruptible).
     LLVMEvaluator *preemptible = nullptr;
 #ifdef HAVE_LFORTRAN_LLVM
     if (io.interrupt_requested && interruptible()) {
@@ -926,7 +928,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             catch (...) { interrupting = true; }
         }
 #ifdef HAVE_LFORTRAN_LLVM
-        // Until the cell ends: code outside the JIT ignores a signal.
+        // The cell stops at its next poll, or at a runtime wait.
         if (interrupting) preemptible->request_interrupt();
 #endif
     };
@@ -1115,6 +1117,10 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
 #ifndef __EMSCRIPTEN__
         if (threaded) {
             std::exception_ptr worker_error;
+            // A callback that is already true must set the flag before the
+            // cell compiles and runs. A one-statement cell has no later poll
+            // if that race is lost.
+            poll_interrupt();
             CellThread worker([&]() {
                 try { execute_cell(); }
                 catch (...) { worker_error = std::current_exception(); }
@@ -1125,10 +1131,8 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
                 poll_interrupt();
                 try { drain_output(false); }
                 catch (...) {} // Saved above; keep servicing hooks until join.
-                // Signal often: a signal stops only code in the JIT, and a
-                // loop can spend most of its time in the runtime.
-                done = mailbox.service(std::chrono::microseconds(
-                    interrupting ? 100 : 10000));
+                // Polls and runtime waits notice the flag; 10 ms is enough.
+                done = mailbox.service(std::chrono::microseconds(10000));
                 if (process_exiting) mailbox.await_process_exit();
             } while (!done);
             worker.join();
