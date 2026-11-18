@@ -136,6 +136,9 @@ typedef struct resident {
 
 // Ends the program with a message when `err` is an error.
 static void check(cudaError_t err, const char *what);
+// Makes the launches recorded for a graph (see "Replay of repeated launch
+// sequences" below) before anything else the runtime does on the device.
+static void replay_barrier(void);
 
 enum { MEMORY_UNCHOSEN = -1, MEMORY_COPY, MEMORY_UNIFIED, MEMORY_MANAGED };
 static int memory_model = MEMORY_UNCHOSEN;
@@ -515,6 +518,7 @@ static void check(cudaError_t err, const char *what) {
 static uint64_t sync_epoch = 0;
 
 static void device_synchronize(void) {
+    replay_barrier();
     if (!device_busy) return;
     device_busy = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
@@ -708,6 +712,7 @@ static void remove_entry(int i) {
 static void end_wait_period(void);
 
 static void sync_all(void) {
+    replay_barrier();
     n_syncs++;
     pending_in_place_reads = 0;
     device_synchronize();
@@ -808,6 +813,7 @@ static void* resident_for_write(void *host, size_t size, int discard) {
         e->fresh = 0;
     }
     if (!discard && !e->fresh) {
+        replay_barrier();
         check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
             0), "cudaMemcpyAsync H2D");
         device_busy = 1;
@@ -829,6 +835,7 @@ static void* kept_read(void *host, size_t size) {
         e->fresh = 0;
     }
     if (!e->fresh) {
+        replay_barrier();
         check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
             0), "cudaMemcpyAsync H2D");
         device_busy = 1;
@@ -909,6 +916,7 @@ static void* small_read(const void *host, size_t size) {
                 e->device = device_alloc(size);
             }
             memcpy(e->shadow, host, size);
+            replay_barrier();
             check(cudaMemcpyAsync(e->device, e->shadow, size,
                 cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
             device_busy = 1;
@@ -924,6 +932,7 @@ static void* small_read(const void *host, size_t size) {
             e->device = device_alloc(size);
             small_read_bytes += size;
             memcpy(shadow, host, size);
+            replay_barrier();
             check(cudaMemcpyAsync(e->device, shadow, size,
                 cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
             device_busy = 1;
@@ -1388,6 +1397,583 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
 
+/*
+Replay of repeated launch sequences as CUDA graphs.
+
+A program that runs the same kernels in the same order again and again (the
+layers of a model for every token, the steps of a time loop) launches each
+of them with a stream operation, and the device spends time between the
+kernels of the stream processing each launch. A graph of the same kernels,
+launched once, runs them back to back. So the runtime watches the launches
+for a sequence that repeats, and replays the repetitions of it as graphs:
+
+* The launches are numbered, and the runtime keeps the kernel and block size
+  of the last REPLAY_HISTORY of them. When a kernel is launched for the third
+  time at the same distance P from its last launch, and the P launches
+  before the last are the P launches since (the same kernels, with the same
+  block sizes, in the same order), the sequence of those P launches is a
+  cycle, which the runtime expects to repeat from this launch on. A cycle
+  that failed to repeat twice is not expected again; a longer cycle replaces
+  a shorter one (the layers of a model repeat within a token, the tokens
+  repeat as a whole).
+* The launches of an expected cycle are not made: their kernel, grid and
+  arguments are recorded, and every `chunk` of them is launched as one
+  graph once its last launch is recorded. While the host waits for the
+  device at every repetition, the first two launches are made as they come
+  and the chunks have 4, 8, ... up to 256 launches, so that the device
+  starts on the first ones while the host records the next; once the host
+  is ahead of the device (the previous repetition still runs when the next
+  is recorded) for two repetitions in a row, the whole cycle is one chunk,
+  whose kernels the device runs back to back. A chunk has two graphs, which
+  the repetitions use in turn: the first two capture them on a stream of
+  their own and instantiate them, and later ones set the grid and the
+  arguments of each kernel node that differ from what the graph holds
+  (cudaGraphExecKernelNodeSetParams), while the other graph may still be
+  pending, and launch it. The graphs run on the default stream, as every
+  launch and copy of this runtime, and keep the overlap of consecutive
+  kernels (--gpu-overlap) as programmatic edges. On an H200, a decode step
+  of Qwen3.8-27B (452 launches, the host ahead) went from 8.86 to 8.82 ms.
+* A launch that is not the expected one makes the recorded launches of the
+  chunk (none of which has run) and itself be launched as usual, and ends
+  the cycle.
+* Anything else the runtime does on the device -- a copy, a free, a
+  wait -- first launches the recorded launches as usual
+  (replay_barrier): it must come after them, as it would have. The rest of
+  the chunk is then launched as usual too; a chunk that a barrier interrupts
+  twice is never recorded again, and a cycle in one chunk goes back to
+  chunks for good. A prefetch or a fill of managed memory no launch has
+  used yet needs no barrier. What the host does in memory a kernel uses
+  it does after a wait or a sync (gpu_launch_sync.cpp), which is such a
+  barrier, so a recorded launch sees the memory as it would have.
+
+LFORTRAN_GPU_GRAPHS=0 turns the replay off.
+*/
+
+// Whether launches overlap the end of the kernel before them (--gpu-overlap
+// on an sm_90 or newer device).
+static int replay_overlap = 0;
+
+static void issue_launch(kernel_func_t func, dim3 grid, dim3 block,
+        void **args, cudaStream_t stream) {
+#ifdef LFORTRAN_GPU_OVERLAP
+    if (replay_overlap) {
+        cudaLaunchConfig_t cfg;
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gridDim = grid;
+        cfg.blockDim = block;
+        cfg.stream = stream;
+        cudaLaunchAttribute attr[1];
+        attr[0].id = cudaLaunchAttributeProgrammaticStreamSerialization;
+        attr[0].val.programmaticStreamSerializationAllowed = 1;
+        cfg.attrs = attr;
+        cfg.numAttrs = 1;
+        check(cudaLaunchKernelExC(&cfg, (const void*)func, args),
+            "cudaLaunchKernelExC");
+        device_busy = 1;
+        return;
+    }
+#endif
+    check(cudaLaunchKernel((const void*)func, grid, block, args, 0, stream),
+        "cudaLaunchKernel");
+    device_busy = 1;
+}
+
+#if !defined(LFORTRAN_CUDA_CPU_EMULATION) && !defined(LFORTRAN_GPU_HIP)
+
+enum {
+    REPLAY_HISTORY = 1 << 14,
+    REPLAY_MIN_PERIOD = 4,
+    REPLAY_MAX_PERIOD = 4096,
+    REPLAY_CHUNK_MAX = 256,
+    REPLAY_FAILED = 8,
+    // Repetitions in a row with the host ahead (behind) before the cycle is
+    // launched as one graph (in chunks again).
+    REPLAY_SWITCH = 2,
+};
+
+// A launch: the kernel, its grid and block, and the values of its
+// arguments, one after another.
+typedef struct replay_launch {
+    kernel_func_t func;
+    dim3 grid, block;
+    int n_args;
+    size_t sizes[MAX_ARGS];
+    unsigned char *bytes;
+    size_t capacity;
+} replay_launch;
+
+// A chunk of the cycle, launched as one graph. It has two, used by the
+// repetitions in turn, so that the arguments of one can be set while the
+// other is still pending.
+typedef struct replay_chunk {
+    int start, end;
+    cudaGraph_t graph[2];
+    cudaGraphExec_t exec[2];
+    // Launch as usual: the first launches of the cycle, a chunk that
+    // barriers interrupt, or one whose graph could not be made.
+    int direct;
+    int interrupted;
+} replay_chunk;
+
+typedef struct replay_kernel {
+    kernel_func_t func;
+    // The two last launches of the kernel, plus one (0: none).
+    long long last[2];
+    // The periods at which a cycle starting at the kernel failed to repeat,
+    // and how often.
+    int failed_period[REPLAY_FAILED];
+    int failed_count[REPLAY_FAILED];
+} replay_kernel;
+
+static int replay_enabled = -1;
+static long long replay_launches = 0;
+static kernel_func_t replay_history_func[REPLAY_HISTORY];
+static dim3 replay_history_block[REPLAY_HISTORY];
+// The cycle expected: its period (0: none), the kernel it starts at (an
+// index into replay_kernels, which grows), the position of the next launch
+// in it, the launches recorded (`pending`), and, for each of the two graphs
+// of a chunk, the arguments it holds (`applied`) and its nodes.
+static int replay_period = 0;
+static int replay_start = 0;
+static int replay_pos = 0;
+static kernel_func_t *replay_expected_func = NULL;
+static dim3 *replay_expected_block = NULL;
+static replay_launch *replay_pending = NULL;
+static replay_launch *replay_applied[2] = {NULL, NULL};
+static cudaGraphNode_t *replay_nodes[2] = {NULL, NULL};
+static size_t replay_records = 0;
+static replay_chunk *replay_chunks = NULL;
+static int replay_n_chunks = 0;
+// The repetition being recorded, counted from the start of the cycle.
+static long long replay_iteration = 0;
+// The chunk of the next launch, and whether its launches are made as usual
+// in this repetition (a barrier interrupted it).
+static int replay_chunk_at = 0;
+static int replay_chunk_direct = 0;
+// Whether the cycle is one chunk, and how many repetitions in a row found
+// the host ahead of the device, or behind it: the previous repetition still
+// running (replay_done) when this one is recorded, or done.
+static int replay_whole = 0;
+static int replay_ahead = 0, replay_behind = 0;
+// Whether a barrier interrupted the cycle as one chunk: it is launched in
+// chunks from the end of that repetition on.
+static int replay_whole_interrupted = 0;
+static cudaEvent_t replay_done[2] = {NULL, NULL};
+static cudaStream_t replay_capture_stream = NULL;
+static replay_kernel *replay_kernels = NULL;
+static int replay_n_kernels = 0;
+
+static void *replay_alloc(void *p, size_t size) {
+    void *grown = realloc(p, size);
+    if (!grown) {
+        fprintf(stderr, "lfortran_gpu: out of memory\n");
+        exit(1);
+    }
+    return grown;
+}
+
+static void replay_store(replay_launch *r, kernel_func_t func, dim3 grid,
+        dim3 block, int n_args, void **args, const size_t *sizes) {
+    size_t total = 0;
+    for (int i = 0; i < n_args; i++) total += sizes[i];
+    if (r->capacity < total) {
+        r->bytes = (unsigned char *)replay_alloc(r->bytes, total);
+        r->capacity = total;
+    }
+    size_t at = 0;
+    for (int i = 0; i < n_args; i++) {
+        memcpy(r->bytes + at, args[i], sizes[i]);
+        r->sizes[i] = sizes[i];
+        at += sizes[i];
+    }
+    r->func = func;
+    r->grid = grid;
+    r->block = block;
+    r->n_args = n_args;
+}
+
+// The pointers to the values of the arguments of `r`.
+static void replay_arg_pointers(const replay_launch *r, void **args) {
+    size_t at = 0;
+    for (int i = 0; i < r->n_args; i++) {
+        args[i] = r->bytes + at;
+        at += r->sizes[i];
+    }
+}
+
+static void replay_copy(replay_launch *to, const replay_launch *from) {
+    void *args[MAX_ARGS];
+    replay_arg_pointers(from, args);
+    replay_store(to, from->func, from->grid, from->block, from->n_args, args,
+        from->sizes);
+}
+
+static int replay_same(const replay_launch *a, const replay_launch *b) {
+    if (a->func != b->func || a->n_args != b->n_args
+            || a->grid.x != b->grid.x || a->grid.y != b->grid.y
+            || a->grid.z != b->grid.z) {
+        return 0;
+    }
+    size_t total = 0;
+    for (int i = 0; i < a->n_args; i++) {
+        if (a->sizes[i] != b->sizes[i]) return 0;
+        total += a->sizes[i];
+    }
+    return memcmp(a->bytes, b->bytes, total) == 0;
+}
+
+static void replay_issue(const replay_launch *r) {
+    void *args[MAX_ARGS];
+    replay_arg_pointers(r, args);
+    issue_launch(r->func, r->grid, r->block, args, 0);
+}
+
+// Launches the recorded launches of the chunk being recorded as usual.
+static void replay_flush(void) {
+    if (replay_period == 0 || replay_chunk_direct) return;
+    replay_chunk *c = &replay_chunks[replay_chunk_at];
+    for (int p = c->start; p < replay_pos; p++) {
+        replay_issue(&replay_pending[p]);
+    }
+}
+
+static void replay_destroy_chunks(void) {
+    for (int c = 0; c < replay_n_chunks; c++) {
+        for (int g = 0; g < 2; g++) {
+            // A graph still running is freed when it is done.
+            if (replay_chunks[c].exec[g]) {
+                cudaGraphExecDestroy(replay_chunks[c].exec[g]);
+            }
+            if (replay_chunks[c].graph[g]) {
+                cudaGraphDestroy(replay_chunks[c].graph[g]);
+            }
+        }
+    }
+    replay_n_chunks = 0;
+}
+
+static void replay_end_cycle(void) {
+    replay_flush();
+    replay_destroy_chunks();
+    replay_period = 0;
+}
+
+static void replay_barrier(void) {
+    if (replay_period == 0 || replay_chunk_direct) return;
+    replay_chunk *c = &replay_chunks[replay_chunk_at];
+    if (replay_pos == c->start) return;
+    replay_flush();
+    replay_chunk_direct = 1;
+    // A cycle in one chunk goes back to chunks at the end of the
+    // repetition, for good; a chunk interrupted twice is launched as usual.
+    if (replay_whole) {
+        replay_whole_interrupted = 1;
+    } else if (++c->interrupted >= 2) {
+        c->direct = 1;
+    }
+}
+
+static replay_kernel *replay_kernel_of(kernel_func_t func) {
+    for (int i = 0; i < replay_n_kernels; i++) {
+        if (replay_kernels[i].func == func) return &replay_kernels[i];
+    }
+    replay_kernels = (replay_kernel *)replay_alloc(replay_kernels,
+        (replay_n_kernels + 1) * sizeof(replay_kernel));
+    replay_kernel *r = &replay_kernels[replay_n_kernels++];
+    memset(r, 0, sizeof(*r));
+    r->func = func;
+    return r;
+}
+
+static int replay_failures(replay_kernel *r, int period) {
+    for (int i = 0; i < REPLAY_FAILED; i++) {
+        if (r->failed_period[i] == period) return r->failed_count[i];
+    }
+    return 0;
+}
+
+static void replay_fail(replay_kernel *r, int period) {
+    int slot = 0;
+    for (int i = 0; i < REPLAY_FAILED; i++) {
+        if (r->failed_period[i] == period) {
+            r->failed_count[i]++;
+            return;
+        }
+        if (r->failed_count[i] < r->failed_count[slot]) slot = i;
+    }
+    r->failed_period[slot] = period;
+    r->failed_count[slot] = 1;
+}
+
+static int same_dim(dim3 a, dim3 b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+// The period of a cycle that starts at this launch, the launch `i` of the
+// kernel `r`, or 0.
+static int replay_cycle_at(replay_kernel *r, long long i) {
+    if (r->last[0] == 0 || r->last[1] == 0) return 0;
+    long long j = r->last[0] - 1, j2 = r->last[1] - 1;
+    long long period = i - j;
+    if (j - j2 != period || period < REPLAY_MIN_PERIOD
+            || period > REPLAY_MAX_PERIOD || i - j2 > REPLAY_HISTORY
+            || period <= replay_period
+            || replay_failures(r, (int)period) >= 2) {
+        return 0;
+    }
+    for (long long q = 0; q < period; q++) {
+        long long a = (j2 + q) % REPLAY_HISTORY, b = (j + q) % REPLAY_HISTORY;
+        if (replay_history_func[a] != replay_history_func[b]
+                || !same_dim(replay_history_block[a],
+                    replay_history_block[b])) {
+            return 0;
+        }
+    }
+    return (int)period;
+}
+
+// Splits the cycle into chunks: one, or, while the device may be waiting
+// for the host, the first two launches made as usual and then chunks of 4,
+// 8, ... up to REPLAY_CHUNK_MAX, so that the device starts on the first
+// launches while the host records the next.
+static void replay_plan(int whole) {
+    replay_destroy_chunks();
+    replay_chunks = (replay_chunk *)replay_alloc(replay_chunks,
+        (size_t)replay_period * sizeof(replay_chunk));
+    for (int start = 0, size = whole ? replay_period : 2;
+            start < replay_period;) {
+        replay_chunk *c = &replay_chunks[replay_n_chunks++];
+        memset(c, 0, sizeof(*c));
+        c->start = start;
+        c->end = start + size < replay_period ? start + size : replay_period;
+        c->direct = !whole && start == 0;
+        start = c->end;
+        if (size < REPLAY_CHUNK_MAX) size *= 2;
+    }
+    replay_whole = whole;
+    replay_ahead = replay_behind = 0;
+}
+
+// Expects the cycle of `period` launches before launch `i` to repeat from
+// launch `i` on.
+static void replay_begin_cycle(replay_kernel *r, long long i, int period) {
+    replay_end_cycle();
+    size_t n = (size_t)period;
+    replay_expected_func = (kernel_func_t *)replay_alloc(replay_expected_func,
+        n * sizeof(kernel_func_t));
+    replay_expected_block = (dim3 *)replay_alloc(replay_expected_block,
+        n * sizeof(dim3));
+    // The launch records keep their storage from one cycle to the next.
+    if (replay_records < n) {
+        replay_pending = (replay_launch *)replay_alloc(replay_pending,
+            n * sizeof(replay_launch));
+        memset(replay_pending + replay_records, 0,
+            (n - replay_records) * sizeof(replay_launch));
+        for (int g = 0; g < 2; g++) {
+            replay_applied[g] = (replay_launch *)replay_alloc(
+                replay_applied[g], n * sizeof(replay_launch));
+            memset(replay_applied[g] + replay_records, 0,
+                (n - replay_records) * sizeof(replay_launch));
+            replay_nodes[g] = (cudaGraphNode_t *)replay_alloc(
+                replay_nodes[g], n * sizeof(cudaGraphNode_t));
+        }
+        replay_records = n;
+    }
+    for (int q = 0; q < period; q++) {
+        long long a = (i - period + q) % REPLAY_HISTORY;
+        replay_expected_func[q] = replay_history_func[a];
+        replay_expected_block[q] = replay_history_block[a];
+    }
+    replay_period = period;
+    replay_plan(0);
+    replay_whole_interrupted = 0;
+    replay_start = (int)(r - replay_kernels);
+    replay_pos = 0;
+    replay_iteration = 0;
+    replay_chunk_at = 0;
+    replay_chunk_direct = replay_chunks[0].direct;
+}
+
+// The node of the kernel launched last on the capturing stream.
+static cudaGraphNode_t replay_captured_node(cudaStream_t stream) {
+    enum cudaStreamCaptureStatus status;
+    const cudaGraphNode_t *deps = NULL;
+    size_t n_deps = 0;
+#if CUDART_VERSION >= 13000
+    if (cudaStreamGetCaptureInfo(stream, &status, NULL, NULL, &deps, NULL,
+            &n_deps) != cudaSuccess || n_deps != 1) {
+        return NULL;
+    }
+#else
+    if (cudaStreamGetCaptureInfo(stream, &status, NULL, NULL, &deps,
+            &n_deps) != cudaSuccess || n_deps != 1) {
+        return NULL;
+    }
+#endif
+    return deps[0];
+}
+
+// Graph `g` of chunk `c`, captured from its recorded launches. Whether it
+// could be made.
+static int replay_capture(replay_chunk *c, int g) {
+    if (!replay_capture_stream && cudaStreamCreateWithFlags(
+            &replay_capture_stream, cudaStreamNonBlocking) != cudaSuccess) {
+        return 0;
+    }
+    if (cudaStreamBeginCapture(replay_capture_stream,
+            cudaStreamCaptureModeThreadLocal) != cudaSuccess) {
+        return 0;
+    }
+    int ok = 1;
+    for (int p = c->start; p < c->end && ok; p++) {
+        void *args[MAX_ARGS];
+        replay_arg_pointers(&replay_pending[p], args);
+        issue_launch(replay_pending[p].func, replay_pending[p].grid,
+            replay_pending[p].block, args, replay_capture_stream);
+        replay_nodes[g][p] = replay_captured_node(replay_capture_stream);
+        if (!replay_nodes[g][p]) ok = 0;
+    }
+    cudaGraph_t graph = NULL;
+    if (cudaStreamEndCapture(replay_capture_stream, &graph) != cudaSuccess) {
+        ok = 0;
+    }
+    if (ok && cudaGraphInstantiate(&c->exec[g], graph, 0) != cudaSuccess) {
+        c->exec[g] = NULL;
+        ok = 0;
+    }
+    if (!ok) {
+        (void)cudaGetLastError();
+        if (graph) cudaGraphDestroy(graph);
+        return 0;
+    }
+    c->graph[g] = graph;
+    for (int p = c->start; p < c->end; p++) {
+        replay_copy(&replay_applied[g][p], &replay_pending[p]);
+    }
+    return 1;
+}
+
+// Launches chunk `c`, whose launches are all recorded, as a graph.
+static void replay_run_chunk(replay_chunk *c) {
+    int g = (int)(replay_iteration & 1);
+    if (!c->exec[g] && !replay_capture(c, g)) {
+        c->direct = 1;
+        for (int p = c->start; p < c->end; p++) {
+            replay_issue(&replay_pending[p]);
+        }
+        return;
+    }
+    for (int p = c->start; p < c->end; p++) {
+        replay_launch *r = &replay_pending[p];
+        if (replay_same(r, &replay_applied[g][p])) continue;
+        void *args[MAX_ARGS];
+        replay_arg_pointers(r, args);
+        struct cudaKernelNodeParams params;
+        memset(&params, 0, sizeof(params));
+        params.func = (void *)r->func;
+        params.gridDim = r->grid;
+        params.blockDim = r->block;
+        params.kernelParams = args;
+        check(cudaGraphExecKernelNodeSetParams(c->exec[g],
+            replay_nodes[g][p], &params),
+            "cudaGraphExecKernelNodeSetParams");
+        replay_copy(&replay_applied[g][p], r);
+    }
+    check(cudaGraphLaunch(c->exec[g], 0), "cudaGraphLaunch");
+    device_busy = 1;
+}
+
+// At the end of a repetition: launches its graphs in one chunk from now on
+// when the host has been ahead of the device (the previous repetition
+// still running) for REPLAY_SWITCH repetitions in a row, in chunks again
+// when it has been behind as long.
+static void replay_end_repetition(void) {
+    int g = (int)(replay_iteration & 1);
+    if (!replay_done[g] && cudaEventCreateWithFlags(&replay_done[g],
+            cudaEventDisableTiming) != cudaSuccess) {
+        replay_done[g] = NULL;
+        return;
+    }
+    if (replay_iteration > 0 && replay_done[1 - g]) {
+        if (cudaEventQuery(replay_done[1 - g]) == cudaErrorNotReady) {
+            replay_ahead++;
+            replay_behind = 0;
+        } else {
+            (void)cudaGetLastError();
+            replay_behind++;
+            replay_ahead = 0;
+        }
+    }
+    check(cudaEventRecord(replay_done[g], 0), "cudaEventRecord");
+    if (!replay_whole && !replay_whole_interrupted
+            && replay_ahead >= REPLAY_SWITCH) {
+        replay_plan(1);
+    } else if (replay_whole && (replay_whole_interrupted
+            || replay_behind >= REPLAY_SWITCH)) {
+        replay_plan(0);
+    }
+}
+
+// Makes the launch of `func`, or records it as one of the cycle expected.
+static void replay_launch_or_issue(kernel_func_t func, dim3 grid, dim3 block,
+        int n_args, void **args, const size_t *sizes) {
+    if (replay_enabled < 0) {
+        const char *value = getenv("LFORTRAN_GPU_GRAPHS");
+        replay_enabled = !(value && value[0] == '0');
+    }
+    if (!replay_enabled) {
+        issue_launch(func, grid, block, args, 0);
+        return;
+    }
+    long long i = replay_launches++;
+    replay_history_func[i % REPLAY_HISTORY] = func;
+    replay_history_block[i % REPLAY_HISTORY] = block;
+    replay_kernel *r = replay_kernel_of(func);
+    int period = replay_cycle_at(r, i);
+    if (period) {
+        replay_begin_cycle(r, i, period);
+    } else if (replay_period && (func != replay_expected_func[replay_pos]
+            || !same_dim(block, replay_expected_block[replay_pos]))) {
+        replay_fail(&replay_kernels[replay_start], replay_period);
+        replay_end_cycle();
+    }
+    r->last[1] = r->last[0];
+    r->last[0] = i + 1;
+    if (replay_period == 0 || replay_chunk_direct) {
+        issue_launch(func, grid, block, args, 0);
+    } else {
+        replay_store(&replay_pending[replay_pos], func, grid, block, n_args,
+            args, sizes);
+        device_busy = 1;
+    }
+    if (replay_period == 0) return;
+    replay_pos++;
+    replay_chunk *c = &replay_chunks[replay_chunk_at];
+    if (replay_pos < c->end) return;
+    if (!replay_chunk_direct) replay_run_chunk(c);
+    replay_chunk_at++;
+    if (replay_pos == replay_period) {
+        replay_end_repetition();
+        replay_iteration++;
+        replay_pos = 0;
+        replay_chunk_at = 0;
+    }
+    replay_chunk_direct = replay_chunks[replay_chunk_at].direct;
+}
+
+#else
+// The CPU emulation and HIP make every launch as it comes.
+static void replay_barrier(void) {}
+
+static void replay_launch_or_issue(kernel_func_t func, dim3 grid, dim3 block,
+        int n_args, void **args, const size_t *sizes) {
+    (void)n_args;
+    (void)sizes;
+    (void)replay_overlap;
+    issue_launch(func, grid, block, args, 0);
+}
+#endif
+
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
@@ -1479,6 +2065,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     d_ptr = slot_buffer(k->cache, i, size);
                     if (!k->copied[i] || d_ptr != previous
                             || k->cache->filled_by[i] != k) {
+                        replay_barrier();
                         check(cudaMemcpyAsync(d_ptr, host, size,
                             cudaMemcpyHostToDevice, 0),
                             "cudaMemcpyAsync H2D");
@@ -1532,11 +2119,14 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     // Build the kernel argument array for cudaLaunchKernel: a device
     // pointer for a buffer, the value for a scalar.
     void *args[MAX_ARGS];
+    size_t sizes[MAX_ARGS];
     int arg_idx = 0;
     for (int i = 0; i < k->n_args; i++) {
         if (k->kind[i] == ARG_SCALAR) {
+            sizes[arg_idx] = k->scalar_args[i].size;
             args[arg_idx++] = k->scalar_args[i].data;
         } else {
+            sizes[arg_idx] = sizeof(void *);
             args[arg_idx++] = &k->buffer_device_ptrs[i];
         }
     }
@@ -1556,23 +2146,10 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 cudaDevAttrComputeCapabilityMajor, dev) == cudaSuccess
             && major >= 9;
     }
-    if (overlap) {
-        cudaLaunchConfig_t cfg;
-        memset(&cfg, 0, sizeof(cfg));
-        cfg.gridDim = grid_dim;
-        cfg.blockDim = block_dim;
-        cudaLaunchAttribute attr[1];
-        attr[0].id = cudaLaunchAttributeProgrammaticStreamSerialization;
-        attr[0].val.programmaticStreamSerializationAllowed = 1;
-        cfg.attrs = attr;
-        cfg.numAttrs = 1;
-        check(cudaLaunchKernelExC(&cfg, (const void*)k->func, args),
-            "cudaLaunchKernelExC");
-    } else
+    replay_overlap = overlap;
 #endif
-    check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
-        0), "cudaLaunchKernel");
-    device_busy = 1;
+    replay_launch_or_issue(k->func, grid_dim, block_dim, arg_idx, args,
+        sizes);
     if (reads_in_place) pending_in_place_reads = 1;
 }
 
@@ -1583,6 +2160,7 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
 
 void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
+    replay_barrier();
     end_wait_period();
     if (!pending_in_place_reads) return;
     pending_in_place_reads = 0;

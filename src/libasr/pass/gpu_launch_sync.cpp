@@ -71,9 +71,15 @@ compiled with a device like this unit, so it defines their twins.
   cannot follow is waited for after the call.
 * The caller does not wait before the call for the launches pending on an
   array actual argument the twin is handed, including one only the twin can
-  name and a module array passed as that argument. The twin starts as if
-  launches were pending on what its array dummies hold, and waits where it
-  accesses that on the host. When every exit of the twin has waited, that
+  name and a module array passed as that argument. Nor for those pending on
+  a variable of a derived type with no pointer component, when they are in
+  its array components (in those of its components of a derived type,
+  arrays of them included) and, for an intent(in) dummy, only read them:
+  the state of a model, whose arrays the launches of a step use while the
+  twin reads its sizes on the host. The twin starts as if launches were
+  pending on what its array dummies hold, and on (only reading, for an
+  intent(in) one) the array components of its derived-type dummies, and
+  waits where it accesses that on the host. When every exit of the twin has waited, that
   wait covered every launch pending at the call, and the caller keeps only
   what the twin still leaves pending. The exit contract is only the launches
   this body made: a launch the caller had already left pending stays the
@@ -1115,11 +1121,107 @@ private:
     }
 
     // Whether the call of a twin hands it its dummy `d` without waiting
-    // for the launches pending on it (call_twin): an array dummy. The
-    // caller waits for the launches pending on any other actual argument,
-    // a scalar the twin is likely to read on the host.
+    // for the launches pending on it (call_twin): an array dummy, or one
+    // of a derived type that holds all it refers to (holds_its_storage),
+    // such as the state of a model whose arrays the launches of the twin
+    // use. The caller waits for the launches pending on any other actual
+    // argument, a scalar the twin is likely to read on the host.
     static bool handed_pending(ASR::Variable_t *d) {
-        return !d->m_value_attr && ASRUtils::is_array(d->m_type);
+        if (d->m_value_attr) return false;
+        return ASRUtils::is_array(d->m_type)
+            || struct_of(d->m_type, d->m_type_declaration) != nullptr;
+    }
+
+    // The derived type of a scalar of type `t` declared by `decl` that
+    // holds all it refers to: no component of it, or of a component of
+    // it, is a pointer, and its type is not polymorphic. Or nullptr.
+    static ASR::Struct_t *struct_of(ASR::ttype_t *t, ASR::symbol_t *decl,
+            int depth = 0) {
+        if (depth > 8 || decl == nullptr || ASRUtils::is_pointer(t)
+                || refers(t) || ASRUtils::is_class_type(
+                    ASRUtils::extract_type(t))
+                || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t))) {
+            return nullptr;
+        }
+        decl = ASRUtils::symbol_get_past_external(decl);
+        if (!ASR::is_a<ASR::Struct_t>(*decl)) return nullptr;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(decl);
+        for (ASR::Struct_t *c = st; c != nullptr;
+                c = c->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(c->m_parent))
+                    : nullptr) {
+            for (size_t i = 0; i < c->n_members; i++) {
+                ASR::symbol_t *m = c->m_symtab->get_symbol(c->m_members[i]);
+                if (m == nullptr || !ASR::is_a<ASR::Variable_t>(*m)) {
+                    return nullptr;
+                }
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(m);
+                if (ASRUtils::is_pointer(v->m_type)) return nullptr;
+                if (ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::extract_type(v->m_type))
+                        && struct_of(v->m_type, v->m_type_declaration,
+                            depth + 1) == nullptr) {
+                    return nullptr;
+                }
+            }
+        }
+        return st;
+    }
+
+    // The component of `st` (or of the type it extends) named by `m`.
+    static ASR::Variable_t *component(ASR::Struct_t *st, ASR::symbol_t *m) {
+        for (ASR::Struct_t *c = st; c != nullptr;
+                c = c->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(c->m_parent))
+                    : nullptr) {
+            for (size_t i = 0; i < c->n_members; i++) {
+                ASR::symbol_t *s = c->m_symtab->get_symbol(c->m_members[i]);
+                if (s == m) return ASR::down_cast<ASR::Variable_t>(s);
+            }
+        }
+        return nullptr;
+    }
+
+    // The paths of the array components of a value of the derived type
+    // `st` (through the derived-type components it has, arrays of them
+    // included) that `root` holds: what a launch can read or write of a
+    // derived-type dummy of a twin.
+    static void array_components(ASR::Struct_t *st, Path &prefix,
+            std::vector<Path> &out, int depth = 0) {
+        if (depth > 8) return;
+        for (ASR::Struct_t *c = st; c != nullptr;
+                c = c->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(c->m_parent))
+                    : nullptr) {
+            for (size_t i = 0; i < c->n_members; i++) {
+                ASR::symbol_t *m = c->m_symtab->get_symbol(c->m_members[i]);
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(m);
+                prefix.members.push_back(m);
+                ASR::Struct_t *inner = struct_of(v->m_type,
+                    v->m_type_declaration);
+                if (inner != nullptr) {
+                    array_components(inner, prefix, out, depth + 1);
+                } else if (ASRUtils::is_array(v->m_type)) {
+                    out.push_back(prefix);
+                }
+                prefix.members.pop_back();
+            }
+        }
+    }
+
+    // Whether the path `p`, of a value of the derived type `st`, is in an
+    // array component (array_components): a launch that wrote it changed
+    // no scalar the twin may read on the host.
+    static bool in_array_component(ASR::Struct_t *st, const Path &p) {
+        for (ASR::symbol_t *m : p.members) {
+            ASR::Variable_t *v = component(st, m);
+            if (v == nullptr) return false;
+            ASR::Struct_t *inner = struct_of(v->m_type,
+                v->m_type_declaration);
+            if (inner == nullptr) return ASRUtils::is_array(v->m_type);
+            st = inner;
+        }
+        return false;
     }
 
     // What is pending on entry: nothing, except in a twin, whose callers do
@@ -1135,10 +1237,25 @@ private:
                     || !handed_pending(ASR::down_cast<ASR::Variable_t>(d))) {
                 continue;
             }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(d);
             Path p;
             p.root = d;
-            s.add_written(p);
-            s.add_read(p);
+            std::vector<Path> paths;
+            ASR::Struct_t *st = ASRUtils::is_array(v->m_type) ? nullptr
+                : struct_of(v->m_type, v->m_type_declaration);
+            if (st != nullptr) {
+                array_components(st, p, paths);
+            } else {
+                paths.push_back(p);
+            }
+            // The launches pending on an intent(in) derived-type dummy
+            // only read it (call_twin).
+            bool read_only = st != nullptr
+                && v->m_intent == ASR::intentType::In;
+            for (const Path &q : paths) {
+                if (!read_only) s.add_written(q);
+                s.add_read(q);
+            }
             s.any = true;
         }
         return s;
@@ -1311,6 +1428,31 @@ private:
                 ? ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(
                     t->m_args[i])->m_v) : nullptr;
             bool handed = dummy != nullptr && handed_pending(dummy);
+            // A derived-type actual argument is handed when it is a whole
+            // variable and the launches pending on it are in its array
+            // components, and only read it when the dummy is intent(in),
+            // which is all the twin expects (entry).
+            if (handed && !ASRUtils::is_array(dummy->m_type)) {
+                ASR::Struct_t *st = struct_of(dummy->m_type,
+                    dummy->m_type_declaration);
+                handed = st != nullptr && ASR::is_a<ASR::Var_t>(*arg);
+                ASR::symbol_t *root = handed
+                    ? ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(arg)->m_v) : nullptr;
+                bool in = dummy->m_intent == ASR::intentType::In;
+                for (const Path &w : s.written) {
+                    if (handed && w.root == root
+                            && (in || !in_array_component(st, w))) {
+                        handed = false;
+                    }
+                }
+                for (const Path &w : s.read) {
+                    if (handed && w.root == root
+                            && !in_array_component(st, w)) {
+                        handed = false;
+                    }
+                }
+            }
             std::vector<Path> paths;
             std::vector<ASR::expr_t*> subscripts;
             if (!handed || !designated_paths(arg, paths, &subscripts)) {
