@@ -8054,6 +8054,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_split_01.f90"
 gpu_cuda_kernel = true
 
+# The lanes of an iteration read an element of an array and its first lane
+# then assigns one: they wait for each other only when the two elements may
+# be the same (`ss(i)` and `ss(i)`, not `ss(2*i)` and `ss(2*i - 1)`).
+[[test]]
+filename = "../integration_tests/gpu_lanes_disjoint_01.f90"
+gpu_cuda_kernel = true
+
 # A kernel whose iteration is a block of lanes that read vectors of 16 bytes
 # has a second version, held to fewer registers and numbering its iterations
 # by its blocks.

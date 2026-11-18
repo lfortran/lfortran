@@ -15,6 +15,7 @@
 #include <functional>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <memory>
 #include <set>
 #include <string>
@@ -1354,18 +1355,54 @@ public:
     std::set<ASR::symbol_t*> reads;
     std::set<ASR::symbol_t*> writes;
     std::set<ASR::symbol_t*> blocks;
+    // The elements of each array read or assigned, for the arrays named
+    // only by their elements (none of `whole_reads` or `whole_writes`).
+    std::map<ASR::symbol_t*, std::vector<ASR::expr_t*>> read_elements;
+    std::map<ASR::symbol_t*, std::vector<ASR::expr_t*>> written_elements;
+    std::set<ASR::symbol_t*> whole_reads, whole_writes;
     explicit SharedAccess(const KernelInfo &k_) : k(k_) {}
 
     bool shared_variable(ASR::symbol_t *s) const {
         return s != nullptr && ASR::is_a<ASR::Variable_t>(*s) && k.shared(s);
     }
+    // The array of an element of a variable, or nullptr.
+    static ASR::symbol_t* element_array(ASR::expr_t *e) {
+        if (!ASR::is_a<ASR::ArrayItem_t>(*e)) return nullptr;
+        ASR::expr_t *v = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        if (!ASR::is_a<ASR::Var_t>(*v)) return nullptr;
+        return ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(v)->m_v);
+    }
     void written(ASR::expr_t *e) {
         ASR::symbol_t *r = root_of(e);
-        if (shared_variable(r)) writes.insert(r);
+        if (!shared_variable(r)) return;
+        writes.insert(r);
+        if (element_array(e) == r) {
+            written_elements[r].push_back(e);
+        } else {
+            whole_writes.insert(r);
+        }
     }
     void visit_Var(const ASR::Var_t &x) {
         ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
-        if (shared_variable(s)) reads.insert(s);
+        if (shared_variable(s)) {
+            reads.insert(s);
+            whole_reads.insert(s);
+        }
+    }
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        ASR::symbol_t *a = element_array(const_cast<ASR::expr_t*>(&x.base));
+        if (!shared_variable(a)) {
+            BaseWalkVisitor::visit_ArrayItem(x);
+            return;
+        }
+        reads.insert(a);
+        read_elements[a].push_back(const_cast<ASR::expr_t*>(&x.base));
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_left) visit_expr(*x.m_args[i].m_left);
+            if (x.m_args[i].m_right) visit_expr(*x.m_args[i].m_right);
+            if (x.m_args[i].m_step) visit_expr(*x.m_args[i].m_step);
+        }
     }
     // An element assigned is not read: only its subscripts are.
     void visit_Assignment(const ASR::Assignment_t &x) {
@@ -1457,6 +1494,77 @@ bool intersects(const std::set<ASR::symbol_t*> &a,
         const std::set<ASR::symbol_t*> &b) {
     for (ASR::symbol_t *s : a) {
         if (b.count(s)) return true;
+    }
+    return false;
+}
+
+// The shared memory the lanes may still be reading since their last
+// barrier (LaneRewriter::apply), and, for the arrays they read only
+// elements of, those elements.
+struct Unsettled {
+    std::set<ASR::symbol_t*> arrays;
+    std::map<ASR::symbol_t*, std::vector<ASR::expr_t*>> elements;
+
+    void add(const SharedAccess &a) {
+        for (ASR::symbol_t *s : a.reads) {
+            bool fresh = arrays.insert(s).second;
+            auto e = a.read_elements.find(s);
+            if (a.whole_reads.count(s) || e == a.read_elements.end()) {
+                elements.erase(s);
+            } else if (fresh) {
+                elements[s] = e->second;
+            } else if (elements.count(s)) {
+                elements[s].insert(elements[s].end(), e->second.begin(),
+                    e->second.end());
+            }
+        }
+    }
+    void add(const Unsettled &u) {
+        for (ASR::symbol_t *s : u.arrays) {
+            bool fresh = arrays.insert(s).second;
+            auto e = u.elements.find(s);
+            if (e == u.elements.end()) {
+                elements.erase(s);
+            } else if (fresh) {
+                elements[s] = e->second;
+            } else if (elements.count(s)) {
+                elements[s].insert(elements[s].end(), e->second.begin(),
+                    e->second.end());
+            }
+        }
+    }
+    void clear() {
+        arrays.clear();
+        elements.clear();
+    }
+};
+
+// Whether the elements `a` and `b` of an array are different whatever the
+// values of the scalars of `fixed`: at some subscript, their difference is
+// an affine form whose constant the greatest common divisor of its
+// coefficients does not divide (`k` and `3 - k`).
+bool distinct_elements(ASR::expr_t *a, ASR::expr_t *b,
+        const std::set<ASR::symbol_t*> &fixed) {
+    auto *x = ASR::down_cast<ASR::ArrayItem_t>(a);
+    auto *y = ASR::down_cast<ASR::ArrayItem_t>(b);
+    if (x->n_args != y->n_args) return false;
+    GpuAffineBuilder builder;
+    builder.invariant_variable = [&](ASR::symbol_t *s) {
+        return fixed.count(ASRUtils::symbol_get_past_external(s)) > 0;
+    };
+    for (size_t i = 0; i < x->n_args; i++) {
+        GpuAffine u, v;
+        if (x->m_args[i].m_left || x->m_args[i].m_step
+                || y->m_args[i].m_left || y->m_args[i].m_step
+                || !x->m_args[i].m_right || !y->m_args[i].m_right
+                || !builder.affine(x->m_args[i].m_right, u)
+                || !builder.affine(y->m_args[i].m_right, v)) {
+            continue;
+        }
+        GpuAffine d = u.plus(v, -1);
+        int64_t g = 0;
+        for (auto &t : d.terms) g = std::gcd(g, std::abs(t.second));
+        if (g == 0 ? d.constant != 0 : d.constant % g != 0) return true;
     }
     return false;
 }
@@ -2694,8 +2802,7 @@ public:
                         *out.p[out.n - 1])) {
                     unsettled.clear();
                 } else {
-                    unsettled.insert(access.reads.begin(),
-                        access.reads.end());
+                    unsettled.add(access);
                 }
                 single.clear();
             }
@@ -2721,8 +2828,7 @@ public:
                 // the lanes have read what they accumulate once they
                 // combine it, unless the combination is deferred.
                 if (deferred) {
-                    unsettled.insert(access.reads.begin(),
-                        access.reads.end());
+                    unsettled.add(access);
                 } else if (!reduction) {
                     unsettled.clear();
                 }
@@ -2732,13 +2838,13 @@ public:
             if (r == Role::Recurse && deferral != deferrals.end()) {
                 settle_before(access, body[i]->base.loc, out);
                 emit_deferred(body[i], deferral->second, out);
-                unsettled.insert(access.reads.begin(), access.reads.end());
+                unsettled.add(access);
                 continue;
             }
             if (r == Role::Recurse) {
                 nested_apply(body[i]);
             } else {
-                unsettled.insert(access.reads.begin(), access.reads.end());
+                unsettled.add(access);
             }
             out.push_back(al, body[i]);
         }
@@ -3807,16 +3913,150 @@ private:
 
     // The lanes wait for each other before `access`, when it may assign
     // shared memory they may still be reading.
+    // An element the lanes read and one assigned that differ whatever the
+    // values of the scalars that keep theirs in the iteration (fixed_scalars:
+    // `ss(k)` and `ss(3 - k)`, `ss(2*i)` and `ss(2*i - 1)`) do not make the
+    // lanes wait.
     void settle_before(const SharedAccess &access, const Location &loc,
             Vec<ASR::stmt_t*> &out) {
-        if (!intersects(access.writes, unsettled)) return;
+        bool wait = false;
+        for (ASR::symbol_t *s : access.writes) {
+            if (!unsettled.arrays.count(s)) continue;
+            auto read = unsettled.elements.find(s);
+            auto written = access.written_elements.find(s);
+            if (read == unsettled.elements.end()
+                    || access.whole_writes.count(s)
+                    || written == access.written_elements.end()) {
+                wait = true;
+                break;
+            }
+            const std::set<ASR::symbol_t*> &fixed = fixed_scalars();
+            for (ASR::expr_t *w : written->second) {
+                for (ASR::expr_t *r : read->second) {
+                    if (!distinct_elements(w, r, fixed)) wait = true;
+                }
+            }
+            if (wait) break;
+        }
+        if (!wait) return;
         out.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
             loc)));
         unsettled.clear();
     }
 
+    // The integer scalars the kernel is handed and does not assign.
+    const std::set<ASR::symbol_t*>& fixed_scalars() {
+        if (fixed_known) return fixed;
+        fixed_known = true;
+        Effects e(k);
+        for (size_t i = 0; i < k.fn->n_body; i++) e.visit_stmt(*k.fn->m_body[i]);
+        for (ASR::symbol_t *s : k.params) {
+            if (ASR::is_a<ASR::Variable_t>(*s) && !e.scalars.count(s)
+                    && ASRUtils::is_integer(*ASRUtils::symbol_type(s))
+                    && !ASRUtils::is_array(ASRUtils::symbol_type(s))) {
+                fixed.insert(s);
+            }
+        }
+        // Scalars a procedure is handed or a loop counts with are assigned
+        // other than by an assignment.
+        class Other : public ASR::BaseWalkVisitor<Other> {
+        public:
+            std::set<ASR::symbol_t*> found;
+            std::set<ASR::symbol_t*> blocks;
+            void args(ASR::call_arg_t *a, size_t n) {
+                for (size_t i = 0; i < n; i++) {
+                    if (a[i].m_value && ASR::is_a<ASR::Var_t>(*a[i].m_value)) {
+                        found.insert(ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(a[i].m_value)->m_v));
+                    }
+                }
+            }
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                args(x.m_args, x.n_args);
+                BaseWalkVisitor::visit_SubroutineCall(x);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                args(x.m_args, x.n_args);
+                BaseWalkVisitor::visit_FunctionCall(x);
+            }
+            void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+                for (size_t h = 0; h < x.n_head; h++) {
+                    if (x.m_head[h].m_v) found.insert(root_of(x.m_head[h].m_v));
+                }
+                BaseWalkVisitor::visit_DoConcurrentLoop(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!blocks.insert(b).second) return;
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                for (size_t i = 0; i < block->n_body; i++) {
+                    visit_stmt(*block->m_body[i]);
+                }
+            }
+        } other;
+        for (size_t i = 0; i < k.fn->n_body; i++) {
+            other.visit_stmt(*k.fn->m_body[i]);
+        }
+        add_fixed(k.fn->m_body, k.fn->n_body, other.found);
+        return fixed;
+    }
+    // The integer scalars a list of the kernel outside every loop and `if`
+    // (and the blocks it runs) assigns once, from constants, scalars that
+    // are fixed already and the index of the iteration (the variable of a
+    // `do concurrent`, `i`), which every lane of the iteration holds alike
+    // from then on: `ss(2*i)` and `ss(2*i - 1)` differ.
+    void add_fixed(ASR::stmt_t **body, size_t n_body,
+            const std::set<ASR::symbol_t*> &other) {
+        class Uniform : public ASR::BaseWalkVisitor<Uniform> {
+        public:
+            const std::set<ASR::symbol_t*> &fixed;
+            bool ok = true;
+            explicit Uniform(const std::set<ASR::symbol_t*> &f) : fixed(f) {}
+            void visit_Var(const ASR::Var_t &x) {
+                if (!fixed.count(ASRUtils::symbol_get_past_external(x.m_v))) {
+                    ok = false;
+                }
+            }
+            void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t &) {
+                ok = false;
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &) { ok = false; }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) {
+                ok = false;
+            }
+            void visit_IntrinsicElementalFunction(
+                    const ASR::IntrinsicElementalFunction_t &) {
+                ok = false;
+            }
+        };
+        for (size_t i = 0; i < n_body; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
+                add_fixed(block->m_body, block->n_body, other);
+                continue;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*body[i])) continue;
+            auto *a = ASR::down_cast<ASR::Assignment_t>(body[i]);
+            if (!ASR::is_a<ASR::Var_t>(*a->m_target)) continue;
+            ASR::symbol_t *v = root_of(a->m_target);
+            auto d = k.definitions.find(v);
+            if (!k.private_scalar(v) || other.count(v)
+                    || !ASRUtils::is_integer(*ASRUtils::symbol_type(v))
+                    || d == k.definitions.end() || d->second.size() != 1) {
+                continue;
+            }
+            Uniform u(fixed);
+            u.visit_expr(*a->m_value);
+            if (u.ok) fixed.insert(v);
+        }
+    }
+    bool fixed_known = false;
+    std::set<ASR::symbol_t*> fixed;
+
     // Shared memory the lanes may still be reading (apply).
-    std::set<ASR::symbol_t*> unsettled;
+    Unsettled unsettled;
 
     // What a loop's header reads, and, in its body, a barrier at the end
     // when the next iteration may assign what the lanes still read there.
@@ -3828,13 +4068,13 @@ private:
         for (ASR::expr_t *e : header) {
             if (e) head.visit_expr(*e);
         }
-        unsettled.insert(head.reads.begin(), head.reads.end());
-        std::set<ASR::symbol_t*> before = unsettled;
+        unsettled.add(head);
+        Unsettled before = unsettled;
         apply(body, n_body);
-        unsettled.insert(head.reads.begin(), head.reads.end());
+        unsettled.add(head);
         SharedAccess inside(k);
         inside.visit_stmt(*loop);
-        if (intersects(inside.writes, unsettled)) {
+        if (intersects(inside.writes, unsettled.arrays)) {
             Vec<ASR::stmt_t*> list;
             list.reserve(al, n_body + 1);
             for (size_t i = 0; i < n_body; i++) list.push_back(al, body[i]);
@@ -3844,7 +4084,7 @@ private:
             n_body = list.n;
             unsettled.clear();
         }
-        unsettled.insert(before.begin(), before.end());
+        unsettled.add(before);
     }
 
     void nested_apply(ASR::stmt_t *s) {
@@ -3864,13 +4104,13 @@ private:
                 auto *x = ASR::down_cast<ASR::If_t>(s);
                 SharedAccess test(k);
                 test.visit_expr(*x->m_test);
-                unsettled.insert(test.reads.begin(), test.reads.end());
-                std::set<ASR::symbol_t*> before = unsettled;
+                unsettled.add(test);
+                Unsettled before = unsettled;
                 apply(x->m_body, x->n_body);
-                std::set<ASR::symbol_t*> taken = unsettled;
+                Unsettled taken = unsettled;
                 unsettled = before;
                 apply(x->m_orelse, x->n_orelse);
-                unsettled.insert(taken.begin(), taken.end());
+                unsettled.add(taken);
                 break;
             }
             case ASR::stmtType::BlockCall: {
