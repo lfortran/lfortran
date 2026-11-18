@@ -6788,10 +6788,31 @@ public:
     // result; see `create_single_use_null_array_descriptor_global` below for
     // what that rules out.
     llvm::GlobalVariable* create_null_array_descriptor_global(
-            llvm::Type* desc_type, const std::string& name) {
+            llvm::Type* desc_type, const std::string& name, ASR::ttype_t* array_type) {
+        llvm::Constant* init = llvm::ConstantAggregateZero::get(desc_type);
+        if (ASRUtils::is_character(*array_type)) {
+            // A character array descriptor owns its string descriptor from the start.
+            ASR::String_t* str = ASRUtils::get_string_type(array_type);
+            int64_t len = 0;
+            if (str->m_len) {
+                ASRUtils::extract_value(str->m_len, len);
+            }
+            llvm::GlobalVariable* str_desc = new llvm::GlobalVariable(*module,
+                llvm_utils->string_descriptor, false, llvm::GlobalVariable::InternalLinkage,
+                llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(llvm_utils->string_descriptor), {
+                    llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), len)}),
+                name + "_str_desc");
+            llvm::StructType* desc_struct = llvm::cast<llvm::StructType>(desc_type);
+            std::vector<llvm::Constant*> fields;
+            for (unsigned i = 0; i < desc_struct->getNumElements(); i++) {
+                fields.push_back(llvm::Constant::getNullValue(desc_struct->getElementType(i)));
+            }
+            fields[0] = llvm::ConstantExpr::getBitCast(str_desc, desc_struct->getElementType(0));
+            init = llvm::ConstantStruct::get(desc_struct, fields);
+        }
         return new llvm::GlobalVariable(*module, desc_type, false,
-            llvm::GlobalVariable::InternalLinkage,
-            llvm::ConstantAggregateZero::get(desc_type), name);
+            llvm::GlobalVariable::InternalLinkage, init, name);
     }
 
     // The same, for a `null()` value of type `array_type` appearing inside a
@@ -6823,7 +6844,7 @@ public:
             type_declaration);
         return create_null_array_descriptor_global(desc_type,
             "null_array_descriptor_single_use_"
-                + std::to_string(null_array_descriptor_count++));
+                + std::to_string(null_array_descriptor_count++), array_type);
     }
 
     // Constant for a CHARACTER array struct member: one string descriptor
@@ -8420,7 +8441,7 @@ public:
                     // sets it up once, and later cells must not replace it.
                     llvm::GlobalVariable *descriptor =
                         create_null_array_descriptor_global(type_,
-                            llvm_var_name + "_descriptor__");
+                            llvm_var_name + "_descriptor__", x.m_type);
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             descriptor);
                     allocatable_array_details.back().descriptor = descriptor;
@@ -10958,7 +10979,7 @@ public:
                     std::string global_name = saved_global->getName().str();
                     llvm::GlobalVariable* saved_descriptor =
                         create_null_array_descriptor_global(type_,
-                            global_name + ".__descriptor");
+                            global_name + ".__descriptor", v->m_type);
                     saved_global->setInitializer(saved_descriptor);
                     llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
                     llvm::GlobalVariable* guard = new llvm::GlobalVariable(
