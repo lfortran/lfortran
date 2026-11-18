@@ -5119,24 +5119,15 @@ public:
 
     The runtime launches every kernel to overlap the kernel before it in the
     stream (programmatic stream serialization), and each kernel waits for
-    the one before it (griddepcontrol.wait) before it touches memory. The
-    next kernel starts when every block of this one has run
-    griddepcontrol.launch_dependents or exited: its blocks then become
-    resident as the blocks of this one leave room, and run up to their wait.
-    A kernel whose first statement that touches memory is a loop, its main
-    loop (the rows of a matrix-vector product), lets the next one start
-    right after it: the next kernel is then on the multiprocessors when this
-    one ends, while its blocks become resident only once this one has
-    nothing left to start. On an H200, the decode of Qwen3.8-27B (257 q8
-    matrix-vector products a step) went from 118.1 to 118.5 tokens/s with
-    its launches replayed as CUDA graphs (lfortran_gpu_cuda.c), and from
-    117.4 to 116.9 launched one by one. Letting the next kernel start right
-    after the wait instead made it 3% slower
-    (its blocks wait on the multiprocessors the first blocks of this one
-    leave, and a next kernel of one wave is unbalanced); loads of the first
-    iteration of the loop made before the wait, into registers or as
-    prefetches into the L2 cache, did not pay either (they changed how nvcc
-    compiles the loop: 1 to 4% slower).
+    the one before it (griddepcontrol.wait) at entry, before it touches
+    memory, so where a kernel lets the next one start decides only how soon
+    the next one is resident, never what it reads. A kernel whose first
+    statement that touches memory is a loop, its main loop (the rows of a
+    matrix-vector product), lets the next one start right after that loop
+    (griddepcontrol.launch_dependents): the next kernel's blocks are then
+    on the multiprocessors when this one ends. Letting it start right after
+    the wait instead is slower: its blocks occupy the multiprocessors while
+    this one still has blocks to start.
     */
     // The main loop of the kernel being written, or nullptr.
     const ASR::stmt_t *kernel_main_loop = nullptr;
