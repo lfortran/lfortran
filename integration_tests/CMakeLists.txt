@@ -6482,6 +6482,7 @@ RUN(NAME func_call_in_decl_03 LABELS gfortran llvm EXTRAFILES func_call_in_decl_
 RUN(NAME func_call_in_decl_04 LABELS gfortran llvm) # result length calls a function use associated in the callee (#15004)
 RUN(NAME func_parameter_type_02 LABELS gfortran) # function passed in other argument of function
 RUN(NAME logical_not_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME logical_xor_01 LABELS gfortran llvm)
 RUN(NAME assign_allocatable_array_of_struct_instances LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_component_struct_array_01 LABELS gfortran llvm)
 RUN(NAME allocatable_component_struct_array_02 LABELS gfortran llvm)

@@ -1300,6 +1300,22 @@ TEST_CASE("Tokenizer") {
     CHECK(tokens(al, s) == ref);
 }
 
+TEST_CASE("Every token converts to text") {
+    // The interactive prompt and --show-tokens convert every token with
+    // token2text(). UMINUS is the first precedence-only symbol after the
+    // tokens declared in parser.yy.
+    using LCompilers::LFortran::token2text;
+    CHECK(token2text(tt::END_OF_FILE) == "end of file");
+    for (int token = tt::TK_NEWLINE; token < tt::UMINUS; token++) {
+        CAPTURE(token);
+        CHECK_NOTHROW(token2text(token));
+    }
+    CHECK(token2text(tt::TK_XOR) == ".xor.");
+    CHECK(token2text(tt::KW_BYTE) == "byte");
+    CHECK(token2text(tt::KW_IN_OUT) == "in out");
+    CHECK(token2text(tt::KW_DOUBLE_COMPLEX) == "doublecomplex");
+}
+
 #define cast(type, p) (LCompilers::LFortran::AST::type##_t*) (p)
 
 TEST_CASE("Location") {

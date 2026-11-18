@@ -1,0 +1,13 @@
+{
+    "basename": "tokens-show_tokens_01-20e3359",
+    "cmd": "lfortran --no-color --show-tokens {infile} -o {outfile}",
+    "infile": "tests/show_tokens_01.f90",
+    "infile_hash": "821cbaeb7840520bdb72d676ecf0aa8b91fc86ef8ba323ae957bb709",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "tokens-show_tokens_01-20e3359.stdout",
+    "stdout_hash": "88e93e379bcd02e5a9a2c04efd9c3942e70e85fccc14f3a9d83286a9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

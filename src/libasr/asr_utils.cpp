@@ -5248,6 +5248,7 @@ bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
     switch (op) {
         case ASR::And: result = left && right; return true;
         case ASR::Or: result = left || right; return true;
+        case ASR::Xor: result = left != right; return true;
         case ASR::NEqv: result = left != right; return true;
         case ASR::Eqv: result = left == right; return true;
         default: return false;
