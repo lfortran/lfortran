@@ -4300,6 +4300,10 @@ public:
             written.insert(gpu_designator_base(dl->m_head.m_v).root);
         }
         bool wide = holds_wide_load(dl->m_body, dl->n_body);
+        if (!wide && predicated_unroll(*dl)) {
+            emit_predicated_loop(*dl, frame, written);
+            return;
+        }
         // The loop over the chunks of a row is unrolled whatever the size
         // of its body: it reads vectors, and each iteration is long.
         emit_counted_for(dl->m_head, written, stmt->base.loc,
@@ -4307,6 +4311,86 @@ public:
             holds_lane_reduce(dl->m_body, dl->n_body), wide,
             indexes_registers(*dl));
         emit_loop_body(frame, dl->m_body, dl->n_body);
+    }
+
+    // The iterations a predicated loop takes at a time (predicated_unroll).
+    static constexpr int64_t predicated_unroll_factor = 8;
+
+    // Whether the loop `l` of a kernel whose every launch gives an
+    // iteration the lanes of a block (kernel_fixed_lanes) is written as
+    // predicated_unroll_factor iterations at a time, each under a test of
+    // the end: a short loop of a body of few statements, a step known at
+    // compile time and a number of iterations that is not (the chunks of
+    // an attention). nvcc unrolls such a loop by its pragma and runs the
+    // iterations it has left one after another, each waiting for its load;
+    // predicated, the loads of the iterations of a step are issued
+    // together (the merge of 19 chunks went from 6.9 to 4.2 us on an
+    // H200).
+    bool predicated_unroll(const ASR::DoLoop_t &l) {
+        if (current_fixed_lanes <= 0 || l.m_head.m_v == nullptr
+                || dialect.unroll_whole_pragma().empty()
+                || !small_innermost_loop(l.m_body, l.n_body)
+                || holds_lane_reduce(l.m_body, l.n_body)) {
+            return false;
+        }
+        int64_t step = 0, end = 0, start = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(
+                    l.m_head.m_increment), step) || step <= 0) {
+            return false;
+        }
+        if (ASRUtils::extract_value(ASRUtils::expr_value(l.m_head.m_start),
+                    start)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    l.m_head.m_end), end)) {
+            return false;
+        }
+        class Leaves : public ASR::BaseWalkVisitor<Leaves> {
+        public:
+            bool found = false;
+            void visit_Exit(const ASR::Exit_t &) { found = true; }
+            void visit_Cycle(const ASR::Cycle_t &) { found = true; }
+            void visit_Return(const ASR::Return_t &) { found = true; }
+        } leaves;
+        for (size_t i = 0; i < l.n_body; i++) leaves.visit_stmt(*l.m_body[i]);
+        return !leaves.found;
+    }
+
+    // Writes the loop of predicated_unroll: steps of the iterations, each
+    // iteration of a step under a test of the end, unrolled whole; the
+    // variable ends one step past the last iteration, as Fortran has it.
+    void emit_predicated_loop(const ASR::DoLoop_t &l,
+            const GpuLoopFrame &frame,
+            const std::set<ASR::symbol_t*> &written) {
+        ASR::ttype_t *type = ASRUtils::expr_type(l.m_head.m_v);
+        std::string type_name = gpu_type(type);
+        std::string v = captured_source([&]() { visit_expr(l.m_head.m_v); });
+        std::string start = loop_control(l.m_head.m_start, "start", type,
+            written);
+        std::string end = loop_control(l.m_head.m_end, "end", type, written);
+        std::string inc = captured_source([&]() {
+            visit_expr(l.m_head.m_increment); });
+        std::string base = "__lfortran_base_"
+            + std::to_string(loop_control_count);
+        std::string k = "__lfortran_part_"
+            + std::to_string(loop_control_count++);
+        std::string in = get_indent();
+        int64_t u = predicated_unroll_factor;
+        src << in << "for (" << type_name << " " << base << " = " << start
+            << "; " << base << " <= " << end << "; " << base << " += "
+            << u << " * (" << inc << ")) {\n";
+        src << in << "    " << dialect.unroll_whole_pragma() << "\n";
+        src << in << "    for (int " << k << " = 0; " << k << " < " << u
+            << "; " << k << "++) {\n";
+        src << in << "        " << v << " = " << base << " + " << k
+            << " * (" << inc << ");\n";
+        src << in << "        if (" << v << " <= " << end << ") {\n";
+        indent_level += 2;
+        emit_loop_body(frame, l.m_body, l.n_body);
+        indent_level -= 2;
+        src << in << "    }\n" << in << "}\n";
+        src << in << v << " = " << end << " >= " << start << " ? " << start
+            << " + ((" << end << " - " << start << ") / (" << inc
+            << ") + 1) * (" << inc << ") : " << start << ";\n";
     }
 
     // The most iterations of a loop unrolled whole for a private array it
