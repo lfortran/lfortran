@@ -10017,3 +10017,37 @@ end module
 }
 #endif
 #endif // __EMSCRIPTEN__
+
+TEST_CASE("FortranEvaluator a procedure cell allocates a notebook array") {
+    // A variable declared by a cell outlives the procedure or the cell that
+    // allocates it, so --fast must not turn it into a fixed-size array.
+    for (bool fast : {false, true}) {
+        CAPTURE(fast);
+        CompilerOptions cu;
+        cu.interactive = true;
+        cu.po.fast = fast;
+        cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2("integer, allocatable :: a(:)\n").ok);
+        REQUIRE(e.evaluate2(R"(subroutine init_array()
+    allocate(a(3))
+    a = 7
+end subroutine
+)").ok);
+        REQUIRE(e.evaluate2("call init_array()\n").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("size(a)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 3);
+        r = e.evaluate2("sum(a)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 21);
+
+        // The allocation is a statement cell.
+        REQUIRE(e.evaluate2("integer, allocatable :: b(:)\n").ok);
+        REQUIRE(e.evaluate2("allocate(b(4))\n").ok);
+        r = e.evaluate2("size(b)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 4);
+    }
+}
