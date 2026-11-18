@@ -2174,6 +2174,12 @@ struct FixedFormRecursiveDescent {
             push_token_no_advance(cur, "continue");
             push_token_no_advance(cur, "\n");
         }
+        if (next_is(cur, "contains")) {
+            push_token_advance(cur, "contains");
+            push_token_no_advance(cur, "\n");
+            next_line(cur);
+            while(lex_procedure(cur));
+        }
         if (next_is(cur, "endfunction")) {
             push_token_advance(cur, "endfunction");
             tokenize_line(cur);
