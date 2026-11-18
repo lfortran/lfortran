@@ -507,6 +507,10 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 {
 #ifdef HAVE_LFORTRAN_LLVM
     EvalResult result;
+#ifndef __EMSCRIPTEN__
+    // The scope of the session before this cell.
+    SymbolTable *cell_parent = symbol_table;
+#endif
 
     // Src -> AST
     Result<LFortran::AST::TranslationUnit_t*> res = get_ast2(
@@ -601,6 +605,49 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     if (compiler_options.interactive) {
         drop_redefinitions(*m);
     }
+
+#ifndef __EMSCRIPTEN__
+    // A procedure that is defined nowhere, neither by a cell nor by the
+    // runtime, is an error in the user's code, like an undefined reference at
+    // link time. A cell that only defines procedures may refer to one that a
+    // later cell defines, so it is only an error once code that needs it is
+    // to run. The cell is then not added to the JIT, so it leaves no trace,
+    // as with a semantic error, and the user can define what is missing and
+    // enter the cell again.
+    if (has_setup || has_program || return_type != "none") {
+        std::vector<std::string> undefined
+            = get_llvm_evaluator().undefined_symbols(*m);
+        if (!undefined.empty()) {
+            if (compiler_options.interactive) {
+                // The passes of this cell have rewritten the earlier cells'
+                // symbols in place (see snapshot_cell_scope), so the session
+                // goes back to the copy of them taken before the passes ran.
+                SymbolTable *restored = symbol_table->parent;
+                auto previous = cell_implicit_types.find(cell_parent);
+                std::map<std::string, ASR::ttype_t*> implicit_types;
+                if (previous != cell_implicit_types.end()) {
+                    implicit_types = std::move(previous->second);
+                    cell_implicit_types.erase(previous);
+                }
+                cell_implicit_types.erase(symbol_table);
+                cell_implicit_types[restored] = std::move(implicit_types);
+                symbol_table = restored;
+                // What drop_redefinitions() kept is not in the JIT either.
+                for (llvm::Function &fn : *m->m_m) {
+                    if (!fn.isDeclaration() && !fn.hasLocalLinkage()) {
+                        defined_symbols.erase(fn.getName().str());
+                    }
+                }
+            }
+            for (const std::string &name : undefined) {
+                diagnostics.add(diag::Diagnostic(
+                    "undefined reference to '" + name + "'",
+                    diag::Level::Error, diag::Stage::CodeGen));
+            }
+            return Error();
+        }
+    }
+#endif
 
     // LLVM -> Machine code -> Execution
 #ifdef __EMSCRIPTEN__

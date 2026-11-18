@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdlib>
+#include <deque>
 #include <iostream>
 #include <fstream>
 #include <optional>
@@ -1029,6 +1030,34 @@ std::unique_ptr<LLVMModule> LLVMEvaluator::parse_module2(const std::string &sour
     return std::make_unique<LLVMModule>(parse_module(source, filename));
 }
 
+namespace {
+// The symbols that `m` uses and that the JIT resolves elsewhere: those it
+// does not define, and those it defines that `jit_symbols` already assigns to
+// an earlier module, since the JIT keeps the first definition of a name (a
+// redefinition whose body is dropped, a weak or linkonce duplicate). Those
+// that need no definition (intrinsics, extern_weak) are not included, nor
+// are uses by constant expressions that nothing uses, which make no
+// relocation.
+std::vector<std::string> external_refs(llvm::Module &m,
+        const std::map<std::string, size_t> &jit_symbols) {
+    std::vector<std::string> refs;
+    for (llvm::GlobalValue &gv : m.global_values()) {
+        if (!gv.hasName() || gv.hasExternalWeakLinkage()) continue;
+        if (!gv.isDeclaration() && (gv.hasLocalLinkage()
+                || jit_symbols.count(gv.getName().str()) == 0)) {
+            continue;
+        }
+        if (llvm::Function *fn = llvm::dyn_cast<llvm::Function>(&gv)) {
+            if (fn->isIntrinsic()) continue;
+        }
+        gv.removeDeadConstantUsers();
+        if (gv.use_empty()) continue;
+        refs.push_back(gv.getName().str());
+    }
+    return refs;
+}
+}
+
 void LLVMEvaluator::add_module(const std::string &source) {
     std::unique_ptr<llvm::Module> module = parse_module(source);
     // TODO: apply LLVM optimizations here
@@ -1047,6 +1076,16 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
     // cases when the Module was constructed directly, not via parse_module().
     configure_module(*mod);
     mod->setDataLayout(jit->getDataLayout());
+    JITModule jm;
+    jm.refs = external_refs(*mod, jit_symbols);
+    jm.linkable = jm.refs.empty();
+    std::vector<std::string> defined;
+    for (llvm::GlobalValue &gv : mod->global_values()) {
+        if (!gv.isDeclaration() && gv.hasName() && !gv.hasLocalLinkage()
+                && !gv.hasAvailableExternallyLinkage()) {
+            defined.push_back(gv.getName().str());
+        }
+    }
     llvm::Error err = jit->addModule(std::move(mod), context);
     if (err) {
         llvm::SmallVector<char, 128> buf;
@@ -1056,11 +1095,90 @@ void LLVMEvaluator::add_module(std::unique_ptr<llvm::Module> mod) {
         if (msg[msg.size()-1] == '\n') msg = msg.substr(0, msg.size()-1);
         throw LCompilersException("addModule() returned an error: " + msg);
     }
-
+    jit_modules.push_back(jm);
+    for (const std::string &name : defined) {
+        jit_symbols.emplace(name, jit_modules.size() - 1);
+    }
 }
 
 void LLVMEvaluator::add_module(std::unique_ptr<LLVMModule> m) {
     add_module(std::move(m->m_m));
+}
+
+bool LLVMEvaluator::is_process_symbol(const std::string &name) {
+    // Only called for symbols that no module of the JIT defines, so the
+    // lookup goes to the host process and links nothing.
+    if (process_symbols.count(name) > 0) return true;
+#if LLVM_VERSION_MAJOR < 8
+    llvm::JITSymbol s = jit->findSymbol(name);
+    if (s) {
+        process_symbols.insert(name);
+        return true;
+    }
+    llvm::Error err = s.takeError();
+    if (!err) return false;
+#else
+#if LLVM_VERSION_MAJOR < 17
+    llvm::Expected<llvm::JITEvaluatedSymbol>
+#else
+    llvm::Expected<llvm::orc::ExecutorSymbolDef>
+#endif
+        s = jit->lookup(name);
+    if (s) {
+        process_symbols.insert(name);
+        return true;
+    }
+    bool not_found = false;
+    llvm::Error err = llvm::handleErrors(s.takeError(),
+        [&](llvm::orc::SymbolsNotFound &) { not_found = true; });
+    if (not_found && !err) return false;
+#endif
+    llvm::SmallVector<char, 128> buf;
+    llvm::raw_svector_ostream dest(buf);
+    llvm::logAllUnhandledErrors(std::move(err), dest, "");
+    std::string msg = std::string(dest.str().data(), dest.str().size());
+    if (!msg.empty() && msg[msg.size()-1] == '\n') {
+        msg = msg.substr(0, msg.size()-1);
+    }
+    throw LCompilersException("lookup() failed to find the symbol '"
+        + name + "', error: " + msg);
+}
+
+std::vector<std::string> LLVMEvaluator::undefined_symbols(LLVMModule &m) {
+    std::vector<std::string> undefined;
+    std::set<std::string> seen;
+    std::vector<size_t> visited;
+    std::deque<std::string> names;
+    for (const std::string &name : external_refs(*m.m_m, jit_symbols)) {
+        names.push_back(name);
+    }
+    // A name that `m` defines first resolves to `m`, added to the JIT next.
+    for (llvm::GlobalValue &gv : m.m_m->global_values()) {
+        if (!gv.isDeclaration() && gv.hasName() && !gv.hasLocalLinkage()
+                && !gv.hasAvailableExternallyLinkage()
+                && jit_symbols.count(gv.getName().str()) == 0) {
+            seen.insert(gv.getName().str());
+        }
+    }
+    while (!names.empty()) {
+        std::string name = names.front();
+        names.pop_front();
+        if (!seen.insert(name).second) continue;
+        auto it = jit_symbols.find(name);
+        if (it != jit_symbols.end()) {
+            JITModule &jm = jit_modules[it->second];
+            if (!jm.linkable) {
+                visited.push_back(it->second);
+                names.insert(names.end(), jm.refs.begin(), jm.refs.end());
+            }
+        } else if (!is_process_symbol(name)) {
+            undefined.push_back(name);
+        }
+    }
+    if (undefined.empty()) {
+        for (size_t i : visited) jit_modules[i].linkable = true;
+    }
+    return undefined;
 }
 
 intptr_t LLVMEvaluator::get_symbol_address(const std::string &name) {

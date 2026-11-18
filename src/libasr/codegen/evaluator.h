@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 
 #include <libasr/alloc.h>
 #include <libasr/asr_scopes.h>
@@ -97,8 +98,22 @@ private:
     std::unique_ptr<llvm::LLVMContext> context;
     LLVMTargetConfig target_config;
     std::unique_ptr<llvm::TargetMachine> TM;
+    // What each module added to the JIT refers to and defines, so that what
+    // running code would link can be checked without linking anything (see
+    // undefined_symbols()).
+    struct JITModule {
+        std::vector<std::string> refs;
+        // Everything it refers to, directly or through other modules, is
+        // known to be defined.
+        bool linkable;
+    };
+    std::vector<JITModule> jit_modules;
+    // The module (index into `jit_modules`) that defines each symbol.
+    std::map<std::string, size_t> jit_symbols;
+    std::set<std::string> process_symbols;
     LLVMEvaluator(LLVMTargetConfig target_config);
     void configure_module(llvm::Module &module) const;
+    bool is_process_symbol(const std::string &name);
 public:
     LLVMEvaluator(const std::string &t = "");
     LLVMEvaluator(const CompilerOptions &compiler_options);
@@ -108,6 +123,14 @@ public:
     void add_module(const std::string &source);
     void add_module(std::unique_ptr<llvm::Module> mod);
     void add_module(std::unique_ptr<LLVMModule> m);
+    // The symbols that running code of `m` would need and that are defined
+    // nowhere, neither by a module added earlier nor by the host process. The
+    // JIT links a module as a whole the first time a symbol of it is looked
+    // up, and with it every module it refers to, so these include what such
+    // a module refers to. If linking fails, the symbols involved stay failed
+    // for the rest of the session, so nothing is looked up in the modules
+    // here, and `m` is not added.
+    std::vector<std::string> undefined_symbols(LLVMModule &m);
     intptr_t get_symbol_address(const std::string &name);
     std::string get_asm(llvm::Module &m);
     void save_asm_file(llvm::Module &m, const std::string &filename);
