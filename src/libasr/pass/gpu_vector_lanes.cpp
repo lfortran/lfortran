@@ -1862,12 +1862,13 @@ read and named nowhere else in the kernel (`dead`). And the groups read
 shared memory: a lane waits for what it loads, so lanes that load an
 element each wait once where the first lane would wait for each in turn,
 while statements that only store what the lanes hold already cost the first
-lane little more than one of them, less than the register that keeps the
-number of each lane for them through the loop before costs the loop (a q8
-matrix-vector product of Qwen3.8-27B that stores 4 rows per iteration took
-0.5 to 1% longer when its lanes stored a row each; one that also adds them
-to the rows of another vector, and scales them by a third, 1.5% shorter). The statements of the
-first group, with each such integer expression `e` turned into
+lane little more than one of them, less than the selection, the loop and
+the divergent branch that share them out cost. A q8 matrix-vector product
+of Qwen3.8-27B on an H200 that stores 4 rows per iteration took 0.3 to 1%
+longer when its lanes stored a row each, also with the lane read again
+from the thread index after the loop of the sums, which left that loop as
+it was; one that also adds them to the rows of another vector, and scales
+them by a third, 1.5% shorter. The statements of the first group, with each such integer expression `e` turned into
 `e + g*step` and each such scalar into the one of group `g`, are then the
 statements of group `g` (`generic`), which lane g runs: after the lanes
 combined the sums of four rows of a matrix-vector product, four lanes
