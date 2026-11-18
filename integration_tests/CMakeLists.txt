@@ -7733,6 +7733,7 @@ RUN(NAME gpu_deferred_sync_09 LABELS gfortran llvm metal cuda STATIC_LIBRARY_FIL
 RUN(NAME gpu_deferred_sync_10 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_deferred_sync_11 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_deferred_sync_12 LABELS gfortran llvm cuda)
+RUN(NAME gpu_graph_replay_01 LABELS gfortran llvm cuda)
 # A pointer, a pointer component, and the actual's own name read what an
 # assumed-shape target dummy's launch wrote.
 RUN(NAME gpu_target_dummy_reader LABELS gfortran llvm metal cuda)
