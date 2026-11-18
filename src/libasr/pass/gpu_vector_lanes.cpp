@@ -3067,6 +3067,9 @@ private:
         // warp, which combine what they accumulate with shuffles: `parts`
         // is a power of two up to a SIMD-group.
         bool groups;
+        // The variable of the loop and the scalars its body assigns, which
+        // may differ between the lanes of the block.
+        std::set<ASR::symbol_t*> varying;
     };
     std::map<ASR::stmt_t*, Parts> parted;
     // The fewest lanes per iteration that combine with shuffles rather than
@@ -3106,7 +3109,11 @@ private:
     // assign the same value. The lanes of the block take one iteration each
     // (`trips` times `parts` is the block), and wait for each other inside
     // the body. Only for a kernel that runs one iteration per block (one
-    // with arrays the block shares), whose lanes are known.
+    // with arrays the block shares), whose lanes are known. The statements
+    // several lanes run alike (all but the loops shared out; those too
+    // when lanes past the last group repeat the last iteration) assign
+    // memory the body does not read: two lanes would otherwise each add to
+    // `acc(i) = acc(i) + s`, or one read what another assigned already.
     void plan_parts(ASR::DoLoop_t *l, std::vector<Frame> &frames) {
         if (k.block_lanes <= 0 || l->n_orelse > 0
                 || l->m_head.m_v == nullptr) {
@@ -3123,10 +3130,39 @@ private:
         for (size_t i = 0; i < l->n_body; i++) e.visit_stmt(*l->m_body[i]);
         if (e.unknown || e.returns || !e.statuses.empty()) return;
         Parts plan{trips, parts, {}, {},
-            (parts & (parts - 1)) == 0 && parts >= parts_groups_min};
-        if (plan_list(l->m_body, l->n_body, &l->base, frames, plan)
-                && !plan.loops.empty()) {
-            parted[&l->base] = plan;
+            (parts & (parts - 1)) == 0 && parts >= parts_groups_min,
+            e.scalars};
+        plan.varying.insert(root_of(l->m_head.m_v));
+        if (!plan_list(l->m_body, l->n_body, &l->base, frames, plan)
+                || plan.loops.empty()) {
+            return;
+        }
+        SharedAccess alike(k), split(k), all(k);
+        parts_access(l->m_body, l->n_body, plan, alike, split);
+        for (size_t i = 0; i < l->n_body; i++) all.visit_stmt(*l->m_body[i]);
+        if (intersects(alike.writes, all.reads)) return;
+        if (plan.groups && plan.trips*plan.parts < k.block_lanes
+                && intersects(split.writes, all.reads)) {
+            return;
+        }
+        parted[&l->base] = plan;
+    }
+
+    // What the statements of a list of a body planned by plan_parts access:
+    // the loops shared out in `split`, the others, which several lanes run
+    // alike, in `alike`.
+    void parts_access(ASR::stmt_t **body, size_t n_body, const Parts &plan,
+            SharedAccess &alike, SharedAccess &split) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            if (plan.loops.count(s)) {
+                split.visit_stmt(*s);
+            } else if (plan.containers.count(s)) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(s);
+                parts_access(c->m_body, c->n_body, plan, alike, split);
+            } else {
+                alike.visit_stmt(*s);
+            }
         }
     }
 
@@ -3147,13 +3183,26 @@ private:
             if (splittable(d, plan.parts, frames, accumulators)) {
                 plan.loops[s] = accumulators;
             } else if (d->n_orelse == 0 && d->m_head.m_v
-                    && k.private_scalar(root_of(d->m_head.m_v))) {
+                    && k.private_scalar(root_of(d->m_head.m_v))
+                    && uniform_bounds(d, plan)) {
                 size_t before = plan.loops.size();
                 ok = plan_list(d->m_body, d->n_body, s, frames, plan);
                 if (plan.loops.size() > before) plan.containers.insert(s);
             }
             frames.pop_back();
             if (!ok) return false;
+        }
+        return true;
+    }
+
+    // Whether every lane of the block runs the loop `d` of a body planned by
+    // plan_parts as many times: its bounds name nothing that differs between
+    // them. Its barriers and the shuffles of the loops it holds need them
+    // all; the loop otherwise runs whole on each lane.
+    bool uniform_bounds(ASR::DoLoop_t *d, const Parts &plan) {
+        for (ASR::expr_t *e : {d->m_head.m_start, d->m_head.m_end,
+                d->m_head.m_increment}) {
+            if (e && mentions_any(e, plan.varying)) return false;
         }
         return true;
     }
