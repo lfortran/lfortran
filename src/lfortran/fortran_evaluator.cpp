@@ -357,6 +357,12 @@ static int read_input(void *context, const char **record, size_t *length) {
     try {
         c.record.clear();
         int status = c.io.input(c.record);
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+        // An interrupt ends the wait for input. The READ holds no runtime
+        // state across this wait (items already read stay assigned), so
+        // stop the cell here rather than fail the READ.
+        _lfortran_stop_if_interrupted();
+#endif
         *record = c.record.data();
         *length = c.record.size();
         return status;

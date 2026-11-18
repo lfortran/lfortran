@@ -97,7 +97,9 @@ public:
         // every few milliseconds on the caller, and after each callback above.
         // Once it returns true, the cell is interrupted (see
         // interruptible()) and fails with a KeyboardInterrupt. It must not
-        // block or throw.
+        // block or throw. If interruptible(), the `input` callback may return
+        // early, with any status, once this returns true; otherwise it must
+        // keep waiting for input, as nothing would stop the cell.
         std::function<bool()> interrupt_requested;
     };
 

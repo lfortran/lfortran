@@ -46,6 +46,8 @@ typedef enum {
 #  include <unistd.h>
 #if !defined(COMPILE_TO_WASM)
 #  include <sys/wait.h>
+#  include <spawn.h>
+#  include <signal.h>
 #endif
 #endif
 
@@ -118,6 +120,13 @@ LFORTRAN_API void _lfortran_stop_if_interrupted(void)
     interrupt_defer = 0;
     longjmp(*env, 1);
 }
+
+/* Whether this thread runs an interruptible cell, whose runtime waits then
+   look at the request. */
+static inline int interrupt_armed(void)
+{
+    return interrupt_env != NULL;
+}
 #else
 LFORTRAN_API int _lfortran_cell_interrupt;
 LFORTRAN_API void _lfortran_set_cell_interrupt(int requested)
@@ -132,6 +141,7 @@ LFORTRAN_API void _lfortran_set_interrupt_env(void *env) { (void)env; }
 LFORTRAN_API void _lfortran_interrupt_defer_enter(void) {}
 LFORTRAN_API void _lfortran_interrupt_defer_leave(void) {}
 LFORTRAN_API void _lfortran_stop_if_interrupted(void) {}
+static inline int interrupt_armed(void) { return 0; }
 #endif
 
 static lfortran_stdin_provider stdin_provider;
@@ -10955,6 +10965,29 @@ LFORTRAN_API void _lfortran_exit(int32_t status)
 
 LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    if (interrupt_armed()) {
+        /* No signal wakes this sleep. Look at the request between short
+           slices, and stop the cell once it is set. */
+        int64_t left_ms = (seconds > 0 ? (int64_t)seconds : 0) * 1000;
+        while (left_ms > 0) {
+            struct timespec slice;
+            int step = left_ms > 10 ? 10 : (int)left_ms;
+            if (_lfortran_cell_interrupt_requested()) {
+                /* Returns inside a statement that must finish: end the
+                   wait there. */
+                _lfortran_stop_if_interrupted();
+                return;
+            }
+            slice.tv_sec = 0;
+            slice.tv_nsec = (long)step * 1000000L;
+            while (nanosleep(&slice, &slice) < 0 && errno == EINTR) {
+            }
+            left_ms -= step;
+        }
+        return;
+    }
+#endif
 #if defined(_WIN32)
     Sleep((DWORD)seconds * 1000);
 #else
@@ -20402,14 +20435,65 @@ static void copy_fchar_to_char(const fchar *src, int64_t len, char *dest) {
     dest[len] = '\0';
 }
 
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+extern char **environ;
+
+// Runs `command` like system(), but in a process group of its own, which an
+// interrupted cell ends with all its processes. Sets `*cancelled` then.
+static int execute_cancellable_command(const char *command, bool *cancelled)
+{
+    // As the terminal's foreground job, the command gets Ctrl-C from the
+    // terminal anyway, and a group of its own could not read the terminal.
+    for (int fd = STDIN_FILENO; fd <= STDERR_FILENO; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return system(command);
+    }
+    posix_spawnattr_t attributes;
+    if (posix_spawnattr_init(&attributes)) return -1;
+    int error = posix_spawnattr_setpgroup(&attributes, 0);
+    if (!error) error = posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP);
+    pid_t child;
+    char *argv[] = {"sh", "-c", (char *)command, NULL};
+    if (!error) error = posix_spawn(&child, "/bin/sh", NULL, &attributes, argv, environ);
+    posix_spawnattr_destroy(&attributes);
+    if (error) return -1;
+    int status;
+    // Short commands end quickly; poll a long one every 10 ms.
+    long delay_ns = 100000;
+    for (;;) {
+        pid_t waited = waitpid(child, &status, WNOHANG);
+        if (waited == child) return status;
+        if (waited < 0 && errno != EINTR) return -1;
+        if (_lfortran_cell_interrupt_requested()) {
+            // The unreaped leader keeps the group id ours.
+            kill(-child, SIGKILL);
+            while (waitpid(child, &status, 0) < 0 && errno == EINTR) {}
+            *cancelled = true;
+            return -1;
+        }
+        const struct timespec delay = {0, delay_ns};
+        nanosleep(&delay, NULL);
+        if (delay_ns < 10000000) delay_ns *= 2;
+    }
+}
+#endif
+
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len) {
     char *c_cmd = internal_malloc(sizeof(char) * (len + 1));
 
     copy_fchar_to_char(cmd, len, c_cmd);
     _lfortran_flush(-1, NULL, NULL, 0);
 
-    int result = system(c_cmd);
+    int result;
+#if !defined(_WIN32) && !defined(COMPILE_TO_WASM)
+    bool cancelled = false;
+    result = interrupt_armed() ? execute_cancellable_command(c_cmd, &cancelled)
+        : system(c_cmd);
     internal_free(c_cmd);
+    if (cancelled) _lfortran_stop_if_interrupted();
+#else
+    result = system(c_cmd);
+    internal_free(c_cmd);
+#endif
 
     // On POSIX systems, system() returns a wait status, not the exit code directly.
     // Use WEXITSTATUS to extract the actual exit code.

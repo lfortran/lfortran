@@ -50,6 +50,10 @@ input. `execute()` installs the hook through the runtime's C API
 (`src/libasr/runtime/lfortran_stdin.h`) for that cell only and always removes
 it, so a later cell can read again after end of file and unread bytes are
 discarded.
+If the cell can be interrupted (`FortranEvaluator::interruptible()`), the
+hook may return early, with any status, once `CellIO::interrupt_requested`
+returns true: the cell then stops without failing the READ. Otherwise it must
+keep waiting for input, as nothing would stop the cell.
 
 The runtime keeps the record's bytes, its cursor and delimiters, so one record
 can satisfy several list items and one READ can consume several records.
@@ -108,6 +112,14 @@ next cell: an interrupt that arrives while no cell runs does nothing, and
 compilation is not interrupted; a request that is already set stops the cell
 before its code runs.
 
+The runtime's waits stop at once too: SLEEP, which wakes every 10
+milliseconds to look at the request; EXECUTE_COMMAND_LINE, whose command runs
+in a process group of its own, which is killed (with its descendants that stay
+in the group) and reaped first; and a READ from stdin that waits for its
+input. In a process that is the foreground job of a terminal, the command
+runs as with `system()`: the terminal's Ctrl-C reaches it, and the cell waits
+for it.
+
 A poll inside a final subroutine, a defined assignment, or a defined input or
 output procedure returns: these run inside another statement, which must
 finish. The cell stops at the next poll after that statement, so a loop that
@@ -117,6 +129,7 @@ call returns; a loop that calls it stops at its next iteration.
 
 Interruption is supported on Linux and macOS (x86-64 and AArch64). It is not
 supported on Windows, in WASM (JupyterLite) or with `--openmp`, where a cell
-runs to its end.
+runs to its end, and a READ keeps waiting for its input.
 
-The `test_lfortran` cases `FortranEvaluator interrupt*` cover this.
+The `test_lfortran` cases `FortranEvaluator interrupt*` and the
+`test_session_regressions` case `terminal_command` cover this.

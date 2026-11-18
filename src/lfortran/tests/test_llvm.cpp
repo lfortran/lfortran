@@ -19,6 +19,7 @@
 #ifndef _WIN32
 #include <pthread.h>
 #include <sys/resource.h>
+#include <unistd.h>
 #endif
 #include <libasr/codegen/KaleidoscopeJIT.h>
 #if defined(__linux__)
@@ -7948,6 +7949,18 @@ std::string cell_output(FortranEvaluator &e, const std::string &code) {
     return output;
 }
 
+// Whether this process is the foreground job of a terminal.
+bool foreground_terminal() {
+#ifdef _WIN32
+    return false;
+#else
+    for (int fd = 0; fd <= 2; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return true;
+    }
+    return false;
+#endif
+}
+
 void check_interrupted(const FortranEvaluator::CellResult &cell) {
     CHECK(!cell.ok);
     CHECK(cell.interrupted);
@@ -8021,9 +8034,18 @@ end module
         "subroutine tags()\ntype(point) :: q\nq%tags = [7]\nprint *, '@'\ndo\n"
             "  q%tags = [q%tags, 1]\n  if (size(q%tags) > 100) q%tags = [7, 8]\nend do\n"
             "end subroutine\ncall tags()",
+        // Runtime waits stop at once: nothing after them runs.
+        "print *, '@'\ncall sleep(100)\nprint *, 'after'",
+        "print *, '@'\ncall execute_command_line('sleep 100')\nprint *, 'after'",
     };
     for (size_t n = 0; n < cells.size(); n++) {
         CAPTURE(cells[n]);
+        if (cells[n].find("execute_command_line") != std::string::npos
+                && foreground_terminal()) {
+            // The command runs as with system(), which the terminal's
+            // Ctrl-C interrupts, not this test.
+            continue;
+        }
         std::string output;
         check_interrupted(interrupt_at_marker(e, cells[n], output));
         CHECK(output.find("after") == std::string::npos);
@@ -8150,6 +8172,38 @@ end module
         check_interrupted(interrupt_at_marker(e, item.first, output));
         run_cell(e, item.second);
     }
+}
+
+TEST_CASE("FortranEvaluator interrupt: a READ waiting for input stops") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    run_cell(e, "integer :: n = 5, m = 6");
+    for (const std::string code : {"read *, n\nprint *, 'after'",
+            "read *, n, m\nprint *, 'after'"}) {
+        CAPTURE(code);
+        std::string output;
+        FortranEvaluator::CellIO io;
+        io.output = [&](int, const std::string &text) { output += text; };
+        int asked = 0;
+        // The first record of `n, m` has only one value, so the second wait
+        // comes after the READ has stored n.
+        io.input = [&](std::string &record) {
+            if (asked++ == 0 && code.find(", m") != std::string::npos) {
+                record = "7";
+                return 0;
+            }
+            return 1;
+        };
+        io.interrupt_requested = [&]() { return asked > 0
+            && (asked > 1 || code.find(", m") == std::string::npos); };
+        check_interrupted(e.execute(code, false, io));
+        CHECK(output.find("after") == std::string::npos);
+    }
+    CHECK(cell_value(e, "m") == "6");
+    InputRecords input{{"42"}};
+    run_cell(e, "read *, n", input.io());
+    CHECK(cell_value(e, "n") == "42");
 }
 
 TEST_CASE("FortranEvaluator interrupt: a request belongs to its cell") {
