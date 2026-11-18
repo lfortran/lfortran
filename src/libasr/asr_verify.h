@@ -77,6 +77,13 @@ namespace LCompilers {
     bool asr_verify(const ASR::TranslationUnit_t &unit,
         bool check_external, diag::Diagnostics &diagnostics);
 
+    // The interface that a separate module procedure `name` of a submodule
+    // was declared with, searched up the chain of the ancestor modules that
+    // `parent_module` starts, or nullptr. asr_verify requires the procedure
+    // to conform to it.
+    ASR::Function_t* declared_module_interface(SymbolTable *tu_scope,
+        const char *parent_module, const std::string &name);
+
 } // namespace LCompilers
 
 #endif // LFORTRAN_ASR_VERIFY_H

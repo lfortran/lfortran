@@ -3,6 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/asr_serialization_visitor.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_by_data.h>
 #include <libasr/asr_builder.h>
@@ -109,6 +110,96 @@ static bool has_saved_state(ASR::Function_t* x) {
         }
     }
     return false;
+}
+
+// Every symbol that an ASR node, or a symbol it owns, refers to. A module
+// file has to resolve each such reference, so the serialization visitor
+// writes all of them; this one records them and writes nothing else.
+class SymbolReferences : public ASR::SerializationBaseVisitor<SymbolReferences> {
+public:
+    std::vector<ASR::symbol_t*> symbols;
+
+    void write_symbol(const ASR::symbol_t& x) {
+        symbols.push_back(const_cast<ASR::symbol_t*>(&x));
+    }
+    template <typename... T> void write_int8(T...) {}
+    template <typename... T> void write_int64(T...) {}
+    template <typename... T> void write_bool(T...) {}
+    template <typename... T> void write_string(T...) {}
+    template <typename... T> void write_real(T...) {}
+    template <typename... T> void write_complex_part(T...) {}
+    template <typename... T> void write_void(T...) {}
+};
+
+// The symbol of `scope` that `sym` is, or is declared in, or nullptr if
+// `sym` is not in `scope`.
+static ASR::symbol_t* symbol_of_scope(SymbolTable* scope, ASR::symbol_t* sym) {
+    for (SymbolTable* s = ASRUtils::symbol_parent_symtab(sym); s; s = s->parent) {
+        if (s == scope) return sym;
+        if (!s->asr_owner || !ASR::is_a<ASR::symbol_t>(*s->asr_owner)) return nullptr;
+        sym = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+    }
+    return nullptr;
+}
+
+// Whether a procedure whose body was replaced can still hold `sym`, one of
+// its own symbols other than its dummies and result: a declaration that has
+// neither code nor state of the procedure. A local variable would be
+// initialized or finalized again on entry, and an internal procedure or a
+// BLOCK refers to what the old body used.
+static bool is_declaration_only(ASR::symbol_t* sym) {
+    switch (sym->type) {
+        case ASR::symbolType::Variable: {
+            // A COMMON variable lives in the storage of its block. An entry
+            // initialized local holds a bound of a dummy, which every entry
+            // evaluates from the dummies and host entities.
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            return var->m_storage == ASR::storage_typeType::Parameter ||
+                var->m_common_block || ASRUtils::is_entry_initialized_local(*var);
+        }
+        case ASR::symbolType::Function:
+            return ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))
+                ->m_deftype == ASR::deftypeType::Interface;
+        case ASR::symbolType::Struct:
+        case ASR::symbolType::Union:
+        case ASR::symbolType::Enum:
+        case ASR::symbolType::CommonBlock:
+        case ASR::symbolType::ExternalSymbol:
+        case ASR::symbolType::ScopedVariableAttribute:
+        case ASR::symbolType::GenericProcedure:
+        case ASR::symbolType::CustomOperator:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// The symbols of `f` that its signature needs: its dummies, its result and,
+// transitively, every symbol of `f` that their declarations refer to (types,
+// bounds, lengths, type declarations, derived type components, interfaces).
+// Returns false if one of them is not is_declaration_only().
+static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure) {
+    std::vector<ASR::symbol_t*> pending;
+    for (size_t i = 0; i < f->n_args; i++) {
+        pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+    }
+    if (f->m_return_var) {
+        pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_return_var)->m_v);
+    }
+    closure.insert(pending.begin(), pending.end());
+    while (!pending.empty()) {
+        ASR::symbol_t* sym = pending.back();
+        pending.pop_back();
+        SymbolReferences references;
+        references.visit_symbol(*sym);
+        for (ASR::symbol_t* reference : references.symbols) {
+            ASR::symbol_t* needed = symbol_of_scope(f->m_symtab, reference);
+            if (!needed || !closure.insert(needed).second) continue;
+            if (!is_declaration_only(needed)) return false;
+            pending.push_back(needed);
+        }
+    }
+    return true;
 }
 
 /*
@@ -1157,26 +1248,6 @@ static bool procedure_type_symbols_in_scope(ASR::ttype_t* type, SymbolTable* sco
     return check.in_scope;
 }
 
-// The symbols a procedure's signature needs: its arguments, its result and,
-// transitively, what their declarations refer to.
-struct SignatureSymbols : public ASR::BaseWalkVisitor<SignatureSymbols> {
-    std::set<ASR::symbol_t*> needed;
-    bool safe = true;
-    void visit_Var(const ASR::Var_t& x) {
-        if (needed.insert(x.m_v).second &&
-                ASR::is_a<ASR::Variable_t>(*x.m_v)) {
-            visit_Variable(*ASR::down_cast<ASR::Variable_t>(x.m_v));
-        }
-    }
-    // A specification function must not be evaluated twice.
-    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-        safe = false;
-        needed.insert(x.m_name);
-        if (x.m_original_name) needed.insert(x.m_original_name);
-        ASR::BaseWalkVisitor<SignatureSymbols>::visit_FunctionCall(x);
-    }
-};
-
 /*
     The following visitor replaces procedure calls with arrays as arguments
     to procedure calls having dimensional information passed as arguments. See example below,
@@ -1563,11 +1634,88 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             return new_args;
         }
 
-        static void relax_intent_out(ASR::Function_t* f) {
-            for (size_t i = 0; i < f->n_args; i++) {
-                ASR::Variable_t* arg = ASRUtils::expr_to_variable_or_null(f->m_args[i]);
-                if (arg && arg->m_intent == ASR::intentType::Out) {
-                    arg->m_intent = ASR::intentType::InOut;
+        // Whether the copy of `f` can forward its result from a call of `f`.
+        // subroutine_from_function has made the other results arguments,
+        // except in the WASM pipeline, which runs this pass without it:
+        // there such a copy keeps its own saved state, as it did before
+        // forwarding.
+        static bool forwardable_result(ASR::Function_t* f, bool& pointer_result) {
+            pointer_result = false;
+            if (!f->m_return_var) return true;
+            ASR::ttype_t* type = ASRUtils::expr_type(f->m_return_var);
+            pointer_result = ASRUtils::is_pointer(type);
+            return pointer_result || (!ASRUtils::is_array(type) &&
+                !ASRUtils::is_allocatable(type) &&
+                (ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
+                 ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type)));
+        }
+
+        // The body of `copy` that calls `original` with its own dummies,
+        // passing as descriptors the arrays at `data_args` that it takes by
+        // data. The copy has a dummy of the same name for each one of the
+        // original.
+        Vec<ASR::stmt_t*> forwarding_body(ASR::Function_t* original,
+                ASR::Function_t* copy, const std::vector<size_t>& data_args,
+                bool pointer_result) {
+            ASR::symbol_t* callee = &original->base;
+            const Location& loc = copy->base.base.loc;
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, original->n_args);
+            for (size_t i = 0; i < original->n_args; i++) {
+                ASR::symbol_t* sym = copy->m_symtab->get_symbol(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(original->m_args[i])->m_v));
+                LCOMPILERS_ASSERT(sym);
+                ASR::call_arg_t arg;
+                arg.loc = original->m_args[i]->base.loc;
+                arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg.loc, sym));
+                if (std::find(data_args.begin(), data_args.end(), i) != data_args.end()) {
+                    arg.m_value = ASRUtils::cast_to_descriptor(al, arg.m_value);
+                }
+                args.push_back(al, arg);
+            }
+
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            if (copy->m_return_var) {
+                ASR::expr_t* value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                    callee, callee, args.p, args.size(),
+                    ASRUtils::expr_type(copy->m_return_var), nullptr, nullptr));
+                if (pointer_result) {
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                        copy->m_return_var, value,
+                        ASR::pointer_bounds_formType::NoPointerBounds)));
+                } else {
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                        copy->m_return_var, value, nullptr, false, false, false, false)));
+                }
+            } else {
+                body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    callee, callee, args.p, args.size(), nullptr, false)));
+            }
+            return body;
+        }
+
+        // The original finalizes and initializes its intent(out) dummies on
+        // entry; a copy that forwards to it must not do it a second time.
+        // Both intents pass arguments alike. A separate module procedure
+        // keeps the interface its ancestor module declares, which asr_verify
+        // compares it with, so the copy of that interface is relaxed too.
+        static void relax_intent_out(ASR::Function_t* copy) {
+            std::vector<ASR::Function_t*> procedures{copy};
+            SymbolTable* parent = copy->m_symtab->parent;
+            ASR::asr_t* owner = parent->asr_owner;
+            if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+                ASR::Function_t* declared = declared_module_interface(parent->parent,
+                    ASR::down_cast2<ASR::Module_t>(owner)->m_parent_module, copy->m_name);
+                if (declared) procedures.push_back(declared);
+            }
+            for (ASR::Function_t* f : procedures) {
+                for (size_t i = 0; i < f->n_args; i++) {
+                    ASR::Variable_t* arg = ASRUtils::expr_to_variable_or_null(f->m_args[i]);
+                    if (arg && arg->m_intent == ASR::intentType::Out) {
+                        arg->m_intent = ASR::intentType::InOut;
+                    }
                 }
             }
         }
@@ -1579,6 +1727,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // instead, so that both entries reach the original's variables. The
         // contiguous array the copy takes is a valid actual argument for the
         // assumed-shape dummy of the original.
+        //
+        // The forwarder keeps exactly the symbols its signature needs
+        // (signature_closure) and drops the others, which only the old body
+        // used. If the signature needs a symbol that has storage or code,
+        // such as a dummy procedure declared with an internal procedure, the
+        // copy is not forwarded and keeps its own saved state. Evaluating a
+        // specification function of the signature in both entries is
+        // harmless: it is pure.
         void forward_copies_with_saved_state() {
             for (auto& entry : v.proc2newproc) {
                 if (!ASR::is_a<ASR::Function_t>(*entry.first) ||
@@ -1586,121 +1742,23 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASR::Function_t* original = ASR::down_cast<ASR::Function_t>(entry.first);
                 ASR::Function_t* copy = ASR::down_cast<ASR::Function_t>(entry.second.first);
                 SymbolTable* parent = original->m_symtab->parent;
+                bool pointer_result;
+                std::set<ASR::symbol_t*> signature;
                 if (parent->get_symbol(original->m_name) != entry.first ||
                         parent->get_symbol(copy->m_name) != entry.second.first ||
-                        original->n_body == 0 || !has_saved_state(original)) continue;
-                bool pointer_result = false;
-                if (original->m_return_var) {
-                    // subroutine_from_function has made other results
-                    // arguments, except in the WASM pipeline, which runs
-                    // this pass without it: there such a copy keeps its own
-                    // saved state, as it did before forwarding.
-                    ASR::ttype_t* type = ASRUtils::expr_type(original->m_return_var);
-                    pointer_result = ASRUtils::is_pointer(type);
-                    if (!pointer_result && (ASRUtils::is_array(type) ||
-                            ASRUtils::is_allocatable(type) ||
-                            !(ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
-                              ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type)))) continue;
-                }
+                        original->n_body == 0 || !has_saved_state(original) ||
+                        !forwardable_result(original, pointer_result) ||
+                        !signature_closure(copy, signature)) continue;
                 forwarded.insert(entry.first);
 
-                const Location& loc = copy->base.base.loc;
-                Vec<ASR::call_arg_t> args;
-                args.reserve(al, original->n_args);
-                for (size_t i = 0; i < original->n_args; i++) {
-                    // The copy has a dummy of the same name for each one of
-                    // the original.
-                    ASR::symbol_t* sym = copy->m_symtab->get_symbol(ASRUtils::symbol_name(
-                        ASR::down_cast<ASR::Var_t>(original->m_args[i])->m_v));
-                    LCOMPILERS_ASSERT(sym);
-                    ASR::call_arg_t arg;
-                    arg.loc = original->m_args[i]->base.loc;
-                    arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg.loc, sym));
-                    if (std::find(entry.second.second.begin(), entry.second.second.end(), i)
-                            != entry.second.second.end()) {
-                        arg.m_value = ASRUtils::cast_to_descriptor(al, arg.m_value);
-                    }
-                    args.push_back(al, arg);
-                }
-
-                Vec<ASR::stmt_t*> body;
-                body.reserve(al, 1);
-                if (copy->m_return_var) {
-                    ASR::expr_t* value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
-                        entry.first, entry.first, args.p, args.size(),
-                        ASRUtils::expr_type(copy->m_return_var), nullptr, nullptr));
-                    if (pointer_result) {
-                        body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
-                            copy->m_return_var, value,
-                            ASR::pointer_bounds_formType::NoPointerBounds)));
-                    } else {
-                        body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                            copy->m_return_var, value, nullptr, false, false, false, false)));
-                    }
-                } else {
-                    body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                        entry.first, entry.first, args.p, args.size(), nullptr, false)));
-                }
+                Vec<ASR::stmt_t*> body = forwarding_body(original, copy,
+                    entry.second.second, pointer_result);
                 copy->m_body = body.p;
                 copy->n_body = body.size();
-                // The original finalizes and initializes its intent(out)
-                // dummies on entry; the copy must not do it a second time.
-                // Both intents pass arguments alike. A separate module
-                // procedure keeps the interface its ancestor module declares,
-                // so the copy of that interface is relaxed with it.
                 relax_intent_out(copy);
-                ASR::asr_t* owner = parent->asr_owner;
-                const char* ancestor = (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
-                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner)))
-                    ? ASR::down_cast2<ASR::Module_t>(owner)->m_parent_module : nullptr;
-                std::set<std::string> seen;
-                while (ancestor && seen.insert(ancestor).second) {
-                    ASR::symbol_t* mod = parent->parent->get_symbol(ancestor);
-                    if (!mod || !ASR::is_a<ASR::Module_t>(*mod)) break;
-                    ASR::symbol_t* decl = ASR::down_cast<ASR::Module_t>(mod)
-                        ->m_symtab->get_symbol(copy->m_name);
-                    if (decl && ASR::is_a<ASR::Function_t>(*decl) &&
-                            ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(decl))
-                                ->m_deftype == ASR::deftypeType::Interface) {
-                        relax_intent_out(ASR::down_cast<ASR::Function_t>(decl));
-                        break;
-                    }
-                    ancestor = ASR::down_cast<ASR::Module_t>(mod)->m_parent_module;
-                }
-
-                // Drop what only the old body used: its own saved variables,
-                // its automatic arrays, its internal procedures and the
-                // symbols that refer to them (NAMELIST, generic interfaces).
-                // A dropped symbol is never referenced by a kept one. A
-                // COMMON block view has no storage of its own and the
-                // signature may use its members, so it is kept whole.
-                // Evaluating a specification function of the signature in
-                // both entries is harmless: it is pure.
-                SignatureSymbols signature;
-                for (size_t i = 0; i < copy->n_args; i++) {
-                    signature.visit_expr(*copy->m_args[i]);
-                }
-                if (copy->m_return_var) {
-                    signature.visit_expr(*copy->m_return_var);
-                }
                 std::vector<std::string> unused;
                 for (auto& item : copy->m_symtab->get_scope()) {
-                    ASR::symbol_t* sym = item.second;
-                    if (signature.needed.count(sym)) continue;
-                    if ((ASR::is_a<ASR::Variable_t>(*sym) &&
-                            ASR::down_cast<ASR::Variable_t>(sym)->m_storage !=
-                                ASR::storage_typeType::Parameter &&
-                            !ASR::down_cast<ASR::Variable_t>(sym)->m_common_block) ||
-                            ASR::is_a<ASR::Block_t>(*sym) ||
-                            ASR::is_a<ASR::AssociateBlock_t>(*sym) ||
-                            ASR::is_a<ASR::Namelist_t>(*sym) ||
-                            ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
-                            ASR::is_a<ASR::CustomOperator_t>(*sym) ||
-                            (ASR::is_a<ASR::Function_t>(*sym) &&
-                             ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))
-                                ->m_deftype == ASR::deftypeType::Implementation)) {
-                        unused.push_back(item.first);
-                    }
+                    if (!signature.count(item.second)) unused.push_back(item.first);
                 }
                 for (auto& name : unused) copy->m_symtab->erase_symbol(name);
             }
@@ -1796,7 +1854,18 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 safety.check_function(*original);
                 if (!safety.safe) continue;
 
-                SignatureSymbols signature;
+                struct SignatureSymbols : public ASR::BaseWalkVisitor<SignatureSymbols> {
+                    std::set<ASR::symbol_t*> needed;
+                    bool safe = true;
+                    void visit_Var(const ASR::Var_t& x) {
+                        if (needed.insert(x.m_v).second &&
+                                ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+                            visit_Variable(*ASR::down_cast<ASR::Variable_t>(x.m_v));
+                        }
+                    }
+                    // A specification function must not be evaluated twice.
+                    void visit_FunctionCall(const ASR::FunctionCall_t&) { safe = false; }
+                } signature;
                 for (size_t i = 0; i < original->n_args; i++) {
                     signature.visit_expr(*original->m_args[i]);
                 }
