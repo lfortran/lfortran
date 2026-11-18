@@ -17,7 +17,9 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#if !defined(COMPILE_TO_WASM)
 #include <setjmp.h>
+#endif
 #include <sys/stat.h>
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -82,8 +84,6 @@ static __declspec(thread) int interrupt_defer;
 #elif defined(COMPILE_TO_WASM)
 static lfortran_cancel_requested cancel_requested;
 static lfortran_cancel_stop cancel_stop;
-static jmp_buf *interrupt_env;
-static int interrupt_defer;
 #else
 static _Thread_local lfortran_cancel_requested cancel_requested;
 static _Thread_local lfortran_cancel_stop cancel_stop;
@@ -125,22 +125,31 @@ LFORTRAN_API int _lfortran_cell_interrupt_requested(void)
 
 LFORTRAN_API void _lfortran_set_interrupt_env(void *env)
 {
+#if defined(COMPILE_TO_WASM)
+    (void)env;
+#else
     interrupt_env = (jmp_buf *)env;
     if (env == NULL) interrupt_defer = 0;
+#endif
 }
 
 LFORTRAN_API void _lfortran_interrupt_defer_enter(void)
 {
+#if !defined(COMPILE_TO_WASM)
     if (interrupt_env) interrupt_defer++;
+#endif
 }
 
 LFORTRAN_API void _lfortran_interrupt_defer_leave(void)
 {
+#if !defined(COMPILE_TO_WASM)
     if (interrupt_env && interrupt_defer > 0) interrupt_defer--;
+#endif
 }
 
 LFORTRAN_API void _lfortran_stop_if_interrupted(void)
 {
+#if !defined(COMPILE_TO_WASM)
     int requested;
     jmp_buf *env;
     if (interrupt_env == NULL || interrupt_defer > 0) return;
@@ -154,6 +163,7 @@ LFORTRAN_API void _lfortran_stop_if_interrupted(void)
     interrupt_env = NULL;
     interrupt_defer = 0;
     longjmp(*env, 1);
+#endif
 }
 
 // Where a runtime call of an output or formatted input statement begins, an
