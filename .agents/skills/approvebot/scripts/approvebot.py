@@ -24,7 +24,9 @@ import sys
 
 REPO = "lfortran/lfortran"
 REPO_URL = f"https://github.com/{REPO}.git"
-AUTHORS = {"certik"}          # PR authors the bot classifies
+# PR authors are members of this org team who can merge the repository.
+# authors() resolves the set each run; it is not a fixed login list.
+PUSH_ACCESS_TEAM = "push-access"
 APPROVED = "bot-approved"
 REVIEW = "needs-review"
 VERDICTS = {"approved": APPROVED, "review": REVIEW}
@@ -62,6 +64,15 @@ read_json, write_json = mergebot.read_json, mergebot.write_json
 
 
 # --- Pure decision logic (unit-tested in ci/test_ci.py) ----------------------
+
+def select_authors(members, can_merge):
+    """Push Access members whose repository role can merge.
+
+    `members` is the team. `can_merge(login)` is true for the same roles
+    mergebot accepts on an `auto-merge` label (`admin` and `write`).
+    """
+    return {login for login in members if can_merge(login)}
+
 
 def area(path):
     """Classify a changed path for the policy's size budgets."""
@@ -266,9 +277,30 @@ def ci(head):
     return mergebot.ci_state(mergebot.required_checks(), checks)
 
 
+def authors():
+    """Logins whose PRs this process classifies, cached for the process.
+
+    Members of the Push Access team with write or admin permission on the
+    repository. An empty result is a lookup failure, not an empty team the
+    bot should quietly skip.
+    """
+    def compute():
+        output = gh("api", "--paginate",
+                    f"orgs/{REPO.split('/')[0]}/teams/{PUSH_ACCESS_TEAM}/members",
+                    "--jq", ".[].login")
+        members = [line.strip() for line in output.splitlines() if line.strip()]
+        if not members:
+            fail(f"the {PUSH_ACCESS_TEAM} team returned no members")
+        selected = select_authors(members, mergebot.can_write)
+        if not selected:
+            fail(f"no member of {PUSH_ACCESS_TEAM} has write access")
+        return selected
+    return mergebot.cached("approvebot-authors", compute)
+
+
 def open_prs():
     prs = []
-    for author in sorted(AUTHORS):
+    for author in sorted(authors()):
         prs += gh_json("pr", "list", "--repo", REPO, "--author", author,
                        "--base", "main", "--state", "open", "--limit", "500",
                        "--json", "number,title,isDraft,headRefOid,labels")
@@ -354,6 +386,7 @@ def cmd_status(args):
                            "action": "ack"})
     main = read_json(state_dir() / "main.json", {})
     print(json.dumps({"login": mergebot.login(), "policy": POLICY_VERSION,
+                      "authors": sorted(authors()),
                       "main_build": main, "prs": result, "closed": closed}, indent=2))
 
 
@@ -607,8 +640,8 @@ def cmd_apply(args):
     pr = pr_view(args.number)
     if pr["state"] != "OPEN" or pr["base"] != "main" or pr["draft"]:
         fail("only open, non-draft PRs against main get a verdict")
-    if pr["author"] not in AUTHORS:
-        fail(f"author {pr['author']} is not in AUTHORS")
+    if pr["author"] not in authors():
+        fail(f"author {pr['author']} is not a Push Access member with write access")
     if pr["head"] != args.head:
         fail(f"the head moved to {pr['head']}; classify the new head")
     if AUTO_MERGE in pr["labels"]:
