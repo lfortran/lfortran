@@ -9159,8 +9159,12 @@ struct UNIT_FILE {
     // record is completed by an advancing WRITE, or terminated when the unit
     // is repositioned (REWIND, BACKSPACE), reaches ENDFILE or is closed.
     bool pending_record;
-    // Pending list-directed null-repeat state.
-    int32_t lf_list_dir_null_remaining;
+    // The repeat r*c or r* (F2023 13.10.3.1) that the items of the current
+    // list-directed READ are taking: the number of its values still to be
+    // transferred, and its constant c, or NULL for the null values of r*.
+    int64_t lf_list_dir_repeat_remaining;
+    char *lf_list_dir_repeat_text;
+    int64_t lf_list_dir_repeat_len;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
     int32_t lf_child_io_mode;
     // See file_is_rereadable.
@@ -9293,7 +9297,10 @@ static inline int seq_unf_finish_record(int32_t unit_num, FILE* filep) {
 
 static inline void list_dir_state_reset(struct UNIT_FILE *uf) {
     if (!uf) return;
-    uf->lf_list_dir_null_remaining = 0;
+    uf->lf_list_dir_repeat_remaining = 0;
+    internal_free(uf->lf_list_dir_repeat_text);
+    uf->lf_list_dir_repeat_text = NULL;
+    uf->lf_list_dir_repeat_len = 0;
 }
 
 // Whether a record can be read again by seeking back to its start, which
@@ -9623,9 +9630,12 @@ void remove_from_unit_to_file(int32_t unit_num) {
     if( index == -1 ) {
         return ;
     }
+    list_dir_state_reset(&unit_to_file[index]);
     for( int i = index; i < last_index_used; i++ ) {
         unit_to_file[i] = unit_to_file[i + 1];
     }
+    // The last entry was copied down, and the copy owns its repeat text.
+    unit_to_file[last_index_used].lf_list_dir_repeat_text = NULL;
     last_index_used -= 1;
 }
 
@@ -9649,6 +9659,7 @@ static void _lfortran_close_all_units(void) {
             internal_free(unit_to_file[i].filename);
             unit_to_file[i].filename = NULL;
         }
+        list_dir_state_reset(&unit_to_file[i]);
     }
 }
 
@@ -11971,28 +11982,94 @@ static char list_directed_separator(int32_t unit_num) {
     return _lfortran_get_decimal_mode(unit_num) == 1 ? ';' : ',';
 }
 
-static void skip_list_directed_comma(FILE *filep, char lsep) {
-    int c;
-    while ((c = input_getc(filep)) != EOF && (c == ' ' || c == '\t')) {}
-    if (c == lsep) return;
-    if (c != EOF) input_ungetc(c, filep);
-}
+static int64_t list_directed_repeat_prefix(const char *s, int64_t len,
+        int64_t *count);
 
-static int list_directed_check_null_repeat(int32_t unit_num) {
-    struct UNIT_FILE *uf = find_unit(unit_num);
-    if (uf && uf->lf_list_dir_null_remaining > 0) {
-        uf->lf_list_dir_null_remaining--;
-        return 1;
+typedef enum {
+    LD_REPEAT_NONE = 0, // The item reads its value from the file.
+    LD_REPEAT_NULL,     // A null value: the item keeps its value.
+    LD_REPEAT_VALUE     // The item takes the constant c of an r*c.
+} list_directed_repeat_kind;
+
+// Takes the next value of the repeat that the items of the current
+// list-directed READ on the unit whose repeat state is `uf` are taking.
+// For LD_REPEAT_VALUE, `*text` and `*text_len` are its constant c, which
+// stays valid until the end of the statement.
+static list_directed_repeat_kind list_directed_repeat_next(struct UNIT_FILE *uf,
+        const char **text, int64_t *text_len) {
+    if (!uf || uf->lf_list_dir_repeat_remaining <= 0) {
+        return LD_REPEAT_NONE;
     }
-    return 0;
+    uf->lf_list_dir_repeat_remaining--;
+    if (uf->lf_list_dir_repeat_text == NULL) {
+        return LD_REPEAT_NULL;
+    }
+    *text = uf->lf_list_dir_repeat_text;
+    *text_len = uf->lf_list_dir_repeat_len;
+    return LD_REPEAT_VALUE;
 }
 
-// Detect "n*" null-repeat token (digits + star + nothing after).
-static int list_directed_parse_null_repeat(const char *token) {
-    int i = 0;
-    while (token[i] >= '0' && token[i] <= '9') i++;
-    if (i == 0 || token[i] != '*' || token[i+1] != '\0') return 0;
-    return atoi(token);
+// Starts the repeat r*c or r* when the list-directed value `token` of
+// length `len`, just read from the unit whose repeat state is `uf`, is one.
+// This item takes its first value: for LD_REPEAT_VALUE, c starts at
+// `token + *value_offset`. The following items of the statement take the
+// other r - 1 values.
+static list_directed_repeat_kind list_directed_repeat_start(struct UNIT_FILE *uf,
+        const char *token, int64_t len, int64_t *value_offset) {
+    int64_t count = 0;
+    int64_t prefix = list_directed_repeat_prefix(token, len, &count);
+    if (prefix == 0) {
+        return LD_REPEAT_NONE;
+    }
+    if (uf) {
+        list_dir_state_reset(uf);
+        if (count > 1) {
+            uf->lf_list_dir_repeat_remaining = count - 1;
+            if (prefix < len) {
+                char *text = (char *)internal_malloc((size_t)(len - prefix) + 1);
+                memcpy(text, token + prefix, (size_t)(len - prefix));
+                text[len - prefix] = '\0';
+                uf->lf_list_dir_repeat_text = text;
+                uf->lf_list_dir_repeat_len = len - prefix;
+            }
+        }
+    }
+    *value_offset = prefix;
+    return prefix < len ? LD_REPEAT_VALUE : LD_REPEAT_NULL;
+}
+
+// Where the list-directed items of one READ call take their values from:
+// the connection and repeat state of the unit, looked up once, so that an
+// array read does not search the unit table for each of its elements.
+typedef struct {
+    FILE *filep;
+    int32_t unit_num;
+    struct UNIT_FILE *state;
+    int decimal_mode;
+    char lsep;
+} list_directed_input;
+
+static void list_directed_input_init(list_directed_input *in, FILE *filep,
+        int32_t unit_num) {
+    in->filep = filep;
+    in->unit_num = unit_num;
+    in->state = find_unit(unit_num);
+    in->decimal_mode = _lfortran_get_decimal_mode(unit_num);
+    in->lsep = in->decimal_mode == 1 ? ';' : ',';
+}
+
+// An item that fails ends its READ statement, whose end-of-statement
+// processing (_lfortran_empty_read) is then skipped: the values of a repeat
+// that the statement did not take are dropped here instead, so that the
+// next READ on the unit does not take them.
+// Returns whether the item was read.
+static bool list_directed_item_end(const list_directed_input *in,
+        int32_t *iostat) {
+    if (iostat && *iostat != 0) {
+        list_dir_state_reset(in->state);
+        return false;
+    }
+    return true;
 }
 
 static void skip_trailing_comma(FILE *filep, char lsep);
@@ -12003,13 +12080,36 @@ typedef enum {
     LD_TOKEN_REPEAT
 } list_directed_token_status;
 
-static list_directed_token_status read_list_directed_token(FILE *filep,
-        int32_t unit_num, int32_t *iostat, char *buffer, size_t buffer_len,
-        const char *eof_message, const char *overflow_message, int *out_delim,
-        bool consume_repeat_trailing_comma) {
-    char lsep = list_directed_separator(unit_num);
-    if (list_directed_check_null_repeat(unit_num)) {
-        return LD_TOKEN_REPEAT;
+// Reads the next list-directed value of the unit into `buffer`. A value
+// longer than the buffer is consumed whole; with an `overflow_message` it is
+// an error, without one it is truncated to fit the buffer.
+static list_directed_token_status read_list_directed_token(
+        const list_directed_input *in, int32_t *iostat, char *buffer,
+        size_t buffer_len, const char *eof_message,
+        const char *overflow_message, int *out_delim) {
+    FILE *filep = in->filep;
+    char lsep = in->lsep;
+    const char *text = NULL;
+    int64_t text_len = 0;
+    switch (list_directed_repeat_next(in->state, &text, &text_len)) {
+        case LD_REPEAT_NULL:
+            return LD_TOKEN_REPEAT;
+        case LD_REPEAT_VALUE:
+            if ((size_t)text_len >= buffer_len) {
+                if (overflow_message) {
+                    if (iostat) { *iostat = 1; return LD_TOKEN_EARLY; }
+                    fprintf(stderr, "%s\n", overflow_message);
+                    exit(1);
+                }
+                text_len = (int64_t)buffer_len - 1;
+            }
+            memcpy(buffer, text, (size_t)text_len);
+            buffer[text_len] = '\0';
+            // The separator after the value was read with its repeat count.
+            if (out_delim) *out_delim = lsep;
+            return LD_TOKEN_OK;
+        default:
+            break;
     }
     int c;
     while ((c = input_getc(filep)) != EOF && isspace(c)) {}
@@ -12029,11 +12129,15 @@ static list_directed_token_status read_list_directed_token(FILE *filep,
     }
 
     size_t len = 0;
+    bool overflow = false;
     do {
         if (len + 1 < buffer_len) {
             buffer[len++] = (char)c;
-        } else {
-            if (iostat) { *iostat = 1; return LD_TOKEN_EARLY; }
+        } else if (overflow_message && iostat) {
+            // Consume the rest of the value, so that the next READ starts
+            // after it, and report the error below.
+            overflow = true;
+        } else if (overflow_message) {
             fprintf(stderr, "%s\n", overflow_message);
             exit(1);
         }
@@ -12042,23 +12146,32 @@ static list_directed_token_status read_list_directed_token(FILE *filep,
     buffer[len] = '\0';
     if (c == lsep) {
         // trailing separator consumed
-    } else if (c != EOF) {
+    } else if (c != EOF && c != ' ' && c != '\t') {
+        // A blank after the value is not put back: the callers skip the
+        // blanks after it, up to an optional separator.
         input_ungetc(c, filep);
     }
     if (out_delim) *out_delim = c;
-
-    int null_count = list_directed_parse_null_repeat(buffer);
-    if (null_count > 0) {
-        {
-            struct UNIT_FILE *uf_ = find_unit(unit_num);
-            if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-        }
-        if (consume_repeat_trailing_comma && c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
-        return LD_TOKEN_REPEAT;
+    if (overflow) {
+        *iostat = 1;
+        return LD_TOKEN_EARLY;
     }
 
+    int64_t value_offset = 0;
+    switch (list_directed_repeat_start(in->state, buffer, (int64_t)len,
+            &value_offset)) {
+        case LD_REPEAT_NULL:
+            // The item keeps its value; consume the separator after r*.
+            if (c != lsep) {
+                skip_trailing_comma(filep, lsep);
+            }
+            return LD_TOKEN_REPEAT;
+        case LD_REPEAT_VALUE:
+            memmove(buffer, buffer + value_offset, len - (size_t)value_offset + 1);
+            break;
+        default:
+            break;
+    }
     return LD_TOKEN_OK;
 }
 
@@ -12149,11 +12262,12 @@ static bool read_next_nonblank_stdin_line(char *buffer, int bufsize, int32_t *io
     }
 }
 
-LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one integer(1) item.
+static void read_list_directed_int8(int8_t *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-    if (unit_num == -1) {
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
@@ -12187,6 +12301,46 @@ LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iost
         }
 
         *p = (int8_t)long_val;
+        return;
+    }
+
+    FILE *filep = in->filep;
+    char buffer[40];
+    int c = 0;
+    if (read_list_directed_token(in, iostat, buffer,
+            sizeof(buffer), "Error: Invalid int8_t input from file (EOF).",
+            NULL, &c) != LD_TOKEN_OK) {
+        return;
+    }
+    char *endptr = NULL;
+    errno = 0;
+    long temp = strtol(buffer, &endptr, 10);
+    if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input for int8_t from file.\n");
+        exit(1);
+    }
+
+    if (temp < INT8_MIN || temp > INT8_MAX) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Value %ld is out of integer(1) range (file).\n", temp);
+        exit(1);
+    }
+
+    *p = (int8_t)temp;
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_int8(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -12237,67 +12391,18 @@ LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iost
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {}
-        if (c == EOF) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Invalid int8_t input from file (EOF).\n");
-            exit(1);
-        }
-        if (c == lsep) {
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-        char buffer[40];
-        int len = 0;
-        do {
-            if (len < 39) buffer[len++] = (char)c;
-            c = input_getc(filep);
-        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-        buffer[len] = '\0';
-        if (c == lsep) {
-        } else if (c != EOF) {
-            input_ungetc(c, filep);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            struct UNIT_FILE *uf_ = find_unit(unit_num);
-            if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            return;
-        }
-        char *endptr = NULL;
-        errno = 0;
-        long temp = strtol(buffer, &endptr, 10);
-        if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input for int8_t from file.\n");
-            exit(1);
-        }
-
-        if (temp < INT8_MIN || temp > INT8_MAX) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Value %ld is out of integer(1) range (file).\n", temp);
-            exit(1);
-        }
-
-        *p = (int8_t)temp;
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_int8(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
-LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one integer(2) item.
+static void read_list_directed_int16(int16_t *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-    if (unit_num == -1) {
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
@@ -12331,6 +12436,47 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
         }
 
         *p = (int16_t)long_val;
+        return;
+    }
+
+    FILE *filep = in->filep;
+    // List-directed formatted read: handle null values and n* repeat counts.
+    char buffer[40];
+    int c = 0;
+    if (read_list_directed_token(in, iostat, buffer,
+            sizeof(buffer), "Error: Invalid int16_t input from file (EOF).",
+            NULL, &c) != LD_TOKEN_OK) {
+        return;
+    }
+    char *endptr = NULL;
+    errno = 0;
+    long temp = strtol(buffer, &endptr, 10);
+    if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input for int16_t from file.\n");
+        exit(1);
+    }
+
+    if (temp < INT16_MIN || temp > INT16_MAX) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Value %ld is out of integer(2) range (file).\n", temp);
+        exit(1);
+    }
+
+    *p = (int16_t)temp;
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_int16(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -12381,74 +12527,18 @@ LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *io
             }
         }
     } else {
-        // List-directed formatted read: handle null values and n* repeat counts.
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {}
-        if (c == EOF) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Invalid int16_t input from file (EOF).\n");
-            exit(1);
-        }
-        if (c == lsep) {
-            // Null value: two consecutive commas — leave *p unchanged.
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-        char buffer[40];
-        int len = 0;
-        do {
-            if (len < 39) buffer[len++] = (char)c;
-            c = input_getc(filep);
-        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-        buffer[len] = '\0';
-        if (c == lsep) {
-            // trailing comma consumed
-        } else if (c != EOF) {
-            input_ungetc(c, filep);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        char *endptr = NULL;
-        errno = 0;
-        long temp = strtol(buffer, &endptr, 10);
-        if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input for int16_t from file.\n");
-            exit(1);
-        }
-
-        if (temp < INT16_MIN || temp > INT16_MAX) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Value %ld is out of integer(2) range (file).\n", temp);
-            exit(1);
-        }
-
-        *p = (int16_t)temp;
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_int16(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
-// Improved input validation for integer reading
-// - Prevents auto-casting of invalid inputs to integers
-LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one integer(4) item.
+static void read_list_directed_int32(int32_t *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-    if (unit_num == -1) {
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
@@ -12482,6 +12572,49 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
         }
 
         *p = (int32_t)long_val;
+        return;
+    }
+
+    FILE *filep = in->filep;
+    // List-directed formatted read: handle null values and n* repeat counts.
+    char buffer[40];
+    int c = 0;
+    if (read_list_directed_token(in, iostat, buffer,
+            sizeof(buffer), "Error: Invalid int32_t input from file (EOF).",
+            NULL, &c) != LD_TOKEN_OK) {
+        return;
+    }
+    char *endptr = NULL;
+    errno = 0;
+    long temp = strtol(buffer, &endptr, 10);
+    if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
+        exit(1);
+    }
+
+    if (temp < INT32_MIN || temp > INT32_MAX) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Value %ld is out of integer(4) range (file).\n", temp);
+        exit(1);
+    }
+
+    *p = (int32_t)temp;
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+// Improved input validation for integer reading
+// - Prevents auto-casting of invalid inputs to integers
+LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_int32(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -12532,72 +12665,18 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
             }
         }
     } else {
-        // List-directed formatted read: handle null values and n* repeat counts.
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {}
-        if (c == EOF) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Invalid int32_t input from file (EOF).\n");
-            exit(1);
-        }
-        if (c == lsep) {
-            // Null value: two consecutive commas — leave *p unchanged.
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-        char buffer[40];
-        int len = 0;
-        do {
-            if (len < 39) buffer[len++] = (char)c;
-            c = input_getc(filep);
-        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-        buffer[len] = '\0';
-        if (c == lsep) {
-            // trailing comma consumed
-        } else if (c != EOF) {
-            input_ungetc(c, filep);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        char *endptr = NULL;
-        errno = 0;
-        long temp = strtol(buffer, &endptr, 10);
-        if (endptr == buffer || *endptr != '\0' || errno == ERANGE) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input for int32_t from file.\n");
-            exit(1);
-        }
-
-        if (temp < INT32_MIN || temp > INT32_MAX) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Value %ld is out of integer(4) range (file).\n", temp);
-            exit(1);
-        }
-
-        *p = (int32_t)temp;
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_int32(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
-LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one integer(8) item.
+static void read_list_directed_int64(int64_t *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-    if (unit_num == -1) {
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
@@ -12631,6 +12710,44 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
         }
 
         *p = (int64_t)long_val;
+        return;
+    }
+
+    FILE *filep = in->filep;
+    // List-directed formatted read: handle null values and n* repeat counts.
+    char buf64[40];
+    int c = 0;
+    list_directed_token_status token_status = read_list_directed_token(
+        in, iostat, buf64, sizeof(buf64),
+        "Error: Invalid int64_t input from file (EOF).",
+        "Error: Input token exceeds 39 characters.",
+        &c);
+    if (token_status != LD_TOKEN_OK) {
+        return;
+    }
+    char *endptr = NULL;
+    errno = 0;
+    long long temp = strtoll(buf64, &endptr, 10);
+    if (endptr == buf64 || *endptr != '\0' || errno == ERANGE) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
+        exit(1);
+    }
+
+    *p = (int64_t)temp;
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_int64(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -12681,40 +12798,18 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
             }
         }
     } else {
-        // List-directed formatted read: handle null values and n* repeat counts.
-        char buf64[40];
-        int c = 0;
-        list_directed_token_status token_status = read_list_directed_token(
-            filep, unit_num, iostat, buf64, sizeof(buf64),
-            "Error: Invalid int64_t input from file (EOF).",
-            "Error: Input token exceeds 39 characters.",
-            &c, false);
-        if (token_status != LD_TOKEN_OK) {
-            return;
-        }
-        char *endptr = NULL;
-        errno = 0;
-        long long temp = strtoll(buf64, &endptr, 10);
-        if (endptr == buf64 || *endptr != '\0' || errno == ERANGE) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input for int64_t from file.\n");
-            exit(1);
-        }
-
-        *p = (int64_t)temp;
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_int64(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
-// Logical read API
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one logical item.
+static void read_list_directed_logical(bool *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-
-    if (unit_num == -1) {
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
@@ -12744,6 +12839,48 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
             fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
             exit(1);
         }
+        return;
+    }
+
+    FILE *filep = in->filep;
+    char token[100];
+    int c = 0;
+    list_directed_token_status token_status = read_list_directed_token(
+        in, iostat, token, sizeof(token),
+        "Error: Invalid logical input from file (EOF).",
+        "Error: Input token exceeds 99 characters.",
+        &c);
+    if (token_status != LD_TOKEN_OK) {
+        return;
+    }
+
+    for (int i = 0; token[i]; ++i) token[i] = (char)tolower((unsigned char)token[i]);
+
+    // Check token
+    char *check_ptr = token;
+    if (token[0] == '.') check_ptr++;
+    
+    if (check_ptr[0] == 't') {
+        *p = true;
+    } else if (check_ptr[0] == 'f') {
+        *p = false;
+    } else {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
+        exit(1);
+    }
+    if (c != lsep) skip_trailing_comma(filep, lsep);
+}
+
+// Logical read API
+LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_logical(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -12798,40 +12935,15 @@ LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *ios
             *p = (temp != 0);
         }
     } else {
-        char token[100];
-        int c = 0;
-        list_directed_token_status token_status = read_list_directed_token(
-            filep, unit_num, iostat, token, sizeof(token),
-            "Error: Invalid logical input from file (EOF).",
-            "Error: Input token exceeds 99 characters.",
-            &c, true);
-        if (token_status != LD_TOKEN_OK) {
-            return;
-        }
-
-        for (int i = 0; token[i]; ++i) token[i] = (char)tolower((unsigned char)token[i]);
-
-        // Check token
-        char *check_ptr = token;
-        if (token[0] == '.') check_ptr++;
-        
-        if (check_ptr[0] == 't') {
-            *p = true;
-        } else if (check_ptr[0] == 'f') {
-            *p = false;
-        } else {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid logical input '%s'. Use T, F, .true., .false., true, false\n", token);
-            exit(1);
-        }
-        if (c != lsep) skip_trailing_comma(filep, lsep);
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_logical(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
 
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -12925,15 +13037,13 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            int8_t val;
-            if (input_scan(filep, "%" SCNd8, &val) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int8_t from file.\n");
-                exit(1);
-            }
-            skip_list_directed_comma(filep, lsep);
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int8(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
@@ -12948,15 +13058,19 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
     }
 
     if (unit_num == -1) {
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            bool val;
-            _lfortran_read_logical(&val, unit_num, iostat);
-            if (iostat && *iostat != 0) {
+            char *elem = (char*)p + (int64_t)i * (int64_t)stride * kind;
+            // A null value leaves the element unchanged.
+            bool val = false;
+            for (int b = 0; b < kind; b++) val = val || elem[b] != 0;
+            read_list_directed_logical(&val, &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) {
                 return;
             }
-            int64_t idx = (int64_t)i * (int64_t)stride;
-            memset((char*)p + idx * kind, 0, kind);
-            *((char*)p + idx * kind) = val ? 1 : 0;
+            memset(elem, 0, kind);
+            *elem = val ? 1 : 0;
         }
         return;
     }
@@ -13043,15 +13157,19 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
             }
         }
     } else {
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            bool val;
-            _lfortran_read_logical(&val, unit_num, iostat);
-            if (iostat && *iostat != 0) {
+            char *elem = (char*)p + (int64_t)i * (int64_t)stride * kind;
+            // A null value leaves the element unchanged.
+            bool val = false;
+            for (int b = 0; b < kind; b++) val = val || elem[b] != 0;
+            read_list_directed_logical(&val, &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) {
                 return;
             }
-            int64_t idx = (int64_t)i * (int64_t)stride;
-            memset((char*)p + idx * kind, 0, kind);
-            *((char*)p + idx * kind) = val ? 1 : 0;
+            memset(elem, 0, kind);
+            *elem = val ? 1 : 0;
         }
     }
 }
@@ -13059,7 +13177,6 @@ LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind
 
 LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -13153,22 +13270,19 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            int16_t val;
-            if (input_scan(filep, "%hd", &val) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int16_t from file.\n");
-                exit(1);
-            }
-            skip_list_directed_comma(filep, lsep);
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int16(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
 
 LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
 
     if (stride == 0) {
@@ -13263,22 +13377,19 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            int32_t val;
-            if (input_scan(filep, "%d", &val) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int32_t from file.\n");
-                exit(1);
-            }
-            skip_list_directed_comma(filep, lsep);
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int32(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
 
 LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -13372,22 +13483,152 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            int64_t val;
-            if (input_scan(filep, "%" SCNd64, &val) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int64_t from file.\n");
-                exit(1);
-            }
-            skip_list_directed_comma(filep, lsep);
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int64(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
 
+// Reads the list-directed value that starts with the character `c` from
+// the file: an optional repeat count r*, followed by a delimited character
+// constant or by the characters up to the next blank, value separator or
+// slash. Returns the text as read, with its length in `*len`, and the
+// character after it in `*end`.
+static char *read_list_directed_char_token(FILE *filep, int c, char lsep,
+        int64_t *len, int *end) {
+    size_t capacity = 64, n = 0, value_start = 0;
+    char *text = (char *)internal_malloc(capacity);
+    char delim = 0;
+    bool digits = true;
+    while (c != EOF) {
+        if (n + 2 >= capacity) {
+            capacity *= 2;
+            text = (char *)internal_realloc(text, capacity);
+        }
+        if (delim) {
+            text[n++] = (char)c;
+            if (c == delim) {
+                c = input_getc(filep);
+                if (c != delim) {
+                    break;
+                }
+                // A doubled delimiter stands for one delimiter.
+                text[n++] = (char)c;
+            }
+        } else {
+            if (isspace(c) || c == lsep || c == '/') {
+                break;
+            }
+            if (n == value_start && (c == '\'' || c == '"')) {
+                delim = (char)c;
+            } else if (c == '*' && digits && n > 0) {
+                value_start = n + 1;
+            }
+            digits = digits && isdigit(c);
+            text[n++] = (char)c;
+        }
+        c = input_getc(filep);
+    }
+    text[n] = '\0';
+    *len = (int64_t)n;
+    *end = c;
+    return text;
+}
+
+// Assigns the list-directed character constant `text` of length `len`,
+// delimited or not, to the character variable `dest` of length `dest_len`.
+static void list_directed_char_value(const char *text, int64_t len,
+        char *dest, int64_t dest_len) {
+    int64_t n = 0;
+    if (len > 0 && (text[0] == '\'' || text[0] == '"')) {
+        char delim = text[0];
+        for (int64_t i = 1; i < len; i++) {
+            if (text[i] == delim) {
+                if (i + 1 >= len || text[i + 1] != delim) {
+                    break;
+                }
+                i++;
+            }
+            if (n < dest_len) dest[n++] = text[i];
+        }
+    } else {
+        n = len < dest_len ? len : dest_len;
+        memcpy(dest, text, (size_t)n);
+    }
+    pad_with_spaces(dest, n, dest_len);
+}
+
+// The list-directed input of one character item of length `dest_len`.
+static void read_list_directed_char(char *dest, int64_t dest_len,
+        const list_directed_input *in, int32_t *iostat)
+{
+    char lsep = in->lsep;
+    FILE *filep = in->filep;
+    // Take the next value of a pending repeat first.
+    const char *text = NULL;
+    int64_t text_len = 0;
+    switch (list_directed_repeat_next(in->state, &text, &text_len)) {
+        case LD_REPEAT_NULL:
+            return;
+        case LD_REPEAT_VALUE:
+            list_directed_char_value(text, text_len, dest, dest_len);
+            return;
+        default:
+            break;
+    }
+    int c;
+    while ((c = input_getc(filep)) != EOF && isspace(c)) {
+    }
+#if defined(__EMSCRIPTEN__)
+    // Same spurious-EOF recovery as in read_stdin_list_directed_token
+    // above, for a record boundary at the start of the skip when
+    // reading the standard input.
+    if (c == EOF && filep == stdin) {
+        clearerr(filep);
+        while ((c = input_getc(filep)) != EOF && isspace(c)) {
+        }
+    }
+#endif
+
+    if (c == EOF) {
+        if (iostat) { *iostat = input_end_status(filep); return; }
+        printf("Runtime error: End of file!\n");
+        exit(1);
+    }
+
+    if (c == lsep) {
+        return;
+    }
+    if (c == '/') {
+        input_ungetc(c, filep);
+        return;
+    }
+
+    int64_t len = 0;
+    int end = EOF;
+    char *token = read_list_directed_char_token(filep, c, lsep, &len, &end);
+    if (end == '/') {
+        input_ungetc(end, filep);
+    } else if (end != lsep && end != EOF) {
+        input_ungetc(end, filep);
+        skip_trailing_comma(filep, lsep);
+    }
+    int64_t value_offset = 0;
+    if (list_directed_repeat_start(in->state, token, len, &value_offset)
+            != LD_REPEAT_NULL) {
+        list_directed_char_value(token + value_offset, len - value_offset,
+            dest, dest_len);
+    }
+    internal_free(token);
+}
+
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num, int32_t *iostat)
 {
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
 
     bool unit_file_bin;
@@ -13473,80 +13714,10 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
         }
 
     } else {
-        // List-directed: honour pending n* null-repeat counter first.
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {
-        }
-#if defined(__EMSCRIPTEN__)
-        // Same spurious-EOF recovery as in read_stdin_list_directed_token
-        // above, for a record boundary at the start of the skip when
-        // reading the standard input.
-        if (c == EOF && filep == stdin) {
-            clearerr(filep);
-            while ((c = input_getc(filep)) != EOF && isspace(c)) {
-            }
-        }
-#endif
-
-        if (c == EOF) {
-            if (iostat) { *iostat = input_end_status(filep); return; }
-            printf("Runtime error: End of file!\n");
-            exit(1);
-        }
-
-        if (c == lsep) {
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-
-        char *tmp_buffer = (char *)internal_malloc((p_len + 1) * sizeof(char));
-        if (!tmp_buffer) {
-            if (iostat) { *iostat = 1; return; }
-            printf("Memory allocation failed\n");
-            exit(1);
-        }
-
-        size_t len = 0;
-        if (c == '\'' || c == '"') {
-            char quote = c;
-            while (1) {
-                c = input_getc(filep);
-                if (c == EOF) break;
-                if (c == quote) {
-                    int next_c = input_getc(filep);
-                    if (next_c == quote) {
-                        if (len < (size_t)p_len) tmp_buffer[len++] = (char)quote;
-                    } else {
-                        if (next_c != EOF) input_ungetc(next_c, filep);
-                        break;
-                    }
-                } else {
-                    if (len < (size_t)p_len) tmp_buffer[len++] = (char)c;
-                }
-            }
-            skip_trailing_comma(filep, lsep);
-        } else {
-            do {
-                if (len < (size_t)p_len) tmp_buffer[len++] = (char)c;
-                c = input_getc(filep);
-            } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-            if (c == '/') {
-                input_ungetc(c, filep);
-            } else if (c != lsep && c != EOF) {
-                input_ungetc(c, filep);
-                skip_trailing_comma(filep, lsep);
-            }
-        }
-
-        memcpy(*p, tmp_buffer, len);
-        pad_with_spaces(*p, len, p_len);
-        internal_free(tmp_buffer);
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_char(*p, p_len, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
@@ -13709,14 +13880,58 @@ static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize) {
     }
 }
 
-// Improved input validation for float reading
-LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat)
-{
-    int dmode = _lfortran_get_decimal_mode(unit_num);
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
+// Reads the next list-directed complex value of the unit into `buffer`: the
+// next value of a pending repeat, or a value from the file, which can be an
+// r*c or r*. Returns 1 for a value, -1 for a null value, and 0 at end of
+// file or for invalid input. Sets `*repeated` when the value belongs to a
+// repeat read before, so that the reader consumes nothing after it.
+static int read_list_directed_complex_token(const list_directed_input *in,
+        char *buffer, size_t bufsize, bool *repeated) {
+    const char *text = NULL;
+    int64_t text_len = 0;
+    *repeated = false;
+    switch (list_directed_repeat_next(in->state, &text, &text_len)) {
+        case LD_REPEAT_NULL:
+            return -1;
+        case LD_REPEAT_VALUE:
+            *repeated = true;
+            break;
+        default: {
+            int rc = read_complex_expr(in->filep, buffer, bufsize);
+            if (rc != 1) {
+                return rc;
+            }
+            int64_t len = (int64_t)strlen(buffer);
+            int64_t value_offset = 0;
+            switch (list_directed_repeat_start(in->state, buffer, len,
+                    &value_offset)) {
+                case LD_REPEAT_NONE:
+                    return 1;
+                case LD_REPEAT_NULL:
+                    return -1;
+                default:
+                    break;
+            }
+            text = buffer + value_offset;
+            text_len = len - value_offset;
+        }
+    }
+    // The constant c of a repeat is a parenthesized complex constant.
+    if (text[0] != '(' || (size_t)text_len >= bufsize) {
+        return 0;
+    }
+    memmove(buffer, text, (size_t)text_len);
+    buffer[text_len] = '\0';
+    return 1;
+}
 
-    if (unit_num == -1) {
+// The list-directed input of one real(4) item.
+static void read_list_directed_float(float *p, const list_directed_input *in,
+        int32_t *iostat)
+{
+    int dmode = in->decimal_mode;
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (!iostat) {
@@ -13743,6 +13958,37 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
             fprintf(stderr, "Error: Invalid input for float.\n");
             exit(1);
         }
+        return;
+    }
+
+    FILE *filep = in->filep;
+    char buffer[100];
+    int c = 0;
+    if (read_list_directed_token(in, iostat, buffer,
+            sizeof(buffer), "Error: Invalid float input from file (EOF).",
+            NULL, &c) != LD_TOKEN_OK) {
+        return;
+    }
+    normalize_numeric_input(buffer, dmode);
+    if (!parse_fortran_float(buffer, p)) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input from file.\n");
+        exit(1);
+    }
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+// Improved input validation for float reading
+LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_float(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -13793,59 +14039,71 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num, int32_t *iost
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {}
-        if (c == EOF) {
-             if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-             fprintf(stderr, "Error: Invalid float input from file (EOF).\n");
-             exit(1);
-        }
-        if (c == lsep) {
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-        char buffer[100];
-        int len = 0;
-        do {
-            if (len < 99) buffer[len++] = (char)c;
-            c = input_getc(filep);
-        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-        buffer[len] = '\0';
-        if (c == lsep) {
-            // trailing comma consumed
-        } else if (c != EOF) {
-            input_ungetc(c, filep);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        normalize_numeric_input(buffer, dmode);
-        if (!parse_fortran_float(buffer, p)) {
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_float(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
+    }
+}
+
+// The list-directed input of one complex(4) item.
+static void read_list_directed_complex_float(struct _lfortran_complex_32 *p,
+        const list_directed_input *in, int32_t *iostat)
+{
+    int dmode = in->decimal_mode;
+    char lsep = in->lsep;
+    FILE *filep = in->filep;
+    char buffer[200];
+    bool repeated = false;
+    int rc = read_list_directed_complex_token(in, buffer, sizeof(buffer),
+        &repeated);
+    if (rc == -1) {
+        return; // null value
+    }
+    if (rc == 0) {
+        if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+        fprintf(stderr, "Error: Invalid input for complex float from file.\n");
+        exit(1);
+    }
+    convert_fortran_d_exponent(buffer);
+    normalize_numeric_input(buffer, dmode);
+    char *start = strchr(buffer, '(');
+    char *end = strchr(buffer, ')');
+    if (start && end && end > start) {
+        *end = '\0';
+        start++;
+        char *comma = strchr(start, ',');
+        if (comma) {
+            *comma = '\0';
+            while (isspace((unsigned char)*start)) start++;
+            char *endptr_re;
+            p->re = strtof(start, &endptr_re);
+            while (isspace((unsigned char)*endptr_re)) endptr_re++;
+            char *im_start = comma + 1;
+            while (isspace((unsigned char)*im_start)) im_start++;
+            char *endptr_im;
+            p->im = strtof(im_start, &endptr_im);
+        } else {
             if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input from file.\n");
+            fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
             exit(1);
         }
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
+    } else {
+        p->re = strtof(buffer, NULL);
+        if (input_scan(filep, "%f", &p->im) != 1) {
+            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read imaginary part of complex float.\n");
+            exit(1);
         }
+    }
+    // Consume trailing comma
+    if (!repeated) {
+        skip_trailing_comma(filep, lsep);
     }
 }
 
 LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num, int32_t *iostat)
 {
     int dmode = _lfortran_get_decimal_mode(unit_num);
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
@@ -13912,59 +14170,64 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        char buffer[200];
-        int rc = read_complex_expr(filep, buffer, sizeof(buffer));
-        if (rc == -1) {
-            return; // null value
-        }
-        if (rc == 0) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Invalid input for complex float from file.\n");
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_complex_float(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
+    }
+}
+
+// The list-directed input of one complex(8) item.
+static void read_list_directed_complex_double(struct _lfortran_complex_64 *p,
+        const list_directed_input *in, int32_t *iostat)
+{
+    int dmode = in->decimal_mode;
+    char lsep = in->lsep;
+    FILE *filep = in->filep;
+    char buffer[200];
+    bool repeated = false;
+    int rc = read_list_directed_complex_token(in, buffer, sizeof(buffer),
+        &repeated);
+    if (rc == -1) {
+        return;
+    }
+    if (rc == 0) {
+        if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+        fprintf(stderr, "Error: Invalid input for complex double from file.\n");
+        exit(1);
+    }
+    convert_fortran_d_exponent(buffer);
+    normalize_numeric_input(buffer, dmode);
+    char *start = strchr(buffer, '(');
+    char *end = strchr(buffer, ')');
+    if (start && end && end > start) {
+        *end = '\0';
+        start++;
+        char *comma = strchr(start, ',');
+        if (comma) {
+            *comma = '\0';
+            while (isspace((unsigned char)*start)) start++;
+            char *endptr_re;
+            p->re = strtod(start, &endptr_re);
+            while (isspace((unsigned char)*endptr_re)) endptr_re++;
+            char *im_start = comma + 1;
+            while (isspace((unsigned char)*im_start)) im_start++;
+            char *endptr_im;
+            p->im = strtod(im_start, &endptr_im);
+        } else {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
             exit(1);
         }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
+    } else {
+        p->re = strtod(buffer, NULL);
+        if (input_scan(filep, "%lf", &p->im) != 1) {
+            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
+            exit(1);
         }
-        convert_fortran_d_exponent(buffer);
-        normalize_numeric_input(buffer, dmode);
-        char *start = strchr(buffer, '(');
-        char *end = strchr(buffer, ')');
-        if (start && end && end > start) {
-            *end = '\0';
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) {
-                *comma = '\0';
-                while (isspace((unsigned char)*start)) start++;
-                char *endptr_re;
-                p->re = strtof(start, &endptr_re);
-                while (isspace((unsigned char)*endptr_re)) endptr_re++;
-                char *im_start = comma + 1;
-                while (isspace((unsigned char)*im_start)) im_start++;
-                char *endptr_im;
-                p->im = strtof(im_start, &endptr_im);
-            } else {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
-                exit(1);
-            }
-        } else {
-            p->re = strtof(buffer, NULL);
-            if (input_scan(filep, "%f", &p->im) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read imaginary part of complex float.\n");
-                exit(1);
-            }
-        }
-        // Consume trailing comma
+    }
+    if (!repeated) {
         skip_trailing_comma(filep, lsep);
     }
 }
@@ -13972,7 +14235,6 @@ LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, i
 LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num, int32_t *iostat)
 {
     int dmode = _lfortran_get_decimal_mode(unit_num);
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
@@ -14039,59 +14301,10 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        char buffer[200];
-        int rc = read_complex_expr(filep, buffer, sizeof(buffer));
-        if (rc == -1) {
-            return;
-        }
-        if (rc == 0) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Invalid input for complex double from file.\n");
-            exit(1);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        convert_fortran_d_exponent(buffer);
-        normalize_numeric_input(buffer, dmode);
-        char *start = strchr(buffer, '(');
-        char *end = strchr(buffer, ')');
-        if (start && end && end > start) {
-            *end = '\0';
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) {
-                *comma = '\0';
-                while (isspace((unsigned char)*start)) start++;
-                char *endptr_re;
-                p->re = strtod(start, &endptr_re);
-                while (isspace((unsigned char)*endptr_re)) endptr_re++;
-                char *im_start = comma + 1;
-                while (isspace((unsigned char)*im_start)) im_start++;
-                char *endptr_im;
-                p->im = strtod(im_start, &endptr_im);
-            } else {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
-                exit(1);
-            }
-        } else {
-            p->re = strtod(buffer, NULL);
-            if (input_scan(filep, "%lf", &p->im) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
-                exit(1);
-            }
-        }
-        skip_trailing_comma(filep, lsep);
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_complex_double(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
@@ -14197,66 +14410,13 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
             }
         }
     } else {
-        for (int i = 0; i < array_size;) {
-            char buffer[200];
-            int rc = read_complex_expr(filep, buffer, sizeof(buffer));
-            if (rc == -1) {
-                i++;
-                continue;
-            }
-            if (rc == 0) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid input for complex float from file.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buffer);
-            normalize_numeric_input(buffer, dmode);
-            struct _lfortran_complex_32 value;
-            int repeat_count = 1;
-            char *value_start = buffer;
-            char *star = strchr(buffer, '*');
-            bool has_repeat_count = star && star > buffer && star[1] == '(';
-            for (char *p_repeat = buffer; has_repeat_count && p_repeat < star; p_repeat++) {
-                has_repeat_count = isdigit((unsigned char)*p_repeat);
-            }
-            if (has_repeat_count) {
-                *star = '\0';
-                repeat_count = atoi(buffer);
-                value_start = star + 1;
-            }
-            char *start = strchr(value_start, '(');
-            char *end = strchr(value_start, ')');
-            if (start && end && end > start) {
-                *end = '\0';
-                start++;
-                char *comma = strchr(start, ',');
-                if (comma) {
-                    *comma = '\0';
-                    while (isspace((unsigned char)*start)) start++;
-                    char *endptr_re;
-                    value.re = strtof(start, &endptr_re);
-                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
-                    char *im_start = comma + 1;
-                    while (isspace((unsigned char)*im_start)) im_start++;
-                    char *endptr_im;
-                    value.im = strtof(im_start, &endptr_im);
-                } else {
-                    if (iostat) { *iostat = 1; return; }
-                    fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
-                    exit(1);
-                }
-            } else {
-                // No parentheses: treat as two whitespace-separated numbers
-                value.re = strtof(buffer, NULL);
-                if (input_scan(filep, "%f", &value.im) != 1) {
-                    if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read complex float from file.\n");
-                    exit(1);
-                }
-            }
-            for (int r = 0; r < repeat_count && i < array_size; r++, i++) {
-                p[(int64_t)i * (int64_t)stride] = value;
-            }
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        for (int i = 0; i < array_size; i++) {
+            read_list_directed_complex_float(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
@@ -14363,66 +14523,13 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
             }
         }
     } else {
-        for (int i = 0; i < array_size;) {
-            char buffer[200];
-            int rc = read_complex_expr(filep, buffer, sizeof(buffer));
-            if (rc == -1) {
-                i++;
-                continue;
-            }
-            if (rc == 0) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid input for complex double from file.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buffer);
-            normalize_numeric_input(buffer, dmode);
-            struct _lfortran_complex_64 value;
-            int repeat_count = 1;
-            char *value_start = buffer;
-            char *star = strchr(buffer, '*');
-            bool has_repeat_count = star && star > buffer && star[1] == '(';
-            for (char *p_repeat = buffer; has_repeat_count && p_repeat < star; p_repeat++) {
-                has_repeat_count = isdigit((unsigned char)*p_repeat);
-            }
-            if (has_repeat_count) {
-                *star = '\0';
-                repeat_count = atoi(buffer);
-                value_start = star + 1;
-            }
-            char *start = strchr(value_start, '(');
-            char *end = strchr(value_start, ')');
-            if (start && end && end > start) {
-                *end = '\0';
-                start++;
-                char *comma = strchr(start, ',');
-                if (comma) {
-                    *comma = '\0';
-                    while (isspace((unsigned char)*start)) start++;
-                    char *endptr_re;
-                    value.re = strtod(start, &endptr_re);
-                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
-                    char *im_start = comma + 1;
-                    while (isspace((unsigned char)*im_start)) im_start++;
-                    char *endptr_im;
-                    value.im = strtod(im_start, &endptr_im);
-                } else {
-                    if (iostat) { *iostat = 1; return; }
-                    fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
-                    exit(1);
-                }
-            } else {
-                // No parentheses: treat as two whitespace-separated numbers
-                value.re = strtod(buffer, NULL);
-                if (input_scan(filep, "%lf", &value.im) != 1) {
-                    if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read complex double from file.\n");
-                    exit(1);
-                }
-            }
-            for (int r = 0; r < repeat_count && i < array_size; r++, i++) {
-                p[(int64_t)i * (int64_t)stride] = value;
-            }
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        for (int i = 0; i < array_size; i++) {
+            read_list_directed_complex_double(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
@@ -14529,13 +14636,13 @@ static int lf_scan_f128(FILE *filep, lf_float128 *val)
     return lf_strtof128(token, val, &end);
 }
 
-LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one real(16) item.
+static void read_list_directed_float128(lf_float128 *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-
-    if (unit_num == -1) {
+    int dmode = in->decimal_mode;
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
         char buffer[LF_F128_TOKEN_BUF];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
@@ -14549,6 +14656,37 @@ LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int3
             fprintf(stderr, "Error: Invalid input from stdin.\n");
             exit(1);
         }
+        return;
+    }
+
+    FILE *filep = in->filep;
+    char buffer[LF_F128_TOKEN_BUF];
+    int c = 0;
+    if (read_list_directed_token(in, iostat, buffer,
+            sizeof(buffer), "Error: Failed to read double from file.",
+            NULL, &c) != LD_TOKEN_OK) {
+        return;
+    }
+    normalize_numeric_input(buffer, dmode);
+    if (!parse_fortran_f128(buffer, p)) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input from file.\n");
+        exit(1);
+    }
+    // If we didn't consume a trailing comma in the loop, try now
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_float128(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -14599,54 +14737,9 @@ LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int3
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {}
-        if (c == EOF) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read double from file.\n");
-            exit(1);
-        }
-        // Leading comma = null value
-        if (c == lsep) {
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-        char buffer[LF_F128_TOKEN_BUF];
-        int len = 0;
-        do {
-            if (len < LF_F128_TOKEN_BUF - 1) buffer[len++] = (char)c;
-            c = input_getc(filep);
-        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-        buffer[len] = '\0';
-        if (c == lsep) {
-            // Trailing comma consumed (separator for next value)
-        } else if (c != EOF) {
-            input_ungetc(c, filep);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        normalize_numeric_input(buffer, dmode);
-        if (!parse_fortran_f128(buffer, p)) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input from file.\n");
-            exit(1);
-        }
-        // If we didn't consume a trailing comma in the loop, try now
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_float128(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
@@ -14754,28 +14847,79 @@ LFORTRAN_API void _lfortran_read_array_float128(lf_float128 *p, int array_size, 
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(filep, "%100s", buffer) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read double from file.\n");
-                exit(1);
-            }
-            lf_float128 val;
-            normalize_numeric_input(buffer, dmode);
-            if (!parse_fortran_f128(buffer, &val)) {
+            read_list_directed_float128(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
+        }
+    }
+}
+
+// The list-directed input of one complex(16) item.
+static void read_list_directed_complex_float128(struct _lfortran_complex_128 *p,
+        const list_directed_input *in, int32_t *iostat)
+{
+    int dmode = in->decimal_mode;
+    char lsep = in->lsep;
+    FILE *filep = in->filep;
+    char buffer[256];
+    bool repeated = false;
+    int rc = read_list_directed_complex_token(in, buffer, sizeof(buffer),
+        &repeated);
+    if (rc == -1) {
+        return;
+    }
+    if (rc == 0) {
+        if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+        fprintf(stderr, "Error: Invalid input for complex double from file.\n");
+        exit(1);
+    }
+    convert_fortran_d_exponent(buffer);
+    normalize_numeric_input(buffer, dmode);
+    char *start = strchr(buffer, '(');
+    char *end = strchr(buffer, ')');
+    if (start && end && end > start) {
+        *end = '\0';
+        start++;
+        char *comma = strchr(start, ',');
+        if (comma) {
+            *comma = '\0';
+            while (isspace((unsigned char)*start)) start++;
+            char *im_start = comma + 1;
+            while (isspace((unsigned char)*im_start)) im_start++;
+            if (!lf_strtof128(start, &p->re, NULL) || !lf_strtof128(im_start, &p->im, NULL)) {
                 if (iostat) { *iostat = 1; return; }
                 fprintf(stderr, "Error: Invalid input from file.\n");
                 exit(1);
             }
-            p[(int64_t)i * (int64_t)stride] = val;
+        } else {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
+            exit(1);
         }
+    } else {
+        if (!lf_strtof128(buffer, &p->re, NULL)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from file.\n");
+            exit(1);
+        }
+        if (lf_scan_f128(filep, &p->im) != 1) {
+            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+            fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
+            exit(1);
+        }
+    }
+    if (!repeated) {
+        skip_trailing_comma(filep, lsep);
     }
 }
 
 LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *p, int32_t unit_num, int32_t *iostat)
 {
     int dmode = _lfortran_get_decimal_mode(unit_num);
-    char lsep = list_directed_separator(unit_num);
     if (iostat) *iostat = 0;
 
     if (unit_num == -1) {
@@ -14845,63 +14989,10 @@ LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        char buffer[256];
-        int rc = read_complex_expr(filep, buffer, sizeof(buffer));
-        if (rc == -1) {
-            return;
-        }
-        if (rc == 0) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Invalid input for complex double from file.\n");
-            exit(1);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        convert_fortran_d_exponent(buffer);
-        normalize_numeric_input(buffer, dmode);
-        char *start = strchr(buffer, '(');
-        char *end = strchr(buffer, ')');
-        if (start && end && end > start) {
-            *end = '\0';
-            start++;
-            char *comma = strchr(start, ',');
-            if (comma) {
-                *comma = '\0';
-                while (isspace((unsigned char)*start)) start++;
-                char *im_start = comma + 1;
-                while (isspace((unsigned char)*im_start)) im_start++;
-                if (!lf_strtof128(start, &p->re, NULL) || !lf_strtof128(im_start, &p->im, NULL)) {
-                    if (iostat) { *iostat = 1; return; }
-                    fprintf(stderr, "Error: Invalid input from file.\n");
-                    exit(1);
-                }
-            } else {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
-                exit(1);
-            }
-        } else {
-            if (!lf_strtof128(buffer, &p->re, NULL)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from file.\n");
-                exit(1);
-            }
-            if (lf_scan_f128(filep, &p->im) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
-                exit(1);
-            }
-        }
-        skip_trailing_comma(filep, lsep);
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_complex_float128(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
@@ -15012,70 +15103,13 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
             }
         }
     } else {
-        for (int i = 0; i < array_size;) {
-            char buffer[256];
-            int rc = read_complex_expr(filep, buffer, sizeof(buffer));
-            if (rc == -1) {
-                i++;
-                continue;
-            }
-            if (rc == 0) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Invalid input for complex double from file.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buffer);
-            normalize_numeric_input(buffer, dmode);
-            struct _lfortran_complex_128 value;
-            int repeat_count = 1;
-            char *value_start = buffer;
-            char *star = strchr(buffer, '*');
-            bool has_repeat_count = star && star > buffer && star[1] == '(';
-            for (char *p_repeat = buffer; has_repeat_count && p_repeat < star; p_repeat++) {
-                has_repeat_count = isdigit((unsigned char)*p_repeat);
-            }
-            if (has_repeat_count) {
-                *star = '\0';
-                repeat_count = atoi(buffer);
-                value_start = star + 1;
-            }
-            char *start = strchr(value_start, '(');
-            char *end = strchr(value_start, ')');
-            if (start && end && end > start) {
-                *end = '\0';
-                start++;
-                char *comma = strchr(start, ',');
-                if (comma) {
-                    *comma = '\0';
-                    while (isspace((unsigned char)*start)) start++;
-                    char *im_start = comma + 1;
-                    while (isspace((unsigned char)*im_start)) im_start++;
-                    if (!lf_strtof128(start, &value.re, NULL) || !lf_strtof128(im_start, &value.im, NULL)) {
-                        if (iostat) { *iostat = 1; return; }
-                        fprintf(stderr, "Error: Invalid input from file.\n");
-                        exit(1);
-                    }
-                } else {
-                    if (iostat) { *iostat = 1; return; }
-                    fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
-                    exit(1);
-                }
-            } else {
-                // No parentheses: treat as two whitespace-separated numbers
-                if (!lf_strtof128(buffer, &value.re, NULL)) {
-                    if (iostat) { *iostat = 1; return; }
-                    fprintf(stderr, "Error: Invalid input from file.\n");
-                    exit(1);
-                }
-                if (input_scan(filep, "%lf", &value.im) != 1) {
-                    if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                    fprintf(stderr, "Error: Failed to read complex double from file.\n");
-                    exit(1);
-                }
-            }
-            for (int r = 0; r < repeat_count && i < array_size; r++, i++) {
-                p[(int64_t)i * (int64_t)stride] = value;
-            }
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
+        for (int i = 0; i < array_size; i++) {
+            read_list_directed_complex_float128(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
@@ -15184,23 +15218,19 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(filep, "%99s", buffer) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read float from file.\n");
-                exit(1);
-            }
-            float val;
-            normalize_numeric_input(buffer, dmode);
-            if (!parse_fortran_float(buffer, &val)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from file.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_float(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
+
+static void read_list_directed_double(double *p, const list_directed_input *in,
+        int32_t *iostat);
 
 LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
@@ -15306,20 +15336,13 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
             }
         }
     } else {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(filep, "%99s", buffer) != 1) {
-                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read double from file.\n");
-                exit(1);
-            }
-            double val;
-            normalize_numeric_input(buffer, dmode);
-            if (!parse_fortran_double(buffer, &val)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from file.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_double(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
@@ -15394,21 +15417,23 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
             }
         }
     } else {
+        list_directed_input in;
+        list_directed_input_init(&in, filep, unit_num);
         for (int i = 0; i < array_size; i++) {
-            char *elem = p + ((int64_t)i * length);
-            _lfortran_read_char(&elem, length, unit_num, iostat);
-            if (iostat && *iostat != 0) return;
+            read_list_directed_char(p + ((int64_t)i * length), length, &in,
+                iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
     }
 }
 
-LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *iostat)
+// The list-directed input of one real(8) item.
+static void read_list_directed_double(double *p, const list_directed_input *in,
+        int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
-    char lsep = list_directed_separator(unit_num);
-    if (iostat) *iostat = 0;
-
-    if (unit_num == -1) {
+    int dmode = in->decimal_mode;
+    char lsep = in->lsep;
+    if (in->unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
         char buffer[100];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
@@ -15422,6 +15447,37 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
             fprintf(stderr, "Error: Invalid input from stdin.\n");
             exit(1);
         }
+        return;
+    }
+
+    FILE *filep = in->filep;
+    char buffer[100];
+    int c = 0;
+    if (read_list_directed_token(in, iostat, buffer,
+            sizeof(buffer), "Error: Failed to read double from file.",
+            NULL, &c) != LD_TOKEN_OK) {
+        return;
+    }
+    normalize_numeric_input(buffer, dmode);
+    if (!parse_fortran_double(buffer, p)) {
+        if (iostat) { *iostat = 1; return; }
+        fprintf(stderr, "Error: Invalid input from file.\n");
+        exit(1);
+    }
+    // If we didn't consume a trailing comma in the loop, try now
+    if (c != lsep) {
+        skip_trailing_comma(filep, lsep);
+    }
+}
+
+LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *iostat)
+{
+    if (iostat) *iostat = 0;
+    list_directed_input in;
+    if (unit_num == -1) {
+        list_directed_input_init(&in, stdin, -1);
+        read_list_directed_double(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
         return;
     }
 
@@ -15472,54 +15528,9 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num, int32_t *io
             }
         }
     } else {
-        if (list_directed_check_null_repeat(unit_num)) {
-            return;
-        }
-        int c;
-        while ((c = input_getc(filep)) != EOF && isspace(c)) {}
-        if (c == EOF) {
-            if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read double from file.\n");
-            exit(1);
-        }
-        // Leading comma = null value
-        if (c == lsep) {
-            return;
-        }
-        if (c == '/') {
-            input_ungetc(c, filep);
-            return;
-        }
-        char buffer[100];
-        int len = 0;
-        do {
-            if (len < 99) buffer[len++] = (char)c;
-            c = input_getc(filep);
-        } while (c != EOF && !isspace(c) && c != lsep && c != '/');
-        buffer[len] = '\0';
-        if (c == lsep) {
-            // Trailing comma consumed (separator for next value)
-        } else if (c != EOF) {
-            input_ungetc(c, filep);
-        }
-        int null_count = list_directed_parse_null_repeat(buffer);
-        if (null_count > 0) {
-            {
-                struct UNIT_FILE *uf_ = find_unit(unit_num);
-                if (uf_) uf_->lf_list_dir_null_remaining = null_count - 1;
-            }
-            return;
-        }
-        normalize_numeric_input(buffer, dmode);
-        if (!parse_fortran_double(buffer, p)) {
-            if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input from file.\n");
-            exit(1);
-        }
-        // If we didn't consume a trailing comma in the loop, try now
-        if (c != lsep) {
-            skip_trailing_comma(filep, lsep);
-        }
+        list_directed_input_init(&in, filep, unit_num);
+        read_list_directed_double(p, &in, iostat);
+        list_directed_item_end(&in, iostat);
     }
 }
 
@@ -17658,6 +17669,9 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
     }
 
     if (!unit_file_bin) {
+        // The values of a repeat that the statement did not take are not
+        // transferred to the next one.
+        list_dir_state_reset(find_unit(unit_num));
         int c = input_getc(fp);
         bool read_any = (c != EOF);
         while (c != '\n' && c != EOF) {
