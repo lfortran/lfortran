@@ -568,6 +568,29 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
     if (pos < s.size()) pos++; // Skip the last '\n' if present
 }
 
+// Only used in fixed-form, at the end of a line (or past column 72) inside a
+// character literal or Hollerith text. Moves `pos` to the first character
+// of the text on the next continuation line, skipping the comment and blank
+// lines before it. Returns false, leaving `pos` unchanged, if no
+// continuation line follows.
+bool skip_to_continuation_text(const std::string &s, size_t &pos)
+{
+    size_t next = pos;
+    LineType lt;
+    do {
+        skip_rest_of_line(s, next);
+        lt = determine_line_type((const unsigned char*)&s[next]);
+    } while (lt == LineType::Comment);
+    if (lt == LineType::Continuation) {
+        pos = next + 6;
+    } else if (lt == LineType::ContinuationTab) {
+        pos = next + 2;
+    } else {
+        return false;
+    }
+    return true;
+}
+
 // Parses a fixed-form string, including possible continuation lines.
 // Returns false if the string is not terminated. A string can only continue
 // on a continuation line; otherwise it is unterminated and `pos` is left at
@@ -588,21 +611,8 @@ bool parse_string_fixed_form(std::string &out, const std::string &s,
         bool line_end = s[pos] == '\n'
             || (s[pos] == '\r' && s[pos+1] == '\n');
         if (col > 72 || line_end) {
-            // The literal continues on the next continuation line, which
-            // may be preceded by comment or blank lines
-            size_t next = pos;
-            LineType lt;
-            do {
-                skip_rest_of_line(s, next);
-                lt = determine_line_type((const unsigned char*)&s[next]);
-            } while (lt == LineType::Comment);
-            if (lt == LineType::Continuation) {
-                pos = next + 6;
-            } else if (lt == LineType::ContinuationTab) {
-                pos = next + 2;
-            } else {
-                return false;
-            }
+            // The literal continues on the next continuation line
+            if (!skip_to_continuation_text(s, pos)) return false;
             // A line that ends before column 72 is padded with blanks
             if (col <= 72) out.append(73 - col, ' ');
             col = 7;
@@ -776,21 +786,8 @@ bool copy_hollerith_fixed_form(std::string &out, const std::string &s,
                 lm.files.back().in_start.push_back(source_offset(pos));
                 return true;
             }
-            // The text continues on the next continuation line, which may
-            // be preceded by comment or blank lines
-            size_t next = pos;
-            LineType lt;
-            do {
-                skip_rest_of_line(s, next);
-                lt = determine_line_type((const unsigned char*)&s[next]);
-            } while (lt == LineType::Comment);
-            if (lt == LineType::Continuation) {
-                pos = next + 6;
-            } else if (lt == LineType::ContinuationTab) {
-                pos = next + 2;
-            } else {
-                return true;
-            }
+            // The text continues on the next continuation line
+            if (!skip_to_continuation_text(s, pos)) return true;
             out.append(pad, ' ');
             i += pad;
             col = 7;
