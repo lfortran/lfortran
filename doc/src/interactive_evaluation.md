@@ -140,6 +140,14 @@ LFortran's `InputChannel`, which an interrupt cancels; replies to an older
 can end the READ (`lfortran_interruptible`), so that a client knows whether
 to keep forwarding input after an interrupt.
 
+During a cell, Ctrl-C at the prompt (Linux and macOS) only marks the
+interrupt; the prompt's client loop sends the `interrupt_request` on the
+control channel and keeps reading the terminal without blocking, so that it
+also notices Ctrl-C while a READ waits for input. If the kernel cannot end
+the READ (`lfortran_interruptible` is false), the client keeps forwarding
+what is typed.
+
 The `test_lfortran` cases `FortranEvaluator interrupt*`, the
-`test_session_regressions` cases `terminal_command` and `read_errors`, and
-`test_kernel_evaluation` cover this.
+`test_session_regressions` cases `terminal_command`, `read_errors` and
+`test_interrupt_prompt`, `test_repl` and `test_kernel_evaluation` cover
+this.
