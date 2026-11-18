@@ -1089,6 +1089,7 @@ public:
         }
         visit_construct(x);
     }
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) { visit_construct(x); }
     void visit_Module(const ASR::Module_t &x)                   { visit_construct(x); }
     void visit_Program(const ASR::Program_t &x) {
         if (capture_array_bounds(x.m_symtab)) {
