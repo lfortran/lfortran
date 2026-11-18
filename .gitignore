@@ -79,6 +79,8 @@ lfortran/parser/fortranVisitor.py
 src/lfortran/parser/parser.tab.cc
 src/lfortran/parser/parser.tab.hh
 src/lfortran/parser/tokenizer.cpp
+src/lfortran/parser/ll_parser.cpp
+!src/lfortran/parser/ll_parser.ll
 src/lfortran/parser/preprocessor.cpp
 src/lfortran/ast.h
 src/lfortran/asr.h
