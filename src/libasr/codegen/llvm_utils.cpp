@@ -2269,10 +2269,8 @@ namespace LCompilers {
         llvm::Type* string_desc_type) {
         llvm::Value* own_str_desc = CreateLoad2(string_desc_type->getPointerTo(),
             arr_api->get_pointer_to_data(array_desc_type, array_desc));
-        create_if_else(builder->CreateIsNotNull(own_str_desc), [&]() {
-            builder->CreateStore(llvm::ConstantPointerNull::get(i8_ptr),
-                create_gep2(string_desc_type, own_str_desc, 0));
-        }, [](){});
+        builder->CreateStore(llvm::ConstantPointerNull::get(i8_ptr),
+            create_gep2(string_desc_type, own_str_desc, 0));
     }
 
     llvm::Value* LLVMUtils::ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,

@@ -473,7 +473,7 @@ class ASRToLLVMVisitor;
             // Copies `src_str_desc` (null: no target) into the string descriptor the array descriptor owns.
             void copy_to_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type, llvm::Value* src_str_desc);
-            // Sets the data of the string descriptor the array descriptor owns, if any, to null.
+            // Sets the data of the string descriptor the array descriptor owns to null.
             void disassociate_own_string_descriptor(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type);
             // Stores a new heap descriptor in `desc_ptr` if it is null; returns the descriptor.
