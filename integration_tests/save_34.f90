@@ -5,6 +5,10 @@
 ! variable or a named constant.
 
 ! The dummy procedure takes its interface from an internal procedure.
+! This is the fail-closed case: the signature needs the internal procedure
+! `helper`, so the by-data copy is not forwarded to the original and keeps
+! its own counter. The program passes only whole arrays, so this checks
+! that the procedure compiles and runs.
 subroutine save_34_dummy(x, g, n)
 implicit none
 real, intent(in) :: x(:)
