@@ -7100,6 +7100,7 @@ RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES 
 RUN(NAME gpu_lazy_init_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-lazy-init)
 # --gpu-overlap needs sm_90 or newer to take effect; elsewhere it is accepted and the launches are the usual ones.
 RUN(NAME gpu_overlap_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-overlap)
+RUN(NAME gpu_overlap_trigger_01 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-overlap)
 RUN(NAME gpu_memory_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_wait_reads_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_keep_reads_01 LABELS gfortran llvm metal cuda)

@@ -4091,6 +4091,14 @@ public:
             emit_function_def(function, device_function_name(function));
         }
 
+        kernel_main_loop = nullptr;
+        if (dialect.overlaps_kernels()) {
+            const ASR::stmt_t *first = first_memory_statement(x.m_body,
+                x.n_body);
+            if (first && ASR::is_a<ASR::DoLoop_t>(*first)) {
+                kernel_main_loop = first;
+            }
+        }
         emit_kernel_signature(x);
         bind_kernel_arguments(x);
 
@@ -4311,6 +4319,9 @@ public:
             holds_lane_reduce(dl->m_body, dl->n_body), wide,
             indexes_registers(*dl));
         emit_loop_body(frame, dl->m_body, dl->n_body);
+        if (stmt == kernel_main_loop) {
+            dialect.emit_dependents_trigger(src, get_indent());
+        }
     }
 
     // The iterations a predicated loop takes at a time (predicated_unroll).
@@ -5101,6 +5112,105 @@ public:
             src << in << "}\n";
             i += run.size() - 1;
         }
+    }
+
+    /*
+    When a kernel lets the next one start (--gpu-overlap).
+
+    The runtime launches every kernel to overlap the kernel before it in the
+    stream (programmatic stream serialization), and each kernel waits for
+    the one before it (griddepcontrol.wait) before it touches memory. The
+    next kernel starts when every block of this one has run
+    griddepcontrol.launch_dependents or exited: its blocks then become
+    resident as the blocks of this one leave room, and run up to their wait.
+    A kernel whose first statement that touches memory is a loop, its main
+    loop (the rows of a matrix-vector product), lets the next one start
+    right after it: the next kernel is then on the multiprocessors when this
+    one ends, while its blocks become resident only once this one has
+    nothing left to start. On an H200, the decode of Qwen3.8-27B (257 q8
+    matrix-vector products a step) went from 118.1 to 118.5 tokens/s with
+    its launches replayed as CUDA graphs (lfortran_gpu_cuda.c), and from
+    117.4 to 116.9 launched one by one. Letting the next kernel start right
+    after the wait instead made it 3% slower
+    (its blocks wait on the multiprocessors the first blocks of this one
+    leave, and a next kernel of one wave is unbalanced); loads of the first
+    iteration of the loop made before the wait, into registers or as
+    prefetches into the L2 cache, did not pay either (they changed how nvcc
+    compiles the loop: 1 to 4% slower).
+    */
+    // The main loop of the kernel being written, or nullptr.
+    const ASR::stmt_t *kernel_main_loop = nullptr;
+
+    // Whether running a statement may touch memory: anything but assigning
+    // scalars of the kernel, sizes of its arrays (arguments of the kernel
+    // too) and constants, and tests of them.
+    class TouchesMemory : public ASR::BaseWalkVisitor<TouchesMemory> {
+    public:
+        bool found = false;
+        void visit_ArrayItem(const ASR::ArrayItem_t &) { found = true; }
+        void visit_ArraySection(const ASR::ArraySection_t &) { found = true; }
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t &) {
+            found = true;
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &) { found = true; }
+        void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &) {
+            found = true;
+        }
+        void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t &) {
+            found = true;
+        }
+        void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &) {
+            found = true;
+        }
+        void visit_stmt(const ASR::stmt_t &x) {
+            switch (x.type) {
+                case ASR::stmtType::Assignment: {
+                    auto *a = ASR::down_cast<ASR::Assignment_t>(&x);
+                    if (!ASR::is_a<ASR::Var_t>(*a->m_target)
+                            || ASRUtils::is_array(ASRUtils::expr_type(
+                                a->m_target))
+                            || a->m_overloaded) {
+                        found = true;
+                        return;
+                    }
+                    this->visit_expr(*a->m_value);
+                    return;
+                }
+                case ASR::stmtType::If:
+                case ASR::stmtType::Return:
+                    ASR::BaseWalkVisitor<TouchesMemory>::visit_stmt(x);
+                    return;
+                default:
+                    found = true;
+                    return;
+            }
+        }
+    };
+
+    static bool touches_memory(const ASR::stmt_t &s) {
+        TouchesMemory t;
+        t.visit_stmt(s);
+        return t.found;
+    }
+
+    // The first statement of `body`, or of the blocks it runs, that may
+    // touch memory; nullptr when none does.
+    static const ASR::stmt_t *first_memory_statement(ASR::stmt_t **body,
+            size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m);
+                if (!ASR::is_a<ASR::Block_t>(*b)) return body[i];
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                const ASR::stmt_t *s = first_memory_statement(block->m_body,
+                    block->n_body);
+                if (s) return s;
+                continue;
+            }
+            if (touches_memory(*body[i])) return body[i];
+        }
+        return nullptr;
     }
 
     void visit_stmt(ASR::stmt_t *stmt) {
