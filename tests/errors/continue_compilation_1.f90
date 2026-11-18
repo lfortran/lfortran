@@ -5222,3 +5222,15 @@ subroutine cc1_extended_real_to_integer_overflow()
     cc1_ero_i1 = ceiling(300.5_16, 1)  ! {Error} Result of `ceiling` overflows its kind(1)
     cc1_ero_i2 = int(-40000.5_16, 2)  ! {Error} Result of `int` overflows its kind(2)
 end subroutine
+
+! An internal file requires formatted I/O, including list-directed or namelist.
+subroutine cc1_internal_file_unformatted()
+    character(len=40) :: cc1_ifu_s, cc1_ifu_lines(2)
+    integer :: cc1_ifu_i
+    write(cc1_ifu_s) 1  ! {Error} unformatted I/O is not allowed for an internal file
+    write(unit=cc1_ifu_s) 1  ! {Error} unformatted I/O is not allowed for an internal file
+    read(cc1_ifu_s) cc1_ifu_i  ! {Error} unformatted I/O is not allowed for an internal file
+    read(unit=cc1_ifu_s) cc1_ifu_i  ! {Error} unformatted I/O is not allowed for an internal file
+    write(cc1_ifu_s(1:20)) 1  ! {Error} unformatted I/O is not allowed for an internal file
+    write(cc1_ifu_lines) 1  ! {Error} unformatted I/O is not allowed for an internal file
+end subroutine
