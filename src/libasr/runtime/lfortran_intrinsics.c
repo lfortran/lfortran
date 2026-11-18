@@ -9159,6 +9159,12 @@ struct UNIT_FILE {
     // record is completed by an advancing WRITE, or terminated when the unit
     // is repositioned (REWIND, BACKSPACE), reaches ENDFILE or is closed.
     bool pending_record;
+    // The items an unformatted WRITE wrote to a record that a later WRITE of
+    // the same statement completes (see _lfortran_file_write): only the call
+    // that completes the record knows the length its record markers hold.
+    char* unf_write_pending;
+    size_t unf_write_pending_len;
+    size_t unf_write_pending_cap;
     // Pending list-directed null-repeat state.
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
@@ -9245,6 +9251,21 @@ static void terminate_pending_record(struct UNIT_FILE *uf, FILE *filep) {
         (void)!ftruncate(lfortran_fileno(filep), pos);
     }
     pos_nl_reset(uf);
+}
+
+static void unf_write_pending_free(struct UNIT_FILE *uf) {
+    internal_free(uf->unf_write_pending);
+    uf->unf_write_pending = NULL;
+    uf->unf_write_pending_len = 0;
+    uf->unf_write_pending_cap = 0;
+}
+
+// Discard the items of a record that an unformatted WRITE left open, when an
+// error condition terminates the statement or the unit is repositioned, so
+// that they can never become part of a later record.
+static void unf_write_pending_discard(int32_t unit_num) {
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) unf_write_pending_free(uf);
 }
 
 static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
@@ -9492,6 +9513,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].rereadable = file_is_rereadable(filep);
             unit_to_file[i].swap_bytes = false;
             unit_to_file[i].pending_record = false;
+            unf_write_pending_free(&unit_to_file[i]);
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
             pos_nl_reset(&unit_to_file[i]);
@@ -9522,6 +9544,9 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].rereadable = file_is_rereadable(filep);
     unit_to_file[last_index_used].swap_bytes = false;
     unit_to_file[last_index_used].pending_record = false;
+    unit_to_file[last_index_used].unf_write_pending = NULL;
+    unit_to_file[last_index_used].unf_write_pending_len = 0;
+    unit_to_file[last_index_used].unf_write_pending_cap = 0;
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
     pos_nl_reset(&unit_to_file[last_index_used]);
@@ -9623,6 +9648,7 @@ void remove_from_unit_to_file(int32_t unit_num) {
     if( index == -1 ) {
         return ;
     }
+    unf_write_pending_free(&unit_to_file[index]);
     for( int i = index; i < last_index_used; i++ ) {
         unit_to_file[i] = unit_to_file[i + 1];
     }
@@ -11719,6 +11745,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
         }
     }
     terminate_pending_record(find_unit(unit_num), filep);
+    unf_write_pending_discard(unit_num);
     if (fseek(filep, 0, SEEK_SET) != 0) {
         if (iostat != NULL) {
             *iostat = -1;
@@ -11772,6 +11799,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
         store_unit_file(unit_num, fname, filep, false, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
     }
     terminate_pending_record(find_unit(unit_num), filep);
+    unf_write_pending_discard(unit_num);
     fflush(filep);
     long pos = ftell(filep);
     if (pos >= 0) {
@@ -11836,6 +11864,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
     }
 
     terminate_pending_record(find_unit(unit_num), fd);
+    unf_write_pending_discard(unit_num);
     fflush(fd);
     long pos = ftell(fd);
     if (pos <= 0) {
@@ -17887,6 +17916,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (filep && !write_access) {
         if (iostat) {
             *iostat = 5003;  // Write not allowed
+            unf_write_pending_discard(unit_num);
             return;
         } else {
             fprintf(stderr, "Runtime Error: Write operation not allowed on unit %d "
@@ -17933,6 +17963,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             if (!filep) {
                 if (iostat) {
                     *iostat = 5004;
+                    unf_write_pending_discard(unit_num);
                     return;
                 } else {
                     fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
@@ -17946,6 +17977,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         } else {
             if(iostat) {
                 *iostat = 5001;
+                unf_write_pending_discard(unit_num);
                 return;
             } else {
                 fprintf(stderr, "Runtime Error: Format mismatch between "
@@ -17968,12 +18000,17 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         } data[100];  // support max 100 args
 
         int count = 0;
+        bool continues_record = false;
 
-        // Read (size, element size, ptr) until len == -1. The element size
-        // is the unit of byte swapping (1 for character data).
+        // Read (size, element size, ptr) until len == -1, or -2 for a part
+        // of a record that a later call completes. The element size is the
+        // unit of byte swapping (1 for character data).
         while (1) {
             int32_t len = va_arg(args, int32_t);
-            if (len == -1) break; // sentinel
+            if (len == -1 || len == -2) { // sentinel
+                continues_record = (len == -2);
+                break;
+            }
             int32_t elem_size = va_arg(args, int32_t);
             void* ptr = va_arg(args, void*);
 
@@ -17990,6 +18027,32 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         va_end(args);
 
         bool swap = unit_swaps_bytes(unit_num);
+        struct UNIT_FILE *uf = find_unit(unit_num);
+        if (continues_record) {
+            // Keep the items until the call that completes the record.
+            size_t needed = uf->unf_write_pending_len + total_size;
+            if (needed > uf->unf_write_pending_cap) {
+                size_t cap = uf->unf_write_pending_cap * 2;
+                if (cap < needed) cap = needed;
+                uf->unf_write_pending = (char*)internal_realloc(
+                    uf->unf_write_pending, cap);
+                uf->unf_write_pending_cap = cap;
+            }
+            for (int i = 0; i < count; i++) {
+                if (data[i].len == 0) continue;
+                char *dest = uf->unf_write_pending + uf->unf_write_pending_len;
+                memcpy(dest, data[i].ptr, data[i].len);
+                if (swap && data[i].elem_size > 1) {
+                    swap_element_bytes(dest, data[i].elem_size,
+                        data[i].len / data[i].elem_size);
+                }
+                uf->unf_write_pending_len += data[i].len;
+            }
+            if (iostat != NULL) *iostat = 0;
+            return;
+        }
+        size_t pending_len = uf->unf_write_pending_len;
+        total_size += pending_len;
         // Write record marker
         int32_t record_marker = (int32_t)total_size;
         if (swap) {
@@ -17999,7 +18062,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             fwrite(&record_marker, sizeof(record_marker), 1, filep);
         }        
         size_t written = 0;
-        // Write all data chunks
+        // Write the items of the earlier parts of the record, then this call's.
+        if (pending_len > 0) {
+            written += fwrite(uf->unf_write_pending, 1, pending_len, filep);
+        }
+        unf_write_pending_free(uf);
         for (int i = 0; i < count; i++) {
             if (swap && data[i].elem_size > 1) {
                 // The data belongs to the program: swap a copy of it.

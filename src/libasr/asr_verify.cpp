@@ -5089,6 +5089,15 @@ public:
         // unformatted output.
         require(!x.m_is_formatted || x.m_overloaded == nullptr,
             "FileWrite::m_overloaded must be nil for formatted output");
+        // Unformatted output has no record terminator. On an unformatted
+        // FileWrite, `end` can only be the empty string: the statement writes
+        // a part of a record that a later FileWrite to the same unit
+        // completes.
+        require(x.m_is_formatted || x.m_end == nullptr ||
+            (is_a<StringConstant_t>(*x.m_end) &&
+                down_cast<StringConstant_t>(x.m_end)->m_s[0] == '\0'),
+            "FileWrite::m_end of unformatted output must be nil or an empty "
+            "StringConstant");
         if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
             verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, false);
         }

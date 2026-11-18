@@ -1056,13 +1056,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         bool remove_original_statement, allocate_target = false;
         bool print = false, file_write = false;
         ASR::expr_t* m_unit = nullptr;
-        ASR::expr_t* m_rec = nullptr;
         ASR::expr_t* m_iomsg = nullptr;
         ASR::expr_t* m_iostat = nullptr;
-        ASR::expr_t* m_pos = nullptr;
         ASR::expr_t* m_decimal = nullptr;
         ASR::expr_t* m_delim = nullptr;
-        bool m_is_formatted = true;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
         // Statements to put after the statement being visited
@@ -1090,13 +1087,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             pass_result_after.reserve(al, 0);
             print = false, file_write = false;
             m_unit = nullptr;
-            m_rec = nullptr;
             m_iomsg = nullptr;
             m_iostat = nullptr;
-            m_pos = nullptr;
             m_decimal = nullptr;
             m_delim = nullptr;
-            m_is_formatted = true;
         }
 
         void visit_Variable(const ASR::Variable_t& /*x*/) {
@@ -1557,6 +1551,54 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return do_loop;
         }
 
+        // A part of the record of an unformatted WRITE that is split into
+        // several statements (see split_unformatted_write). A part with an
+        // empty `end` (no record terminator) leaves the record open for the
+        // next part; the last part completes it.
+        ASR::stmt_t* unformatted_write_part(const Location& loc, int64_t label,
+                Vec<ASR::expr_t*>& values, ASR::expr_t* rec, ASR::expr_t* pos,
+                bool continues_record) {
+            ASR::expr_t* end = nullptr;
+            if (continues_record) {
+                ASR::ttype_t* end_type = ASRUtils::TYPE(ASR::make_String_t(
+                    al, loc, 1, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, loc, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::DescriptorString));
+                end = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+                    s2c(al, ""), end_type));
+            }
+            return ASRUtils::STMT(ASR::make_FileWrite_t(al, loc, label, m_unit,
+                m_iomsg, m_iostat, nullptr, values.p, values.size(), nullptr,
+                end, nullptr, false, nullptr, rec, pos, nullptr, m_decimal,
+                m_delim));
+        }
+
+        // A part after the first one of a split unformatted WRITE runs only
+        // while IOSTAT= reports no error: an error condition in any part (for
+        // example from POS=, which only the first part has) terminates the
+        // statement (F2023 12.11), so no later part may complete the record.
+        // The first part always runs and sets IOSTAT=. Without IOSTAT= an
+        // error condition has already stopped the program.
+        ASR::stmt_t* unless_write_failed(const Location& loc,
+                ASR::stmt_t* part) {
+            if (!m_iostat) return part;
+            ASR::ttype_t* iostat_type = ASRUtils::extract_type(
+                ASRUtils::expr_type(m_iostat));
+            ASR::expr_t* no_error = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                al, loc, m_iostat, ASR::cmpopType::Eq,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                    iostat_type)),
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            body.push_back(al, part);
+            return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, no_error,
+                body.p, body.size(), nullptr, 0));
+        }
+
+        // The DO loop of an implied do loop of an unformatted WRITE: every
+        // iteration writes its items, in order, to the open record.
         ASR::stmt_t* create_do_loop_unformatted_idl(ASR::ImpliedDoLoop_t* x) {
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = x->base.base.loc; do_loop_head.m_v = x->m_var;
@@ -1569,6 +1611,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             args.reserve(al, x->n_values);
             for (size_t i = 0; i < x->n_values; i++ ) {
                 if ( ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i]) ) {
+                    if (args.size() > 0) {
+                        do_loop_body.push_back(al, unless_write_failed(
+                            x->base.base.loc, unformatted_write_part(
+                            x->base.base.loc, 0, args, nullptr, nullptr, true)));
+                        args.reserve(al, x->n_values);
+                    }
                     do_loop_body.push_back(al, create_do_loop_unformatted_idl(
                         ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i])));
                 } else {
@@ -1577,15 +1625,53 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
 
             if (args.size() > 0) {
-                ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_FileWrite_t(al, x->base.base.loc,
-                    0, m_unit, m_iomsg, m_iostat, nullptr,
-                    args.p, args.size(), nullptr, nullptr, nullptr,
-                    m_is_formatted, nullptr, m_rec, m_pos, nullptr, m_decimal, m_delim));
-                do_loop_body.push_back(al, stmt);
+                do_loop_body.push_back(al, unless_write_failed(
+                    x->base.base.loc, unformatted_write_part(
+                    x->base.base.loc, 0, args, nullptr, nullptr, true)));
             }
 
             return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+        }
+
+        // An unformatted WRITE transfers one record (F2023 12.6.4.5.2). An
+        // implied do loop of items of different types whose bounds are not
+        // known at compile time can neither be expanded nor become one array,
+        // so the statement becomes a sequence of parts that write to the same
+        // record: the items before such a loop, the DO loop of its items, and
+        // so on, and a last part with the remaining items (possibly none) that
+        // completes the record. Only the first part positions the unit, and
+        // with IOSTAT= a first part is always written, possibly without items,
+        // so that IOSTAT= is set before any later part checks it.
+        void split_unformatted_write(const ASR::FileWrite_t &x) {
+            const Location& loc = x.base.base.loc;
+            bool first_part = true;
+            Vec<ASR::expr_t*> part;
+            part.reserve(al, x.n_values);
+            for (size_t i = 0; i < x.n_values; i++) {
+                if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
+                    part.push_back(al, x.m_values[i]);
+                    continue;
+                }
+                if (first_part) {
+                    if (part.size() > 0 || x.m_rec || x.m_pos || x.m_iostat) {
+                        pass_result.push_back(al, unformatted_write_part(loc,
+                            x.m_label, part, x.m_rec, x.m_pos, true));
+                        part.reserve(al, x.n_values);
+                    }
+                    first_part = false;
+                } else if (part.size() > 0) {
+                    pass_result.push_back(al, unless_write_failed(loc,
+                        unformatted_write_part(loc, 0, part, nullptr, nullptr,
+                        true)));
+                    part.reserve(al, x.n_values);
+                }
+                pass_result.push_back(al, create_do_loop_unformatted_idl(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(x.m_values[i])));
+            }
+            pass_result.push_back(al, unless_write_failed(loc,
+                unformatted_write_part(loc, 0, part, nullptr, nullptr, false)));
+            remove_original_statement = true;
         }
 
         // Collects the variables of `idl` and of the implied do loops nested
@@ -2332,13 +2418,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             file_write = true;
             set_implied_do_variables_after(x.m_values, x.n_values);
             m_unit = x.m_unit;
-            m_rec = x.m_rec;
             m_iomsg = x.m_iomsg;
             m_iostat = x.m_iostat;
-            m_pos = x.m_pos;
             m_decimal = x.m_decimal;
             m_delim = x.m_delim;
-            m_is_formatted = x.m_is_formatted;
             if (x.m_overloaded) {
                 this->visit_stmt(*x.m_overloaded);
                 remove_original_statement = false;
@@ -2356,6 +2439,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 write(*,*) [(i, i=1, 10)]
             */
             ASR::FileWrite_t* write_stmt = const_cast<ASR::FileWrite_t*>(&x);
+            bool split_record = false;
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
@@ -2380,8 +2464,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             i = i + expanded_values.size() - 1;
                             continue;
                         }
-                        remove_original_statement = true;
-                        pass_result.push_back(al, create_do_loop_unformatted_idl(idl));
+                        LCOMPILERS_ASSERT(!x.m_is_formatted);
+                        split_record = true;
                         continue;
                     }
                     ASR::asr_t* array_constant = create_array_constant(x, value);
@@ -2406,6 +2490,9 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                         this->visit_expr(*write_stmt->m_values[i]);
                     }
                 }
+            }
+            if (split_record) {
+                split_unformatted_write(x);
             }
             file_write = false;
         }
