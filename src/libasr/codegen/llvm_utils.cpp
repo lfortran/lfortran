@@ -2256,7 +2256,6 @@ namespace LCompilers {
         ensure_string_descriptor_on_heap(array_desc_type, array_desc, string_desc_type);
         llvm::Value* own_str_desc = CreateLoad2(string_desc_type->getPointerTo(),
             arr_api->get_pointer_to_data(array_desc_type, array_desc));
-        src_str_desc = builder->CreateBitCast(src_str_desc, string_desc_type->getPointerTo());
         create_if_else(builder->CreateIsNull(src_str_desc), [&]() {
             builder->CreateStore(llvm::ConstantPointerNull::get(i8_ptr),
                 create_gep2(string_desc_type, own_str_desc, 0));
