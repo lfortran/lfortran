@@ -12,6 +12,8 @@ end type
 real(8), allocatable :: a(:), b(:,:), small(:)
 real(8), pointer :: p(:) => null()
 real(8), target :: tgt(5)
+character(len=8), pointer :: cp(:) => null()
+character(len=8), target :: ctgt(3)
 character(:), allocatable :: s
 character(len=8), allocatable :: sa(:)
 type(t), allocatable :: ta(:)
@@ -59,12 +61,33 @@ allocate(p(n), stat=ierr)
 if (ierr <= 0) error stop "pointer array: stat not set"
 if (associated(p)) error stop "pointer array: associated"
 
-! ALLOCATE ends the previous association of a pointer.
+! The standard requires a pointer that is not successfully allocated to
+! retain its previous association, but some processors (gfortran)
+! disassociate it. Accept either, but not a half-updated pointer.
 p => tgt
 ierr = 0
 allocate(p(n), stat=ierr)
 if (ierr <= 0) error stop "associated pointer array: stat not set"
-if (associated(p)) error stop "associated pointer array: associated"
+if (associated(p)) then
+    if (.not. associated(p, tgt)) error stop "associated pointer array: new target"
+    if (size(p) /= 5) error stop "associated pointer array: wrong size"
+end if
+
+ierr = 0
+allocate(cp(n), stat=ierr)
+if (ierr <= 0) error stop "character pointer array: stat not set"
+if (associated(cp)) error stop "character pointer array: associated"
+
+ctgt = "abc"
+cp => ctgt
+ierr = 0
+allocate(cp(n), stat=ierr)
+if (ierr <= 0) error stop "associated character pointer array: stat not set"
+if (associated(cp)) then
+    if (.not. associated(cp, ctgt)) error stop "associated character pointer array: new target"
+    if (size(cp) /= 3) error stop "associated character pointer array: wrong size"
+    if (cp(3) /= "abc") error stop "associated character pointer array: wrong value"
+end if
 
 ierr = 0
 allocate(h%x(n), stat=ierr)

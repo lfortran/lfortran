@@ -3411,21 +3411,30 @@ public:
                             },
                             []() {});
                     }
-                    if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
+                    bool is_character_array = ASRUtils::is_array(array_type)
+                        && ASRUtils::is_character(*array_type);
+                    // The standard requires a pointer that is not successfully
+                    // allocated to retain its previous association, but the
+                    // descriptor is updated before the data is allocated.
+                    // Disassociate the pointer first (as gfortran does), so that
+                    // a failure never leaves it with half-updated bounds.
+                    // Retaining the previous association is a follow-up.
+                    bool disassociate_pointer = is_pointer_arg && m_stat;
+                    if (is_character_array || disassociate_pointer) {
                         llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
                             type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
-                        llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
-                            tmp_expr, ASRUtils::extract_type(array_type), module.get());
-                        llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
-                    } else if (is_pointer_arg && m_stat) {
-                        // The association status of a pointer after a failed
-                        // ALLOCATE is processor dependent. Disassociate it before
-                        // allocating, so that a failure leaves it disassociated
-                        // (as gfortran does) instead of pointing to its old target.
-                        llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
-                            type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
-                        arr_descr->reset_is_allocated_flag(type, desc_ptr, llvm_utils->get_el_type(
-                            tmp_expr, ASRUtils::extract_type(alloc_arg_type), module.get()));
+                        if (is_character_array) {
+                            llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                                tmp_expr, ASRUtils::extract_type(array_type), module.get());
+                            llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                            if (disassociate_pointer) {
+                                llvm_utils->disassociate_own_string_descriptor(type, desc_ptr,
+                                    llvm_str_desc_type);
+                            }
+                        } else {
+                            arr_descr->reset_is_allocated_flag(type, desc_ptr, llvm_utils->get_el_type(
+                                tmp_expr, ASRUtils::extract_type(alloc_arg_type), module.get()));
+                        }
                     }
                     // A polymorphic array allocated with SOURCE= or MOLD= of a
                     // polymorphic array takes the dynamic type of the mold, which
