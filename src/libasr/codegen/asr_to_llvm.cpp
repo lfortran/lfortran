@@ -2848,8 +2848,36 @@ public:
         return tmp;
     }
 
+    // Assigns `message` to the ERRMSG= variable `errmsg` of an ALLOCATE or
+    // DEALLOCATE statement, if present, as if by intrinsic assignment
+    // (F2023 9.7.5).
+    void assign_errmsg(ASR::expr_t* errmsg, const std::string& message) {
+        if (errmsg == nullptr) {
+            return;
+        }
+        const Location& loc = errmsg->base.loc;
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t* len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            message.size(), int_type, ASR::integerbozType::Decimal));
+        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(errmsg)), len,
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t* value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, message), str_type));
+        int64_t ptr_loads_copy = ptr_loads;
+        llvm::Value* tmp_copy = tmp;
+        this->visit_stmt(*ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            errmsg, value, nullptr, false, false)));
+        ptr_loads = ptr_loads_copy;
+        tmp = tmp_copy;
+    }
+
     template <typename T>
-    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
+    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc,
+            ASR::expr_t* m_source = nullptr, ASR::expr_t* m_errmsg = nullptr) {
+        const std::string errmsg_already_allocated =
+            "attempt to allocate an already allocated object";
         llvm::Value* stat_target = nullptr;
         if (m_stat) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -2942,6 +2970,7 @@ public:
                                 [&]() {
                                     llvm::Type* stat_llvm_type = llvm::Type::getIntNTy(context, 8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
                                     builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+                                    assign_errmsg(m_errmsg, errmsg_already_allocated);
                                 },
                                 [&]() {
                                     do_scalar_alloc();
@@ -3525,6 +3554,7 @@ public:
                         [&]() {
                             llvm::Type* stat_llvm_type = llvm::Type::getIntNTy(context, 8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
                             builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+                            assign_errmsg(m_errmsg, errmsg_already_allocated);
                         },
                         [&]() {
                             do_array_alloc();
@@ -3554,6 +3584,7 @@ public:
                 8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
             builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type,
                 stat_allocation_failed), stat_target);
+            assign_errmsg(m_errmsg, "allocation failed: out of memory");
         } else {
             llvm::Value* size = llvm_utils->CreateLoad2(
                 llvm::Type::getInt64Ty(context), failure_size);
@@ -3619,7 +3650,7 @@ public:
 
     void visit_Allocate(const ASR::Allocate_t& x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        visit_AllocateUtil(x, x.m_stat, false, x.m_source);
+        visit_AllocateUtil(x, x.m_stat, false, x.m_source, x.m_errmsg);
     }
 
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
@@ -3875,7 +3906,8 @@ public:
     }
 
     template <typename T>
-    void visit_Deallocate(const T& x, ASR::expr_t* m_stat=nullptr) {
+    void visit_Deallocate(const T& x, ASR::expr_t* m_stat=nullptr,
+            ASR::expr_t* m_errmsg=nullptr) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Function* free_fn = llvm_utils->_Deallocate();
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
@@ -3892,6 +3924,7 @@ public:
         auto set_stat_not_allocated = [=]() {
             if (stat_target) {
                 builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+                assign_errmsg(m_errmsg, "attempt to deallocate an unallocated object");
             }
         };
         for( size_t i = 0; i < x.n_vars; i++ ) {
@@ -4116,7 +4149,7 @@ public:
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
-        visit_Deallocate(x, x.m_stat);
+        visit_Deallocate(x, x.m_stat, x.m_errmsg);
     }
 
     void visit_ListConstant(const ASR::ListConstant_t& x) {
