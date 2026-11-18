@@ -2373,17 +2373,21 @@ class ParallelRegionVisitor :
                     bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*sym_type);
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(sym_type));
                     ASR::ttype_t* array_pointer_type = descriptor_pointer_type(sym_type);
-                    bool is_host_associated = current_scope->get_symbol(it.first) == nullptr;
+                    // A use-associated name is an ExternalSymbol in this scope, not a
+                    // local array. Keep it, as an array of an enclosing scope is kept.
+                    ASR::symbol_t* declared_here = current_scope->get_symbol(it.first);
+                    bool is_host_associated = declared_here == nullptr
+                            || ASR::is_a<ASR::ExternalSymbol_t>(*declared_here);
                     if ((is_argument && array_type->m_physical_type == ASR::array_physical_typeType::PointerArray)
                             || is_host_associated) {
                         /*
                             Changing the type of an explicit-shape dummy argument would
                             change the interface of the procedure, which callers compiled
-                            separately rely on. An array declared in an enclosing scope
-                            must not be replaced by a new local array either. Keep the
-                            array as it is; its storage is contiguous, so the outlined
-                            region receives its data address and bounds and associates
-                            its own pointer with them.
+                            separately rely on. An array declared in an enclosing scope,
+                            or use-associated from a module, must not be replaced by a
+                            new local array either. Keep the array as it is; its storage
+                            is contiguous, so the outlined region receives its data
+                            address and bounds and associates its own pointer with them.
                             The region's statements move to the outlined function, which
                             replaces their variables in place, also in the dimensions of
                             expression types that share the array's declared type. Give
@@ -2444,7 +2448,8 @@ class ParallelRegionVisitor :
 
                 ASR::ttype_t* sym_type = it.second.first;
                 bool is_array = ASRUtils::is_array(sym_type);
-                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(current_scope->resolve_symbol(it.first));
+                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(it.first)));
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared && !(var_sym->m_storage == ASR::storage_typeType::Parameter);
 
                 if (is_array) {
@@ -2878,7 +2883,8 @@ class ParallelRegionVisitor :
                     ASR::omp_clauseType::OMPShared :
                     ASR::omp_clauseType::OMPPrivate;
                 ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
-                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
+                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(actual_sym));
                 if(local_var->m_intent == ASR::intentType::In || local_var->m_storage == ASR::storage_typeType::Parameter) {
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
                 }
@@ -4125,7 +4131,8 @@ class ParallelRegionVisitor :
                     ASR::omp_clauseType::OMPShared : ASR::omp_clauseType::OMPPrivate;
                 
                 ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
-                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
+                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(actual_sym));
                 if(local_var->m_intent == ASR::intentType::In || 
                 local_var->m_storage == ASR::storage_typeType::Parameter) {
                     c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
