@@ -722,6 +722,90 @@ void report_unterminated_literal(diag::Diagnostics &diagnostics,
             {loc})}));
 }
 
+// Only used in fixed-form. Returns true if the statement at the end of `out`
+// (after an optional label) is a FORMAT statement.
+bool in_format_statement(const std::string &out)
+{
+    size_t p = out.rfind('\n');
+    p = (p == std::string::npos) ? 0 : p + 1;
+    while (p < out.size() && (out[p] == ' ' || is_num(out[p]))) p++;
+    return out.compare(p, 7, "format(") == 0;
+}
+
+// Only used in fixed-form, in a FORMAT statement, with `pos` at a digit.
+// If an nH edit descriptor starts at `pos`, copies its count (without
+// blanks) and `h`, then the next n characters verbatim: they are character
+// data, so their blanks, case and quotes are kept. Like a character literal,
+// the text continues on a continuation line, and a line that ends before
+// column 72 is padded with blanks. Returns false, copying nothing, if `pos`
+// does not start an nH edit descriptor.
+bool copy_hollerith_fixed_form(std::string &out, const std::string &s,
+    size_t &pos, int &col, LocationManager &lm)
+{
+    size_t p = pos;
+    int c = col;
+    uint64_t n = 0;
+    while (p < s.size() && c <= 72 && (is_num(s[p]) || s[p] == ' ')) {
+        if (is_num(s[p])) n = n * 10 + (s[p] - '0');
+        p++;
+        c++;
+    }
+    if (p >= s.size() || c > 72 || (s[p] != 'h' && s[p] != 'H')) {
+        return false;
+    }
+    while (pos < p) {
+        if (s[pos] != ' ') out += s[pos];
+        pos++;
+        col++;
+        lm.files.back().out_start.push_back(source_offset(out.size()));
+        lm.files.back().in_start.push_back(source_offset(pos));
+    }
+    out += 'h';
+    pos++;
+    col++;
+    uint64_t i = 0;
+    while (i < n) {
+        bool line_end = pos >= s.size() || s[pos] == '\n'
+            || (s[pos] == '\r' && s[pos+1] == '\n');
+        if (col > 72 || line_end) {
+            uint64_t pad = col <= 72 ? 73 - col : 0;
+            if (pad >= n - i) {
+                // The text ends in the blanks that pad the line
+                out.append(n - i, ' ');
+                lm.files.back().out_start.push_back(source_offset(out.size()));
+                lm.files.back().in_start.push_back(source_offset(pos));
+                return true;
+            }
+            // The text continues on the next continuation line, which may
+            // be preceded by comment or blank lines
+            size_t next = pos;
+            LineType lt;
+            do {
+                skip_rest_of_line(s, next);
+                lt = determine_line_type((const unsigned char*)&s[next]);
+            } while (lt == LineType::Comment);
+            if (lt == LineType::Continuation) {
+                pos = next + 6;
+            } else if (lt == LineType::ContinuationTab) {
+                pos = next + 2;
+            } else {
+                return true;
+            }
+            out.append(pad, ' ');
+            i += pad;
+            col = 7;
+            lm.files.back().out_start.push_back(source_offset(out.size()));
+            lm.files.back().in_start.push_back(source_offset(pos));
+            continue;
+        }
+        out += s[pos];
+        pos++;
+        col++;
+        i++;
+    }
+    return true;
+}
+
 // Only used in fixed-form
 // Returns false (and reports an error) on an unterminated character literal
 bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
@@ -758,6 +842,12 @@ bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             // Don't advance the column count here
             lm.files.back().out_start.push_back(source_offset(out.size()));
             lm.files.back().in_start.push_back(source_offset(pos));
+        } else if (is_num(s[pos]) && !out.empty()
+                && (out.back() == '(' || out.back() == ','
+                    || out.back() == '/' || out.back() == ':')
+                && in_format_statement(out)
+                && copy_hollerith_fixed_form(out, s, pos, col, lm)) {
+            // An nH edit descriptor was copied
         } else {
             // Copy the character, but covert to lowercase
             out += tolower(s[pos]);
