@@ -3796,7 +3796,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             if (warp_slots) {
                 kernel_body.push_back(al, ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, acc, ASRUtils::EXPR(
-                        ASR::make_GpuLaneReduce_t(al, loc, acc, r.op,
+                        ASR::make_GpuLaneReduce_t(al, loc, acc, r.op, 0,
                             ASRUtils::duplicate_type(al, r.scalar_type),
                             nullptr)),
                         nullptr, false, false, false, false)));

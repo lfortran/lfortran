@@ -4918,7 +4918,7 @@ public:
         }
         ASR::GpuLaneReduce_t *r = ASR::down_cast<ASR::GpuLaneReduce_t>(
             a->m_value);
-        if (!ASR::is_a<ASR::Var_t>(*r->m_arg)
+        if (r->m_width > 0 || !ASR::is_a<ASR::Var_t>(*r->m_arg)
                 || ASR::down_cast<ASR::Var_t>(r->m_arg)->m_v
                     != ASR::down_cast<ASR::Var_t>(a->m_target)->m_v) {
             return false;
@@ -6819,6 +6819,13 @@ public:
                 int op = r->m_op == ASR::reduction_opType::ReduceAdd ? 0
                     : r->m_op == ASR::reduction_opType::ReduceMul ? 1
                     : r->m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
+                if (r->m_width > 0) {
+                    // The lanes of each group of `width` consecutive
+                    // lanes of a warp, all of which run the combination.
+                    src << dialect.lane_group_reduce(expr_str(r->m_arg), op,
+                        r->m_width);
+                    break;
+                }
                 src << dialect.lane_reduce(expr_str(r->m_arg), op,
                     kernel_has_lanes(), kernel_has_block_lanes());
                 break;

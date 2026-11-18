@@ -2424,6 +2424,7 @@
                         (GpuLaneReduce
                             (Var 5 __gpu_accumulator)
                             ReduceAdd
+                            0
                             (Integer 4)
                             ()
                         )

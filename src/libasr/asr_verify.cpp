@@ -4571,10 +4571,12 @@ public:
                     || x.m_op == ASR::reduction_opType::ReduceMul
                     || x.m_op == ASR::reduction_opType::ReduceMIN
                     || x.m_op == ASR::reduction_opType::ReduceMAX)
-                && x.m_value == nullptr,
+                && x.m_value == nullptr && x.m_width >= 0 && x.m_width <= 32
+                && (x.m_width & (x.m_width - 1)) == 0,
             "asr.verify.gpu_lanes.reduce",
             "GpuLaneReduce must combine an integer or real scalar of its own "
-            "type with +, *, min or max");
+            "type with +, *, min or max, over the lanes of the iteration or "
+            "groups of a power of two of them up to 32");
         BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneReduce(x);
     }
     // Records the function and module dependencies that a call to

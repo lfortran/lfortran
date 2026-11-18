@@ -3991,7 +3991,8 @@ public:
         const char *op = x.m_op == ASR::reduction_opType::ReduceAdd ? "+"
             : x.m_op == ASR::reduction_opType::ReduceMul ? "*"
             : x.m_op == ASR::reduction_opType::ReduceMIN ? "min" : "max";
-        src = std::string("gpu_lane_reduce(") + op + ", " + src + ")";
+        src = std::string("gpu_lane_reduce(") + op + ", " + src
+            + (x.m_width > 0 ? ", " + std::to_string(x.m_width) : "") + ")";
     }
 
     void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {

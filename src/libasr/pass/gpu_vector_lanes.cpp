@@ -4756,7 +4756,7 @@ private:
         if (term_loop) out.push_back(al, term_loop);
         finish.push_back(b.Assignment(b.Var(d.total),
             ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
-                b.Var(d.total), ASR::reduction_opType::ReduceAdd,
+                b.Var(d.total), ASR::reduction_opType::ReduceAdd, 0,
                 ASRUtils::duplicate_type(al, t), nullptr))));
         out.push_back(al, b.If(b.Gt(lanes_var(loc), b.i32(1)), finish, {}));
     }
@@ -4886,8 +4886,8 @@ private:
             ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
             shared.push_back(al, b.Assignment(b.Var(a.variable),
                 ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
-                    b.Var(a.variable), a.op, ASRUtils::duplicate_type(al, t),
-                    nullptr))));
+                    b.Var(a.variable), a.op, 0,
+                    ASRUtils::duplicate_type(al, t), nullptr))));
         }
         for (auto &f : finals) {
             shared.push_back(al, b.Assignment(f.first, f.second));

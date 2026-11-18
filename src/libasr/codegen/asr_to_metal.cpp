@@ -120,6 +120,13 @@ struct MetalDialect {
         LCOMPILERS_ASSERT(op >= 0 && op < 4);
         return std::string(names[op]) + "(" + value + ")";
     }
+    // Groups of lanes narrower than a SIMD-group combine only in a kernel
+    // whose iteration has the lanes of a block, which Metal does not give.
+    std::string lane_group_reduce(const std::string &/*value*/, int /*op*/,
+            int64_t /*width*/) const {
+        throw LCompilersException("Metal has no lanes of a block to combine "
+            "in groups");
+    }
     std::string lane_reduce_helper() const { return ""; }
     // Metal has no lowering of a reduction of an array on the device
     // (GpuDeviceCapabilities::array_reductions), so the offload pass

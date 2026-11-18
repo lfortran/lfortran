@@ -238,6 +238,13 @@ struct CudaDialect {
             + ", " + (has_lanes ? "__gpu_lanes_n, __gpu_lane_mask"
                 : "32, 0xffffffffu") + ")";
     }
+    // What each group of `width` consecutive lanes of a warp hold,
+    // combined, in each of them: all the threads of the warp run it.
+    std::string lane_group_reduce(const std::string &value, int op,
+            int64_t width) const {
+        return "__lfortran_lane_reduce<" + std::to_string(op) + ">(" + value
+            + ", " + std::to_string(width) + ", 0xffffffffu)";
+    }
     // Whether consecutive combinations over the lanes of a whole block
     // share one barrier (emit_stmts): not in the CPU emulation or on HIP,
     // whose blocks have no lanes of more than a warp.
