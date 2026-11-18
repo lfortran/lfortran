@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_split_01-6b2f1a6",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_split_01.f90",
+    "infile_hash": "715993c7a4e06e61bead844687f327c23b1e60107d02188f6a36a4c6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_split_01-6b2f1a6.stdout",
+    "stdout_hash": "5f3fd6132a477dc4302c4499bce950353eeba5048341d6627ab5a5e3",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
