@@ -5539,9 +5539,9 @@ end subroutine
 )").ok);
     REQUIRE(e.evaluate2("integer :: z0").ok);
 #ifndef __EMSCRIPTEN__
-    // In the WASM build the side module of this cell, which calls `csub`
-    // only the linker can resolve, does not load ("function index ... is
-    // out of bounds", like #17138).
+    // In the WASM build this cell does not load ("function index ... is out
+    // of bounds", #17138): the implicit-interface call of `csub` goes
+    // through a procedure pointer.
     // Inside a BLOCK, `csub` gets an implicit interface; the JIT linker
     // resolves it to the subroutine of the first cell.
     REQUIRE(e.evaluate2(R"(block
