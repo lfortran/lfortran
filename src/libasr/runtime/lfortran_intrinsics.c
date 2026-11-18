@@ -18289,6 +18289,159 @@ static int string_is_list_blank(char c) {
     return c == ' ' || c == '\t';
 }
 
+// Length of the repeat count and '*' that start the list-directed value
+// r*c or r* at `s` (F2023 13.10.3.1), with the count r in `*count`, or 0
+// when `s` does not start with a repeat count.
+static int64_t list_directed_repeat_prefix(const char *s, int64_t len,
+        int64_t *count) {
+    int64_t i = 0;
+    int64_t r = 0;
+    while (i < len && s[i] >= '0' && s[i] <= '9') {
+        if (r < INT32_MAX) {
+            r = r * 10 + (s[i] - '0');
+        }
+        i++;
+    }
+    if (i == 0 || i >= len || s[i] != '*' || r == 0) {
+        return 0;
+    }
+    *count = r;
+    return i + 1;
+}
+
+// Length of the list-directed constant that starts at `s`: a delimited
+// character constant, a parenthesized complex constant, or the characters
+// up to the next blank, value separator or slash.
+static int64_t list_directed_value_length(const char *s, int64_t len,
+        char lsep) {
+    int64_t i = 0;
+    if (len > 0 && (s[0] == '\'' || s[0] == '"')) {
+        char delim = s[0];
+        i = 1;
+        while (i < len) {
+            if (s[i] == delim) {
+                if (i + 1 < len && s[i + 1] == delim) {
+                    i += 2;
+                    continue;
+                }
+                return i + 1;
+            }
+            i++;
+        }
+        return len;
+    }
+    if (len > 0 && s[0] == '(') {
+        while (i < len && s[i] != ')') {
+            i++;
+        }
+        return i < len ? i + 1 : len;
+    }
+    while (i < len && !isspace((unsigned char)s[i]) && s[i] != lsep
+            && s[i] != '/') {
+        i++;
+    }
+    return i;
+}
+
+typedef enum {
+    STRING_READ_VALUE,  // The item reads its value from the record.
+    STRING_READ_NULL,   // A null value: the item keeps its value.
+    STRING_READ_REPEAT  // The item reads the constant c of an r*c.
+} string_read_item_kind;
+
+// The repeat r*c or r* that the items of the current internal list-directed
+// READ are taking, one value per item. It can continue over several items,
+// arrays and records. A transfer starts at offset 0, which drops what is
+// left of a repeat of the previous transfer.
+static struct {
+    // Address in the internal file just after the r*c or r*.
+    const char *resume;
+    // Values of the repeat that are still to be transferred.
+    int64_t remaining;
+    // The constant c of an r*c, or NULL for the null values of an r*.
+    char *text;
+    int64_t text_len;
+    // Set by _lfortran_string_array_next_record when the next item continues
+    // the repeat: the reader then gets that record at offset 0.
+    int hold;
+} lf_string_repeat = { NULL, 0, NULL, 0, 0 };
+
+// Starts the next item of an internal list-directed READ at `*offset` in
+// `str`. It takes the next value of a pending repeat, or a new r*c or r*,
+// whose extent it consumes. A slash ends the input, so it and all the items
+// after it take null values. Otherwise the item reads its value as usual.
+static string_read_item_kind string_read_item(char *str, int64_t len,
+        int64_t *offset) {
+    int hold = lf_string_repeat.hold;
+    lf_string_repeat.hold = 0;
+    if (offset == NULL) {
+        return STRING_READ_VALUE;
+    }
+    int64_t pos = *offset;
+    if (pos < 0) pos = 0;
+    if (pos > len) pos = len;
+    if (pos == 0 && !hold) {
+        lf_string_repeat.remaining = 0;
+    }
+    if (lf_string_repeat.remaining > 0) {
+        if (str + pos == lf_string_repeat.resume) {
+            lf_string_repeat.remaining--;
+            return lf_string_repeat.text ? STRING_READ_REPEAT : STRING_READ_NULL;
+        }
+        lf_string_repeat.remaining = 0;
+    }
+    char lsep = list_directed_separator(-1);
+    while (pos < len && isspace((unsigned char)str[pos])) {
+        pos++;
+    }
+    if (pos < len && str[pos] == lsep && !lf_cross_record_null) {
+        pos++;
+        while (pos < len && isspace((unsigned char)str[pos])) {
+            pos++;
+        }
+    }
+    if (pos < len && str[pos] == '/') {
+        return STRING_READ_NULL;
+    }
+    int64_t count = 0;
+    int64_t prefix = list_directed_repeat_prefix(str + pos, len - pos, &count);
+    if (prefix == 0) {
+        return STRING_READ_VALUE;
+    }
+    pos += prefix;
+    int64_t value_len = 0;
+    if (pos < len && !isspace((unsigned char)str[pos]) && str[pos] != lsep
+            && str[pos] != '/') {
+        value_len = list_directed_value_length(str + pos, len - pos, lsep);
+    }
+    lf_string_repeat.text = value_len > 0 ? str + pos : NULL;
+    lf_string_repeat.text_len = value_len;
+    pos += value_len;
+    lf_string_repeat.resume = str + pos;
+    lf_string_repeat.remaining = count - 1;
+    *offset = pos;
+    return value_len > 0 ? STRING_READ_REPEAT : STRING_READ_NULL;
+}
+
+// Starts a scalar item of an internal list-directed READ. Returns true when
+// the item takes a null value. When it takes the constant c of a repeat,
+// points `*str`, `*len` and `*offset` at c, so that the reader parses c.
+static bool string_read_scalar_item(char **str, int64_t *len,
+        int64_t **offset, int64_t *value_offset) {
+    switch (string_read_item(*str, *len, *offset)) {
+        case STRING_READ_NULL:
+            return true;
+        case STRING_READ_REPEAT:
+            *str = lf_string_repeat.text;
+            *len = lf_string_repeat.text_len;
+            *value_offset = 0;
+            *offset = value_offset;
+            return false;
+        default:
+            return false;
+    }
+}
+
 // Each element of a character-array internal file is one record. End of
 // record is a blank. The list-directed separator is a comma, or a
 // semicolon when this transfer's decimal mode is comma. Consume one
@@ -18316,6 +18469,13 @@ LFORTRAN_API void _lfortran_string_array_next_record(
     if (pos == 0) {
         lf_comma_flag = 0;
         lf_cross_record_null = 0;
+        lf_string_repeat.remaining = 0;
+    }
+    // The next item takes the next value of a repeat.
+    if (lf_string_repeat.remaining > 0 && str + pos == lf_string_repeat.resume) {
+        lf_string_repeat.hold = 1;
+        *offset = pos;
+        return;
     }
     lsep = list_directed_separator(-1);
     while (pos < len) {
@@ -18419,6 +18579,11 @@ static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offs
 }
 
 LFORTRAN_API void _lfortran_string_read_i8(char *str, int64_t len, char *format, int8_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     int rc;
@@ -18446,6 +18611,11 @@ LFORTRAN_API void _lfortran_string_read_i8(char *str, int64_t len, char *format,
 }
 
 LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format, int16_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     int rc;
@@ -18473,6 +18643,11 @@ LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format
 }
 
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     int skip = 0;
@@ -18513,6 +18688,11 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
 }
 
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     int skip = 0;
@@ -18553,6 +18733,11 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
 }
 
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     // Internal files have no connection: only a DECIMAL= specifier on the
@@ -18603,6 +18788,11 @@ LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format
 }
 
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     // Internal files have no connection: only a DECIMAL= specifier on the
@@ -18676,6 +18866,10 @@ char* remove_whitespace(char* str, int64_t* len) {
 }
 
 LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, char *dest_data, int64_t dest_len, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&src_data, &src_len, &offset, &value_offset)) {
+        return;
+    }
     int64_t pos = offset ? *offset : 0;
 
     while (pos < src_len && (src_data[pos] == ' ' || src_data[pos] == '\t')) {
@@ -18736,6 +18930,11 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     int skip = 0;
@@ -18802,6 +19001,11 @@ static void _lfortran_replace_d_exponent(char *buf) {
 }
 
 LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format, struct _lfortran_complex_32 *c, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     // Internal files have no connection: only a DECIMAL= specifier on the
@@ -18828,6 +19032,11 @@ LFORTRAN_API void _lfortran_string_read_c32(char *str, int64_t len, char *format
 }
 
 LFORTRAN_API void _lfortran_string_read_c64(char *str, int64_t len, char *format, struct _lfortran_complex_64 *c, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
     // Internal files have no connection: only a DECIMAL= specifier on the
@@ -18879,7 +19088,20 @@ LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *
     const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = off + (pos - buf);
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = buf + (cur - off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_i32(lf_string_repeat.text, lf_string_repeat.text_len,
+                format, &arr[count * stride], &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -18905,7 +19127,20 @@ LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *
     const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = off + (pos - buf);
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = buf + (cur - off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_i64(lf_string_repeat.text, lf_string_repeat.text_len,
+                format, &arr[count * stride], &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -18935,7 +19170,20 @@ LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *
     const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = off + (pos - buf);
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = buf + (cur - off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_f32(lf_string_repeat.text, lf_string_repeat.text_len,
+                format, &arr[count * stride], &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -18965,7 +19213,20 @@ LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *
     const char *end = buf + (len - off);
     char *next = NULL;
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = off + (pos - buf);
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = buf + (cur - off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_f64(lf_string_repeat.text, lf_string_repeat.text_len,
+                format, &arr[count * stride], &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -18988,7 +19249,21 @@ LFORTRAN_API void _lfortran_string_read_bool_array(char *str, int64_t len, char 
     const char *pos = str + string_read_array_start(len, offset);
     const char *end = str + len;
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = pos - str;
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = str + cur;
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_bool(lf_string_repeat.text,
+                lf_string_repeat.text_len, format, &arr[count * stride],
+                &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         const char *item_start = pos;
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
@@ -19042,7 +19317,19 @@ LFORTRAN_API void _lfortran_string_read_c32_array(char *str, int64_t len, char *
     int64_t off = string_read_array_start(len, offset);
     int64_t count = 0;
     const char *end = str + len;
-    while (count < array_size && off < len) {
+    while (count < array_size) {
+        string_read_item_kind item = string_read_item(str, len, &off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_c32(lf_string_repeat.text,
+                lf_string_repeat.text_len, format, &arr[count * stride],
+                &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         const char *peek = str + off;
         while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
             peek++;
@@ -19080,7 +19367,19 @@ LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *
     int64_t off = string_read_array_start(len, offset);
     int64_t count = 0;
     const char *end = str + len;
-    while (count < array_size && off < len) {
+    while (count < array_size) {
+        string_read_item_kind item = string_read_item(str, len, &off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_c64(lf_string_repeat.text,
+                lf_string_repeat.text_len, format, &arr[count * stride],
+                &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         const char *peek = str + off;
         while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
             peek++;
@@ -19132,6 +19431,11 @@ static bool string_read_f128_separator(char next)
 }
 
 LFORTRAN_API void _lfortran_string_read_f128(char *str, int64_t len, char *format, lf_float128 *f, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     (void)format;
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
@@ -19173,7 +19477,20 @@ LFORTRAN_API void _lfortran_string_read_f128_array(char *str, int64_t len, char 
     const char *pos = buf;
     const char *end = buf + (len - off);
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = off + (pos - buf);
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = buf + (cur - off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_f128(lf_string_repeat.text, lf_string_repeat.text_len,
+                format, &arr[count * stride], &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -19223,6 +19540,11 @@ static int string_read_f80_token(const char *s, long double *value, int *consume
 }
 
 LFORTRAN_API void _lfortran_string_read_f80(char *str, int64_t len, char *format, void *f, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     (void)format;
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
@@ -19264,7 +19586,20 @@ LFORTRAN_API void _lfortran_string_read_f80_array(char *str, int64_t len, char *
     const char *pos = buf;
     const char *end = buf + (len - off);
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = off + (pos - buf);
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = buf + (cur - off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_f80(lf_string_repeat.text, lf_string_repeat.text_len,
+                format, (char *)arr + (count * stride) * (int64_t)REAL10_ELEM_SIZE, &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
         }
@@ -19309,6 +19644,11 @@ static int string_read_c128_value(const char *s, struct _lfortran_complex_128 *c
 }
 
 LFORTRAN_API void _lfortran_string_read_c128(char *str, int64_t len, char *format, struct _lfortran_complex_128 *c, int32_t *iostat, int64_t *offset) {
+    int64_t value_offset;
+    if (string_read_scalar_item(&str, &len, &offset, &value_offset)) {
+        if (iostat) *iostat = 0;
+        return;
+    }
     (void)format;
     int64_t off = offset ? *offset : 0;
     char *buf = to_c_string((const fchar*)(str + off), len - off);
@@ -19335,7 +19675,19 @@ LFORTRAN_API void _lfortran_string_read_c128_array(char *str, int64_t len, char 
     int64_t off = string_read_array_start(len, offset);
     int64_t count = 0;
     const char *end = str + len;
-    while (count < array_size && off < len) {
+    while (count < array_size) {
+        string_read_item_kind item = string_read_item(str, len, &off);
+        if (item == STRING_READ_REPEAT) {
+            int32_t value_iostat = 0;
+            _lfortran_string_read_c128(lf_string_repeat.text,
+                lf_string_repeat.text_len, format, &arr[count * stride],
+                &value_iostat, NULL);
+            if (value_iostat != 0) break;
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         const char *peek = str + off;
         while (peek < end && (isspace((unsigned char)*peek) || *peek == ',')) {
             peek++;
@@ -19467,7 +19819,19 @@ LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *
     const char *pos = str + string_read_array_start(len, offset);
     const char *end = str + len;
     int64_t count = 0;
-    while (pos < end && count < array_size) {
+    while (count < array_size) {
+        int64_t cur = pos - str;
+        string_read_item_kind item = string_read_item(str, len, &cur);
+        pos = str + cur;
+        if (item == STRING_READ_REPEAT) {
+            _lfortran_string_read_str(lf_string_repeat.text,
+                lf_string_repeat.text_len, arr + count * stride * elem_len,
+                elem_len, NULL);
+        }
+        if (item != STRING_READ_VALUE) {
+            count++;
+            continue;
+        }
         // Skip whitespace and common separators
         while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
             pos++;
