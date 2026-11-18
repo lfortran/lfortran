@@ -1433,12 +1433,13 @@ for a sequence that repeats, and replays the repetitions of it as graphs:
 * A launch that is not the expected one makes the recorded launches of the
   chunk (none of which has run) and itself be launched as usual, and ends
   the cycle.
-* Anything else the runtime does on the device -- a copy, a prefetch, a
-  free, a wait -- first launches the recorded launches as usual
+* Anything else the runtime does on the device -- a copy, a free, a
+  wait -- first launches the recorded launches as usual
   (replay_barrier): it must come after them, as it would have. The rest of
   the chunk is then launched as usual too; a chunk that a barrier interrupts
   twice is never recorded again, and a cycle in one chunk goes back to
-  chunks. What the host does in memory a kernel uses
+  chunks for good. A prefetch or a fill of managed memory no launch has
+  used yet needs no barrier. What the host does in memory a kernel uses
   it does after a wait or a sync (gpu_launch_sync.cpp), which is such a
   barrier, so a recorded launch sees the memory as it would have.
 
@@ -1525,12 +1526,12 @@ static int replay_enabled = -1;
 static long long replay_launches = 0;
 static kernel_func_t replay_history_func[REPLAY_HISTORY];
 static dim3 replay_history_block[REPLAY_HISTORY];
-// The cycle expected: its period (0: none), the kernel it starts at, the
-// position of the next launch in it, the launches recorded (`pending`),
-// and, for each of the two graphs of a chunk, the arguments it holds
-// (`applied`) and its nodes.
+// The cycle expected: its period (0: none), the kernel it starts at (an
+// index into replay_kernels, which grows), the position of the next launch
+// in it, the launches recorded (`pending`), and, for each of the two graphs
+// of a chunk, the arguments it holds (`applied`) and its nodes.
 static int replay_period = 0;
-static replay_kernel *replay_start = NULL;
+static int replay_start = 0;
 static int replay_pos = 0;
 static kernel_func_t *replay_expected_func = NULL;
 static dim3 *replay_expected_block = NULL;
@@ -1551,6 +1552,9 @@ static int replay_chunk_direct = 0;
 // running (replay_done) when this one is recorded, or done.
 static int replay_whole = 0;
 static int replay_ahead = 0, replay_behind = 0;
+// Whether a barrier interrupted the cycle as one chunk: it is launched in
+// chunks from the end of that repetition on.
+static int replay_whole_interrupted = 0;
 static cudaEvent_t replay_done[2] = {NULL, NULL};
 static cudaStream_t replay_capture_stream = NULL;
 static replay_kernel *replay_kernels = NULL;
@@ -1658,9 +1662,9 @@ static void replay_barrier(void) {
     replay_flush();
     replay_chunk_direct = 1;
     // A cycle in one chunk goes back to chunks at the end of the
-    // repetition; a chunk interrupted twice is launched as usual.
+    // repetition, for good; a chunk interrupted twice is launched as usual.
     if (replay_whole) {
-        replay_behind = REPLAY_SWITCH;
+        replay_whole_interrupted = 1;
     } else if (++c->interrupted >= 2) {
         c->direct = 1;
     }
@@ -1779,7 +1783,8 @@ static void replay_begin_cycle(replay_kernel *r, long long i, int period) {
     }
     replay_period = period;
     replay_plan(0);
-    replay_start = r;
+    replay_whole_interrupted = 0;
+    replay_start = (int)(r - replay_kernels);
     replay_pos = 0;
     replay_iteration = 0;
     replay_chunk_at = 0;
@@ -1897,9 +1902,11 @@ static void replay_end_repetition(void) {
         }
     }
     check(cudaEventRecord(replay_done[g], 0), "cudaEventRecord");
-    if (!replay_whole && replay_ahead >= REPLAY_SWITCH) {
+    if (!replay_whole && !replay_whole_interrupted
+            && replay_ahead >= REPLAY_SWITCH) {
         replay_plan(1);
-    } else if (replay_whole && replay_behind >= REPLAY_SWITCH) {
+    } else if (replay_whole && (replay_whole_interrupted
+            || replay_behind >= REPLAY_SWITCH)) {
         replay_plan(0);
     }
 }
@@ -1924,7 +1931,7 @@ static void replay_launch_or_issue(kernel_func_t func, dim3 grid, dim3 block,
         replay_begin_cycle(r, i, period);
     } else if (replay_period && (func != replay_expected_func[replay_pos]
             || !same_dim(block, replay_expected_block[replay_pos]))) {
-        replay_fail(replay_start, replay_period);
+        replay_fail(&replay_kernels[replay_start], replay_period);
         replay_end_cycle();
     }
     r->last[1] = r->last[0];
