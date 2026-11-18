@@ -4356,41 +4356,54 @@ public:
     }
 
     // Writes the loop of predicated_unroll: steps of the iterations, each
-    // iteration of a step under a test of the end, unrolled whole; the
+    // iteration of a step under a test of the count, unrolled whole; the
     // variable ends one step past the last iteration, as Fortran has it.
+    // The iterations are counted in unsigned arithmetic, as
+    // emit_counted_for counts them, so that an end near the largest value
+    // of the type does not overflow.
     void emit_predicated_loop(const ASR::DoLoop_t &l,
             const GpuLoopFrame &frame,
             const std::set<ASR::symbol_t*> &written) {
         ASR::ttype_t *type = ASRUtils::expr_type(l.m_head.m_v);
         std::string type_name = gpu_type(type);
+        std::string unsigned_name = ASRUtils::extract_kind_from_ttype_t(
+            type) == 8 ? "unsigned long long" : "unsigned";
         std::string v = captured_source([&]() { visit_expr(l.m_head.m_v); });
         std::string start = loop_control(l.m_head.m_start, "start", type,
             written);
         std::string end = loop_control(l.m_head.m_end, "end", type, written);
         std::string inc = captured_source([&]() {
             visit_expr(l.m_head.m_increment); });
-        std::string base = "__lfortran_base_"
-            + std::to_string(loop_control_count);
-        std::string k = "__lfortran_part_"
-            + std::to_string(loop_control_count++);
+        std::string id = std::to_string(loop_control_count++);
+        std::string trips = "__lfortran_trips_" + id;
+        std::string base = "__lfortran_base_" + id;
+        std::string k = "__lfortran_part_" + id;
+        // The value of the variable `count` steps from the start.
+        auto value = [&](const std::string &count) {
+            return "(" + type_name + ")((" + unsigned_name + ")(" + start
+                + ") + (" + unsigned_name + ")(" + count + ") * ("
+                + unsigned_name + ")(" + inc + "))";
+        };
         std::string in = get_indent();
         int64_t u = predicated_unroll_factor;
-        src << in << "for (" << type_name << " " << base << " = " << start
-            << "; " << base << " <= " << end << "; " << base << " += "
-            << u << " * (" << inc << ")) {\n";
+        src << in << "const " << type_name << " " << trips << " = " << end
+            << " >= " << start << " ? (" << type_name << ")(("
+            << unsigned_name << ")(" << end << " - " << start << ") / ("
+            << unsigned_name << ")(" << inc << ")) + 1 : 0;\n";
+        src << in << "for (" << type_name << " " << base << " = 0; " << base
+            << " < " << trips << "; " << base << " += " << u << ") {\n";
         src << in << "    " << dialect.unroll_whole_pragma() << "\n";
         src << in << "    for (int " << k << " = 0; " << k << " < " << u
             << "; " << k << "++) {\n";
-        src << in << "        " << v << " = " << base << " + " << k
-            << " * (" << inc << ");\n";
-        src << in << "        if (" << v << " <= " << end << ") {\n";
+        src << in << "        if (" << base << " + " << k << " < " << trips
+            << ") {\n";
+        src << in << "            " << v << " = " << value(base + " + " + k)
+            << ";\n";
         indent_level += 2;
         emit_loop_body(frame, l.m_body, l.n_body);
         indent_level -= 2;
         src << in << "    }\n" << in << "}\n";
-        src << in << v << " = " << end << " >= " << start << " ? " << start
-            << " + ((" << end << " - " << start << ") / (" << inc
-            << ") + 1) * (" << inc << ") : " << start << ";\n";
+        src << in << v << " = " << value(trips) << ";\n";
     }
 
     // The most iterations of a loop unrolled whole for a private array it
