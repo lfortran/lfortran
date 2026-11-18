@@ -73,8 +73,6 @@ static char *stdin_record;
 static size_t stdin_record_length, stdin_record_pos;
 static int stdin_status;
 static void reset_stdin_units(void);
-static int read_complex_expr(FILE *filep, char *buffer, size_t bufsize);
-static void skip_trailing_comma(FILE *filep, char lsep);
 
 LFORTRAN_API void _lfortran_stdin_reset(void)
 {
@@ -188,8 +186,8 @@ static size_t input_read(void *buffer, size_t size, size_t count, FILE *file)
     return i / size;
 }
 
-// The runtime's scanf sites have one numeric/word conversion, or two bounded
-// words for complex input. Scan only demanded bytes, retaining the delimiter
+// The runtime's scanf sites have one numeric/word conversion. Scan only
+// demanded bytes, retaining the delimiter
 // for subsequent items and record draining. No libc FILE is substituted.
 static int input_scan_word(FILE *file, char *word, size_t capacity)
 {
@@ -218,29 +216,11 @@ static int input_scan(FILE *file, const char *format, ...)
         va_end(args);
         return result;
     }
-    if (strcmp(format, "%99s %99s") == 0) {
-        char expression[200] = {0};
-        int status = read_complex_expr(file, expression, sizeof(expression));
-        char *comma = strchr(expression, ',');
-        char *end = strchr(expression, ')');
-        if (status != 1 || expression[0] != '(' || !comma || !end || end < comma) {
-            va_end(args);
-            return status == 0 ? EOF : 0;
-        }
-        *comma = *end = '\0';
-        snprintf(va_arg(args, char *), 100, "%.99s", expression + 1);
-        snprintf(va_arg(args, char *), 100, "%.99s", comma + 1);
-        skip_trailing_comma(file, ',');
-        va_end(args);
-        return 2;
-    }
-    if (strcmp(format, "%99s") != 0) {
-        int c;
-        do {
-            c = input_getc(file);
-        } while (c != EOF && (isspace((unsigned char)c) || c == ',' || c == ';'));
-        if (c != EOF) input_ungetc(c, file);
-    }
+    int c;
+    do {
+        c = input_getc(file);
+    } while (c != EOF && (isspace((unsigned char)c) || c == ',' || c == ';'));
+    if (c != EOF) input_ungetc(c, file);
     char word[100];
     int result = input_scan_word(file, word, sizeof(word));
     if (result == EOF) {
@@ -248,20 +228,7 @@ static int input_scan(FILE *file, const char *format, ...)
         return EOF;
     }
     int used = 0;
-    if (strcmp(format, "%99s") == 0) {
-        strcpy(va_arg(args, char *), word);
-        va_end(args);
-        return result;
-    }
-    if (strcmp(format, "%" SCNd8) == 0) {
-        result = sscanf(word, "%" SCNd8 "%n", va_arg(args, int8_t *), &used);
-    } else if (strcmp(format, "%hd") == 0) {
-        result = sscanf(word, "%hd%n", va_arg(args, int16_t *), &used);
-    } else if (strcmp(format, "%d") == 0) {
-        result = sscanf(word, "%d%n", va_arg(args, int32_t *), &used);
-    } else if (strcmp(format, "%" SCNd64) == 0) {
-        result = sscanf(word, "%" SCNd64 "%n", va_arg(args, int64_t *), &used);
-    } else if (strcmp(format, "%f") == 0) {
+    if (strcmp(format, "%f") == 0) {
         result = sscanf(word, "%f%n", va_arg(args, float *), &used);
     } else if (strcmp(format, "%lf") == 0) {
         result = sscanf(word, "%lf%n", va_arg(args, double *), &used);
@@ -9303,6 +9270,15 @@ static inline void list_dir_state_reset(struct UNIT_FILE *uf) {
     uf->lf_list_dir_repeat_len = 0;
 }
 
+// The list-directed state of READ(*, *), which reads the standard input
+// without a unit_to_file entry.
+static struct UNIT_FILE stdin_list_dir_state;
+
+// The entry that holds the list-directed state of the READs on `unit_num`.
+static struct UNIT_FILE *list_dir_unit(int32_t unit_num) {
+    return unit_num == -1 ? &stdin_list_dir_state : find_unit(unit_num);
+}
+
 // Whether a record can be read again by seeking back to its start, which
 // formatted READ does to measure the record and to tab within it (T, TL).
 // Only a regular file can: a terminal on macOS reports a successful ftell
@@ -9336,6 +9312,7 @@ static bool stdin_is_rereadable(void)
 static bool _lfortran_standard_units_initialized = false;
 
 static void reset_stdin_units(void) {
+    list_dir_state_reset(&stdin_list_dir_state);
     if (!_lfortran_standard_units_initialized) return;
     for (int i = 0; i <= last_index_used; i++) {
         if (unit_to_file[i].filep == stdin) {
@@ -9661,6 +9638,7 @@ static void _lfortran_close_all_units(void) {
         }
         list_dir_state_reset(&unit_to_file[i]);
     }
+    list_dir_state_reset(&stdin_list_dir_state);
 }
 
 // Mersenne Twister (MT19937) for generating unique file IDs.
@@ -12039,8 +12017,9 @@ static list_directed_repeat_kind list_directed_repeat_start(struct UNIT_FILE *uf
 }
 
 // Where the list-directed items of one READ call take their values from:
-// the connection and repeat state of the unit, looked up once, so that an
-// array read does not search the unit table for each of its elements.
+// the connection and repeat state of the unit (or of the standard input
+// for unit -1), looked up once, so that an array read does not search the
+// unit table for each of its elements.
 typedef struct {
     FILE *filep;
     int32_t unit_num;
@@ -12053,7 +12032,7 @@ static void list_directed_input_init(list_directed_input *in, FILE *filep,
         int32_t unit_num) {
     in->filep = filep;
     in->unit_num = unit_num;
-    in->state = find_unit(unit_num);
+    in->state = list_dir_unit(unit_num);
     in->decimal_mode = _lfortran_get_decimal_mode(unit_num);
     in->lsep = in->decimal_mode == 1 ? ';' : ',';
 }
@@ -12077,7 +12056,8 @@ static void skip_trailing_comma(FILE *filep, char lsep);
 typedef enum {
     LD_TOKEN_OK = 0,
     LD_TOKEN_EARLY,
-    LD_TOKEN_REPEAT
+    LD_TOKEN_REPEAT,
+    LD_TOKEN_NULL
 } list_directed_token_status;
 
 // Reads the next list-directed value of the unit into `buffer`. A value
@@ -12184,13 +12164,31 @@ static void skip_trailing_comma(FILE *filep, char lsep) {
     if (c != EOF) input_ungetc(c, filep); // not a separator, push back
 }
 
-static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t bufsize, int32_t *iostat)
+// Reads the next list-directed value of the standard input into `buffer`
+// for the scalar token-based reads: the next value of a pending repeat, or a
+// value from the input, which can be an r*c or r*. Returns LD_TOKEN_NULL for
+// a null value, which leaves the item unchanged, and LD_TOKEN_EARLY with
+// `*iostat` set at end of file.
+static list_directed_token_status read_stdin_list_directed_token(
+        const list_directed_input *in, char *buffer, size_t bufsize,
+        int32_t *iostat)
 {
-    // Scalar token-based reads; arrays and complex have separate readers.
+    FILE *filep = in->filep;
     use_stdin_char_mode();
     if (bufsize == 0) {
         if (iostat) *iostat = 1;
-        return false;
+        return LD_TOKEN_EARLY;
+    }
+    const char *text = NULL;
+    int64_t text_len = 0;
+    switch (list_directed_repeat_next(in->state, &text, &text_len)) {
+        case LD_REPEAT_NULL:
+            return LD_TOKEN_NULL;
+        case LD_REPEAT_VALUE:
+            snprintf(buffer, bufsize, "%.*s", (int)text_len, text);
+            return LD_TOKEN_OK;
+        default:
+            break;
     }
 
     int c;
@@ -12211,12 +12209,20 @@ static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t buf
 
     if (c == EOF) {
         if (iostat) *iostat = input_end_status(filep);
-        return false;
+        return LD_TOKEN_EARLY;
     }
 
+    char lsep = in->lsep;
+    if (c == lsep) {
+        return LD_TOKEN_NULL;
+    }
+    if (c == '/') {
+        // A slash ends the statement: this and all later items are null.
+        input_ungetc(c, filep);
+        return LD_TOKEN_NULL;
+    }
     size_t i = 0;
-    char lsep = list_directed_separator(-1);
-    while (c != EOF && !isspace((unsigned char)c) && c != lsep) {
+    while (c != EOF && !isspace((unsigned char)c) && c != lsep && c != '/') {
         if (i + 1 < bufsize) {
             buffer[i++] = (char)c;
         }
@@ -12224,16 +12230,28 @@ static bool read_stdin_list_directed_token(FILE *filep, char *buffer, size_t buf
     }
     buffer[i] = '\0';
 
-    if (c != EOF && c != lsep) {
+    if (c == '/') {
         input_ungetc(c, filep);
+    } else if (c != EOF && c != lsep) {
+        // Skip the blanks after the value up to an optional separator.
+        if (c != ' ' && c != '\t') {
+            input_ungetc(c, filep);
+        }
         skip_trailing_comma(filep, lsep);
     }
 
-    if (i == 0) {
-        if (iostat) *iostat = 1;
-        return false;
+    int64_t value_offset = 0;
+    switch (list_directed_repeat_start(in->state, buffer, (int64_t)i,
+            &value_offset)) {
+        case LD_REPEAT_NULL:
+            return LD_TOKEN_NULL;
+        case LD_REPEAT_VALUE:
+            memmove(buffer, buffer + value_offset, i - (size_t)value_offset + 1);
+            break;
+        default:
+            break;
     }
-    return true;
+    return LD_TOKEN_OK;
 }
 
 static bool read_next_nonblank_stdin_line(char *buffer, int bufsize, int32_t *iostat)
@@ -12269,7 +12287,10 @@ static void read_list_directed_int8(int8_t *p, const list_directed_input *in,
     char lsep = in->lsep;
     if (in->unit_num == -1) {
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -12404,7 +12425,10 @@ static void read_list_directed_int16(int16_t *p, const list_directed_input *in,
     char lsep = in->lsep;
     if (in->unit_num == -1) {
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -12540,7 +12564,10 @@ static void read_list_directed_int32(int32_t *p, const list_directed_input *in,
     char lsep = in->lsep;
     if (in->unit_num == -1) {
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -12678,7 +12705,10 @@ static void read_list_directed_int64(int64_t *p, const list_directed_input *in,
     char lsep = in->lsep;
     if (in->unit_num == -1) {
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -12811,7 +12841,10 @@ static void read_list_directed_logical(bool *p, const list_directed_input *in,
     char lsep = in->lsep;
     if (in->unit_num == -1) {
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -12952,15 +12985,13 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t s
     }
 
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            int8_t val;
-            if (input_scan(stdin, "%" SCNd8, &val) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int8_t from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int8(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -13185,15 +13216,13 @@ LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t
     }
 
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            int16_t val;
-            if (input_scan(stdin, "%hd", &val) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int16_t from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int16(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -13292,15 +13321,13 @@ LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t
     }
 
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            int32_t val;
-            if (input_scan(stdin, "%d", &val) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int32_t from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int32(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -13398,15 +13425,13 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            int64_t val;
-            if (input_scan(stdin, "%" SCNd64, &val) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read int64_t from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_int64(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -13933,7 +13958,10 @@ static void read_list_directed_float(float *p, const list_directed_input *in,
     char lsep = in->lsep;
     if (in->unit_num == -1) {
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (!iostat) {
                 fprintf(stderr, "Error: Failed to read input.\n");
                 exit(1);
@@ -14103,39 +14131,26 @@ static void read_list_directed_complex_float(struct _lfortran_complex_32 *p,
 
 LFORTRAN_API void _lfortran_read_complex_float(struct _lfortran_complex_32 *p, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
 
+    bool unit_file_bin = false;
+    int access_mode = 0;
+    FILE *filep = stdin;
     if (unit_num == -1) {
         use_stdin_char_mode();
-        char buf_re[100], buf_im[100];
-        if (input_scan(stdin, "%99s %99s", buf_re, buf_im) != 2) {
-            if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read complex float from stdin.\n");
+    } else {
+        bool read_access_flag = true;
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        if (filep && !read_access_flag) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
-        convert_fortran_d_exponent(buf_re);
-        normalize_numeric_input(buf_re, dmode);
-        convert_fortran_d_exponent(buf_im);
-        normalize_numeric_input(buf_im, dmode);
-        p->re = strtof(buf_re, NULL);
-        p->im = strtof(buf_im, NULL);
-        return;
-    }
-
-    bool unit_file_bin;
-    int access_mode;
-    bool read_access_flag = true;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    if (filep && !read_access_flag) {
-        if (iostat) { *iostat = 5007; return; }
-        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
-        exit(1);
-    }
-    if (!filep) {
-        if (iostat) { *iostat = 1; return; }
-        printf("No file found with given unit\n");
-        exit(1);
+        if (!filep) {
+            if (iostat) { *iostat = 1; return; }
+            printf("No file found with given unit\n");
+            exit(1);
+        }
     }
 
     if (unit_file_bin) {
@@ -14234,39 +14249,26 @@ static void read_list_directed_complex_double(struct _lfortran_complex_64 *p,
 
 LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
 
+    bool unit_file_bin = false;
+    int access_mode = 0;
+    FILE *filep = stdin;
     if (unit_num == -1) {
         use_stdin_char_mode();
-        char buf_re[100], buf_im[100];
-        if (input_scan(stdin, "%99s %99s", buf_re, buf_im) != 2) {
-            if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
+    } else {
+        bool read_access_flag = true;
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        if (filep && !read_access_flag) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
-        convert_fortran_d_exponent(buf_re);
-        normalize_numeric_input(buf_re, dmode);
-        convert_fortran_d_exponent(buf_im);
-        normalize_numeric_input(buf_im, dmode);
-        p->re = strtod(buf_re, NULL);
-        p->im = strtod(buf_im, NULL);
-        return;
-    }
-
-    bool unit_file_bin;
-    int access_mode;
-    bool read_access_flag = true;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    if (filep && !read_access_flag) {
-        if (iostat) { *iostat = 5007; return; }
-        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
-        exit(1);
-    }
-    if (!filep) {
-        if (iostat) { *iostat = 1; return; }
-        printf("No file found with given unit\n");
-        exit(1);
+        if (!filep) {
+            if (iostat) { *iostat = 1; return; }
+            printf("No file found with given unit\n");
+            exit(1);
+        }
     }
 
     if (unit_file_bin) {
@@ -14310,7 +14312,6 @@ LFORTRAN_API void _lfortran_read_complex_double(struct _lfortran_complex_64 *p, 
 
 LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -14318,22 +14319,15 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
         exit(1);
     }
 
-    char buf_re[100], buf_im[100];
-
     if (unit_num == -1) {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%99s %99s", buf_re, buf_im) != 2) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read complex float from stdin.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buf_re);
-            normalize_numeric_input(buf_re, dmode);
-            convert_fortran_d_exponent(buf_im);
-            normalize_numeric_input(buf_im, dmode);
-            p[(int64_t)i * (int64_t)stride].re = strtof(buf_re, NULL);
-            p[(int64_t)i * (int64_t)stride].im = strtof(buf_im, NULL);
+            read_list_directed_complex_float(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -14423,7 +14417,6 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
 
 LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -14431,22 +14424,15 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
         exit(1);
     }
 
-    char buf_re[100], buf_im[100];
-
     if (unit_num == -1) {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%99s %99s", buf_re, buf_im) != 2) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buf_re);
-            normalize_numeric_input(buf_re, dmode);
-            convert_fortran_d_exponent(buf_im);
-            normalize_numeric_input(buf_im, dmode);
-            p[(int64_t)i * (int64_t)stride].re = strtod(buf_re, NULL);
-            p[(int64_t)i * (int64_t)stride].im = strtod(buf_im, NULL);
+            read_list_directed_complex_double(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -14645,7 +14631,10 @@ static void read_list_directed_float128(lf_float128 *p, const list_directed_inpu
     if (in->unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
         char buffer[LF_F128_TOKEN_BUF];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (iostat) return;
             fprintf(stderr, "Error: Failed to read double from stdin.\n");
             exit(1);
@@ -14745,7 +14734,6 @@ LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int3
 
 LFORTRAN_API void _lfortran_read_array_float128(lf_float128 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -14753,24 +14741,14 @@ LFORTRAN_API void _lfortran_read_array_float128(lf_float128 *p, int array_size, 
         exit(1);
     }
 
-    char buffer[LF_F128_TOKEN_BUF];
-
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%100s", buffer) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read double from stdin.\n");
-                exit(1);
-            }
-            lf_float128 val;
-            normalize_numeric_input(buffer, dmode);
-            if (!parse_fortran_f128(buffer, &val)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_float128(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -14919,42 +14897,26 @@ static void read_list_directed_complex_float128(struct _lfortran_complex_128 *p,
 
 LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *p, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
 
+    bool unit_file_bin = false;
+    int access_mode = 0;
+    FILE *filep = stdin;
     if (unit_num == -1) {
         use_stdin_char_mode();
-        char buf_re[LF_F128_TOKEN_BUF], buf_im[LF_F128_TOKEN_BUF];
-        if (input_scan(stdin, "%100s %100s", buf_re, buf_im) != 2) {
-            if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-            fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
+    } else {
+        bool read_access_flag = true;
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        if (filep && !read_access_flag) {
+            if (iostat) { *iostat = 5007; return; }
+            fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
             exit(1);
         }
-        convert_fortran_d_exponent(buf_re);
-        normalize_numeric_input(buf_re, dmode);
-        convert_fortran_d_exponent(buf_im);
-        normalize_numeric_input(buf_im, dmode);
-        if (!lf_strtof128(buf_re, &p->re, NULL) || !lf_strtof128(buf_im, &p->im, NULL)) {
+        if (!filep) {
             if (iostat) { *iostat = 1; return; }
-            fprintf(stderr, "Error: Invalid input from stdin.\n");
+            printf("No file found with given unit\n");
             exit(1);
         }
-        return;
-    }
-
-    bool unit_file_bin;
-    int access_mode;
-    bool read_access_flag = true;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-    if (filep && !read_access_flag) {
-        if (iostat) { *iostat = 5007; return; }
-        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
-        exit(1);
-    }
-    if (!filep) {
-        if (iostat) { *iostat = 1; return; }
-        printf("No file found with given unit\n");
-        exit(1);
     }
 
     if (unit_file_bin) {
@@ -14998,7 +14960,6 @@ LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *
 
 LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex_128 *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -15006,27 +14967,15 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
         exit(1);
     }
 
-    char buf_re[LF_F128_TOKEN_BUF], buf_im[LF_F128_TOKEN_BUF];
-
     if (unit_num == -1) {
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%100s %100s", buf_re, buf_im) != 2) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
-                exit(1);
-            }
-            convert_fortran_d_exponent(buf_re);
-            normalize_numeric_input(buf_re, dmode);
-            convert_fortran_d_exponent(buf_im);
-            normalize_numeric_input(buf_im, dmode);
-            struct _lfortran_complex_128 val;
-            if (!lf_strtof128(buf_re, &val.re, NULL) || !lf_strtof128(buf_im, &val.im, NULL)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_complex_float128(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -15116,7 +15065,6 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
 
 LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -15124,24 +15072,14 @@ LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t s
         exit(1);
     }
 
-    char buffer[100];
-
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%99s", buffer) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read float from stdin.\n");
-                exit(1);
-            }
-            float val;
-            normalize_numeric_input(buffer, dmode);
-            if (!parse_fortran_float(buffer, &val)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_float(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -15234,7 +15172,6 @@ static void read_list_directed_double(double *p, const list_directed_input *in,
 
 LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat)
 {
-    int dmode = _lfortran_get_decimal_mode(unit_num);
     if (iostat) *iostat = 0;
     if (stride == 0) {
         if (iostat) { *iostat = 1; return; }
@@ -15242,24 +15179,14 @@ LFORTRAN_API void _lfortran_read_array_double(double *p, int array_size, int32_t
         exit(1);
     }
 
-    char buffer[100];
-
     if (unit_num == -1) {
-        use_stdin_char_mode();
+        // List-directed: a repeat r*c or r* can continue over the elements
+        // and the other items of the statement.
+        list_directed_input in;
+        list_directed_input_init(&in, stdin, -1);
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%99s", buffer) != 1) {
-                if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
-                fprintf(stderr, "Error: Failed to read double from stdin.\n");
-                exit(1);
-            }
-            double val;
-            normalize_numeric_input(buffer, dmode);
-            if (!parse_fortran_double(buffer, &val)) {
-                if (iostat) { *iostat = 1; return; }
-                fprintf(stderr, "Error: Invalid input from stdin.\n");
-                exit(1);
-            }
-            p[(int64_t)i * (int64_t)stride] = val;
+            read_list_directed_double(&p[(int64_t)i * (int64_t)stride], &in, iostat);
+            if (!list_directed_item_end(&in, iostat)) return;
         }
         return;
     }
@@ -15436,7 +15363,10 @@ static void read_list_directed_double(double *p, const list_directed_input *in,
     if (in->unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
         char buffer[100];
-        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+        list_directed_token_status token_status = read_stdin_list_directed_token(
+            in, buffer, sizeof(buffer), iostat);
+        if (token_status == LD_TOKEN_NULL) return;
+        if (token_status != LD_TOKEN_OK) {
             if (iostat) return;
             fprintf(stderr, "Error: Failed to read double from stdin.\n");
             exit(1);
@@ -17621,6 +17551,9 @@ static void common_formatted_read(InputSource *inputSource,
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values) {
     if (iostat) *iostat = 0;
     if (unit_num == -1 || unit_num == -2) {
+        // The values of a repeat that the statement did not take are not
+        // transferred to the next one.
+        list_dir_state_reset(&stdin_list_dir_state);
         // Standard input. Finish the current record. A list-directed read
         // stops at the record terminator and leaves it in the stream, so
         // without this advance the next format-directed read would see the
