@@ -140,6 +140,15 @@ LFortran's `InputChannel`, which an interrupt cancels; replies to an older
 can end the READ (`lfortran_interruptible`), so that a client knows whether
 to keep forwarding input after an interrupt.
 
+The Xeus kernel uses Xeus's split server (`make_xserver_shell_main`), which
+runs shell requests on the main thread and control requests on their own
+thread, where `interrupt_request` sets the flag that the callback reads. It
+publishes the `KeyboardInterrupt` as an `error` message before it replies.
+For a READ it replaces only Xeus's stdin transport, with LFortran's
+`InputChannel`, so that an interrupt can end the wait. With Xeus registration
+configurations, IPv6 or non-TCP transports, a READ uses Xeus's blocking stdin
+transport, and an interrupt takes effect once the READ has its input.
+
 During a cell, Ctrl-C at the prompt (Linux and macOS) only marks the
 interrupt; the prompt's client loop sends the `interrupt_request` on the
 control channel and keeps reading the terminal without blocking, so that it

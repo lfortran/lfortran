@@ -216,7 +216,7 @@ when that prompt cannot end it, such as when its terminal closes or it is
 killed with `kill -9`. A prompt that only joins, with
 `lfortran --connect FILE`, leaves the kernel running; that session lasts
 until the kernel itself stops. Jupyter's Interrupt stops a
-running cell in the built-in kernel on Linux and macOS, also while it waits
+running cell in the built-in and the Xeus kernel on Linux and macOS, also while it waits
 for input in a READ. What the cell did before it was interrupted stays done
 (variables it assigned, output it wrote); it is not rolled back, and what it
 allocated and did not free leaks. A single long call into foreign code still
@@ -231,9 +231,11 @@ The client is LFortran's own. The kernel is LFortran's own implementation of
 the Jupyter messaging protocol (ZeroMQ over TCP with HMAC-SHA256 signatures),
 which needs no third-party library. In a build with `WITH_XEUS=yes`,
 `lfortran` and `lfortran kernel` both run the Xeus kernel, and the prompt
-still ends that kernel when it exits. The Xeus kernel uses Xeus's own server
-for every channel. A READ whose client has disconnected waits there, and the
-clients behind that cell wait with it. A cell that fails aborts the requests
+still ends that kernel when it exits. It uses Xeus's split server, which reads
+control messages on their own thread, so an interrupt reaches a running cell.
+For TCP/IPv4 connections, it uses LFortran's stdin channel, so that an
+interrupt ends a READ that waits for input; with other transports, a READ
+waits for its input before an interrupt takes effect. A cell that fails aborts the requests
 already waiting with an error reply and no idle status, so a client that
 waits for the aborted cell to become idle waits with it. See
 `src/lfortran/jupyter.cpp` and `src/lfortran/fortran_kernel.cpp`.

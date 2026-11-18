@@ -120,8 +120,10 @@ class InputChannel {
     std::unique_ptr<Impl> impl;
 public:
     // Listens on `port` of `ip`, or on a free port if it is 0, which `port`
-    // then becomes; `key` signs the messages.
-    InputChannel(const std::string &ip, int &port, const std::string &key);
+    // then becomes; `key` signs the messages. `resolve_host` also accepts an
+    // IPv4 host name, for Xeus connection files.
+    InputChannel(const std::string &ip, int &port, const std::string &key,
+        bool resolve_host = false);
     ~InputChannel();
     InputChannel(const InputChannel &) = delete;
     InputChannel &operator=(const InputChannel &) = delete;
