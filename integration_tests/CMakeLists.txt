@@ -3666,6 +3666,7 @@ RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an alre
 RUN(NAME char_array_pointer_01 LABELS gfortran llvm) # allocate an associated character-array pointer (#16206, #13623, #17885)
 RUN(NAME char_array_pointer_02 LABELS gfortran llvm) # c_f_pointer into an associated character-array pointer (#17884)
 RUN(NAME char_array_pointer_03 LABELS gfortran llvm) # pointer assignment copies the string descriptor of a character array
+RUN(NAME char_array_pointer_04 LABELS gfortran llvm EXTRAFILES char_array_pointer_04c.c EXTRA_ARGS --separate-compilation) # a module character-array pointer used from a C main
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
