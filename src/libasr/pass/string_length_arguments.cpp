@@ -287,6 +287,22 @@ public:
             down_cast<ASR::Function_t>(to)->m_function_signature;
     }
 
+    // A null procedure pointer built around the pointer it disassociates
+    // takes that pointer's type, which the visits above may have changed.
+    void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_PointerNullConstant(x);
+        if (x.m_var_expr == nullptr || !is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(x.m_type))) {
+            return;
+        }
+        ASR::ttype_t *var_type = ASRUtils::expr_type(x.m_var_expr);
+        if (ASRUtils::is_pointer(var_type) == ASRUtils::is_pointer(x.m_type) &&
+                is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(var_type))) {
+            const_cast<ASR::PointerNullConstant_t&>(x).m_type = var_type;
+        }
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
