@@ -1259,11 +1259,44 @@ public:
     }
 };
 
+// An enumerator is imported into the scope holding its enumeration, and into
+// any scope that uses the module holding it, as an ExternalSymbol naming the
+// enumeration rather than a module. Finds the copy of the enumerator the
+// same way: the enumeration of the same name in the copied module, or in the
+// scopes visible from `scope` if no module holds it. Returns nullptr if
+// `target` is not an enumerator or its copy cannot be found.
+static ASR::symbol_t* copied_enumerator(SymbolTable *scope, SymbolTable *tu,
+    ASR::symbol_t *target, const char *name)
+{
+    ASR::symbol_t *enum_sym = ASRUtils::get_asr_owner(target);
+    if (enum_sym == nullptr || !ASR::is_a<ASR::Enum_t>(*enum_sym)) {
+        return nullptr;
+    }
+    ASR::symbol_t *holder = ASRUtils::get_asr_owner(enum_sym);
+    ASR::symbol_t *copy = nullptr;
+    if (holder != nullptr && ASR::is_a<ASR::Module_t>(*holder)) {
+        ASR::symbol_t *mod = tu->resolve_symbol(ASRUtils::symbol_name(holder));
+        if (mod != nullptr && ASR::is_a<ASR::Module_t>(*mod)) {
+            copy = ASR::down_cast<ASR::Module_t>(mod)->m_symtab->get_symbol(
+                ASRUtils::symbol_name(enum_sym));
+        }
+    } else {
+        copy = scope->resolve_symbol(ASRUtils::symbol_name(enum_sym));
+    }
+    if (copy == nullptr || !ASR::is_a<ASR::Enum_t>(*copy)) return nullptr;
+    ASR::symbol_t *member = ASR::down_cast<ASR::Enum_t>(copy)->m_symtab
+        ->get_symbol(name);
+    if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+        return nullptr;
+    }
+    return member;
+}
+
 // The duplicated symbols still point into the scopes they were copied from: an
-// ExternalSymbol at the module it names, a generic procedure at the specific
-// procedures it resolves to. A later cell resolves a name and finds the copy,
-// so anything still pointing at an original does not match it. Point them at
-// the copies.
+// ExternalSymbol at the module or enumeration it names, a generic procedure at
+// the specific procedures it resolves to. A later cell resolves a name and
+// finds the copy, so anything still pointing at an original does not match it.
+// Point them at the copies.
 static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
     SymbolTable *tu)
 {
@@ -1271,6 +1304,12 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
         ASR::symbol_t *s = item.second;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
             ASR::ExternalSymbol_t *es = ASR::down_cast<ASR::ExternalSymbol_t>(s);
+            ASR::symbol_t *enumerator = copied_enumerator(scope, tu,
+                es->m_external, es->m_original_name);
+            if (enumerator != nullptr) {
+                es->m_external = enumerator;
+                continue;
+            }
             ASR::symbol_t *mod = tu->resolve_symbol(es->m_module_name);
             if (mod == nullptr || !ASR::is_a<ASR::Module_t>(*mod)) continue;
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(mod);

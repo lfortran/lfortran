@@ -15943,6 +15943,18 @@ void SymbolDuplicator::duplicate_symbol(ASR::symbol_t* symbol,
             new_symbol_name = struct_type->m_name;
             break;
         }
+        case ASR::symbolType::Enum: {
+            ASR::Enum_t* enum_t = ASR::down_cast<ASR::Enum_t>(symbol);
+            new_symbol = duplicate_Enum(enum_t, destination_symtab);
+            new_symbol_name = enum_t->m_name;
+            break;
+        }
+        case ASR::symbolType::Union: {
+            ASR::Union_t* union_t = ASR::down_cast<ASR::Union_t>(symbol);
+            new_symbol = duplicate_Union(union_t, destination_symtab);
+            new_symbol_name = union_t->m_name;
+            break;
+        }
         case ASR::symbolType::GenericProcedure: {
             ASR::GenericProcedure_t* generic_procedure = ASR::down_cast<ASR::GenericProcedure_t>(symbol);
             new_symbol = duplicate_GenericProcedure(generic_procedure, destination_symtab);
@@ -16354,6 +16366,30 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Struct(ASR::Struct_t* struct_type_t,
         struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
         struct_type_t->m_parent,
         struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+}
+
+ASR::symbol_t* SymbolDuplicator::duplicate_Enum(ASR::Enum_t* enum_t,
+    SymbolTable* destination_symtab) {
+    SymbolTable* enum_symtab = al.make_new<SymbolTable>(destination_symtab);
+    duplicate_SymbolTable(enum_t->m_symtab, enum_symtab);
+    return ASR::down_cast<ASR::symbol_t>(ASR::make_Enum_t(
+        al, enum_t->base.base.loc, enum_symtab, enum_t->m_name,
+        enum_t->m_dependencies, enum_t->n_dependencies,
+        enum_t->m_members, enum_t->n_members, enum_t->m_abi,
+        enum_t->m_access, enum_t->m_enum_value_type, enum_t->m_type,
+        enum_t->m_parent));
+}
+
+ASR::symbol_t* SymbolDuplicator::duplicate_Union(ASR::Union_t* union_t,
+    SymbolTable* destination_symtab) {
+    SymbolTable* union_symtab = al.make_new<SymbolTable>(destination_symtab);
+    duplicate_SymbolTable(union_t->m_symtab, union_symtab);
+    return ASR::down_cast<ASR::symbol_t>(ASR::make_Union_t(
+        al, union_t->base.base.loc, union_symtab, union_t->m_name,
+        union_t->m_dependencies, union_t->n_dependencies,
+        union_t->m_members, union_t->n_members, union_t->m_abi,
+        union_t->m_access, union_t->m_initializers, union_t->n_initializers,
+        union_t->m_parent));
 }
 
 ASR::symbol_t* SymbolDuplicator::duplicate_StructMethodDeclaration(
