@@ -3581,7 +3581,7 @@ public:
             return;
         }
         llvm::BasicBlock* end_bb = llvm::BasicBlock::Create(context, "allocate.end");
-        if (builder->GetInsertBlock()->getTerminator() == nullptr) {
+        if (LLVM::get_terminator(builder->GetInsertBlock()) == nullptr) {
             builder->CreateBr(end_bb);
         }
         builder->SetInsertPoint(failure_bb);
