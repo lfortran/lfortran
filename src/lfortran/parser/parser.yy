@@ -664,12 +664,25 @@ script_unit
     | union_type_decl
     | enum_decl
     | interactive_statement %dprec 7
-    // expr sep outranks a statement, so a bare allocate(a) would be a call.
-    // These two are the statement. A call in an expression (y = allocate(n))
-    // is still an expression. Do not keep sep on the node: a blank line would
-    // become trivia, and the previous AST left that separator off.
+    // expr sep outranks a statement, so a bare allocate(a) or open(u) would be
+    // a call. Each statement below is the statement: allocate, deallocate and
+    // nullify act on memory, and open, close, rewind, backspace, endfile,
+    // flush, inquire, read and write are I/O. A call in an expression
+    // (y = allocate(n)) is still an expression. Do not keep sep on the node: a
+    // blank line would become trivia, and the previous AST left that separator
+    // off.
     | allocate_statement sep %dprec 9
     | deallocate_statement sep %dprec 9
+    | nullify_statement sep %dprec 9
+    | open_statement sep %dprec 9
+    | close_statement sep %dprec 9
+    | rewind_statement sep %dprec 9
+    | backspace_statement sep %dprec 9
+    | endfile_statement sep %dprec 9
+    | flush_statement sep %dprec 9
+    | inquire_statement sep %dprec 9
+    | read_statement sep %dprec 9
+    | write_statement sep %dprec 9
     | expr sep           %dprec 8
     | KW_END_PROGRAM sep { $$ = SYMBOL($1, @$); }
     | TK_LABEL KW_END sep { $$ = LABELED_END($1, $2, @$); }
@@ -1840,9 +1853,9 @@ statement1
     ;
 
 // Top-level script units give expr a higher precedence than a statement, so
-// allocate and deallocate are recognized on their own there. Every other
-// statement keeps the previous precedence. A labeled statement is unchanged:
-// a label cannot be an expression.
+// the statements listed there are recognized on their own and are not reached
+// here. Every other statement keeps the previous precedence. A labeled
+// statement is unchanged: a label cannot be an expression.
 interactive_statement
     : interactive_statement1 sep { $$ = $1; TRIVIA_($$, TRIVIA_AFTER($2, @$)); }
     | TK_LABEL statement1 sep { $$ = $2;
@@ -1854,9 +1867,22 @@ interactive_statement1
     | multi_line_statement
     ;
 
+// Moved out of other_single_line_statement so that an interactive cell cannot
+// reach them through interactive_statement1, where they would conflict with the
+// top-level expression a second time.
 single_line_statement
     : allocate_statement
     | deallocate_statement
+    | nullify_statement
+    | open_statement
+    | close_statement
+    | rewind_statement
+    | backspace_statement
+    | endfile_statement
+    | flush_statement
+    | inquire_statement
+    | read_statement
+    | write_statement
     | other_single_line_statement
     ;
 
@@ -1864,7 +1890,6 @@ other_single_line_statement
     : assign_statement
     | assignment_statement
     | associate_statement
-    | close_statement
     | continue_statement
     | cycle_statement
     | entry_statement
@@ -1872,7 +1897,6 @@ other_single_line_statement
     | event_post_statement
     | event_wait_statement
     | exit_statement
-    | flush_statement
     | forall_statement_single
     | format_statement
     | data_statement
@@ -1880,17 +1904,10 @@ other_single_line_statement
     | goto_statement
     | if_statement_single
     | include_statement
-    | inquire_statement
-    | nullify_statement
-    | open_statement
     | pause_statement
     | pragma_statement
     | print_statement
-    | read_statement
     | return_statement
-    | rewind_statement
-    | backspace_statement
-    | endfile_statement
     | stop_statement
     | subroutine_call
     | sync_all_statement
@@ -1898,7 +1915,6 @@ other_single_line_statement
     | sync_memory_statement
     | sync_team_statement
     | where_statement_single
-    | write_statement
     ;
 
 multi_line_statement
