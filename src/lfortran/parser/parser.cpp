@@ -1014,7 +1014,24 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
         // if `in_string` is true, keeps track of the quote
         // used for that string
         char quote = '\0';
+        out.reserve(s.size());
         while (pos < s.size()) {
+            if (!newline) {
+                // Fast path: characters that cannot change the prescanner
+                // state are copied in one go
+                size_t run = pos;
+                if (in_comment) {
+                    while (run < s.size() && s[run] != '\n' && s[run] != '&') run++;
+                } else {
+                    while (run < s.size() && s[run] != '\n' && s[run] != '&'
+                            && s[run] != '!' && s[run] != '\'' && s[run] != '"') run++;
+                }
+                if (run > pos) {
+                    out.append(s, pos, run-pos);
+                    pos = run;
+                    continue;
+                }
+            }
             is_within_string(s, pos, quote, in_comment, in_string);
             if (newline && is_include(s, pos)) {
                 int col = 0; // doesn't matter
