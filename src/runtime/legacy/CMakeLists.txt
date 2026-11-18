@@ -76,7 +76,7 @@ if(WITH_TARGET_WASM)
         set(WASM_WASI_OBJ ${WASM_RUNTIME_DIR}/lfortran_runtime_wasm_wasi.o)
         add_custom_command(OUTPUT ${WASM_WASI_OBJ}
             COMMAND $ENV{WASI_SDK_PATH}/bin/clang -I${libasr_SOURCE_DIR}/.. -I${libasr_BINARY_DIR}/.. -DCOMPILE_TO_WASM
-                -D_WASI_EMULATED_PROCESS_CLOCKS -c --target=wasm32-wasi ${SRC} -o ${WASM_WASI_OBJ}
+                -D_WASI_EMULATED_PROCESS_CLOCKS -c --target=wasm32-wasip1 ${SRC} -o ${WASM_WASI_OBJ}
             COMMENT "Cross compiling the runtime to ${WASM_WASI_OBJ}"
             DEPENDS ${SRC})
         add_custom_target(lfortran_runtime_wasm_wasi ALL DEPENDS ${WASM_WASI_OBJ})
