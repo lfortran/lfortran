@@ -3947,22 +3947,14 @@ public:
                 if (ASRUtils::is_pointer(cur_type) && ASRUtils::is_array(cur_type)
                         && ASRUtils::extract_physical_type(cur_type)
                             == ASR::array_physical_typeType::DescriptorArray) {
-                    // A disassociated pointer has no string descriptor or no data.
+                    // A disassociated pointer has no data.
                     llvm::Value* desc = tmp;
                     llvm::Type* str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                         tmp_expr, ASRUtils::extract_type(cur_type), module.get());
                     llvm::Value* str_desc = llvm_utils->CreateLoad2(str_desc_type->getPointerTo(),
                         arr_descr->get_pointer_to_data(tmp_expr, cur_type, desc, module.get()));
-                    llvm::Value* has_target = llvm_utils->CreateAlloca(
-                        llvm::Type::getInt1Ty(context), nullptr, "has_target");
-                    builder->CreateStore(llvm::ConstantInt::getFalse(context), has_target);
-                    llvm_utils->create_if_else(builder->CreateIsNotNull(str_desc), [&]() {
-                        builder->CreateStore(builder->CreateIsNotNull(llvm_utils->CreateLoad2(
-                            llvm_utils->i8_ptr, llvm_utils->create_gep2(str_desc_type, str_desc, 0))),
-                            has_target);
-                    }, [](){});
-                    llvm_utils->create_if_else(llvm_utils->CreateLoad2(
-                            llvm::Type::getInt1Ty(context), has_target), [&]() {
+                    llvm_utils->create_if_else(builder->CreateIsNotNull(llvm_utils->CreateLoad2(
+                            llvm_utils->i8_ptr, llvm_utils->create_gep2(str_desc_type, str_desc, 0))), [&]() {
                         llvm_utils->free_strings(tmp_expr, desc);
                     }, set_stat_not_allocated);
                 } else {
@@ -13186,16 +13178,11 @@ public:
         // A character-array pointer is associated when the string descriptor it owns has data.
         bool ptr_is_char_desc_array = ASRUtils::is_array_of_strings(p_type)
             && ASRUtils::extract_physical_type(p_type) == ASR::array_physical_typeType::DescriptorArray;
-        auto string_data_or_null = [&](llvm::Value* str_desc) -> llvm::Value* {
+        auto string_data = [&](llvm::Value* str_desc) -> llvm::Value* {
             llvm::Type* str_desc_type = llvm_utils->get_StringType(ASRUtils::extract_type(p_type));
             str_desc = builder->CreateBitCast(str_desc, str_desc_type->getPointerTo());
-            llvm::Value* data = llvm_utils->CreateAlloca(llvm_utils->i8_ptr, nullptr, "str_desc_data");
-            builder->CreateStore(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr), data);
-            llvm_utils->create_if_else(builder->CreateIsNotNull(str_desc), [&]() {
-                builder->CreateStore(llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
-                    llvm_utils->create_gep2(str_desc_type, str_desc, 0)), data);
-            }, [](){});
-            return llvm_utils->CreateLoad2(llvm_utils->i8_ptr, data);
+            return llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_gep2(str_desc_type, str_desc, 0));
         };
         if(ASRUtils::is_character(*p_type)){ // String OR array of strings
             if (ASRUtils::is_array_of_strings(p_type)) {
@@ -13210,7 +13197,7 @@ public:
                 if (ptr_is_char_desc_array) {
                     llvm::Type* string_type = llvm_utils->get_StringType(
                         ASRUtils::extract_type(p_type))->getPointerTo();
-                    ptr = string_data_or_null(llvm_utils->CreateLoad2(string_type,
+                    ptr = string_data(llvm_utils->CreateLoad2(string_type,
                         arr_descr->get_pointer_to_data(x.m_ptr,
                             ASRUtils::type_get_past_allocatable_pointer(p_type),
                             ptr, module.get())));
@@ -13429,7 +13416,7 @@ public:
                         nptr = llvm_utils->create_gep2(array_type, nptr, 0);
                     } else if (tgt_ptype == ASR::array_physical_typeType::PointerArray
                             && ptr_is_char_desc_array) {
-                        nptr = string_data_or_null(nptr);
+                        nptr = string_data(nptr);
                     } else if( tgt_ptype == ASR::array_physical_typeType::DescriptorArray ) {
                         llvm::Type *array_inner_type = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
                             ASRUtils::extract_type(tgt_type), module.get());
@@ -13457,7 +13444,7 @@ public:
                             if (ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type))) {
                                 nptr = load_class_wrapper_data(array_inner_type, nptr);
                             } else if (ptr_is_char_desc_array) {
-                                nptr = string_data_or_null(nptr);
+                                nptr = string_data(nptr);
                             }
                         }
                     }
