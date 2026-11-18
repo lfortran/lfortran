@@ -1401,7 +1401,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "rank_stmt" or
             field.type == "omp_clause" or
             field.type == "ttype" or
-            field.type == "dimension"):
+            field.type == "dimension" or
+            field.type == "dtio_binding"):
             level = 2
             if field.seq:
                 pointer_char = ''
@@ -1411,6 +1412,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     field.type != "alloc_arg" and
                     field.type != "reduction_expr" and
                     field.type != "dimension" and
+                    field.type != "dtio_binding" and
                     field.type != "do_loop_head"):
                     pointer_char = '*'
                 self.emit("Vec<%s_t%s> m_%s;" % (field.type, pointer_char, field.name), level)
@@ -1472,6 +1474,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    check_copy.m_left_extent = self().duplicate_expr(x->m_%s[i].m_left_extent);"%(field.name), level)
                     self.emit("    check_copy.m_right_extent = self().duplicate_expr(x->m_%s[i].m_right_extent);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, check_copy);"%(field.name), level)
+                elif field.type == "dtio_binding":
+                    self.emit("    m_%s.push_back(al, x->m_%s[i]);"%(field.name, field.name), level)
                 elif field.type == "dimension":
                     self.emit("    ASR::dimension_t dim_copy;", level)
                     self.emit("    dim_copy.loc = x->m_%s[i].loc;"%(field.name), level)
