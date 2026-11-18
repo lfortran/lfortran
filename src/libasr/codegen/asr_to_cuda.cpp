@@ -242,12 +242,44 @@ struct CudaDialect {
         src << indent << "unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? "
             "0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << "
             "(threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));\n";
-        src << indent << "int __gpu_lane = (int)(threadIdx.x % "
-            "(unsigned)__gpu_lanes_n);\n";
-        src << indent << "unsigned __gpu_iteration_thread = threadIdx.x / "
-            "(unsigned)__gpu_lanes_n;\n";
-        src << indent << "unsigned __gpu_iteration_block = blockDim.x / "
-            "(unsigned)__gpu_lanes_n;\n";
+        for (const std::string &line : lane_iteration_lines(false)) {
+            src << indent << line << "\n";
+        }
+    }
+    // The lane of the thread and its iteration in the block, worked out
+    // from the lanes and the size of the block, or, `block` being the
+    // iteration (a kernel whose every launch starts blocks of exactly its
+    // fixed lanes, gpu_vector_lanes.cpp), from the thread index alone.
+    static std::vector<std::string> lane_iteration_lines(bool block) {
+        if (block) {
+            return {"int __gpu_lane = (int)threadIdx.x;",
+                "unsigned __gpu_iteration_thread = 0u;",
+                "unsigned __gpu_iteration_block = 1u;"};
+        }
+        return {"int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);",
+            "unsigned __gpu_iteration_thread = threadIdx.x / "
+                "(unsigned)__gpu_lanes_n;",
+            "unsigned __gpu_iteration_block = blockDim.x / "
+                "(unsigned)__gpu_lanes_n;"};
+    }
+    // The lines the second version of a kernel (occupancy_variant) writes
+    // in place of the kernel's, for a kernel whose every launch gives an
+    // iteration `fixed_lanes` lanes, a whole block: its iteration is the
+    // block, a value the warp shares, which keeps the addresses of its rows
+    // in uniform registers. Held to 64 registers (16 blocks per
+    // multiprocessor of an H200), a q8 matrix-vector product of 4120
+    // blocks took 26.1 us so, rather than 27.1, and one of 62,080 blocks
+    // 318 rather than 339; held to 72 (14 blocks), the uniform form was the
+    // slower one (52.3 us rather than 52.0 for 8704 blocks), and the kernel
+    // keeps the other.
+    std::vector<std::pair<std::string, std::string>> variant_rewrites(
+            int64_t fixed_lanes) const {
+        std::vector<std::pair<std::string, std::string>> r;
+        if (fixed_lanes <= 0) return r;
+        std::vector<std::string> from = lane_iteration_lines(false);
+        std::vector<std::string> to = lane_iteration_lines(true);
+        for (size_t i = 0; i < from.size(); i++) r.push_back({from[i], to[i]});
+        return r;
     }
     // The test of the lanes most launches give a kernel whose lanes are a
     // run-time value (gpu_vector_lanes.cpp): a warp, or all of them when

@@ -4153,8 +4153,16 @@ public:
                 static_cast<size_t>(kernel_variant.start));
             LCOMPILERS_ASSERT(kernel_source.rfind(kernel_variant.signature, 0)
                 == 0);
+            std::string body = kernel_source.substr(
+                kernel_variant.signature.size());
+            for (const auto &r : dialect.variant_rewrites(
+                    kernel_variant.fixed_lanes)) {
+                size_t at = body.find(r.first);
+                LCOMPILERS_ASSERT(at != std::string::npos);
+                body.replace(at, r.first.size(), r.second);
+            }
             src << kernel_variant.qualifier << kernel_variant.name << "("
-                << kernel_source.substr(kernel_variant.signature.size());
+                << body;
             kernel_variants.push_back({name, kernel_variant.name});
         }
 
@@ -4184,6 +4192,8 @@ public:
     struct KernelVariant {
         std::streampos start = 0;
         std::string signature, qualifier, name;
+        // The lanes every launch gives an iteration (kernel_fixed_lanes).
+        int64_t fixed_lanes = 0;
     };
     KernelVariant kernel_variant;
     // The kernels of the translation unit that have a second version, and

@@ -63,6 +63,10 @@ struct MetalDialect {
             bool /*few_blocks*/, int64_t /*lane_vectors*/) const {
         return {"", 0};
     }
+    std::vector<std::pair<std::string, std::string>> variant_rewrites(
+            int64_t /*fixed_lanes*/) const {
+        return {};
+    }
 
     void emit_kernel_entry(std::stringstream &, const std::string &) const {}
 

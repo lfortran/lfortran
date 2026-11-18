@@ -823,9 +823,9 @@ extern "C" __global__ void __launch_bounds__(64, 16) __lfortran_gpu_kernel_1_18g
     __gpu_lanes = 64;
     int __gpu_lanes_n = __gpu_lanes;
     unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
-    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
-    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
-    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+    int __gpu_lane = (int)threadIdx.x;
+    unsigned __gpu_iteration_thread = 0u;
+    unsigned __gpu_iteration_block = 1u;
     int __flat_idx;
     int i__dc;
     if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {

@@ -79,6 +79,7 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
             kernel_variant.qualifier = variant.first;
             kernel_variant.name = name + "__blocks"
                 + std::to_string(variant.second);
+            kernel_variant.fixed_lanes = kernel_caps.lanes_wide;
         }
     }
     src << qualifier << name << "(\n";
