@@ -131,5 +131,15 @@ Interruption is supported on Linux and macOS (x86-64 and AArch64). It is not
 supported on Windows, in WASM (JupyterLite) or with `--openmp`, where a cell
 runs to its end, and a READ keeps waiting for its input.
 
-The `test_lfortran` cases `FortranEvaluator interrupt*` and the
-`test_session_regressions` case `terminal_command` cover this.
+The built-in kernel reads its control channel while a cell runs, through the
+callback, and answers `interrupt_request` at once; it defers other control
+requests until the cell ends, and publishes the `KeyboardInterrupt` as an
+`error` message before it replies. A READ waits for its `input_reply` on
+LFortran's `InputChannel`, which an interrupt cancels; replies to an older
+`input_request` are ignored. The kernel's `input_request` says whether it
+can end the READ (`lfortran_interruptible`), so that a client knows whether
+to keep forwarding input after an interrupt.
+
+The `test_lfortran` cases `FortranEvaluator interrupt*`, the
+`test_session_regressions` cases `terminal_command` and `read_errors`, and
+`test_kernel_evaluation` cover this.

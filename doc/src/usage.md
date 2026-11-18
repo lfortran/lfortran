@@ -176,9 +176,10 @@ sequences. Unsupported controls, invalid UTF-8, and unfinished sequences when
 leaving a cell produce an explicit error. Retained incomplete sequences,
 styling metadata per refresh, and a final-cell combining cluster are each
 limited to 64 KiB; rejection restores terminal mode and cursor visibility.
-A cell's output is shown when the cell finishes or reads input. A cell that fails
-aborts the cells waiting behind it, unless it was sent with `stop_on_error`
-false.
+A cell's output is shown when the cell finishes or reads input. A cell that fails,
+including one interrupted with `KeyboardInterrupt`, aborts the cells waiting
+behind it, unless the failing request was sent with `stop_on_error=false`.
+Newly submitted cells can run after interruption with either setting.
 Delivery is not guaranteed if a client cannot consume output fast enough.
 Once more than 64 MiB of output waits for a client, the built-in kernel drops
 the oldest of it, not the newest, and puts a notice in its place, so that a
@@ -204,8 +205,16 @@ when that prompt cannot end it, such as when its terminal closes or it is
 killed with `kill -9`. A prompt that only joins, with
 `lfortran --connect FILE`, leaves the kernel running; that session lasts
 until the kernel itself stops. The way to stop a cell that does not return
-is to end the prompt that started the kernel. Jupyter's Interrupt has no
-effect until the cell ends. Whoever can read the connection file can run
+is to end the prompt that started the kernel. Jupyter's Interrupt stops a
+running cell in the built-in kernel on Linux and macOS, also while it waits
+for input in a READ. What the cell did before it was interrupted stays done
+(variables it assigned, output it wrote); it is not rolled back, and what it
+allocated and did not free leaks. A single long call into foreign code still
+runs until it returns. The commands that `execute_command_line` runs are
+ended with it, unless the kernel is the foreground job of a terminal, where
+Ctrl-C at that terminal reaches the command instead. See
+[interactive evaluation](interactive_evaluation.md) for how a cell is
+interrupted and the limits. Whoever can read the connection file can run
 code as its owner. The file is readable by its owner only.
 
 The client is LFortran's own. The kernel is LFortran's own implementation of

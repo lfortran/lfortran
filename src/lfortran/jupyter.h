@@ -125,6 +125,9 @@ public:
     // Waits at most `timeout` ms for the answer: 1 with its value, -1 if that
     // client is not connected or has disconnected, 0 if it is still awaited.
     int wait(std::string &value, int timeout);
+    // Abandons a pending request; a later READ starts a fresh wait. An answer
+    // to it that arrives later is ignored.
+    void cancel();
     // Asks and waits as long as the client is connected; false if it is not.
     bool request(const std::string &identity, const std::string parts[4],
         std::string &value);
