@@ -1563,6 +1563,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             return new_args;
         }
 
+        static void relax_intent_out(ASR::Function_t* f) {
+            for (size_t i = 0; i < f->n_args; i++) {
+                ASR::Variable_t* arg = ASRUtils::expr_to_variable_or_null(f->m_args[i]);
+                if (arg && arg->m_intent == ASR::intentType::Out) {
+                    arg->m_intent = ASR::intentType::InOut;
+                }
+            }
+        }
+
         // A saved variable of a procedure is shared by all its calls (F2023
         // 8.5.16), but the copy that takes arrays by data duplicated it with
         // the rest of the procedure. Where the original that takes
@@ -1582,7 +1591,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         original->n_body == 0 || !has_saved_state(original)) continue;
                 bool pointer_result = false;
                 if (original->m_return_var) {
-                    // Other results are arguments by now.
+                    // subroutine_from_function has made other results
+                    // arguments, except in the WASM pipeline, which runs
+                    // this pass without it: there such a copy keeps its own
+                    // saved state, as it did before forwarding.
                     ASR::ttype_t* type = ASRUtils::expr_type(original->m_return_var);
                     pointer_result = ASRUtils::is_pointer(type);
                     if (!pointer_result && (ASRUtils::is_array(type) ||
@@ -1631,12 +1643,39 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 }
                 copy->m_body = body.p;
                 copy->n_body = body.size();
+                // The original finalizes and initializes its intent(out)
+                // dummies on entry; the copy must not do it a second time.
+                // Both intents pass arguments alike. A separate module
+                // procedure keeps the interface its ancestor module declares,
+                // so the copy of that interface is relaxed with it.
+                relax_intent_out(copy);
+                ASR::asr_t* owner = parent->asr_owner;
+                const char* ancestor = (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner)))
+                    ? ASR::down_cast2<ASR::Module_t>(owner)->m_parent_module : nullptr;
+                std::set<std::string> seen;
+                while (ancestor && seen.insert(ancestor).second) {
+                    ASR::symbol_t* mod = parent->parent->get_symbol(ancestor);
+                    if (!mod || !ASR::is_a<ASR::Module_t>(*mod)) break;
+                    ASR::symbol_t* decl = ASR::down_cast<ASR::Module_t>(mod)
+                        ->m_symtab->get_symbol(copy->m_name);
+                    if (decl && ASR::is_a<ASR::Function_t>(*decl) &&
+                            ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(decl))
+                                ->m_deftype == ASR::deftypeType::Interface) {
+                        relax_intent_out(ASR::down_cast<ASR::Function_t>(decl));
+                        break;
+                    }
+                    ancestor = ASR::down_cast<ASR::Module_t>(mod)->m_parent_module;
+                }
 
                 // Drop what only the old body used: its own saved variables,
                 // its automatic arrays, its internal procedures and the
-                // symbols that refer to them (COMMON, NAMELIST, generic
-                // interfaces). Evaluating a specification function of the
-                // signature in both entries is harmless: it is pure.
+                // symbols that refer to them (NAMELIST, generic interfaces).
+                // A dropped symbol is never referenced by a kept one. A
+                // COMMON block view has no storage of its own and the
+                // signature may use its members, so it is kept whole.
+                // Evaluating a specification function of the signature in
+                // both entries is harmless: it is pure.
                 SignatureSymbols signature;
                 for (size_t i = 0; i < copy->n_args; i++) {
                     signature.visit_expr(*copy->m_args[i]);
@@ -1650,10 +1689,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     if (signature.needed.count(sym)) continue;
                     if ((ASR::is_a<ASR::Variable_t>(*sym) &&
                             ASR::down_cast<ASR::Variable_t>(sym)->m_storage !=
-                                ASR::storage_typeType::Parameter) ||
+                                ASR::storage_typeType::Parameter &&
+                            !ASR::down_cast<ASR::Variable_t>(sym)->m_common_block) ||
                             ASR::is_a<ASR::Block_t>(*sym) ||
                             ASR::is_a<ASR::AssociateBlock_t>(*sym) ||
-                            ASR::is_a<ASR::CommonBlock_t>(*sym) ||
                             ASR::is_a<ASR::Namelist_t>(*sym) ||
                             ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
                             ASR::is_a<ASR::CustomOperator_t>(*sym) ||
