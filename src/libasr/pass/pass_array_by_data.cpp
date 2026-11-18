@@ -85,6 +85,31 @@ static void remap_block_calls(Vec<ASR::stmt_t*>& body,
     }
 }
 
+// Whether `x`, a BLOCK in it or a procedure it contains has a variable
+// that keeps its value between calls: one with the SAVE attribute, explicit
+// or implied by an initializer, or a threadprivate one.
+static bool has_saved_state(ASR::Function_t* x) {
+    std::vector<SymbolTable*> scopes{x->m_symtab};
+    for (size_t i = 0; i < scopes.size(); i++) {
+        for (auto& item : scopes[i]->get_scope()) {
+            ASR::symbol_t* sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::storage_typeType storage =
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_storage;
+                if (storage == ASR::storage_typeType::Save ||
+                        storage == ASR::storage_typeType::Threadprivate) {
+                    return true;
+                }
+            } else if (ASR::is_a<ASR::Block_t>(*sym) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*sym) ||
+                    ASR::is_a<ASR::Function_t>(*sym)) {
+                scopes.push_back(ASRUtils::symbol_symtab(sym));
+            }
+        }
+    }
+    return false;
+}
+
 /*
 A device procedure is transformed in place (see proc2inplace below), so a
 dummy it takes by data is taken that way from every caller, and addressed
@@ -1131,6 +1156,21 @@ static bool procedure_type_symbols_in_scope(ASR::ttype_t* type, SymbolTable* sco
     return check.in_scope;
 }
 
+// The symbols a procedure's signature needs: its arguments, its result and,
+// transitively, what their declarations refer to.
+struct SignatureSymbols : public ASR::BaseWalkVisitor<SignatureSymbols> {
+    std::set<ASR::symbol_t*> needed;
+    bool safe = true;
+    void visit_Var(const ASR::Var_t& x) {
+        if (needed.insert(x.m_v).second &&
+                ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+            visit_Variable(*ASR::down_cast<ASR::Variable_t>(x.m_v));
+        }
+    }
+    // A specification function must not be evaluated twice.
+    void visit_FunctionCall(const ASR::FunctionCall_t&) { safe = false; }
+};
+
 /*
     The following visitor replaces procedure calls with arrays as arguments
     to procedure calls having dimensional information passed as arguments. See example below,
@@ -1515,6 +1555,99 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             return new_args;
         }
 
+        // A saved variable of a procedure is shared by all its calls (F2023
+        // 8.5.16), but the copy that takes arrays by data duplicated it with
+        // the rest of the procedure. Where the original that takes
+        // descriptors is kept beside the copy, the copy calls the original
+        // instead, so that both entries reach the original's variables. The
+        // contiguous array the copy takes is a valid actual argument for the
+        // assumed-shape dummy of the original.
+        void forward_copies_with_saved_state() {
+            for (auto& entry : v.proc2newproc) {
+                if (!ASR::is_a<ASR::Function_t>(*entry.first) ||
+                        v.newprocs.find(entry.second.first) == v.newprocs.end()) continue;
+                ASR::Function_t* original = ASR::down_cast<ASR::Function_t>(entry.first);
+                ASR::Function_t* copy = ASR::down_cast<ASR::Function_t>(entry.second.first);
+                SymbolTable* parent = original->m_symtab->parent;
+                if (parent->get_symbol(original->m_name) != entry.first ||
+                        parent->get_symbol(copy->m_name) != entry.second.first ||
+                        original->n_body == 0 || !has_saved_state(original)) continue;
+                if (original->m_return_var) {
+                    // Results other than these are arguments by now.
+                    ASR::ttype_t* type = ASRUtils::expr_type(original->m_return_var);
+                    if (ASRUtils::is_array(type) || ASRUtils::is_allocatable_or_pointer(type) ||
+                            !(ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
+                              ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type))) continue;
+                }
+
+                const Location& loc = copy->base.base.loc;
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, original->n_args);
+                bool found = true;
+                for (size_t i = 0; i < original->n_args; i++) {
+                    ASR::symbol_t* sym = nullptr;
+                    if (ASR::is_a<ASR::Var_t>(*original->m_args[i])) {
+                        sym = copy->m_symtab->get_symbol(ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(original->m_args[i])->m_v));
+                    }
+                    if (sym == nullptr) {
+                        found = false;
+                        break;
+                    }
+                    ASR::call_arg_t arg;
+                    arg.loc = original->m_args[i]->base.loc;
+                    arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg.loc, sym));
+                    if (std::find(entry.second.second.begin(), entry.second.second.end(), i)
+                            != entry.second.second.end()) {
+                        arg.m_value = ASRUtils::cast_to_descriptor(al, arg.m_value);
+                    }
+                    args.push_back(al, arg);
+                }
+                if (!found) continue;
+
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 1);
+                if (copy->m_return_var) {
+                    ASR::expr_t* value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                        entry.first, entry.first, args.p, args.size(),
+                        ASRUtils::expr_type(copy->m_return_var), nullptr, nullptr));
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                        copy->m_return_var, value, nullptr, false, false, false, false)));
+                } else {
+                    body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                        entry.first, entry.first, args.p, args.size(), nullptr, false)));
+                }
+                copy->m_body = body.p;
+                copy->n_body = body.size();
+
+                // Drop what only the old body used: its own saved variables,
+                // its automatic arrays and its internal procedures.
+                SignatureSymbols signature;
+                for (size_t i = 0; i < copy->n_args; i++) {
+                    signature.visit_expr(*copy->m_args[i]);
+                }
+                if (copy->m_return_var) {
+                    signature.visit_expr(*copy->m_return_var);
+                }
+                std::vector<std::string> unused;
+                for (auto& item : copy->m_symtab->get_scope()) {
+                    ASR::symbol_t* sym = item.second;
+                    if (signature.needed.count(sym)) continue;
+                    if ((ASR::is_a<ASR::Variable_t>(*sym) &&
+                            ASR::down_cast<ASR::Variable_t>(sym)->m_storage !=
+                                ASR::storage_typeType::Parameter) ||
+                            ASR::is_a<ASR::Block_t>(*sym) ||
+                            ASR::is_a<ASR::AssociateBlock_t>(*sym) ||
+                            (ASR::is_a<ASR::Function_t>(*sym) &&
+                             ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))
+                                ->m_deftype == ASR::deftypeType::Implementation)) {
+                        unused.push_back(item.first);
+                    }
+                }
+                for (auto& name : unused) copy->m_symtab->erase_symbol(name);
+            }
+        }
+
         void wrap_descriptor_entries() {
             for (auto& entry : v.proc2newproc) {
                 if (!ASR::is_a<ASR::Function_t>(*entry.first)) continue;
@@ -1603,18 +1736,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 safety.check_function(*original);
                 if (!safety.safe) continue;
 
-                struct SignatureSymbols : public ASR::BaseWalkVisitor<SignatureSymbols> {
-                    std::set<ASR::symbol_t*> needed;
-                    bool safe = true;
-                    void visit_Var(const ASR::Var_t& x) {
-                        if (needed.insert(x.m_v).second &&
-                                ASR::is_a<ASR::Variable_t>(*x.m_v)) {
-                            visit_Variable(*ASR::down_cast<ASR::Variable_t>(x.m_v));
-                        }
-                    }
-                    // A specification function must not be evaluated twice.
-                    void visit_FunctionCall(const ASR::FunctionCall_t&) { safe = false; }
-                } signature;
+                SignatureSymbols signature;
                 for (size_t i = 0; i < original->n_args; i++) {
                     signature.visit_expr(*original->m_args[i]);
                 }
@@ -2756,6 +2878,7 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased,
         pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data);
     x.visit_TranslationUnit(unit);
+    u.forward_copies_with_saved_state();
     // Keep exported descriptor signatures and vtable identities unchanged.
     // The usual call conversion and later temporary pass provide the same
     // runtime contiguity checks/copy-in as at an ordinary data-ABI call site.
