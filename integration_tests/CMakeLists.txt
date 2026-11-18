@@ -511,6 +511,7 @@ RUN(NAME label_02 LABELS gfortran llvm) # END= label on a statement in the same 
 RUN(NAME format_hollerith_01 LABELS gfortran llvm)
 RUN(NAME format_hollerith_02 LABELS gfortran llvm)
 RUN(NAME format_hollerith_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME format_hollerith_04 LABELS gfortran llvm)
 
 RUN(NAME print_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp llvm2 wasm fortran mlir)
 RUN(NAME print_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm fortran)

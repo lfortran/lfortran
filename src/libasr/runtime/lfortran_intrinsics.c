@@ -5518,11 +5518,11 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 internal_free(inner_value);
                 internal_free(unescaped_value);
             } else if (isdigit(value[0])) {
-                char *hollerith = strchr(value, 'h');
-                if (hollerith == NULL) {
-                    hollerith = strchr(value, 'H');
-                }
-                if (hollerith != NULL) {
+                // Hollerith nHtext: the descriptor letter follows the count;
+                // the text after it may itself contain 'h' or 'H'.
+                char *hollerith = value;
+                while (isdigit(*hollerith)) hollerith++;
+                if (tolower(*hollerith) == 'h') {
                     int64_t hollerith_len = (int64_t)strlen(hollerith + 1);
                     dtio_fill_before_field(result, result_extent, &fill_from, &field_written, result_len);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len,
