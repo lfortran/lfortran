@@ -567,6 +567,7 @@ namespace LCompilers {
                     ptr_as_char_ptr = lfortran_malloc(context, *module,
                         *builder, arg_size);
                 }
+                llvm_utils->check_allocation(ptr_as_char_ptr, arg_size);
                 llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
                 builder->CreateStore(first_ptr, ptr2firstptr);
             }

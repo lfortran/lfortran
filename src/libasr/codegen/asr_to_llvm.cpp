@@ -2864,6 +2864,15 @@ public:
             llvm::Value* stat_zero = llvm::ConstantInt::get(stat_llvm_type, 0);
             builder->CreateStore(stat_zero, stat_target);
         }
+        // A failed allocation of the storage of an allocate-object branches
+        // to `failure_bb` (see LLVMUtils::check_allocation), which skips the
+        // remaining allocate-objects.
+        llvm::BasicBlock* failure_bb = llvm::BasicBlock::Create(context,
+            "allocate.failed", builder->GetInsertBlock()->getParent());
+        llvm::BasicBlock* saved_failure_bb = llvm_utils->allocate_failure_bb;
+        llvm::Value* saved_failure_size = llvm_utils->allocate_failure_size;
+        llvm_utils->allocate_failure_bb = failure_bb;
+        llvm_utils->allocate_failure_size = nullptr;
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t curr_arg = x.m_args[i];
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
@@ -2910,6 +2919,7 @@ public:
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
+                        llvm_utils->check_allocation(malloc_ptr, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                         builder->CreateStore(builder->CreateBitCast(
                             malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
@@ -3075,6 +3085,7 @@ public:
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
+                        llvm_utils->check_allocation(malloc_ptr, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                         llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
                         llvm::Value* bitcasted_malloc_ptr = builder->CreateBitCast(
@@ -3129,6 +3140,7 @@ public:
 
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
+                        llvm_utils->check_allocation(malloc_ptr, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                                     malloc_size, llvm::MaybeAlign());
                         if(ASRUtils::is_string_only(dest_asr_type)) { // String type has a state to be cloned.
@@ -3376,6 +3388,15 @@ public:
                         llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
                             tmp_expr, ASRUtils::extract_type(array_type), module.get());
                         llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                    } else if (is_pointer_arg && m_stat) {
+                        // The association status of a pointer after a failed
+                        // ALLOCATE is processor dependent. Disassociate it before
+                        // allocating, so that a failure leaves it disassociated
+                        // (as gfortran does) instead of pointing to its old target.
+                        llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
+                            type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
+                        arr_descr->reset_is_allocated_flag(type, desc_ptr, llvm_utils->get_el_type(
+                            tmp_expr, ASRUtils::extract_type(alloc_arg_type), module.get()));
                     }
                     // A polymorphic array allocated with SOURCE= or MOLD= of a
                     // polymorphic array takes the dynamic type of the mold, which
@@ -3513,6 +3534,38 @@ public:
                 }
             }
         }
+        llvm::Value* failure_size = llvm_utils->allocate_failure_size;
+        llvm_utils->allocate_failure_bb = saved_failure_bb;
+        llvm_utils->allocate_failure_size = saved_failure_size;
+        if (failure_bb->use_empty()) {
+            failure_bb->eraseFromParent();
+            return;
+        }
+        llvm::BasicBlock* end_bb = llvm::BasicBlock::Create(context, "allocate.end");
+        if (builder->GetInsertBlock()->getTerminator() == nullptr) {
+            builder->CreateBr(end_bb);
+        }
+        builder->SetInsertPoint(failure_bb);
+        if (m_stat) {
+            // A processor-dependent positive value (F2023 9.7.4), distinct
+            // from the 1 of an already allocated allocate-object.
+            const int64_t stat_allocation_failed = 2;
+            llvm::Type* stat_llvm_type = llvm::Type::getIntNTy(context,
+                8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
+            builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type,
+                stat_allocation_failed), stat_target);
+        } else {
+            llvm::Value* size = llvm_utils->CreateLoad2(
+                llvm::Type::getInt64Ty(context), failure_size);
+            llvm_utils->generate_runtime_error(llvm::ConstantInt::getTrue(context),
+                "allocation of %lld bytes failed: out of memory",
+                {LLVMUtils::RuntimeLabel("not enough memory for this allocation",
+                    {x.base.base.loc})},
+                infile,
+                location_manager,
+                size);
+        }
+        llvm_utils->start_new_block(end_bb);
     }
 
     // The type identifier of the dynamic type of `arg`, whose value is
