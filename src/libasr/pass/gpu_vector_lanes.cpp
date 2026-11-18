@@ -158,9 +158,10 @@ what its body read last waits at the end of its body as well.
 
 Where the lanes of an iteration may be the whole block (`lanes_block`), the
 arrays of the iteration -- locals of the kernel or of a block it runs
-outside every loop, of constant extents, of at least as many elements as a
-SIMD-group has lanes, of integers, reals or logicals, named only by their
-elements and shape, block_array_bytes_max of them together -- can live in
+outside every loop, of constant extents, of integers, reals or logicals,
+named only by their elements and shape, block_array_bytes_max of them
+together, those of fewer elements than a SIMD-group has lanes only with
+one of as many -- can live in
 the shared memory of the block (`__shared__`) instead of each lane's own:
 then the lanes see the same of them, as of a kernel argument, and the loops
 that fill them are distributed (each element assigned by one lane, at a
@@ -6041,8 +6042,7 @@ constexpr int64_t block_array_bytes_max = 32 * 1024;
 // block_array_bytes_max; share_block_arrays keeps the small ones only
 // with a large one.
 std::vector<ASR::symbol_t*> block_array_candidates(
-        const ASR::Function_t &kernel, const KernelInfo &k,
-        const GpuDeviceCapabilities &caps) {
+        const ASR::Function_t &kernel, const KernelInfo &k) {
     std::vector<SymbolTable*> scopes = {kernel.m_symtab};
     std::function<void(ASR::stmt_t**, size_t)> outside_loops =
             [&](ASR::stmt_t **body, size_t n_body) {
@@ -6130,7 +6130,7 @@ std::unique_ptr<LaneRewriter> share_block_arrays(Allocator &al,
     std::unique_ptr<LaneRewriter> rewrite;
     if (caps.lanes_block <= caps.lanes_per_iteration) return rewrite;
     std::vector<ASR::symbol_t*> candidates = block_array_candidates(kernel,
-        k, caps);
+        k);
     std::set<ASR::symbol_t*> trial(candidates.begin(), candidates.end());
     bool shared_only = k.shared_only;
     while (!trial.empty()) {
