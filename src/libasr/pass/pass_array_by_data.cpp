@@ -87,7 +87,8 @@ static void remap_block_calls(Vec<ASR::stmt_t*>& body,
 
 // Whether `x`, a BLOCK in it or a procedure it contains has a variable
 // that keeps its value between calls: one with the SAVE attribute, explicit
-// or implied by an initializer, or a threadprivate one.
+// or implied by an initializer, or a threadprivate one (as in the check of
+// wrap_descriptor_entries).
 static bool has_saved_state(ASR::Function_t* x) {
     std::vector<SymbolTable*> scopes{x->m_symtab};
     for (size_t i = 0; i < scopes.size(); i++) {
@@ -1168,7 +1169,12 @@ struct SignatureSymbols : public ASR::BaseWalkVisitor<SignatureSymbols> {
         }
     }
     // A specification function must not be evaluated twice.
-    void visit_FunctionCall(const ASR::FunctionCall_t&) { safe = false; }
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        safe = false;
+        needed.insert(x.m_name);
+        if (x.m_original_name) needed.insert(x.m_original_name);
+        ASR::BaseWalkVisitor<SignatureSymbols>::visit_FunctionCall(x);
+    }
 };
 
 /*
@@ -1194,6 +1200,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         PassArrayByDataProcedureVisitor& v;
         std::set<ASR::symbol_t*>& not_to_be_erased;
         const LCompilers::PassOptions& pass_options;
+        // Originals whose copy calls them (forward_copies_with_saved_state).
+        std::set<ASR::symbol_t*> forwarded;
 
     public:
 
@@ -1572,28 +1580,27 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 if (parent->get_symbol(original->m_name) != entry.first ||
                         parent->get_symbol(copy->m_name) != entry.second.first ||
                         original->n_body == 0 || !has_saved_state(original)) continue;
+                bool pointer_result = false;
                 if (original->m_return_var) {
-                    // Results other than these are arguments by now.
+                    // Other results are arguments by now.
                     ASR::ttype_t* type = ASRUtils::expr_type(original->m_return_var);
-                    if (ASRUtils::is_array(type) || ASRUtils::is_allocatable_or_pointer(type) ||
+                    pointer_result = ASRUtils::is_pointer(type);
+                    if (!pointer_result && (ASRUtils::is_array(type) ||
+                            ASRUtils::is_allocatable(type) ||
                             !(ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
-                              ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type))) continue;
+                              ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type)))) continue;
                 }
+                forwarded.insert(entry.first);
 
                 const Location& loc = copy->base.base.loc;
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, original->n_args);
-                bool found = true;
                 for (size_t i = 0; i < original->n_args; i++) {
-                    ASR::symbol_t* sym = nullptr;
-                    if (ASR::is_a<ASR::Var_t>(*original->m_args[i])) {
-                        sym = copy->m_symtab->get_symbol(ASRUtils::symbol_name(
-                            ASR::down_cast<ASR::Var_t>(original->m_args[i])->m_v));
-                    }
-                    if (sym == nullptr) {
-                        found = false;
-                        break;
-                    }
+                    // The copy has a dummy of the same name for each one of
+                    // the original.
+                    ASR::symbol_t* sym = copy->m_symtab->get_symbol(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(original->m_args[i])->m_v));
+                    LCOMPILERS_ASSERT(sym);
                     ASR::call_arg_t arg;
                     arg.loc = original->m_args[i]->base.loc;
                     arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, arg.loc, sym));
@@ -1603,7 +1610,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     }
                     args.push_back(al, arg);
                 }
-                if (!found) continue;
 
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 1);
@@ -1611,8 +1617,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     ASR::expr_t* value = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                         entry.first, entry.first, args.p, args.size(),
                         ASRUtils::expr_type(copy->m_return_var), nullptr, nullptr));
-                    body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-                        copy->m_return_var, value, nullptr, false, false, false, false)));
+                    if (pointer_result) {
+                        body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                            copy->m_return_var, value,
+                            ASR::pointer_bounds_formType::NoPointerBounds)));
+                    } else {
+                        body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+                            copy->m_return_var, value, nullptr, false, false, false, false)));
+                    }
                 } else {
                     body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                         entry.first, entry.first, args.p, args.size(), nullptr, false)));
@@ -1621,7 +1633,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 copy->n_body = body.size();
 
                 // Drop what only the old body used: its own saved variables,
-                // its automatic arrays and its internal procedures.
+                // its automatic arrays, its internal procedures and the
+                // symbols that refer to them (COMMON, NAMELIST, generic
+                // interfaces). Evaluating a specification function of the
+                // signature in both entries is harmless: it is pure.
                 SignatureSymbols signature;
                 for (size_t i = 0; i < copy->n_args; i++) {
                     signature.visit_expr(*copy->m_args[i]);
@@ -1638,6 +1653,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                                 ASR::storage_typeType::Parameter) ||
                             ASR::is_a<ASR::Block_t>(*sym) ||
                             ASR::is_a<ASR::AssociateBlock_t>(*sym) ||
+                            ASR::is_a<ASR::CommonBlock_t>(*sym) ||
+                            ASR::is_a<ASR::Namelist_t>(*sym) ||
+                            ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
+                            ASR::is_a<ASR::CustomOperator_t>(*sym) ||
                             (ASR::is_a<ASR::Function_t>(*sym) &&
                              ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))
                                 ->m_deftype == ASR::deftypeType::Implementation)) {
@@ -1650,7 +1669,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
 
         void wrap_descriptor_entries() {
             for (auto& entry : v.proc2newproc) {
-                if (!ASR::is_a<ASR::Function_t>(*entry.first)) continue;
+                // The copy of a forwarded original calls it already.
+                if (!ASR::is_a<ASR::Function_t>(*entry.first) ||
+                        forwarded.count(entry.first)) continue;
                 ASR::Function_t* original = ASR::down_cast<ASR::Function_t>(entry.first);
                 ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(original);
                 if (original->m_symtab->parent->get_symbol(original->m_name) != entry.first ||
