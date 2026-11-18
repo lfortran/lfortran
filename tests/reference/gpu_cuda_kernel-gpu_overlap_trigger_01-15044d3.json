@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_overlap_trigger_01-15044d3",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_overlap_trigger_01.f90",
+    "infile_hash": "07081b9a871a09db7eb8b9a9fdd5c0b845be2c6cfd2cdfe308d71e8a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_overlap_trigger_01-15044d3.stdout",
+    "stdout_hash": "433569c9701298d5b835f01575895d6e199f19c8c115f35d7578b184",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
