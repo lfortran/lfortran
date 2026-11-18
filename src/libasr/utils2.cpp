@@ -1,9 +1,25 @@
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
+#else
+#include <dirent.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 #endif
 
+#include <cctype>
+#include <cerrno>
 #include <cfloat>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -13,6 +29,7 @@
 #include <libasr/exception.h>
 #include <libasr/utils.h>
 #include <libasr/string_utils.h>
+#include <libasr/temp_dir.h>
 
 namespace LCompilers {
 
@@ -363,5 +380,403 @@ int initialize()
     return 0;
 #endif
 }
+
+std::string TempDir::system_temp_dir() {
+#ifdef _WIN32
+    char buffer[MAX_PATH + 1];
+    DWORD len = GetTempPathA(sizeof(buffer), buffer);
+    if (len > 0 && len < sizeof(buffer)) return std::string(buffer, len);
+    return ".";
+#else
+    const char *tmp = std::getenv("TMPDIR");
+    if (tmp && *tmp) return tmp;
+    return "/tmp";
+#endif
+}
+
+namespace {
+
+// The name of this machine, as it can appear in a file name
+std::string temp_dir_host_name() {
+    char name[256] = {};
+#ifdef _WIN32
+    DWORD size = sizeof(name);
+    if (!GetComputerNameA(name, &size)) return "host";
+#else
+    if (gethostname(name, sizeof(name) - 1) != 0) return "host";
+#endif
+    std::string host;
+    for (const char *c = name; *c && host.size() < 64; c++) {
+        bool ok = std::isalnum(static_cast<unsigned char>(*c))
+            || *c == '.' || *c == '-' || *c == '_';
+        host += ok ? *c : '_';
+    }
+    return host.empty() ? "host" : host;
+}
+
+// The directory that the signal handlers remove
+TempDir *signal_temp_dir = nullptr;
+
+#ifdef _WIN32
+// Runs in a new thread when the console is closed or Ctrl+C or Ctrl+Break
+// is pressed; returning FALSE lets the default handler end the process
+BOOL WINAPI remove_temp_dir_on_console_event(DWORD) {
+    TempDir *dir = signal_temp_dir;
+    if (dir) dir->remove_in_signal_handler();
+    return FALSE;
+}
+#else
+// Interrupts, crashes, and the limits of the CPU time and the file size
+constexpr int temp_dir_signals[] = {
+    SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM,
+    SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGSEGV,
+    SIGXCPU, SIGXFSZ
+};
+constexpr size_t n_temp_dir_signals
+    = sizeof(temp_dir_signals) / sizeof(temp_dir_signals[0]);
+struct sigaction previous_signal_actions[n_temp_dir_signals];
+
+// The directory of the signal handlers and its subdirectories, opened when
+// they are created: the handlers cannot open them, opendir() allocates
+constexpr size_t max_signal_dirs = 4;
+DIR *signal_dirs[max_signal_dirs] = {};
+
+void open_signal_dir(const std::string &path) {
+    for (DIR *&dir : signal_dirs) {
+        if (!dir) {
+            dir = opendir(path.c_str());
+            return;
+        }
+    }
+}
+
+void close_signal_dirs() {
+    for (DIR *&dir : signal_dirs) {
+        if (dir) closedir(dir);
+        dir = nullptr;
+    }
+}
+
+// Removes the files and the empty subdirectories in the open directory
+// `dir` in one pass over its entries, without allocating: in a signal
+// handler. Returns how many it removed.
+size_t remove_entries_once_in_signal_handler(DIR *dir) {
+    int fd = dirfd(dir);
+    size_t removed = 0;
+    auto remove_entry = [fd, &removed](const char *name) {
+        if (name[0] == '.' && (name[1] == '\0'
+                || (name[1] == '.' && name[2] == '\0'))) {
+            return;
+        }
+        if (unlinkat(fd, name, 0) == 0
+                || unlinkat(fd, name, AT_REMOVEDIR) == 0) {
+            removed++;
+        }
+    };
+#ifdef __linux__
+    // The getdents64 system call reads the entries into this buffer.
+    // The layout of an entry is the kernel's struct linux_dirent64.
+    struct LinuxDirent64 {
+        std::uint64_t d_ino;
+        std::int64_t d_off;
+        unsigned short d_reclen;
+        unsigned char d_type;
+        char d_name[1];
+    };
+    alignas(LinuxDirent64) char buffer[4096];
+    long n;
+    while ((n = syscall(SYS_getdents64, fd, buffer, sizeof(buffer))) > 0) {
+        for (long pos = 0; pos < n;) {
+            unsigned short reclen;
+            std::memcpy(&reclen, buffer + pos + offsetof(LinuxDirent64, d_reclen),
+                sizeof(reclen));
+            remove_entry(buffer + pos + offsetof(LinuxDirent64, d_name));
+            pos += reclen;
+        }
+    }
+#else
+    // readdir() of an open directory reads into the buffer of its DIR
+    while (struct dirent *entry = readdir(dir)) remove_entry(entry->d_name);
+#endif
+    return removed;
+}
+
+// Removes the files and the empty subdirectories in the open directory
+// `dir`, without allocating. A file system may skip entries of a directory
+// that changes while it is read, so it is read again from the start until a
+// pass removes nothing, at most a few times.
+void remove_entries_in_signal_handler(DIR *dir) {
+    for (int pass = 0; pass < 8; pass++) {
+#ifdef __linux__
+        lseek(dirfd(dir), 0, SEEK_SET);
+#else
+        rewinddir(dir);
+#endif
+        if (remove_entries_once_in_signal_handler(dir) == 0) break;
+    }
+}
+
+void temp_dir_signal_set(sigset_t *set) {
+    sigemptyset(set);
+    for (int sig : temp_dir_signals) sigaddset(set, sig);
+}
+
+void remove_temp_dir_on_signal(int sig) {
+    int saved_errno = errno;
+    TempDir *dir = signal_temp_dir;
+    if (dir) dir->remove_in_signal_handler();
+    // Hand the signal to the previous handler, which is the default action
+    // (the process ends with the status of the signal, 128+sig in a shell)
+    // or, for a crash, the stacktrace printer. It is blocked here, so it is
+    // delivered when this handler returns.
+    for (size_t i = 0; i < n_temp_dir_signals; i++) {
+        if (temp_dir_signals[i] == sig) {
+            sigaction(sig, &previous_signal_actions[i], nullptr);
+        }
+    }
+    raise(sig);
+    errno = saved_errno;
+}
+#endif
+
+// Holds the signals of the handlers while it exists, so that they see the
+// directory either before it is created or removed, or after
+class BlockTempDirSignals {
+public:
+#ifdef _WIN32
+    BlockTempDirSignals() {}
+#else
+    BlockTempDirSignals() {
+        sigset_t signals;
+        temp_dir_signal_set(&signals);
+        sigprocmask(SIG_BLOCK, &signals, &previous_mask_);
+    }
+    ~BlockTempDirSignals() { sigprocmask(SIG_SETMASK, &previous_mask_, nullptr); }
+private:
+    sigset_t previous_mask_;
+#endif
+};
+
+void install_temp_dir_signal_handlers(TempDir *dir) {
+    if (signal_temp_dir) return;
+    signal_temp_dir = dir;
+#ifdef _WIN32
+    SetConsoleCtrlHandler(remove_temp_dir_on_console_event, TRUE);
+#else
+    struct sigaction action {};
+    action.sa_handler = remove_temp_dir_on_signal;
+    // One handler at a time
+    temp_dir_signal_set(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+    for (size_t i = 0; i < n_temp_dir_signals; i++) {
+        int sig = temp_dir_signals[i];
+        if (sigaction(sig, nullptr, &previous_signal_actions[i]) != 0) continue;
+        // E.g. SIGINT in a background job, SIGHUP under nohup
+        if (previous_signal_actions[i].sa_handler == SIG_IGN) continue;
+        sigaction(sig, &action, nullptr);
+    }
+#endif
+}
+
+bool process_exists(unsigned long pid) {
+#ifdef _WIN32
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE,
+        static_cast<DWORD>(pid));
+    if (!process) return GetLastError() != ERROR_INVALID_PARAMETER;
+    DWORD code = 0;
+    bool exists = !GetExitCodeProcess(process, &code) || code == STILL_ACTIVE;
+    CloseHandle(process);
+    return exists;
+#else
+    // EPERM: it exists, but belongs to another user
+    return !(kill(static_cast<pid_t>(pid), 0) == -1 && errno == ESRCH);
+#endif
+}
+
+// The process ID in the name `<start><pid>-<6 letters or digits>` of a
+// temporary directory, else 0
+unsigned long temp_dir_pid(const std::string &name, const std::string &start) {
+    if (name.compare(0, start.size(), start) != 0) return 0;
+    size_t begin = start.size(), end = begin;
+    while (end < name.size() && std::isdigit(static_cast<unsigned char>(name[end]))) {
+        end++;
+    }
+    if (end == begin || end - begin > 9 || name.size() != end + 7
+            || name[end] != '-') {
+        return 0;
+    }
+    for (size_t i = end + 1; i < name.size(); i++) {
+        if (!std::isalnum(static_cast<unsigned char>(name[i]))) return 0;
+    }
+    return std::stoul(name.substr(begin, end - begin));
+}
+
+} // namespace
+
+std::vector<std::string> TempDir::remove_stale(const std::string &prefix) {
+    std::vector<std::string> removed;
+    std::string start = prefix + "-" + temp_dir_host_name() + "-";
+    std::error_code ec;
+    std::filesystem::directory_iterator it(system_temp_dir(), ec), end;
+    for (; !ec && it != end; it.increment(ec)) {
+        const std::filesystem::path &dir = it->path();
+        unsigned long pid = temp_dir_pid(dir.filename().string(), start);
+        if (pid == 0) continue;
+#ifdef _WIN32
+        // The user's temporary directory is private on Windows
+        std::error_code status_ec;
+        if (!std::filesystem::is_directory(
+                std::filesystem::symlink_status(dir, status_ec))) {
+            continue;
+        }
+#else
+        // A directory of this user, not a symbolic link to one
+        struct stat st;
+        if (lstat(dir.c_str(), &st) != 0 || !S_ISDIR(st.st_mode)
+                || st.st_uid != geteuid()) {
+            continue;
+        }
+#endif
+        if (process_exists(pid)) continue;
+        std::error_code remove_ec;
+        std::filesystem::remove_all(dir, remove_ec);
+        if (!remove_ec) removed.push_back(dir.string());
+    }
+    return removed;
+}
+
+TempDir::~TempDir() {
+    remove();
+    if (signal_temp_dir == this) signal_temp_dir = nullptr;
+}
+
+const std::string &TempDir::path() {
+    if (!path_.empty()) return path_;
+    std::filesystem::path base = system_temp_dir();
+    BlockTempDirSignals block_signals;
+#ifdef _WIN32
+    std::string name = prefix_ + "-" + temp_dir_host_name() + "-"
+        + std::to_string(GetCurrentProcessId()) + "-";
+    // The user's temporary directory is already private on Windows
+    std::error_code ec;
+    for (int i = 0; i < 100 && path_.empty(); i++) {
+        std::filesystem::path dir = base / (name + get_unique_ID().substr(0, 6));
+        if (std::filesystem::create_directory(dir, ec)) {
+            path_ = dir.string();
+        } else if (ec) {
+            break;
+        }
+    }
+    if (path_.empty()) {
+        throw TempDirError("cannot create a temporary directory in '"
+            + base.string() + "': " + (ec ? ec.message() : "it exists"));
+    }
+#else
+    // mkdtemp() creates the directory with mode 0700 and a unique name
+    std::string name = (base / (prefix_ + "-" + temp_dir_host_name() + "-"
+        + std::to_string(getpid()) + "-XXXXXX")).string();
+    if (!mkdtemp(&name[0])) {
+        throw TempDirError("cannot create a temporary directory in '"
+            + base.string() + "': " + std::strerror(errno));
+    }
+    path_ = name;
+#endif
+    if (path_.size() < sizeof(c_path_)) {
+        std::memcpy(c_path_, path_.c_str(), path_.size() + 1);
+    }
+    std::string message = prefix_ + ": temporary files kept in " + path_ + "\n";
+    if (message.size() <= sizeof(kept_message_)) {
+        std::memcpy(kept_message_, message.data(), message.size());
+        kept_message_size_ = message.size();
+    }
+    if (remove_on_signal_) install_temp_dir_signal_handlers(this);
+#ifndef _WIN32
+    if (signal_temp_dir == this) open_signal_dir(path_);
+#endif
+    return path_;
+}
+
+std::string TempDir::file(const std::string &name) {
+    return (std::filesystem::path(path()) / name).string();
+}
+
+std::string TempDir::file(const std::string &subdir, const std::string &name) {
+    std::filesystem::path dir = std::filesystem::path(path()) / subdir;
+    BlockTempDirSignals block_signals;
+    std::error_code ec;
+    [[maybe_unused]] bool created = std::filesystem::create_directory(dir, ec);
+    if (ec) {
+        throw TempDirError("cannot create the temporary directory '"
+            + dir.string() + "': " + ec.message());
+    }
+#ifndef _WIN32
+    if (created && signal_temp_dir == this) open_signal_dir(dir.string());
+#endif
+    return (dir / name).string();
+}
+
+void TempDir::remove() noexcept {
+    if (path_.empty() || keep_) return;
+    BlockTempDirSignals block_signals;
+#ifndef _WIN32
+    if (signal_temp_dir == this) close_signal_dirs();
+#endif
+    try {
+        std::error_code ec;
+        std::filesystem::remove_all(path_, ec);
+    } catch (...) {
+    }
+    c_path_[0] = '\0';
+    kept_message_size_ = 0;
+    path_.clear();
+}
+
+void TempDir::report_kept() noexcept {
+    if (!keep_ || kept_message_size_ == 0 || kept_reported_) return;
+    kept_reported_ = 1;
+#ifdef _WIN32
+    std::fwrite(kept_message_, 1, kept_message_size_, stderr);
+    std::fflush(stderr);
+#else
+    // write() is async-signal-safe
+    for (std::size_t done = 0; done < kept_message_size_;) {
+        ssize_t n = write(STDERR_FILENO, kept_message_ + done,
+            kept_message_size_ - done);
+        if (n > 0) {
+            done += static_cast<std::size_t>(n);
+        } else if (n < 0 && errno == EINTR) {
+            continue;
+        } else {
+            break;
+        }
+    }
+#endif
+}
+
+void TempDir::remove_in_signal_handler() noexcept {
+    if (keep_) {
+        report_kept();
+        return;
+    }
+    if (c_path_[0] == '\0') return;
+#ifdef _WIN32
+    try {
+        std::error_code ec;
+        std::filesystem::remove_all(c_path_, ec);
+    } catch (...) {
+    }
+#else
+    // Without allocating: the signal may have interrupted malloc() or free().
+    // The subdirectories, opened after the directory, first.
+    if (signal_temp_dir == this) {
+        for (size_t i = max_signal_dirs; i-- > 0;) {
+            if (signal_dirs[i]) remove_entries_in_signal_handler(signal_dirs[i]);
+        }
+    }
+    rmdir(c_path_);
+#endif
+    c_path_[0] = '\0';
+}
+
 
 } // namespace LCompilers

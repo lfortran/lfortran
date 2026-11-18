@@ -371,6 +371,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
         app.add_flag("--time-report", compiler_options.time_report, "Show compilation time report")->group(group_output_debugging_options);
+        app.add_flag("--save-temps", opts.save_temps, "Keep the temporary directory of the intermediate files and print its path")->group(group_output_debugging_options);
 
 
         // Pass and transformation-related flags
@@ -439,6 +440,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--mangle-underscore-external", compiler_options.po.mangle_underscore_external, "Mangles external symbols with underscore")->group(group_mangling_options);
 
         // Miscellaneous flags
+        app.add_flag("--clean-temp", opts.clean_temp, "Remove the temporary directories of killed compiler runs and exit")->group(group_miscellaneous_options);
         app.add_flag("--continue-compilation", compiler_options.continue_compilation, "collect error message and continue compilation")->group(group_miscellaneous_options);
         app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors")->group(group_miscellaneous_options);
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified")->group(group_miscellaneous_options);

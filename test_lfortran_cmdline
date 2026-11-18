@@ -146,6 +146,264 @@ if [[ $FC == "lfortran" ]]; then
         ! $FC --backend=$backend $f -o missing/out 2> err.txt
         grep "cannot write the output file 'missing/out'" err.txt
     done
+
+    cd $(mktemp -d)
+    echo "Testing that no intermediate files are left in TMPDIR"
+    cat > m.f90 <<'EOF'
+module m
+implicit none
+contains
+integer function twice(x)
+integer, intent(in) :: x
+twice = 2*x
+end function
+end module
+EOF
+    cat > p.f90 <<'EOF'
+program p
+use m, only: twice
+implicit none
+if (twice(21) /= 42) error stop
+print *, "ok"
+end program
+EOF
+    cat > e.f90 <<'EOF'
+program e
+implicit none
+integer :: i
+i = undefined_variable
+end program
+EOF
+    cat > g.f90 <<'EOF'
+program g
+use m, only: twice
+implicit none
+integer :: i, x(100)
+do concurrent (i = 1:100)
+    x(i) = i
+end do
+if (twice(sum(x)) /= 10100) error stop
+print *, "ok"
+end program
+EOF
+    mkdir tmp obj
+    tmp_is_empty() {
+        if [ -n "$(ls -A tmp)" ]; then
+            ls -lR tmp
+            return 1
+        fi
+    }
+    TMPDIR=$PWD/tmp $FC m.f90 p.f90 -o a.out
+    ./a.out
+    tmp_is_empty
+    # A compile error in the second file
+    if TMPDIR=$PWD/tmp $FC m.f90 e.f90 -o b.out; then exit 1; fi
+    tmp_is_empty
+    TMPDIR=$PWD/tmp $FC --backend=c m.f90 p.f90 -o c.out
+    ./c.out
+    tmp_is_empty
+    # Nothing but the objects next to the objects
+    TMPDIR=$PWD/tmp $FC --backend=c -c m.f90 -o obj/m.o
+    TMPDIR=$PWD/tmp $FC --backend=c -c p.f90 -o obj/p.o
+    [ "$(ls -A obj | tr '\n' ' ')" == "m.o p.o " ]
+    tmp_is_empty
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu m.f90 g.f90 -o g.out
+    ./g.out
+    tmp_is_empty
+    # A temporary directory with a space in its path, in the commands of
+    # the tools
+    mkdir "sp ace"
+    TMPDIR="$PWD/sp ace" $FC --backend=c -c p.f90 -o obj/p_sp.o
+    [ -f obj/p_sp.o ]
+    TMPDIR="$PWD/sp ace" $FC --backend=c m.f90 p.f90 -o c_sp.out
+    ./c_sp.out
+    # A C source makes the compiler driver do the link
+    TMPDIR="$PWD/sp ace" $FC $f1 $add_c -o a_sp.out
+    ./a_sp.out
+    TMPDIR="$PWD/sp ace" $FC --gpu=cuda_cpu m.f90 g.f90 -o g_sp.out
+    ./g_sp.out
+    if [ -n "$(ls -A "sp ace")" ]; then
+        ls -lR "sp ace"
+        exit 1
+    fi
+    # A temporary directory with characters that the shell interprets, also
+    # inside double quotes: none of them may run a command
+    qdir="$PWD/q \$x \`touch pwned\` \"d\" 's'"
+    mkdir "$qdir"
+    TMPDIR="$qdir" $FC --backend=c -c p.f90 -o obj/p_q.o
+    [ -f obj/p_q.o ]
+    TMPDIR="$qdir" $FC m.f90 p.f90 -o a_q.out
+    ./a_q.out
+    TMPDIR="$qdir" $FC --backend=c m.f90 p.f90 -o c_q.out
+    ./c_q.out
+    TMPDIR="$qdir" $FC $f1 $add_c -o a2_q.out
+    ./a2_q.out
+    TMPDIR="$qdir" $FC --gpu=cuda_cpu m.f90 g.f90 -o g_q.out
+    ./g_q.out
+    [ ! -e pwned ]
+    if [ -n "$(ls -A "$qdir")" ]; then
+        ls -lR "$qdir"
+        exit 1
+    fi
+    # Sources named like the files of the link
+    cp m.f90 lfortran_gpu_cuda_0.f90
+    cp p.f90 lfortran_gpu_kernel_0.f90
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu lfortran_gpu_cuda_0.f90 g.f90 -o g2.out
+    ./g2.out
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu m.f90 lfortran_gpu_kernel_0.f90 -o g3.out
+    ./g3.out
+    tmp_is_empty
+    # A plain -c compile does not need the temporary directory
+    TMPDIR=$PWD/missing $FC -c m.f90 -o m.o
+    [ -f m.o ]
+    if TMPDIR=$PWD/missing $FC m.f90 p.f90 -o d.out 2> err.txt; then
+        exit 1
+    fi
+    grep "cannot create a temporary directory in '$PWD/missing'" err.txt
+    # Nor does the empty object of a file without a main program, with the
+    # C and C++ backends
+    TMPDIR=$PWD/missing $FC --backend=c -c m.f90 -o m_c.o
+    [ -f m_c.o ]
+    TMPDIR=$PWD/missing $FC --backend=cpp -c m.f90 -o m_cpp.o
+    [ -f m_cpp.o ]
+
+    echo "Testing that an interrupted compiler removes its temporary directory"
+    # Opening a FIFO without a writer blocks the compiler on the second
+    # file, after the object of the first one is in the temporary directory
+    mkfifo blocked.f90
+    # No core files of the signals that dump one
+    ulimit -c 0
+    for sig in INT TERM HUP QUIT ILL FPE XCPU XFSZ; do
+        # Job control: a background job of a script ignores SIGINT otherwise
+        set -m
+        TMPDIR=$PWD/tmp $FC m.f90 blocked.f90 -o i.out &
+        pid=$!
+        set +m
+        for i in $(seq 600); do
+            if compgen -G "tmp/lfortran-*/m.o" > /dev/null; then break; fi
+            sleep 0.1
+        done
+        compgen -G "tmp/lfortran-*/m.o"
+        kill -$sig $pid
+        status=0
+        wait $pid || status=$?
+        [ $status -eq $((128 + $(kill -l $sig))) ]
+        tmp_is_empty
+    done
+    # Also the files of the link, in their subdirectory: a device compiler
+    # that blocks after it has compiled the GPU runtime
+    mkfifo cxx_blocked
+    cat > slow_cxx <<'EOF'
+#!/bin/sh
+c++ "$@" || exit
+case "$*" in
+    *lfortran_gpu_cuda_0.o*) cat "$(dirname "$0")/cxx_blocked" > /dev/null ;;
+esac
+EOF
+    chmod +x slow_cxx
+    TMPDIR=$PWD/tmp $FC --gpu=cuda_cpu --device-compiler=$PWD/slow_cxx \
+        m.f90 g.f90 -o g4.out &
+    pid=$!
+    for i in $(seq 600); do
+        if compgen -G "tmp/lfortran-*/link/lfortran_gpu_cuda_0.o" > /dev/null; then
+            break
+        fi
+        sleep 0.1
+    done
+    compgen -G "tmp/lfortran-*/link/lfortran_gpu_cuda_0.o"
+    kill -TERM $pid
+    status=0
+    wait $pid || status=$?
+    # Let the device compiler finish
+    echo > cxx_blocked
+    [ $status -eq $((128 + $(kill -l TERM))) ]
+    tmp_is_empty
+
+    echo "Testing --clean-temp"
+    # The host name as the compiler puts it into the directory name
+    host=$(hostname | tr -c 'A-Za-z0-9._\n-' '_' | cut -c1-64)
+    sh -c 'exit 0' &
+    dead=$!
+    wait $dead
+    mkdir -p stale/lfortran-$host-$dead-Ab12Cd stale/lfortran-$host-$$-Ab12Cd \
+        stale/lfortran-other.host-$dead-Ab12Cd stale/other-$host-$dead-Ab12Cd \
+        stale/lfortran-$host-$dead-toolong stale/target
+    touch stale/lfortran-$host-$dead-Ab12Cd/m.o stale/target/m.o \
+        stale/lfortran-$host-$dead-File12
+    ln -s target stale/lfortran-$host-$dead-Link12
+    TMPDIR=$PWD/stale $FC --clean-temp > out.txt
+    [ "$(cat out.txt)" == "removed $PWD/stale/lfortran-$host-$dead-Ab12Cd" ]
+    [ ! -e stale/lfortran-$host-$dead-Ab12Cd ]
+    # Not a live process, another host, another prefix, another name, a
+    # file, a symbolic link (nor what it points to)
+    [ -d stale/lfortran-$host-$$-Ab12Cd ]
+    [ -d stale/lfortran-other.host-$dead-Ab12Cd ]
+    [ -d stale/other-$host-$dead-Ab12Cd ]
+    [ -d stale/lfortran-$host-$dead-toolong ]
+    [ -f stale/lfortran-$host-$dead-File12 ]
+    [ -L stale/lfortran-$host-$dead-Link12 ]
+    [ -f stale/target/m.o ]
+    # Nothing to remove
+    TMPDIR=$PWD/stale $FC --clean-temp > out.txt
+    [ ! -s out.txt ]
+
+    echo "Testing --save-temps"
+    TMPDIR=$PWD/tmp $FC --save-temps m.f90 p.f90 -o s.out 2> err.txt
+    ./s.out
+    kept=$(sed -n 's/^lfortran: temporary files kept in //p' err.txt)
+    [ "$(dirname "$kept")" == "$PWD/tmp" ]
+    [ -f "$kept/m.o" ]
+    [ -f "$kept/p.o" ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Also after an error
+    if TMPDIR=$PWD/tmp $FC --save-temps m.f90 e.f90 -o s.out 2> err.txt; then
+        exit 1
+    fi
+    kept=$(sed -n 's/^lfortran: temporary files kept in //p' err.txt)
+    [ -f "$kept/m.o" ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Also when the stacktrace printer of a crash exits
+    set -m
+    TMPDIR=$PWD/tmp $FC --save-temps m.f90 blocked.f90 -o s.out 2> err.txt &
+    pid=$!
+    set +m
+    for i in $(seq 600); do
+        if compgen -G "tmp/lfortran-*/m.o" > /dev/null; then break; fi
+        sleep 0.1
+    done
+    kill -SEGV $pid
+    status=0
+    wait $pid || status=$?
+    kept=$(compgen -G "$PWD/tmp/lfortran-*")
+    [ -f "$kept/m.o" ]
+    # Once, whether the stacktrace printer exits or the signal ends it
+    [ "$(grep -c "temporary files kept in $kept\$" err.txt)" -eq 1 ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Also when a signal ends the compiler
+    set -m
+    TMPDIR=$PWD/tmp $FC --save-temps m.f90 blocked.f90 -o s.out 2> err.txt &
+    pid=$!
+    set +m
+    for i in $(seq 600); do
+        if compgen -G "tmp/lfortran-*/m.o" > /dev/null; then break; fi
+        sleep 0.1
+    done
+    kill -INT $pid
+    status=0
+    wait $pid || status=$?
+    [ $status -eq $((128 + $(kill -l INT))) ]
+    kept=$(compgen -G "$PWD/tmp/lfortran-*")
+    [ -f "$kept/m.o" ]
+    [ "$(grep -c "^lfortran: temporary files kept in $kept\$" err.txt)" -eq 1 ]
+    rm -r "$kept"
+    tmp_is_empty
+    # Nothing to keep: nothing is printed
+    TMPDIR=$PWD/tmp $FC --save-temps -c m.f90 -o s.o 2> err.txt
+    if grep "temporary files kept" err.txt; then exit 1; fi
+    tmp_is_empty
 fi
 
 cd $(mktemp -d)
