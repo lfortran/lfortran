@@ -1007,6 +1007,11 @@ fortran = true
 pass = "array_struct_temporary"
 
 [[test]]
+filename = "../integration_tests/array_section_assign_15.f90"
+fortran = true
+pass = "full_section_target,array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/pointer_intent_in_04.f90"
 fortran = true
 pass = "array_struct_temporary"
@@ -6803,6 +6808,14 @@ run = true
 
 [[test]]
 filename = "errors/array_shape_10.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_11.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_12.f90"
 run = true
 
 [[test]]

@@ -81,6 +81,7 @@
 #include <libasr/pass/gpu_array_statements.h>
 #include <libasr/pass/gpu_call_guards.h>
 #include <libasr/pass/dead_array_store.h>
+#include <libasr/pass/full_section_target.h>
 #include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/pass/gpu_memory_space.h>
@@ -156,6 +157,7 @@ namespace LCompilers {
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
             {"dead_array_store", &pass_dead_array_store},
+            {"full_section_target", &pass_full_section_target},
             {"gpu_array_statements", &pass_gpu_array_statements},
             {"gpu_call_guards", &pass_gpu_call_guards},
             {"omp_region_flatten", &pass_flatten_omp_regions},
@@ -334,6 +336,10 @@ namespace LCompilers {
                 // the runtime formatter calls, lowered by the passes below
                 // like any other procedure.
                 "dtio_callbacks",
+                // `x(:) = v` assigns to the whole array `x` without
+                // reallocation, so that every pass below treats it exactly
+                // as it treats `x = v` without reallocation.
+                "full_section_target",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
                 // it, and the pass after that writes the decision into the

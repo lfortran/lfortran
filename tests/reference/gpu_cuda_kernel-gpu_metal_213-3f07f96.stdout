@@ -119,7 +119,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     int __dim_d_0 = __scalar_args.__dim_d_0;
     int __lb_d_0 = __scalar_args.__lb_d_0;
     int __flat_idx;
-    int __gpu_sec_i;
+    int __gpu_bc_i;
     int i__dc;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1)) {
         return;
@@ -127,8 +127,8 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     #pragma unroll 16
-    for (__gpu_sec_i = 1; __gpu_sec_i <= ((((((int)__dim_d_0) + ((int)__lb_d_0)) - 1) - ((int)__lb_d_0)) + 1); __gpu_sec_i++) {
-        d[((int)((((int)__lb_d_0) + (__gpu_sec_i - 1))) - (__lb_d_0))] =   1.00000000000000000e+00;
+    for (__gpu_bc_i = 1; __gpu_bc_i <= __dim_d_0; __gpu_bc_i++) {
+        d[((int)((((int)__lb_d_0) + (__gpu_bc_i - 1))) - (__lb_d_0))] =   1.00000000000000000e+00;
     }
 }
 
