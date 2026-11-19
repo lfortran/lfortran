@@ -1329,8 +1329,27 @@ struct Scope {
     SymbolTable* symtab = nullptr;
     bool is_program = false;
     bool has_internal_procedures = false;
+    // The names of the variables that its internal procedures, or theirs,
+    // reach by host association: nested_vars has made them their
+    // HostAssociated variables
+    std::set<std::string> reached;
     SymbolSet aliased;
 };
+
+static void collect_reached(SymbolTable* t, std::set<std::string>& reached) {
+    for (auto& item : t->get_scope()) {
+        if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(item.second);
+        for (auto& v : f->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*v.second) &&
+                    ASR::down_cast<ASR::Variable_t>(v.second)->m_storage ==
+                        ASR::storage_typeType::HostAssociated) {
+                reached.insert(v.first);
+            }
+        }
+        collect_reached(f->m_symtab, reached);
+    }
+}
 
 class HoistReAllocVisitor : public PassUtils::PassVisitor<HoistReAllocVisitor> {
 public:
@@ -1348,6 +1367,9 @@ public:
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 scope.has_internal_procedures = true;
             }
+        }
+        if (scope.has_internal_procedures) {
+            collect_reached(x.m_symtab, scope.reached);
         }
         AliasCollector c(scope.aliased);
         c.visit_symbol(x.base);
@@ -1375,11 +1397,14 @@ public:
     void visit_OMPRegion(const ASR::OMPRegion_t& /*x*/) {}
 
     // A variable of the scope or of a BLOCK in it, whose allocation no
-    // procedure can change unless it is an actual argument of the call.
+    // procedure can change unless it is an actual argument of the call, or
+    // it is one an internal procedure of the scope names, which a call of
+    // it, also through a procedure passed down, can change.
     // A procedure can change its value through a pointer only when it is
     // also is_aliased.
     bool is_call_safe(ASR::symbol_t* s) {
-        if (!ASR::is_a<ASR::Variable_t>(*s) || scope.has_internal_procedures) {
+        if (!ASR::is_a<ASR::Variable_t>(*s) ||
+                scope.reached.count(ASRUtils::symbol_name(s)) > 0) {
             return false;
         }
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
@@ -1668,6 +1693,82 @@ public:
     // The first one gives `u` and `v` the same shape, so the second finds
     // `v` allocated (its shape was read) with the shape of `u`, and does
     // nothing.
+    // A ReAlloc whose extents read a scalar that the statement just before
+    // it sets to an expression of inquiries and constants, as the extent of
+    // a function result is kept, `m = size(a)`, reads that expression
+    // instead: it has the same value there, and the ReAlloc then reads no
+    // variable that the loop sets, so that it can leave the loop.
+    void read_extents_in_place(ASR::stmt_t** body, size_t n_body) {
+        class Inquiries : public ASR::BaseWalkVisitor<Inquiries> {
+        public:
+            bool ok = true;
+            ASR::symbol_t* self = nullptr;
+            void visit_FunctionCall(const ASR::FunctionCall_t&) { ok = false; }
+            void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t&) { ok = false; }
+            void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t&) { ok = false; }
+            void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t&) { ok = false; }
+            void visit_ArrayItem(const ASR::ArrayItem_t&) { ok = false; }
+            void visit_Var(const ASR::Var_t& x) {
+                if (past_external(x.m_v) == self) ok = false;
+            }
+        };
+        class Substitute : public ASR::BaseExprReplacer<Substitute> {
+        public:
+            Allocator& al;
+            ASR::symbol_t* var;
+            ASR::expr_t* value;
+            Substitute(Allocator& al_, ASR::symbol_t* var_, ASR::expr_t* value_)
+                : al(al_), var(var_), value(value_) {}
+            void replace_Var(ASR::Var_t* x) {
+                if (past_external(x->m_v) == var) {
+                    ASRUtils::ExprStmtDuplicator d(al);
+                    *current_expr = d.duplicate_expr(value);
+                }
+            }
+            void apply(ASR::expr_t*& e) {
+                if (e == nullptr) return;
+                current_expr = &e;
+                replace_expr(e);
+            }
+        };
+        for (size_t i = 1; i < n_body; i++) {
+            if (!ASR::is_a<ASR::ReAlloc_t>(*body[i]) ||
+                    !ASR::is_a<ASR::Assignment_t>(*body[i - 1])) {
+                continue;
+            }
+            ASR::Assignment_t* a = ASR::down_cast<ASR::Assignment_t>(body[i - 1]);
+            if (a->m_overloaded != nullptr || !ASR::is_a<ASR::Var_t>(*a->m_target) ||
+                    !ASRUtils::is_integer(*ASRUtils::expr_type(a->m_target)) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(a->m_target))) {
+                continue;
+            }
+            ASR::symbol_t* var = past_external(
+                ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*var) ||
+                    ASR::down_cast<ASR::Variable_t>(var)->m_storage !=
+                        ASR::storage_typeType::Default ||
+                    is_aliased(var)) {
+                continue;
+            }
+            Inquiries inquiries;
+            inquiries.self = var;
+            inquiries.visit_expr(*a->m_value);
+            if (!inquiries.ok) {
+                continue;
+            }
+            ASR::ReAlloc_t* r = ASR::down_cast<ASR::ReAlloc_t>(body[i]);
+            Substitute sub(al, var, a->m_value);
+            for (size_t k = 0; k < r->n_args; k++) {
+                for (size_t d = 0; d < r->m_args[k].n_dims; d++) {
+                    sub.apply(r->m_args[k].m_dims[d].m_start);
+                    sub.apply(r->m_args[k].m_dims[d].m_length);
+                }
+                sub.apply(r->m_args[k].m_len_expr);
+            }
+            sub.apply(r->m_shape_differs);
+        }
+    }
+
     void remove_redundant_reallocations(ASR::stmt_t**& body, size_t& n_body) {
         std::vector<bool> redundant(n_body, false);
         bool any = false;
@@ -1722,6 +1823,7 @@ public:
             return;
         }
         remove_redundant_reallocations(xx.m_body, xx.n_body);
+        read_extents_in_place(xx.m_body, xx.n_body);
         int64_t step = 1;
         if (x.m_head.m_increment &&
                 (!ASRUtils::is_value_constant(
@@ -2124,6 +2226,7 @@ public:
             return;
         }
         remove_redundant_reallocations(xx.m_body, xx.n_body);
+        read_extents_in_place(xx.m_body, xx.n_body);
         if (xx.n_orelse != 0) {
             return;
         }

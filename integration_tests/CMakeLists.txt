@@ -3764,6 +3764,7 @@ RUN(NAME realloc_lhs_hoist_13 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocations of unallocated arrays, see tests/tests.toml
 RUN(NAME realloc_lhs_hoist_14 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # calls of functions that read only their arguments
+RUN(NAME realloc_lhs_hoist_15 LABELS gfortran llvm) # extents kept in a scalar, internal procedures that do not name the target
 RUN(NAME realloc_lhs_unallocated_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # plain allocation of certainly unallocated arrays, see tests/tests.toml
 RUN(NAME realloc_lhs_unallocated_02 LABELS gfortran llvm
