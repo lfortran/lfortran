@@ -975,6 +975,7 @@ public:
             x.class_type == AST::modType::Submodule
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
         PendingAttributeScope pending_attribute_scope(*this);
+        collect_allocatable_statements(x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
@@ -1422,6 +1423,7 @@ public:
         }
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
         PendingAttributeScope pending_attribute_scope(*this);
+        collect_allocatable_statements(x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -2015,6 +2017,7 @@ public:
         }
 
         PendingAttributeScope pending_attribute_scope(*this);
+        collect_allocatable_statements(x.m_items, x.n_items);
         SymbolTable* parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
@@ -2334,6 +2337,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         PendingAttributeScope pending_attribute_scope(*this);
+        collect_allocatable_statements(x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3012,6 +3016,7 @@ public:
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         PendingAttributeScope pending_attribute_scope(*this);
+        collect_allocatable_statements(x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3532,7 +3537,9 @@ public:
 
             if (return_type && !(x.n_attributes == 0 && compiler_options.implicit_typing && compiler_options.implicit_interface)) {
                 // Bypass the strict F23 guard if the duplicate was just caused by a standalone attribute
-                if (!is_alloc_standalone && !is_ptr_standalone) {
+                if ((!is_alloc_standalone && !is_ptr_standalone)
+                        || explicitly_typed_variables.count(
+                            current_scope->get_symbol(return_var_name))) {
                     diag.add(diag::Diagnostic(
                         "Cannot specify the return type twice",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -4519,6 +4526,7 @@ public:
     void visit_BlockData(const AST::BlockData_t& x) {
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         PendingAttributeScope pending_attribute_scope(*this);
+        collect_allocatable_statements(x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         std::string name;

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-func_result_type_twice_01-bdc959f",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/func_result_type_twice_01.f90",
+    "infile_hash": "342a01ceb9f9f5dcb9bbf96dad50b952dc27573046a143fc33daa9d0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-func_result_type_twice_01-bdc959f.stderr",
+    "stderr_hash": "85b6d46d497f7204c7c52bab07c0d09f6fdb93f356dd159fc7acc094",
+    "returncode": 1
+}

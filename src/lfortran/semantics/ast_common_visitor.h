@@ -2455,6 +2455,27 @@ public:
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
     };
 
+    // An ALLOCATABLE statement may also follow the type declaration of its
+    // entities, which needs the attribute when it is declared (a deferred
+    // shape is only allowed with it), so the names are recorded up front.
+    void collect_allocatable_statements(AST::decl_stmt_t **items, size_t n_items) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(items[i]);
+            if (d->m_vartype != nullptr) continue;
+            for (size_t a = 0; a < d->n_attributes; a++) {
+                if (AST::is_a<AST::SimpleAttribute_t>(*d->m_attributes[a])
+                        && AST::down_cast<AST::SimpleAttribute_t>(d->m_attributes[a])->m_attr
+                            == AST::simple_attributeType::AttrAllocatable) {
+                    for (size_t s = 0; s < d->n_syms; s++) {
+                        assgnd_allocatable.insert(to_lower(d->m_syms[s].m_name));
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
     // Whether `implicit none (external)` applies to the scoping unit or BLOCK
     // construct being visited: one entry per unit whose body is visited. It
     // applies to the unit that has it and to its contained subprograms and
@@ -11351,7 +11372,6 @@ public:
                 AST::dimension_t* dims_ast = nullptr;
                 // location for dimension(...) if present
                 Location dims_attr_loc;
-                is_allocatable = false;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {
@@ -13568,6 +13588,7 @@ public:
     }
 
     void visit_DerivedTypeUtil(const AST::DerivedType_t &x) {
+        PendingAttributeScope pending_attribute_scope(*this);
         std::string dt_name = to_lower(x.m_name);
         bool is_abstract = false;
         bool is_deferred = false;
