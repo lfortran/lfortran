@@ -1044,6 +1044,7 @@ RUN(NAME arrays_reshape_58 LABELS gfortran llvm) # reshape of an automatic array
 RUN(NAME arrays_reshape_59 LABELS gfortran llvm) # integer(8) rank-2 initializer from reshape of a default-kind constructor (#5284)
 RUN(NAME arrays_reshape_60 LABELS gfortran llvm) # reshape assigned to a non-contiguous array section
 RUN(NAME arrays_reshape_61 LABELS gfortran llvm)
+RUN(NAME arrays_reshape_62 LABELS gfortran llvm) # reshape of a large explicit-shape dummy with run-time extents must not overflow the stack (#17336)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_02 LABELS gfortran llvm) # pad= of another rank, or allocatable/pointer unlike source (#14279)
 RUN(NAME array_reshape_pad_03 LABELS gfortran llvm) # pad= of run-time size with a fixed-size source (#14279)
