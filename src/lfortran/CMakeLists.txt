@@ -12,6 +12,10 @@ set(SRC
     semantics/ast_symboltable_visitor.cpp
     semantics/ast_body_visitor.cpp
     semantics/ast_common_visitor.cpp
+    semantics/ast_common_visitor_base1.cpp
+    semantics/ast_common_visitor_base2.cpp
+    semantics/ast_common_visitor_base3.cpp
+    semantics/ast_common_visitor_base4.cpp
     semantics/ast_to_asr.cpp
     semantics/elemental_checks.cpp
     semantics/pure_checks.cpp
