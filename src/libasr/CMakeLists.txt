@@ -241,6 +241,20 @@ if (WITH_PCH)
         <libasr/pass/gpu_decline.h>
         <libasr/codegen/gpu_utils.h>)
 endif()
+
+# A unity build compiles the sources in batches, so the headers they share
+# are parsed once for each batch rather than once for each source.
+set(WITH_UNITY_BUILD no CACHE BOOL "Compile libasr in batches of sources")
+if (WITH_UNITY_BUILD)
+    set(LFORTRAN_UNITY_BATCH_SIZE 8 CACHE STRING "Sources in a unity batch")
+    set_target_properties(asr PROPERTIES
+        UNITY_BUILD ON
+        UNITY_BUILD_BATCH_SIZE ${LFORTRAN_UNITY_BATCH_SIZE})
+    # Sources that define a name that another source of their batch defines
+    include(${CMAKE_CURRENT_SOURCE_DIR}/unity_exclude.cmake)
+    set_source_files_properties(${LFORTRAN_UNITY_EXCLUDE} PROPERTIES
+        SKIP_UNITY_BUILD_INCLUSION ON)
+endif()
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 target_link_libraries(asr lfortran_utils)
