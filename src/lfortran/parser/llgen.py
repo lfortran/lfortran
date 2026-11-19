@@ -90,6 +90,7 @@ An alternative is a sequence of:
                         is the list of the values
     ITEM % ","          a list of one or more ITEMs separated by a token
     ( A | B )           a choice; with `?` optional, with `*` repeated
+    x=( A | B )?        the same; `x` is true if the group was taken
     &[ T1 T2 | T3 ]     a predicate on the next tokens: T1 then T2, or T3;
                         `_` is any token, NAME any name, SEP any separator
     ![ ... ]            the negation
@@ -194,6 +195,7 @@ class Call:
 class Group:
     def __init__(self, alts, suffix, line):
         self.alts, self.suffix, self.line = alts, suffix, line
+        self.cap = None
 
 
 class Pred:
@@ -423,6 +425,11 @@ class BodyParser:
             m = re.compile(r"\w+").match(s, self.i)
             self.i = m.end()
             return Pred(neg, m.group(0), None, line)
+        group_cap = None
+        m = re.compile(r"(\w+)=\(").match(s, self.i)
+        if m:
+            group_cap = m.group(1)
+            self.i = m.end() - 1
         if self.take("("):
             alts = self.alts()
             if not self.take(")"):
@@ -431,7 +438,9 @@ class BodyParser:
             if s.startswith("?", self.i) or s.startswith("*", self.i):
                 suffix = s[self.i]
                 self.i += 1
-            return Group(alts, suffix, line)
+            g = Group(alts, suffix, line)
+            g.cap = group_cap
+            return g
         cap = None
         m = re.compile(r"(\w+)=(?![>=])").match(s, self.i)
         if m:
@@ -953,7 +962,8 @@ class Generator:
         if END in node or not node:
             return None
         groups = {}
-        for e, sub in node.items():
+        # Sorted, so that the output does not depend on the order of sets
+        for e, sub in sorted(node.items()):
             c = self.trie_cond(sub, pos + 1)
             groups.setdefault(c, []).append(e)
         parts = []
@@ -1028,6 +1038,8 @@ class Generator:
                     t = self.list_type(t)[0]
                 self.add_capture(caps, it.cap, t, it)
             elif isinstance(it, Group):
+                if it.cap:
+                    self.add_capture(caps, it.cap, "bool", it)
                 for alt in it.alts:
                     self.captures(alt, caps)
 
@@ -1190,28 +1202,33 @@ class Generator:
         where = "rule %s, group" % r.name
         decisions = self.decide(g.alts, where, g.line)
         conds = [self.condition(s, p) for s, p in decisions]
+        if g.cap and not g.suffix:
+            error(g.line, "`%s=( ... )` without `?` or `*` is always true"
+                % g.cap)
         if g.suffix == "*":
             if len(g.alts) == 1:
                 if conds[0] is None:
                     error(g.line, "a repeated group needs a condition")
                 self.emit(indent, "while (%s) {" % conds[0])
+                if g.cap:
+                    self.emit(indent + 1, "%s = true;" % g.cap)
                 self.gen_seq(g.alts[0], indent + 1,
                     self.single_token(decisions[0][0], g.alts[0]), r, caps)
                 self.emit(indent, "}")
                 return
             self.emit(indent, "for (;;) {")
             self.gen_chain(g.alts, decisions, conds, indent + 1, "break;", r,
-                caps, g.line)
+                caps, g.line, g.cap)
             self.emit(indent, "}")
         elif g.suffix == "?":
             self.gen_chain(g.alts, decisions, conds, indent, None, r, caps,
-                g.line)
+                g.line, g.cap)
         else:
             self.gen_chain(g.alts, decisions, conds, indent,
                 "unsup(%d);" % g.line, r, caps, g.line)
 
     def gen_chain(self, alts, decisions, conds, indent, otherwise, r, caps,
-            line):
+            line, flag=None):
         closed = False
         for n, (alt, cond) in enumerate(zip(alts, conds)):
             if cond is None:
@@ -1222,11 +1239,15 @@ class Generator:
                     self.emit(indent, "{")
                 else:
                     self.emit(indent, "} else {")
+                if flag:
+                    self.emit(indent + 1, "%s = true;" % flag)
                 self.gen_seq(alt, indent + 1, False, r, caps)
                 closed = True
                 break
             self.emit(indent, "%s (%s) {" % ("if" if n == 0 else "} else if",
                 cond))
+            if flag:
+                self.emit(indent + 1, "%s = true;" % flag)
             self.gen_seq(alt, indent + 1,
                 self.single_token(decisions[n][0], alt), r, caps)
         if not closed and otherwise:
