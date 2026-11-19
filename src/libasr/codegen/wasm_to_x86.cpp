@@ -27,15 +27,15 @@ the number of registers available with the CPU.
 
 */
 
-enum Block {
-    LOOP = 0,
-    IF = 1,
-    BLOCK = 2
-};
-
 class X86Visitor : public WASMDecoder<X86Visitor>,
                    public WASM_INSTS_VISITOR::BaseWASMVisitor<X86Visitor> {
    public:
+    enum Block {
+        LOOP = 0,
+        IF = 1,
+        BLOCK = 2
+    };
+
     X86Assembler &m_a;
     uint32_t cur_func_idx;
     uint32_t block_id;

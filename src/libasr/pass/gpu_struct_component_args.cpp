@@ -83,7 +83,7 @@ bool holds_device_buffers(ASR::Struct_t *st, std::set<ASR::Struct_t*> &seen) {
     return false;
 }
 
-ASR::symbol_t* var_symbol(ASR::expr_t *e) {
+ASR::symbol_t* component_arg_var_symbol(ASR::expr_t *e) {
     if (e == nullptr) return nullptr;
     e = ASRUtils::get_past_array_physical_cast(e);
     if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
@@ -91,7 +91,7 @@ ASR::symbol_t* var_symbol(ASR::expr_t *e) {
         ASR::down_cast<ASR::Var_t>(e)->m_v);
 }
 
-ASR::Function_t* call_target(ASR::symbol_t *name) {
+ASR::Function_t* component_arg_call_target(ASR::symbol_t *name) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
     if (s == nullptr) return nullptr;
     s = ASRUtils::symbol_get_past_external(
@@ -106,26 +106,26 @@ typedef std::pair<size_t, std::string> Use;
 
 // One call made by device code: its target, its passed object and its
 // actual arguments, which the pass appends to.
-struct Call {
+struct ComponentArgCall {
     ASR::Function_t *callee;
     ASR::expr_t *dt;
     ASR::call_arg_t **args;
     size_t *n_args;
 };
 
-class CallCollector : public ASRUtils::BlockBodyWalkVisitor<CallCollector> {
+class ComponentArgCallCollector : public ASRUtils::BlockBodyWalkVisitor<ComponentArgCallCollector> {
 public:
-    std::vector<Call> calls;
+    std::vector<ComponentArgCall> calls;
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        ASRUtils::BlockBodyWalkVisitor<CallCollector>::visit_FunctionCall(x);
+        ASRUtils::BlockBodyWalkVisitor<ComponentArgCallCollector>::visit_FunctionCall(x);
         ASR::FunctionCall_t &c = const_cast<ASR::FunctionCall_t&>(x);
-        calls.push_back({call_target(c.m_name), c.m_dt, &c.m_args,
+        calls.push_back({component_arg_call_target(c.m_name), c.m_dt, &c.m_args,
             &c.n_args});
     }
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        ASRUtils::BlockBodyWalkVisitor<CallCollector>::visit_SubroutineCall(x);
+        ASRUtils::BlockBodyWalkVisitor<ComponentArgCallCollector>::visit_SubroutineCall(x);
         ASR::SubroutineCall_t &c = const_cast<ASR::SubroutineCall_t&>(x);
-        calls.push_back({call_target(c.m_name), c.m_dt, &c.m_args,
+        calls.push_back({component_arg_call_target(c.m_name), c.m_dt, &c.m_args,
             &c.n_args});
     }
 };
@@ -139,7 +139,7 @@ public:
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         ASRUtils::BlockBodyWalkVisitor<ComponentUses>
             ::visit_StructInstanceMember(x);
-        auto d = dummies.find(var_symbol(x.m_v));
+        auto d = dummies.find(component_arg_var_symbol(x.m_v));
         if (d == dummies.end()) return;
         std::set<ASR::Struct_t*> seen;
         if (split_member(x.m_m, seen)) {
@@ -161,7 +161,7 @@ public:
     void replace_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::BaseExprReplacer<ComponentReplacer>
             ::replace_StructInstanceMember(x);
-        ASR::symbol_t *d = var_symbol(x->m_v);
+        ASR::symbol_t *d = component_arg_var_symbol(x->m_v);
         if (d == nullptr) return;
         auto c = companions.find({d, ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(x->m_m))});
@@ -227,7 +227,7 @@ public:
                 ASR::symbol_t *c = companion(*fn, u);
                 if (c == nullptr) continue;
                 added[fn].push_back({u, c});
-                companions[{var_symbol(fn->m_args[u.first]), u.second}] = c;
+                companions[{component_arg_var_symbol(fn->m_args[u.first]), u.second}] = c;
             }
         }
         if (added.empty()) return false;
@@ -237,11 +237,11 @@ public:
             append_dummies(*a.first, dummies);
         }
         for (ASR::Function_t *fn : device) {
-            CallCollector calls;
+            ComponentArgCallCollector calls;
             for (size_t i = 0; i < fn->n_body; i++) {
                 calls.visit_stmt(*fn->m_body[i]);
             }
-            for (Call &call : calls.calls) {
+            for (ComponentArgCall &call : calls.calls) {
                 auto a = added.find(call.callee);
                 if (a == added.end()) continue;
                 pass_companions(call, original[call.callee], a->second,
@@ -252,10 +252,10 @@ public:
         launches.visit_TranslationUnit(unit);
         for (auto &l : launches.found) {
             ASR::GpuKernelLaunch_t *launch = l.first;
-            ASR::Function_t *kernel = call_target(launch->m_kernel);
+            ASR::Function_t *kernel = component_arg_call_target(launch->m_kernel);
             auto a = added.find(kernel);
             if (a == added.end()) continue;
-            Call call{kernel, nullptr, &launch->m_args, &launch->n_args};
+            ComponentArgCall call{kernel, nullptr, &launch->m_args, &launch->n_args};
             size_t before = launch->n_args;
             pass_companions(call, original[kernel], a->second, l.second);
             hand_over_components(*kernel, *launch, before, a->second,
@@ -302,13 +302,13 @@ private:
     // and those a routine it passes the dummy to needs.
     std::map<ASR::Function_t*, std::set<Use>> find_uses() {
         std::map<ASR::Function_t*, std::set<Use>> uses;
-        std::map<ASR::Function_t*, std::vector<Call>> calls;
+        std::map<ASR::Function_t*, std::vector<ComponentArgCall>> calls;
         std::map<ASR::Function_t*, std::map<ASR::symbol_t*, size_t>> dummies;
         std::set<ASR::Function_t*> is_device(device.begin(), device.end());
         for (ASR::Function_t *fn : device) {
             ComponentUses named;
             for (size_t i = 0; i < fn->n_args; i++) {
-                ASR::symbol_t *d = var_symbol(fn->m_args[i]);
+                ASR::symbol_t *d = component_arg_var_symbol(fn->m_args[i]);
                 if (d && ASR::is_a<ASR::Variable_t>(*d) && scalar_struct(
                         ASR::down_cast<ASR::Variable_t>(d))) {
                     named.dummies[d] = i;
@@ -330,7 +330,7 @@ private:
                 }
             }
             uses[fn] = named.uses;
-            CallCollector collector;
+            ComponentArgCallCollector collector;
             for (size_t i = 0; i < fn->n_body; i++) {
                 collector.visit_stmt(*fn->m_body[i]);
             }
@@ -340,12 +340,12 @@ private:
             changed = false;
             for (ASR::Function_t *fn : device) {
                 if (dummies[fn].empty()) continue;
-                for (Call &call : calls[fn]) {
+                for (ComponentArgCall &call : calls[fn]) {
                     if (!is_device.count(call.callee)) continue;
                     for (const Use &u : uses[call.callee]) {
                         ASR::expr_t *actual = actual_of(call,
                             call.callee->n_args, u.first);
-                        auto d = dummies[fn].find(var_symbol(actual));
+                        auto d = dummies[fn].find(component_arg_var_symbol(actual));
                         if (d == dummies[fn].end()) continue;
                         changed = uses[fn].insert({d->second, u.second})
                             .second || changed;
@@ -358,7 +358,7 @@ private:
 
     // The actual argument a call passes for the dummy at `index` of a
     // routine of `n_dummies` dummies, the passed object included.
-    static ASR::expr_t* actual_of(const Call &call, size_t n_dummies,
+    static ASR::expr_t* actual_of(const ComponentArgCall &call, size_t n_dummies,
             size_t index) {
         size_t shift = call.dt != nullptr && *call.n_args + 1 == n_dummies
             ? 1 : 0;
@@ -370,7 +370,7 @@ private:
     // A dummy argument of `fn` that stands for the component `u`.
     ASR::symbol_t* companion(ASR::Function_t &fn, const Use &u) {
         ASR::Variable_t *d = ASR::down_cast<ASR::Variable_t>(
-            var_symbol(fn.m_args[u.first]));
+            component_arg_var_symbol(fn.m_args[u.first]));
         ASR::Struct_t *st = scalar_struct(d);
         ASR::symbol_t *member = ASRUtils::symbol_get_past_external(
             gpu_struct_lookup_member(&st->base, u.second));
@@ -420,7 +420,7 @@ private:
     // Passes `call` the companions its target was given: the companion of
     // the actual argument when it has one, else the component of the
     // actual argument, made in `scope`.
-    void pass_companions(Call &call, size_t original_dummies,
+    void pass_companions(ComponentArgCall &call, size_t original_dummies,
             const std::vector<std::pair<Use, ASR::symbol_t*>> &added,
             SymbolTable *scope) {
         std::vector<ASR::expr_t*> actuals;
@@ -504,7 +504,7 @@ private:
         if (!made) {
             std::vector<ASR::symbol_t*> dummies;
             for (size_t i = 0; i < parameters.n; i++) {
-                dummies.push_back(var_symbol(parameters[i]));
+                dummies.push_back(component_arg_var_symbol(parameters[i]));
             }
             append_dummies(kernel, dummies);
         }
@@ -521,7 +521,7 @@ private:
     ASR::expr_t* component_of(ASR::expr_t *actual, const std::string &member,
             SymbolTable *scope) {
         ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(actual);
-        auto c = companions.find({var_symbol(base), member});
+        auto c = companions.find({component_arg_var_symbol(base), member});
         const Location &loc = actual->base.loc;
         if (c != companions.end()) {
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, c->second));

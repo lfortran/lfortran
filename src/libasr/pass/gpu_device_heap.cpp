@@ -100,7 +100,7 @@ std::string type_tag(ASR::ttype_t *t, ASR::symbol_t *decl) {
     }
 }
 
-ASR::symbol_t* call_target(ASR::symbol_t *name) {
+ASR::symbol_t* heap_call_target(ASR::symbol_t *name) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
     if (s == nullptr) return nullptr;
     s = ASRUtils::symbol_get_past_external(
@@ -146,7 +146,7 @@ public:
 
 struct Image;
 
-ASR::symbol_t* designator_root(ASR::expr_t *e);
+ASR::symbol_t* heap_designator_root(ASR::expr_t *e);
 
 // Where the kernel stores the images it assigns to the elements of a
 // derived-type array argument, for the host to copy them out after the
@@ -439,7 +439,7 @@ private:
 
     void extend(ASR::symbol_t *name, ASR::call_arg_t *&args, size_t &n_args,
             const Location &loc) {
-        ASR::symbol_t *target = call_target(name);
+        ASR::symbol_t *target = heap_call_target(name);
         if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) {
             return;
         }
@@ -1445,7 +1445,7 @@ public:
     // that, and does not take from the heap itself.
     void check_actuals(ASR::symbol_t *name, ASR::expr_t *dt,
             ASR::call_arg_t *args, size_t n_args) {
-        ASR::symbol_t *target = call_target(name);
+        ASR::symbol_t *target = heap_call_target(name);
         if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) return;
         ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
         size_t offset = dt != nullptr && n_args + 1 == callee->n_args ? 1 : 0;
@@ -1728,7 +1728,7 @@ public:
     template <typename T>
     void unbind(T *x) {
         if (x->m_dt == nullptr || types.image_of(x->m_dt) == nullptr) return;
-        ASR::symbol_t *target = call_target(x->m_name);
+        ASR::symbol_t *target = heap_call_target(x->m_name);
         if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) return;
         x->m_name = target;
         x->m_original_name = nullptr;
@@ -1739,7 +1739,7 @@ public:
         Base::replace_FunctionCall(x);
         check_actuals(x->m_name, x->m_dt, x->m_args, x->n_args);
         unbind(x);
-        ASR::symbol_t *target = call_target(x->m_name);
+        ASR::symbol_t *target = heap_call_target(x->m_name);
         if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) return;
         ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
         if (callee->m_return_var != nullptr &&
@@ -2022,7 +2022,7 @@ public:
                 }
             }
             void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-                ASR::symbol_t *t = call_target(x.m_name);
+                ASR::symbol_t *t = heap_call_target(x.m_name);
                 if (t == nullptr || !ASR::is_a<ASR::Function_t>(*t)) return;
                 ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(t);
                 for (size_t i = 0; i < x.n_args && i < callee->n_args; i++) {
@@ -2223,7 +2223,7 @@ private:
         if (!ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::get_past_array_physical_cast(
                 x->m_target)) || !ASRUtils::is_struct(*ASRUtils::expr_type(
                     x->m_target))) {
-            ASR::symbol_t *root = designator_root(x->m_target);
+            ASR::symbol_t *root = heap_designator_root(x->m_target);
             if (root != nullptr && replacer.stored.count(root)) {
                 unsupported = "stored into '" + std::string(
                     ASRUtils::symbol_name(root)) + "', a component of which "
@@ -2358,7 +2358,7 @@ private:
         statements.visit_stmt(*s);
         ASR::SubroutineCall_t *x = ASR::down_cast<ASR::SubroutineCall_t>(s);
         replacer.unbind(x);
-        ASR::symbol_t *target = call_target(x->m_name);
+        ASR::symbol_t *target = heap_call_target(x->m_name);
         std::vector<ASR::stmt_t*> after;
         if (target != nullptr && ASR::is_a<ASR::Function_t>(*target)) {
             ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
@@ -2726,7 +2726,7 @@ public:
                 if (f->m_impure_intrinsic_id == static_cast<int64_t>(
                         ASRUtils::IntrinsicImpureFunctions::Allocated) &&
                         f->n_args == 1) {
-                    if (ASR::symbol_t *root = designator_root(f->m_args[0])) {
+                    if (ASR::symbol_t *root = heap_designator_root(f->m_args[0])) {
                         arrays.insert(root);
                     }
                 }
@@ -2742,7 +2742,7 @@ class AssignedSymbols :
 public:
     std::set<ASR::symbol_t*> symbols;
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if (ASR::symbol_t *s = designator_root(x.m_target)) symbols.insert(s);
+        if (ASR::symbol_t *s = heap_designator_root(x.m_target)) symbols.insert(s);
         ASRUtils::BlockBodyWalkVisitor<AssignedSymbols>::visit_Assignment(x);
     }
     void visit_DoLoop(const ASR::DoLoop_t &x) {
@@ -2750,7 +2750,7 @@ public:
         ASRUtils::BlockBodyWalkVisitor<AssignedSymbols>::visit_DoLoop(x);
     }
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        ASR::symbol_t *t = call_target(x.m_name);
+        ASR::symbol_t *t = heap_call_target(x.m_name);
         ASR::Function_t *callee = t != nullptr &&
             ASR::is_a<ASR::Function_t>(*t)
             ? ASR::down_cast<ASR::Function_t>(t) : nullptr;
@@ -2764,7 +2764,7 @@ public:
                     continue;
                 }
             }
-            if (ASR::symbol_t *s = designator_root(x.m_args[i].m_value)) {
+            if (ASR::symbol_t *s = heap_designator_root(x.m_args[i].m_value)) {
                 symbols.insert(s);
             }
         }
@@ -2780,7 +2780,7 @@ public:
     ASR::symbol_t *found = nullptr;
     explicit ComponentReads(const std::set<ASR::symbol_t*> &a) : arrays(a) {}
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
-        ASR::symbol_t *root = designator_root(x.m_v);
+        ASR::symbol_t *root = heap_designator_root(x.m_v);
         if (root != nullptr && arrays.count(root)) found = root;
         ASRUtils::BlockBodyWalkVisitor<ComponentReads>
             ::visit_StructInstanceMember(x);
@@ -3584,7 +3584,7 @@ private:
     void result_allocations(ASR::Function_t &fn, ASR::SubroutineCall_t &x,
             std::set<ASR::symbol_t*> &candidates,
             std::set<ASR::Variable_t*> &chosen, Vec<ASR::stmt_t*> &out) {
-        ASR::symbol_t *t = call_target(x.m_name);
+        ASR::symbol_t *t = heap_call_target(x.m_name);
         if (t == nullptr || !ASR::is_a<ASR::Function_t>(*t)) return;
         ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(t);
         // The dummy arguments of the callee stand for the actual arguments,
@@ -3888,7 +3888,7 @@ private:
 
 // The variable a designator -- a variable, or an element, a section or a
 // component of one -- is rooted at.
-ASR::symbol_t* designator_root(ASR::expr_t *e) {
+ASR::symbol_t* heap_designator_root(ASR::expr_t *e) {
     while (e) {
         if (ASR::is_a<ASR::Var_t>(*e)) {
             return ASRUtils::symbol_get_past_external(
@@ -3931,7 +3931,7 @@ void remove_size_checks(Allocator &al, ASR::stmt_t **&body, size_t &n_body,
                     if (f->m_impure_intrinsic_id == static_cast<int64_t>(
                             ASRUtils::IntrinsicImpureFunctions::Allocated) &&
                             f->n_args == 1 &&
-                            designator_root(f->m_args[0]) == array) {
+                            heap_designator_root(f->m_args[0]) == array) {
                         continue;
                     }
                 }

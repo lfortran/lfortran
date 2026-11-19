@@ -85,7 +85,7 @@ std::set<ASR::symbol_t*> extent_reads(const ASR::Array_t &arr) {
     return reader.symbols;
 }
 
-ASR::symbol_t* call_target(ASR::symbol_t *name) {
+ASR::symbol_t* workspace_call_target(ASR::symbol_t *name) {
     ASR::symbol_t *target = ASRUtils::symbol_get_past_external(name);
     if (target == nullptr) return nullptr;
     return ASRUtils::symbol_get_past_StructMethodDeclaration(target);
@@ -130,14 +130,14 @@ public:
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::BaseWalkVisitor<CallSiteWorkspaces>::visit_FunctionCall(x);
-        if (call_target(x.m_name) != &callee.base) return;
+        if (workspace_call_target(x.m_name) != &callee.base) return;
         auto &call = const_cast<ASR::FunctionCall_t&>(x);
         give_workspaces(x.base.base.loc, call.m_args, call.n_args);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::BaseWalkVisitor<CallSiteWorkspaces>::visit_SubroutineCall(x);
-        if (call_target(x.m_name) != &callee.base) return;
+        if (workspace_call_target(x.m_name) != &callee.base) return;
         auto &call = const_cast<ASR::SubroutineCall_t&>(x);
         give_workspaces(x.base.base.loc, call.m_args, call.n_args);
     }

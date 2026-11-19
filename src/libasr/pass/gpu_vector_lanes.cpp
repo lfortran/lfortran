@@ -226,7 +226,7 @@ namespace {
 
 // Whether two expressions are the same, written the same way. False for
 // anything this does not know.
-bool same_expr(ASR::expr_t *a, ASR::expr_t *b) {
+bool lane_same_expr(ASR::expr_t *a, ASR::expr_t *b) {
     if (a == b) return true;
     if (a == nullptr || b == nullptr || a->type != b->type) return false;
     switch (a->type) {
@@ -241,22 +241,22 @@ bool same_expr(ASR::expr_t *a, ASR::expr_t *b) {
         case ASR::exprType::IntegerBinOp: {
             auto *x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
             auto *y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
-            return x->m_op == y->m_op && same_expr(x->m_left, y->m_left)
-                && same_expr(x->m_right, y->m_right);
+            return x->m_op == y->m_op && lane_same_expr(x->m_left, y->m_left)
+                && lane_same_expr(x->m_right, y->m_right);
         }
         case ASR::exprType::IntegerUnaryMinus:
-            return same_expr(
+            return lane_same_expr(
                 ASR::down_cast<ASR::IntegerUnaryMinus_t>(a)->m_arg,
                 ASR::down_cast<ASR::IntegerUnaryMinus_t>(b)->m_arg);
         case ASR::exprType::Cast: {
             auto *x = ASR::down_cast<ASR::Cast_t>(a);
             auto *y = ASR::down_cast<ASR::Cast_t>(b);
-            return x->m_kind == y->m_kind && same_expr(x->m_arg, y->m_arg)
+            return x->m_kind == y->m_kind && lane_same_expr(x->m_arg, y->m_arg)
                 && ASRUtils::check_equal_type(x->m_type, y->m_type, nullptr,
                     nullptr);
         }
         case ASR::exprType::ArrayPhysicalCast:
-            return same_expr(
+            return lane_same_expr(
                 ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg,
                 ASR::down_cast<ASR::ArrayPhysicalCast_t>(b)->m_arg);
         case ASR::exprType::StructInstanceMember: {
@@ -264,19 +264,19 @@ bool same_expr(ASR::expr_t *a, ASR::expr_t *b) {
             auto *y = ASR::down_cast<ASR::StructInstanceMember_t>(b);
             return ASRUtils::symbol_get_past_external(x->m_m)
                     == ASRUtils::symbol_get_past_external(y->m_m)
-                && same_expr(x->m_v, y->m_v);
+                && lane_same_expr(x->m_v, y->m_v);
         }
         case ASR::exprType::ArrayItem: {
             auto *x = ASR::down_cast<ASR::ArrayItem_t>(a);
             auto *y = ASR::down_cast<ASR::ArrayItem_t>(b);
-            if (x->n_args != y->n_args || !same_expr(x->m_v, y->m_v)) {
+            if (x->n_args != y->n_args || !lane_same_expr(x->m_v, y->m_v)) {
                 return false;
             }
             for (size_t i = 0; i < x->n_args; i++) {
-                if (!same_expr(x->m_args[i].m_left, y->m_args[i].m_left)
-                        || !same_expr(x->m_args[i].m_right,
+                if (!lane_same_expr(x->m_args[i].m_left, y->m_args[i].m_left)
+                        || !lane_same_expr(x->m_args[i].m_right,
                             y->m_args[i].m_right)
-                        || !same_expr(x->m_args[i].m_step,
+                        || !lane_same_expr(x->m_args[i].m_step,
                             y->m_args[i].m_step)) {
                     return false;
                 }
@@ -291,30 +291,30 @@ bool same_expr(ASR::expr_t *a, ASR::expr_t *b) {
 // Whether two expressions of a loop body are the same, written the same way,
 // with the operations and calls of values (same_expr, and the arithmetic, the
 // intrinsic functions and the calls of functions on them).
-bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
+bool lane_same_value(ASR::expr_t *a, ASR::expr_t *b) {
     if (a == b) return true;
     if (a == nullptr || b == nullptr || a->type != b->type) return false;
     switch (a->type) {
         case ASR::exprType::RealBinOp: {
             auto *x = ASR::down_cast<ASR::RealBinOp_t>(a);
             auto *y = ASR::down_cast<ASR::RealBinOp_t>(b);
-            return x->m_op == y->m_op && same_value(x->m_left, y->m_left)
-                && same_value(x->m_right, y->m_right);
+            return x->m_op == y->m_op && lane_same_value(x->m_left, y->m_left)
+                && lane_same_value(x->m_right, y->m_right);
         }
         case ASR::exprType::RealUnaryMinus:
-            return same_value(
+            return lane_same_value(
                 ASR::down_cast<ASR::RealUnaryMinus_t>(a)->m_arg,
                 ASR::down_cast<ASR::RealUnaryMinus_t>(b)->m_arg);
         case ASR::exprType::IntegerBinOp: {
             auto *x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
             auto *y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
-            return x->m_op == y->m_op && same_value(x->m_left, y->m_left)
-                && same_value(x->m_right, y->m_right);
+            return x->m_op == y->m_op && lane_same_value(x->m_left, y->m_left)
+                && lane_same_value(x->m_right, y->m_right);
         }
         case ASR::exprType::Cast: {
             auto *x = ASR::down_cast<ASR::Cast_t>(a);
             auto *y = ASR::down_cast<ASR::Cast_t>(b);
-            return x->m_kind == y->m_kind && same_value(x->m_arg, y->m_arg)
+            return x->m_kind == y->m_kind && lane_same_value(x->m_arg, y->m_arg)
                 && ASRUtils::check_equal_type(x->m_type, y->m_type, nullptr,
                     nullptr);
         }
@@ -326,7 +326,7 @@ bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
                 return false;
             }
             for (size_t i = 0; i < x->n_args; i++) {
-                if (!same_value(x->m_args[i], y->m_args[i])) return false;
+                if (!lane_same_value(x->m_args[i], y->m_args[i])) return false;
             }
             return true;
         }
@@ -339,7 +339,7 @@ bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
                 return false;
             }
             for (size_t i = 0; i < x->n_args; i++) {
-                if (!same_value(x->m_args[i].m_value,
+                if (!lane_same_value(x->m_args[i].m_value,
                         y->m_args[i].m_value)) {
                     return false;
                 }
@@ -349,11 +349,11 @@ bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
         case ASR::exprType::ArrayItem: {
             auto *x = ASR::down_cast<ASR::ArrayItem_t>(a);
             auto *y = ASR::down_cast<ASR::ArrayItem_t>(b);
-            if (x->n_args != y->n_args || !same_expr(x->m_v, y->m_v)) {
+            if (x->n_args != y->n_args || !lane_same_expr(x->m_v, y->m_v)) {
                 return false;
             }
             for (size_t i = 0; i < x->n_args; i++) {
-                if (!same_value(x->m_args[i].m_right, y->m_args[i].m_right)
+                if (!lane_same_value(x->m_args[i].m_right, y->m_args[i].m_right)
                         || x->m_args[i].m_left || y->m_args[i].m_left
                         || x->m_args[i].m_step || y->m_args[i].m_step) {
                     return false;
@@ -362,7 +362,7 @@ bool same_value(ASR::expr_t *a, ASR::expr_t *b) {
             return true;
         }
         default:
-            return same_expr(a, b);
+            return lane_same_expr(a, b);
     }
 }
 
@@ -570,12 +570,12 @@ bool mentions(ASR::expr_t *e, ASR::symbol_t *s) {
     return m.found;
 }
 
-enum class Access { None, Read, Write };
+enum class LaneAccess { None, Read, Write };
 
 // The first access of `s` in body[from, to): a write when the first
 // statement that names it assigns it without reading it first. A block runs
 // its statements in turn, so the first access in it is the first access.
-Access first_access(ASR::stmt_t **body, size_t from, size_t to,
+LaneAccess first_access(ASR::stmt_t **body, size_t from, size_t to,
         ASR::symbol_t *s) {
     for (size_t i = from; i < to; i++) {
         ASR::stmt_t *x = body[i];
@@ -583,16 +583,16 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
             ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
                 ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::BlockCall_t>(x)->m_m));
-            Access a = first_access(block->m_body, 0, block->n_body, s);
-            if (a != Access::None) return a;
+            LaneAccess a = first_access(block->m_body, 0, block->n_body, s);
+            if (a != LaneAccess::None) return a;
             continue;
         }
         if (ASR::is_a<ASR::Assignment_t>(*x)) {
             auto *a = ASR::down_cast<ASR::Assignment_t>(x);
             if (ASR::is_a<ASR::Var_t>(*a->m_target)
                     && root_of(a->m_target) == s) {
-                return mentions(a->m_value, s) ? Access::Read
-                    : Access::Write;
+                return mentions(a->m_value, s) ? LaneAccess::Read
+                    : LaneAccess::Write;
             }
         } else if (ASR::is_a<ASR::DoLoop_t>(*x)) {
             auto *d = ASR::down_cast<ASR::DoLoop_t>(x);
@@ -600,14 +600,14 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
                 || mentions(d->m_head.m_end, s)
                 || mentions(d->m_head.m_increment, s);
             if (d->m_head.m_v && root_of(d->m_head.m_v) == s) {
-                return header ? Access::Read : Access::Write;
+                return header ? LaneAccess::Read : LaneAccess::Write;
             }
             // A loop whose body assigns `s` before it reads it, as a loop
             // inside it over `s` does, or reads it only in such loops of its
             // own: what `s` held before is not read in it, and if it runs no
             // iteration, is read only after it.
             if (!header && d->n_orelse == 0 && first_access(d->m_body, 0,
-                    d->n_body, s) != Access::Read) {
+                    d->n_body, s) != LaneAccess::Read) {
                 continue;
             }
         } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*x)) {
@@ -619,10 +619,10 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
                     || mentions(d->m_head[h].m_end, s)
                     || mentions(d->m_head[h].m_increment, s);
             }
-            if (index) return header ? Access::Read : Access::Write;
+            if (index) return header ? LaneAccess::Read : LaneAccess::Write;
             // As for a loop above: a body that assigns `s` first.
             if (!header && first_access(d->m_body, 0, d->n_body, s)
-                    != Access::Read) {
+                    != LaneAccess::Read) {
                 continue;
             }
         } else if (ASR::is_a<ASR::If_t>(*x)) {
@@ -631,17 +631,17 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
             // or that reads it in neither.
             auto *c = ASR::down_cast<ASR::If_t>(x);
             if (!mentions(c->m_test, s)) {
-                Access a = first_access(c->m_body, 0, c->n_body, s);
-                Access b = first_access(c->m_orelse, 0, c->n_orelse, s);
-                if (a == Access::Write && b == Access::Write) {
-                    return Access::Write;
+                LaneAccess a = first_access(c->m_body, 0, c->n_body, s);
+                LaneAccess b = first_access(c->m_orelse, 0, c->n_orelse, s);
+                if (a == LaneAccess::Write && b == LaneAccess::Write) {
+                    return LaneAccess::Write;
                 }
-                if (a != Access::Read && b != Access::Read) continue;
+                if (a != LaneAccess::Read && b != LaneAccess::Read) continue;
             }
         }
-        if (mentions(*x, s)) return Access::Read;
+        if (mentions(*x, s)) return LaneAccess::Read;
     }
-    return Access::None;
+    return LaneAccess::None;
 }
 
 // Where a statement is: in a list, at an index, and the statement owning
@@ -675,9 +675,9 @@ bool dead_after(const std::vector<Frame> &frames, ASR::symbol_t *s) {
     };
     for (size_t k = frames.size(); k-- > 0;) {
         const Frame &f = frames[k];
-        Access a = first_access(f.body, f.index + 1, f.n_body, s);
-        if (a == Access::Write) return true;
-        if (a == Access::Read) return false;
+        LaneAccess a = first_access(f.body, f.index + 1, f.n_body, s);
+        if (a == LaneAccess::Write) return true;
+        if (a == LaneAccess::Read) return false;
         if (f.owner == nullptr || !(ASR::is_a<ASR::DoLoop_t>(*f.owner)
                 || ASR::is_a<ASR::WhileLoop_t>(*f.owner))) {
             continue;
@@ -705,15 +705,15 @@ bool dead_after(const std::vector<Frame> &frames, ASR::symbol_t *s) {
                     } else {
                         return false;
                     }
-                    if (first_access(other, 0, n_other, s) == Access::Read) {
+                    if (first_access(other, 0, n_other, s) == LaneAccess::Read) {
                         return false;
                     }
                 }
                 if (header_reads(g.owner)) return false;
             }
             a = first_access(g.body, 0, g.index, s);
-            if (a == Access::Write) break;
-            if (a == Access::Read) return false;
+            if (a == LaneAccess::Write) break;
+            if (a == LaneAccess::Read) return false;
         }
         // Or the loop ends, with the value its last iteration left in `s`,
         // which what comes after the loop must not read either.
@@ -1698,7 +1698,7 @@ bool disjoint(ASR::expr_t *a, ASR::expr_t *b,
     }
     auto *x = ASR::down_cast<ASR::ArrayItem_t>(a);
     auto *y = ASR::down_cast<ASR::ArrayItem_t>(b);
-    if (x->n_args != y->n_args || !same_expr(x->m_v, y->m_v)) return false;
+    if (x->n_args != y->n_args || !lane_same_expr(x->m_v, y->m_v)) return false;
     for (size_t i = 0; i < x->n_args; i++) {
         ASR::expr_t *p = x->m_args[i].m_right, *q = y->m_args[i].m_right;
         if (p == nullptr || q == nullptr || x->m_args[i].m_left
@@ -1715,7 +1715,7 @@ bool disjoint(ASR::expr_t *a, ASR::expr_t *b,
         offset_form(p, pb, po);
         offset_form(q, qb, qo);
         if (po != qo && ((pb == nullptr && qb == nullptr)
-                || (pb && qb && same_expr(pb, qb)))) {
+                || (pb && qb && lane_same_expr(pb, qb)))) {
             return true;
         }
     }
@@ -2246,7 +2246,7 @@ private:
             ASR::expr_t *s2 = resolve(l2->m_head.m_start, body, j);
             ASR::expr_t *f1 = resolve(l1->m_head.m_end, body, i);
             ASR::expr_t *f2 = resolve(l2->m_head.m_end, body, j);
-            if (!same_expr(s1, s2) || !same_expr(f1, f2)
+            if (!lane_same_expr(s1, s2) || !lane_same_expr(f1, f2)
                     || mentions_any(s2, changed1)
                     || mentions_any(f2, changed1)
                     || mentions_any(s2, arrays1)
@@ -2266,7 +2266,7 @@ private:
                     named = mentions(*l2->m_body[q], x);
                 }
                 if (named && first_access(l2->m_body, 0, l2->n_body, x)
-                        != Access::Write) {
+                        != LaneAccess::Write) {
                     return;
                 }
             }
@@ -2277,7 +2277,7 @@ private:
                     named = mentions(*l1->m_body[q], x);
                 }
                 if ((named || x == v1) && first_access(l1->m_body, 0,
-                        l1->n_body, x) != Access::Write) {
+                        l1->n_body, x) != LaneAccess::Write) {
                     return;
                 }
             }
@@ -2396,7 +2396,7 @@ private:
         ASR::expr_t *s2 = resolve(l2->m_head.m_start, body, j);
         ASR::expr_t *f1 = resolve(l1->m_head.m_end, body, i);
         ASR::expr_t *f2 = resolve(l2->m_head.m_end, body, j);
-        if (!same_expr(s1, s2) || !same_expr(f1, f2)
+        if (!lane_same_expr(s1, s2) || !lane_same_expr(f1, f2)
                 || mentions_any(s2, changed1) || mentions_any(f2, changed1)
                 || mentions_any(s2, arrays1) || mentions_any(f2, arrays1)) {
             return;
@@ -2443,7 +2443,7 @@ private:
             if (!arrays1.count(root_of(item))) continue;
             bool same = false;
             for (ASR::Assignment_t *a : assigns.found) {
-                if (same_expr(a->m_target, item)) same = true;
+                if (lane_same_expr(a->m_target, item)) same = true;
             }
             if (!same) return;
         }
@@ -3279,7 +3279,7 @@ private:
             if (!tells_apart) return false;
             for (ASR::expr_t *w : written) {
                 if (overlapping(path_of(w), path_of(a->m_target))
-                        && !same_expr(w, a->m_target)) {
+                        && !lane_same_expr(w, a->m_target)) {
                     return false;
                 }
             }
@@ -3290,7 +3290,7 @@ private:
         for (ASR::expr_t *w : written) {
             for (ASR::expr_t *item : names.items) {
                 if (overlapping(path_of(item), path_of(w))
-                        && !same_expr(item, w)) {
+                        && !lane_same_expr(item, w)) {
                     return false;
                 }
             }
@@ -3307,7 +3307,7 @@ private:
             auto op = ops.find(s);
             if (op == ops.end()) {
                 // Its own in every iteration.
-                if (first_access(d->m_body, 0, d->n_body, s) != Access::Write
+                if (first_access(d->m_body, 0, d->n_body, s) != LaneAccess::Write
                         || !dead_after(frames, s)) {
                     return false;
                 }
@@ -3714,7 +3714,7 @@ private:
                     ASR::expr_t *h_, ASR::expr_t *c_)
                     : b(b_), element(e_), held(h_), count(c_) {}
                 void replace_ArrayItem(ASR::ArrayItem_t *y) {
-                    if (same_expr(&y->base, element)) {
+                    if (lane_same_expr(&y->base, element)) {
                         *current_expr = b.ArrayItem_01(held, {count});
                         return;
                     }
@@ -3757,7 +3757,7 @@ private:
         }
         for (ASR::expr_t *item : names.items) {
             if (root_of(item) != array) continue;
-            if (element && !same_expr(element, item)) return false;
+            if (element && !lane_same_expr(element, item)) return false;
             element = item;
         }
         for (size_t i = 1; i < l->n_body; i++) {
@@ -3777,8 +3777,8 @@ private:
             int64_t trips) {
         auto *v1 = ASR::down_cast<ASR::Assignment_t>(first->m_body[0]);
         auto *v2 = ASR::down_cast<ASR::Assignment_t>(second->m_body[0]);
-        if (!same_expr(v1->m_target, v2->m_target)
-                || !same_value(v1->m_value, v2->m_value)) {
+        if (!lane_same_expr(v1->m_target, v2->m_target)
+                || !lane_same_value(v1->m_value, v2->m_value)) {
             return;
         }
         ASR::symbol_t *j = root_of(v1->m_target);
@@ -3793,7 +3793,7 @@ private:
             bool assigned1 = false, assigned2 = false;
             if (!element_of(first, array, e1, assigned1) || assigned1
                     || !element_of(second, array, e2, assigned2)
-                    || !same_expr(e1, e2)) {
+                    || !lane_same_expr(e1, e2)) {
                 continue;
             }
             ASR::ttype_t *t = ASRUtils::expr_type(e1);
@@ -3870,7 +3870,7 @@ private:
                 return b.ArrayItem_01(held, {count});
             }
             void replace_ArrayItem(ASR::ArrayItem_t *x) {
-                if (same_expr(&x->base, element)) {
+                if (lane_same_expr(&x->base, element)) {
                     *current_expr = item();
                     return;
                 }
@@ -3902,7 +3902,7 @@ private:
         for (size_t i = 0; i < second->n_body; i++) {
             auto *a = ASR::down_cast<ASR::Assignment_t>(second->m_body[i]);
             if (i > 0) r2.value(a->m_value);
-            if (i > 0 && same_expr(a->m_target, element)) {
+            if (i > 0 && lane_same_expr(a->m_target, element)) {
                 body2.push_back(al, b.Assignment(r2.item(), a->m_value));
                 a->m_value = r2.item();
             }
@@ -4247,11 +4247,11 @@ private:
         // The value on the larger side is the new maximum.
         ASR::expr_t *larger = greater ? left : right;
         ASR::expr_t *smaller = greater ? right : left;
-        if (is_s(smaller) && same_value(larger, value)) {
+        if (is_s(smaller) && lane_same_value(larger, value)) {
             op = ASR::reduction_opType::ReduceMAX;
             return true;
         }
-        if (is_s(larger) && same_value(smaller, value)) {
+        if (is_s(larger) && lane_same_value(smaller, value)) {
             op = ASR::reduction_opType::ReduceMIN;
             return true;
         }
@@ -4456,7 +4456,7 @@ private:
         for (ASR::symbol_t *s : e.scalars) {
             if (s == v) continue;
             if (k.stop_scalars.count(s)) return false;
-            if (first_access(d->m_body, 0, d->n_body, s) != Access::Read
+            if (first_access(d->m_body, 0, d->n_body, s) != LaneAccess::Read
                     && dead_after(frames, s)) {
                 continue;
             }
@@ -5247,9 +5247,9 @@ private:
             for (ASR::expr_t *item : items) {
                 if (!overlapping(path_of(item), wp)) continue;
                 auto *y = ASR::down_cast<ASR::ArrayItem_t>(item);
-                if (y->n_args != x->n_args || !same_expr(y->m_v, x->m_v)
+                if (y->n_args != x->n_args || !lane_same_expr(y->m_v, x->m_v)
                         || y->m_args[k].m_left || y->m_args[k].m_step
-                        || !same_expr(y->m_args[k].m_right, sub)) {
+                        || !lane_same_expr(y->m_args[k].m_right, sub)) {
                     all = false;
                     break;
                 }
@@ -5364,7 +5364,7 @@ private:
             bool same = false;
             for (ASR::expr_t *w : written) {
                 if (overlapping(path_of(w), path_of(a->m_target))) {
-                    if (!same_expr(w, a->m_target)) {
+                    if (!lane_same_expr(w, a->m_target)) {
                         sliced.insert(w);
                     }
                     same = true;
@@ -5390,7 +5390,7 @@ private:
                 continue;
             }
             for (ASR::expr_t *item : names.items) {
-                if (overlapping(path_of(item), wp) && !same_expr(item, w)
+                if (overlapping(path_of(item), wp) && !lane_same_expr(item, w)
                         && !disjoint(item, w, changed)) {
                     return false;
                 }
@@ -5408,7 +5408,7 @@ private:
             // Or assigned before it is read by every loop inside that
             // names it, which may run no iteration (the `local` of a
             // `do concurrent` over two indices, in its inner loop).
-            if (first_access(d->m_body, 0, d->n_body, s) == Access::Read) {
+            if (first_access(d->m_body, 0, d->n_body, s) == LaneAccess::Read) {
                 return false;
             }
         }

@@ -28,7 +28,7 @@ ASR::expr_t* stop_code(const ASR::stmt_t &s) {
 
 // The procedure a call names, past external symbols and type bound
 // procedure declarations.
-ASR::Function_t* called_function(ASR::symbol_t *name) {
+ASR::Function_t* stop_called_function(ASR::symbol_t *name) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
     if (s == nullptr) return nullptr;
     s = ASRUtils::symbol_get_past_external(
@@ -220,7 +220,7 @@ private:
     // the routine making it as its two hidden arguments.
     bool extend_call(ASR::call_arg_t *&args, size_t &n_args,
             ASR::symbol_t *name, const void *call) {
-        ASR::Function_t *fn = called_function(name);
+        ASR::Function_t *fn = stop_called_function(name);
         if (fn == nullptr || stopping.count(fn) == 0) return false;
         if (!extended_calls.insert(call).second) return true;
         Vec<ASR::call_arg_t> extended;

@@ -39,7 +39,7 @@ bool is_designator_chain(ASR::expr_t *x) {
     return ASR::is_a<ASR::Var_t>(*x);
 }
 
-ASR::symbol_t* designator_root(ASR::expr_t *x) {
+ASR::symbol_t* overwrite_designator_root(ASR::expr_t *x) {
     while (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
         x = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
     }
@@ -76,7 +76,7 @@ public:
     std::vector<ASR::symbol_t*> &callees;
 
     ArrayUses(ASR::expr_t *array, std::vector<ASR::symbol_t*> &callees)
-        : array(array), root(designator_root(array)), callees(callees) {}
+        : array(array), root(overwrite_designator_root(array)), callees(callees) {}
 
     void visit_Var(const ASR::Var_t &x) {
         if (past_external(x.m_v) == root) named = true;
@@ -411,7 +411,7 @@ public:
     // is not a variable of a module.
     bool cannot_reach(ASR::symbol_t *callee) {
         if (!callee || !ASR::is_a<ASR::Function_t>(*callee)) return false;
-        ASR::symbol_t *root = designator_root(array);
+        ASR::symbol_t *root = overwrite_designator_root(array);
         if (!ASR::is_a<ASR::Variable_t>(*root)) return false;
         SymbolTable *owner = ASR::down_cast<ASR::Variable_t>(root)
             ->m_parent_symtab;

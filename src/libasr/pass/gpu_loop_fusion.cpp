@@ -348,7 +348,7 @@ struct BoundHoistWalker
     }
 };
 
-class LoopFusion {
+class GpuLoopFusion {
 public:
     Allocator &al;
     const PassOptions &po;
@@ -362,7 +362,7 @@ public:
     // outermost DO loop the fusion relies on, its deallocation after it.
     std::map<ASR::stmt_t*, std::vector<ASR::stmt_t*>> before, after;
 
-    LoopFusion(Allocator &al_, const PassOptions &po_,
+    GpuLoopFusion(Allocator &al_, const PassOptions &po_,
             GpuRarelyRun &rarely_run_)
         : al(al_), po(po_), rarely_run(rarely_run_) {}
 
@@ -2019,7 +2019,7 @@ public:
 // become one loop, retaining a typed scalar store before each fold update.
 class PrivateReductionFusion {
     Allocator &al;
-    LoopFusion &fusion;
+    GpuLoopFusion &fusion;
 
     static ASR::symbol_t *variable(ASR::expr_t *e) {
         if (!e || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
@@ -2501,7 +2501,7 @@ class PrivateReductionFusion {
     }
 
 public:
-    PrivateReductionFusion(Allocator &al_, LoopFusion &fusion_)
+    PrivateReductionFusion(Allocator &al_, GpuLoopFusion &fusion_)
         : al(al_), fusion(fusion_) {}
 
     void list(SymbolTable *scope, ASR::stmt_t **body, size_t &n) {
@@ -2549,7 +2549,7 @@ public:
 // the consuming fold a plain loop over the map's element expression.
 class PrivateMapForwarding {
     Allocator &al;
-    LoopFusion &fusion;
+    GpuLoopFusion &fusion;
 
     static ASR::symbol_t *variable(ASR::expr_t *e) {
         if (!e || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
@@ -3236,7 +3236,7 @@ class PrivateMapForwarding {
     }
 
 public:
-    PrivateMapForwarding(Allocator &al_, LoopFusion &fusion_)
+    PrivateMapForwarding(Allocator &al_, GpuLoopFusion &fusion_)
         : al(al_), fusion(fusion_) {}
 
     // `root` is the statement list of the block whose symbol table is
@@ -3280,19 +3280,19 @@ void gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
             || !gpu_loop_transform_enabled(pass_options, GpuLoopFuse)) {
         return;
     }
-    LoopFusion f(al, pass_options, rarely_run);
+    GpuLoopFusion f(al, pass_options, rarely_run);
     gpu_collect_address_taken(unit, f.address_taken);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *s = item.second;
             if (ASR::is_a<ASR::Function_t>(*s)) {
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-                std::vector<LoopFusion::Ancestor> anc;
+                std::vector<GpuLoopFusion::Ancestor> anc;
                 f.visit_body(fn->m_symtab, fn->m_body, fn->n_body, anc);
                 visit_scope(fn->m_symtab);
             } else if (ASR::is_a<ASR::Program_t>(*s)) {
                 ASR::Program_t *pr = ASR::down_cast<ASR::Program_t>(s);
-                std::vector<LoopFusion::Ancestor> anc;
+                std::vector<GpuLoopFusion::Ancestor> anc;
                 f.visit_body(pr->m_symtab, pr->m_body, pr->n_body, anc);
                 visit_scope(pr->m_symtab);
             } else if (ASR::is_a<ASR::Module_t>(*s)) {
@@ -3314,7 +3314,7 @@ void pass_gpu_private_reduction_fusion(Allocator &al, ASR::TranslationUnit_t &un
     if (gpu_device_selected(pass_options) == GpuDevice::None
             || !gpu_loop_transform_enabled(pass_options, GpuLoopFuse)) return;
     GpuRarelyRun rarely_run;
-    LoopFusion fusion(al, pass_options, rarely_run);
+    GpuLoopFusion fusion(al, pass_options, rarely_run);
     gpu_collect_address_taken(unit, fusion.address_taken);
     PrivateReductionFusion private_fusion(al, fusion);
     std::function<void(SymbolTable*)> visit = [&](SymbolTable *scope) {
@@ -3341,7 +3341,7 @@ void pass_gpu_private_map_forwarding(Allocator &al, ASR::TranslationUnit_t &unit
     if (gpu_device_selected(pass_options) == GpuDevice::None
             || !gpu_loop_transform_enabled(pass_options, GpuLoopFuse)) return;
     GpuRarelyRun rarely_run;
-    LoopFusion fusion(al, pass_options, rarely_run);
+    GpuLoopFusion fusion(al, pass_options, rarely_run);
     gpu_collect_address_taken(unit, fusion.address_taken);
     PrivateMapForwarding forwarding(al, fusion);
     std::function<void(SymbolTable*)> visit = [&](SymbolTable *scope) {

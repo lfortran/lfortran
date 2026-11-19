@@ -70,7 +70,7 @@ std::vector<ASR::symbol_t*> whole_designator(ASR::expr_t *e) {
     return chain;
 }
 
-bool intrinsic_element_type(ASR::ttype_t *t) {
+bool store_intrinsic_element_type(ASR::ttype_t *t) {
     t = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_allocatable_pointer(t));
     return ASR::is_a<ASR::Real_t>(*t) || ASR::is_a<ASR::Integer_t>(*t)
@@ -200,7 +200,7 @@ private:
         ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(s);
         if (a->m_overloaded || a->m_move_allocation) return nullptr;
         ASR::ttype_t *type = ASRUtils::expr_type(a->m_target);
-        if (!ASRUtils::is_array(type) || !intrinsic_element_type(type)) {
+        if (!ASRUtils::is_array(type) || !store_intrinsic_element_type(type)) {
             return nullptr;
         }
         std::vector<ASR::symbol_t*> chain = whole_designator(a->m_target);
