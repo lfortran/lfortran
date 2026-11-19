@@ -143,6 +143,7 @@ kernel void __lfortran_gpu_kernel_5_20gpu_kernel_source_30(
 struct __ScalarArgs___lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block {
     int __dim_s_0_gpu;
     int __lb_s_0_gpu;
+    int __workspace_extent_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block(
@@ -152,11 +153,12 @@ kernel void __lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block(
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_s_0_gpu = __scalar_args.__lb_s_0_gpu;
+    int __workspace_extent_gpu = __scalar_args.__workspace_extent_gpu;
     int __flat_idx_gpu;
     int __gpu_loop_end_gpu;
     int __gpu_loop_group_gpu;
     int __gpu_loop_start_gpu;
-    device float* __libasr_created__array_section__gpu = ((8) > 0) ? (__workspace_2 + ((long)__thread_id) * 8) : nullptr;
+    device float* __libasr_created__array_section__gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
     device float* __libasr_created__array_section_pointer__gpu;
     int __libasr_index_0_1_gpu;
     int __libasr_index_0__gpu;
@@ -170,7 +172,7 @@ kernel void __lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block(
     __libasr_created__array_section_pointer__gpu = s_gpu + ((int)((n_gpu + 1)) - (__lb_s_0_gpu));
     __libasr_index_0_1_gpu = 1;
     __gpu_loop_start_gpu = 1;
-    __gpu_loop_end_gpu = 8;
+    __gpu_loop_end_gpu = (1 + ((((2 * 8) - (8 + 1)) / 1) + 1) - 1);
     __libasr_index_0__gpu = __gpu_loop_start_gpu;
     if ((__gpu_loop_end_gpu >= __gpu_loop_start_gpu)) {
         for (__gpu_loop_group_gpu = __gpu_loop_start_gpu; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - 15); __gpu_loop_group_gpu += 16) {

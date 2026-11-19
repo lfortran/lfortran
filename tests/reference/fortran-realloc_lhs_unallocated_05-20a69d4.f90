@@ -18,7 +18,6 @@ subroutine first(n, s)
     call numbers(n, __libasr_created__subroutine_from_function_)
     if (.false.) then
         if (size(x, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(x, 1) /= 1) then
-            reallocate(x(size(__libasr_created__subroutine_from_function_, 1)))
             ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_, 
             __libasr_index_0_2 = lbound(__libasr_created__subroutine_from_function_, 1)
             do __libasr_index_0_1 = lbound(x, 1), ubound(x, 1)
@@ -68,7 +67,6 @@ subroutine fresh(o, n)
     call numbers(n, __libasr_created__subroutine_from_function_)
     if (.false.) then
         if (size(o, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(o, 1) /= 1) then
-            reallocate(o(size(__libasr_created__subroutine_from_function_, 1)))
             ! CheckBounds LHS = o, RHS = __libasr_created__subroutine_from_function_, 
             __libasr_index_0_1 = lbound(__libasr_created__subroutine_from_function_, 1)
             do __libasr_index_0_ = lbound(o, 1), ubound(o, 1)
@@ -108,7 +106,6 @@ subroutine maybe(flag, n)
     call numbers(n, __libasr_created__subroutine_from_function_)
     if (Allocated(t)) then
         if (size(t, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(t, 1) /= 1) then
-            reallocate(t(size(__libasr_created__subroutine_from_function_, 1)))
             ! CheckBounds LHS = t, RHS = __libasr_created__subroutine_from_function_, 
             __libasr_index_0_1 = lbound(__libasr_created__subroutine_from_function_, 1)
             do __libasr_index_0_ = lbound(t, 1), ubound(t, 1)

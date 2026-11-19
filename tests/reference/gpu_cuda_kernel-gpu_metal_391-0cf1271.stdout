@@ -86,17 +86,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
         }
         __gpu_heap_view___libasr_created__subroutine_from_function_ = __gpu_heap_r4 + ((int)((__gpu_heap___libasr_created__subroutine_from_function__base + 1)) - (1));
         ramp_gpu_17(x[((int)(i__dc) - (1))], k, __gpu_heap_view___libasr_created__subroutine_from_function_);
-        if (((int)(!(((int)((__gpu_heap___libasr_created__function_call_ramp_base >= 0) && (__gpu_heap___libasr_created__function_call_ramp_n1 == max(0, __gpu_heap___libasr_created__subroutine_from_function__n1)))))))) {
-            __gpu_heap___libasr_created__function_call_ramp_lb1 = __gpu_heap___libasr_created__subroutine_from_function__lb1;
-            __gpu_heap___libasr_created__function_call_ramp_n1 = max(0, __gpu_heap___libasr_created__subroutine_from_function__n1);
-            __gpu_heap___libasr_created__function_call_ramp_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__function_call_ramp_n1);
-            if ((__gpu_heap___libasr_created__function_call_ramp_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__function_call_ramp_n1))) {
-                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                    __gpu_stop_status[((int)(1) - (1))] = 4;
-                }
-                return;
-            }
-        }
         __libasr_index_0_3 = __gpu_heap___libasr_created__subroutine_from_function__lb1;
         #pragma unroll 16
         for (__libasr_index_0_2 = __gpu_heap___libasr_created__function_call_ramp_lb1; __libasr_index_0_2 <= ((__gpu_heap___libasr_created__function_call_ramp_lb1 + __gpu_heap___libasr_created__function_call_ramp_n1) - 1); __libasr_index_0_2++) {
@@ -109,7 +98,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
             __gpu_heap___gpu_call_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___gpu_call_result_n1);
             if ((__gpu_heap___gpu_call_result_base > (__gpu_heap_cap_r4 - __gpu_heap___gpu_call_result_n1))) {
                 if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                    __gpu_stop_status[((int)(1) - (1))] = 5;
+                    __gpu_stop_status[((int)(1) - (1))] = 4;
                 }
                 return;
             }

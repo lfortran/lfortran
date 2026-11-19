@@ -141,7 +141,6 @@ deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
 call tensors(3, __libasr_created__subroutine_from_function_)
 if (.false.) then
     if (size(a, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(a, 1) /= 1) then
-        reallocate(a(size(__libasr_created__subroutine_from_function_, 1)))
         ! CheckBounds LHS = a, RHS = __libasr_created__subroutine_from_function_, 
         __libasr_index_0_17 = lbound(__libasr_created__subroutine_from_function_, 1)
         do __libasr_index_0_16 = lbound(a, 1), ubound(a, 1)
@@ -179,7 +178,6 @@ deallocate(__libasr_created__subroutine_from_function_1) ! Implicit deallocate
 call tensors(2, __libasr_created__subroutine_from_function_1)
 if (Allocated(a)) then
     if (size(a, 1) == size(__libasr_created__subroutine_from_function_1, 1) .and. lbound(a, 1) /= 1) then
-        reallocate(a(size(__libasr_created__subroutine_from_function_1, 1)))
         ! CheckBounds LHS = a, RHS = __libasr_created__subroutine_from_function_1, 
         __libasr_index_0_19 = lbound(__libasr_created__subroutine_from_function_1, 1)
         do __libasr_index_0_18 = lbound(a, 1), ubound(a, 1)
@@ -216,7 +214,6 @@ deallocate(__libasr_created__subroutine_from_function_2) ! Implicit deallocate
 call tensors(2, __libasr_created__subroutine_from_function_2)
 if (Allocated(a)) then
     if (size(a, 1) == size(__libasr_created__subroutine_from_function_2, 1) .and. lbound(a, 1) /= 1) then
-        reallocate(a(size(__libasr_created__subroutine_from_function_2, 1)))
         ! CheckBounds LHS = a, RHS = __libasr_created__subroutine_from_function_2, 
         __libasr_index_0_21 = lbound(__libasr_created__subroutine_from_function_2, 1)
         do __libasr_index_0_20 = lbound(a, 1), ubound(a, 1)
@@ -267,7 +264,6 @@ deallocate(__libasr_created__subroutine_from_function_3) ! Implicit deallocate
 call tensors(2, __libasr_created__subroutine_from_function_3)
 if (Allocated(b)) then
     if (size(b, 1) == size(__libasr_created__subroutine_from_function_3, 1)) then
-        reallocate(b(size(__libasr_created__subroutine_from_function_3, 1)))
         ! CheckBounds LHS = b, RHS = __libasr_created__subroutine_from_function_3, 
         __libasr_index_0_23 = lbound(__libasr_created__subroutine_from_function_3, 1)
         do __libasr_index_0_22 = lbound(b, 1), ubound(b, 1)
@@ -288,7 +284,6 @@ __1_k3 = 2
 __libasr__created__var__5__array_constant_(__1_k3) = 4.00000000e+00
 deallocate(__libasr_created_real_compare_left_)
 allocate(__libasr_created_real_compare_left_(size(p%values_, 1)))
-reallocate(__libasr_created_real_compare_left_(size(p%values_, 1)))
 ! CheckBounds LHS = __libasr_created_real_compare_left_, RHS = p%values_, 
 __libasr_index_0_11 = lbound(p%values_, 1)
 do __libasr_index_0_10 = lbound(__libasr_created_real_compare_left_, 1), ubound(__libasr_created_real_compare_left_, 1)
@@ -319,7 +314,6 @@ do k = 1, 4
         call tensors(k, __libasr_created__subroutine_from_function_)
         if (.false.) then
             if (size(t, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(t, 1) /= 1) then
-                reallocate(t(size(__libasr_created__subroutine_from_function_, 1)))
                 ! CheckBounds LHS = t, RHS = __libasr_created__subroutine_from_function_, 
                 __libasr_index_0_1 = lbound(__libasr_created__subroutine_from_function_, 1)
                 do __libasr_index_0_ = lbound(t, 1), ubound(t, 1)
@@ -344,7 +338,6 @@ deallocate(__libasr_created__subroutine_from_function_4) ! Implicit deallocate
 call numbers(4, __libasr_created__subroutine_from_function_4)
 if (.false.) then
     if (size(x, 1) == size(__libasr_created__subroutine_from_function_4, 1) .and. lbound(x, 1) /= 1) then
-        reallocate(x(size(__libasr_created__subroutine_from_function_4, 1)))
         ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_4, 
         __libasr_index_0_25 = lbound(__libasr_created__subroutine_from_function_4, 1)
         do __libasr_index_0_24 = lbound(x, 1), ubound(x, 1)
@@ -363,7 +356,6 @@ deallocate(__libasr_created__subroutine_from_function_5) ! Implicit deallocate
 call numbers(2, __libasr_created__subroutine_from_function_5)
 if (Allocated(x)) then
     if (size(x, 1) == size(__libasr_created__subroutine_from_function_5, 1) .and. lbound(x, 1) /= 1) then
-        reallocate(x(size(__libasr_created__subroutine_from_function_5, 1)))
         ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_5, 
         __libasr_index_0_27 = lbound(__libasr_created__subroutine_from_function_5, 1)
         do __libasr_index_0_26 = lbound(x, 1), ubound(x, 1)
@@ -387,7 +379,6 @@ deallocate(__libasr_created__subroutine_from_function_6) ! Implicit deallocate
 call numbers(3, __libasr_created__subroutine_from_function_6)
 if (Allocated(x)) then
     if (size(x, 1) == size(__libasr_created__subroutine_from_function_6, 1) .and. lbound(x, 1) /= 1) then
-        reallocate(x(size(__libasr_created__subroutine_from_function_6, 1)))
         ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_6, 
         __libasr_index_0_29 = lbound(__libasr_created__subroutine_from_function_6, 1)
         do __libasr_index_0_28 = lbound(x, 1), ubound(x, 1)

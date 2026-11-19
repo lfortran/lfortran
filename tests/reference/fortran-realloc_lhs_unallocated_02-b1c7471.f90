@@ -382,7 +382,19 @@ integer(4) :: __libasr_index_0_11
 integer(4) :: __libasr_index_0_12
 integer(4) :: __libasr_index_0_13
 integer(4) :: __libasr_index_0_14
+integer(4) :: __libasr_index_0_15
+integer(4) :: __libasr_index_0_16
+integer(4) :: __libasr_index_0_17
+integer(4) :: __libasr_index_0_18
+integer(4) :: __libasr_index_0_19
 integer(4) :: __libasr_index_0_2
+integer(4) :: __libasr_index_0_20
+integer(4) :: __libasr_index_0_21
+integer(4) :: __libasr_index_0_22
+integer(4) :: __libasr_index_0_23
+integer(4) :: __libasr_index_0_24
+integer(4) :: __libasr_index_0_25
+integer(4) :: __libasr_index_0_26
 integer(4) :: __libasr_index_0_3
 integer(4) :: __libasr_index_0_4
 integer(4) :: __libasr_index_0_5
@@ -397,22 +409,70 @@ integer(4) :: total
 integer(4), dimension(:), allocatable :: x
 deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
 call assigned_twice(4, __libasr_created__subroutine_from_function_)
-deallocate(__libasr_created__array_size_v) ! Implicit deallocate
-__libasr_created__array_size_v = __libasr_created__subroutine_from_function_
+if (.false.) then
+    if (size(__libasr_created__array_size_v, 1) == size(__libasr_created__subroutine_from_function_,&
+         1) .and. lbound(__libasr_created__array_size_v, 1) /= 1) then
+        ! CheckBounds LHS = __libasr_created__array_size_v, RHS = __libasr_created__subroutine_from_function_, 
+        __libasr_index_0_16 = lbound(__libasr_created__subroutine_from_function_, 1)
+        do __libasr_index_0_15 = lbound(__libasr_created__array_size_v, 1), ubound(__libasr_created__array_size_v, 1)
+            __libasr_created__array_size_v(__libasr_index_0_15) = __libasr_created__subroutine_from_function_(__libasr_i&
+        ndex_0_16)
+            __libasr_index_0_16 = __libasr_index_0_16 + 1
+        end do
+    else
+        deallocate(__libasr_created__array_size_v) ! Implicit deallocate
+        __libasr_created__array_size_v = __libasr_created__subroutine_from_function_
+    end if
+else
+    deallocate(__libasr_created__array_size_v) ! Implicit deallocate
+    __libasr_created__array_size_v = __libasr_created__subroutine_from_function_
+end if
 if (size(__libasr_created__array_size_v) /= 3) then
     error stop
 end if
 deallocate(__libasr_created__subroutine_from_function_1) ! Implicit deallocate
 call assigned_on_some_path(4, __libasr_created__subroutine_from_function_1)
-deallocate(__libasr_created__array_size_v1) ! Implicit deallocate
-__libasr_created__array_size_v1 = __libasr_created__subroutine_from_function_1
+if (.false.) then
+    if (size(__libasr_created__array_size_v1, 1) == size(__libasr_created__subroutine_from_function_1,&
+         1) .and. lbound(__libasr_created__array_size_v1, 1) /= 1) then
+        ! CheckBounds LHS = __libasr_created__array_size_v1, RHS = __libasr_created__subroutine_from_function_1, 
+        __libasr_index_0_18 = lbound(__libasr_created__subroutine_from_function_1, 1)
+        do __libasr_index_0_17 = lbound(__libasr_created__array_size_v1, 1), ubound(__libasr_created__array_size_v1, 1)
+            __libasr_created__array_size_v1(__libasr_index_0_17) = __libasr_created__subroutine_from_function_1(__libasr&
+        _index_0_18)
+            __libasr_index_0_18 = __libasr_index_0_18 + 1
+        end do
+    else
+        deallocate(__libasr_created__array_size_v1) ! Implicit deallocate
+        __libasr_created__array_size_v1 = __libasr_created__subroutine_from_function_1
+    end if
+else
+    deallocate(__libasr_created__array_size_v1) ! Implicit deallocate
+    __libasr_created__array_size_v1 = __libasr_created__subroutine_from_function_1
+end if
 if (size(__libasr_created__array_size_v1) /= 2) then
     error stop
 end if
 deallocate(__libasr_created__subroutine_from_function_2) ! Implicit deallocate
 call in_a_loop(4, __libasr_created__subroutine_from_function_2)
-deallocate(__libasr_created__array_size_v2) ! Implicit deallocate
-__libasr_created__array_size_v2 = __libasr_created__subroutine_from_function_2
+if (.false.) then
+    if (size(__libasr_created__array_size_v2, 1) == size(__libasr_created__subroutine_from_function_2,&
+         1) .and. lbound(__libasr_created__array_size_v2, 1) /= 1) then
+        ! CheckBounds LHS = __libasr_created__array_size_v2, RHS = __libasr_created__subroutine_from_function_2, 
+        __libasr_index_0_20 = lbound(__libasr_created__subroutine_from_function_2, 1)
+        do __libasr_index_0_19 = lbound(__libasr_created__array_size_v2, 1), ubound(__libasr_created__array_size_v2, 1)
+            __libasr_created__array_size_v2(__libasr_index_0_19) = __libasr_created__subroutine_from_function_2(__libasr&
+        _index_0_20)
+            __libasr_index_0_20 = __libasr_index_0_20 + 1
+        end do
+    else
+        deallocate(__libasr_created__array_size_v2) ! Implicit deallocate
+        __libasr_created__array_size_v2 = __libasr_created__subroutine_from_function_2
+    end if
+else
+    deallocate(__libasr_created__array_size_v2) ! Implicit deallocate
+    __libasr_created__array_size_v2 = __libasr_created__subroutine_from_function_2
+end if
 if (size(__libasr_created__array_size_v2) /= 4) then
     error stop
 end if
@@ -422,8 +482,25 @@ __1_k = 2
 __libasr__created__var__0__array_constant_(__1_k) = 5
 deallocate(__libasr_created__subroutine_from_function_3) ! Implicit deallocate
 call passed_down(5, __libasr_created__subroutine_from_function_3)
-deallocate(__libasr_created_integer_compare_left_) ! Implicit deallocate
-__libasr_created_integer_compare_left_ = __libasr_created__subroutine_from_function_3
+if (.false.) then
+    if (size(__libasr_created_integer_compare_left_, 1) == size(__libasr_created__subroutine_from_function_3,&
+         1) .and. lbound(__libasr_created_integer_compare_left_, 1) /= 1) then
+        ! CheckBounds LHS = __libasr_created_integer_compare_left_, RHS = __libasr_created__subroutine_from_function_3, 
+        __libasr_index_0_22 = lbound(__libasr_created__subroutine_from_function_3, 1)
+        do __libasr_index_0_21 = lbound(__libasr_created_integer_compare_left_, 1),&
+         ubound(__libasr_created_integer_compare_left_, 1)
+            __libasr_created_integer_compare_left_(__libasr_index_0_21) = __libasr_created__subroutine_from_function_3(_&
+        _libasr_index_0_22)
+            __libasr_index_0_22 = __libasr_index_0_22 + 1
+        end do
+    else
+        deallocate(__libasr_created_integer_compare_left_) ! Implicit deallocate
+        __libasr_created_integer_compare_left_ = __libasr_created__subroutine_from_function_3
+    end if
+else
+    deallocate(__libasr_created_integer_compare_left_) ! Implicit deallocate
+    __libasr_created_integer_compare_left_ = __libasr_created__subroutine_from_function_3
+end if
 ! CheckBounds LHS = __libasr_created__intrinsic_array_function_Any, RHS = __libasr_created_integer_compare_left_,&
          __libasr__created__var__0__array_constant_, 
 __libasr_index_0_1 = lbound(__libasr_created_integer_compare_left_, 1)
@@ -443,8 +520,26 @@ __1_k1 = 1
 __libasr__created__var__1__array_constant_(__1_k1) = 6
 deallocate(__libasr_created__subroutine_from_function_4) ! Implicit deallocate
 call moved_into(6, __libasr_created__subroutine_from_function_4)
-deallocate(__libasr_created_integer_compare_left_1) ! Implicit deallocate
-__libasr_created_integer_compare_left_1 = __libasr_created__subroutine_from_function_4
+if (.false.) then
+    if (size(__libasr_created_integer_compare_left_1, 1) == size(__libasr_created__subroutine_from_function_4,&
+         1) .and. lbound(__libasr_created_integer_compare_left_1, 1) /= 1) then
+        ! CheckBounds LHS = __libasr_created_integer_compare_left_1, RHS = __libasr_created__subroutine_from_function_4,&
+         
+        __libasr_index_0_24 = lbound(__libasr_created__subroutine_from_function_4, 1)
+        do __libasr_index_0_23 = lbound(__libasr_created_integer_compare_left_1, 1),&
+         ubound(__libasr_created_integer_compare_left_1, 1)
+            __libasr_created_integer_compare_left_1(__libasr_index_0_23) = __libasr_created__subroutine_from_function_4(&
+        __libasr_index_0_24)
+            __libasr_index_0_24 = __libasr_index_0_24 + 1
+        end do
+    else
+        deallocate(__libasr_created_integer_compare_left_1) ! Implicit deallocate
+        __libasr_created_integer_compare_left_1 = __libasr_created__subroutine_from_function_4
+    end if
+else
+    deallocate(__libasr_created_integer_compare_left_1) ! Implicit deallocate
+    __libasr_created_integer_compare_left_1 = __libasr_created__subroutine_from_function_4
+end if
 ! CheckBounds LHS = __libasr_created__intrinsic_array_function_Any1, RHS = __libasr_created_integer_compare_left_1,&
          __libasr__created__var__1__array_constant_, 
 __libasr_index_0_4 = lbound(__libasr_created_integer_compare_left_1, 1)
@@ -468,8 +563,26 @@ __1_k2 = 3
 __libasr__created__var__2__array_constant_(__1_k2) = 2
 deallocate(__libasr_created__subroutine_from_function_5) ! Implicit deallocate
 call by_internal_procedure(2, __libasr_created__subroutine_from_function_5)
-deallocate(__libasr_created_integer_compare_left_2) ! Implicit deallocate
-__libasr_created_integer_compare_left_2 = __libasr_created__subroutine_from_function_5
+if (.false.) then
+    if (size(__libasr_created_integer_compare_left_2, 1) == size(__libasr_created__subroutine_from_function_5,&
+         1) .and. lbound(__libasr_created_integer_compare_left_2, 1) /= 1) then
+        ! CheckBounds LHS = __libasr_created_integer_compare_left_2, RHS = __libasr_created__subroutine_from_function_5,&
+         
+        __libasr_index_0_26 = lbound(__libasr_created__subroutine_from_function_5, 1)
+        do __libasr_index_0_25 = lbound(__libasr_created_integer_compare_left_2, 1),&
+         ubound(__libasr_created_integer_compare_left_2, 1)
+            __libasr_created_integer_compare_left_2(__libasr_index_0_25) = __libasr_created__subroutine_from_function_5(&
+        __libasr_index_0_26)
+            __libasr_index_0_26 = __libasr_index_0_26 + 1
+        end do
+    else
+        deallocate(__libasr_created_integer_compare_left_2) ! Implicit deallocate
+        __libasr_created_integer_compare_left_2 = __libasr_created__subroutine_from_function_5
+    end if
+else
+    deallocate(__libasr_created_integer_compare_left_2) ! Implicit deallocate
+    __libasr_created_integer_compare_left_2 = __libasr_created__subroutine_from_function_5
+end if
 ! CheckBounds LHS = __libasr_created__intrinsic_array_function_Any2, RHS = __libasr_created_integer_compare_left_2,&
          __libasr__created__var__2__array_constant_, 
 __libasr_index_0_7 = lbound(__libasr_created_integer_compare_left_2, 1)

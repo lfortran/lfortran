@@ -90,7 +90,6 @@ do k = 1, 4
         call numbers(k, __libasr_created__subroutine_from_function_)
         if (.false.) then
             if (size(y, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(y, 1) /= 1) then
-                reallocate(y(size(__libasr_created__subroutine_from_function_, 1)))
                 ! CheckBounds LHS = y, RHS = __libasr_created__subroutine_from_function_, 
                 __libasr_index_0_5 = lbound(__libasr_created__subroutine_from_function_, 1)
                 do __libasr_index_0_4 = lbound(y, 1), ubound(y, 1)
@@ -155,7 +154,6 @@ do k = 1, 3
         call numbers(k + 1, __libasr_created__subroutine_from_function_)
         if (.false.) then
             if (size(x, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(x, 1) /= 1) then
-                reallocate(x(size(__libasr_created__subroutine_from_function_, 1)))
                 ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_, 
                 __libasr_index_0_1 = lbound(__libasr_created__subroutine_from_function_, 1)
                 do __libasr_index_0_ = lbound(x, 1), ubound(x, 1)
@@ -187,7 +185,6 @@ associate_block2 : associate ()
     call numbers(2, __libasr_created__subroutine_from_function_)
     if (.false.) then
         if (size(x, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(x, 1) /= 1) then
-            reallocate(x(size(__libasr_created__subroutine_from_function_, 1)))
             ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_, 
             __libasr_index_0_1 = lbound(__libasr_created__subroutine_from_function_, 1)
             do __libasr_index_0_ = lbound(x, 1), ubound(x, 1)

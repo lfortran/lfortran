@@ -1,4 +1,4 @@
-runtime error: Array 'x' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+runtime error: Array 'x' is not allocated. Allocate it explicitly.
   --> tests/errors/array_shape_11.f90:10:5
    |
 10 |     x(:) = y + 1

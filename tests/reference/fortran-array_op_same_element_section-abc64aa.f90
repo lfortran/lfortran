@@ -59,7 +59,6 @@ subroutine array_op_same_element_section(scores, visible, total)
     deallocate(__libasr_created__intrinsic_elemental_function_Exp)
     allocate(__libasr_created__intrinsic_elemental_function_Exp((visible - 1 - 1)/1 + 1))
     __libasr_created__array_section_pointer_ => scores(1:visible - 1)
-    reallocate(__libasr_created__intrinsic_elemental_function_Exp(size(__libasr_created__array_section_pointer_, 1)))
     ! CheckBounds LHS = __libasr_created__intrinsic_elemental_function_Exp,&
          RHS = __libasr_created__array_section_pointer_, 
     __libasr_index_0_5 = lbound(__libasr_created__array_section_pointer_, 1)
