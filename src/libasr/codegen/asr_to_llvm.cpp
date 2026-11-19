@@ -16484,6 +16484,10 @@ public:
         }
         if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value)) &&
              ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(asr_target_type))) {
+            // An inline bind(C)/SEQUENCE member on the right-hand side is a
+            // byte blob; the copies below read the source through a descriptor.
+            value = inline_char_member_as_string_descriptor(
+                m_value, value, "inline_char_member_value");
             bool is_bindc_char_member =
                 ASRUtils::is_inline_character_struct_member(x.m_target);
             bool is_cchar = ASRUtils::is_string_only(asr_target_type) &&
