@@ -7325,6 +7325,12 @@ options = "--fixed-form"
 filename = "errors/include_location_05.f90"
 asr = true
 
+# The locations of an INCLUDE file are saved in the module file
+[[test]]
+filename = "errors/include_location_06.f90"
+extrafiles = "errors/include_location_06_module.f90"
+asr_json = true
+
 [[test]]
 filename = "coarray_teams_01.f90"
 fortran = true
