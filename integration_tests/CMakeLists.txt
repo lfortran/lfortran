@@ -3772,6 +3772,7 @@ RUN(NAME realloc_lhs_unallocated_02 LABELS gfortran llvm
 RUN(NAME realloc_lhs_unallocated_03 LABELS gfortran llvm) # what internal procedures reach stays possibly allocated
 RUN(NAME realloc_lhs_unallocated_04 LABELS gfortran llvm) # copies of ASSOCIATE selectors start unallocated
 RUN(NAME realloc_lhs_unallocated_05 LABELS gfortran llvm) # allocated() of certainly unallocated arrays is false
+RUN(NAME realloc_lhs_unallocated_06 LABELS gfortran llvm) # OPEN, INQUIRE, CLOSE etc. keep a local certainly unallocated
 RUN(NAME realloc_lhs_move_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocatable array results moved into the variable
 RUN(NAME realloc_lhs_result_inplace_01 LABELS gfortran llvm) # explicit-shape results computed into the reallocated target

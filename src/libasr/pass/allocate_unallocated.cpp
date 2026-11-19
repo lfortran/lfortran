@@ -534,6 +534,15 @@ public:
             case ASR::stmtType::Print:
             case ASR::stmtType::FileWrite:
             case ASR::stmtType::FileRead:
+            // These change only the variables they name; an ERR= branch
+            // goes to a label, where nothing is known
+            case ASR::stmtType::FileOpen:
+            case ASR::stmtType::FileClose:
+            case ASR::stmtType::FileInquire:
+            case ASR::stmtType::FileRewind:
+            case ASR::stmtType::FileBackspace:
+            case ASR::stmtType::FileEndfile:
+            case ASR::stmtType::Flush:
             case ASR::stmtType::Return:
             case ASR::stmtType::Exit:
             case ASR::stmtType::Cycle:

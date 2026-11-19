@@ -1,0 +1,13 @@
+{
+    "basename": "asr-realloc_lhs_unallocated_06-9335909",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/realloc_lhs_unallocated_06.f90",
+    "infile_hash": "cd914e0a1abea0d56b322120d14ce209b06bf0ba6449729288d0626d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-realloc_lhs_unallocated_06-9335909.stdout",
+    "stdout_hash": "7689a24247ad388bca3d9716c0b5110246233d7548a16ad9e956292f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

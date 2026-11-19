@@ -3900,6 +3900,12 @@ pass = "allocate_unallocated"
 options = "--cumulative"
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_06.f90"
+asr = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
 filename = "../integration_tests/realloc_lhs_hoist_15.f90"
 fortran = true
 pass = "allocate_unallocated"
