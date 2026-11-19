@@ -1,6 +1,6 @@
 /*
-The LL parser of free-form Fortran (a prototype; the Bison parser is the one
-that is used by default).
+The LL parser of free-form Fortran. (Fixed form is parsed by the Bison parser,
+parser.yy.)
 
 The grammar is in ll_parser.ll. llgen.py generates from it the member
 functions that parse its rules (ll_parser_rules.h), which are included in the
@@ -17,10 +17,10 @@ class `LL` below. This file has the rest of the parser:
 The AST is built by the same macros and functions as the Bison parser
 (semantics.h), so both parsers return the same AST, including locations.
 
-The parser reports no syntax errors: at anything it cannot parse it throws
-`LLUnsupported`, and the caller parses the file again with the Bison parser.
-It parses all the free-form files in integration_tests/ and tests/ that the
-Bison parser accepts. It does not parse fixed form or interactive input.
+Syntax errors: a rule that cannot go on throws `LLUnsupported` at the token
+that it did not expect, and the error is reported there. With
+--continue-compilation the parser then skips to the end of the line and goes
+on with the declarations and statements of the program unit it is in.
 */
 
 #include <lfortran/parser/parser.h>
@@ -48,6 +48,9 @@ namespace {
 
 using LCompilers::LFortran::YYSTYPE;
 using LCompilers::LFortran::LLUnsupported;
+
+// Thrown when the parser cannot go on after an error that it has reported
+struct LLStop {};
 
 // The header of FORALL and DO CONCURRENT: the controls and the mask (or null)
 struct ConcurrentHeader {
@@ -81,10 +84,103 @@ struct LL {
     const Location *Lc;
     size_t i = 0;
 
+    // The source, to show a token in an error message; the locations of the
+    // tokens are offsets into it plus `loc_offset`
+    const std::string &src;
+    uint32_t loc_offset;
+    // --continue-compilation: go on after a syntax error
+    bool continue_compilation;
+    // After an error, further errors are not reported before this token
+    size_t quiet_until = 0;
+    // The errors of the tokenizer, which has run before the parser; they
+    // are reported in the order of the source, with those of the parser
+    std::vector<LCompilers::diag::Diagnostic> *tokenizer_errors = nullptr;
+    size_t n_tokenizer_errors = 0;
+    // The token at which a statement at the top level of the file starts
+    size_t top_statement = SIZE_MAX;
+
     LL(Allocator &al, LCompilers::diag::Diagnostics &diag, const int *K,
-        const YYSTYPE *V, const Location *Lc)
-        : m_a{al}, diag{diag}, p{*this}, K{K}, V{V}, Lc{Lc} {
+        const YYSTYPE *V, const Location *Lc, const std::string &src,
+        uint32_t loc_offset, bool continue_compilation)
+        : m_a{al}, diag{diag}, p{*this}, K{K}, V{V}, Lc{Lc}, src{src},
+        loc_offset{loc_offset}, continue_compilation{continue_compilation} {
         result.reserve(al, 32);
+    }
+
+    // Reports the errors of the tokenizer up to the current token
+    void flush_tokenizer_errors(bool all = false) {
+        if (tokenizer_errors == nullptr) return;
+        while (n_tokenizer_errors < tokenizer_errors->size()) {
+            LCompilers::diag::Diagnostic &d
+                = (*tokenizer_errors)[n_tokenizer_errors];
+            if (!all && !d.labels.empty() && !d.labels[0].spans.empty()
+                    && d.labels[0].spans[0].loc.first > Lc[i].last) {
+                break;
+            }
+            diag.diagnostics.push_back(d);
+            n_tokenizer_errors++;
+        }
+    }
+
+    // Reports the current token as a syntax error
+    void syntax_error() {
+        flush_tokenizer_errors();
+        if (i < quiet_until) return;
+        int token = K[i];
+        std::string message;
+        if (token == END_OF_FILE) {
+            message = "End of file is unexpected here";
+        } else if (token == TK_NEWLINE) {
+            message = "Newline is unexpected here";
+        } else {
+            std::string type = LCompilers::LFortran::token2text(token);
+            size_t first = Lc[i].first - loc_offset;
+            size_t last = Lc[i].last - loc_offset;
+            std::string text;
+            if (first <= last && last < src.size()) {
+                text = src.substr(first, last - first + 1);
+            }
+            if (text == type || text.size() == 0) {
+                message = "Token '" + type + "' is unexpected here";
+            } else {
+                message = "Token '" + text + "' (of type '" + type
+                    + "') is unexpected here";
+            }
+        }
+        diag.add(LCompilers::diag::Diagnostic(message,
+            LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser,
+            {LCompilers::diag::Label("", {Lc[i]})}));
+    }
+
+    // After a syntax error: skips to the end of the statement and over one
+    // separator. Errors in the next two tokens are not reported (as with
+    // the Bison parser, which the messages are compared with).
+    void recover() {
+        while (!is_sep(K[i])) {
+            if (K[i] == END_OF_FILE) throw LLStop();
+            i++;
+        }
+        i++;
+        quiet_until = i + 2;
+    }
+
+    // Can the current token follow the declarations and statements of a
+    // program unit or a block?
+    bool is_decl_follow() const {
+        size_t j = (K[i] == TK_LABEL) ? i + 1 : i;
+        switch (K[j]) {
+            case KW_END: case KW_CONTAINS: case END_OF_FILE:
+            case KW_END_PROGRAM: case KW_ENDPROGRAM:
+            case KW_END_MODULE: case KW_ENDMODULE:
+            case KW_END_SUBMODULE: case KW_ENDSUBMODULE:
+            case KW_END_BLOCK: case KW_ENDBLOCK:
+            case KW_END_BLOCK_DATA: case KW_ENDBLOCKDATA:
+            case KW_END_SUBROUTINE: case KW_ENDSUBROUTINE:
+            case KW_END_FUNCTION: case KW_ENDFUNCTION:
+            case KW_END_PROCEDURE: case KW_ENDPROCEDURE:
+                return true;
+            default: return false;
+        }
     }
 
     // Gives up; `line` is the line of the grammar (or of this file) that did
@@ -92,9 +188,6 @@ struct LL {
         throw LLUnsupported{line, K[i], Lc[i].first};
     }
 
-    static bool is_name(int t) {
-        return t == TK_NAME || (t >= KW_ABSTRACT && t <= KW_WRITE);
-    }
     static bool is_sep(int t) {
         return t == TK_NEWLINE || t == TK_COMMENT || t == TK_EOLCOMMENT
             || t == TK_SEMICOLON;
@@ -437,6 +530,9 @@ struct LL {
         if (has_label) i++;
         ast_t *st = statement1();
         if (st == nullptr) {
+            // An identifier (not a keyword) can only start an assignment
+            // here; at the top level of a file it can be an expression
+            if (K[i] == TK_NAME && s != top_statement) statement_error();
             i = s;
             return nullptr;
         }
@@ -581,19 +677,63 @@ struct LL {
     Vec<ast_t*> decl_statements() {
         Vec<ast_t*> v;
         LIST_NEW(v);
+        decl_statements_loop(v);
+        return v;
+    }
+
+    void decl_statements_loop(Vec<ast_t*> &v) {
         for (;;) {
-            if (K[i] == KW_INSTANTIATE && !is_assignment()) {
-                v = LIST_EXTEND(m_a, v, instantiate());
-                continue;
+            flush_tokenizer_errors();
+            try {
+                if (K[i] == KW_INSTANTIATE && !is_assignment()) {
+                    v = LIST_EXTEND(m_a, v, instantiate());
+                    continue;
+                }
+                if (K[i] == KW_DEFERRED && K[i+1] == KW_TYPE
+                        && K[i+2] != TK_LPAREN) {
+                    v = LIST_EXTEND(m_a, v, deferred_type_decl());
+                    continue;
+                }
+                if (K[i] == TK_PRAGMA_DECL) {
+                    // A pragma that is not valid is reported, and is a null
+                    // declaration (as in the Bison parser)
+                    LIST_ADD(v, pragma_decl());
+                    continue;
+                }
+                ast_t *s = decl_statement();
+                if (s == nullptr) {
+                    if (!continue_compilation || is_decl_follow()) return;
+                    statement_error();
+                }
+                LIST_ADD(v, s);
+            } catch (const LLUnsupported &) {
+                // With --continue-compilation the declarations and
+                // statements go on after the line of a syntax error
+                if (!continue_compilation) throw;
+                syntax_error();
+                recover();
             }
-            if (K[i] == KW_DEFERRED && K[i+1] == KW_TYPE) {
-                v = LIST_EXTEND(m_a, v, deferred_type_decl());
-                continue;
-            }
-            ast_t *s = decl_statement();
-            if (s == nullptr) return v;
-            LIST_ADD(v, s);
         }
+    }
+
+    // Error recovery (`resume:` in the grammar): the rest of a program unit
+    // after its declarations and statements `v` did not parse. With
+    // --continue-compilation, reports the error and goes on with more
+    // declarations and statements after the line of the error.
+    bool more_decl_statements(Vec<ast_t*> &v) {
+        if (!continue_compilation) return false;
+        syntax_error();
+        recover();
+        decl_statements_loop(v);
+        return true;
+    }
+
+    // No statement starts at the current token. A name can start an
+    // assignment, so the token to report is the one after the designator.
+    [[noreturn]] void statement_error() {
+        if (K[i] == TK_LABEL) i++;
+        if (is_name(K[i])) designator();
+        unsup(__LINE__);
     }
 
     // "{" instantiate_symbol_list_opt "}"
@@ -965,11 +1105,44 @@ struct LL {
             }
             default: break;
         }
-        ast_t *r = decl_statement();
-        if (r != nullptr) return r;
-        ast_t *e = expr();
-        sep();
-        return e;
+        // A statement of one line that is also an expression is the
+        // expression: `stop (1)`, `print (x)`
+        switch (K[i]) {
+            case KW_STOP: case KW_RETURN: case KW_PAUSE: case KW_PRINT: {
+                if (K[i+1] != TK_LPAREN) break;
+                try {
+                    ast_t *e = expr();
+                    if (is_sep(K[i])) {
+                        sep();
+                        return e;
+                    }
+                } catch (const LLUnsupported &) {
+                }
+                i = s;
+                break;
+            }
+            default: break;
+        }
+        // A declaration or a statement, or else an expression. If neither
+        // parses, the error is the one that is further in the source.
+        size_t failed_at = s;
+        top_statement = s;
+        try {
+            ast_t *r = decl_statement();
+            if (r != nullptr) return r;
+        } catch (const LLUnsupported &) {
+            failed_at = i;
+        }
+        i = s;
+        top_statement = SIZE_MAX;
+        try {
+            ast_t *e = expr();
+            sep();
+            return e;
+        } catch (const LLUnsupported &) {
+            if (i < failed_at) i = failed_at;
+            throw;
+        }
     }
 
     ast_t* subprogram_or_item() {
@@ -1183,22 +1356,23 @@ void fix_program_without_program_line(Allocator &al,
 
 void ll_tokenize(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics, LLTokens &t, bool openmp,
-        uint32_t loc_offset)
+        uint32_t loc_offset, bool continue_compilation)
 {
     Tokenizer tok;
     tok.openmp_enabled = openmp;
     tok.loc_offset = loc_offset;
     // The tokenizer needs the input to end with a newline
-    const std::string *inp = &input;
     if (input.empty() || input.back() != '\n') {
         t.input = input;
         t.input.append("\n");
-        inp = &t.input;
+        t.source = &t.input;
+    } else {
+        t.source = &input;
     }
-    tok.set_string(*inp);
+    tok.set_string(*t.source);
     // A token takes at least one character; the arrays end with several
     // END_OF_FILE tokens, so that the parser can look ahead without checks
-    size_t max = inp->size() + 8;
+    size_t max = t.source->size() + 8;
     if (t.kind.size() < max) {
         t.kind.resize(max);
         t.value.resize(max);
@@ -1209,7 +1383,7 @@ void ll_tokenize(Allocator &al, const std::string &input,
     Location *L = t.loc.data();
     size_t n = 0;
     for (;;) {
-        int k = tok.lex(al, V[n], L[n], diagnostics, false);
+        int k = tok.lex(al, V[n], L[n], diagnostics, continue_compilation);
         K[n] = k;
         n++;
         if (k == END_OF_FILE) break;
@@ -1221,14 +1395,41 @@ void ll_tokenize(Allocator &al, const std::string &input,
     t.n = n;
 }
 
-AST::TranslationUnit_t* ll_parse(Allocator &al, const std::string &input,
-        diag::Diagnostics &diagnostics, LLTokens &tokens, bool openmp,
-        uint32_t loc_offset)
+Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
+        const std::string &input, diag::Diagnostics &diagnostics,
+        LLTokens &tokens, const CompilerOptions &co, uint32_t loc_offset)
 {
-    ll_tokenize(al, input, diagnostics, tokens, openmp, loc_offset);
+    // The whole file is tokenized first; the errors of the tokenizer are
+    // added to the diagnostics as the parser gets to them
+    diag::Diagnostics tokenizer_diagnostics;
+    try {
+        ll_tokenize(al, input, tokenizer_diagnostics, tokens, co.openmp,
+            loc_offset, co.continue_compilation);
+    } catch (const parser_local::TokenizerAbort &) {
+        for (auto &d : tokenizer_diagnostics.diagnostics) {
+            diagnostics.diagnostics.push_back(d);
+        }
+        return Error();
+    }
     LL ll(al, diagnostics, tokens.kind.data(), tokens.value.data(),
-        tokens.loc.data());
-    ll.units();
+        tokens.loc.data(), *tokens.source, loc_offset,
+        co.continue_compilation);
+    ll.tokenizer_errors = &tokenizer_diagnostics.diagnostics;
+    try {
+        ll.units();
+        ll.flush_tokenizer_errors(true);
+    } catch (const LLUnsupported &) {
+        ll.syntax_error();
+        ll.flush_tokenizer_errors(true);
+    } catch (const LLStop &) {
+        ll.flush_tokenizer_errors(true);
+    } catch (const parser_local::ParserAbort &) {
+        ll.flush_tokenizer_errors(true);
+        return Error();
+    }
+    if (diagnostics.has_error() && !co.continue_compilation) {
+        return Error();
+    }
     Location l;
     if (ll.result.size() == 0) {
         l.first = 0;
@@ -1239,35 +1440,14 @@ AST::TranslationUnit_t* ll_parse(Allocator &al, const std::string &input,
     }
     AST::TranslationUnit_t *ast = (AST::TranslationUnit_t*)
         AST::make_TranslationUnit_t(al, l, ll.result.p, ll.result.size());
-    if (is_program_needed(*ast)) {
-        fix_program_without_program_line(al, *ast, diagnostics);
-    }
-    return ast;
-}
-
-AST::TranslationUnit_t* ll_parse_or_null(Allocator &al,
-        const std::string &input, diag::Diagnostics &diagnostics, bool openmp,
-        uint32_t loc_offset)
-{
-    // The diagnostics are kept apart until the parse succeeds, because the
-    // caller parses the input again if it does not
-    diag::Diagnostics d;
-    LLTokens tokens;
-    AST::TranslationUnit_t *ast;
-    try {
-        ast = ll_parse(al, input, d, tokens, openmp, loc_offset);
-    } catch (const LLUnsupported &) {
-        return nullptr;
-    } catch (const parser_local::TokenizerAbort &) {
-        return nullptr;
-    } catch (const parser_local::ParserAbort &) {
-        return nullptr;
-    } catch (const LCompilersException &) {
-        return nullptr;
-    }
-    if (d.has_error()) return nullptr;
-    for (auto &x : d.diagnostics) {
-        diagnostics.diagnostics.push_back(x);
+    if (!co.interactive && !co.infer_mode && is_program_needed(*ast)) {
+        try {
+            fix_program_without_program_line(al, *ast, diagnostics);
+        } catch (const parser_local::ParserAbort &) {
+            if (!co.continue_compilation) {
+                return Error();
+            }
+        }
     }
     return ast;
 }

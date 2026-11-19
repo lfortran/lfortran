@@ -55,8 +55,10 @@
 %extern concurrent_header -> ConcurrentHeader first: "("
 // "," and the specifiers of EVENT WAIT
 %extern event_wait_specs -> Vec<ast_t*> first: ","
-// The declarations and statements of a program unit or a BLOCK
-%extern decl_statements -> Vec<ast_t*>
+// The declarations and statements of a program unit or a BLOCK. With
+// --continue-compilation, after a syntax error in the rest of the unit the
+// parser goes on with more declarations and statements.
+%extern decl_statements -> Vec<ast_t*> resume: more_decl_statements
 // A declaration or a statement that has a label
 %extern labeled_decl_or_statement -> ast_t* first: TK_LABEL
 // A declaration, or else a statement; null if neither starts here
@@ -626,11 +628,12 @@ rule decl_statement? -> ast_t*
     | import_statement
     | interface_decl
     | deferred_decl
-    | template_decl
-    | requirement_decl
-    | require_decl
+    | &[ KW_TEMPLATE NAME ] ![ _ ":" ] template_decl
+    | &[ KW_REQUIREMENT ] ![ _ ":" ] requirement_decl
+    | &[ KW_REQUIRE ] ![ _ ":" ] require_decl
     | union_type_decl
-    | ![ KW_TYPE KW_IS ] derived_type_decl
+    | &[ KW_TYPE "," | KW_TYPE "::" | KW_TYPE NAME ] ![ KW_TYPE KW_IS ]
+        derived_type_decl
     | enum_decl
     | var_decl_or_statement
     ;
@@ -847,6 +850,10 @@ rule typed_decl?(size_t s) -> ast_t*
         )
     ;
 
+rule pragma_decl -> ast_t*
+    : v=TK_PRAGMA_DECL ^ sp=sep     => VAR_DECL_PRAGMA($v, TRIVIA_AFTER(sp, @^), @^)
+    ;
+
 rule named_constant_def -> var_sym_t*
     : n=id "=" e=expr               => VAR_SYM_DIM_INIT(n, nullptr, 0, e, Equal, @$)
     ;
@@ -1053,7 +1060,7 @@ rule var_sym_decl -> var_sym_t*
 
 // var_modifiers: [ [ "," var_modifier ]... "::" ]
 rule var_modifiers -> Vec<ast_t*>
-    : "," list=a_var_modifier % "," "::" => list
+    : &[ "," ] "," list=a_var_modifier % "," "::" => list
     | "::"                          => empty_list()
     |                               => empty_list()
     ;

@@ -1,10 +1,9 @@
-// Benchmark of the prototype LL parser against the Bison GLR parser.
+// Benchmark of the LL parser against the Bison GLR parser.
 //
 //     parse_ll_bench <repetitions> file.f90...
 //
 // Each file is prescanned and parsed by both parsers. A file takes part in
-// the benchmark if the LL parser supports everything in it and both parsers
-// return the same AST (compared as JSON, including the locations). The time
+// the benchmark if both parsers accept it and return the same AST (compared as JSON, including the locations). The time
 // of a file is the best of the repetitions.
 #include <algorithm>
 #include <chrono>
@@ -76,29 +75,36 @@ int main(int argc, char **argv) {
         std::string a, b;
         {
             Allocator al(64*1024);
-            auto res = LFortran::parse(al, pre, d, co);
+            auto res = LFortran::parse_bison(al, pre, d, co);
             if (!res.ok) { failed++; continue; }
             a = LFortran::pickle_json(*res.result, lm, false);
         }
-        try {
+        {
             Allocator al(64*1024);
             diag::Diagnostics d2;
-            LFortran::AST::TranslationUnit_t *t = LFortran::ll_parse(al, pre, d2, toks);
-            b = LFortran::pickle_json(*t, lm, false);
-        } catch (const LFortran::LLUnsupported &e) {
-            unsupported++;
-            if (getenv("LL_WHY")) {
-                size_t a = pre.rfind('\n', e.pos == 0 ? 0 : e.pos - 1);
-                a = (a == std::string::npos) ? 0 : a + 1;
-                size_t b = pre.find('\n', e.pos);
-                std::string line = pre.substr(a, b - a);
-                size_t c = line.find_first_not_of(" \t");
-                if (c != std::string::npos) line = line.substr(c);
-                std::cerr << "UNSUP " << e.line << " "
-                    << LFortran::token2text(e.token) << " | " << argv[i]
-                    << " | " << line.substr(0, 90) << "\n";
+            auto res = LFortran::ll_parse(al, pre, d2, toks, co);
+            if (!res.ok) {
+                unsupported++;
+                if (getenv("LL_WHY")) {
+                    std::string msg, line;
+                    for (auto &x : d2.diagnostics) {
+                        if (x.level != diag::Level::Error) continue;
+                        msg = x.message;
+                        if (x.labels.empty() || x.labels[0].spans.empty()) break;
+                        size_t pos = x.labels[0].spans[0].loc.first;
+                        size_t a = pre.rfind('\n', pos == 0 ? 0 : pos - 1);
+                        a = (a == std::string::npos) ? 0 : a + 1;
+                        line = pre.substr(a, pre.find('\n', pos) - a);
+                        size_t c = line.find_first_not_of(" \t");
+                        if (c != std::string::npos) line = line.substr(c);
+                        break;
+                    }
+                    std::cerr << "UNSUP " << msg << " | " << argv[i] << " | "
+                        << line.substr(0, 90) << "\n";
+                }
+                continue;
             }
-            continue;
+            b = LFortran::pickle_json(*res.result, lm, false);
         }
         if (a != b) {
             // The JSON of an integer too large for 62 bits is a pointer;
@@ -106,11 +112,11 @@ int main(int argc, char **argv) {
             // other AST format, which prints the integers
             Allocator al1(64*1024), al2(64*1024);
             diag::Diagnostics d3;
-            auto r1 = LFortran::parse(al1, pre, d3, co);
-            LFortran::AST::TranslationUnit_t *r2 = LFortran::ll_parse(al2, pre,
-                d3, toks);
+            auto r1 = LFortran::parse_bison(al1, pre, d3, co);
+            auto r2 = LFortran::ll_parse(al2, pre, d3, toks, co);
             if (mask_long_numbers(a) == mask_long_numbers(b)
-                    && LFortran::pickle(*r1.result) == LFortran::pickle(*r2)) {
+                    && LFortran::pickle(*r1.result)
+                        == LFortran::pickle(*r2.result)) {
                 b = a;
             }
         }
@@ -130,7 +136,7 @@ int main(int argc, char **argv) {
                 diag::Diagnostics d2;
                 Allocator al(64*1024);
                 auto t1 = Clock::now();
-                auto res = LFortran::parse(al, pre, d2, co);
+                auto res = LFortran::parse_bison(al, pre, d2, co);
                 auto t2 = Clock::now();
                 (void)res;
                 b_glr = std::min(b_glr, us(t1, t2));
@@ -139,7 +145,7 @@ int main(int argc, char **argv) {
                 diag::Diagnostics d2;
                 Allocator al(64*1024);
                 auto t1 = Clock::now();
-                LFortran::ll_parse(al, pre, d2, toks);
+                LFortran::ll_parse(al, pre, d2, toks, co);
                 auto t2 = Clock::now();
                 b_ll = std::min(b_ll, us(t1, t2));
             }
@@ -158,7 +164,7 @@ int main(int argc, char **argv) {
         lines += std::count(src.begin(), src.end(), '\n');
         t_glr += b_glr; t_ll += b_ll; t_tok += b_tok;
     }
-    std::cout << "files " << files << "  unsupported " << unsupported
+    std::cout << "files " << files << "  LL fails " << unsupported
         << "  AST mismatch " << mismatch << "  failed " << failed << "\n";
     std::cout << "lines " << lines << "  bytes " << bytes << "  tokens "
         << tokens << "\n";

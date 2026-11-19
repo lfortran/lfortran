@@ -4,12 +4,13 @@
 #include <vector>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/diagnostics.h>
+#include <libasr/utils.h>
 
 namespace LCompilers::LFortran {
 
-// Thrown for a construct outside the subset that the prototype parses
+// Thrown inside the parser at a token that a rule does not expect
 struct LLUnsupported {
-    int line; // line in ll_parser.cpp that gave up
+    int line; // line of the grammar (or of ll_parser.cpp) that gave up
     int token; // the kind of the current token
     size_t pos; // its position in the source
 };
@@ -20,25 +21,20 @@ struct LLTokens {
     std::vector<YYSTYPE> value;
     std::vector<Location> loc;
     size_t n = 0;
-    std::string input; // a copy of the input, if a newline had to be added
+    // The source that the locations refer to: the input, or `input` below
+    // if a newline had to be added at its end
+    const std::string *source = nullptr;
+    std::string input;
 };
 
 void ll_tokenize(Allocator &al, const std::string &input,
     diag::Diagnostics &diagnostics, LLTokens &tokens, bool openmp=false,
-    uint32_t loc_offset=0);
+    uint32_t loc_offset=0, bool continue_compilation=false);
 
-// Parses free-form Fortran (already prescanned) with the prototype LL parser.
-// Throws LLUnsupported if it cannot parse the input (it reports no syntax
-// errors itself).
-AST::TranslationUnit_t* ll_parse(Allocator &al, const std::string &input,
-    diag::Diagnostics &diagnostics, LLTokens &tokens, bool openmp=false,
-    uint32_t loc_offset=0);
-
-// The same, but returns nullptr (and adds no diagnostics) if the LL parser
-// cannot parse the input, so that the caller can use the Bison parser.
-AST::TranslationUnit_t* ll_parse_or_null(Allocator &al,
-    const std::string &input, diag::Diagnostics &diagnostics, bool openmp,
-    uint32_t loc_offset);
+// Parses free-form Fortran (already prescanned) to AST with the LL parser
+Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
+    const std::string &input, diag::Diagnostics &diagnostics,
+    LLTokens &tokens, const CompilerOptions &co, uint32_t loc_offset=0);
 
 } // namespace LCompilers::LFortran
 
