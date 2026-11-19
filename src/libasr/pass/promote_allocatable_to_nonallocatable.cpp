@@ -233,6 +233,26 @@ static bool has_run_time_lower_bound(ASR::ttype_t* type) {
     return false;
 }
 
+// The lower bounds and extents of `dims` when all are constants, or false
+static bool constant_shape(const ASR::dimension_t* dims, size_t n_dims,
+        std::vector<int64_t>& shape) {
+    shape.clear();
+    for( size_t i = 0; i < n_dims; i++ ) {
+        int64_t start = 1, length = 0;
+        if( dims[i].m_start != nullptr && !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[i].m_start), start) ) {
+            return false;
+        }
+        if( dims[i].m_length == nullptr || !ASRUtils::extract_value(
+                ASRUtils::expr_value(dims[i].m_length), length) ) {
+            return false;
+        }
+        shape.push_back(start);
+        shape.push_back(length);
+    }
+    return true;
+}
+
 class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled> {
     public:
 
@@ -241,6 +261,10 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         std::map<ASR::symbol_t*, std::vector<ASR::dimension_t>> alloc_shape;
         // Whether the first allocation's shape was written on entry.
         std::map<ASR::symbol_t*, bool> alloc_on_entry;
+        // The shapes, all constants, that reallocations on assignment give
+        // a variable, which keep it an array of a fixed shape when its
+        // allocation has that shape too
+        std::map<ASR::symbol_t*, std::vector<std::vector<int64_t>>> constant_reallocations;
         bool device_only;
         bool in_device;
         Allocator* al;
@@ -352,7 +376,15 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                     ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                     if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_a) ) {
                         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_args[i].m_a)->m_v;
-                        push_to_scopes_until_symbol_scope(sym);
+                        std::vector<int64_t> shape;
+                        if( x.n_args == 1 && x.m_args[i].m_len_expr == nullptr &&
+                                x.m_args[i].m_type == nullptr &&
+                                constant_shape(x.m_args[i].m_dims,
+                                    x.m_args[i].n_dims, shape) ) {
+                            constant_reallocations[sym].push_back(shape);
+                        } else {
+                            push_to_scopes_until_symbol_scope(sym);
+                        }
                     }
                 }
             }
@@ -509,6 +541,9 @@ class PromoteAllocatableToNonAllocatable:
     public:
 
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var;
+        // See IsAllocatedCalled::constant_reallocations
+        const std::map<ASR::symbol_t*, std::vector<std::vector<int64_t>>>*
+            constant_reallocations = nullptr;
         std::set<ASR::symbol_t*> promoted_symbols;
         // Functions whose result variable was promoted. Their signature and
         // every call to them have to be rebuilt from the new result type.
@@ -544,12 +579,66 @@ class PromoteAllocatableToNonAllocatable:
             promote_allocation(const_cast<ASR::Allocate_t&>(x));
         }
 
+        // Whether every reallocation on assignment of `sym` on the host
+        // gives it the constant shape its allocation `alloc_arg` gives it,
+        // so that each finds it allocated with that shape and does nothing
+        bool reallocations_keep_shape(ASR::symbol_t* sym,
+                const ASR::alloc_arg_t& alloc_arg) {
+            if( in_device || constant_reallocations == nullptr ) {
+                return true;
+            }
+            auto it = constant_reallocations->find(sym);
+            if( it == constant_reallocations->end() ) {
+                return true;
+            }
+            std::vector<int64_t> shape;
+            if( !constant_shape(alloc_arg.m_dims, alloc_arg.n_dims, shape) ) {
+                return false;
+            }
+            for( const std::vector<int64_t>& s : it->second ) {
+                if( s != shape ) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         // A device has no heap: a reallocation there gives the array the
-        // one shape it can have, as an allocation does.
+        // one shape it can have, as an allocation does. On the host, the
+        // reallocations of a promoted array do nothing (see
+        // reallocations_keep_shape) and are removed.
         void visit_ReAlloc(const ASR::ReAlloc_t& x) {
             if( in_device ) {
                 promote_allocation(const_cast<ASR::ReAlloc_t&>(x));
+                return;
             }
+            ASR::ReAlloc_t& xx = const_cast<ASR::ReAlloc_t&>(x);
+            Vec<ASR::alloc_arg_t> kept;
+            kept.reserve(al, x.n_args);
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                if( !(ASR::is_a<ASR::Var_t>(*x.m_args[i].m_a) &&
+                      promoted_symbols.count(ASR::down_cast<ASR::Var_t>(
+                          x.m_args[i].m_a)->m_v)) ) {
+                    kept.push_back(al, x.m_args[i]);
+                }
+            }
+            if( kept.size() == 0 ) {
+                remove_original_statement = true;
+            } else if( kept.size() != x.n_args ) {
+                xx.m_args = kept.p;
+                xx.n_args = kept.size();
+            }
+        }
+
+        // An assignment to a promoted array cannot reallocate it
+        void visit_Assignment(const ASR::Assignment_t& x) {
+            ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(x.m_target);
+            if( !in_device && x.m_realloc_lhs && ASR::is_a<ASR::Var_t>(*target) &&
+                    promoted_symbols.count(ASR::down_cast<ASR::Var_t>(target)->m_v) ) {
+                const_cast<ASR::Assignment_t&>(x).m_realloc_lhs = false;
+            }
+            ASR::CallReplacerOnExpressionsVisitor<
+                PromoteAllocatableToNonAllocatable>::visit_Assignment(x);
         }
 
         template <typename T>
@@ -614,7 +703,8 @@ class PromoteAllocatableToNonAllocatable:
                     std::find(scope2var[current_scope].begin(),
                         scope2var[current_scope].end(),
                         ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) ==
-                        scope2var[current_scope].end() ) {
+                        scope2var[current_scope].end() &&
+                    reallocations_keep_shape(var_sym, alloc_arg) ) {
                     ASR::Variable_t* alloc_variable = ASR::down_cast<ASR::Variable_t>(
                         ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
                     ASR::ttype_t* array_type /*Array's type*/  = ASRUtils::duplicate_type(al,
@@ -1320,6 +1410,7 @@ void pass_promote_allocatable_to_nonallocatable(
     IsAllocatedCalled is_allocated_called(scope2var);
     is_allocated_called.visit_TranslationUnit(unit);
     PromoteAllocatableToNonAllocatable promoter(al, scope2var);
+    promoter.constant_reallocations = &is_allocated_called.constant_reallocations;
     promoter.visit_TranslationUnit(unit);
     promoter.visit_TranslationUnit(unit);
     FixArrayPhysicalCastVisitor fix_array_physical_cast(al, promoter.promoted_symbols);
