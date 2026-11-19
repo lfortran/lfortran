@@ -192,11 +192,7 @@
                 )
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )]
         []
         []

@@ -1,27 +1,25 @@
 /*
 This is a fixed-form tokenizer. It accepts a prescanned source code that removes
-all whitespace.  It uses a hand written recursive descent parser to figure out
-how to properly tokenize the input. It returns a list of tokens that are then
-fed into our Bison parser, that is shared with the free-form parser.
+all whitespace and splits it into tokens one statement at a time; see
+FixedFormStatements below. The tokens go to the parser that is shared with
+free form.
 
 Note: The prescanner removes CR from regular code, but not from string literals.
 */
 #include <algorithm>
+#include <cstring>
 #include <unordered_map>
 #include <utility>
 
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <lfortran/parser/tokenizer.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
 
-#include <lfortran/pickle.h>
 
 
-int position = 0;
-#define TOK(pos, arg) std::cout << std::string(pos, ' ') << "TOKEN: " << arg << std::endl;
 
 namespace LCompilers::LFortran {
 
@@ -270,52 +268,9 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"where", KW_WHERE},
     {"while", KW_WHILE},
     {"write", KW_WRITE},
-    {"uminus", UMINUS}
     };
     return map;
 }
-
-// star-forms must appear before non-stars
-const std::vector<std::string> declarators{
-            "integer*",
-            "integer",
-            "parameter",
-	    "real*",
-            "real",
-	    "complex*",
-            "complex",
-            "doubleprecision",
-            "doublecomplex",
-            "external",
-            "dimension",
-	    "character*",
-            "character",
-	    "logical*",
-            "logical",
-            "byte",
-            "data",
-            "type",
-            "class",
-            "public",
-            "private",
-            "allocatable",
-            "asynchronous",
-            "bind",
-            "codimension",
-            "contiguous",
-            "intent",
-            "optional",
-            "pointer",
-            "protected",
-            "target",
-            "value",
-            "volatile"
-        };
-
-std::vector<std::string> lines{};
-
-std::vector<std::string> io_names{ "open",  "read",    "write",  "format", "close",
-                                   "print", "inquire", "rewind", "flush" };
 
 void FixedFormTokenizer::set_string(const std::string &str)
 {
@@ -333,11 +288,31 @@ void FixedFormTokenizer::set_string(const std::string &str)
     line_num = 1;
 }
 
-#define KW(x) RET(KW_##x);
-#define RET(x) token_loc(loc); last_token=yytokentype::x; return yytokentype::x;
-#define WARN_REL(x) add_rel_warning(diagnostics, yytokentype::TK_##x);
 
-struct FixedFormRecursiveDescent {
+/*
+The statements of a fixed-form source, one at a time.
+
+After the prescanner removed the blanks, the tokens of a statement such as
+`do10i=1,5` cannot be found by the longest match: this one is the DO loop
+`do 10 i = 1, 5`, while `do10i=1` is an assignment to the variable `do10i`.
+The parser is the same as for free form and resolves the grammar; the only
+job here is to split each statement into tokens, and that needs just the
+statement itself:
+
+  * An assignment (`name [(...) | %name]... = ...` without a comma outside of
+    parentheses after the `=`) is tokenized by the longest match.
+
+  * Any other statement starts with keywords. `statement_keywords` lists the
+    ones that can be glued to what follows (`callf(x)`, `endsubroutinef`,
+    `goto10`); the rest of the statement is tokenized by the longest match.
+    A few keywords need more than that, see `Mode`.
+
+One thing depends on the previous statements: a function or a subroutine
+statement is only recognized where a program unit can start (`integer
+function f(n)` and the declaration of the array `functionf` are otherwise
+the same characters).
+*/
+struct FixedFormStatements {
     Tokenizer t;
     diag::Diagnostics &diag;
     Allocator &m_a;
@@ -345,2067 +320,673 @@ struct FixedFormRecursiveDescent {
     std::vector<YYSTYPE> stypes;
     std::vector<int> tokens;
     std::vector<Location> locations;
-    // Stack of do labels
-    std::vector<int64_t> do_labels;
+    // The program units that are open: 'p'rogram, 'm'odule, 's'ubroutine,
+    // 'f'unction, 'b'lock data
+    std::vector<char> units;
+    // A program unit can start with the next statement
+    bool unit_start = true;
 
-    FixedFormRecursiveDescent(diag::Diagnostics &diag,
+    enum Mode {
+        Plain,       // keywords, then the rest by the longest match
+        Type,        // `integer*4x`: only digits follow the `*`
+        Do,          // `do10i=1,5`, `dowhile(x)`, `doconcurrent(i=1:n)`
+        Condition,   // `if(x)y=1`: a statement follows the `(...)`
+        Format,      // the whole statement is one token
+        Assign,      // `assign10toi`
+        EndUnit,     // the end of a program unit
+        EndIf,       // `10 endif`
+        Contains,    // internal procedures follow
+        Interface,   // interface bodies follow
+    };
+
+    struct Keywords {
+        // The keywords, separated by a space
+        const char *words;
+        Mode mode = Plain;
+        // If not 0, the character that must follow: '(' or '$' for the end
+        // of the statement
+        char next = 0;
+    };
+
+    struct Entry {
+        std::string text;
+        std::vector<std::pair<yytokentype, size_t>> words;
+        Mode mode;
+        char next;
+    };
+
+    static const std::vector<Entry> &statement_keywords(unsigned char first) {
+        static const std::vector<Keywords> keywords = {
+            {"abstract interface", Interface, '$'},
+            {"allocatable"}, {"assign", Assign}, {"asynchronous"},
+            {"backspace"}, {"byte", Type},
+            {"call"}, {"case default"}, {"character", Type},
+            {"class default"}, {"class is", Plain, '('},
+            {"codimension"}, {"common"}, {"complex", Type},
+            {"contains", Contains, '$'}, {"contiguous"}, {"cycle"},
+            {"data"}, {"dimension"}, {"do", Do},
+            {"doublecomplex", Type}, {"doubleprecision", Type},
+            {"else"}, {"elseif", Condition, '('}, {"elsewhere"},
+            {"end", EndUnit, '$'}, {"endassociate"}, {"endblock"},
+            {"endblockdata", EndUnit}, {"endcritical"}, {"enddo"},
+            {"endenum"}, {"endfile"}, {"endforall"},
+            {"endfunction", EndUnit}, {"endif", EndIf}, {"endinterface"},
+            {"endmodule", EndUnit}, {"endprocedure"},
+            {"endprogram", EndUnit}, {"endselect"},
+            {"endsubmodule", EndUnit}, {"endsubroutine", EndUnit},
+            {"endtype"}, {"endwhere"}, {"entry"}, {"enumerator"},
+            {"equivalence"}, {"error stop"}, {"exit"}, {"external"},
+            {"flush"}, {"forall", Condition, '('}, {"format", Format, '('},
+            {"goto"},
+            {"if", Condition, '('}, {"implicit"}, {"import"},
+            {"include"}, {"integer", Type}, {"interface", Interface},
+            {"intrinsic"},
+            {"logical", Type},
+            {"module procedure"},
+            {"namelist"},
+            {"optional"},
+            {"parameter"}, {"pause"}, {"pointer"}, {"print"}, {"private"},
+            {"procedure"}, {"protected"}, {"public"},
+            {"rank default"}, {"read"}, {"real", Type},
+            {"return"}, {"rewind"},
+            {"save"}, {"select case", Plain, '('},
+            {"select rank", Plain, '('}, {"select type", Plain, '('},
+            {"stop"},
+            {"target"}, {"then"}, {"type is", Plain, '('}, {"type"},
+            {"use"},
+            {"value"}, {"volatile"},
+            {"where", Condition, '('},
+        };
+        // By the first letter, the longest first
+        static const std::vector<std::vector<Entry>> by_letter = [] {
+            std::vector<std::vector<Entry>> table(26);
+            for (const Keywords &k : keywords) {
+                Entry e;
+                e.mode = k.mode;
+                e.next = k.next;
+                std::string words = k.words;
+                size_t start = 0;
+                while (start < words.size()) {
+                    size_t end = words.find(' ', start);
+                    if (end == std::string::npos) end = words.size();
+                    std::string word = words.substr(start, end - start);
+                    e.words.push_back({identifier_token_map().at(word),
+                        word.size()});
+                    e.text += word;
+                    start = end + 1;
+                }
+                table[e.text[0] - 'a'].push_back(e);
+            }
+            for (auto &entries : table) {
+                std::stable_sort(entries.begin(), entries.end(),
+                    [](const Entry &a, const Entry &b) {
+                        return a.text.size() > b.text.size();
+                    });
+            }
+            return table;
+        }();
+        static const std::vector<Entry> none;
+        if (first < 'a' || first > 'z') return none;
+        return by_letter[first - 'a'];
+    }
+
+    FixedFormStatements(diag::Diagnostics &diag,
         Allocator &m_a) : diag{diag}, m_a{m_a} {
             t.fixed_form = true;
         };
 
-    // Auxiliary functions:
-
-    void error(unsigned char *cur, const std::string &text) {
-        uint32_t loc_first = source_offset(cur-string_start);
-        Location loc;
-        loc.first = loc_first;
-        loc.last = loc_first;
-        // auto next=cur; next_line(next);
-        //std::cout << "error line " << tostr(cur,next-1) << std::endl;
-        diag.add(diag::Diagnostic(
-            text,
-            diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-        throw parser_local::TokenizerAbort();
-    }
-
-    // Are the next characters in the `cur` stream equal to `str`?
-    bool next_is(unsigned char const *cur, const std::string &str) {
-	for(const char s : str) {
-	    if (!s || *cur++ != s) return false;
-	}
-	return true;
-    }
-
-    // Are the next characters in the `cur` stream equal to `str`?
-    constexpr bool next_is(unsigned char const * cur, const char *str) {
-	while(*str) {
-	    if (*cur++ != *str++) return false;
-	}
-	return true;
-    }
-
-    constexpr bool next_is_eol(unsigned char const *cur) {
-        return (*cur == '\n');
+    // Are the next characters equal to `str`?
+    static bool next_is(const unsigned char *cur, const char *str) {
+        while (*str) {
+            if (*cur++ != *str++) return false;
+        }
+        return true;
     }
 
     // A statement ends at the end of the line or at a `;` separator
-    constexpr bool next_is_eos(unsigned char const *cur) {
-        return (*cur == '\n' || *cur == ';');
+    static bool is_eos(const unsigned char *cur) {
+        return *cur == '\n' || *cur == ';' || *cur == '\0';
     }
 
-    bool is_integer(const std::string &s) const {
-        return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
-            // TODO: I think `c` can never be ' ', since we remove all
-            // space
-            return ::isdigit(c) || c == ' ';
-        });
+    static bool is_digit(unsigned char ch) {
+        return ch >= '0' && ch <= '9';
     }
 
-    int64_t eat_label(unsigned char *&cur) {
-        // consume label if it is available
-        // for line beginnings
-        const int reserved_cols = 5;
-        std::string label;
-        label.assign((char*)cur, reserved_cols);
-        if (is_integer(label)) {
-            lines.push_back(label);
-            YYSTYPE y;
-            std::string::iterator end = std::remove(label.begin(), label.end(), ' ');
-            label.erase(end, label.end());
-            unsigned char *t = (unsigned char*)&label[0];
-            unsigned char *e = (unsigned char*)&label[label.size()];
-            lex_int_large(m_a, t,e,
-                    y.int_suffix.int_n,
-                    y.int_suffix.int_kind);
-            tokens.push_back(yytokentype::TK_LABEL);
-            stypes.push_back(y);
-            Location loc;
-            loc.first = source_offset(cur - string_start);
-            loc.last = source_offset(cur - string_start + label.size());
-            locations.push_back(loc);
-            cur+=reserved_cols;
-            return y.int_suffix.int_n.n;
-        }
-        return -1;
+    static bool is_name_start(unsigned char ch) {
+        return (ch >= 'a' && ch <= 'z') || ch == '_';
     }
 
-    void undo_label(unsigned char *&cur) {
-        cur -= 5;
-        tokens.pop_back();
-        stypes.pop_back();
-        locations.pop_back();
+    static bool is_name_char(unsigned char ch) {
+        return is_name_start(ch) || is_digit(ch);
     }
 
-    int64_t eat_label_inline(unsigned char *&cur) {
-        // consume label if it is available
-        auto start = cur;
-        auto cur2 = cur;
-        std::string label;
-        unsigned long long count = 0;
-        if (::isdigit(*cur2)) {
-            while(*cur2 == ' ' || ::isdigit(*(cur2++))) count++;
-            cur2--; // we advance one too much
-        }
-        label.assign((char*)start, count);
-        if (is_integer(label) && count > 0) {
-            YYSTYPE yy;
-            lex_int_large(m_a, cur, cur2,
-                    yy.int_suffix.int_n,
-                    yy.int_suffix.int_kind);
-            tokens.push_back(yytokentype::TK_INTEGER);
-            stypes.push_back(yy);
-            Location loc;
-            loc.first = source_offset(cur - string_start);
-            loc.last = source_offset(cur - string_start + label.size());
-            locations.push_back(loc);
-            cur+=count+1; // TODO revisit
-            return yy.int_suffix.int_n.n;
-        }
-        return -1;
+    static const unsigned char *skip_name(const unsigned char *cur) {
+        while (is_name_char(*cur)) cur++;
+        return cur;
     }
 
-    void next_line(unsigned char *&cur) {
-        while (*cur != '\n' && *cur != '\0') {
-            if (*cur == '\r') {
+    // `cur` points to `'` or `"`; returns the position after the string, or
+    // the end of the input if the string is not terminated
+    static const unsigned char *skip_string(const unsigned char *cur) {
+        unsigned char delim = *cur++;
+        while (*cur != '\0') {
+            if (*cur == delim) {
                 cur++;
-                continue;
+                if (*cur != delim) return cur;
             }
             cur++;
         }
-        if (*cur == '\n') cur++;
+        return cur;
     }
 
-    // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
-    // The token covers `len` characters of the source starting at `cur`
-    // (`loc.last` is the offset of its last character).
-    // (Does not modify `cur`.)
-    void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
-            yytokentype const token_type, size_t len) {
-        LCOMPILERS_ASSERT(len > 0)
-        YYSTYPE yy;
-        yy.string.from_str(m_a, token_str);
-        stypes.push_back(yy);
-        tokens.push_back(token_type);
-        Location loc;
-        loc.first = source_offset(cur - string_start);
-        loc.last = source_offset(cur - string_start + len - 1);
-        locations.push_back(loc);
-    }
-
-    // The token covers token_str.size() characters of the source
-    void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
-            yytokentype const token_type) {
-        push_token_no_advance_token(cur, token_str, token_type,
-            token_str.size());
-    }
-
-    // token_type automatically determined
-    void push_token_no_advance(unsigned char *cur, const std::string &token_str) {
-	auto it = identifier_token_map().find(token_str);
-	LCOMPILERS_ASSERT(it != identifier_token_map().end());
-        push_token_no_advance_token(cur, token_str, it->second);
-    }
-
-    void push_integer_no_advance(unsigned char *cur, int32_t n) {
-        YYSTYPE yy;
-        yy.int_suffix.int_n.from_smallint(n);
-        yy.int_suffix.int_kind.p = nullptr;
-        yy.int_suffix.int_kind.n = 0;
-        stypes.push_back(yy);
-        tokens.push_back(TK_INTEGER);
-        Location loc;
-        loc.first = source_offset(cur - string_start);
-        loc.last = source_offset(cur - string_start);
-        locations.push_back(loc);
-    }
-
-    // Same as push_token_no_advance(), but update `cur` and `t.cur`.
-    // token_type is automatically determined
-    void push_token_advance(unsigned char *&cur, const std::string &token_str) {
-        LCOMPILERS_ASSERT(next_is(cur, token_str))
-        push_token_no_advance(cur, token_str);
-        cur += token_str.size();
-        t.cur = cur;
-    }
-
-    bool contains(unsigned char *start, unsigned char *end, char ch) {
-        unsigned char *cur = start;
-        while (*cur != '\0' && cur < end) {
-            if (*cur == ch) {
-                return true;
-            }
-            cur++;
-        }
-        return false;
-    }
-
-    std::string tostr(unsigned char *start, unsigned char *end) {
-        return std::string((char *)start, end-start);
-    }
-
-    // Return the current token's location
-    void token_loc(unsigned char *tok, unsigned char *cur, Location &loc) const
-    {
-        loc.first = source_offset(tok-string_start);
-        loc.last = source_offset(cur-string_start-1);
-    }
-
-    /*
-    ------------------------------------------------------------------------
-    The is_*() functions return true/false if the given character is
-    of a given type (digit, char)
-    */
-
-    bool is_digit(unsigned char ch) {
-        return (ch >= '0' && ch <= '9');
-    }
-
-    bool is_char(unsigned char ch) {
-        return (ch >= 'a' && ch <= 'z');
-    }
-
-    bool is_arit_op(unsigned char ch) {
-        return (ch == '+' || ch == '-' || ch == '*' || ch == '/');
-    }
-
-    // Two character relational operator
-    bool is_rel2_op(unsigned char *cur) {
-        if (*cur != '\0' && *(cur+1) != '\0') {
-            std::string op((char*)cur,2);
-            if (op == "<=" || op == ">=" || op == "==" || op == "/=") {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /*
-    ------------------------------------------------------------------------
-    The try_*() functions return true/false if the pointer `cur` points to
-    a given type (integer, name, given keyword, etc.). If true, it also
-    advances the pointer. If false, the pointer is untouched.
-
-    The try_*() functions are probably the same as the lex_* functions.
-    I think lex_* functions that return a bool should be renamed to try_* to
-    make it obvious that they might fail. Lex would then always succeed or
-    return an error message.
-
-    The main difference with these and the rest of this file is that these
-    functions parse the code, but only communicate true/false (success/failure)
-    and move the cursor `cur`, but do not emit any tokens or other information.
-
-    They are used to probe the code to figure out what Fortran statement we
-    are dealing with. For example try_expr() will return true if it is
-    an expression and move the cursor, or false. If we want to return the
-    tokens, we later need to then take the span and turn it into tokens.
-    */
-
-    // cur points to an integer: digit*
-    bool try_integer(unsigned char *&cur) {
-        unsigned char *old = cur;
-        while (is_digit(*cur)) cur++;
-        if (cur > old) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    // cur points to an name: char|_ (char|digit|_)*
-    bool try_name(unsigned char *&cur) {
-        unsigned char *old = cur;
-        if (is_char(*cur) || (*cur == '_')) {
-            cur++;
-            while (is_char(*cur) || is_digit(*cur) || (*cur == '_')) cur++;
-        }
-        if (cur > old) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    // cur points exactly to "str"
-    bool try_next(unsigned char *&cur, const std::string &str) {
-        if (next_is(cur, str)) {
-            cur += str.size();
-            return true;
-        }
-        return false;
-    }
-
-    // cur points to an name: char (char|digit)*
-    bool try_end_of_stmt(unsigned char *&cur) {
-        if (try_next(cur, "\n")) return true;
-        if (try_next(cur, ";")) return true;
-        return false;
-    }
-
-    // ------------------------------------------------------------------
-    // The following try_*() and lex_*() functions behave exactly like the above
-    // ones, but they now parse Fortran syntax
-
-    // Parses ' and " strings
-    bool lex_string(unsigned char *&cur) {
-        unsigned char *delim = cur;
-        LCOMPILERS_ASSERT(*delim == '"' || *delim == '\'')
-        cur++;
-        while (true) {
-            if (*cur == '\0') {
-                // String is not terminated
-                cur = delim;
-                return false;
-            }
-            if (*cur == *delim) {
-                cur++;
-                if (*cur == '\0') {
-                    // String is ended by delim
-                    return true;
-                }
-                if (*cur == *delim) {
-                    // Either '' or "", we continue
-                    cur++;
-                    continue;
-                }
-                // String is ended by delim
-                return true;
-            }
-            if (*cur == '\r') {
-                cur++;
+    // `cur` points to `(`; returns the position after the matching `)`, or
+    // nullptr if the statement ends before it
+    static const unsigned char *skip_parentheses(const unsigned char *cur) {
+        int depth = 0;
+        while (!is_eos(cur)) {
+            if (*cur == '\'' || *cur == '"') {
+                cur = skip_string(cur);
                 continue;
-            }
-            cur++;
-        }
-    }
-
-    // cur points to a Fortran expression
-    bool try_expr(unsigned char *&cur, bool nested) {
-        // We do not try to parse all the details, we simply accept all
-        // characters that can appear in an expression and we correctly
-        // match parentheses and parse strings.
-        unsigned char *old = cur;
-        while (true) {
-            if (is_rel2_op(cur)) {
-                cur += 2;
-                continue;
-            }
-            if (   is_digit(*cur)
-                || is_char(*cur)
-                || is_arit_op(*cur)
-                || (*cur == '%')
-                || (*cur == '[')
-                || (*cur == ']')
-                || (*cur == '<')
-                || (*cur == '>')
-                || (*cur == '.')
-                || (*cur == '_')
-                    ) {
-                cur++;
-                continue;
-            }
-            if (nested) {
-                // Nested expressions can also contain [,:=], such as
-                // in "f(x, y=3)/4" or "A(:,:)"
-                if ((*cur == ',') || (*cur == '=') || (*cur == ':')) {
-                    cur++;
-                    continue;
-                }
             }
             if (*cur == '(') {
-                cur++;
-                if (*cur == ')') {
-                    cur++;
-                    continue;
-                }
-                if (!try_expr(cur, true)) {
-                    cur = old;
-                    return false;
-                }
-                if (*cur == ')') {
-                    cur++;
-                    continue;
-                } else {
-                    // Unmatched parenthesis
-                    cur = old;
-                    return false;
-                }
+                depth++;
+            } else if (*cur == ')') {
+                depth--;
+                if (depth == 0) return cur + 1;
             }
-            if (*cur == '"' || *cur == '\'') {
-                lex_string(cur);
-                continue;
-            }
-            break;
+            cur++;
         }
-        if (cur > old) {
-            return true;
-        } else {
-            return false;
-        }
+        return nullptr;
     }
 
-
-    // Recursive descent parser with backtracking
-    //
-    // If a function returns void, then it will always parse the given grammar
-    // rule (and `cur` progressed), or give a compiler error (via the `error`
-    // function).  If a function returns bool, then it does not raise any
-    // errors, and returns true (parsed, `cur` progressed) or false (not-parsed,
-    // `cur` unchanged).
-
-
     /*
-     * Tokenize the rest of the statement, including the `;` or the new line
-     * that ends it. Empty statements that follow a `;` up to the end of the
-     * line (as in `x = 1;` or `x = 1;;`) are tokenized as well. On return,
-     * `cur` points to the start of the next statement.
-     */
-    void tokenize_line(unsigned char *&cur) {
+    Is the statement an assignment?
+
+        x = 1
+        a(i, j)%b(k) = 1
+        p => q
+        do10i = 1
+
+    A comma outside of parentheses after the `=` means it is not:
+
+        do10i = 1, 5
+    */
+    static bool is_assignment(const unsigned char *cur) {
+        if (!is_name_start(*cur)) return false;
+        cur = skip_name(cur);
+        while (true) {
+            if (*cur == '(') {
+                cur = skip_parentheses(cur);
+                if (cur == nullptr) return false;
+            } else if (*cur == '%') {
+                cur++;
+                if (!is_name_start(*cur)) return false;
+                cur = skip_name(cur);
+            } else {
+                break;
+            }
+        }
+        if (*cur != '=') return false;
+        cur++;
+        int depth = 0;
+        while (!is_eos(cur)) {
+            if (*cur == '\'' || *cur == '"') {
+                cur = skip_string(cur);
+                continue;
+            }
+            if (*cur == '(' || *cur == '[') {
+                depth++;
+            } else if (*cur == ')' || *cur == ']') {
+                depth--;
+            } else if (*cur == ',' && depth == 0) {
+                return false;
+            }
+            cur++;
+        }
+        return true;
+    }
+
+    // The label in the first five characters of a line, if there is one
+    static bool has_label(const unsigned char *cur) {
+        bool digit = false;
+        for (int i = 0; i < 5; i++) {
+            if (is_digit(cur[i])) {
+                digit = true;
+            } else if (cur[i] != ' ') {
+                return false;
+            }
+        }
+        return digit;
+    }
+
+    void push(int token, const YYSTYPE &y, const unsigned char *first,
+            const unsigned char *last) {
+        tokens.push_back(token);
+        stypes.push_back(y);
+        Location loc;
+        loc.first = source_offset(first - string_start);
+        loc.last = source_offset(last - string_start);
+        locations.push_back(loc);
+    }
+
+    // The token `text` that covers `len` characters at `cur`
+    void push_token(const unsigned char *cur, int token, const char *text,
+            size_t len) {
+        YYSTYPE y;
+        y.string.from_str(m_a, text);
+        push(token, y, cur, cur + len - 1);
+    }
+
+    void push_newline(const unsigned char *cur) {
+        push_token(cur, TK_NEWLINE, "\n", 1);
+    }
+
+    // The keyword of `len` characters at `cur`
+    void push_keyword(unsigned char *&cur, yytokentype token, size_t len) {
+        YYSTYPE y;
+        y.string.p = m_a.allocate<char>(len);
+        y.string.n = len;
+        std::memcpy(y.string.p, cur, len);
+        push(token, y, cur, cur + len - 1);
+        cur += len;
+    }
+
+    // The integer made of the digits [cur, end)
+    void push_integer(int token, const unsigned char *cur,
+            const unsigned char *end, const unsigned char *last) {
+        YYSTYPE y;
+        lex_int_large(m_a, cur, end, y.int_suffix.int_n, y.int_suffix.int_kind);
+        push(token, y, cur, last);
+    }
+
+    // Consumes the label of the line, if there is one, otherwise returns -1
+    int64_t label(unsigned char *&cur) {
+        if (!has_label(cur)) return -1;
+        unsigned char digits[5];
+        size_t n = 0;
+        for (int i = 0; i < 5; i++) {
+            if (cur[i] != ' ') digits[n++] = cur[i];
+        }
+        YYSTYPE y;
+        lex_int_large(m_a, digits, digits + n, y.int_suffix.int_n,
+            y.int_suffix.int_kind);
+        push(TK_LABEL, y, cur, cur + n);
+        cur += 5;
+        return y.int_suffix.int_n.n;
+    }
+
+    // Lex one token at `t.cur` by the longest match and push it
+    int lex_token() {
+        YYSTYPE y;
+        Location loc;
+        int token = t.lex(m_a, y, loc, diag, false);
+        size_t len = t.cur - t.tok;
+        if (token == TK_INTEGER) {
+            lex_int_large(m_a, t.tok, t.cur, y.int_suffix.int_n,
+                y.int_suffix.int_kind);
+        } else if (token == TK_STRING) {
+            std::string s((char *)t.tok + 1, len - 2);
+            s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
+            Str str;
+            str.from_str(m_a, s);
+            char *unescaped = str_unescape_fortran(m_a, str, t.tok[0]);
+            y.string.p = unescaped;
+            y.string.n = strlen(unescaped);
+        } else if (token != TK_TRUE && token != TK_FALSE) {
+            // (The kind of a logical constant is already in `y.string`)
+            y.string.p = m_a.allocate<char>(len + 1);
+            y.string.n = len;
+            std::memcpy(y.string.p, t.tok, len);
+            y.string.p[len] = '\0';
+        }
+        tokens.push_back(token);
+        stypes.push_back(y);
+        locations.push_back(loc);
+        return token;
+    }
+
+    // Tokenizes the rest of the statement by the longest match, including
+    // the new line or the `;` that ends it (and the empty statements that
+    // follow a `;` up to the end of the line)
+    void rest(unsigned char *&cur) {
         t.cur = cur;
         while (*t.cur != '\0') {
             int token = lex_token();
             if (*(t.cur-1) == '\n') break;
-            if (token == yytokentype::TK_SEMICOLON && *t.cur != ';'
+            if (token == TK_SEMICOLON && *t.cur != ';'
                     && *t.cur != '\n' && *t.cur != '\r') break;
         }
         cur = t.cur;
     }
 
-    // Lex one token at `t.cur` using the free-form tokenizer and push it.
-    int lex_token() {
-        YYSTYPE y2;
-        Location loc;
-        auto token = t.lex(m_a, y2, loc, diag, false);
-        ptrdiff_t len = t.cur - t.tok;
-        tokens.push_back(token);
-        if (token == yytokentype::TK_INTEGER) {
-            lex_int_large(m_a, t.tok, t.cur,
-                y2.int_suffix.int_n,
-                y2.int_suffix.int_kind);
-        } else if (token == yytokentype::TK_STRING) {
-            std::string tk{tostr(t.tok+1, t.tok + len-1)};
-            tk.erase(std::remove(tk.begin(), tk.end(), '\r'), tk.end());
-            Str s;
-            s.from_str(m_a, tk);
-            char quote_char = t.tok[0];
-            char* unescaped = str_unescape_fortran(m_a, s, quote_char);
-            y2.string.p = unescaped;
-            y2.string.n = strlen(unescaped);
-        } else if (token == yytokentype::TK_TRUE
-                || token == yytokentype::TK_FALSE) {
-            // token_logical_kind() already extracted the kind suffix
-            // into y2.string; preserve it.
-        } else {
-            std::string tk{tostr(t.tok, t.tok + len)};
-            y2.string.from_str(m_a, tk);
-        }
-        stypes.push_back(y2);
-        locations.push_back(loc);
-        return token;
-    }
-
-    /*
-     * The span [t.cur, end) is tokenized. The `t.cur` is inclusive, `end`
-     * is exclusive (points to the next character).
-     * The last token *must* end at the position end-1. If it does not,
-     * we raise an exception.
-     * The tokenizer ideally should be called consecutively, as it maintains
-     * an internal state as well for do loops and other things. If you
-     * need to adjust the starting point, you must make sure the internal
-     * state is not made inconsistent.
-     */
-    void tokenize_until(unsigned char *end) {
-        LCOMPILERS_ASSERT(t.cur < end)
-        // TODO: Is this needed?
-        std::string line{tostr(t.cur, end)};
-        lines.push_back(line);
-        while (t.cur < end) {
-            lex_token();
-        }
-        // Check that the last token ends exactly on `end`:
-        LCOMPILERS_ASSERT(t.cur == end)
-    }
-
-    // returns TRUE iff multiline-if
-    bool lex_if_statement(unsigned char *&cur, bool continue_compilation = false) {
-        push_token_advance(cur, "if");
-        LCOMPILERS_ASSERT(*t.cur == '(')
-        tokenize_until(t.cur+1);
-        unsigned char *end = t.cur;
-        bool multiline = false;
-        if (try_expr(end, false)) {
-            if (*end == ')') {
-                end++;
-                // After the condition's `)`, the if-body must begin with
-                // a letter (regular statement: `then`, `goto`, `call`, ...)
-                // or a digit (arithmetic-if label). Anything else (e.g. a
-                // stray `)`) is a tokenization error.
-                if (!is_char(*end) && !is_digit(*end)) {
-                    Location loc;
-                    loc.first = source_offset(end - string_start);
-                    loc.last = source_offset(end - string_start);
-                    diag.add(diag::Diagnostic(
-                        "Unexpected token after the condition of the if statement",
-                        diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                    if (continue_compilation) {
-                        // Skip stray chars so the body below starts with a
-                        // valid token (letter, digit, or end-of-line).
-                        while (*end != '\n' && *end != '\0'
-                                && !is_char(*end) && !is_digit(*end)) {
-                            end++;
-                        }
-                    } else {
-                        throw parser_local::TokenizerAbort();
-                    }
-                }
-                if (next_is(end, "then")) {
-                    if (next_is_eos(end+4) || *(end+4) == '!') {
-                        multiline = true;
-                    }
-                }
-            } else {
-                Location loc;
-                loc.first = source_offset(end - string_start);
-                loc.last = source_offset(end - string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected `)` here to end the condition expression of the if statement ",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            }
-        } else {
-            Location loc;
-            loc.first = source_offset(cur - string_start);
-            loc.last = source_offset(cur - string_start);
-            diag.add(diag::Diagnostic(
-                "Expected expression after `if`",
-                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-            throw parser_local::TokenizerAbort();
-        }
-        tokenize_until(end);
-        cur = end;
-        if (multiline || is_digit(*end)) {
-            // Take care of "then\n" or of an arithmetic if
-            tokenize_line(cur);
-        } else {
-            // Regular statement
-            // Tokenize the rest of the single line if statement
-            lex_body_statement(cur);
-            if (cur == end) next_line(cur);
-        }
-        return multiline;
-    }
-
-    // Determines if a line in Fortran code represents an assignment rather than a declaration.
-    // E.g. below are declarations
-    //      integer :: x = 1
-    //      DATA p(1), (c(i), i=1, 2) / 5, 10, 12 /
-    //
-    // while, below are assignments
-    //      i = 2
-    //      integerx = 12
-    //      datap = 5
-    // NOTE: this function doesn't actually lexes, but only determines if it's
-    // (possibly) an assignment or not
-    bool is_possible_assignment(unsigned char *start, unsigned char *&cur) {
-        unsigned char *end = start;
-        if (!try_name(end)) return false;
-
-        // Try parsing array indices and/or derived-type component accesses,
-        // if any, e.g. `D(1)%X(2)%Y`. These can be interleaved arbitrarily,
-        // so keep consuming `(...)` groups and `%name` segments until
-        // neither matches.
-        while (true) {
-            if (*end == '(') {
-                end++;  // Move past '('
-                if (*end == ')') {
-                    // Empty parentheses, e.g. zero-argument statement function
-                    end++;  // Move past ')'
-                    continue;
-                }
-                if (!try_expr(end, true)) {
-                    return false;  // Parsing failed, it's not an assignment
-                }
-                if (*end != ')') {
-                    return false;  // Expected closing ')', not an assignment
-                }
-                end++;  // Move past ')'
-                continue;
-            }
-            if (*end == '%') {
-                end++;  // Move past '%'
-                if (!try_name(end)) {
-                    return false;  // Expected a component name after '%'
-                }
-                continue;
-            }
-            break;
-        }
-
-        // After parsing identifier, indices and component accesses, check
-        // if the next character is `=`. This also matches the start of
-        // `=>` (pointer assignment) - that is intentional: as far as this
-        // statement classifier is concerned it's still "an assignment", and
-        // the `=` vs `=>` distinction is made later, at the token level, by
-        // tokenize_line()'s shared lexer (the same one free form uses).
-        if (*end == '=') {
-            cur = start;  // Reset to the start to re-tokenize as an assignment
-            return true;
-        }
-        return false;  // Not an assignment if no '=' found
-    }
-
-    bool lex_declaration(unsigned char *&cur) {
-        unsigned char *start = cur;
-        next_line(cur);
-
-        if (is_possible_assignment(start, cur)) {
-            return false;
-        }
-
-        if (lex_declarator(start)) {
-            tokenize_line(start);
-            cur = start;
-            return true;
-        }
-        cur = start;
-        return false;
-    }
-
-    bool lex_declarator(unsigned char *&cur) {
-        for(const auto& declarator : declarators) {
-            if(next_is(cur, declarator)) {
-		if (declarator.back() == '*') {
-		    /* In "star" form declarations, we need to be careful of only parsing an integer (no kind)
-		       after the star, so that we correctly parse "character*2d3v" as "character*2 d3v"
-		       instead of "character*2d3 v", which is illegal. */
-		    push_token_advance(cur, declarator.substr(0, declarator.size() - 1));
-		    push_token_advance(cur, std::string("*"));
-		    unsigned char *int_start = cur;
-		    if (try_integer(cur)) {
-			int32_t val = std::atoi((char*)int_start);
-			push_integer_no_advance(int_start, val);
-		    }
-		} else {
-		    push_token_advance(cur, declarator);
-		}
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Check if the line starting at `cur` is an assignment to a variable
-    // whose name starts with an IO keyword (e.g., PRINTP = 1 in fixed-form
-    // becomes printp=1 after prescanning). Returns true if there is a '='
-    // (not '==') before any ',' at parenthesis depth 0, indicating an
-    // assignment rather than an IO statement.
-    bool is_io_keyword_assignment(unsigned char *p) {
-        if (*p == '=' && *(p+1) != '=') return true;
-        if (!is_char(*p) && !is_digit(*p) && *p != '_') return false;
-        int depth = 0;
-        while (*p != '\n' && *p != '\0') {
-            if (*p == '(') depth++;
-            else if (*p == ')') depth--;
-            else if (depth == 0) {
-                if (*p == '=' && *(p+1) != '=') return true;
-                if (*p == ',') return false;
-            }
-            p++;
-        }
-        return false;
-    }
-
-    bool lex_io(unsigned char *&cur) {
-        for(const auto &io_str: io_names) {
-            if (next_is(cur, io_str)) {
-                if (is_io_keyword_assignment(cur + io_str.size())) {
-                    return false;
-                }
-                if (io_str == "format") {
-                    unsigned char *format_start = cur;
-                    cur += io_str.size();
-                    unsigned char *start;
-                    Location fmt_content_loc;
-                    lex_format(cur, fmt_content_loc, start, diag, false, this->string_start);
-                    Location loc;
-                    loc.first = source_offset(format_start - string_start);
-                    loc.last = source_offset(cur - string_start - 1);
-                    locations.push_back(loc);
-                    YYSTYPE yylval;
-                    yylval.string.p = (char*) start;
-                    yylval.string.n = cur-start-1;
-                    stypes.push_back(yylval);
-                    tokens.push_back(TK_FORMAT);
-                    if (*cur == ';') {
-                        // Another statement follows on this line
-                        tokenize_line(cur);
-                    } else {
-                        next_line(cur);
-                        push_token_no_advance(cur-1, "\n");
-                    }
-                } else {
-                    push_token_advance(cur, io_str);
-                    tokenize_line(cur);
-                }
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool has_terminal(unsigned char *&cur) {
-        std::vector<std::string> terminals {
-            "end"
-        };
-        for (const auto &terminal : terminals) {
-            if (next_is(cur, terminal))
-                return true;
-        }
-        return false;
-    }
-
-    void lex_implicit(unsigned char *&cur) {
-        push_token_advance(cur, "implicit");
-        if (next_is(cur, "doubleprecision(")) {
-            push_token_advance(cur, "double");
-        }
-        tokenize_line(cur);
-    }
-
-    void lex_use(unsigned char *&cur) {
-        push_token_advance(cur, "use");
-        tokenize_line(cur);
-    }
-
-    bool is_function_call(unsigned char *cur) {
-        if (try_next(cur, "call")) {
-            if (try_name(cur)) {
-                // Skip optional parentheses (skips strings, nested
-                // parentheses etc.)
-                if (*cur == '(') {
-                    cur++;
-                    if (*cur == ')') {
-                        cur++;
-                    } else {
-                        // By setting `true` we ensure all arguments are parsed
-                        // (separated by commas)
-                        if (!try_expr(cur, true)) {
-                            // If the expression failed to parse, then it
-                            // is not a properly formed function call
-                            return false;
-                        };
-                        if (*cur != ')') {
-                            // Missing right parenthesis
-                            // Return true here because it is still a subroutine call starting with the "call" keyword.
-                            // We report the error later in the parser.
-                            return true;
-                        }
-                        cur++;
-                    }
-                }
-                // If we are at the end of the statement, then this must
-                // be a function call. Otherwise it's something else,
-                // such as assignment (=, or =>).
-                if (next_is_eol(cur) || *cur == ';') {
-                    return true;
-                }
-                // Return true here because it is still a subroutine call starting with the "call" keyword.
-                // We report the error later in the parser.
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void lex_common_block_part(unsigned char *&cur) {
-        // tokenize / block_1 / a, b
-        bool first_slash = true;
-        int paren_depth = 0;
-        while(!next_is_eos(cur)) {
-            if (*cur == '(') {
-                paren_depth++;
-            } else if (*cur == ')') {
-                if (paren_depth > 0) paren_depth--;
-            }
-            // A '/' inside parentheses is a division operator (e.g. in an
-            // array dimension like A(20/4)), not a common block delimiter.
-            if (paren_depth == 0 && *(cur+1) == '/' && !first_slash) {
-                if (*cur != ',') {
-                    cur+=1;
-                }
-                unsigned char *end = cur;
-                // tokenize uptil here
-                tokenize_until(end);
-                t.cur = cur;
-                break;
-            } else if (paren_depth == 0 && *(cur+1) == '/') {
-                first_slash = false;
-            }
-            cur++;
-        }
-        if (next_is_eos(cur)) {
-            tokenize_until(cur);
-            t.cur = cur;
-        }
-    }
-
-    bool lex_common_block(unsigned char *&cur) {
-        push_token_advance(cur, "common");
-        while(*cur == '/') {
-            lex_common_block_part(cur);
-            // handle an optional comma
-            if (next_is_eos(cur)) {
-                break;
-            }
-            push_token_no_advance(cur, "comma");
-            if (*cur == ',') {
-                cur++;
-                t.cur = cur;
-            }
-        }
-        tokenize_line(cur);
-        return true;
-    }
-
-    void lex_derived_type(unsigned char *&cur) {
-        push_token_advance(cur, "type");
-        tokenize_line(cur);
-        while (true) {
-            if (next_is(cur, "endtype")) {
-                push_token_advance(cur, "endtype");
-                tokenize_line(cur);
-                break;
-            } else if (*cur == '\0') {
-                error(cur, "Expecting terminating symbol for derived type");
-            } else if (!lex_declaration(cur)) {
-                // Other type-body statements, e.g. `sequence`, `contains`
-                // and type-bound `procedure`, `generic` or `final`
-                tokenize_line(cur);
-            }
-        }
-    }
-
-    bool lex_body_statement(unsigned char *&cur, bool continue_compilation = false) {
-        if (*cur == ';') {
-            // Empty statement, e.g. the stray `;` in `;end do`
-            tokenize_line(cur);
-            return true;
-        }
-        int64_t l = eat_label(cur);
-        unsigned char *do_pos = nullptr;
-        if (is_named_do_while(cur, do_pos)) {
-            t.cur = cur;
-            tokenize_until(do_pos);
-            cur = do_pos;
-            lex_dowhile(cur, continue_compilation);
-            return true;
-        }
-        if (is_named_do_loop(cur, do_pos)) {
-            t.cur = cur;
-            tokenize_until(do_pos);
-            cur = do_pos;
-            lex_do(cur);
-            return true;
-        }
-        unsigned char *construct_pos = nullptr;
-        if (is_named_construct(cur, construct_pos)) {
-            // Tokenize the construct name and `:`, then lex the construct
-            // itself below
-            t.cur = cur;
-            tokenize_until(construct_pos);
-            cur = construct_pos;
-        }
-        // handle derived type tokenization
-        // this needs to be done before 'lex_declaration'
-        // `type, <attr-spec-list> :: name` (e.g. `type, extends(p) :: c`)
-        // is always a derived-type-def: no other statement starts with
-        // `type,`
-        if (next_is(cur, "type::") || next_is(cur, "type,")) {
-            lex_derived_type(cur);
-            return true;
-        }
-        // handle the bare `TYPE name` derived-type-def opener (no `::`),
-        // e.g. `TYPE GT`. This must be disambiguated from:
-        //  - `TYPE(...)`, a declaration-type-spec using a derived type,
-        //    e.g. `TYPE(GT), SAVE :: DAT(10)` (must NOT be routed here)
-        //  - a plain identifier that merely starts with "type", e.g.
-        //    `TYPEX = 5` (must NOT be routed here)
-        // A bare derived-type-def statement is exactly `TYPE type-name`
-        // with nothing else in the statement, so require a NAME immediately
-        // after `type` followed immediately by the end of the statement.
-        if (next_is(cur, "type") && !next_is(cur, "type(")) {
-            unsigned char *name_end = cur + 4;
-            if (try_name(name_end) && next_is_eos(name_end)) {
-                lex_derived_type(cur);
-                return true;
-            }
-        }
-
-        if (lex_declaration(cur)) {
-            return true;
-        }
-
-        if (is_do_loop(cur)) {
-            lex_do(cur);
-            return true;
-        }
-
-        // assignment
-        if (is_possible_assignment(cur, cur)) {
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (lex_io(cur)) return true;
-        if (next_is(cur, "if(")) {
-            lex_cond(cur, continue_compilation);
-            return true;
-        }
-        unsigned char *nline = cur; next_line(nline);
-
-        if (next_is(cur, "doconcurrent(")) {
-            lex_do_concurrent(cur);
-            return true;
-        }
-
-        if (next_is(cur, "dowhile(")) {
-            lex_dowhile(cur, continue_compilation);
-            return true;
-        }
-
-        if (next_is(cur, "where(")) {
-            lex_where(cur);
-            return true;
-        }
-
-        if (next_is(cur, "selectrank(")) {
-            lex_selectrank(cur);
-            return true;
-        }
-
-        if (next_is(cur, "selectcase(")) {
-            lex_selectcase(cur);
-            return true;
-        }
-
-        if (is_block_construct(cur)) {
-            lex_block(cur, continue_compilation);
-            return true;
-        }
-
-        if (is_function_call(cur)) {
-            push_token_advance(cur, "call");
-            tokenize_line(cur);
-            return true;
-        }
-
-        // `GOTO (X,Z,Y) M` translates to (roughly)
-        // `IF (M .EQ. 1) THEN;  GOTO X; ELSE IF (M .EQ. 2) GOTO Z; IF (M .EQ. 3) GOTO Y; ENDIF`
-        if (next_is(cur, "goto(")) {
-            // lex_goto_select(cur);
-            tokenize_line(cur);
-            return true;
-        }
-
-        // careful addition -- `IF` and `DO` terminals are `CONTINUE`, too
-        if (next_is(cur, "continue")) {
-            push_token_advance(cur, "continue");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "backspace")) {
-            push_token_advance(cur, "backspace");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "rewind")) {
-            push_token_advance(cur, "rewind");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "endfile")) {
-            push_token_advance(cur, "endfile");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "interface") || is_abstract_interface(cur)) {
-            lex_interface(cur);
-            return true;
-        }
-
-        if (next_is(cur, "exit")) {
-            push_token_advance(cur, "exit");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "flush")) {
-            push_token_advance(cur, "flush");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "allocate")) {
-            push_token_advance(cur, "allocate");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "deallocate")) {
-            push_token_advance(cur, "deallocate");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "goto")) {
-            push_token_advance(cur, "goto");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "return")) {
-            push_token_advance(cur, "return");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "common")) {
-            return lex_common_block(cur);
-        }
-
-        if (next_is(cur, "save")) {
-            push_token_advance(cur, "save");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "entry")) {
-            push_token_advance(cur, "entry");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "intrinsic")) {
-            push_token_advance(cur, "intrinsic");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "equivalence")) {
-            push_token_advance(cur, "equivalence");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "namelist")) {
-            push_token_advance(cur, "namelist");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "implicit")) {
-            lex_implicit(cur);
-            return true;
-        }
-
-        if (next_is(cur, "use")) {
-            lex_use(cur);
-            return true;
-        }
-
-        // `import`, `import k`, `import :: a, b`, `import, only: a`,
-        // `import, none`, `import, all`; assignments such as `import = 2`
-        // or `importx = 1` were already handled above
-        if (next_is(cur, "import")) {
-            push_token_advance(cur, "import");
-            tokenize_line(cur);
-            return true;
-        }
-
-        // procedure declaration statement, e.g. `procedure(a) :: p`,
-        // `procedure(a) p`, `procedure(), pointer :: q => null()`;
-        // assignments such as `procedure(i) = 1` were already handled above
-        if (next_is(cur, "procedure(")) {
-            push_token_advance(cur, "procedure");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "include")) {
-            push_token_advance(cur, "include");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "stop")) {
-            push_token_advance(cur, "stop");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "pause")) {
-            push_token_advance(cur, "pause");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "errorstop")) {
-            push_token_advance(cur, "error");
-            push_token_advance(cur, "stop");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (next_is(cur, "assign")) {
-            lex_assign(cur);
-            return true;
-        }
-
-        if (next_is(cur, "cycle")){
-            push_token_advance(cur, "cycle");
-            tokenize_line(cur);
-            return true;
-        }
-
-        if (l != -1) {
-            // Undo the label, as it will be handled later
-            undo_label(cur);
-        }
-        if (next_is(cur, "endprogram") || next_is(cur, "end") || next_is(cur, "contains") || next_is(cur, "subroutine") || next_is(cur, "function")) {
-            return false;
-        }
-        if (continue_compilation) {
-            tokenize_line(cur);
-            return true;
-        }
-
-        return false;
-    }
-
-    void lex_assign(unsigned char *&cur) {
-        push_token_advance(cur, "assign");
-        if (try_integer(cur)) {
-            tokenize_until(cur);
-            if (next_is(cur, "to")) {
-                push_token_advance(cur, "to");
-                tokenize_line(cur);
-            } else {
-                Location loc;
-                loc.first = source_offset(cur-string_start);
-                loc.last = source_offset(cur-string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected 'to' here",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            }
-        } else {
-            Location loc;
-            loc.first = source_offset(cur-string_start);
-            loc.last = source_offset(cur-string_start);
-            diag.add(diag::Diagnostic(
-                "Expected integer after `assign`",
-                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-            throw parser_local::TokenizerAbort();
-        }
-    }
-
-    bool all_labels_match(int64_t label) {
-        return std::all_of(do_labels.begin(), do_labels.end(), [&label](const auto & x){
-                return x == label;
-                });
-    }
-
-    // Return how many last labels match
-    int64_t last_labels_match(int64_t label) {
-        for (size_t n=0; n < do_labels.size(); n++) {
-            if (do_labels[do_labels.size()-n-1] != label) {
-                return n;
-            }
-        }
-        return do_labels.size();
-    }
-
-    // Skip the `continue` statement that terminates a labeled do loop,
-    // together with the `;` or the new line that ends it.
-    void skip_continue(unsigned char *&cur) {
-        LCOMPILERS_ASSERT(next_is(cur, "continue"))
-        cur += 8;
-        if (*cur == ';') {
-            while (*cur == ';') cur++;
-            if (*cur == '\n' || *cur == '\r') next_line(cur);
-        } else {
-            next_line(cur);
-        }
-    }
-
-    // Push an `end_do` token that ends a labeled do loop at its terminal
-    // statement, which starts at `term_first` and was consumed up to `cur`
-    // (the end of its line or its `;` separator). The token covers the
-    // terminal statement, so that the loop ends there and not at the
-    // statement after it. If nothing was consumed (an empty or invalid
-    // terminal statement, such as `10 end`), the token covers the single
-    // character at `term_first`.
-    void push_end_do_terminal(unsigned char *term_first, unsigned char *cur) {
-        size_t len = 1;
-        if (cur > term_first) {
-            unsigned char *term_last = cur - 1;
-            while (term_last > term_first && (*term_last == '\n'
-                    || *term_last == '\r' || *term_last == ';')) {
-                term_last--;
-            }
-            len = term_last - term_first + 1;
-        }
-        push_token_no_advance_token(term_first, "end_do", KW_END_DO, len);
-    }
-
-    // Returns true if this is "end do" or equivalent, otherwise false
-    // It will always consume the label.
-    // If true, it will consume the terminal statement, up to and including
-    // the `;` or the new line that ends it. Otherwise it leaves it.
-    bool lex_do_terminal(unsigned char *&cur, int64_t do_label) {
-        LCOMPILERS_ASSERT(do_label != -1)
-        if (*cur == '\0') {
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
-            diag.add(diag::Diagnostic(
-                "End of file encountered in labeled do loop (loop is not terminated)",
-                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-            throw parser_local::TokenizerAbort();
-        }
-        int64_t label = eat_label(cur);
-        if (label != do_label) {
-            // Labels do not match, this is not the end of our do loop
-            return false;
-        }
-        if (next_is(cur, "enddo")) {
-            // end one nesting of loop
-            // TODO: add continue label
-            lex_enddo_line(cur);
-            LCOMPILERS_ASSERT(label_last(do_label))
-            do_labels.pop_back();
-            return true;
-        } else if (all_labels_match(label)) {
-            // end entire loop nesting with single `CONTINUE`
-            // the usual terminal statement for do loops
-            unsigned char *term_first = cur;
-            if (next_is(cur, "continue")) {
-                // Drop the redundant CONTINUE keyword. The TK_LABEL pushed
-                // by eat_label() above already precedes the `end_do` we
-                // are about to push, so via `enddo : TK_LABEL KW_END_DO`
-                // it attaches as `m_do_label` on the DoLoop AST node and
-                // is converted to an ASR GoToTarget at the end of the
-                // (innermost) loop body during AST->ASR. This preserves
-                // `GO TO <label>` cycle semantics.
-                skip_continue(cur);
-                t.cur = cur;
-            } else {
-                // TODO: add a continue label
-                lex_body_statement(cur);
-            }
-            size_t n_match = do_labels.size();
-            for (size_t i=0; i<n_match; i++) {
-                push_end_do_terminal(term_first, cur);
-                push_token_no_advance(cur, "\n");
-                LCOMPILERS_ASSERT(label_last(do_label))
-                do_labels.pop_back();
-            }
-            return true;
-        } else if (last_labels_match(label) > 1) {
-            int64_t n_match = last_labels_match(label);
-            // end entire loop nesting with single `CONTINUE`
-            // the usual terminal statement for do loops
-            unsigned char *term_first = cur;
-            if (next_is(cur, "continue")) {
-                // See note above; label attaches to innermost end_do.
-                skip_continue(cur);
-                t.cur = cur;
-            } else {
-                // TODO: add a continue label
-                lex_body_statement(cur);
-            }
-            for (int i=0;i<n_match;++i) {
-                push_end_do_terminal(term_first, cur);
-                push_token_no_advance(cur, "\n");
-                LCOMPILERS_ASSERT(label_last(do_label))
-                do_labels.pop_back();
-            }
-            return true;
-        } else {
-            // end one nesting of loop
-            unsigned char *term_first = cur;
-            if (next_is(cur, "continue")) {
-                // See note above; label attaches to end_do.
-                skip_continue(cur);
-                t.cur = cur;
-            } else {
-                // TODO: add a continue label
-                lex_body_statement(cur);
-            }
-            push_end_do_terminal(term_first, cur);
-            push_token_no_advance(cur, "\n");
-            LCOMPILERS_ASSERT(label_last(do_label))
-            do_labels.pop_back();
-            return true;
-        }
-    }
-
-    /*
-    If the line contains any of these forms, then it is a do loop:
-
-    do [LABEL] [,] x = EXPR, EXPR [, EXPR]
-    do
-    */
-    bool is_do_loop(unsigned char *cur) {
-        if (try_next(cur, "do")) {
-            // do
-            try_integer(cur); // Optional: do 5
-            if (try_end_of_stmt(cur)) {
-                // do
-                // do 5
-                return true;
-            }
-            try_next(cur, ","); // Optional comma
-            // do
-            // do 5
-            // do ,
-            // do 5,
-            if (try_name(cur)) {
-                // do x
-                // do 5 x
-                // do , x
-                // do 5, x
-                if (try_next(cur, "=")) {
-                    // do x =
-                    // do 5 x =
-                    if (try_expr(cur, false)) {
-                        // do x = 1
-                        // do 5 x = 1
-                        if (try_next(cur, ",")) {
-                            // do x = 1,
-                            // do 5 x = 1,
-                            // It must be a do loop at this point, as
-                            // it cannot be an assignment "dox=1" or "do5x=1"
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    bool is_named_do_loop(unsigned char *cur, unsigned char *&do_pos) {
-        unsigned char *tmp = cur;
-        if (!try_name(tmp)) return false;
-        if (!try_next(tmp, ":")) return false;
-        unsigned char *tmp2 = tmp;
-        if (!is_do_loop(tmp2)) return false;
-        do_pos = tmp;
-        return true;
-    }
-
-    bool is_named_do_while(unsigned char *cur, unsigned char *&do_pos) {
-        unsigned char *tmp = cur;
-        if (!try_name(tmp)) return false;
-        if (!try_next(tmp, ":")) return false;
-        if (!next_is(tmp, "dowhile(")) return false;
-        do_pos = tmp;
-        return true;
-    }
-
-    // `block` that opens a BLOCK construct
-    bool is_block_construct(unsigned char *cur) {
-        return next_is(cur, "block") && next_is_eos(cur+5);
-    }
-
-    /*
-    If the statement starts with `name:` followed by an IF, SELECT CASE,
-    SELECT RANK, WHERE, DO CONCURRENT or BLOCK construct, returns true and
-    sets `construct_pos` to the position after the `:`. Named DO loops are
-    handled by is_named_do_loop() and is_named_do_while().
-    */
-    bool is_named_construct(unsigned char *cur, unsigned char *&construct_pos) {
-        unsigned char *tmp = cur;
-        if (!try_name(tmp)) return false;
-        if (!try_next(tmp, ":")) return false;
-        if (next_is(tmp, "if(") || next_is(tmp, "selectcase(")
-                || next_is(tmp, "selectrank(") || next_is(tmp, "where(")
-                || next_is(tmp, "doconcurrent(") || is_block_construct(tmp)) {
-            construct_pos = tmp;
-            return true;
-        }
-        return false;
-    }
-
-    // Is this the statement `keyword [construct-name]`, e.g. `endselect`,
-    // `endselect sel` or `else mode0`?
-    bool is_construct_stmt(unsigned char *cur, const std::string &keyword) {
-        if (!try_next(cur, keyword)) return false;
-        try_name(cur);
-        return next_is_eos(cur);
-    }
-
-    bool label_last(int64_t label) {
-        if (do_labels.size() > 0) {
-            if (do_labels[do_labels.size()-1] == label) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void lex_do_concurrent(unsigned char *&cur) {
-        push_token_advance(cur, "do");
-        push_token_advance(cur, "concurrent");
-        tokenize_line(cur);
-
-        while (true) {
-            if (next_is(cur, "enddo")) {
-                lex_enddo_line(cur);
-                break;
-            } else if (!lex_body_statement(cur)) {
-                Location loc;
-                loc.first = source_offset(cur - string_start);
-                loc.last = source_offset(cur - string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected an executable statement inside do concurrent loop",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            }
-        }
-    }
-
-    void lex_do(unsigned char *&cur) {
-        auto end = cur; next_line(end);
-        push_token_advance(cur, "do");
-        int64_t do_label = eat_label_inline(cur);
-        if (do_label != -1) cur--; // un-advance as eat_label_inline moves 1 char too far when making checks
-        // If do_label == -1, it is a regular do loop
-        // Otherwise it is a labeled do loop, and do_label is the label
-        tokenize_line(cur); // tokenize rest of line where `do` starts
-        if (do_label == -1) {
-            lex_do_regular(cur);
-        } else {
-            lex_do_label(cur, do_label);
-        }
-    }
-
-    // Return true if enddo and advance;
-    bool try_enddo_regular(unsigned char *&cur, int64_t continue_label) {
-        if (next_is(cur, "enddo")) {
-            // TODO: parse things correctly to distinguish enddo = 5;
-            // If a label preceded `end do` (`<label> end do`), the TK_LABEL
-            // was already pushed by eat_label() before this call. The
-            // grammar rule `enddo : TK_LABEL KW_END_DO` attaches it to the
-            // DoLoop AST node as `do_label`, so we just emit `end_do`
-            // directly here -- no synthetic `<label> continue` line.
-            (void)continue_label;
-            lex_enddo_line(cur);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    void lex_enddo_line(unsigned char *&cur) {
-        LCOMPILERS_ASSERT(next_is(cur, "enddo"))
-        // The `end_do` token covers the 5 characters of `enddo`
-        push_token_no_advance_token(cur, "end_do", KW_END_DO, 5);
-        cur += 5;
+    // Tokenizes [cur, end) by the longest match
+    void until(unsigned char *&cur, const unsigned char *end) {
         t.cur = cur;
-        unsigned char *name_start = cur;
-        if (try_name(cur)) {
-            std::string name = tostr(name_start, cur);
-            push_token_no_advance_token(name_start, name, TK_NAME);
-            t.cur = cur;
-        }
-        if (*cur == ';') {
-            // Another statement follows on the same line
-            tokenize_line(cur);
-            return;
-        }
-        if (*cur == '\n') {
-            push_token_no_advance(cur, "\n");
-        }
-        next_line(cur);
+        while (t.cur < end) lex_token();
+        cur = t.cur;
     }
 
-    void lex_do_regular(unsigned char *&cur) {
-        while (true) {
-            int64_t l = eat_label(cur);
-
-            if (try_enddo_regular(cur, l)) {
-                return;
+    // Tokenizes the `(...)` at `cur`; returns false if the statement ended
+    // before the matching `)`
+    bool parentheses(unsigned char *&cur) {
+        t.cur = cur;
+        int depth = 0;
+        do {
+            if (*t.cur == '\0') break;
+            int token = lex_token();
+            if (token == TK_LPAREN) {
+                depth++;
+            } else if (token == TK_RPAREN) {
+                depth--;
+            } else if (*(t.cur-1) == '\n' || token == TK_SEMICOLON) {
+                cur = t.cur;
+                return false;
             }
-            if (!lex_body_statement(cur)) {
-                Location loc;
-                loc.first = source_offset(cur-string_start);
-                loc.last = source_offset(cur-string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected an executable statement inside a do loop",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            };
-        }
-    }
-
-    void lex_do_label(unsigned char *&cur, int64_t do_label) {
-        LCOMPILERS_ASSERT(do_label != -1)
-        // For labeled do loops we keep the labels in the do_labels stack
-        do_labels.push_back(do_label);
-
-        while (!lex_do_terminal(cur, do_label)) {
-            if (!lex_body_statement(cur)) {
-                Location loc;
-                loc.first = source_offset(cur-string_start);
-                loc.last = source_offset(cur-string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected an executable statement inside a labeled do loop",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            };
-            if (!label_last(do_label)) {
-                // The lex_body_statement() above was a labeled loop that ended
-                // with the same label continue line as this loop, so we need to
-                // end this loop as well.
-                break;
-            }
-        }
-    }
-
-    void lex_dowhile(unsigned char *&cur, bool continue_compilation = false) {
-        auto end = cur; next_line(end);
-        push_token_advance(cur, "do");
-        push_token_advance(cur, "while");
-        tokenize_line(cur); // tokenize rest of line where `do while` starts
-        // Named ENDDO ("END DO L") prescans to "enddol", not "enddo\n".
-        while (!next_is(cur, "enddo")) {
-            // With --continue-compilation an unrecognized body statement is
-            // tokenized as a plain line (and reported by the parser); the
-            // error below is then only reached at end of file or at a
-            // stray `end`/`contains`/`subroutine`/`function`.
-            if (!lex_body_statement(cur, continue_compilation)) {
-                Location loc;
-                loc.first = source_offset(cur-string_start);
-                loc.last = source_offset(cur-string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected an executable statement inside a do while loop",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            }
-        }
-        push_token_advance(cur, "enddo");
-        tokenize_line(cur);
-    }
-
-    void lex_selectrank(unsigned char *&cur) {
-        auto end = cur; next_line(end);
-        push_token_advance(cur, "select");
-        push_token_advance(cur, "rank");
-        tokenize_line(cur); // tokenize rest of line where `select rank` starts
-        while (!is_construct_stmt(cur, "endselect")) {
-            if (next_is(cur, "rankdefault")) {
-                push_token_advance(cur, "rank");
-                push_token_advance(cur, "default");
-                tokenize_line(cur);
-            } else if (next_is(cur, "rank")) {
-                push_token_advance(cur, "rank");
-                tokenize_line(cur);
-            } else {
-                lex_body_statement(cur);
-            }
-        }
-        push_token_advance(cur, "endselect");
-        tokenize_line(cur);
-    }
-
-    void lex_selectcase(unsigned char *&cur) {
-        auto end = cur; next_line(end);
-        push_token_advance(cur, "select");
-        push_token_advance(cur, "case");
-        tokenize_line(cur);
-        while (!is_construct_stmt(cur, "endselect")) {
-            if (next_is(cur, "casedefault")) {
-                push_token_advance(cur, "case");
-                push_token_advance(cur, "default");
-                tokenize_line(cur);
-            } else if (next_is(cur, "case")) {
-                push_token_advance(cur, "case");
-                tokenize_line(cur);
-            } else {
-                lex_body_statement(cur);
-            }
-        }
-        push_token_advance(cur, "endselect");
-        tokenize_line(cur);
-    }
-
-    void lex_block(unsigned char *&cur, bool continue_compilation = false) {
-        push_token_advance(cur, "block");
-        tokenize_line(cur);
-        while (!is_construct_stmt(cur, "endblock")) {
-            if (!lex_body_statement(cur, continue_compilation)) {
-                Location loc;
-                loc.first = source_offset(cur - string_start);
-                loc.last = source_offset(cur - string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected a statement inside block construct",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            }
-        }
-        push_token_advance(cur, "endblock");
-        tokenize_line(cur);
-    }
-
-    void lex_where(unsigned char *&cur) {
-        unsigned char *probe = cur;
-        if (!try_next(probe, "where")) {
-            return;
-        }
-        bool is_block = false;
-        if (try_next(probe, "(")) {
-            if (try_expr(probe, false) && *probe == ')') {
-                probe++;
-                is_block = next_is_eos(probe);
-            }
-        }
-
-        push_token_advance(cur, "where");
-        tokenize_line(cur);
-        if (!is_block) {
-            return;
-        }
-
-        while (true) {
-            if (next_is(cur, "elsewhere")) {
-                push_token_advance(cur, "elsewhere");
-                tokenize_line(cur);
-                continue;
-            }
-            if (next_is(cur, "endwhere")) {
-                push_token_advance(cur, "endwhere");
-                tokenize_line(cur);
-                break;
-            }
-            if (next_is(cur, "end_where")) {
-                push_token_advance(cur, "end_where");
-                tokenize_line(cur);
-                break;
-            }
-            if (!lex_body_statement(cur)) {
-                Location loc;
-                loc.first = source_offset(cur - string_start);
-                loc.last = source_offset(cur - string_start);
-                diag.add(diag::Diagnostic(
-                    "Expected an executable statement inside where block",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
-            }
-        }
-    }
-
-    bool if_advance_or_terminate(unsigned char *&cur) {
-        int64_t l = eat_label(cur);
-        if (next_is(cur, "elseif(")) {
-            push_token_advance(cur, "elseif");
-            unsigned char *end = cur + 1;
-            if (try_expr(end, false) && *end == ')'
-                    && is_construct_stmt(end + 1, "then")) {
-                // `else if (...) then [construct-name]`: push `then`
-                // separately so that it does not merge with the name
-                tokenize_until(end + 1);
-                cur = end + 1;
-                push_token_advance(cur, "then");
-            }
-            tokenize_line(cur);
-            return true;
-        }
-        if (is_construct_stmt(cur, "else")) {
-            push_token_advance(cur, "else");
-            tokenize_line(cur);
-            return true;
-        }
-        // TODO: check for other if terminals
-        if (next_is(cur, "endif")) {
-            if (l != -1) {
-                push_token_no_advance(cur, "continue");
-                push_token_no_advance(cur, "\n");
-            }
-            push_token_advance(cur, "endif");
-            tokenize_line(cur);
-            return false;
-        }
-        if (next_is(cur, "continue")) {
-            push_token_advance(cur, "continue");
-            tokenize_line(cur);
-            return true;
-        }
-        unsigned char *prev = cur;
-        bool result = lex_body_statement(cur);
-        if (!result && cur == prev) {
-            // No progress was made (e.g. an unsupported statement like PAUSE).
-            // Abort the loop to avoid an infinite loop; the outer parser will
-            // emit an appropriate error.
-            return false;
-        }
+        } while (depth > 0);
+        cur = t.cur;
         return true;
     }
 
-    void lex_cond(unsigned char *&cur, bool continue_compilation = false) {
-        if (lex_if_statement(cur, continue_compilation)) while (if_advance_or_terminate(cur));
-    }
-
-    void lex_subroutine(unsigned char *&cur) {
-        while(lex_body_statement(cur));
-        int64_t l = eat_label(cur);
-        if (l != -1) {
-            push_token_no_advance(cur, "continue");
-            push_token_no_advance(cur, "\n");
-        }
-        if (next_is(cur, "contains")) {
-            push_token_advance(cur, "contains");
-            push_token_no_advance(cur, "\n");
-            next_line(cur);
-            while(lex_procedure(cur));
-        }
-        if (next_is(cur, "endsubroutine")) {
-            push_token_advance(cur, "endsubroutine");
-            tokenize_line(cur);
-        } else if (next_is(cur, "end")) {
-            push_token_advance(cur, "end");
-            tokenize_line(cur);
-        } else {
-            error(cur, "Expecting terminating symbol for subroutine");
+    // `*8` and `*(*)` of `real*8` and `character*(*)`: only digits follow
+    // the star, so that `character*2d3v` is `character*2 d3v`
+    void star_length(unsigned char *&cur) {
+        if (*cur != '*') return;
+        push_keyword(cur, TK_STAR, 1);
+        unsigned char *end = cur;
+        while (is_digit(*end)) end++;
+        if (end > cur) {
+            push_integer(TK_INTEGER, cur, end, end - 1);
+            cur = end;
         }
     }
 
     /*
-        explicit_program: This flag indicates whether the Fortran
-            program being lexed is explicitly declared with the
-            program keyword or implicitly defined by the presence
-            of statements that belong to a main program but without
-            an explicit program declaration.
+    The statement that starts a program unit:
 
-            E.g.; program where `explicit_program` is false:
-            ```
-                   integer :: x
-                   x = 42
-                   print *, x
-                   end
-            ```
+        program p
+        module m
+        submodule (m) s
+        block data b
+        [recursive | pure | ...] subroutine s(x)
+        [recursive | pure | ... | integer | real*8 | ...] function f(x)
+
+    Returns the kind of the unit and tokenizes the statement (if `emit`),
+    or returns 0.
     */
-    void lex_program(unsigned char *&cur, bool explicit_program, bool continue_compilation, diag::Diagnostics &diagnostics) {
-        if (explicit_program) {
-            push_token_advance(cur, "program");
-            tokenize_line(cur);
-        }
-        while(lex_body_statement(cur, continue_compilation));
-        eat_label(cur);
-        if (next_is(cur, "contains")) {
-            push_token_advance(cur, "contains");
-            push_token_no_advance(cur, "\n");
-            next_line(cur); // Does not generate any code?
-            while(lex_procedure(cur));
-        } else if (next_is(cur, "subroutine") || next_is(cur, "function")) {
-            Location loc;
-            token_loc(cur, cur + 1, loc);
-            if (continue_compilation) {
-                diagnostics.add(diag::Diagnostic(
-                    "Expecting contains keyword before procedure definition",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                if (next_is(cur, "subroutine")) {
-                    while (!next_is(cur, "endprogram")) {
-                        next_line(cur);
-                    }
-                } else if (next_is(cur, "function")) {
-                    while (!next_is(cur, "endprogram")) {
-                        next_line(cur);
-                    }
+    char unit_statement(unsigned char *&cur, bool emit) {
+        if (is_assignment(cur)) return 0;
+        if (next_is(cur, "module") && is_name_start(cur[6])) {
+            // `module m`; inside of a program unit it is `module procedure`
+            // or the prefix of a separate module procedure
+            if (units.empty()) {
+                if (emit) {
+                    push_keyword(cur, KW_MODULE, 6);
+                    rest(cur);
                 }
-            } else {
-                diagnostics.add(diag::Diagnostic(
-                    "Expecting contains keyword before procedure definition",
-                    diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-                throw parser_local::TokenizerAbort();
+                return 'm';
             }
+            if (next_is(cur, "moduleprocedure")) return 0;
         }
-        if (next_is(cur, "endprogram")) {
-            push_token_advance(cur, "endprogram");
-            tokenize_line(cur);
-        } else if (next_is(cur, "end")) {
-            push_token_advance(cur, "end");
-            tokenize_line(cur);
-        } else {
-            error(cur, "Expecting terminating symbol for program");
-        }
-    }
-
-    void lex_module(unsigned char *&cur) {
-        push_token_advance(cur, "module");
-        tokenize_line(cur);
-        while(lex_body_statement(cur));
-        eat_label(cur);
-        if (next_is(cur, "contains")) {
-            push_token_advance(cur, "contains");
-            push_token_no_advance(cur, "\n");
-            next_line(cur);
-            while(lex_procedure(cur));
-        }
-        if (next_is(cur, "endmodule")) {
-            push_token_advance(cur, "endmodule");
-            tokenize_line(cur);
-        } else if (next_is(cur, "end")) {
-            push_token_advance(cur, "end");
-            tokenize_line(cur);
-        } else {
-            error(cur, "Expecting terminating symbol for module");
-        }
-    }
-
-    void lex_function(unsigned char *&cur) {
-        while(lex_body_statement(cur));
-        int64_t l = eat_label(cur);
-        if (l != -1) {
-            push_token_no_advance(cur, "continue");
-            push_token_no_advance(cur, "\n");
-        }
-        if (next_is(cur, "endfunction")) {
-            push_token_advance(cur, "endfunction");
-            tokenize_line(cur);
-        } else if (next_is(cur, "end")) {
-            push_token_advance(cur, "end");
-            tokenize_line(cur);
-        } else {
-            error(cur, "Expecting terminating symbol for function");
-        }
-    }
-
-    // `ABSTRACT INTERFACE` has no generic specification, so the statement
-    // must end right after the keywords
-    bool is_abstract_interface(unsigned char *cur) {
-        const std::string header = "abstractinterface";
-        return next_is(cur, header) && next_is_eos(cur + header.size());
-    }
-
-    void lex_interface(unsigned char *&cur) {
-        if (is_abstract_interface(cur)) {
-            push_token_advance(cur, "abstract");
-        }
-        push_token_advance(cur, "interface");
-        tokenize_line(cur);
-
+        static const char *const prefixes[] = {"recursive", "non_recursive",
+            "pure", "impure", "elemental", "module"};
+        static const char *const types[] = {"doubleprecision",
+            "doublecomplex", "character", "complex", "integer", "logical",
+            "real"};
+        // Each span is a keyword ('k'), a `*` length ('*') or a `(...)`
+        // selector ('(')
+        struct Span { char kind; const unsigned char *start, *end; };
+        std::vector<Span> spans;
+        const unsigned char *p = cur;
+        bool type_seen = false;
         while (true) {
-            if (next_is(cur, "endinterface")) {
-                push_token_advance(cur, "endinterface");
-                tokenize_line(cur);
-                break;
-            } else if (next_is(cur, "subroutine") || next_is(cur, "function")) {
-                // Handle procedure declaration within the interface
-                lex_procedure(cur);
-            } else if (next_is(cur, "moduleprocedure")) {
-                push_token_advance(cur, "module");
-                push_token_advance(cur, "procedure");
-                tokenize_line(cur);
-            } else {
-                error(cur, "Unexpected token in interface block");
-            }
-        }
-    }
-
-    void lex_block_data(unsigned char *&cur) {
-        push_token_advance(cur, "block");
-        push_token_advance(cur, "data");
-        tokenize_line(cur);
-        while(lex_body_statement(cur));
-        if (next_is(cur, "endblockdata")) {
-            push_token_advance(cur, "endblockdata");
-            tokenize_line(cur);
-        } else if (next_is(cur, "end")) {
-            push_token_advance(cur, "end");
-            tokenize_line(cur);
-        } else {
-            error(cur, "Expecting terminating symbol for block data");
-        }
-    }
-
-    bool is_declaration(unsigned char *&cur,
-			std::string declaration_type /*function, subroutine, program*/,
-			const std::vector<std::string>& keywords) {
-        unsigned char *cpy = cur;
-        unsigned char *nextline = cur; next_line(nextline);
-        std::string line{tostr(cur, nextline-1)};
-        // current line does not contain type -> we abort
-        if (!(line.find(declaration_type) != std::string::npos)) return false;
-        std::vector<std::string> kw_found;
-        std::vector<std::string> decls{keywords.begin(), keywords.end()};
-        while(decls.size() != 0) {
-            bool kw_matched = false;
-            for (unsigned int i=0;i<decls.size();++i) {
-                if (next_is(cpy, decls[i])) {
-                    kw_matched = true;
-                    kw_found.push_back(decls[i]);
-                    cpy += decls[i].size();
-                    if (decls[i].back() == '*') {
- 		        if (decls[i] == "character*" && next_is(cpy, "(*)")) {
-			    kw_found.back() += "(*)";
-			    cpy += 3;
-                        } else if (std::isdigit(*cpy)) {
-			    do {
-                                kw_found.back().push_back(*cpy++);
-                            } while(std::isdigit(*cpy));
-			} else {
-			    error(cpy, "Syntax error: expecting length "
-				  "specification after " + decls[i]);
-			}
-                    } else if (*cpy == '(') {
-                        // kind or length selector, such as `real(8)`,
-                        // `real(kind=8)` or `character(len=32)`
-                        unsigned char *end = cpy + 1;
-                        if (try_expr(end, true) && *end == ')') {
-                            end++;
-                            kw_found.back() += tostr(cpy, end);
-                            cpy = end;
-                        }
-                    }
-                    decls.erase(decls.begin() + i);
+            bool matched = false;
+            for (const char *prefix : prefixes) {
+                if (next_is(p, prefix)) {
+                    size_t n = strlen(prefix);
+                    spans.push_back({'k', p, p + n});
+                    p += n;
+                    matched = true;
                     break;
                 }
             }
-            if (next_is(cpy, declaration_type))
-                break;
-            // catching syntax errors like `recursive double precision
-            // recursive function f(...`
-            for (auto kw = kw_found.begin(); kw != kw_found.end(); ++kw) {
-                if (next_is(cpy, *kw)) {
-                    error(cpy, "Syntax error: keyword " + *kw +
-			  "cannot occur multiple times in " +
-			  declaration_type + "declaration");
+            if (matched) continue;
+            if (type_seen) break;
+            for (const char *type : types) {
+                if (next_is(p, type)) {
+                    size_t n = strlen(type);
+                    spans.push_back({'k', p, p + n});
+                    p += n;
+                    if (*p == '*') {
+                        const unsigned char *end = p + 1;
+                        if (*end == '(') {
+                            end = skip_parentheses(end);
+                            if (end == nullptr) return 0;
+                        } else {
+                            while (is_digit(*end)) end++;
+                        }
+                        spans.push_back({'*', p, end});
+                        p = end;
+                    } else if (*p == '(') {
+                        const unsigned char *end = skip_parentheses(p);
+                        if (end == nullptr) return 0;
+                        spans.push_back({'(', p, end});
+                        p = end;
+                    }
+                    type_seen = true;
+                    matched = true;
+                    break;
                 }
             }
-            // no prefix keyword matched: this is not a declaration of
-            // `declaration_type` (e.g. `end subroutine`), stop scanning
-            if (!kw_matched) break;
+            if (!matched) break;
         }
-        if (!next_is(cpy, declaration_type))
-            return false;
-
-        // tokenize all keywords
-        for(auto const &kw : kw_found) {
-            if (kw.find_first_of("*(") != std::string::npos) {
-                tokenize_until(cur + kw.size());
-                cur += kw.size();
-            } else {
-                push_token_advance(cur, kw);
+        char kind = 0;
+        size_t keyword = 0;
+        if (next_is(p, "subroutine") && is_name_start(p[10])) {
+            kind = 's';
+            keyword = 10;
+        } else if (next_is(p, "function") && is_name_start(p[8])
+                && *skip_name(p + 8) == '(') {
+            kind = 'f';
+            keyword = 8;
+        } else if (!spans.empty()) {
+            return 0;
+        } else if (next_is(p, "program") && is_name_start(p[7])) {
+            kind = 'p';
+            keyword = 7;
+        } else if (next_is(p, "submodule(")) {
+            kind = 'm';
+            keyword = 9;
+        } else if (next_is(p, "blockdata")) {
+            kind = 'b';
+        } else {
+            return 0;
+        }
+        if (!emit) return kind;
+        {
+            for (const Span &span : spans) {
+                unsigned char *start = const_cast<unsigned char*>(span.start);
+                if (span.kind == 'k') {
+                    std::string word((const char*)span.start,
+                        span.end - span.start);
+                    push_keyword(cur, identifier_token_map().at(word),
+                        word.size());
+                } else if (span.kind == '*' && span.start[1] != '(') {
+                    cur = start;
+                    star_length(cur);
+                } else {
+                    cur = start;
+                    until(cur, span.end);
+                }
             }
         }
-        cur = cpy;
-        push_token_advance(cur, declaration_type);
-        tokenize_line(cur);
-        return true;
-    }
-
-    bool is_implicit_program(unsigned char *cur) {
-        auto cpy = cur;
-        auto prev = cpy;
-        for (;;) {
-            next_line(cpy);
-            if (*cpy == '\0') break;
-            prev = cpy;
-        }
-        if (next_is(prev, "endprogram\n") || next_is(prev, "end\n")) {
-            return true;
-        }
-        return false;
-    }
-
-    bool is_program(unsigned char *cur) {
-        return next_is(cur, "program");
-    }
-
-    bool is_module(unsigned char *cur) {
-        return next_is(cur, "module");
-    }
-
-    bool lex_procedure(unsigned char *&cur) {
-	const std::vector<std::string> subroutine_keywords{"recursive", "non_recursive", "pure",
-            "elemental"};
-        const std::vector<std::string> function_keywords{"recursive", "non_recursive", "pure",
-            "elemental", "real*", "real",
-	    "character*(*)",
-            "character*", "character",
-            "complex*", "complex",
-            "integer*", "integer",
-            "logical*", "logical",
-            "doubleprecision", "doublecomplex"};
-        if (is_declaration(cur, "subroutine", subroutine_keywords)) {
-            lex_subroutine(cur);
-            return true;
-        } else if (is_declaration(cur, "function", function_keywords)) {
-            lex_function(cur);
-            return true;
+        if (kind == 'b') {
+            push_keyword(cur, KW_BLOCK, 5);
+            push_keyword(cur, KW_DATA, 4);
         } else {
-            return false;
+            std::string word((const char*)cur, keyword);
+            push_keyword(cur, identifier_token_map().at(word), keyword);
         }
+        rest(cur);
+        return kind;
     }
 
-    void lex_global_scope_item(unsigned char *&cur, bool continue_compilation, diag::Diagnostics &diagnostics) {
-        // we can define a global assignment
-        unsigned char *nline = cur; next_line(nline);
-        // eat_label(cur);
-        if (next_is(cur, "include")) {
-            push_token_advance(cur, "include");
-            tokenize_line(cur);
-        }
-        if (is_program(cur)) {
-            lex_program(cur, true, continue_compilation, diagnostics);
-        } else if (next_is(cur, "interface")) {
-            lex_interface(cur);
-        } else if (is_module(cur)) {
-            lex_module(cur);
-        } else if (lex_procedure(cur)) {
+    // The statement at `cur` (after its label, if it has one). On return,
+    // `cur` points to the next statement.
+    void statement(unsigned char *&cur, int64_t stmt_label) {
+        if (is_eos(cur) || is_assignment(cur)) {
+            if (!is_eos(cur)) unit_start = false;
+            rest(cur);
             return;
-        } else if (next_is(cur, "blockdata")) {
-            lex_block_data(cur);
-        } else if (is_implicit_program(cur)) {
-            // add implicit global program at the line `cur` is currently at
-            push_token_no_advance(cur, "program");
-            push_token_no_advance_token(cur, "implicit_program_lfortran", TK_NAME);
-            push_token_no_advance(cur, "\n");
-            lex_program(cur, false, continue_compilation, diagnostics);
-        } else {
-            error(cur, "ICE: Cannot recognize global scope entity");
         }
+        // The name of a construct: `name: do`
+        {
+            const unsigned char *p = skip_name(cur);
+            if (p > cur && is_name_start(*cur) && *p == ':' && p[1] != ':') {
+                until(cur, p + 1);
+            }
+        }
+        if (unit_start) {
+            char kind = unit_statement(cur, true);
+            if (kind != 0) {
+                units.push_back(kind);
+                unit_start = false;
+                return;
+            }
+        }
+        unit_start = false;
+        for (const Entry &e : statement_keywords(*cur)) {
+            if (!next_is(cur, e.text.c_str())) continue;
+            unsigned char next = cur[e.text.size()];
+            if (e.next == '$' ? !is_eos(cur + e.text.size())
+                    : (e.next != 0 && next != e.next)) {
+                continue;
+            }
+            if (e.mode == Do && !(is_eos(cur + 2) || is_digit(next)
+                    || next == ',' || next_is(cur + 2, "while(")
+                    || next_is(cur + 2, "concurrent(")
+                    || *skip_name(cur + 2) == '=')) {
+                continue;
+            }
+            if (e.mode == Format) {
+                unsigned char *first = cur;
+                unsigned char *start;
+                Location content;
+                cur += 6;
+                lex_format(cur, content, start, diag, false, string_start);
+                YYSTYPE y;
+                y.string.p = (char*) start;
+                y.string.n = cur - start - 1;
+                push(TK_FORMAT, y, first, cur - 1);
+                rest(cur);
+                return;
+            }
+            if (e.mode == EndIf && stmt_label != -1) {
+                // The label is the one of a `continue` statement
+                push_token(cur, KW_CONTINUE, "continue", 8);
+                push_newline(cur);
+            } else if (e.mode == EndUnit) {
+                if (stmt_label != -1 && !units.empty()
+                        && (units.back() == 's' || units.back() == 'f')) {
+                    push_token(cur, KW_CONTINUE, "continue", 8);
+                    push_newline(cur);
+                }
+                if (!units.empty()) units.pop_back();
+                unit_start = true;
+            }
+            for (const auto &word : e.words) {
+                push_keyword(cur, word.first, word.second);
+            }
+            switch (e.mode) {
+                case Type: {
+                    star_length(cur);
+                    break;
+                }
+                case Do: {
+                    unsigned char *end = cur;
+                    while (is_digit(*end)) end++;
+                    if (end > cur) {
+                        // The label: only digits, `do10e1=1,5` is not a real
+                        push_integer(TK_INTEGER, cur, end, end);
+                        cur = end;
+                    }
+                    if (next_is(cur, "while(")) {
+                        push_keyword(cur, KW_WHILE, 5);
+                    } else if (next_is(cur, "concurrent(")) {
+                        push_keyword(cur, KW_CONCURRENT, 10);
+                    }
+                    break;
+                }
+                case Condition: {
+                    if (!parentheses(cur)) return;
+                    if (is_name_start(*cur)) {
+                        // `then`, or the statement that the condition
+                        // controls
+                        statement(cur, -1);
+                        return;
+                    }
+                    break;
+                }
+                case Assign: {
+                    unsigned char *end = cur;
+                    while (is_digit(*end)) end++;
+                    if (end > cur && next_is(end, "to")) {
+                        until(cur, end);
+                        push_keyword(cur, KW_TO, 2);
+                    }
+                    break;
+                }
+                case Contains:
+                case Interface: {
+                    unit_start = true;
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
+            break;
+        }
+        rest(cur);
     }
 
-    void lex_global_scope(unsigned char *&cur, bool continue_compilation, diag::Diagnostics &diagnostics) {
-        auto next = cur;
-        while (*cur != '\0') {
-            // eat_label(cur);
-            next_line(next);
-            lex_global_scope_item(cur, continue_compilation, diagnostics);
-            next = cur;
+    // The next statement, with its label
+    void labeled_statement(unsigned char *&cur) {
+        if (units.empty()) {
+            // A main program can start without the `program` statement
+            unsigned char *body = cur + (has_label(cur) ? 5 : 0);
+            if (!next_is(body, "include")
+                    && unit_statement(body, false) == 0) {
+                push_token(cur, KW_PROGRAM, "program", 7);
+                push_token(cur, TK_NAME, "implicit_program_lfortran", 25);
+                push_newline(cur);
+                units.push_back('p');
+                unit_start = false;
+            }
         }
-        push_token_no_advance(cur, "EOF");
+        int64_t l = label(cur);
+        statement(cur, l);
+    }
+
+    void tokenize(unsigned char *&cur) {
+        while (*cur != '\0') {
+            unsigned char *start = cur;
+            labeled_statement(cur);
+            if (cur == start) rest(cur);
+        }
+        push_token(cur, END_OF_FILE, "EOF", 3);
     }
 
 };
 
-bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocator &al, bool continue_compilation) {
-    // We use a recursive descent parser.  We are starting at the global scope
+bool FixedFormTokenizer::tokenize_input(diag::Diagnostics &diagnostics, Allocator &al, bool /*continue_compilation*/) {
     try {
-        FixedFormRecursiveDescent f(diagnostics, al);
+        FixedFormStatements f(diagnostics, al);
         f.string_start = string_start;
-        //f.t.set_string(lines[lines.size()-1]);
         f.t.cur = string_start;
         f.t.string_start = string_start;
         f.t.cur_line = string_start;
         f.t.line_num = 1;
-        f.lex_global_scope(cur, continue_compilation, diagnostics);
+        f.tokenize(cur);
         tokens = std::move(f.tokens);
         stypes = std::move(f.stypes);
         locations = std::move(f.locations);

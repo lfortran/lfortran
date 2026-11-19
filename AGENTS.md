@@ -32,10 +32,10 @@ Ninja then recompiles almost everything (a one-line edit can cost 15+ minutes).
 `rebuild` (`cmake --build`) recompiles only what changed. Run `build` again
 only for a new worktree, for new CMake options, or after editing a generator
 input: `src/libasr/ASR.asdl`, `grammar/AST.asdl`,
-`src/lfortran/parser/parser.yy`, `tokenizer.re`, `preprocessor.re`,
+`src/lfortran/parser/ll_parser.ll`, `tokenizer.re`, `preprocessor.re`,
 `src/libasr/wasm_instructions.txt`, the generator scripts themselves
 (`asdl_cpp.py`, `wasm_instructions_visitor.py`,
-`intrinsic_func_registry_util_gen.py`) or `src/server/generator/`. `rebuild`
+`intrinsic_func_registry_util_gen.py`, `llgen.py`) or `src/server/generator/`. `rebuild`
 does not regenerate these, so it would compile stale generated sources.
 
 Use the allocated job budget instead of `8` when sharing resources. `pixi run`

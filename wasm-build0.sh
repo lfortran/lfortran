@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build native lfortran and install runtime .mod files to the WASM host env.
-# Run in the native 'lf' dev env (needs cmake, re2c, bison) before wasm-build1.sh.
+# Run in the native 'lf' dev env (needs cmake, re2c) before wasm-build1.sh.
 #
 # Prerequisites:
 #   - ./build0.sh already run  (parser/ASR headers generated)

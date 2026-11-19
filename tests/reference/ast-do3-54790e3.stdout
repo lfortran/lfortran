@@ -52,11 +52,7 @@
                 ()
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )
         (Assignment
             0

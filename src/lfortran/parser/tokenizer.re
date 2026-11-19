@@ -3,7 +3,7 @@
 
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/tokenizer.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <libasr/bigint.h>
 
 using LCompilers::diag::Level;
@@ -249,20 +249,6 @@ int Tokenizer::lex_omp_directive(Allocator &al, YYSTYPE &yylval,
 
 int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation)
 {
-    if (enddo_state == 1) {
-        enddo_state = 2;
-        KW(END_DO)
-    } else if (enddo_state == 2) {
-        enddo_insert_count--;
-        if (enddo_insert_count > 0) {
-            enddo_state = 1;
-        } else {
-            enddo_state = 0;
-            token_loc(loc); line_num++; cur_line=cur;
-            last_token = yytokentype::TK_NEWLINE;
-        }
-        return yytokentype::TK_NEWLINE;
-    }
     for (;;) {
         tok = cur;
 
@@ -407,13 +393,6 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'default' { KW(DEFAULT) }
             'deferred' { KW(DEFERRED) }
             'dimension' { KW(DIMENSION) }
-            'do' / (whitespace digit+) {
-                // This is a label do statement, we have to match the
-                // corresponding continue base "end do".
-                uint64_t n = parse_int(cur);
-                enddo_label_stack.push_back(n);
-                KW(DO);
-            }
             'do' { KW(DO) }
             'dowhile' { KW(DOWHILE) }
             'double' { KW(DOUBLE) }
@@ -479,20 +458,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'end' whitespace 'type' { KW(END_TYPE) }
             'endtype' { KW(ENDTYPE) }
 
-            'end' whitespace 'do' {
-                if (enddo_newline_process) {
-                    KW(CONTINUE)
-                } else {
-                    KW(END_DO)
-                }
-            }
-            'enddo' {
-                if (enddo_newline_process) {
-                    KW(CONTINUE)
-                } else {
-                    KW(ENDDO)
-                }
-            }
+            'end' whitespace 'do' { KW(END_DO) }
+            'enddo' { KW(ENDDO) }
 
             'end' whitespace 'where' { KW(END_WHERE) }
             'endwhere' { KW(ENDWHERE) }
@@ -638,17 +605,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             // Tokens
             newline {
-                if (enddo_newline_process) {
-                    enddo_newline_process = false;
-                    enddo_state = 1;
-                    return yytokentype::TK_NEWLINE;
-                } else {
-                    enddo_newline_process = false;
-                    enddo_insert_count = 0;
-                    token_loc(loc); line_num++; cur_line=cur;
-                    last_token = yytokentype::TK_NEWLINE;
-                    return yytokentype::TK_NEWLINE;
-                }
+                token_loc(loc); line_num++; cur_line=cur;
+                last_token = yytokentype::TK_NEWLINE;
+                return yytokentype::TK_NEWLINE;
             }
 
             // Single character symbols
@@ -741,11 +700,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     if (lex_int(tok, cur, u, yylval.int_suffix.int_kind)) {
                             yylval.n = u;
                             // A statement label is a positive integer, so a
-                            // zero here is not a label at all. It must be
-                            // rejected before it reaches `enddo_label_stack`,
-                            // whose bottom is a 0 sentinel that would then be
-                            // popped, leaving the stack empty and the loop
-                            // below reading past its front.
+                            // zero here is not a label at all.
                             if (u == 0) {
                                 token_loc(loc);
                                 diagnostics.add(diag::Diagnostic(
@@ -756,15 +711,6 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                                 if (!continue_compilation) {
                                     throw parser_local::TokenizerAbort();
                                 }
-                                enddo_newline_process = false;
-                            } else if (enddo_label_stack[enddo_label_stack.size()-1] == u) {
-                                while (enddo_label_stack[enddo_label_stack.size()-1] == u) {
-                                    enddo_label_stack.pop_back();
-                                    enddo_insert_count++;
-                                }
-                                enddo_newline_process = true;
-                            } else {
-                                enddo_newline_process = false;
                             }
                             RET(TK_LABEL)
                     } else {

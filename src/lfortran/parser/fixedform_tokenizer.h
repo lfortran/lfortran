@@ -18,10 +18,6 @@ public:
 
     int last_token=-1;
 
-    std::vector<uint64_t> enddo_label_stack = {0};
-    bool enddo_newline_process = false;
-    int enddo_state = 0;
-    int enddo_insert_count = 0;
 
     std::vector<int> tokens;
     std::vector<YYSTYPE> stypes;

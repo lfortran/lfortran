@@ -1,5 +1,5 @@
-tokenizer error: Expecting terminating symbol for program
- --> tests/errors/fixed_form_14.f:3:11
+syntax error: Newline is unexpected here
+ --> tests/errors/fixed_form_14.f:3:18
   |
 3 |           UNKNOWN
-  |           ^ 
+  |                  ^ 
