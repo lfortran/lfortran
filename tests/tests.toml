@@ -8047,3 +8047,13 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_lanes_block_03.f90"
 gpu_cuda_kernel = true
+
+# The arrays of an iteration that runs on all the threads of a block live in
+# the block's shared memory (`__shared__`): every launch runs one iteration
+# per block (its lanes named as a constant), the loops that fill the arrays
+# are shared out, and the lanes meet at a barrier before they read them. The
+# phase over 64 columns runs each column on 4 of the 256 lanes, which share
+# out its sum and combine it through shared memory.
+[[test]]
+filename = "../integration_tests/gpu_block_shared_01.f90"
+gpu_cuda_kernel = true

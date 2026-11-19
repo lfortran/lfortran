@@ -46,13 +46,21 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         && holds_wide_load(kernel.m_body, kernel.n_body);
     // A kernel that reads vectors of 16 bytes may run an iteration on each
     // block of caps.lanes_wide threads (gpu_vector_lanes.cpp), and its
-    // register bound is for blocks of that size.
+    // register bound is for blocks of that size; one whose arrays of the
+    // iteration the block shares, on blocks of as many threads as an
+    // iteration has lanes.
     GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
-    int64_t kernel_threads = kernel_lane_vectors && kernel_caps.lanes_wide > 0
+    int64_t kernel_threads = gpu_kernel_block_shared(kernel)
+        ? kernel.m_gpu->m_lanes_max
+        : kernel_lane_vectors && kernel_caps.lanes_wide > 0
             && kernel.m_gpu->m_lanes_max == kernel_caps.lanes_wide
         ? kernel_caps.lanes_wide : kernel_caps.threads_per_block;
+    // The bound on the registers of a kernel whose lanes read vectors is
+    // for many blocks per multiprocessor; one whose arrays of the iteration
+    // the block shares keeps the registers for the elements its lanes keep
+    // (gpu_vector_lanes.cpp, hold_elements).
     src << dialect.kernel_qualifier(kernel_threads,
-            streams_rows, kernel_lane_vectors
+            streams_rows, kernel_lane_vectors && !gpu_kernel_block_shared(kernel)
                 ? std::max<int64_t>(1, gpu_wide_vectors_per_iteration(kernel))
                 : 0)
         << name << "(\n";
@@ -131,9 +139,7 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         std::stringstream prologue;
         dialect.emit_lane_prologue(prologue, get_indent(),
             ASRUtils::symbol_name(layout.m_lanes),
-            kernel_caps.lanes_wide > 0
-                && kernel.m_gpu->m_lanes_max == kernel_caps.lanes_wide
-                ? kernel_caps.lanes_wide : 0);
+            kernel_fixed_lanes(kernel));
         kernel_declarations.push_back({{}, prologue.str()});
     }
     if (layout.m_packed) {
@@ -156,6 +162,7 @@ template <typename D>
 void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
     const auto &layout = *kernel.m_gpu;
     current_kernel_layout = &layout;
+    current_fixed_lanes = kernel_fixed_lanes(kernel);
     func_array_size_params.clear();
     func_array_lb_params.clear();
     func_array_data_params.clear();

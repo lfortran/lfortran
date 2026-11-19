@@ -10,6 +10,7 @@
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_wide_loads.h>
+#include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/codegen/gpu_symbol_map.h>
 #include <libasr/codegen/c_utils.h>
 #include <libasr/codegen/c_loop_control.h>
@@ -563,6 +564,9 @@ public:
     // The layout of the kernel whose arguments are currently bound, the
     // one `emit_kernel_signature` wrote the parameter list from.
     const ASR::gpu_kernel_layout_t *current_kernel_layout = nullptr;
+    // The lanes every launch gives an iteration of the kernel being written
+    // (kernel_fixed_lanes), or zero.
+    int64_t current_fixed_lanes = 0;
 
     // A loop of the device code being written, innermost last. `leave`
     // names the variable an exit (1) or a cycle (2) of the loop sets when
@@ -1145,7 +1149,12 @@ public:
                     return;
                 }
             }
-            src << get_indent() << elem_type << " "
+            // An array of the iteration that the lanes of a block share
+            // (gpu_vector_lanes.cpp) is the block's.
+            std::string space = arr->m_memory_space
+                    == ASR::memory_spaceType::Shared
+                ? space_prefix(arr->m_memory_space) : std::string();
+            src << get_indent() << space << elem_type << " "
                 << sanitize_name(std::string(var->m_name));
             if (is_alloc) {
                 // Use pre-scanned compile-time size, runtime
@@ -3616,6 +3625,7 @@ public:
         array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
+        current_fixed_lanes = 0;
         ASR::FunctionType_t *ftype = ASR::down_cast<ASR::FunctionType_t>(
             fn->m_function_signature);
         std::string ret_type = "void";
@@ -4020,6 +4030,7 @@ public:
         array_extent_params.clear();
         struct_from_array_elem.clear();
         current_kernel_layout = nullptr;
+        current_fixed_lanes = 0;
     }
 
     // What `emit` writes to `src`, which it leaves as it was.
@@ -4130,15 +4141,29 @@ public:
         dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
+    // The lanes every launch gives an iteration of the kernel `x`, or zero
+    // when a launch decides: a kernel that reads vectors of 16 bytes on a
+    // block of caps.lanes_wide threads, or one whose arrays of the
+    // iteration the block shares, on all the threads of a block
+    // (gpu_vector_lanes.cpp).
+    int64_t kernel_fixed_lanes(const ASR::Function_t &x) const {
+        if (x.m_gpu == nullptr || x.m_gpu->m_lanes == nullptr) return 0;
+        if (gpu_kernel_block_shared(x)) return x.m_gpu->m_lanes_max;
+        GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
+        if (kernel_caps.lanes_wide > 0
+                && x.m_gpu->m_lanes_max == kernel_caps.lanes_wide) {
+            return kernel_caps.lanes_wide;
+        }
+        return 0;
+    }
+
     // The test, empty for none, of the lanes a launch most often gives the
     // kernel `x`, when they are a run-time value: kernels that every
     // launch gives the same lanes name them as a constant already
     // (emit_lane_prologue).
     std::string common_lanes_test(const ASR::Function_t &x) const {
         const ASR::gpu_kernel_layout_t &layout = *x.m_gpu;
-        GpuDeviceCapabilities kernel_caps = gpu_device_capabilities(co.po);
-        if (layout.m_lanes == nullptr || (kernel_caps.lanes_wide > 0
-                && layout.m_lanes_max == kernel_caps.lanes_wide)) {
+        if (layout.m_lanes == nullptr || kernel_fixed_lanes(x) > 0) {
             return "";
         }
         for (size_t i = 0; i < layout.n_scalars; i++) {
@@ -4275,12 +4300,183 @@ public:
             written.insert(gpu_designator_base(dl->m_head.m_v).root);
         }
         bool wide = holds_wide_load(dl->m_body, dl->n_body);
+        if (!wide && predicated_unroll(*dl)) {
+            emit_predicated_loop(*dl, frame, written);
+            return;
+        }
         // The loop over the chunks of a row is unrolled whatever the size
         // of its body: it reads vectors, and each iteration is long.
         emit_counted_for(dl->m_head, written, stmt->base.loc,
             small_innermost_loop(dl->m_body, dl->n_body) || wide,
-            holds_lane_reduce(dl->m_body, dl->n_body), wide);
+            holds_lane_reduce(dl->m_body, dl->n_body), wide,
+            indexes_registers(*dl));
         emit_loop_body(frame, dl->m_body, dl->n_body);
+    }
+
+    // The iterations a predicated loop takes at a time (predicated_unroll).
+    static constexpr int64_t predicated_unroll_factor = 8;
+
+    // Whether the loop `l` of a kernel whose every launch gives an
+    // iteration the lanes of a block (kernel_fixed_lanes) is written as
+    // predicated_unroll_factor iterations at a time, each under a test of
+    // the end: a short loop of a body of few statements, a step known at
+    // compile time and a number of iterations that is not (the chunks of
+    // an attention). nvcc unrolls such a loop by its pragma and runs the
+    // iterations it has left one after another, each waiting for its load;
+    // predicated, the loads of the iterations of a step are issued
+    // together (the merge of 19 chunks went from 6.9 to 4.2 us on an
+    // H200).
+    bool predicated_unroll(const ASR::DoLoop_t &l) {
+        if (current_fixed_lanes <= 0 || l.m_head.m_v == nullptr
+                || dialect.unroll_whole_pragma().empty()
+                || !small_innermost_loop(l.m_body, l.n_body)
+                || holds_lane_reduce(l.m_body, l.n_body)) {
+            return false;
+        }
+        int64_t step = 0, end = 0, start = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(
+                    l.m_head.m_increment), step) || step <= 0) {
+            return false;
+        }
+        if (ASRUtils::extract_value(ASRUtils::expr_value(l.m_head.m_start),
+                    start)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    l.m_head.m_end), end)) {
+            return false;
+        }
+        class Leaves : public ASR::BaseWalkVisitor<Leaves> {
+        public:
+            bool found = false;
+            void visit_Exit(const ASR::Exit_t &) { found = true; }
+            void visit_Cycle(const ASR::Cycle_t &) { found = true; }
+            void visit_Return(const ASR::Return_t &) { found = true; }
+        } leaves;
+        for (size_t i = 0; i < l.n_body; i++) leaves.visit_stmt(*l.m_body[i]);
+        return !leaves.found;
+    }
+
+    // Writes the loop of predicated_unroll: steps of the iterations, each
+    // iteration of a step under a test of the count, unrolled whole; the
+    // variable ends one step past the last iteration, as Fortran has it.
+    // The iterations are counted in unsigned arithmetic, as
+    // emit_counted_for counts them, so that an end near the largest value
+    // of the type does not overflow.
+    void emit_predicated_loop(const ASR::DoLoop_t &l,
+            const GpuLoopFrame &frame,
+            const std::set<ASR::symbol_t*> &written) {
+        ASR::ttype_t *type = ASRUtils::expr_type(l.m_head.m_v);
+        std::string type_name = gpu_type(type);
+        std::string unsigned_name = ASRUtils::extract_kind_from_ttype_t(
+            type) == 8 ? "unsigned long long" : "unsigned";
+        std::string v = captured_source([&]() { visit_expr(l.m_head.m_v); });
+        std::string start = loop_control(l.m_head.m_start, "start", type,
+            written);
+        std::string end = loop_control(l.m_head.m_end, "end", type, written);
+        std::string inc = captured_source([&]() {
+            visit_expr(l.m_head.m_increment); });
+        std::string id = std::to_string(loop_control_count++);
+        std::string trips = "__lfortran_trips_" + id;
+        std::string base = "__lfortran_base_" + id;
+        std::string k = "__lfortran_part_" + id;
+        // The value of the variable `count` steps from the start.
+        auto value = [&](const std::string &count) {
+            return "(" + type_name + ")((" + unsigned_name + ")(" + start
+                + ") + (" + unsigned_name + ")(" + count + ") * ("
+                + unsigned_name + ")(" + inc + "))";
+        };
+        std::string in = get_indent();
+        int64_t u = predicated_unroll_factor;
+        src << in << "const " << type_name << " " << trips << " = " << end
+            << " >= " << start << " ? (" << type_name << ")(("
+            << unsigned_name << ")(" << end << " - " << start << ") / ("
+            << unsigned_name << ")(" << inc << ")) + 1 : 0;\n";
+        src << in << "for (" << type_name << " " << base << " = 0; " << base
+            << " < " << trips << "; " << base << " += " << u << ") {\n";
+        src << in << "    " << dialect.unroll_whole_pragma() << "\n";
+        src << in << "    for (int " << k << " = 0; " << k << " < " << u
+            << "; " << k << "++) {\n";
+        src << in << "        if (" << base << " + " << k << " < " << trips
+            << ") {\n";
+        src << in << "            " << v << " = " << value(base + " + " + k)
+            << ";\n";
+        indent_level += 2;
+        emit_loop_body(frame, l.m_body, l.n_body);
+        indent_level -= 2;
+        src << in << "    }\n" << in << "}\n";
+        src << in << v << " = " << value(trips) << ";\n";
+    }
+
+    // The most iterations of a loop unrolled whole for a private array it
+    // indexes (indexes_registers).
+    static constexpr int64_t whole_unroll_max = 64;
+
+    // Whether `l` runs at most whole_unroll_max iterations, known at compile
+    // time, has no loop inside, and indexes an array of the thread's own by
+    // its variable: the elements a lane keeps of a column
+    // (gpu_vector_lanes.cpp, hold_elements). Unrolled whole, every index is
+    // a constant, and the array lives in registers rather than in the
+    // thread's local memory.
+    static bool indexes_registers(const ASR::DoLoop_t &l) {
+        if (l.m_head.m_v == nullptr) return false;
+        int64_t start = 0, end = 0, step = 1;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(l.m_head.m_start),
+                    start)
+                || !ASRUtils::extract_value(ASRUtils::expr_value(
+                    l.m_head.m_end), end)
+                || (l.m_head.m_increment && !ASRUtils::extract_value(
+                    ASRUtils::expr_value(l.m_head.m_increment), step))
+                || step <= 0 || end < start
+                || (end - start)/step + 1 > whole_unroll_max
+                || !small_innermost_loop(l.m_body, l.n_body)) {
+            return false;
+        }
+        class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            ASR::symbol_t *v;
+            bool found = false;
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
+                    ASR::symbol_t *a = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x.m_v)->m_v);
+                    ASR::Variable_t *var = ASR::is_a<ASR::Variable_t>(*a)
+                        ? ASR::down_cast<ASR::Variable_t>(a) : nullptr;
+                    // Not a named constant, which the device compiler
+                    // folds already.
+                    ASR::ttype_t *t = var && var->m_storage
+                            == ASR::storage_typeType::Default
+                            && var->m_value == nullptr
+                            && var->m_symbolic_value == nullptr
+                        ? var->m_type : nullptr;
+                    if (t && ASR::is_a<ASR::Array_t>(*t)
+                            && ASR::down_cast<ASR::Array_t>(t)->m_memory_space
+                                == ASR::memory_spaceType::Thread) {
+                        for (size_t i = 0; i < x.n_args; i++) {
+                            ASR::expr_t *sub = x.m_args[i].m_right;
+                            CountVar c(v);
+                            if (sub) c.visit_expr(*sub);
+                            if (c.found) found = true;
+                        }
+                    }
+                }
+                ASR::BaseWalkVisitor<Finder>::visit_ArrayItem(x);
+            }
+            class CountVar : public ASR::BaseWalkVisitor<CountVar> {
+            public:
+                ASR::symbol_t *v;
+                bool found = false;
+                explicit CountVar(ASR::symbol_t *v_) : v(v_) {}
+                void visit_Var(const ASR::Var_t &x) {
+                    if (ASRUtils::symbol_get_past_external(x.m_v) == v) {
+                        found = true;
+                    }
+                }
+            };
+        } finder;
+        finder.v = gpu_designator_base(l.m_head.m_v).root;
+        for (size_t i = 0; i < l.n_body && !finder.found; i++) {
+            finder.visit_stmt(*l.m_body[i]);
+        }
+        return finder.found;
     }
 
     bool wide_versioned = false;
@@ -4642,7 +4838,7 @@ public:
     void emit_counted_for(const ASR::do_loop_head_t &head,
             const std::set<ASR::symbol_t*> &written, const Location &loc,
             bool unroll = false, bool unroll_few = false,
-            bool wide = false) {
+            bool wide = false, bool whole = false) {
         if (head.m_v == nullptr) {
             src << get_indent() << "for (;;) {\n";
             return;
@@ -4706,7 +4902,11 @@ public:
             if (!wide && !unroll_text.empty() && kernel_has_lanes()
                     && ASRUtils::extract_value(ASRUtils::expr_value(
                         head.m_end), end_value) && end_value > 0) {
-                int64_t per_lane = (end_value + 31) / 32;
+                // The lanes of a warp, or of a kernel whose every launch
+                // gives an iteration the same number.
+                int64_t lanes = current_fixed_lanes > 0
+                    ? current_fixed_lanes : 32;
+                int64_t per_lane = (end_value + lanes - 1) / lanes;
                 if (per_lane < 16) {
                     unroll_text = "#pragma unroll "
                         + std::to_string(std::max<int64_t>(per_lane, 1));
@@ -4718,7 +4918,9 @@ public:
                 << "++, " << v << " += " << inc << ") {\n";
             return;
         }
-        if (pragma) {
+        if (whole && !dialect.unroll_whole_pragma().empty()) {
+            src << get_indent() << dialect.unroll_whole_pragma() << "\n";
+        } else if (pragma) {
             src << get_indent() << (wide ? dialect.unroll_wide_pragma(kernel_lane_vectors)
                 : dialect.unroll_pragma(deep)) << "\n";
         } else if (unroll_few && !dialect.unroll_few_pragma().empty()) {
@@ -4813,7 +5015,7 @@ public:
         }
         ASR::GpuLaneReduce_t *r = ASR::down_cast<ASR::GpuLaneReduce_t>(
             a->m_value);
-        if (!ASR::is_a<ASR::Var_t>(*r->m_arg)
+        if (r->m_width > 0 || !ASR::is_a<ASR::Var_t>(*r->m_arg)
                 || ASR::down_cast<ASR::Var_t>(r->m_arg)->m_v
                     != ASR::down_cast<ASR::Var_t>(a->m_target)->m_v) {
             return false;
@@ -4844,7 +5046,11 @@ public:
                     run.push_back({var, op});
                 }
             }
-            if (run.size() < 2) {
+            // A kernel whose every launch gives an iteration the lanes of a
+            // block (kernel_fixed_lanes) combines one value this way too,
+            // inline, behind one barrier, rather than in
+            // __lfortran_block_reduce, which waits at two.
+            if (run.size() < (current_fixed_lanes > 32 ? 1u : 2u)) {
                 visit_stmt(body[i]);
                 continue;
             }
@@ -5583,6 +5789,10 @@ public:
                 LCOMPILERS_ASSERT(current_kernel_layout != nullptr
                     && current_kernel_layout->m_lanes != nullptr);
                 if (trailing_barriers.count(stmt)) break;
+                if (current_fixed_lanes > 32) {
+                    dialect.emit_block_barrier(src, get_indent());
+                    break;
+                }
                 dialect.emit_lane_barrier(src, get_indent(),
                     ASRUtils::symbol_name(current_kernel_layout->m_lanes),
                     kernel_has_block_lanes());
@@ -6706,6 +6916,13 @@ public:
                 int op = r->m_op == ASR::reduction_opType::ReduceAdd ? 0
                     : r->m_op == ASR::reduction_opType::ReduceMul ? 1
                     : r->m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
+                if (r->m_width > 0) {
+                    // The lanes of each group of `width` consecutive
+                    // lanes of a warp, all of which run the combination.
+                    src << dialect.lane_group_reduce(expr_str(r->m_arg), op,
+                        r->m_width);
+                    break;
+                }
                 src << dialect.lane_reduce(expr_str(r->m_arg), op,
                     kernel_has_lanes(), kernel_has_block_lanes());
                 break;

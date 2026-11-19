@@ -340,7 +340,9 @@ expr
     | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
     | GpuLaneIndex(ttype type, expr? value)
     | GpuLaneBroadcast(expr arg, ttype type, expr? value)
-    | GpuLaneReduce(expr arg, reduction_op op, ttype type, expr? value)
+    -- `width`: zero combines the lanes of the iteration; a power of two up to
+    -- a SIMD-group combines each group of that many consecutive lanes.
+    | GpuLaneReduce(expr arg, reduction_op op, int width, ttype type, expr? value)
 
 ttype
     = Integer(int kind)

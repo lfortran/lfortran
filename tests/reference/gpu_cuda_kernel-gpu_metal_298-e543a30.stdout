@@ -73,7 +73,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_
             __1__libasr_index_ = (__1__libasr_index_ + 1);
             __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = (i__dc2 + 1);
             __1__libasr_index_ = (__1__libasr_index_ + 1);
-            #pragma unroll 16
+            #pragma unroll
             for (__gpu_elem_i = 1; __gpu_elem_i <= 2; __gpu_elem_i++) {
                 t[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
             }

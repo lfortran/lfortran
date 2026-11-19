@@ -12,6 +12,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <map>
 #include <memory>
@@ -147,6 +148,57 @@ values in its private scalars, except for these statements:
   block that holds none is a statement like any other: it runs on every
   lane, or on the first alone, without its own locals, which are gone
   after it, to hand on to the others.
+
+The lanes run the statements between two barriers each at its own pace, so
+before a single statement or a distributed loop that assigns shared memory
+which the statements every lane ran since the last barrier read, the lanes
+wait for each other: one lane would assign an element another still reads
+(`s = a(1)` and then `a(j) = a(j) - s`). A loop whose next iteration assigns
+what its body read last waits at the end of its body as well.
+
+Where the lanes of an iteration may be the whole block (`lanes_block`), the
+arrays of the iteration -- locals of the kernel or of a block it runs
+outside every loop, of constant extents, of integers, reals or logicals,
+named only by their elements and shape, block_array_bytes_max of them
+together, those of fewer elements than a SIMD-group has lanes only with
+one of as many -- can live in
+the shared memory of the block (`__shared__`) instead of each lane's own:
+then the lanes see the same of them, as of a kernel argument, and the loops
+that fill them are distributed (each element assigned by one lane, at a
+subscript that tells the iterations apart, also in a `do concurrent`, which
+may define a scratch array of its own in each of its iterations), with the
+barrier after them that every later read waits for. Scalars stay each
+lane's own. The kernel is tried with such arrays first, and those that no
+distributed loop assigns are left private (a lane-private copy each lane
+fills itself), as are all of them when it cannot be rewritten so. A kernel
+that keeps arrays in shared memory runs one iteration per block at every
+launch, whatever its number of iterations, on blocks of as many threads as
+the iteration has lanes: the smallest power of two from a SIMD-group to the
+block that is at least the iterations of each distributed loop, known at
+compile time, or the block. The lanes are then a constant of the kernel,
+which is written once.
+
+In such a kernel, a distributed loop of fewer iterations than the block has
+lanes (128 columns of a state, 256 lanes) whose body holds long loops of
+its own (the inner products of a column and its update) runs each of its
+iterations on several lanes (`parts`, plan_parts): they share out those
+inner loops whose iterations are independent but for private scalars they
+accumulate into, and combine what they accumulated through shared memory,
+behind a barrier. A lane counts the iterations it takes of such a loop,
+and of two of them over the same iterations, the second takes the elements
+of an array the first read from registers (hold_elements), as a
+hand-written kernel keeps a column of the state.
+
+A reduction loop right after a distributed loop over the same iterations,
+which reads what that loop assigns only where it assigns it, is joined
+into it (fold_reduction): each lane accumulates the elements it has just
+computed (the norms of the vectors a phase works out) in the same pass,
+and the lanes combine what they hold after it. And in a kernel with arrays
+the block shares, the elements of the arguments the kernel only reads that
+the iteration reads after earlier phases and their barriers (the gates of
+a step, the weights of its last phase, the elements of a column a lane
+keeps in registers) are read at the start of the iteration (EarlyLoads),
+where the loads of the first phase hide them.
 
 A kernel is rewritten only if it has a loop to distribute, and only if all
 of the following holds of every single statement: it does not return (a
@@ -551,10 +603,11 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
                 return header ? Access::Read : Access::Write;
             }
             // A loop whose body assigns `s` before it reads it, as a loop
-            // inside it over `s` does: what `s` held before is not read in
-            // it, and if it runs no iteration, is read only after it.
+            // inside it over `s` does, or reads it only in such loops of its
+            // own: what `s` held before is not read in it, and if it runs no
+            // iteration, is read only after it.
             if (!header && d->n_orelse == 0 && first_access(d->m_body, 0,
-                    d->n_body, s) == Access::Write) {
+                    d->n_body, s) != Access::Read) {
                 continue;
             }
         } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*x)) {
@@ -567,6 +620,24 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
                     || mentions(d->m_head[h].m_increment, s);
             }
             if (index) return header ? Access::Read : Access::Write;
+            // As for a loop above: a body that assigns `s` first.
+            if (!header && first_access(d->m_body, 0, d->n_body, s)
+                    != Access::Read) {
+                continue;
+            }
+        } else if (ASR::is_a<ASR::If_t>(*x)) {
+            // An `if` both of whose branches assign `s` before they read it
+            // (the cosine and sine of a rotation, by the part of a vector);
+            // or that reads it in neither.
+            auto *c = ASR::down_cast<ASR::If_t>(x);
+            if (!mentions(c->m_test, s)) {
+                Access a = first_access(c->m_body, 0, c->n_body, s);
+                Access b = first_access(c->m_orelse, 0, c->n_orelse, s);
+                if (a == Access::Write && b == Access::Write) {
+                    return Access::Write;
+                }
+                if (a != Access::Read && b != Access::Read) continue;
+            }
         }
         if (mentions(*x, s)) return Access::Read;
     }
@@ -701,6 +772,18 @@ struct KernelInfo {
     // needs their values, so a statement that assigns nothing else runs on
     // it alone, and they are not handed to the others.
     std::set<ASR::symbol_t*> first_lane_scalars;
+    // The arrays of the iteration that live in the shared memory of the
+    // block, whose threads are all lanes of the one iteration
+    // (block_array_candidates): every lane sees the same of them.
+    std::set<ASR::symbol_t*> block_arrays;
+    // The lanes of the block, all of which run the iteration, while the
+    // iteration is tried with arrays the block shares (zero otherwise).
+    int block_lanes = 0;
+    // The lanes every launch gives an iteration, once they are known (zero
+    // when a launch decides): above a SIMD-group, the lanes combine their
+    // values (GpuLaneReduce) through shared memory behind a barrier of the
+    // block, which every lane has reached when it has the result.
+    int fixed_lanes = 0;
 
     bool local(ASR::symbol_t *s) const {
         if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
@@ -715,7 +798,10 @@ struct KernelInfo {
     bool shared(ASR::symbol_t *s) const {
         if (s == nullptr || !local(s)) return true;
         ASR::ttype_t *t = ASRUtils::symbol_type(s);
-        if (ASRUtils::is_pointer(t) || workspaces.count(s)) return true;
+        if (ASRUtils::is_pointer(t) || workspaces.count(s)
+                || block_arrays.count(s)) {
+            return true;
+        }
         if (params.count(s)) {
             return ASRUtils::is_array(t)
                 || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t));
@@ -1254,6 +1340,123 @@ public:
     }
 };
 
+// The memory every lane sees the same of (KernelInfo::shared) that the
+// statements walked name, and that they may assign: an assignment's target,
+// what a procedure is handed for a dummy that is not `intent(in)`, what an
+// atomic adds to.
+class SharedAccess : public ASR::BaseWalkVisitor<SharedAccess> {
+public:
+    const KernelInfo &k;
+    std::set<ASR::symbol_t*> reads;
+    std::set<ASR::symbol_t*> writes;
+    std::set<ASR::symbol_t*> blocks;
+    explicit SharedAccess(const KernelInfo &k_) : k(k_) {}
+
+    bool shared_variable(ASR::symbol_t *s) const {
+        return s != nullptr && ASR::is_a<ASR::Variable_t>(*s) && k.shared(s);
+    }
+    void written(ASR::expr_t *e) {
+        ASR::symbol_t *r = root_of(e);
+        if (shared_variable(r)) writes.insert(r);
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (shared_variable(s)) reads.insert(s);
+    }
+    // An element assigned is not read: only its subscripts are.
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        written(x.m_target);
+        ASR::expr_t *e = x.m_target;
+        while (e && !ASR::is_a<ASR::Var_t>(*e)) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                auto *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+                for (size_t i = 0; i < item->n_args; i++) {
+                    if (item->m_args[i].m_left) {
+                        visit_expr(*item->m_args[i].m_left);
+                    }
+                    if (item->m_args[i].m_right) {
+                        visit_expr(*item->m_args[i].m_right);
+                    }
+                    if (item->m_args[i].m_step) {
+                        visit_expr(*item->m_args[i].m_step);
+                    }
+                }
+                e = item->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else {
+                visit_expr(*e);
+                e = nullptr;
+            }
+        }
+        visit_expr(*x.m_value);
+    }
+    void call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
+            callee = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)
+                    ->m_proc);
+        }
+        ASR::Function_t *fn = ASR::is_a<ASR::Function_t>(*callee)
+            ? ASR::down_cast<ASR::Function_t>(callee) : nullptr;
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_value == nullptr) continue;
+            if (fn && i < fn->n_args && ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*dummy)
+                        && ASR::down_cast<ASR::Variable_t>(dummy)->m_intent
+                            == ASR::intentType::In) {
+                    continue;
+                }
+            }
+            written(args[i].m_value);
+        }
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        call_args(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        call_args(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor::visit_FunctionCall(x);
+    }
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        written(x.m_target);
+        BaseWalkVisitor::visit_GpuAtomicFetchAdd(x);
+    }
+    // The shape of an array is not its elements.
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+    // What device code lays out beforehand (device_no_op).
+    void visit_Allocate(const ASR::Allocate_t &) {}
+    void visit_ReAlloc(const ASR::ReAlloc_t &) {}
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &) {}
+    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &) {}
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+bool intersects(const std::set<ASR::symbol_t*> &a,
+        const std::set<ASR::symbol_t*> &b) {
+    for (ASR::symbol_t *s : a) {
+        if (b.count(s)) return true;
+    }
+    return false;
+}
+
 // Whether the statements walked leave the loop they belong to: an unnamed
 // `exit` or `cycle` outside every loop inside them, or a named one whose
 // target is no loop inside them (the loop itself, or a loop around it).
@@ -1627,6 +1830,40 @@ public:
         }
     }
 
+    // Whether a loop the lanes share out runs each of its iterations on
+    // several lanes (plan_parts), which needs all the lanes of the block.
+    bool has_parts() const { return !parted.empty(); }
+
+    // A loop the lanes share out, one iteration per lane in turn
+    // (distribute): its start and step as they were, and its number of
+    // iterations, known at compile time.
+    struct LaneLoop {
+        ASR::expr_t *start;
+        ASR::expr_t *step;
+        int64_t trips;
+    };
+    std::map<ASR::stmt_t*, LaneLoop> lane_loops;
+    // The counted loops that read the elements a lane keeps in registers
+    // (hold): the variable first, then the element into the register.
+    std::set<ASR::stmt_t*> held_loops;
+
+    // The arrays of the iteration that the block shares
+    // (KernelInfo::block_arrays) which a loop the lanes share out assigns
+    // elements of: the lanes assign them together.
+    std::set<ASR::symbol_t*> distributed_block_arrays() {
+        std::set<ASR::symbol_t*> found;
+        for (auto &r : roles) {
+            if (r.second != Role::Distribute) continue;
+            Assignments assigns;
+            assigns.visit_stmt(*r.first);
+            for (ASR::Assignment_t *a : assigns.found) {
+                ASR::symbol_t *root = root_of(a->m_target);
+                if (k.block_arrays.count(root)) found.insert(root);
+            }
+        }
+        return found;
+    }
+
     // Puts back the `do concurrent` loops decide() tried as loops one
     // inside the other, for a kernel that keeps one lane per iteration.
     void restore() {
@@ -1664,8 +1901,13 @@ public:
                 frames.push_back({body, n_body, i, owner});
                 if (collapsible(ASR::down_cast<ASR::DoLoop_t>(body[i]))) {
                     collapse.insert(body[i]);
+                } else {
+                    plan_parts(ASR::down_cast<ASR::DoLoop_t>(body[i]), frames);
                 }
                 frames.pop_back();
+                if (!collapse.count(body[i]) && !parted.count(body[i])) {
+                    fold_reduction(body, n_body, i, owner, frames);
+                }
             }
             roles[body[i]] = r;
             if (r == Role::Distribute || r == Role::Recurse) any = true;
@@ -1677,6 +1919,14 @@ public:
     }
 
     // Rewrites a list as decided.
+    //
+    // The lanes run the statements between two barriers each at its own
+    // pace, so a lane may assign shared memory while another still reads
+    // what was there before: the statements every lane runs read it where
+    // they are, and a statement on the first lane or a distributed loop
+    // after them may assign it. Such a statement or loop waits for the
+    // lanes first. `unsettled` is the shared memory the lanes may still be
+    // reading, named since their last barrier.
     void apply(ASR::stmt_t **&body, size_t &n_body) {
         Vec<ASR::stmt_t*> out;
         out.reserve(al, n_body + 4);
@@ -1691,26 +1941,54 @@ public:
                 continue;
             }
             if (!single.empty()) {
+                SharedAccess access(k);
+                for (ASR::stmt_t *s : single) access.visit_stmt(*s);
+                settle_before(access, single[0]->base.loc, out);
                 emit_single(single, out);
+                unsettled.clear();
                 single.clear();
             }
             if (i == n_body) break;
+            SharedAccess access(k);
+            access.visit_stmt(*body[i]);
             if (r == Role::Distribute) {
+                settle_before(access, body[i]->base.loc, out);
                 auto copy = either.find(body[i]);
                 if (copy != either.end()) {
+                    // The loop shared out ends with a barrier, and the copy
+                    // that shares its sums instead is written as a list of
+                    // its own, which leaves `unsettled` as it ends.
                     emit_either(ASR::down_cast<ASR::DoLoop_t>(body[i]),
                         copy->second, out);
                     continue;
                 }
+                bool reduction = reductions.count(body[i]) > 0
+                    && !folded.count(body[i]);
+                bool deferred = deferred_inner.count(body[i]) > 0;
                 distribute(ASR::down_cast<ASR::DoLoop_t>(body[i]), out);
+                // A loop that only accumulates ends without a barrier, but
+                // the lanes have read what they accumulate once they
+                // combine it, unless the combination is deferred.
+                if (deferred) {
+                    unsettled.insert(access.reads.begin(),
+                        access.reads.end());
+                } else if (!reduction) {
+                    unsettled.clear();
+                }
                 continue;
             }
             auto deferral = deferrals.find(body[i]);
             if (r == Role::Recurse && deferral != deferrals.end()) {
+                settle_before(access, body[i]->base.loc, out);
                 emit_deferred(body[i], deferral->second, out);
+                unsettled.insert(access.reads.begin(), access.reads.end());
                 continue;
             }
-            if (r == Role::Recurse) nested_apply(body[i]);
+            if (r == Role::Recurse) {
+                nested_apply(body[i]);
+            } else {
+                unsettled.insert(access.reads.begin(), access.reads.end());
+            }
             out.push_back(al, body[i]);
         }
         body = out.p;
@@ -2066,6 +2344,155 @@ private:
         }
     }
 
+    // A reduction loop over the iterations of the distributed loop body[i]
+    // that follows it, past assignments of scalars (the starts of its
+    // accumulators, which move in front of it), and reads what body[i]
+    // assigns only where body[i] assigns it in the same iteration, joined
+    // into body[i]: each lane accumulates the elements it has just
+    // computed (the sums of squares of the vectors a phase works out, for
+    // their norms), in one pass over them, with no barrier in between, and
+    // the lanes combine what they hold after the loop, as after a
+    // reduction loop, and wait for each other.
+    void fold_reduction(ASR::stmt_t **&body, size_t &n_body, size_t &i,
+            ASR::stmt_t *owner, std::vector<Frame> &frames) {
+        if (!k.lane_reductions) return;
+        ASR::DoLoop_t *l1 = ASR::down_cast<ASR::DoLoop_t>(body[i]);
+        Effects e1(k);
+        for (size_t q = 0; q < l1->n_body; q++) e1.visit_stmt(*l1->m_body[q]);
+        if (!e1.statuses.empty()) return;
+        std::set<ASR::symbol_t*> changed1 = e1.scalars;
+        ASR::symbol_t *v1 = root_of(l1->m_head.m_v);
+        changed1.insert(v1);
+        std::set<ASR::symbol_t*> arrays1 = assigned_arrays(l1->m_body,
+            l1->n_body);
+        std::vector<size_t> bridges;
+        size_t j = i + 1;
+        for (; j < n_body; j++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*body[j])) break;
+            auto *a = ASR::down_cast<ASR::Assignment_t>(body[j]);
+            ASR::symbol_t *t = root_of(a->m_target);
+            Effects eb(k);
+            eb.visit_stmt(*body[j]);
+            if (!ASR::is_a<ASR::Var_t>(*a->m_target) || !k.private_scalar(t)
+                    || eb.shared_effect || eb.unknown || changed1.count(t)
+                    || mentions(*body[i], t)
+                    || mentions_any(a->m_value, changed1)
+                    || mentions_any(a->m_value, arrays1)) {
+                break;
+            }
+            bridges.push_back(j);
+        }
+        if (j >= n_body || !ASR::is_a<ASR::DoLoop_t>(*body[j])) return;
+        ASR::DoLoop_t *l2 = ASR::down_cast<ASR::DoLoop_t>(body[j]);
+        if (l2->n_orelse > 0 || l2->m_head.m_v == nullptr || has_block(l2)) {
+            return;
+        }
+        ASR::symbol_t *v2 = root_of(l2->m_head.m_v);
+        if (!k.private_scalar(v2) || !same_step(l1->m_head.m_increment,
+                l2->m_head.m_increment)) {
+            return;
+        }
+        ASR::expr_t *s1 = resolve(l1->m_head.m_start, body, i);
+        ASR::expr_t *s2 = resolve(l2->m_head.m_start, body, j);
+        ASR::expr_t *f1 = resolve(l1->m_head.m_end, body, i);
+        ASR::expr_t *f2 = resolve(l2->m_head.m_end, body, j);
+        if (!same_expr(s1, s2) || !same_expr(f1, f2)
+                || mentions_any(s2, changed1) || mentions_any(f2, changed1)
+                || mentions_any(s2, arrays1) || mentions_any(f2, arrays1)) {
+            return;
+        }
+        std::vector<Accumulator> accumulators;
+        std::vector<Induction> counters;
+        frames.push_back({body, n_body, j, owner});
+        bool was_scattered = declined_scattered;
+        bool ok = reducible(l2, frames, accumulators, counters);
+        declined_scattered = was_scattered;
+        frames.pop_back();
+        if (!ok || !counters.empty() || accumulators.empty()
+                || live_variables.count(&l2->base)) {
+            return;
+        }
+        // The joined body, with the second loop's variable the first's.
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.allow_procedure_calls = true;
+        class Rename : public ASR::BaseWalkVisitor<Rename> {
+        public:
+            ASR::symbol_t *from, *to;
+            void visit_Var(const ASR::Var_t &x) {
+                if (ASRUtils::symbol_get_past_external(x.m_v) == from) {
+                    const_cast<ASR::Var_t&>(x).m_v = to;
+                }
+            }
+        } rename;
+        rename.from = v2;
+        rename.to = v1;
+        std::vector<ASR::stmt_t*> copies;
+        for (size_t q = 0; q < l2->n_body; q++) {
+            ASR::stmt_t *copy = dup.duplicate_stmt(l2->m_body[q]);
+            if (copy == nullptr) return;
+            rename.visit_stmt(*copy);
+            copies.push_back(copy);
+        }
+        // It reads what the first assigns where the first assigns it, and
+        // none of the first's scalars; the first names none of its own.
+        Assignments assigns;
+        for (size_t q = 0; q < l1->n_body; q++) assigns.visit_stmt(*l1->m_body[q]);
+        Designators names;
+        for (ASR::stmt_t *c : copies) names.visit_stmt(*c);
+        for (ASR::expr_t *item : names.items) {
+            if (!arrays1.count(root_of(item))) continue;
+            bool same = false;
+            for (ASR::Assignment_t *a : assigns.found) {
+                if (same_expr(a->m_target, item)) same = true;
+            }
+            if (!same) return;
+        }
+        for (ASR::expr_t *w : names.wholes) {
+            ASR::symbol_t *r = root_of(w);
+            if (arrays1.count(r) || (r != v1 && changed1.count(r))) return;
+        }
+        Effects e2(k);
+        for (ASR::stmt_t *c : copies) e2.visit_stmt(*c);
+        for (ASR::symbol_t *x : e2.scalars) {
+            if (x != v1 && mentions(*body[i], x)) return;
+        }
+        for (const Accumulator &a : accumulators) {
+            if (mentions(*body[i], a.variable)) return;
+        }
+        bool copyable = true;
+        block_scope(l1->m_body, l1->n_body, copyable);
+        if (!copyable) return;
+        Vec<ASR::stmt_t*> joined;
+        joined.reserve(al, l1->n_body + copies.size());
+        for (size_t q = 0; q < l1->n_body; q++) joined.push_back(al, l1->m_body[q]);
+        for (ASR::stmt_t *c : copies) joined.push_back(al, c);
+        l1->m_body = joined.p;
+        l1->n_body = joined.n;
+        Vec<ASR::stmt_t*> list;
+        list.reserve(al, n_body);
+        for (size_t q = 0; q < i; q++) list.push_back(al, body[q]);
+        for (size_t q : bridges) {
+            list.push_back(al, body[q]);
+            roles[body[q]] = Role::Replicate;
+        }
+        for (size_t q = i; q < n_body; q++) {
+            if (q == j || std::find(bridges.begin(), bridges.end(), q)
+                    != bridges.end()) {
+                continue;
+            }
+            list.push_back(al, body[q]);
+        }
+        body = list.p;
+        n_body = list.n;
+        i += bridges.size();
+        reductions[&l1->base] = accumulators;
+        folded.insert(&l1->base);
+    }
+
+    // The distributed loops a reduction loop was joined into
+    // (fold_reduction).
+    std::set<ASR::stmt_t*> folded;
+
     // Joins the loops of a distributed loop's body that run over the same
     // independent iterations: they run on one lane, one after another, and
     // only the order of independent iterations changes. `frames` ends with
@@ -2372,9 +2799,17 @@ private:
             distribute_collapsed(d, out);
             return;
         }
+        auto parts = parted.find(&d->base);
+        if (parts != parted.end()) {
+            distribute_parts(d, parts->second, out);
+            return;
+        }
         auto reduction = reductions.find(&d->base);
         if (reduction != reductions.end()) {
             distribute_reduction(d, reduction->second, out);
+            if (folded.count(&d->base) && k.fixed_lanes <= k.lanes_count) {
+                finish_distributed(d, out);
+            }
             return;
         }
         const Location &loc = d->base.base.loc;
@@ -2383,6 +2818,10 @@ private:
         ASR::expr_t *step = d->m_head.m_increment;
         ASR::expr_t *lane = b.i2i_t(lane_index(loc), type);
         ASR::expr_t *lanes = b.i2i_t(lanes_var(loc), type);
+        int64_t trips = 0;
+        if (constant_bounds(d, trips)) {
+            lane_loops[&d->base] = {d->m_head.m_start, step, trips};
+        }
         d->m_head.m_start = b.Add(d->m_head.m_start, b.Mul(lane, step));
         d->m_head.m_increment = b.Mul(step, lanes);
         out.push_back(al, &d->base);
@@ -2417,22 +2856,72 @@ private:
         }
     }
 
+    // The lanes wait for each other before `access`, when it may assign
+    // shared memory they may still be reading.
+    void settle_before(const SharedAccess &access, const Location &loc,
+            Vec<ASR::stmt_t*> &out) {
+        if (!intersects(access.writes, unsettled)) return;
+        out.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
+            loc)));
+        unsettled.clear();
+    }
+
+    // Shared memory the lanes may still be reading (apply).
+    std::set<ASR::symbol_t*> unsettled;
+
+    // What a loop's header reads, and, in its body, a barrier at the end
+    // when the next iteration may assign what the lanes still read there.
+    // What may be unsettled after the loop is what was before it (it may
+    // run no iteration) and what is at the end of its body.
+    void apply_loop(ASR::stmt_t *loop, ASR::stmt_t **&body, size_t &n_body,
+            const std::vector<ASR::expr_t*> &header) {
+        SharedAccess head(k);
+        for (ASR::expr_t *e : header) {
+            if (e) head.visit_expr(*e);
+        }
+        unsettled.insert(head.reads.begin(), head.reads.end());
+        std::set<ASR::symbol_t*> before = unsettled;
+        apply(body, n_body);
+        unsettled.insert(head.reads.begin(), head.reads.end());
+        SharedAccess inside(k);
+        inside.visit_stmt(*loop);
+        if (intersects(inside.writes, unsettled)) {
+            Vec<ASR::stmt_t*> list;
+            list.reserve(al, n_body + 1);
+            for (size_t i = 0; i < n_body; i++) list.push_back(al, body[i]);
+            list.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
+                loop->base.loc)));
+            body = list.p;
+            n_body = list.n;
+            unsettled.clear();
+        }
+        unsettled.insert(before.begin(), before.end());
+    }
+
     void nested_apply(ASR::stmt_t *s) {
         switch (s->type) {
             case ASR::stmtType::DoLoop: {
                 auto *x = ASR::down_cast<ASR::DoLoop_t>(s);
-                apply(x->m_body, x->n_body);
+                apply_loop(s, x->m_body, x->n_body, {x->m_head.m_start,
+                    x->m_head.m_end, x->m_head.m_increment});
                 break;
             }
             case ASR::stmtType::WhileLoop: {
                 auto *x = ASR::down_cast<ASR::WhileLoop_t>(s);
-                apply(x->m_body, x->n_body);
+                apply_loop(s, x->m_body, x->n_body, {x->m_test});
                 break;
             }
             case ASR::stmtType::If: {
                 auto *x = ASR::down_cast<ASR::If_t>(s);
+                SharedAccess test(k);
+                test.visit_expr(*x->m_test);
+                unsettled.insert(test.reads.begin(), test.reads.end());
+                std::set<ASR::symbol_t*> before = unsettled;
                 apply(x->m_body, x->n_body);
+                std::set<ASR::symbol_t*> taken = unsettled;
+                unsettled = before;
                 apply(x->m_orelse, x->n_orelse);
+                unsettled.insert(taken.begin(), taken.end());
                 break;
             }
             case ASR::stmtType::BlockCall: {
@@ -2564,6 +3053,875 @@ private:
         finish_distributed(l, out);
     }
 
+    // A distributed loop of fewer iterations than the lanes of the block
+    // (KernelInfo::block_lanes), each of which runs on `parts` of them, and
+    // the loops of its body that those lanes share out, with the private
+    // scalars each accumulates into (plan_parts).
+    struct Parts {
+        int64_t trips;
+        int64_t parts;
+        std::map<ASR::stmt_t*, std::vector<Accumulator>> loops;
+        // The loops of the body that hold such loops, which every lane of
+        // the iteration goes through (over the heads of a query).
+        std::set<ASR::stmt_t*> containers;
+        // Whether the lanes of an iteration are consecutive lanes of a
+        // warp, which combine what they accumulate with shuffles: `parts`
+        // is a power of two up to a SIMD-group.
+        bool groups;
+        // The variable of the loop and the scalars its body assigns, which
+        // may differ between the lanes of the block.
+        std::set<ASR::symbol_t*> varying;
+    };
+    std::map<ASR::stmt_t*, Parts> parted;
+    // The fewest lanes per iteration that combine with shuffles rather than
+    // through shared memory (Parts::groups): two lanes per column of a
+    // state read along it at half the width of a warp, which costs more
+    // than the barriers it saves.
+    static constexpr int64_t parts_groups_min = 8;
+
+    // The number of iterations of `d`, when its bounds and step are
+    // constants.
+    bool constant_bounds(ASR::DoLoop_t *d, int64_t &trips) {
+        int64_t start = 0, end = 0, step = 1;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(d->m_head.m_start),
+                    start)
+                || !ASRUtils::extract_value(ASRUtils::expr_value(
+                    d->m_head.m_end), end)
+                || (d->m_head.m_increment && !ASRUtils::extract_value(
+                    ASRUtils::expr_value(d->m_head.m_increment), step))
+                || step <= 0) {
+            return false;
+        }
+        trips = end >= start ? (end - start)/step + 1 : 0;
+        return true;
+    }
+
+    // An iteration of the distributed loop `l` -- a column of a matrix, the
+    // state of a head -- whose body holds long loops of their own runs on
+    // several lanes when the loop has fewer iterations than the block has
+    // lanes (128 columns, 256 lanes): `parts` lanes take each iteration, and
+    // share out the loops of its body whose iterations are independent but
+    // for private scalars they accumulate into (sums over a column, and the
+    // update of its elements), each lane taking every `parts`-th iteration
+    // from its own, then combining what they accumulated through shared
+    // memory. The other statements of the body run on each of those lanes,
+    // with the same values, as on the lanes of an iteration: an element of
+    // shared memory they assign is the iteration's, which its lanes all
+    // assign the same value. The lanes of the block take one iteration each
+    // (`trips` times `parts` is the block), and wait for each other inside
+    // the body. Only for a kernel that runs one iteration per block (one
+    // with arrays the block shares), whose lanes are known. The statements
+    // several lanes run alike (all but the loops shared out; those too
+    // when lanes past the last group repeat the last iteration) assign
+    // memory the body does not read: two lanes would otherwise each add to
+    // `acc(i) = acc(i) + s`, or one read what another assigned already.
+    void plan_parts(ASR::DoLoop_t *l, std::vector<Frame> &frames) {
+        if (k.block_lanes <= 0 || l->n_orelse > 0
+                || l->m_head.m_v == nullptr) {
+            return;
+        }
+        int64_t trips = 0;
+        if (!constant_bounds(l, trips) || trips < 1
+                || 2*trips > k.block_lanes) {
+            return;
+        }
+        int64_t parts = std::min<int64_t>(k.block_lanes / trips,
+            k.lanes_count);
+        Effects e(k);
+        for (size_t i = 0; i < l->n_body; i++) e.visit_stmt(*l->m_body[i]);
+        if (e.unknown || e.returns || !e.statuses.empty()) return;
+        Parts plan{trips, parts, {}, {},
+            (parts & (parts - 1)) == 0 && parts >= parts_groups_min,
+            e.scalars};
+        plan.varying.insert(root_of(l->m_head.m_v));
+        if (!plan_list(l->m_body, l->n_body, &l->base, frames, plan)
+                || plan.loops.empty()) {
+            return;
+        }
+        SharedAccess alike(k), split(k), all(k);
+        parts_access(l->m_body, l->n_body, plan, alike, split);
+        for (size_t i = 0; i < l->n_body; i++) all.visit_stmt(*l->m_body[i]);
+        if (intersects(alike.writes, all.reads)) return;
+        if (plan.groups && plan.trips*plan.parts < k.block_lanes
+                && intersects(split.writes, all.reads)) {
+            return;
+        }
+        parted[&l->base] = plan;
+    }
+
+    // What the statements of a list of a body planned by plan_parts access:
+    // the loops shared out in `split`, the others, which several lanes run
+    // alike, in `alike`.
+    void parts_access(ASR::stmt_t **body, size_t n_body, const Parts &plan,
+            SharedAccess &alike, SharedAccess &split) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            if (plan.loops.count(s)) {
+                split.visit_stmt(*s);
+            } else if (plan.containers.count(s)) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(s);
+                parts_access(c->m_body, c->n_body, plan, alike, split);
+            } else {
+                alike.visit_stmt(*s);
+            }
+        }
+    }
+
+    // The loops of a list of the body of a loop planned by plan_parts that
+    // its lanes share out, and the loops that hold such loops, which every
+    // lane goes through: false when the list holds other statements than
+    // assignments and loops.
+    bool plan_list(ASR::stmt_t **body, size_t n_body, ASR::stmt_t *owner,
+            std::vector<Frame> &frames, Parts &plan) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*s)) continue;
+            if (!ASR::is_a<ASR::DoLoop_t>(*s)) return false;
+            auto *d = ASR::down_cast<ASR::DoLoop_t>(s);
+            frames.push_back({body, n_body, i, owner});
+            std::vector<Accumulator> accumulators;
+            bool ok = true;
+            if (splittable(d, plan.parts, frames, accumulators)) {
+                plan.loops[s] = accumulators;
+            } else if (d->n_orelse == 0 && d->m_head.m_v
+                    && k.private_scalar(root_of(d->m_head.m_v))
+                    && uniform_bounds(d, plan)) {
+                size_t before = plan.loops.size();
+                ok = plan_list(d->m_body, d->n_body, s, frames, plan);
+                if (plan.loops.size() > before) plan.containers.insert(s);
+            }
+            frames.pop_back();
+            if (!ok) return false;
+        }
+        return true;
+    }
+
+    // Whether every lane of the block runs the loop `d` of a body planned by
+    // plan_parts as many times: its bounds name nothing that differs between
+    // them. Its barriers and the shuffles of the loops it holds need them
+    // all; the loop otherwise runs whole on each lane.
+    bool uniform_bounds(ASR::DoLoop_t *d, const Parts &plan) {
+        for (ASR::expr_t *e : {d->m_head.m_start, d->m_head.m_end,
+                d->m_head.m_increment}) {
+            if (e && mentions_any(e, plan.varying)) return false;
+        }
+        return true;
+    }
+
+    // Whether the lanes of an iteration share out the loop `d` of its body,
+    // `parts` lanes each taking every `parts`-th iteration (plan_parts): a
+    // loop of at least two iterations per lane, of assignments only, to
+    // private scalars it accumulates into (`s = s op e`, as a reduction
+    // loop), to private scalars of its own in every iteration that are dead
+    // after it, and to elements of shared memory at one subscript list,
+    // which tells its iterations apart and at which alone it reads them.
+    bool splittable(ASR::DoLoop_t *d, int64_t parts,
+            std::vector<Frame> &frames,
+            std::vector<Accumulator> &accumulators) {
+        int64_t trips = 0;
+        if (d->n_orelse > 0 || d->m_head.m_v == nullptr
+                || !constant_bounds(d, trips) || trips < 2*parts) {
+            return false;
+        }
+        ASR::symbol_t *v = root_of(d->m_head.m_v);
+        if (!k.private_scalar(v) || !dead_after(frames, v)) return false;
+        Effects e(k);
+        for (size_t i = 0; i < d->n_body; i++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*d->m_body[i])) return false;
+            e.visit_stmt(*d->m_body[i]);
+        }
+        if (e.unknown || e.private_array || e.associates || e.returns
+                || !e.statuses.empty()) {
+            return false;
+        }
+        class Impure : public ASR::BaseWalkVisitor<Impure> {
+        public:
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                if (!pure_callee(x.m_name)) found = true;
+                BaseWalkVisitor::visit_FunctionCall(x);
+            }
+            void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &) {
+                found = true;
+            }
+        } impure;
+        for (size_t i = 0; i < d->n_body; i++) impure.visit_stmt(*d->m_body[i]);
+        if (impure.found) return false;
+        std::set<ASR::symbol_t*> changed = e.scalars;
+        changed.insert(v);
+        std::vector<ASR::expr_t*> written;
+        std::map<ASR::symbol_t*, ASR::reduction_opType> ops;
+        for (size_t i = 0; i < d->n_body; i++) {
+            auto *a = ASR::down_cast<ASR::Assignment_t>(d->m_body[i]);
+            ASR::symbol_t *r = root_of(a->m_target);
+            if (ASR::is_a<ASR::Var_t>(*a->m_target) && k.private_scalar(r)) {
+                ASR::reduction_opType op;
+                if (accumulation(r, a->m_value, op)) {
+                    auto known = ops.find(r);
+                    if (known != ops.end() && known->second != op) {
+                        return false;
+                    }
+                    ops[r] = op;
+                }
+                continue;
+            }
+            if (!ASR::is_a<ASR::ArrayItem_t>(*a->m_target) || !k.shared(r)) {
+                return false;
+            }
+            auto *item = ASR::down_cast<ASR::ArrayItem_t>(a->m_target);
+            bool tells_apart = false;
+            for (size_t j = 0; j < item->n_args; j++) {
+                if (item->m_args[j].m_left || item->m_args[j].m_step) {
+                    return false;
+                }
+                tells_apart |= injective(item->m_args[j].m_right, v, changed);
+            }
+            if (!tells_apart) return false;
+            for (ASR::expr_t *w : written) {
+                if (overlapping(path_of(w), path_of(a->m_target))
+                        && !same_expr(w, a->m_target)) {
+                    return false;
+                }
+            }
+            written.push_back(a->m_target);
+        }
+        Designators names;
+        for (size_t i = 0; i < d->n_body; i++) names.visit_stmt(*d->m_body[i]);
+        for (ASR::expr_t *w : written) {
+            for (ASR::expr_t *item : names.items) {
+                if (overlapping(path_of(item), path_of(w))
+                        && !same_expr(item, w)) {
+                    return false;
+                }
+            }
+            for (ASR::expr_t *whole : names.wholes) {
+                if (overlapping(path_of(whole), path_of(w))) return false;
+            }
+        }
+        for (ASR::symbol_t *s : e.scalars) {
+            if (s == v) continue;
+            for (ASR::expr_t *bound : {d->m_head.m_start, d->m_head.m_end,
+                    d->m_head.m_increment}) {
+                if (mentions(bound, s)) return false;
+            }
+            auto op = ops.find(s);
+            if (op == ops.end()) {
+                // Its own in every iteration.
+                if (first_access(d->m_body, 0, d->n_body, s) != Access::Write
+                        || !dead_after(frames, s)) {
+                    return false;
+                }
+                continue;
+            }
+            // An accumulator: named only by its updates.
+            for (size_t i = 0; i < d->n_body; i++) {
+                auto *a = ASR::down_cast<ASR::Assignment_t>(d->m_body[i]);
+                bool update = ASR::is_a<ASR::Var_t>(*a->m_target)
+                    && root_of(a->m_target) == s;
+                ASR::reduction_opType op2;
+                if (update ? !accumulation(s, a->m_value, op2)
+                        : mentions(*d->m_body[i], s)) {
+                    return false;
+                }
+            }
+            ASR::ttype_t *t = ASRUtils::symbol_type(s);
+            int kind = ASRUtils::extract_kind_from_ttype_t(t);
+            if (!(ASRUtils::is_integer(*t) || ASRUtils::is_real(*t))
+                    || (kind != 4 && kind != 8)) {
+                return false;
+            }
+            accumulators.push_back({s, op->second});
+        }
+        return true;
+    }
+
+    // Each lane takes the iteration `mod(lane, trips)` of a loop planned by
+    // plan_parts, as the `lane / trips`-th of its lanes: the loops of its
+    // body that they share out start at that part and step by `parts`
+    // iterations, and the lanes combine what they accumulated through an
+    // array of the block's shared memory per accumulator, one element per
+    // lane, after a barrier; every lane folds the parts of its iteration in
+    // the same order. Before a shared-out loop that assigns shared memory
+    // the body read since the last barrier, and after one that assigns
+    // shared memory, the lanes wait for each other.
+    void distribute_parts(ASR::DoLoop_t *d, const Parts &plan,
+            Vec<ASR::stmt_t*> &out) {
+        const Location &loc = d->base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *type = ASRUtils::expr_type(d->m_head.m_v);
+        ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t *step = d->m_head.m_increment ? d->m_head.m_increment
+            : b.i_t(1, type);
+        ASR::expr_t *slot = b.Variable(k.fn->m_symtab,
+            k.fn->m_symtab->get_unique_name("__gpu_lane_slot"), int4,
+            ASR::intentType::Local);
+        ASR::expr_t *part = b.Variable(k.fn->m_symtab,
+            k.fn->m_symtab->get_unique_name("__gpu_lane_part"), int4,
+            ASR::intentType::Local);
+        ASR::expr_t *trips = b.i32(static_cast<int32_t>(plan.trips));
+        if (plan.groups) {
+            // Lane `parts*slot + part`; the lanes past the last group take
+            // the last iteration again, as the lanes of a warp all have to
+            // run its shuffles.
+            ASR::expr_t *parts = b.i32(static_cast<int32_t>(plan.parts));
+            out.push_back(al, b.Assignment(slot, b.Min(b.Div(lane_index(loc),
+                parts), b.i32(static_cast<int32_t>(plan.trips - 1)))));
+            out.push_back(al, b.Assignment(part, b.Sub(lane_index(loc),
+                b.Mul(b.Div(lane_index(loc), parts), parts))));
+        } else {
+            out.push_back(al, b.Assignment(slot, b.Sub(lane_index(loc),
+                b.Mul(b.Div(lane_index(loc), trips), trips))));
+            out.push_back(al, b.Assignment(part, b.Div(lane_index(loc),
+                trips)));
+        }
+        out.push_back(al, b.Assignment(d->m_head.m_v, b.Add(d->m_head.m_start,
+            b.Mul(b.i2i_t(slot, type), step))));
+        share_parts(d->m_body, d->n_body, plan, part);
+        std::set<ASR::symbol_t*> read;
+        parts_list(d->m_body, d->n_body, plan, slot, part, read, false, out);
+        finish_distributed(d, out);
+    }
+
+    // The statements of a list of the body of a loop planned by plan_parts
+    // (distribute_parts), written to `out`: the loops the lanes share out
+    // with the combination of what they accumulate after them (behind
+    // another barrier inside a loop of the body, which writes the shared
+    // memory of the combination again), and the loops that hold them with
+    // their bodies written so. Where the lanes of the block are not a whole
+    // number of parts of each iteration, the lanes past the last part
+    // (`part` >= `parts`) skip the loops: they start their accumulators at
+    // the identity, and take the combination as the others.
+    void parts_list(ASR::stmt_t **body, size_t n_body, const Parts &plan,
+            ASR::expr_t *slot, ASR::expr_t *part,
+            std::set<ASR::symbol_t*> &read, bool nested,
+            Vec<ASR::stmt_t*> &out) {
+        bool idle = !plan.groups && plan.trips*plan.parts < k.block_lanes;
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            const Location &loc = s->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            SharedAccess access(k);
+            access.visit_stmt(*s);
+            if (plan.containers.count(s)) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(s);
+                Vec<ASR::stmt_t*> inner;
+                inner.reserve(al, c->n_body + 8);
+                std::set<ASR::symbol_t*> inner_read = read;
+                parts_list(c->m_body, c->n_body, plan, slot, part,
+                    inner_read, true, inner);
+                c->m_body = inner.p;
+                c->n_body = inner.n;
+                read.insert(inner_read.begin(), inner_read.end());
+                read.insert(access.reads.begin(), access.reads.end());
+                out.push_back(al, s);
+                continue;
+            }
+            auto split = plan.loops.find(s);
+            if (split == plan.loops.end()) {
+                read.insert(access.reads.begin(), access.reads.end());
+                out.push_back(al, s);
+                continue;
+            }
+            if (intersects(access.writes, read)) {
+                out.push_back(al, ASRUtils::STMT(
+                    ASR::make_GpuLaneBarrier_t(al, loc)));
+                read.clear();
+            }
+            const std::vector<Accumulator> &accumulators = split->second;
+            std::vector<ASR::stmt_t*> starts;
+            for (const Accumulator &a : accumulators) {
+                starts.push_back(b.Assignment(b.Var(a.variable), identity(a.op,
+                    ASRUtils::symbol_type(a.variable), loc)));
+            }
+            if (!starts.empty()) {
+                out.push_back(al, b.If(b.NotEq(part, b.i32(0)), starts, {}));
+            }
+            if (idle) {
+                out.push_back(al, b.If(b.Lt(part,
+                    b.i32(static_cast<int32_t>(plan.parts))), {s}, {}));
+            } else {
+                out.push_back(al, s);
+            }
+            if (accumulators.empty()) {
+                if (!access.writes.empty()) {
+                    out.push_back(al, ASRUtils::STMT(
+                        ASR::make_GpuLaneBarrier_t(al, loc)));
+                    read.clear();
+                }
+                continue;
+            }
+            if (plan.groups) {
+                for (const Accumulator &a : accumulators) {
+                    ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
+                    out.push_back(al, b.Assignment(b.Var(a.variable),
+                        ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
+                            b.Var(a.variable), a.op, plan.parts,
+                            ASRUtils::duplicate_type(al, t), nullptr))));
+                }
+                if (!access.writes.empty()) {
+                    out.push_back(al, ASRUtils::STMT(
+                        ASR::make_GpuLaneBarrier_t(al, loc)));
+                    read.clear();
+                }
+                continue;
+            }
+            std::vector<ASR::expr_t*> scratch;
+            for (const Accumulator &a : accumulators) {
+                ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = b.i32(1);
+                dim.m_length = b.i32(static_cast<int32_t>(k.block_lanes));
+                dims.push_back(al, dim);
+                ASR::ttype_t *array = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, t), dims.p, dims.n,
+                    ASR::array_physical_typeType::FixedSizeArray,
+                    ASR::memory_spaceType::Shared));
+                ASR::expr_t *x = b.Variable(k.fn->m_symtab,
+                    k.fn->m_symtab->get_unique_name("__gpu_lane_parts"),
+                    array, ASR::intentType::Local);
+                scratch.push_back(x);
+                out.push_back(al, b.Assignment(b.ArrayItem_01(x,
+                    {b.Add(lane_index(loc), b.i32(1))}), b.Var(a.variable)));
+            }
+            out.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
+                loc)));
+            read.clear();
+            for (size_t j = 0; j < accumulators.size(); j++) {
+                const Accumulator &a = accumulators[j];
+                ASR::expr_t *total = nullptr;
+                for (int64_t q = 0; q < plan.parts; q++) {
+                    ASR::expr_t *x = b.ArrayItem_01(scratch[j], {b.Add(slot,
+                        b.i32(static_cast<int32_t>(q*plan.trips + 1)))});
+                    total = total == nullptr ? x : combine(a.op, total, x, b);
+                }
+                out.push_back(al, b.Assignment(b.Var(a.variable), total));
+            }
+            if (nested) {
+                out.push_back(al, ASRUtils::STMT(
+                    ASR::make_GpuLaneBarrier_t(al, loc)));
+            }
+        }
+    }
+
+    ASR::expr_t* copy_expr(ASR::expr_t *e) {
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.allow_procedure_calls = true;
+        return dup.duplicate_expr(e);
+    }
+
+    // The loops of the body of `d` that its lanes share out (plan_parts),
+    // each lane starting at its `part`. A loop whose iterations the lanes
+    // share evenly counts the iterations of a lane, from one, and works out
+    // its variable from that count first, each lane taking the `part`-th
+    // contiguous run of them: each lane then runs the same number, known
+    // at compile time, which the device compiler unrolls whole. Of two such loops over the same iterations, the second of
+    // which assigns the elements of an array that the first reads (the
+    // state of a column: its inner product, then its update), the second
+    // takes what the first read from a private array, indexed by the count,
+    // which the unrolled loops keep in registers, instead of reading it
+    // again: the first stores each element it reads there, and the second
+    // its new value, before it assigns the element.
+    struct Counted {
+        ASR::DoLoop_t *loop;
+        ASR::expr_t *count;
+        int64_t trips;
+    };
+
+    // Whether a lane of the block may take no part of an iteration (lanes
+    // past the last part, which skip the shared-out loops), while
+    // share_parts runs: their elements are not read outside those loops.
+    bool idle_parts = false;
+
+    std::vector<Counted> share_parts(ASR::stmt_t **&d_body, size_t &d_n,
+            const Parts &plan, ASR::expr_t *part) {
+        idle_parts = !plan.groups
+            && plan.trips*plan.parts < k.block_lanes;
+        std::vector<Counted> counted;
+        std::vector<std::pair<size_t, ASR::stmt_t*>> before;
+        // One count for the loops of a kind of variable: loops that count
+        // the same iterations then work out their variable the same way.
+        std::map<int, ASR::expr_t*> counts;
+        for (size_t i = 0; i < d_n; i++) {
+            if (plan.containers.count(d_body[i])) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(d_body[i]);
+                std::vector<Counted> inner = share_parts(c->m_body, c->n_body,
+                    plan, part);
+                for (const Counted &x : inner) {
+                    if (ASR::stmt_t *copy = hold_invariant(c, x)) {
+                        before.push_back({i, copy});
+                    }
+                }
+                continue;
+            }
+            if (!plan.loops.count(d_body[i])) continue;
+            auto *l = ASR::down_cast<ASR::DoLoop_t>(d_body[i]);
+            const Location &loc = l->base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *lt = ASRUtils::expr_type(l->m_head.m_v);
+            ASR::expr_t *lstep = l->m_head.m_increment
+                ? l->m_head.m_increment : b.i_t(1, lt);
+            ASR::expr_t *start = b.Add(l->m_head.m_start,
+                b.Mul(b.i2i_t(part, lt), lstep));
+            ASR::expr_t *stride = b.Mul(lstep, b.i_t(plan.parts, lt));
+            int64_t trips = 0;
+            constant_bounds(l, trips);
+            if (trips % plan.parts != 0) {
+                l->m_head.m_start = start;
+                l->m_head.m_increment = stride;
+                continue;
+            }
+            int kind = ASRUtils::extract_kind_from_ttype_t(lt);
+            if (!counts.count(kind)) {
+                counts[kind] = b.Variable(k.fn->m_symtab,
+                    k.fn->m_symtab->get_unique_name("__gpu_lane_count"),
+                    ASRUtils::duplicate_type(al, lt), ASR::intentType::Local);
+            }
+            ASR::expr_t *count = counts[kind];
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, l->n_body + 1);
+            // A lane takes a contiguous part of the iterations: its
+            // elements of a column are next to each other, as the lanes
+            // of a hand-written kernel take halves of it (3% faster on an
+            // H200 than every other element). The lanes of a group, which
+            // are consecutive lanes of a warp (Parts::groups), take every
+            // `parts`-th iteration instead, so that a warp reads
+            // consecutive elements together.
+            ASR::expr_t *first = plan.groups
+                ? b.Add(copy_expr(l->m_head.m_start),
+                    b.Mul(b.i2i_t(part, lt), copy_expr(lstep)))
+                : b.Add(copy_expr(l->m_head.m_start),
+                    b.Mul(b.i2i_t(part, lt), b.Mul(copy_expr(lstep),
+                        b.i_t(trips / plan.parts, lt))));
+            ASR::expr_t *by = plan.groups
+                ? b.Mul(copy_expr(lstep), b.i_t(plan.parts, lt))
+                : copy_expr(lstep);
+            body.push_back(al, b.Assignment(l->m_head.m_v, b.Add(first,
+                b.Mul(b.Sub(count, b.i_t(1, lt)), by))));
+            for (size_t j = 0; j < l->n_body; j++) {
+                body.push_back(al, l->m_body[j]);
+            }
+            counted.push_back({l, count, trips / plan.parts});
+            l->m_head.m_v = count;
+            l->m_head.m_start = b.i_t(1, lt);
+            l->m_head.m_end = b.i_t(trips / plan.parts, lt);
+            l->m_head.m_increment = b.i_t(1, lt);
+            l->m_body = body.p;
+            l->n_body = body.n;
+        }
+        for (size_t a = 0; a + 1 < counted.size(); a++) {
+            for (size_t c = a + 1; c < counted.size(); c++) {
+                hold_elements(d_body, d_n, counted[a].loop, counted[c].loop,
+                    counted[a].count, counted[c].count, counted[a].trips);
+            }
+        }
+        if (!before.empty()) {
+            Vec<ASR::stmt_t*> list;
+            list.reserve(al, d_n + before.size());
+            size_t next = 0;
+            for (size_t i = 0; i < d_n; i++) {
+                while (next < before.size() && before[next].first == i) {
+                    list.push_back(al, before[next++].second);
+                }
+                list.push_back(al, d_body[i]);
+            }
+            d_body = list.p;
+            d_n = list.n;
+        }
+        return counted;
+    }
+
+    // The elements that the counted loop `x` (share_parts), which runs in
+    // every iteration of the loop `c` of the body around it (over the heads
+    // of a query), reads the same of in each of them -- a subscript list
+    // that names neither the variable of `c` nor what `c` assigns, of an
+    // array `c` does not assign -- read once ahead of `c` into a private
+    // array, indexed by the count, which the unrolled loops keep in
+    // registers: the key of a position, for the scores of all the heads.
+    // Returns the loop that reads them, or nullptr.
+    ASR::stmt_t* hold_invariant(ASR::DoLoop_t *c, const Counted &x) {
+        ASR::DoLoop_t *l = x.loop;
+        if (idle_parts || l->n_body < 2) return nullptr;
+        Effects e(k);
+        e.visit_stmt(c->base);
+        std::set<ASR::symbol_t*> changed = e.scalars;
+        changed.insert(root_of(c->m_head.m_v));
+        auto *v = ASR::down_cast<ASR::Assignment_t>(l->m_body[0]);
+        ASR::symbol_t *j = root_of(v->m_target);
+        // The count and the variable of `x` itself are worked out the same
+        // way ahead of `c`.
+        changed.erase(root_of(x.count));
+        changed.erase(j);
+        if (mentions_any(v->m_value, changed)) return nullptr;
+        std::set<ASR::symbol_t*> assigned = assigned_arrays(c->m_body,
+            c->n_body);
+        Designators names;
+        for (size_t i = 1; i < l->n_body; i++) names.visit_stmt(*l->m_body[i]);
+        for (ASR::expr_t *item : names.items) {
+            ASR::symbol_t *array = root_of(item);
+            if (array == nullptr || assigned.count(array)
+                    || !ASR::is_a<ASR::Var_t>(*ASR::down_cast<ASR::ArrayItem_t>(
+                        item)->m_v)) {
+                continue;
+            }
+            ASR::expr_t *element = nullptr;
+            bool written = false;
+            if (!element_of(l, array, element, written) || written
+                    || element != item) {
+                continue;
+            }
+            auto *a = ASR::down_cast<ASR::ArrayItem_t>(element);
+            bool invariant = true;
+            for (size_t i = 0; i < a->n_args; i++) {
+                for (ASR::symbol_t *s : changed) {
+                    if (s != j && mentions(a->m_args[i].m_right, s)) {
+                        invariant = false;
+                    }
+                }
+            }
+            ASR::ttype_t *t = ASRUtils::expr_type(element);
+            if (!invariant || !(ASRUtils::is_real(*t)
+                    || ASRUtils::is_integer(*t))
+                    || x.trips*ASRUtils::extract_kind_from_ttype_t(t)
+                        > held_bytes_max) {
+                continue;
+            }
+            const Location &loc = element->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = b.i32(1);
+            dim.m_length = b.i32(static_cast<int32_t>(x.trips));
+            dims.push_back(al, dim);
+            ASR::expr_t *held = b.Variable(k.fn->m_symtab,
+                k.fn->m_symtab->get_unique_name("__gpu_lane_held"),
+                ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, t), dims.p, dims.n,
+                    ASR::array_physical_typeType::FixedSizeArray,
+                    ASR::memory_spaceType::Thread)), ASR::intentType::Local);
+            ASRUtils::ExprStmtDuplicator dup(al);
+            dup.allow_procedure_calls = true;
+            ASR::expr_t *source = dup.duplicate_expr(element);
+            class Replace : public ASR::BaseExprReplacer<Replace> {
+            public:
+                ASRUtils::ASRBuilder &b;
+                ASR::expr_t *element, *held, *count;
+                Replace(ASRUtils::ASRBuilder &b_, ASR::expr_t *e_,
+                    ASR::expr_t *h_, ASR::expr_t *c_)
+                    : b(b_), element(e_), held(h_), count(c_) {}
+                void replace_ArrayItem(ASR::ArrayItem_t *y) {
+                    if (same_expr(&y->base, element)) {
+                        *current_expr = b.ArrayItem_01(held, {count});
+                        return;
+                    }
+                    BaseExprReplacer::replace_ArrayItem(y);
+                }
+            } r(b, element, held, x.count);
+            for (size_t i = 1; i < l->n_body; i++) {
+                auto *s = ASR::down_cast<ASR::Assignment_t>(l->m_body[i]);
+                r.current_expr = &s->m_value;
+                r.replace_expr(s->m_value);
+            }
+            ASR::do_loop_head_t head = l->m_head;
+            head.m_start = dup.duplicate_expr(head.m_start);
+            head.m_end = dup.duplicate_expr(head.m_end);
+            head.m_increment = dup.duplicate_expr(head.m_increment);
+            Vec<ASR::stmt_t*> reads;
+            reads.reserve(al, 2);
+            reads.push_back(al, dup.duplicate_stmt(l->m_body[0]));
+            reads.push_back(al, b.Assignment(b.ArrayItem_01(held, {x.count}),
+                source));
+            ASR::stmt_t *copy = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
+                loc, nullptr, head, reads.p, reads.n, nullptr, 0));
+            held_loops.insert(copy);
+            return copy;
+        }
+        return nullptr;
+    }
+
+    // The elements an array is read at in the body of a counted loop of
+    // share_parts (its first statement works out the variable), when they
+    // are all the same designator, and whether it assigns it there.
+    bool element_of(ASR::DoLoop_t *l, ASR::symbol_t *array,
+            ASR::expr_t *&element, bool &assigned) {
+        element = nullptr;
+        assigned = false;
+        Designators names;
+        for (size_t i = 1; i < l->n_body; i++) names.visit_stmt(*l->m_body[i]);
+        for (ASR::expr_t *w : names.wholes) {
+            if (root_of(w) == array) return false;
+        }
+        for (ASR::expr_t *item : names.items) {
+            if (root_of(item) != array) continue;
+            if (element && !same_expr(element, item)) return false;
+            element = item;
+        }
+        for (size_t i = 1; i < l->n_body; i++) {
+            auto *x = ASR::down_cast<ASR::Assignment_t>(l->m_body[i]);
+            if (root_of(x->m_target) == array) assigned = true;
+        }
+        return element != nullptr;
+    }
+
+    // Keeps the elements of an array that the counted loop `first` reads
+    // and the counted loop `second` (later in the body of `d`, over the
+    // same iterations) assigns in a private array of registers
+    // (share_parts), when nothing in between names the array or changes
+    // what its subscripts read.
+    void hold_elements(ASR::stmt_t **d_body, size_t d_n, ASR::DoLoop_t *first,
+            ASR::DoLoop_t *second, ASR::expr_t *count1, ASR::expr_t *count2,
+            int64_t trips) {
+        auto *v1 = ASR::down_cast<ASR::Assignment_t>(first->m_body[0]);
+        auto *v2 = ASR::down_cast<ASR::Assignment_t>(second->m_body[0]);
+        if (!same_expr(v1->m_target, v2->m_target)
+                || !same_value(v1->m_value, v2->m_value)) {
+            return;
+        }
+        ASR::symbol_t *j = root_of(v1->m_target);
+        Assignments assigns;
+        for (size_t i = 1; i < second->n_body; i++) {
+            assigns.visit_stmt(*second->m_body[i]);
+        }
+        for (ASR::Assignment_t *a : assigns.found) {
+            if (!ASR::is_a<ASR::ArrayItem_t>(*a->m_target)) continue;
+            ASR::symbol_t *array = root_of(a->m_target);
+            ASR::expr_t *e1 = nullptr, *e2 = nullptr;
+            bool assigned1 = false, assigned2 = false;
+            if (!element_of(first, array, e1, assigned1) || assigned1
+                    || !element_of(second, array, e2, assigned2)
+                    || !same_expr(e1, e2)) {
+                continue;
+            }
+            ASR::ttype_t *t = ASRUtils::expr_type(e1);
+            if (!(ASRUtils::is_real(*t) || ASRUtils::is_integer(*t))
+                    || trips*ASRUtils::extract_kind_from_ttype_t(t)
+                        > held_bytes_max) {
+                continue;
+            }
+            // What the subscripts read, but for the variable, is the same
+            // in both loops.
+            std::set<ASR::symbol_t*> changed;
+            for (ASR::DoLoop_t *l : {first, second}) {
+                Effects e(k);
+                for (size_t i = 0; i < l->n_body; i++) {
+                    e.visit_stmt(*l->m_body[i]);
+                }
+                changed.insert(e.scalars.begin(), e.scalars.end());
+            }
+            size_t at1 = d_n, at2 = d_n;
+            for (size_t i = 0; i < d_n; i++) {
+                if (d_body[i] == &first->base) at1 = i;
+                if (d_body[i] == &second->base) at2 = i;
+            }
+            bool kept = at1 < at2 && at2 < d_n;
+            for (size_t i = at1 + 1; kept && i < at2; i++) {
+                Effects e(k);
+                e.visit_stmt(*d_body[i]);
+                changed.insert(e.scalars.begin(), e.scalars.end());
+                if (mentions(*d_body[i], array)) kept = false;
+            }
+            auto *item = ASR::down_cast<ASR::ArrayItem_t>(e1);
+            for (size_t i = 0; kept && i < item->n_args; i++) {
+                for (ASR::symbol_t *x : changed) {
+                    if (x != j && mentions(item->m_args[i].m_right, x)) {
+                        kept = false;
+                    }
+                }
+            }
+            if (!kept) continue;
+            hold(first, second, e1, count1, count2, trips, t);
+        }
+    }
+
+    // The most bytes of the elements a lane keeps in registers
+    // (hold_elements): 64 `float`s, as a hand-written update of a 128 x 128
+    // state on two lanes per column keeps.
+    static constexpr int64_t held_bytes_max = 256;
+
+    void hold(ASR::DoLoop_t *first, ASR::DoLoop_t *second,
+            ASR::expr_t *element, ASR::expr_t *count1, ASR::expr_t *count2,
+            int64_t trips, ASR::ttype_t *t) {
+        const Location &loc = element->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = b.i32(1);
+        dim.m_length = b.i32(static_cast<int32_t>(trips));
+        dims.push_back(al, dim);
+        ASR::expr_t *held = b.Variable(k.fn->m_symtab,
+            k.fn->m_symtab->get_unique_name("__gpu_lane_held"),
+            ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::duplicate_type(al, t), dims.p, dims.n,
+                ASR::array_physical_typeType::FixedSizeArray,
+                ASR::memory_spaceType::Thread)), ASR::intentType::Local);
+        class Replace : public ASR::BaseExprReplacer<Replace> {
+        public:
+            ASRUtils::ASRBuilder &b;
+            ASR::expr_t *element, *held, *count;
+            Replace(ASRUtils::ASRBuilder &b_, ASR::expr_t *e, ASR::expr_t *h,
+                ASR::expr_t *c) : b(b_), element(e), held(h), count(c) {}
+            ASR::expr_t* item() {
+                return b.ArrayItem_01(held, {count});
+            }
+            void replace_ArrayItem(ASR::ArrayItem_t *x) {
+                if (same_expr(&x->base, element)) {
+                    *current_expr = item();
+                    return;
+                }
+                BaseExprReplacer::replace_ArrayItem(x);
+            }
+            void value(ASR::expr_t *&e) {
+                current_expr = &e;
+                replace_expr(e);
+            }
+        };
+        Replace r1(b, element, held, count1);
+        for (size_t i = 1; i < first->n_body; i++) {
+            r1.value(ASR::down_cast<ASR::Assignment_t>(first->m_body[i])
+                ->m_value);
+        }
+        Vec<ASR::stmt_t*> body1;
+        body1.reserve(al, first->n_body + 1);
+        body1.push_back(al, first->m_body[0]);
+        body1.push_back(al, b.Assignment(r1.item(), element));
+        for (size_t i = 1; i < first->n_body; i++) {
+            body1.push_back(al, first->m_body[i]);
+        }
+        first->m_body = body1.p;
+        if (!idle_parts) held_loops.insert(&first->base);
+        first->n_body = body1.n;
+        Replace r2(b, element, held, count2);
+        Vec<ASR::stmt_t*> body2;
+        body2.reserve(al, second->n_body + 2);
+        for (size_t i = 0; i < second->n_body; i++) {
+            auto *a = ASR::down_cast<ASR::Assignment_t>(second->m_body[i]);
+            if (i > 0) r2.value(a->m_value);
+            if (i > 0 && same_expr(a->m_target, element)) {
+                body2.push_back(al, b.Assignment(r2.item(), a->m_value));
+                a->m_value = r2.item();
+            }
+            body2.push_back(al, second->m_body[i]);
+        }
+        second->m_body = body2.p;
+        second->n_body = body2.n;
+    }
+
+    ASR::expr_t* combine(ASR::reduction_opType op, ASR::expr_t *x,
+            ASR::expr_t *y, ASRUtils::ASRBuilder &b) {
+        switch (op) {
+            case ASR::reduction_opType::ReduceAdd: return b.Add(x, y);
+            case ASR::reduction_opType::ReduceMul: return b.Mul(x, y);
+            case ASR::reduction_opType::ReduceMAX: return b.Max(x, y);
+            default: return b.Min(x, y);
+        }
+    }
+
     // After a distributed loop the lanes wait for each other, and when one
     // of them stopped, all return.
     void finish_distributed(ASR::DoLoop_t *d, Vec<ASR::stmt_t*> &out) {
@@ -2594,7 +3952,16 @@ private:
                     // A `do concurrent` of the iteration says its own
                     // iterations are the ones to share out, and the plain
                     // loop with the sum inside it stays on each lane.
-                    if (prefers_inner_reduction(
+                    // In a kernel whose iteration has the lanes of a block,
+                    // one of at least a SIMD-group of iterations known at
+                    // compile time (the dimensions of a head) is shared out
+                    // as it is, with each sum inside it on one lane.
+                    int64_t known = 0;
+                    bool wide = k.block_lanes > 0 && concurrent_loops.count(s)
+                        && constant_bounds(ASR::down_cast<ASR::DoLoop_t>(s),
+                            known)
+                        && known >= k.lanes_count;
+                    if (!wide && prefers_inner_reduction(
                             ASR::down_cast<ASR::DoLoop_t>(s), frames)) {
                         if (concurrent_loops.count(s)
                                 && share_either(s, frames)) {
@@ -3718,7 +5085,7 @@ private:
         if (term_loop) out.push_back(al, term_loop);
         finish.push_back(b.Assignment(b.Var(d.total),
             ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
-                b.Var(d.total), ASR::reduction_opType::ReduceAdd,
+                b.Var(d.total), ASR::reduction_opType::ReduceAdd, 0,
                 ASRUtils::duplicate_type(al, t), nullptr))));
         out.push_back(al, b.If(b.Gt(lanes_var(loc), b.i32(1)), finish, {}));
     }
@@ -3848,8 +5215,8 @@ private:
             ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
             shared.push_back(al, b.Assignment(b.Var(a.variable),
                 ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
-                    b.Var(a.variable), a.op, ASRUtils::duplicate_type(al, t),
-                    nullptr))));
+                    b.Var(a.variable), a.op, 0,
+                    ASRUtils::duplicate_type(al, t), nullptr))));
         }
         for (auto &f : finals) {
             shared.push_back(al, b.Assignment(f.first, f.second));
@@ -3866,7 +5233,34 @@ private:
             alone.n)));
     }
 
+    // Whether every element `items` names of the array of `w` has, at one
+    // subscript, the same expression as `w`, which tells the iterations of
+    // the loop over `v` apart.
+    bool own_slice(ASR::expr_t *w, const std::vector<ASR::expr_t*> &items,
+            ASR::symbol_t *v, const std::set<ASR::symbol_t*> &changed) {
+        auto *x = ASR::down_cast<ASR::ArrayItem_t>(w);
+        std::vector<ASR::symbol_t*> wp = path_of(w);
+        for (size_t k = 0; k < x->n_args; k++) {
+            ASR::expr_t *sub = x->m_args[k].m_right;
+            if (!injective(sub, v, changed)) continue;
+            bool all = true;
+            for (ASR::expr_t *item : items) {
+                if (!overlapping(path_of(item), wp)) continue;
+                auto *y = ASR::down_cast<ASR::ArrayItem_t>(item);
+                if (y->n_args != x->n_args || !same_expr(y->m_v, x->m_v)
+                        || y->m_args[k].m_left || y->m_args[k].m_step
+                        || !same_expr(y->m_args[k].m_right, sub)) {
+                    all = false;
+                    break;
+                }
+            }
+            if (all) return true;
+        }
+        return false;
+    }
+
     bool distributable(ASR::DoLoop_t *d, std::vector<Frame> &frames) {
+        std::set<ASR::expr_t*> sliced;
         if (d->n_orelse > 0 || d->m_head.m_v == nullptr) return false;
         ASR::symbol_t *v = root_of(d->m_head.m_v);
         if (!k.private_scalar(v)) return false;
@@ -3960,25 +5354,41 @@ private:
                 tells_apart |= injective(item->m_args[i].m_right, v,
                     changed);
             }
-            // A `do concurrent` says so itself.
-            if (asserted) continue;
+            // A `do concurrent` says so itself, but not of an array of the
+            // iteration that the block shares (KernelInfo::block_arrays): a
+            // scratch array each of its iterations defines for itself,
+            // which the standard allows, is private memory, which gives
+            // every iteration its own, and the block has one.
+            if (asserted && !k.block_arrays.count(r)) continue;
             if (!tells_apart) return false;
             bool same = false;
             for (ASR::expr_t *w : written) {
                 if (overlapping(path_of(w), path_of(a->m_target))) {
-                    if (!same_expr(w, a->m_target)) return false;
+                    if (!same_expr(w, a->m_target)) {
+                        sliced.insert(w);
+                    }
                     same = true;
                 }
             }
             if (!same) written.push_back(a->m_target);
         }
-        if (asserted) written.clear();
-        // Each of them is read at that subscript list only.
+        // Each of them is read at that subscript list only, or, for an
+        // array assigned at several (`x(d, i)` and `x(d, 7)`), named only
+        // at subscript lists that all have the same subscript, which tells
+        // the iterations apart, in one place: each iteration has a slice
+        // of its own.
         Designators names;
         names.visit_expr(*d->m_head.m_v);
         for (size_t i = 0; i < d->n_body; i++) names.visit_stmt(*d->m_body[i]);
         for (ASR::expr_t *w : written) {
             std::vector<ASR::symbol_t*> wp = path_of(w);
+            if (sliced.count(w)) {
+                if (!own_slice(w, names.items, v, changed)) return false;
+                for (ASR::expr_t *whole : names.wholes) {
+                    if (overlapping(path_of(whole), wp)) return false;
+                }
+                continue;
+            }
             for (ASR::expr_t *item : names.items) {
                 if (overlapping(path_of(item), wp) && !same_expr(item, w)
                         && !disjoint(item, w, changed)) {
@@ -4003,6 +5413,532 @@ private:
             }
         }
         return true;
+    }
+};
+
+// Reads the elements of kernel arguments that the iteration of a kernel
+// with arrays the block shares only reads at the start of the statement
+// list they are read in, as soon as the scalars of their subscripts have
+// their values (EarlyLoads::run): the gates of a gated delta rule, read
+// once the phases before them and their barriers are done, or the
+// elements of a phase of one iteration per lane, wait for memory there,
+// where the loads of the first phase could have hidden them. An element is
+// read early when
+//
+// * its array is an argument of the kernel that nothing before it in the
+//   kernel assigns (an assignment, a procedure's dummy that is not
+//   `intent(in)`, an atomic), nor the loop it is read in, and no pointer is
+//   associated in the kernel: the lanes that may assign it only do so
+//   after they read it (the state of a recurrence, which each lane reads
+//   and then writes);
+// * it is read in a statement of the list, in a block it runs, or in the
+//   body of a loop the lanes share out (distribute) of at most as many
+//   iterations as the block has lanes, which each lane runs once at most:
+//   it is read by the lanes that have an iteration (`lane < trips`), with
+//   the loop's variable worked out from the lane;
+// * every scalar its subscripts name, but that variable, is a scalar
+//   argument, or is assigned only by statements of the list before it, and
+//   nothing between where it is read and where it is read early returns:
+//   the element is the one the statement reads, and reading it cannot fail
+//   where the statement would not.
+//
+// The value is held in a new scalar, at most early_loads_max of them.
+class EarlyLoads {
+public:
+    EarlyLoads(Allocator &al_, const KernelInfo &k_,
+        const std::map<ASR::stmt_t*, LaneRewriter::LaneLoop> &loops_,
+        const std::set<ASR::stmt_t*> &held_, int64_t lanes_)
+        : al(al_), k(k_), loops(loops_), held(held_), lanes(lanes_) {}
+
+    void run(ASR::Function_t &kernel) {
+        // Whether the kernel associates a pointer.
+        bool associates = false;
+        for (size_t i = 0; i < kernel.n_body; i++) {
+            Effects e(k);
+            e.visit_stmt(*kernel.m_body[i]);
+            associates |= e.associates;
+        }
+        if (associates) return;
+        class Assigned : public ASR::BaseWalkVisitor<Assigned> {
+        public:
+            std::map<ASR::symbol_t*, int> count;
+            std::set<ASR::symbol_t*> blocks;
+            void visit_Assignment(const ASR::Assignment_t &x) {
+                if (ASR::is_a<ASR::Var_t>(*x.m_target)) count[root_of(x.m_target)]++;
+                BaseWalkVisitor::visit_Assignment(x);
+            }
+            void visit_DoLoop(const ASR::DoLoop_t &x) {
+                if (x.m_head.m_v) count[root_of(x.m_head.m_v)]++;
+                BaseWalkVisitor::visit_DoLoop(x);
+            }
+            void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+                for (size_t h = 0; h < x.n_head; h++) {
+                    if (x.m_head[h].m_v) count[root_of(x.m_head[h].m_v)]++;
+                }
+                BaseWalkVisitor::visit_DoConcurrentLoop(x);
+            }
+            void call_args(ASR::call_arg_t *args, size_t n) {
+                for (size_t i = 0; i < n; i++) {
+                    if (args[i].m_value && ASR::is_a<ASR::Var_t>(*args[i].m_value)) {
+                        count[root_of(args[i].m_value)] += 2;
+                    }
+                }
+            }
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                call_args(x.m_args, x.n_args);
+                BaseWalkVisitor::visit_SubroutineCall(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!blocks.insert(b).second) return;
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                for (size_t i = 0; i < block->n_body; i++) visit_stmt(*block->m_body[i]);
+            }
+        } assigned;
+        for (size_t i = 0; i < kernel.n_body; i++) assigned.visit_stmt(*kernel.m_body[i]);
+        assignments = assigned.count;
+        fn = &kernel;
+        list(kernel.m_body, kernel.n_body, {});
+    }
+
+private:
+    Allocator &al;
+    const KernelInfo &k;
+    const std::map<ASR::stmt_t*, LaneRewriter::LaneLoop> &loops;
+    const std::set<ASR::stmt_t*> &held;
+    int64_t lanes;
+    ASR::Function_t *fn = nullptr;
+    // The arrays the statements before the list being looked at assign.
+    std::set<ASR::symbol_t*> prior;
+    std::map<ASR::symbol_t*, int> assignments;
+    int hoisted = 0;
+    static constexpr int early_loads_max = 16;
+    // The scalars that keep their value in the list being looked at.
+    std::set<ASR::symbol_t*> stable;
+
+    // An element read early: where in the list, and of which loop of one
+    // iteration per lane (nullptr for none).
+    struct Candidate {
+        ASR::expr_t **at;
+        size_t position;
+        ASR::stmt_t *loop;
+    };
+
+    bool read_only(ASR::expr_t *e) const {
+        if (!ASR::is_a<ASR::ArrayItem_t>(*e)) return false;
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+        if (!ASR::is_a<ASR::Var_t>(*item->m_v)) return false;
+        ASR::symbol_t *a = root_of(item->m_v);
+        ASR::ttype_t *t = ASRUtils::expr_type(e);
+        return a && k.params.count(a) && !k.workspaces.count(a)
+            && ASRUtils::is_array(ASRUtils::symbol_type(a))
+            && !ASRUtils::is_pointer(ASRUtils::symbol_type(a))
+            && (ASRUtils::is_integer(*t) || ASRUtils::is_real(*t));
+    }
+
+    // The elements an expression reads that may be read early, with the
+    // places that hold them.
+    void elements(ASR::expr_t *&e, std::vector<ASR::expr_t**> &found) {
+        class Walk : public ASR::BaseExprReplacer<Walk> {
+        public:
+            EarlyLoads &o;
+            std::vector<ASR::expr_t**> &found;
+            Walk(EarlyLoads &o_, std::vector<ASR::expr_t**> &f) : o(o_), found(f) {}
+            void replace_ArrayItem(ASR::ArrayItem_t *x) {
+                if (o.read_only(&x->base)) {
+                    found.push_back(current_expr);
+                    return;
+                }
+                BaseExprReplacer::replace_ArrayItem(x);
+            }
+        } walk(*this, found);
+        walk.current_expr = &e;
+        walk.replace_expr(e);
+    }
+
+    // The values the assignments of a statement list (and the blocks it
+    // runs) read.
+    void assignments_of(ASR::stmt_t **body, size_t n,
+            std::vector<ASR::expr_t**> &found) {
+        for (size_t i = 0; i < n; i++) {
+            if (ASR::is_a<ASR::Assignment_t>(*body[i])) {
+                elements(ASR::down_cast<ASR::Assignment_t>(body[i])->m_value,
+                    found);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
+                assignments_of(block->m_body, block->n_body, found);
+            }
+        }
+    }
+
+    // Whether a statement may leave the iteration.
+    static bool leaves(const ASR::stmt_t &s) {
+        class Walk : public ASR::BaseWalkVisitor<Walk> {
+        public:
+            bool found = false;
+            void visit_Return(const ASR::Return_t &) { found = true; }
+            void visit_If(const ASR::If_t &x) {
+                if (gpu_stop_record_status(x.base)) found = true;
+                BaseWalkVisitor::visit_If(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) visit_stmt(*block->m_body[i]);
+            }
+        } walk;
+        walk.visit_stmt(s);
+        return walk.found;
+    }
+
+    // The scalars assigned only by the statements of `body` before `p`.
+    std::set<ASR::symbol_t*> assigned_before(ASR::stmt_t **body, size_t p) {
+        std::map<ASR::symbol_t*, int> count;
+        for (size_t q = 0; q < p; q++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*body[q])) continue;
+            auto *a = ASR::down_cast<ASR::Assignment_t>(body[q]);
+            if (ASR::is_a<ASR::Var_t>(*a->m_target)) count[root_of(a->m_target)]++;
+        }
+        std::set<ASR::symbol_t*> found;
+        for (auto &c : count) {
+            auto n = assignments.find(c.first);
+            if (n != assignments.end() && n->second == c.second) {
+                found.insert(c.first);
+            }
+        }
+        return found;
+    }
+
+    // `stable`: the scalars that keep their value in the whole list.
+    void list(ASR::stmt_t **&body, size_t &n_body,
+            const std::set<ASR::symbol_t*> &stable_) {
+        stable = stable_;
+        std::set<ASR::symbol_t*> prior_ = prior;
+        // The blocks of the list are lists of their own.
+        for (size_t i = 0; i < n_body; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
+                std::set<ASR::symbol_t*> inner = assigned_before(body, i);
+                inner.insert(stable_.begin(), stable_.end());
+                prior = prior_;
+                for (size_t q = 0; q < i; q++) {
+                    SharedAccess access(k);
+                    access.visit_stmt(*body[q]);
+                    prior.insert(access.writes.begin(), access.writes.end());
+                }
+                list(block->m_body, block->n_body, inner);
+            }
+        }
+        stable = stable_;
+        prior = prior_;
+        lane_scalars_first(body, n_body);
+        std::vector<std::vector<ASR::stmt_t*>> early(n_body + 1);
+        bool any = false;
+        // The arrays assigned before the statement looked at.
+        std::set<ASR::symbol_t*> assigned = prior;
+        for (size_t p = 0; p < n_body && hoisted < early_loads_max; p++) {
+            ASR::stmt_t *s = body[p];
+            if (p > 0) {
+                SharedAccess access(k);
+                access.visit_stmt(*body[p - 1]);
+                assigned.insert(access.writes.begin(), access.writes.end());
+            }
+            std::vector<ASR::expr_t**> found;
+            ASR::stmt_t *loop = nullptr;
+            auto l = loops.find(s);
+            if (ASR::is_a<ASR::Assignment_t>(*s)
+                    || ASR::is_a<ASR::BlockCall_t>(*s)) {
+                assignments_of(&body[p], 1, found);
+            } else if (held.count(s)) {
+                size_t from = 0;
+                ASR::stmt_t *x = read_held_early(body, p, from, assigned);
+                if (x) {
+                    early[from].push_back(x);
+                    any = true;
+                }
+                continue;
+            } else if (l != loops.end() && l->second.trips <= lanes
+                    && l->second.trips > 0) {
+                auto *d = ASR::down_cast<ASR::DoLoop_t>(s);
+                assignments_of(d->m_body, d->n_body, found);
+                loop = s;
+            }
+            SharedAccess own(k);
+            own.visit_stmt(*s);
+            for (ASR::expr_t **at : found) {
+                if (hoisted >= early_loads_max) break;
+                // Nothing before it assigns its array, nor the loop it is
+                // read in (where an iteration may assign the element before
+                // it reads it).
+                ASR::symbol_t *array = root_of(*at);
+                if (assigned.count(array)
+                        || (loop && own.writes.count(array))) {
+                    continue;
+                }
+                size_t from = 0;
+                if (!available(body, p, *at, loop, from)) continue;
+                // Something to read it ahead of: a loop or a barrier.
+                bool ahead = false;
+                for (size_t q = from; q < p; q++) {
+                    if (!ASR::is_a<ASR::Assignment_t>(*body[q])) ahead = true;
+                }
+                if (!ahead) continue;
+                early[from].push_back(read_early(at, loop));
+                any = true;
+            }
+        }
+        if (!any) return;
+        Vec<ASR::stmt_t*> out;
+        out.reserve(al, n_body + hoisted);
+        for (size_t i = 0; i <= n_body; i++) {
+            for (ASR::stmt_t *x : early[i]) out.push_back(al, x);
+            if (i < n_body) out.push_back(al, body[i]);
+        }
+        body = out.p;
+        n_body = out.n;
+    }
+
+    // Moves the assignments of the list to scalars assigned nowhere else,
+    // of values worked out from the lane alone (which lane of the block
+    // takes which column of a phase, plan_parts), to the start of the
+    // list: the elements a lane reads at those subscripts are then known
+    // there.
+    void lane_scalars_first(ASR::stmt_t **body, size_t n_body) {
+        class Lane : public ASR::BaseWalkVisitor<Lane> {
+        public:
+            const std::set<ASR::symbol_t*> &moved;
+            const KernelInfo &k;
+            bool lane = false, other = false;
+            Lane(const std::set<ASR::symbol_t*> &m, const KernelInfo &k_)
+                : moved(m), k(k_) {}
+            void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t &) { lane = true; }
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+                if (moved.count(s) || (k.params.count(s)
+                        && !ASRUtils::is_array(ASRUtils::symbol_type(s)))) {
+                    lane |= moved.count(s) > 0;
+                    return;
+                }
+                other = true;
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &) { other = true; }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) { other = true; }
+        };
+        std::set<ASR::symbol_t*> moved;
+        std::vector<ASR::stmt_t*> first, rest;
+        for (size_t q = 0; q < n_body; q++) {
+            ASR::stmt_t *s = body[q];
+            if (ASR::is_a<ASR::Assignment_t>(*s)) {
+                auto *a = ASR::down_cast<ASR::Assignment_t>(s);
+                ASR::symbol_t *x = ASR::is_a<ASR::Var_t>(*a->m_target)
+                    ? root_of(a->m_target) : nullptr;
+                auto n = x ? assignments.find(x) : assignments.end();
+                Lane lane(moved, k);
+                lane.visit_expr(*a->m_value);
+                if (x && k.private_scalar(x) && n != assignments.end()
+                        && n->second == 1 && lane.lane && !lane.other) {
+                    moved.insert(x);
+                    first.push_back(s);
+                    continue;
+                }
+            }
+            rest.push_back(s);
+        }
+        if (first.empty()) return;
+        size_t q = 0;
+        for (ASR::stmt_t *s : first) body[q++] = s;
+        for (ASR::stmt_t *s : rest) body[q++] = s;
+    }
+
+    // The loop that reads the elements a lane keeps in registers, ahead of
+    // the counted loop body[p] that reads them (held_loops): a copy of its
+    // first two statements, when what their subscripts read is known
+    // earlier and nothing in between assigns the array or names the loop's
+    // variables. The counted loop then reads them no more.
+    ASR::stmt_t* read_held_early(ASR::stmt_t **body, size_t p,
+            size_t &from, const std::set<ASR::symbol_t*> &assigned) {
+        auto *l = ASR::down_cast<ASR::DoLoop_t>(body[p]);
+        if (l->n_body < 2 || hoisted >= early_loads_max) return nullptr;
+        auto *v = ASR::down_cast<ASR::Assignment_t>(l->m_body[0]);
+        auto *h = ASR::down_cast<ASR::Assignment_t>(l->m_body[1]);
+        if (!ASR::is_a<ASR::ArrayItem_t>(*h->m_value)) return nullptr;
+        ASR::symbol_t *j = root_of(v->m_target);
+        ASR::symbol_t *count = root_of(l->m_head.m_v);
+        ASR::symbol_t *array = root_of(h->m_value);
+        class Scalars : public ASR::BaseWalkVisitor<Scalars> {
+        public:
+            std::set<ASR::symbol_t*> found;
+            bool other = false;
+            void visit_Var(const ASR::Var_t &x) {
+                found.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) { other = true; }
+        } scalars;
+        scalars.visit_expr(*v->m_value);
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(h->m_value);
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step
+                    || item->m_args[i].m_right == nullptr
+                    || reads_array_element(item->m_args[i].m_right)) {
+                return nullptr;
+            }
+            scalars.visit_expr(*item->m_args[i].m_right);
+        }
+        if (scalars.other || assigned.count(array)) return nullptr;
+        from = 0;
+        for (ASR::symbol_t *x : scalars.found) {
+            if (x == j || x == count || x == array) continue;
+            if (!ASR::is_a<ASR::Variable_t>(*x)) return nullptr;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x);
+            if (var->m_storage == ASR::storage_typeType::Parameter
+                    || stable.count(x)) {
+                continue;
+            }
+            auto n = assignments.find(x);
+            int total = n == assignments.end() ? 0 : n->second;
+            if (total == 0) {
+                if (k.params.count(x) || !k.local(x)) continue;
+                return nullptr;
+            }
+            int before = 0;
+            for (size_t q = 0; q < p; q++) {
+                if (!ASR::is_a<ASR::Assignment_t>(*body[q])) continue;
+                auto *a = ASR::down_cast<ASR::Assignment_t>(body[q]);
+                if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                        && root_of(a->m_target) == x) {
+                    before++;
+                    from = std::max(from, q + 1);
+                }
+            }
+            if (before != total) return nullptr;
+        }
+        bool ahead = false;
+        for (size_t q = from; q < p; q++) {
+            SharedAccess access(k);
+            access.visit_stmt(*body[q]);
+            if (access.writes.count(array) || leaves(*body[q])
+                    || mentions(*body[q], j) || mentions(*body[q], count)) {
+                return nullptr;
+            }
+            if (!ASR::is_a<ASR::Assignment_t>(*body[q])) ahead = true;
+        }
+        if (!ahead) return nullptr;
+        hoisted++;
+        ASRUtils::ExprStmtDuplicator dup(al);
+        dup.allow_procedure_calls = true;
+        ASR::do_loop_head_t head = l->m_head;
+        head.m_start = dup.duplicate_expr(head.m_start);
+        head.m_end = dup.duplicate_expr(head.m_end);
+        if (head.m_increment) head.m_increment = dup.duplicate_expr(head.m_increment);
+        Vec<ASR::stmt_t*> reads;
+        reads.reserve(al, 2);
+        reads.push_back(al, dup.duplicate_stmt(l->m_body[0]));
+        reads.push_back(al, l->m_body[1]);
+        Vec<ASR::stmt_t*> rest;
+        rest.reserve(al, l->n_body - 1);
+        rest.push_back(al, l->m_body[0]);
+        for (size_t i = 2; i < l->n_body; i++) rest.push_back(al, l->m_body[i]);
+        l->m_body = rest.p;
+        l->n_body = rest.n;
+        return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, l->base.base.loc,
+            nullptr, head, reads.p, reads.n, nullptr, 0));
+    }
+
+    // Whether the element at `at`, read by body[p], may be read early, and
+    // the first position it may be read at.
+    bool available(ASR::stmt_t **body, size_t p, ASR::expr_t *e,
+            ASR::stmt_t *loop, size_t &from) {
+        ASR::symbol_t *v = loop
+            ? root_of(ASR::down_cast<ASR::DoLoop_t>(loop)->m_head.m_v) : nullptr;
+        class Scalars : public ASR::BaseWalkVisitor<Scalars> {
+        public:
+            std::set<ASR::symbol_t*> found;
+            bool other = false;
+            void visit_Var(const ASR::Var_t &x) {
+                found.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                other = true;
+                BaseWalkVisitor::visit_ArrayItem(x);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &) { other = true; }
+        } scalars;
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+        for (size_t i = 0; i < item->n_args; i++) {
+            if (item->m_args[i].m_left || item->m_args[i].m_step
+                    || item->m_args[i].m_right == nullptr) {
+                return false;
+            }
+            scalars.visit_expr(*item->m_args[i].m_right);
+        }
+        if (scalars.other) return false;
+        from = 0;
+        for (ASR::symbol_t *x : scalars.found) {
+            if (x == v || x == root_of(item->m_v)) continue;
+            if (!ASR::is_a<ASR::Variable_t>(*x)) return false;
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(x);
+            if (var->m_storage == ASR::storage_typeType::Parameter) continue;
+            if (stable.count(x)) continue;
+            auto n = assignments.find(x);
+            int total = n == assignments.end() ? 0 : n->second;
+            if (total == 0) {
+                if (k.params.count(x) || !k.local(x)) continue;
+                return false;
+            }
+            // Assigned only by statements of the list before it.
+            int before = 0;
+            for (size_t q = 0; q < p; q++) {
+                if (ASR::is_a<ASR::Assignment_t>(*body[q])) {
+                    auto *a = ASR::down_cast<ASR::Assignment_t>(body[q]);
+                    if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                            && root_of(a->m_target) == x) {
+                        before++;
+                        from = std::max(from, q + 1);
+                    }
+                }
+            }
+            if (before != total) return false;
+        }
+        for (size_t q = from; q < p; q++) {
+            if (leaves(*body[q])) return false;
+        }
+        return true;
+    }
+
+    // The statement that reads the element at `at` into a new scalar,
+    // which then stands in its place.
+    ASR::stmt_t* read_early(ASR::expr_t **at, ASR::stmt_t *loop) {
+        ASR::expr_t *e = *at;
+        const Location &loc = e->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t *x = b.Variable(fn->m_symtab,
+            fn->m_symtab->get_unique_name("__gpu_early"),
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(e)),
+            ASR::intentType::Local);
+        hoisted++;
+        *at = x;
+        if (loop == nullptr) return b.Assignment(x, e);
+        auto *d = ASR::down_cast<ASR::DoLoop_t>(loop);
+        const LaneRewriter::LaneLoop &l = loops.at(loop);
+        ASR::symbol_t *v = root_of(d->m_head.m_v);
+        ASR::ttype_t *type = ASRUtils::expr_type(d->m_head.m_v);
+        ASRUtils::ExprStmtDuplicator copy(al);
+        copy.allow_procedure_calls = true;
+        ASR::expr_t *lane = ASRUtils::EXPR(ASR::make_GpuLaneIndex_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+        ASR::expr_t *value = b.Add(copy.duplicate_expr(l.start),
+            b.Mul(b.i2i_t(lane, type), copy.duplicate_expr(l.step)));
+        GpuDuplicator dup(al, fn->m_symtab);
+        dup.value_map[v] = value;
+        ASR::expr_t *early = dup.duplicate_expr(e);
+        ASR::expr_t *lane2 = ASRUtils::EXPR(ASR::make_GpuLaneIndex_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+        return b.If(b.Lt(lane2, b.i32(static_cast<int32_t>(l.trips))),
+            {b.Assignment(x, early)}, {});
     }
 };
 
@@ -4090,13 +6026,163 @@ ASR::symbol_t* add_lanes_parameter(Allocator &al, ASR::Function_t &kernel) {
     return sym;
 }
 
+// The most bytes of the arrays of an iteration that a kernel keeps in the
+// shared memory of a block. A block has 48 KiB of it that the kernel's
+// source declares, and the combinations and broadcasts of its lanes take a
+// little of that.
+constexpr int64_t block_array_bytes_max = 32 * 1024;
+
+// The arrays of the iteration of `kernel` that may live in the shared
+// memory of a block whose threads are all lanes of the one iteration: its
+// locals, or those of a block it runs outside every loop (a block inside a
+// loop has one of each per iteration of that loop), of constant extents,
+// of integers, reals or logicals, with no initial value, and named only by
+// their elements and their shape (not handed whole to a procedure or a
+// pointer, whose memory space they would change). Together they fit
+// block_array_bytes_max; share_block_arrays keeps the small ones only
+// with a large one.
+std::vector<ASR::symbol_t*> block_array_candidates(
+        const ASR::Function_t &kernel, const KernelInfo &k) {
+    std::vector<SymbolTable*> scopes = {kernel.m_symtab};
+    std::function<void(ASR::stmt_t**, size_t)> outside_loops =
+            [&](ASR::stmt_t **body, size_t n_body) {
+        for (size_t i = 0; i < n_body; i++) {
+            if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m));
+                scopes.push_back(block->m_symtab);
+                outside_loops(block->m_body, block->n_body);
+            } else if (ASR::is_a<ASR::If_t>(*body[i])) {
+                auto *x = ASR::down_cast<ASR::If_t>(body[i]);
+                outside_loops(x->m_body, x->n_body);
+                outside_loops(x->m_orelse, x->n_orelse);
+            }
+        }
+    };
+    outside_loops(kernel.m_body, kernel.n_body);
+    Designators names;
+    for (size_t i = 0; i < kernel.n_body; i++) {
+        names.visit_stmt(*kernel.m_body[i]);
+    }
+    std::set<ASR::symbol_t*> whole;
+    for (ASR::expr_t *e : names.wholes) {
+        ASR::symbol_t *r = root_of(e);
+        if (r) whole.insert(r);
+    }
+    std::vector<ASR::symbol_t*> found;
+    int64_t bytes = 0;
+    for (SymbolTable *scope : scopes) {
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *s = item.second;
+            if (!ASR::is_a<ASR::Variable_t>(*s) || k.params.count(s)
+                    || k.workspaces.count(s) || whole.count(s)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            if (v->m_intent != ASR::intentType::Local
+                    || v->m_storage != ASR::storage_typeType::Default
+                    || v->m_symbolic_value || v->m_value
+                    || !ASR::is_a<ASR::Array_t>(*v->m_type)) {
+                continue;
+            }
+            ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(v->m_type);
+            if (a->m_physical_type
+                        != ASR::array_physical_typeType::FixedSizeArray
+                    || a->m_memory_space != ASR::memory_spaceType::Thread
+                    || !(ASRUtils::is_integer(*a->m_type)
+                        || ASRUtils::is_real(*a->m_type)
+                        || ASRUtils::is_logical(*a->m_type))) {
+                continue;
+            }
+            int64_t elements = 1;
+            bool constant = a->n_dims > 0;
+            for (size_t d = 0; d < a->n_dims && constant; d++) {
+                int64_t start = 0, length = 0;
+                constant = a->m_dims[d].m_start && a->m_dims[d].m_length
+                    && ASRUtils::extract_value(ASRUtils::expr_value(
+                        a->m_dims[d].m_start), start)
+                    && ASRUtils::extract_value(ASRUtils::expr_value(
+                        a->m_dims[d].m_length), length)
+                    && length > 0;
+                elements *= length;
+            }
+            if (!constant) continue;
+            int64_t size = elements
+                * ASRUtils::extract_kind_from_ttype_t(a->m_type);
+            if (bytes + size > block_array_bytes_max) continue;
+            bytes += size;
+            found.push_back(s);
+        }
+    }
+    return found;
+}
+
+// The arrays of a kernel's iteration placed in the shared memory of the
+// block: the iteration runs on all the threads of a block, and those of
+// its loops that assign them are shared out (see block_array_candidates).
+// Each is tried first; the ones that no shared-out loop assigns are left
+// private, and none when the kernel cannot be rewritten with them shared.
+// Returns the rewriter that decided with them, or nullptr.
+std::unique_ptr<LaneRewriter> share_block_arrays(Allocator &al,
+        ASR::Function_t &kernel, KernelInfo &k,
+        const GpuDeviceCapabilities &caps) {
+    std::unique_ptr<LaneRewriter> rewrite;
+    if (caps.lanes_block <= caps.lanes_per_iteration) return rewrite;
+    std::vector<ASR::symbol_t*> candidates = block_array_candidates(kernel,
+        k);
+    std::set<ASR::symbol_t*> trial(candidates.begin(), candidates.end());
+    bool shared_only = k.shared_only;
+    while (!trial.empty()) {
+        k.block_arrays = trial;
+        k.block_lanes = caps.lanes_block;
+        // The lanes of the one iteration of a block share a sum that reads
+        // across the columns of an array as well: no other iteration reads
+        // along its rows next to it.
+        k.scattered_reductions = true;
+        // The iteration never runs on one lane.
+        k.shared_only = true;
+        std::vector<Frame> frames;
+        rewrite.reset(new LaneRewriter(al, k));
+        rewrite->decide(kernel.m_body, kernel.n_body, nullptr, frames);
+        std::set<ASR::symbol_t*> used;
+        // A sum shared out on fewer lanes than a SIMD-group has
+        // (lane_limit) is for many iterations per block.
+        if (!rewrite->failed && rewrite->distributed
+                && rewrite->lane_limit == 0) {
+            used = rewrite->distributed_block_arrays();
+        }
+        // Arrays of fewer elements than a SIMD-group has lanes (the norms
+        // of a few heads) only join one that has as many: the loops over
+        // them alone do not keep a block's lanes busy.
+        bool large = false;
+        for (ASR::symbol_t *a : used) {
+            large |= ASRUtils::get_fixed_size_of_array(
+                ASRUtils::symbol_type(a)) >= caps.lanes_per_iteration;
+        }
+        if (!large) used.clear();
+        if (used == trial) return rewrite;
+        rewrite->restore();
+        rewrite.reset();
+        trial = used;
+    }
+    k.block_arrays.clear();
+    k.block_lanes = 0;
+    k.scattered_reductions = false;
+    k.shared_only = shared_only;
+    return rewrite;
+}
+
 // Rewrites `kernel` to run each iteration on lanes, when it has a loop to
-// distribute and nothing in the way.
+// distribute and nothing in the way. `block` tells whether arrays of the
+// iteration live in the shared memory of the block, whose threads are then
+// the lanes of one iteration at every launch: `lanes` of them.
 bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         const GpuDeviceCapabilities &caps, bool &any_size, int &lanes,
-        bool &scattered, std::vector<TripBound> &bounds) {
+        bool &scattered, std::vector<TripBound> &bounds, bool &block) {
     any_size = false;
     scattered = false;
+    block = false;
     // A kernel whose warps already combine the accumulators of a reduction
     // (gpu_offload.cpp) runs every thread on its own iterations.
     {
@@ -4173,6 +6259,44 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         }
         added = iteration.added;
     }
+    if (std::unique_ptr<LaneRewriter> shared = share_block_arrays(al, kernel,
+            k, caps)) {
+        // As many lanes as the longest loop they share out has iterations,
+        // rounded up to a power of two, from a SIMD-group to a block (a
+        // block of 256 lanes leaves half of them idle in loops over 128
+        // elements, and waits for them at every barrier), unless a loop
+        // runs its iterations on several lanes (plan_parts), which takes
+        // the block.
+        std::vector<TripBound> trips;
+        shared->loop_bounds(trips);
+        lanes = caps.lanes_block;
+        bool known = !trips.empty();
+        int64_t most = 0;
+        for (const TripBound &t : trips) {
+            if (t.param) known = false;
+            most = std::max(most, t.end - t.start + 1);
+        }
+        if (known && !shared->has_parts()) {
+            lanes = caps.lanes_per_iteration;
+            while (lanes < most && lanes < caps.lanes_block) lanes *= 2;
+        }
+        k.lanes = add_lanes_parameter(al, kernel);
+        kernel.m_gpu->m_lanes_max = lanes;
+        k.fixed_lanes = lanes;
+        shared->apply(kernel.m_body, kernel.n_body);
+        EarlyLoads early(al, k, shared->lane_loops, shared->held_loops,
+            lanes);
+        early.run(kernel);
+        for (ASR::symbol_t *s : k.block_arrays) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            ASR::ttype_t *t = ASRUtils::duplicate_type(al, v->m_type);
+            ASR::down_cast<ASR::Array_t>(t)->m_memory_space =
+                ASR::memory_spaceType::Shared;
+            v->m_type = t;
+        }
+        block = true;
+        return true;
+    }
     std::vector<Frame> frames;
     LaneRewriter first(al, k);
     first.decide(kernel.m_body, kernel.n_body, nullptr, frames);
@@ -4236,14 +6360,15 @@ public:
             *ASR::down_cast<ASR::Function_t>(x.m_kernel);
         if (kernel.m_gpu == nullptr) return;
         if (decided.insert(&kernel).second && kernel.m_gpu->m_lanes == nullptr) {
-            bool any_size = false, scattered = false;
+            bool any_size = false, scattered = false, block = false;
             int kernel_lanes = lanes;
             give_lanes(al, kernel, caps, any_size, kernel_lanes, scattered,
-                kernel_bounds[&kernel]);
+                kernel_bounds[&kernel], block);
             kernel_lane_count[&kernel] = kernel_lanes;
             if (any_size) column_kernels.insert(&kernel);
             if (scattered) scattered_kernels.insert(&kernel);
-            if (kernel.m_gpu->m_lanes != nullptr
+            if (block) block_kernels.insert(&kernel);
+            if (kernel.m_gpu->m_lanes != nullptr && !block
                     && gpu_reads_wide(kernel, caps)) {
                 wide_kernels.insert(&kernel);
                 if (!scattered && caps.lanes_wide > caps.lanes_per_iteration
@@ -4272,6 +6397,17 @@ public:
         dup.success = true;
         ASR::expr_t *count = dup.duplicate_expr(x.m_thread_count);
         LCOMPILERS_ASSERT(dup.success && count);
+        // The arrays of the iteration of a kernel that the block shares
+        // (give_lanes) belong to one iteration: every launch runs one
+        // iteration per block, on all its threads.
+        if (block_kernels.count(&kernel)) {
+            int block_lanes = kernel.m_gpu->m_lanes_max;
+            pass_result.push_back(al, b.Assignment(n, b.i32(block_lanes)));
+            const_cast<ASR::GpuKernelLaunch_t&>(x).m_block_size = b.i_t(
+                block_lanes, ASRUtils::expr_type(x.m_block_size));
+            finish_launch(x, kernel, n);
+            return;
+        }
         pass_result.push_back(al, b.Assignment(n, b.i32(1)));
         bool scattered = scattered_kernels.count(&kernel) > 0;
         int64_t iterations_max = column_kernels.count(&kernel)
@@ -4356,32 +6492,6 @@ public:
         if (wide_block) {
             pass_result.push_back(al, b.Assignment(n, b.i32(caps.lanes_wide)));
         }
-        // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
-        // from the thread index along the tile's width and height, which
-        // lanes narrow to the iterations' (the lanes of one iteration share
-        // a thread index): only a fraction of each tile would run. A launch
-        // with lanes runs flat instead, with the threads the launch started
-        // for the tiles, of which the ones past the iterations return.
-        for (size_t i = 0; i < x.n_args && i < kernel.n_args; i++) {
-            ASR::symbol_t *parameter = ASR::down_cast<ASR::Var_t>(
-                kernel.m_args[i])->m_v;
-            if (std::string(ASRUtils::symbol_name(parameter)).rfind(
-                    "__tiled", 0) != 0
-                    || !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
-                continue;
-            }
-            ASR::expr_t *tiled = x.m_args[i].m_value;
-            pass_result.push_back(al, b.If(b.Gt(n, b.i32(1)),
-                {b.Assignment(tiled, b.i_t(0, ASRUtils::expr_type(tiled)))},
-                {}));
-        }
-        Vec<ASR::call_arg_t> args;
-        args.reserve(al, x.n_args + 1);
-        for (size_t i = 0; i < x.n_args; i++) args.push_back(al, x.m_args[i]);
-        ASR::call_arg_t arg;
-        arg.loc = loc;
-        arg.m_value = n;
-        args.push_back(al, arg);
         auto &launch = const_cast<ASR::GpuKernelLaunch_t&>(x);
         // An iteration of a kernel that reads vectors of 16 bytes streams
         // whole rows, and the launch has few of them: blocks of
@@ -4411,6 +6521,41 @@ public:
                 launch.m_block_size = block;
             }
         }
+        finish_launch(x, kernel, n);
+    }
+
+    // Hands the launch the lanes `n` as the kernel's last argument.
+    void finish_launch(const ASR::GpuKernelLaunch_t &x,
+            ASR::Function_t &kernel, ASR::expr_t *n) {
+        const Location &loc = x.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
+        // from the thread index along the tile's width and height, which
+        // lanes narrow to the iterations' (the lanes of one iteration share
+        // a thread index): only a fraction of each tile would run. A launch
+        // with lanes runs flat instead, with the threads the launch started
+        // for the tiles, of which the ones past the iterations return.
+        for (size_t i = 0; i < x.n_args && i < kernel.n_args; i++) {
+            ASR::symbol_t *parameter = ASR::down_cast<ASR::Var_t>(
+                kernel.m_args[i])->m_v;
+            if (std::string(ASRUtils::symbol_name(parameter)).rfind(
+                    "__tiled", 0) != 0
+                    || !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                continue;
+            }
+            ASR::expr_t *tiled = x.m_args[i].m_value;
+            pass_result.push_back(al, b.If(b.Gt(n, b.i32(1)),
+                {b.Assignment(tiled, b.i_t(0, ASRUtils::expr_type(tiled)))},
+                {}));
+        }
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, x.n_args + 1);
+        for (size_t i = 0; i < x.n_args; i++) args.push_back(al, x.m_args[i]);
+        ASR::call_arg_t arg;
+        arg.loc = loc;
+        arg.m_value = n;
+        args.push_back(al, arg);
+        auto &launch = const_cast<ASR::GpuKernelLaunch_t&>(x);
         launch.m_args = args.p;
         launch.n_args = args.n;
         pass_result.push_back(al, &launch.base);
@@ -4433,6 +6578,9 @@ private:
     std::set<ASR::Function_t*> scattered_kernels;
     // The kernels that read vectors of 16 bytes.
     std::set<ASR::Function_t*> wide_kernels;
+    // The kernels whose arrays of the iteration the block shares, which run
+    // one iteration per block (give_lanes).
+    std::set<ASR::Function_t*> block_kernels;
     // The most iterations of a launch of such a kernel that get lanes:
     // 32 lanes of them stay within the 32-bit thread index.
     static constexpr int64_t wide_iterations_max = int64_t(1) << 24;
@@ -4454,6 +6602,31 @@ private:
 };
 
 } // namespace
+
+bool gpu_kernel_block_shared(const ASR::Function_t &kernel) {
+    if (kernel.m_gpu == nullptr || kernel.m_gpu->m_lanes == nullptr) {
+        return false;
+    }
+    std::function<bool(SymbolTable*)> holds = [&](SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *s = item.second;
+            if (ASR::is_a<ASR::Block_t>(*s)) {
+                if (holds(ASR::down_cast<ASR::Block_t>(s)->m_symtab)) {
+                    return true;
+                }
+            } else if (ASR::is_a<ASR::Variable_t>(*s)) {
+                ASR::ttype_t *t = ASR::down_cast<ASR::Variable_t>(s)->m_type;
+                if (ASR::is_a<ASR::Array_t>(*t)
+                        && ASR::down_cast<ASR::Array_t>(t)->m_memory_space
+                            == ASR::memory_spaceType::Shared) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+    return holds(kernel.m_symtab);
+}
 
 void pass_gpu_vector_lanes(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {

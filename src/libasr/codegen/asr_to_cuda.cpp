@@ -218,6 +218,16 @@ struct CudaDialect {
             : "__lfortran_lane_barrier(") << "__gpu_lanes_n, "
             "__gpu_lane_mask);\n";
     }
+    // The threads of the block wait for each other, in the kernel's own
+    // code: a kernel whose lanes are all the threads of a block at every
+    // launch (gpu_vector_lanes.cpp) keeps the elements of a column in
+    // registers across its barriers, which a call to
+    // __lfortran_block_barrier would have the device compiler keep apart
+    // from it (an update of the state of a gated delta rule took 5% longer).
+    void emit_block_barrier(std::stringstream &src,
+            const std::string &indent) const {
+        src << indent << "__syncthreads();\n";
+    }
     // What the lanes of the iteration hold, combined, in every lane
     // (__lfortran_lane_reduce in the prologue of the kernel source).
     // In a kernel without lanes, the lanes are the 32 threads of the warp.
@@ -227,6 +237,13 @@ struct CudaDialect {
             : "__lfortran_lane_reduce<") + std::to_string(op) + ">(" + value
             + ", " + (has_lanes ? "__gpu_lanes_n, __gpu_lane_mask"
                 : "32, 0xffffffffu") + ")";
+    }
+    // What each group of `width` consecutive lanes of a warp hold,
+    // combined, in each of them: all the threads of the warp run it.
+    std::string lane_group_reduce(const std::string &value, int op,
+            int64_t width) const {
+        return "__lfortran_lane_reduce<" + std::to_string(op) + ">(" + value
+            + ", " + std::to_string(width) + ", 0xffffffffu)";
     }
     // Whether consecutive combinations over the lanes of a whole block
     // share one barrier (emit_stmts): not in the CPU emulation or on HIP,
@@ -744,6 +761,13 @@ struct CudaDialect {
         return emulate_cpu || hip ? std::string()
             : std::string(lane_vectors ? "#pragma unroll 1"
                                        : "#pragma unroll 2");
+    }
+    // A loop that indexes a private array by its variable, of few
+    // iterations known at compile time, is unrolled whole, so that the
+    // array lives in registers.
+    std::string unroll_whole_pragma() const {
+        return emulate_cpu || hip ? std::string()
+            : std::string("#pragma unroll");
     }
     // A loop that combines the values of the lanes of an iteration in each
     // of its iterations is unrolled by four: the shuffles of one iteration

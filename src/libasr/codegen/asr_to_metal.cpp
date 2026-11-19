@@ -120,6 +120,13 @@ struct MetalDialect {
         LCOMPILERS_ASSERT(op >= 0 && op < 4);
         return std::string(names[op]) + "(" + value + ")";
     }
+    // Groups of lanes narrower than a SIMD-group combine only in a kernel
+    // whose iteration has the lanes of a block, which Metal does not give.
+    std::string lane_group_reduce(const std::string &value, int op,
+            int64_t /*width*/) const {
+        LCOMPILERS_ASSERT(false);
+        return lane_reduce(value, op, true, false);
+    }
     std::string lane_reduce_helper() const { return ""; }
     // Metal has no lowering of a reduction of an array on the device
     // (GpuDeviceCapabilities::array_reductions), so the offload pass
@@ -169,9 +176,17 @@ struct MetalDialect {
             "mem_flags::mem_device | mem_flags::mem_threadgroup);\n";
     }
 
+    // The threads of the threadgroup wait for each other.
+    void emit_block_barrier(std::stringstream &src,
+            const std::string &indent) const {
+        src << indent << "threadgroup_barrier(mem_flags::mem_device | "
+            "mem_flags::mem_threadgroup);\n";
+    }
+
     // Metal's short loops are unrolled in the ASR (gpu_sequential_unroll).
     std::string unroll_pragma(bool /*deep*/ = false) const { return ""; }
     std::string unroll_few_pragma() const { return ""; }
+    std::string unroll_whole_pragma() const { return ""; }
 
     // Every real is single precision, so a literal needs no suffix to say
     // which precision it is.

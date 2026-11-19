@@ -240,7 +240,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_
         __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   3.00000000000000000e+00f;
         __1_k = 4;
         __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   4.00000000000000000e+00f;
-        #pragma unroll 16
+        #pragma unroll
         for (__gpu_elem_i1 = 1; __gpu_elem_i1 <= 4; __gpu_elem_i1++) {
             u[((int)(__gpu_elem_i1) - (1))] = (__libasr__created__var__0__array_constant_[((int)(__gpu_elem_i1) - (1))] * ((float)j__dc3));
         }
