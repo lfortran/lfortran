@@ -2691,7 +2691,13 @@ class ASRToLLVMVisitor;
                         return false;
                     }
                 }
-                return true;
+                // A variable of a module has the SAVE attribute whether it
+                // is written or not (F2018 8.5.16), and only the program
+                // finalizes the scope of a module, when it ends: it is
+                // finalized as the one without the attribute is.
+                if (!ASR::is_a<ASR::Module_t>(*owner)) {
+                    return true;
+                }
             }
             // Module-scope non-allocatable, non-pointer string variables
             // (including arrays of strings) have their data in static global
