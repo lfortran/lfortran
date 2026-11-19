@@ -12,17 +12,37 @@
 // (&is_assignment) before its first word is taken as a keyword.
 
 // ----------------------------------------------------------------------------
-// Predicates (ll_parser.cpp)
+// Lookaheads
+
+%nested "(" "[" : ")" "]" "/)" until TK_NEWLINE END_OF_FILE
 
 // The statement that starts here is an assignment: a name, any number of
 // parenthesized lists and `% name` after it, and then `=`, `=>` or `:=`
-%predicate is_assignment
+%lookahead is_assignment
+    : NAME ( NESTED | "%" NAME )* ( "=" | "=>" | ":=" )
+    ;
+
 // A declaration type starts here: an intrinsic type, or `type(`, `class(`
 // or `procedure(`
-%predicate is_var_type_start
+%lookahead is_var_type_start
+    : KW_INTEGER | KW_REAL | KW_COMPLEX | KW_LOGICAL | KW_CHARACTER | KW_BYTE
+    | KW_DOUBLE_PRECISION | KW_DOUBLE_COMPLEX
+    | KW_DOUBLE ( KW_PRECISION | KW_COMPLEX )
+    | ( KW_LIST | KW_SET | KW_DICT | KW_TUPLE | KW_TYPE | KW_CLASS
+        | KW_PROCEDURE ) "("
+    ;
+
 // After the `[` of an array constructor: `::` comes before the bracket that
 // closes it, as in `[integer :: 1, 2]`
-%predicate array_constructor_has_type
+%lookahead array_constructor_has_type
+    : ( NESTED | ~[ "::" | ")" | "]" | "/)" | TK_NEWLINE ] )* "::"
+    ;
+
+// `::` comes before the next `,` or `)` that is not nested, as in the
+// `integer :: i = 1:n` of a FORALL header
+%lookahead has_dbl_colon
+    : ( NESTED | ~[ "::" | "," | ")" | "]" | TK_NEWLINE ] )* "::"
+    ;
 
 // ----------------------------------------------------------------------------
 // Functions written by hand (ll_parser.cpp)

@@ -32,6 +32,27 @@ Declarations
     %predicate NAME
         A condition written by hand, to be used as `&NAME` or `!NAME`.
 
+    %nested OPEN... : CLOSE... until STOP...
+        The tokens that open and close a bracketed group, for NESTED below.
+        A group that reaches one of the STOP tokens is not closed.
+
+    %lookahead NAME
+        : PATTERN
+        ;
+        A condition on the tokens that follow, to be used as `&NAME` or
+        `!NAME`, written as a regular expression over tokens:
+
+            T           a token, or one of the classes NAME, SEP, `_` (any)
+            ~[ T | T ]  any token that is not one of these
+            NESTED      a bracketed group with all that is in it
+            A B         A and then B
+            A | B       A or B
+            ( A )       grouping; ( A )* any number of times, ( A )? optional
+
+        It is matched from left to right without going back: the next token
+        alone decides whether a repetition goes on and which alternative is
+        taken, so the cost is one pass over the tokens it matches.
+
     %operators NAME OPERAND
         left 8 "+" => ADD(x, y, @$)
         right 11 "**" => POW(x, y, @$)
@@ -193,6 +214,11 @@ class Rule:
         self.nullable, self.alts, self.line = nullable, alts, line
 
 
+class Lookahead:
+    def __init__(self, name, alts, line):
+        self.name, self.alts, self.line = name, alts, line
+
+
 class Extern:
     def __init__(self, type, first, single, resume=None):
         self.type, self.first, self.single = type, first, single
@@ -248,6 +274,45 @@ class BodyParser:
             error(self.line, "expected a token")
         self.i = m.end()
         return m.group(0)
+
+    def look_alts(self):
+        alts = [self.look_seq()]
+        while self.take("|"):
+            alts.append(self.look_seq())
+        return alts
+
+    def look_seq(self):
+        """A list of (kind, value, suffix), where kind is one of: tok, not,
+        nested, group"""
+        items = []
+        while True:
+            self.skip()
+            if self.i >= len(self.s) or self.s[self.i] in "|)":
+                return items
+            if self.take("("):
+                item = ["group", self.look_alts(), ""]
+                if not self.take(")"):
+                    error(self.line, "expected )")
+            elif self.take("~["):
+                toks = [self.token()]
+                while self.take("|"):
+                    toks.append(self.token())
+                if not self.take("]"):
+                    error(self.line, "expected ]")
+                item = ["not", toks, ""]
+            else:
+                t = self.token()
+                if t == "NESTED":
+                    item = ["nested", None, ""]
+                else:
+                    if t not in ("_", "NAME", "SEP") \
+                            and t not in self.tokens.type:
+                        error(self.line, "unknown token %s" % t)
+                    item = ["tok", t, ""]
+            if self.i < len(self.s) and self.s[self.i] in "*?":
+                item[2] = self.s[self.i]
+                self.i += 1
+            items.append(tuple(item))
 
     def alts(self):
         alts = [self.seq()]
@@ -405,6 +470,8 @@ def read_grammar(filename, tokens):
     rules = []
     externs = {}
     predicates = set()
+    lookaheads = []
+    nested = None
     operators = []
     i = 0
     while i < len(lines):
@@ -437,6 +504,39 @@ def read_grammar(filename, tokens):
         elif s.startswith("%predicate "):
             predicates.add(s.split()[1])
             i += 1
+        elif s.startswith("%nested "):
+            m = re.match(r"%nested\s+(.+?)\s*:\s*(.+?)\s+until\s+(.+)$", s)
+            if not m:
+                error(i + 1, "bad %nested")
+            nested = []
+            for part in m.groups():
+                p = BodyParser(part, i + 1, tokens)
+                toks = []
+                while True:
+                    p.skip()
+                    if p.i >= len(p.s):
+                        break
+                    toks.append(p.token())
+                nested.append(toks)
+            i += 1
+        elif s.startswith("%lookahead "):
+            name = s.split()[1]
+            j = i + 1
+            while lines[j].strip() != ";":
+                j += 1
+                if j >= len(lines):
+                    error(i + 1, "lookahead without the final `;` line")
+            body = "\n".join(lines[i+1:j])
+            if not body.lstrip().startswith(":"):
+                error(i + 2, "a lookahead starts with `:`")
+            p = BodyParser(body.replace(":", " ", 1), i + 2, tokens)
+            alts = p.look_alts()
+            p.skip()
+            if p.i < len(p.s):
+                error(p.line, "unexpected `%s`" % p.s[p.i])
+            lookaheads.append(Lookahead(name, alts, i + 1))
+            predicates.add(name)
+            i = j + 1
         elif s.startswith("%operators "):
             _, name, operand = s.split()
             ops = []
@@ -474,14 +574,16 @@ def read_grammar(filename, tokens):
             i = j + 1
         else:
             error(i + 1, "unexpected line: " + s)
-    return rules, externs, predicates, operators
+    return rules, externs, predicates, operators, lookaheads, nested
 
 
 # ----------------------------------------------------------------------------
 # The generator
 
 class Generator:
-    def __init__(self, rules, externs, predicates, operators, tokens):
+    def __init__(self, rules, externs, predicates, operators, tokens,
+            lookaheads=(), nested=None):
+        self.lookaheads, self.nested = lookaheads, nested
         self.rule_list = rules
         self.rules = {r.name: r for r in rules}
         self.externs = externs
@@ -507,7 +609,8 @@ class Generator:
                 if it.name not in self.rules and it.name not in self.externs:
                     error(it.line, "unknown rule `%s`" % it.name)
             elif isinstance(it, Pred) and it.name:
-                if it.name not in self.predicates:
+                if it.name not in self.predicates \
+                        and it.name not in self.rules:
                     error(it.line, "unknown predicate `%s`" % it.name)
             elif isinstance(it, Group):
                 for alt in it.alts:
@@ -742,6 +845,97 @@ class Generator:
             cur[END] = {}
         return root
 
+    # ------------------------------------------------------------------
+    # Lookaheads
+
+    def look_test(self, e):
+        return self.test(e, 0).replace("K[i]", "K[j]")
+
+    def look_first(self, item, line):
+        """The condition on K[j] with which the item starts"""
+        kind, value, _ = item
+        if kind == "tok":
+            return "K[j] != END_OF_FILE" if value == "_" \
+                else self.look_test(value)
+        if kind == "not":
+            return "!(%s)" % " || ".join(
+                [self.look_test(t) for t in value] + ["K[j] == END_OF_FILE"])
+        if kind == "nested":
+            if self.nested is None:
+                error(line, "NESTED needs a %nested declaration")
+            return self.any_of([self.look_test(t) for t in self.nested[0]])
+        return self.any_of([self.look_first_seq(alt, line) for alt in value])
+
+    def any_of(self, conds):
+        # No parentheses around a single comparison: Clang warns about them
+        return conds[0] if len(conds) == 1 else "(%s)" % " || ".join(conds)
+
+    def look_first_seq(self, seq, line):
+        if not seq or seq[0][2]:
+            error(line, "a repetition, an option or an alternative of a "
+                "lookahead has to start with a token that is always there")
+        return self.look_first(seq[0], line)
+
+    def gen_look_seq(self, seq, ind, line):
+        for item in seq:
+            kind, value, suffix = item
+            if suffix:
+                self.emit(ind, "%s (%s) {" % ("while" if suffix == "*"
+                    else "if", self.look_first(item, line)))
+                self.gen_look_item(item, ind + 1, line, True)
+                self.emit(ind, "}")
+            else:
+                self.gen_look_item(item, ind, line, False)
+
+    def gen_look_item(self, item, ind, line, checked):
+        kind, value, _ = item
+        if kind in ("tok", "not"):
+            if not checked:
+                self.emit(ind, "if (!(%s)) return false;"
+                    % self.look_first(item, line))
+            self.emit(ind, "j++;")
+        elif kind == "nested":
+            if not checked:
+                self.emit(ind, "if (!(%s)) return false;"
+                    % self.look_first(item, line))
+            opens, closes, stops = self.nested
+            self.emit(ind, "for (int depth = 0;;) {")
+            self.emit(ind + 1, "int t = K[j];")
+            self.emit(ind + 1, "if (%s) {" % " || ".join(
+                "t == %s" % t for t in opens))
+            self.emit(ind + 2, "depth++;")
+            self.emit(ind + 1, "} else if (%s) {" % " || ".join(
+                "t == %s" % t for t in closes))
+            self.emit(ind + 2, "depth--;")
+            self.emit(ind + 1, "} else if (%s) {" % " || ".join(
+                "t == %s" % t for t in stops))
+            self.emit(ind + 2, "return false;")
+            self.emit(ind + 1, "}")
+            self.emit(ind + 1, "j++;")
+            self.emit(ind + 1, "if (depth == 0) break;")
+            self.emit(ind, "}")
+        elif len(value) == 1:
+            self.gen_look_seq(value[0], ind, line)
+        else:
+            for n, alt in enumerate(value):
+                self.emit(ind, "%sif (%s) {" % ("} else " if n else "",
+                    self.look_first_seq(alt, line)))
+                self.emit(ind + 1, "j++;") if alt[0][0] in ("tok", "not") \
+                    else self.gen_look_item(alt[0], ind + 1, line, True)
+                self.gen_look_seq(alt[1:], ind + 1, line)
+            self.emit(ind, "} else {")
+            self.emit(ind + 1, "return false;")
+            self.emit(ind, "}")
+
+    def gen_lookahead(self, la):
+        self.emit(1, "bool %s() const {" % la.name)
+        self.emit(2, "size_t j = i;")
+        self.gen_look_item(("group", la.alts, ""), 2, la.line, False)
+        self.emit(2, "(void)j;")
+        self.emit(2, "return true;")
+        self.emit(1, "}")
+        self.emit(0, "")
+
     def test(self, e, pos):
         k = "K[i]" if pos == 0 else "K[i+%d]" % pos
         if e == "NAME":
@@ -785,6 +979,12 @@ class Generator:
         return " || ".join("(%s)" % a for a in alts)
 
     def pred_cond(self, p):
+        if p.name in self.rules:
+            # The tokens that the rule can start with
+            c = self.trie_cond(self.trie(self.first_rule(p.name, 2)), 0)
+            if c is None:
+                error(p.line, "`%s` can start with any token" % p.name)
+            return "!(%s)" % c if p.neg else "(%s)" % c
         if p.name:
             c = "%s()" % p.name
             return "!" + c if p.neg else c
@@ -1239,6 +1439,8 @@ class Generator:
         self.emit(2, "}")
         self.emit(1, "}")
         self.emit(0, "")
+        for la in self.lookaheads:
+            self.gen_lookahead(la)
         for op in self.operators:
             self.gen_operators(*op)
         for r in self.rule_list:
@@ -1253,8 +1455,10 @@ def main():
     tokens = Tokens(args[0])
     with open(args[2], "w", encoding="utf-8") as f:
         f.write(tokens.header(args[0].replace("\\", "/").split("/")[-1]))
-    rules, externs, predicates, operators = read_grammar(args[0], tokens)
-    g = Generator(rules, externs, predicates, operators, tokens)
+    rules, externs, predicates, operators, lookaheads, nested \
+        = read_grammar(args[0], tokens)
+    g = Generator(rules, externs, predicates, operators, tokens, lookaheads,
+        nested)
     text = g.generate(args[0].replace("\\", "/").split("/")[-1])
     with open(args[1], "w", encoding="utf-8") as f:
         f.write(text)
