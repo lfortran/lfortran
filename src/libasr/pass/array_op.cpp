@@ -2284,13 +2284,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return true;
     }
 
-    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool per_assign_realloc = false) {
+    // Reallocates `target` to the shape of `value` if `realloc` holds.
+    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool realloc) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
         ASR::ttype_t* underlying_target_type = ASRUtils::expr_type(underlying_target);
         ASR::expr_t* underlying_value = ASRUtils::get_past_array_physical_cast(value);
         bool array_copy = ASR::is_a<ASR::Var_t>(*underlying_value) && ASR::is_a<ASR::Var_t>(*underlying_target);
-        if (!realloc_lhs && !per_assign_realloc) {
+        if (!realloc) {
             return;
         }
         bool is_bitcast = ASR::is_a<ASR::BitCast_t>(*underlying_value);
@@ -2936,7 +2937,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     var_collector2_value.current_expr = const_cast<ASR::expr_t**>(&(assignment_t->m_value));
                     var_collector2_value.call_replacer();
                     insert_realloc_for_target(
-                        xx.m_args[i].m_a, xx.m_source, vars2);
+                        xx.m_args[i].m_a, xx.m_source, vars2, realloc_lhs);
                 }
                 generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
                 generated_loop = true;
@@ -3459,8 +3460,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             // (computed from the vector subscripts / section bounds)
             // before generating the element-wise loop, so the loop can
             // index into a buffer of the correct size.
-            if ((realloc_lhs ||
-                 xx.m_realloc_lhs ||
+            if ((xx.m_realloc_lhs ||
                  should_auto_realloc_component_assignment(xx.m_target)) &&
                 ASR::is_a<ASR::Var_t>(*xx.m_target) &&
                 ASRUtils::is_allocatable(ASRUtils::expr_type(xx.m_target)) &&
@@ -3492,7 +3492,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if (bounds_checking && !xx.m_move_allocation &&
                     ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
                     !(ASRUtils::is_allocatable(ASRUtils::expr_type(xx.m_target)) &&
-                      (realloc_lhs || xx.m_realloc_lhs ||
+                      (xx.m_realloc_lhs ||
                        should_auto_realloc_component_assignment(xx.m_target)))) {
                 checked_constructor = get_constructor_with_size(
                     ASR::down_cast<ASR::ArrayConstructor_t>(xx.m_value));

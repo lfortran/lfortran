@@ -1028,8 +1028,12 @@ bool set_allocation_size(
                 if ( !m_dims[i].m_length || !m_dims[i].m_start ) {
                     m_dims[i].loc = loc;
                     m_dims[i].m_start = int32_one;
+                    // The size of a rank one array is its extent
+                    ASR::expr_t* dim = n_dims == 1 ? nullptr : ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc, i + 1,
+                            ASRUtils::expr_type(int32_one)));
                     m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                        al, loc, value, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
+                        al, loc, value, dim, ASRUtils::expr_type(int32_one), nullptr, false));
                 }
                 allocate_dims.push_back(al, m_dims[i]);
             }
@@ -3588,6 +3592,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     // The assignments whose value reads the target only in place
     std::set<ASR::stmt_t*> assignments_reading_target_in_place;
+    // The values computed into a target whose shape is already checked
+    // against theirs (see make_matmul_result_shape_check)
+    std::set<ASR::expr_t*> values_checked_against_target;
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -4339,8 +4346,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // computed into it, as it would be checked against the shape of
             // the value.
             if( !bounds_checking ||
-                (ASRUtils::is_allocatable(xx.m_target) &&
-                 (realloc_lhs || xx.m_realloc_lhs)) ) {
+                (ASRUtils::is_allocatable(xx.m_target) && xx.m_realloc_lhs) ) {
                 matmul_target_shape_check.clear();
             } else if( matmul_target_shape_check.empty() ) {
                 matmul_into_target = nullptr;
@@ -4391,7 +4397,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
         }
         // e.g.; a = [b, a], where 'a' is an allocatable
-        if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
+        if (realloc_lhs && xx.m_realloc_lhs &&
+            ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
             ASRUtils::is_allocatable(xx.m_target)
         ) {
             // TODO: dealing with StructType would need thinking similar to the
@@ -4441,7 +4448,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::ttype_t* target_type = ASRUtils::expr_type(xx.m_target);
         ASR::ttype_t* value_type = ASRUtils::expr_type(xx.m_value);
         ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(xx.m_value);
-        if ((realloc_lhs || xx.m_realloc_lhs ||
+        if ((xx.m_realloc_lhs ||
                 ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) &&
             ASRUtils::is_array(target_type) &&
             ASRUtils::is_allocatable(target_type) &&
@@ -4672,6 +4679,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     operands, false));
                 current_body->push_back(al, make_matmul_result_shape_check(
                     ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr)));
+                values_checked_against_target.insert(expr);
             }
             ASR::expr_t* target = duplicator.duplicate_expr(matmul_target);
             exprs_with_target[expr] = std::make_pair(target, targetType::OriginalTarget);
@@ -5330,6 +5338,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::expr_t* lhs_var;
     // Sections that ArgSimplifier left in place (see get_sections_read_in_place)
     const std::set<ASR::expr_t*>* sections_read_in_place = nullptr;
+    // Whether the assignment whose value is being replaced may reallocate
+    // its target: with reallocation on assignment, an assignment that does
+    // not (such as `x(:) = v`, see full_section_target.cpp) is treated as
+    // without it.
+    bool assignment_realloc_lhs = true;
+    // Whether Debug checks are generated, and the values whose target
+    // ArgSimplifier already checked (see check_target_shape)
+    bool bounds_checking = false;
+    const std::set<ASR::expr_t*>* values_checked_against_target = nullptr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -5440,6 +5457,151 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
     }
 
+    // Whether `value`, computed into `target`, may read the storage of
+    // `target` while it writes it: it names the variable of `target`, or
+    // an array pointer that may point into `target`, which is a pointer or
+    // a target, e.g. `e = cshift(q, 1)` after `q => e`.
+    bool may_value_overlap_target(ASR::expr_t* target, ASR::expr_t* value) {
+        if( is_common_symbol_present_in_lhs_and_rhs(al, target, value,
+                dummies_sharing_actual) ) {
+            return true;
+        }
+        ASR::expr_t* designator = ASRUtils::get_past_array_physical_cast(target);
+        if( ASR::is_a<ASR::ArraySection_t>(*designator) ) {
+            designator = ASR::down_cast<ASR::ArraySection_t>(designator)->m_v;
+        }
+        return !is_unaliased_designator(designator) &&
+            can_rhs_refer_to_lhs(al, target, value, dummies_sharing_actual);
+    }
+
+    // The extent `merge(size(a, i), size(a, i + 1), i < dim)` of the result
+    // of a reduction along a constant `dim` (see set_allocation_size) as the
+    // size it selects, which a Debug check can evaluate. nullptr for an
+    // extent with any other elemental intrinsic.
+    static ASR::expr_t* get_checkable_extent(ASR::expr_t* extent) {
+        if( !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*extent) ) {
+            return extent;
+        }
+        ASR::IntrinsicElementalFunction_t* merge =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(extent);
+        if( merge->m_intrinsic_id != static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::Merge) ||
+            merge->n_args != 3 ||
+            !ASR::is_a<ASR::IntegerCompare_t>(*merge->m_args[2]) ) {
+            return nullptr;
+        }
+        ASR::IntegerCompare_t* compare = ASR::down_cast<ASR::IntegerCompare_t>(
+            merge->m_args[2]);
+        int64_t left, right;
+        if( compare->m_op != ASR::cmpopType::Lt ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(compare->m_left) ?
+                ASRUtils::expr_value(compare->m_left) : compare->m_left, left) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(compare->m_right) ?
+                ASRUtils::expr_value(compare->m_right) : compare->m_right, right) ) {
+            return nullptr;
+        }
+        return get_checkable_extent(left < right ? merge->m_args[0] : merge->m_args[1]);
+    }
+
+    // Whether set_allocation_size gives the shape of `value`, a RESHAPE or
+    // an intrinsic array function.
+    static bool is_result_shape_known(ASR::expr_t* value) {
+        if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
+            ASR::is_a<ASR::ArrayReshape_t>(*value) ) {
+            return true;
+        }
+        if( !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value) ) {
+            return false;
+        }
+        switch( ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value)->m_arr_intrinsic_id ) {
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Product):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxVal):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Reduce):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack): {
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    // An intrinsic array function or a RESHAPE computed into the target of
+    // an assignment that does not reallocate it, such as `x = cshift(y, 1)`,
+    // writes its result into the target as it is. Nothing else compares
+    // their shapes, so in Debug the target is checked here to have the
+    // shape of `value`, as array_op checks it for an element-wise value.
+    void check_target_shape(ASR::expr_t* target, ASR::expr_t* value) {
+        if( !bounds_checking || !ASRUtils::is_array(ASRUtils::expr_type(target)) ||
+            !is_result_shape_known(value) ||
+            (values_checked_against_target != nullptr &&
+             values_checked_against_target->count(value) > 0) ) {
+            return;
+        }
+        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
+        Vec<ASR::dimension_t> dims;
+        bool add_allocated_check = false;
+        ASR::expr_t* len = nullptr;
+        if( !set_allocation_size(al, value, target, dims, n_dims,
+                add_allocated_check, len) ||
+            add_allocated_check || dims.size() != n_dims ) {
+            return;
+        }
+        const Location& loc = value->base.loc;
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::array_extent_check_t> checks;
+        checks.reserve(al, n_dims);
+        for( size_t i = 0; i < n_dims; i++ ) {
+            if( get_checkable_extent(dims[i].m_length) == nullptr ) {
+                return;
+            }
+        }
+        for( size_t i = 0; i < n_dims; i++ ) {
+            ASR::expr_t* extent = duplicator.duplicate_expr(
+                get_checkable_extent(dims[i].m_length));
+            if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(extent)) != 4 ) {
+                extent = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, extent,
+                    ASR::cast_kindType::IntegerToInteger, int32_type, nullptr, nullptr));
+            }
+            ASR::array_extent_check_t check;
+            check.loc = loc;
+            check.m_left = 0;
+            check.m_right = 1;
+            check.m_dim = i + 1;
+            check.m_left_extent = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                duplicator.duplicate_expr(target),
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i + 1, int32_type)),
+                int32_type, nullptr));
+            check.m_right_extent = extent;
+            checks.push_back(al, check);
+        }
+        // The value is named by the target it is computed into
+        ASR::expr_t* result = duplicator.duplicate_expr(target);
+        result->base.loc = loc;
+        Vec<ASR::expr_t*> components;
+        components.reserve(al, 1);
+        components.push_back(al, result);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+            al, loc, duplicator.duplicate_expr(target), components.p,
+            components.size(), checks.p, checks.size(), false)));
+    }
+
     bool is_current_expr_linked_to_target_then_return(ASR::expr_t** &current_expr, ExprsWithTargetType& exprs_with_target,
         Vec<ASR::stmt_t*>* &current_body, bool &realloc_lhs, Allocator& al) {
         if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
@@ -5452,14 +5614,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             if( underlying_target != target &&
                 ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
                 target_Type == targetType::OriginalTarget &&
-                realloc_lhs ) {
+                realloc_lhs && assignment_realloc_lhs ) {
                 insert_allocate_stmt_for_array(al, underlying_target, *current_expr,
                                                current_body, target, true);
             } else if( ASRUtils::is_allocatable(ASRUtils::expr_type(target)) &&
                 target_Type == targetType::OriginalTarget &&
-                realloc_lhs ) {
+                realloc_lhs && assignment_realloc_lhs ) {
                 insert_allocate_stmt_for_array(al, target, *current_expr,
                                                current_body, nullptr, true);
+            } else if( target_Type == targetType::OriginalTarget &&
+                ASR::is_a<ASR::IntrinsicArrayFunction_t>(**current_expr) ) {
+                check_target_shape(target, *current_expr);
             }
             return true;
         }
@@ -5919,11 +6084,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::expr_t* target = exprs_with_target[*current_expr].first;
             ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
             ASRUtils::extract_indices(target, m_args, n_args);
-            if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
+            if( (target_Type == targetType::OriginalTarget &&
+                 ((realloc_lhs && assignment_realloc_lhs) ||
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&
-                   is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr, dummies_sharing_actual))) ) ||
+                   may_value_overlap_target(target, *current_expr))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
                 (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ||
                 // The call associates its pointer result; the assignment copies from it.
@@ -5986,7 +6152,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             (is_current_expr_linked_to_target(exprs_with_target, current_expr) && ((
              ASRUtils::is_array(ASRUtils::expr_type(exprs_with_target[*current_expr].first)) ||
              ASRUtils::is_array(x->m_type)) &&
-             is_common_symbol_present_in_lhs_and_rhs(al, exprs_with_target[*current_expr].first, *current_expr, dummies_sharing_actual)))
+             may_value_overlap_target(exprs_with_target[*current_expr].first, *current_expr)))
         ) {
             // x = transpose(x), where 'x' is user-variable
             // needs have a temporary, there might be more
@@ -6068,7 +6234,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         // (a). there is no target, e.g. size([1, 2, 3])
         // (b). there is an OriginalTarget and realloc_lhs is true e.g. `x = [1, 2, 3, 4]`
         if (exprs_with_target.find(*current_expr) == exprs_with_target.end() ||
-            (exprs_with_target[*current_expr].second == targetType::OriginalTarget && realloc_lhs)) {
+            (exprs_with_target[*current_expr].second == targetType::OriginalTarget &&
+             realloc_lhs && assignment_realloc_lhs)) {
             force_replace_current_expr_for_array(current_expr, "_array_constant_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
         }
@@ -6207,6 +6374,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
+        // The result of a RESHAPE is given to an allocatable target with
+        // its shape, so only another target is checked.
+        if( is_current_expr_linked_to_target(exprs_with_target, current_expr) &&
+            exprs_with_target[*current_expr].second == targetType::OriginalTarget &&
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(
+                ASRUtils::get_past_array_physical_cast(
+                    exprs_with_target[*current_expr].first))) ) {
+            check_target_shape(exprs_with_target[*current_expr].first, *current_expr);
+        }
         ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
         if( x->m_value == nullptr && x->m_result == nullptr && x->m_pad == nullptr &&
             ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_array)) ==
@@ -6489,6 +6665,13 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.current_body = current_body;
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
+    }
+
+    // See ReplaceExprWithTemporary::check_target_shape
+    void check_target_shapes(bool bounds_checking,
+            const std::set<ASR::expr_t*>& values_checked_against_target) {
+        replacer.bounds_checking = bounds_checking;
+        replacer.values_checked_against_target = &values_checked_against_target;
     }
 
     void visit_ttype(const ASR::ttype_t& /*x*/) {
@@ -6832,6 +7015,13 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_Assignment(const ASR::Assignment_t &x) {
+        bool assignment_realloc_lhs_copy = replacer.assignment_realloc_lhs;
+        replacer.assignment_realloc_lhs = x.m_realloc_lhs;
+        replace_in_assignment(x);
+        replacer.assignment_realloc_lhs = assignment_realloc_lhs_copy;
+    }
+
+    void replace_in_assignment(const ASR::Assignment_t &x) {
         ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
@@ -7670,8 +7860,72 @@ class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTa
 
 };
 
+// The variables of a translation unit
+class VariableCollector: public ASR::BaseWalkVisitor<VariableCollector> {
+    public:
+
+    std::set<ASR::symbol_t*> variables;
+
+    void visit_Variable(const ASR::Variable_t& x) {
+        variables.insert(const_cast<ASR::symbol_t*>(&x.base));
+    }
+};
+
+// With reallocation on assignment, array_op reallocates the target of an
+// assignment that says so (`realloc_lhs`), as the semantics do for every
+// intrinsic assignment to an allocatable variable. An assignment to an
+// array temporary that this pass creates but does not allocate before it,
+// such as the copy of a structure array for output, says so too, so that
+// the temporary is still allocated by it, and so does an assignment to a
+// polymorphic temporary, which takes the dynamic type of its value there.
+class TemporaryAssignmentsReallocator:
+    public ASR::BaseWalkVisitor<TemporaryAssignmentsReallocator> {
+    public:
+
+    const std::set<ASR::symbol_t*>& variables_before_pass;
+    // The temporaries allocated so far
+    std::set<ASR::symbol_t*> allocated;
+
+    TemporaryAssignmentsReallocator(const std::set<ASR::symbol_t*>& variables_before_pass_):
+        variables_before_pass(variables_before_pass_) {}
+
+    ASR::symbol_t* get_temporary(ASR::expr_t* x) {
+        ASR::symbol_t* root = get_root_var(x);
+        if( root == nullptr ) {
+            return nullptr;
+        }
+        root = ASRUtils::symbol_get_past_external(root);
+        return variables_before_pass.count(root) == 0 ? root : nullptr;
+    }
+
+    void visit_Allocate(const ASR::Allocate_t& x) {
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( ASR::symbol_t* temporary = get_temporary(x.m_args[i].m_a) ) {
+                allocated.insert(temporary);
+            }
+        }
+        ASR::BaseWalkVisitor<TemporaryAssignmentsReallocator>::visit_Allocate(x);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t& x) {
+        ASR::symbol_t* temporary = get_temporary(x.m_target);
+        if( temporary != nullptr && x.m_overloaded == nullptr && !x.m_move_allocation &&
+            (allocated.count(temporary) == 0 || ASRUtils::is_class_type(
+                ASRUtils::extract_type(ASRUtils::expr_type(x.m_target)))) &&
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+            ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_target)) ) {
+            const_cast<ASR::Assignment_t&>(x).m_realloc_lhs = true;
+        }
+        ASR::BaseWalkVisitor<TemporaryAssignmentsReallocator>::visit_Assignment(x);
+    }
+};
+
 void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
                      const PassOptions &pass_options) {
+    VariableCollector variables_before_pass;
+    if( pass_options.realloc_lhs_arrays ) {
+        variables_before_pass.visit_TranslationUnit(unit);
+    }
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
@@ -7697,7 +7951,12 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place,
         dummies_sharing_actual, pass_options.stack_arrays);
     c.assignments_reading_target_in_place = &b.assignments_reading_target_in_place;
+    c.check_target_shapes(pass_options.bounds_checking, b.values_checked_against_target);
     c.visit_TranslationUnit(unit);
+    if( pass_options.realloc_lhs_arrays ) {
+        TemporaryAssignmentsReallocator reallocator(variables_before_pass.variables);
+        reallocator.visit_TranslationUnit(unit);
+    }
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
     #if defined(WITH_LFORTRAN_ASSERT)

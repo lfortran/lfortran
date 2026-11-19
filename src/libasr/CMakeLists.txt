@@ -142,6 +142,7 @@ set(SRC
     pass/gpu_array_statements.cpp
     pass/gpu_call_guards.cpp
     pass/dead_array_store.cpp
+    pass/full_section_target.cpp
     pass/gpu_vector_lanes.cpp
     pass/gpu_wide_loads.cpp
     pass/gpu_memory_space.cpp
