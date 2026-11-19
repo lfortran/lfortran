@@ -113,7 +113,8 @@
 // parts separated by `%`, where a part is a name with its arguments, and
 // then a substring range or the cosubscripts; or the instance of a template
 rule designator -> ast_t*
-    : n=id t=instantiate_symbols "(" args=fnarray_arg_list_opt ")"
+    : ![ _ "(" | _ "%" | _ "[" | _ "{" ] id
+    | n=id t=instantiate_symbols "(" args=fnarray_arg_list_opt ")"
                                     => FUNCCALLORARRAY5(n, args, t, @$)
     | parts=designator_part % "%"
         ( "[" co=coarray_arg_list "]" => coarray_ref(parts, co, @$)
