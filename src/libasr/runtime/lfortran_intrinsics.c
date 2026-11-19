@@ -13551,18 +13551,19 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
 }
 
 
-// Helper to convert Fortran D exponent notation to E for C parsing
-// Modifies buffer in-place, replacing D/d with E
+// Helper to convert Fortran D and Q exponent notation to E for C parsing
+// Modifies buffer in-place, replacing D/d and Q/q with E
 static void convert_fortran_d_exponent(char* buffer) {
     for (int i = 0; buffer[i] != '\0'; i++) {
-        if (buffer[i] == 'D' || buffer[i] == 'd') {
+        if (buffer[i] == 'D' || buffer[i] == 'd'
+                || buffer[i] == 'Q' || buffer[i] == 'q') {
             buffer[i] = 'E';
         }
     }
 }
 
 // Normalize Fortran real tokens for C parsing.
-// Handles D/d exponents and legacy exponent shorthand such as `1.-3` -> `1.E-3`.
+// Handles D/d and Q/q exponents and legacy exponent shorthand such as `1.-3` -> `1.E-3`.
 // Returns 1 if an exponent marker was inserted, 0 otherwise.
 static int normalize_fortran_real_token(char* buffer, size_t buffer_capacity) {
     convert_fortran_d_exponent(buffer);
@@ -18794,10 +18795,10 @@ LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *forma
     if (iostat) *iostat = 0;
 }
 
-// Replace Fortran 'd'/'D' exponent with 'e'/'E' so that C's sscanf can parse it
+// Replace Fortran 'd'/'D' and 'q'/'Q' exponents with 'e' so that C's sscanf can parse them
 static void _lfortran_replace_d_exponent(char *buf) {
     for (int i = 0; buf[i]; i++) {
-        if ((buf[i] == 'd' || buf[i] == 'D') && i > 0
+        if ((buf[i] == 'd' || buf[i] == 'D' || buf[i] == 'q' || buf[i] == 'Q') && i > 0
             && (buf[i-1] == '.' || (buf[i-1] >= '0' && buf[i-1] <= '9'))) {
             buf[i] = 'e';
         }
