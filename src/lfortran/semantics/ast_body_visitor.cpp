@@ -5259,6 +5259,47 @@ public:
                 tmp_type = ASRUtils::type_get_past_pointer(tmp_type);
             }
 
+            bool selector_is_whole_array = ASR::is_a<ASR::Var_t>(*tmp_expr) &&
+                !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer);
+            if ( !create_associate_stmt && !selector_is_whole_array &&
+                    ASRUtils::is_array(tmp_type) ) {
+                // The lower bound of each dimension of the associate name is
+                // LBOUND of the selector (F2018 11.1.3.3), which is 1 unless
+                // the selector is a whole array (F2018 16.9.109). The type of
+                // an expression can carry the bounds of an operand instead,
+                // and that of a parenthesized variable always does.
+                ASR::dimension_t* selector_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(tmp_type, selector_dims);
+                bool is_shape_known = !ASRUtils::is_dimension_empty(selector_dims, n_dims);
+                // A variable without a declared shape is copied into an
+                // array of its current shape. A polymorphic array and a
+                // string whose length is not an expression keep the storage
+                // that the type of the variable asks for, which takes the
+                // bounds of the variable on assignment.
+                ASR::ttype_t* element_type = ASRUtils::extract_type(tmp_type);
+                bool is_shape_inquirable = ASR::is_a<ASR::Var_t>(*tmp_expr) &&
+                    !ASRUtils::is_class_type(element_type) &&
+                    !(ASR::is_a<ASR::String_t>(*element_type) &&
+                      ASR::down_cast<ASR::String_t>(element_type)->m_len_kind !=
+                        ASR::string_length_kindType::ExpressionLength);
+                if ( is_shape_known || is_shape_inquirable ) {
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                        al, tmp_expr->base.loc, 4));
+                    for ( size_t d = 0; d < n_dims; d++ ) {
+                        ASR::dimension_t dim;
+                        dim.loc = tmp_expr->base.loc;
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, tmp_expr->base.loc, 1, int_type));
+                        dim.m_length = is_shape_known ? selector_dims[d].m_length :
+                            ASRUtils::get_size(tmp_expr, d + 1, al);
+                        dims.push_back(al, dim);
+                    }
+                    tmp_type = ASRUtils::duplicate_type(al,
+                        ASRUtils::type_get_past_allocatable_pointer(tmp_type), &dims);
+                }
+            }
+
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
