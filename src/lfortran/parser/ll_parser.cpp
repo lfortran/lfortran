@@ -100,6 +100,13 @@ struct LL {
     size_t n_tokenizer_errors = 0;
     // The token at which a statement at the top level of the file starts
     size_t top_statement = SIZE_MAX;
+    // The token after the last statement, before its separators
+    size_t stmt_end = 0;
+    // The token after the statement that ended a labeled DO loop (with the
+    // separators after it), and the label; a loop around it with the same
+    // label ends there too
+    size_t do_end = SIZE_MAX;
+    int64_t do_end_label = 0;
 
     LL(Allocator &al, LCompilers::diag::Diagnostics &diag, const int *K,
         const YYSTYPE *V, const Location *Lc, const std::string &src,
@@ -433,11 +440,63 @@ struct LL {
             i = s;
             return nullptr;
         }
+        if (has_label) LABEL(st, V[s].n);
+        // A labeled DO loop ends with its last statement, which has the
+        // separators
+        if (do_end == i) return st;
+        stmt_end = i;
         Vec<ast_t*> sp = sep();
         Location l = span(s);
-        if (has_label) LABEL(st, V[s].n);
         TRIVIA_(st, TRIVIA_AFTER(sp, l));
         return st;
+    }
+
+    static bool is_enddo(int t) { return t == KW_END_DO || t == KW_ENDDO; }
+
+    // The loop ends with the statement that has its label, together with
+    // the loops around it that have the same label:
+    //
+    //     do 10 i = 1, n
+    //     do 10 j = 1, m
+    //         ...
+    //  10 continue
+    //
+    // which the tokens cannot say, so it is found here and not in the
+    // grammar.
+    Vec<ast_t*> labeled_do_body(size_t lab) {
+        int64_t label = INTEGER3(V[lab].int_suffix);
+        Vec<ast_t*> v;
+        LIST_NEW(v);
+        for (;;) {
+            bool labeled = (K[i] == TK_LABEL);
+            if (labeled && V[i].n == label) {
+                if (is_enddo(K[i+1])) {
+                    // `10 end do` is `10 continue`, which is not kept
+                    i += 2;
+                    if (is_name(K[i])) i++;
+                    stmt_end = i;
+                    sep();
+                } else {
+                    ast_t *st = statement();
+                    if (st == nullptr) unsup(__LINE__);
+                    LIST_ADD(v, st);
+                }
+                break;
+            }
+            if (is_enddo(K[labeled ? i + 1 : i])) {
+                // An END DO that is not the statement with the label
+                enddo();
+                return v;
+            }
+            ast_t *st = statement();
+            if (st == nullptr) unsup(__LINE__);
+            LIST_ADD(v, st);
+            // The statement was a loop that ended with this label
+            if (do_end == i && do_end_label == label) break;
+        }
+        do_end = i;
+        do_end_label = label;
+        return v;
     }
 
     ast_t* assignment_statement() {
@@ -1170,15 +1229,15 @@ struct LL {
     }
 
     ast_t* do_loop_label(int64_t label, ast_t *var, ast_t *a, ast_t *b,
-            ast_t *c, ast_t *trivia, Vec<ast_t*> &body, int64_t end_label,
-            Location &l) {
-        // The label of the END DO is not kept for a loop that has a label
-        (void)end_label;
+            ast_t *c, ast_t *trivia, Vec<ast_t*> &body, Location l) {
+        // The loop ends with its last statement, not with the separators
+        // after it
+        if (do_end == i) l.last = Lc[stmt_end-1].last;
         ast_t *r;
         if (c) {
-            r = DO3_LABEL(label, var, a, b, c, trivia, body, end_label, l);
+            r = DO3_LABEL(label, var, a, b, c, trivia, body, 0, l);
         } else {
-            r = DO2_LABEL(label, var, a, b, trivia, body, end_label, l);
+            r = DO2_LABEL(label, var, a, b, trivia, body, 0, l);
         }
         return r;
     }

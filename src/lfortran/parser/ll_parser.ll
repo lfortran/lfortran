@@ -74,6 +74,9 @@
 %extern concurrent_header -> ConcurrentHeader first: "("
 // "," and the specifiers of EVENT WAIT
 %extern event_wait_specs -> Vec<ast_t*> first: ","
+// The statements of the DO loop with the label of the token `lab`, up to and
+// including the statement that has the label
+%extern labeled_do_body -> Vec<ast_t*>
 // The declarations and statements of a program unit or a BLOCK. With
 // --continue-compilation, after a syntax error in the rest of the unit the
 // parser goes on with more declarations and statements.
@@ -502,8 +505,8 @@ rule do_statement -> ast_t*
         sp=sep body=statement* enddo
         => do_concurrent(h, loc, TRIVIA_AFTER(sp, @$), body, @$)
     | KW_DO lab=TK_INTEGER ","? var=id "=" a=expr "," b=expr ( "," c=expr )?
-        sp=sep body=statement* end_label=enddo
-        => do_loop_label(INTEGER3($lab), var, a, b, c, TRIVIA_AFTER(sp, @$), body, end_label, @$)
+        sp=sep body=labeled_do_body(lab)
+        => do_loop_label(INTEGER3($lab), var, a, b, c, TRIVIA_AFTER(sp, @$), body, @$)
     | KW_DO ","? var=id "=" a=expr "," b=expr ( "," c=expr )?
         sp=sep body=statement* end_label=enddo
         => do_loop(var, a, b, c, TRIVIA_AFTER(sp, @$), body, end_label, @$)

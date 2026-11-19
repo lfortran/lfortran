@@ -307,11 +307,10 @@ statement itself:
     `goto10`); the rest of the statement is tokenized by the longest match.
     A few keywords need more than that, see `Mode`.
 
-Two things depend on the previous statements: a function or a subroutine
+One thing depends on the previous statements: a function or a subroutine
 statement is only recognized where a program unit can start (`integer
 function f(n)` and the declaration of the array `functionf` are otherwise
-the same characters), and the statement that ends a labeled DO loop is
-found by its label.
+the same characters).
 */
 struct FixedFormStatements {
     Tokenizer t;
@@ -321,8 +320,6 @@ struct FixedFormStatements {
     std::vector<YYSTYPE> stypes;
     std::vector<int> tokens;
     std::vector<Location> locations;
-    // The labels of the labeled DO loops that are open
-    std::vector<int64_t> do_labels;
     // The program units that are open: 'p'rogram, 'm'odule, 's'ubroutine,
     // 'f'unction, 'b'lock data
     std::vector<char> units;
@@ -939,11 +936,8 @@ struct FixedFormStatements {
                     unsigned char *end = cur;
                     while (is_digit(*end)) end++;
                     if (end > cur) {
-                        YYSTYPE y;
-                        lex_int_large(m_a, cur, end, y.int_suffix.int_n,
-                            y.int_suffix.int_kind);
-                        push(TK_INTEGER, y, cur, end);
-                        do_labels.push_back(y.int_suffix.int_n.n);
+                        // The label: only digits, `do10e1=1,5` is not a real
+                        push_integer(TK_INTEGER, cur, end, end);
                         cur = end;
                     }
                     if (next_is(cur, "while(")) {
@@ -996,23 +990,6 @@ struct FixedFormStatements {
         rest(cur);
     }
 
-    // The `end do` of a labeled DO loop that ends with the statement
-    // [first, cur). The token covers the statement, so that the loop ends
-    // there and not at the statement after it.
-    void push_end_do(const unsigned char *first, const unsigned char *cur) {
-        size_t len = 1;
-        if (cur > first) {
-            const unsigned char *last = cur - 1;
-            while (last > first && (*last == '\n' || *last == '\r'
-                    || *last == ';')) {
-                last--;
-            }
-            len = last - first + 1;
-        }
-        push_token(first, KW_END_DO, "end_do", len);
-        push_newline(cur);
-    }
-
     // The next statement, with its label
     void labeled_statement(unsigned char *&cur) {
         if (units.empty()) {
@@ -1028,33 +1005,7 @@ struct FixedFormStatements {
             }
         }
         int64_t l = label(cur);
-        if (l == -1 || do_labels.empty() || do_labels.back() != l) {
-            statement(cur, l);
-            return;
-        }
-        if (next_is(cur, "enddo")) {
-            do_labels.pop_back();
-            statement(cur, l);
-            return;
-        }
-        // The statement ends all the DO loops that have its label. A
-        // `continue` is dropped: the label becomes the label of the
-        // (innermost) `end do`.
-        unsigned char *first = cur;
-        if (next_is(cur, "continue") && is_eos(cur + 8)) {
-            cur += 8;
-            if (*cur == ';') {
-                while (*cur == ';') cur++;
-            }
-            if (*cur == '\r') cur++;
-            if (*cur == '\n') cur++;
-        } else {
-            statement(cur, l);
-        }
-        while (!do_labels.empty() && do_labels.back() == l) {
-            push_end_do(first, cur);
-            do_labels.pop_back();
-        }
+        statement(cur, l);
     }
 
     void tokenize(unsigned char *&cur) {
@@ -1062,15 +1013,6 @@ struct FixedFormStatements {
             unsigned char *start = cur;
             labeled_statement(cur);
             if (cur == start) rest(cur);
-        }
-        if (!do_labels.empty()) {
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
-            diag.add(diag::Diagnostic(
-                "End of file encountered in labeled do loop (loop is not terminated)",
-                diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
-            throw parser_local::TokenizerAbort();
         }
         push_token(cur, END_OF_FILE, "EOF", 3);
     }
