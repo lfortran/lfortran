@@ -36,8 +36,7 @@ rewritten:
   whole array in any case, reallocating it to the shape and lower bounds
   of the result, or a RESHAPE, whose result is given to a whole
   allocatable array with its shape;
-* an assumed-rank or assumed-size `x`, a coarray;
-* with reallocation on assignment, an allocatable `x`.
+* an assumed-rank or assumed-size `x`, a coarray.
 
 A run-time check in Debug that `x` is allocated and conforms to `v` stays,
 as for the whole array.
@@ -219,8 +218,6 @@ bool is_reallocating_value(ASR::expr_t *value) {
 
 class FullSectionTarget: public ASR::BaseWalkVisitor<FullSectionTarget> {
 public:
-    explicit FullSectionTarget(bool realloc_lhs_): realloc_lhs(realloc_lhs_) {}
-
     void visit_Assignment(const ASR::Assignment_t &x) {
         ASR::Assignment_t &xx = const_cast<ASR::Assignment_t&>(x);
         if (xx.m_overloaded || xx.m_move_allocation ||
@@ -232,24 +229,19 @@ public:
         if (!is_whole_array_like_section(section->m_v) ||
                 !is_full_section(section) ||
                 (ASRUtils::is_allocatable(ASRUtils::expr_type(section->m_v)) &&
-                 (realloc_lhs || is_reallocating_value(xx.m_value)))) {
+                 is_reallocating_value(xx.m_value))) {
             return;
         }
         xx.m_target = section->m_v;
         xx.m_realloc_lhs = false;
     }
-
-private:
-    // With reallocation on assignment, the passes below reallocate an
-    // allocatable whole-array target whatever the assignment says.
-    bool realloc_lhs;
 };
 
 } // namespace
 
 void pass_full_section_target(Allocator &/*al*/, ASR::TranslationUnit_t &unit,
-        const PassOptions &pass_options) {
-    FullSectionTarget v(pass_options.realloc_lhs_arrays);
+        const PassOptions &/*pass_options*/) {
+    FullSectionTarget v;
     v.visit_TranslationUnit(unit);
 }
 
