@@ -846,11 +846,19 @@ struct LL {
         return SUBROUTINE(name, args, b, trivia, decls, ce, l);
     }
 
-    // The statements `body` of a block, with a CONTINUE for the label of the
-    // END statement `e` that ends the block
-    Vec<ast_t*> with_end_label(Vec<ast_t*> &body, const EndStmt &e) {
+    // An IF construct; a label of its END IF `e` is the label of a CONTINUE
+    // at the end of the block that ends there. (The lists are passed to the
+    // macros, which use them more than once, only when they are complete.)
+    ast_t* if_then(ast_t *cond, ast_t *trivia, Vec<ast_t*> &body,
+            const EndStmt &e, Location &l) {
         append_labeled_end(m_a, body, e.label, e.loc);
-        return body;
+        return IF1(cond, trivia, body, l);
+    }
+
+    ast_t* if_else(ast_t *cond, ast_t *trivia, Vec<ast_t*> &body,
+            Vec<ast_t*> &orelse, const EndStmt &e, Location &l) {
+        append_labeled_end(m_a, orelse, e.label, e.loc);
+        return IF2(cond, trivia, body, orelse, l);
     }
 
     // The members `a(i)%b%` of a designator: all its parts but the last one
@@ -952,12 +960,13 @@ struct LL {
         return h;
     }
 
-    Vec<ast_t*> event_wait_specs(ast_t *k, Vec<ast_t*> &stats) {
+    // EVENT WAIT with the keyword argument `k` (or null) and `stats`
+    ast_t* event_wait(ast_t *e, ast_t *k, Vec<ast_t*> &stats, Location &l) {
         Vec<ast_t*> specs;
         LIST_NEW(specs);
         if (k) LIST_ADD(specs, k);
         for (size_t j = 0; j < stats.size(); j++) LIST_ADD(specs, stats[j]);
-        return specs;
+        return EVENT_WAIT1(e, specs, l);
     }
 
     // The objects after the name of a group are in the group

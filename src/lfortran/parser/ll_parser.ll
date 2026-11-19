@@ -371,7 +371,7 @@ rule statement1? -> ast_t*
     | KW_EVENT KW_WAIT "(" e=expr
         ( ")"                       => EVENT_WAIT(e, @$) )?
         "," ( k=event_wait_kw ( stats=sync_stat_list )? )? ")"
-                                    => EVENT_WAIT1(e, event_wait_specs(k, stats), @$)
+                                    => event_wait(e, k, stats, @$)
     ;
 
 // The format of a PRINT statement; `*` is null
@@ -548,8 +548,8 @@ rule if_block(size_t s, ast_t *cond) -> ast_t*
         ( KW_ELSE blk=if_construct  => IF3(cond, TRIVIA_AFTER(sp, @$), body, blk, @$)
         | blk=elseif_construct      => IF3(cond, TRIVIA_AFTER(sp, @$), body, blk, @$)
         | KW_ELSE id? sp2=sep orelse=statement* e=endif
-                                    => IF2(cond, TRIVIA(sp, sp2, @$), body, with_end_label(orelse, e), @$)
-        | e=endif                   => IF1(cond, TRIVIA_AFTER(sp, @$), with_end_label(body, e), @$)
+                                    => if_else(cond, TRIVIA(sp, sp2, @$), body, orelse, e, @$)
+        | e=endif                   => if_then(cond, TRIVIA_AFTER(sp, @$), body, e, @$)
         )
     ;
 
