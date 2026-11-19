@@ -2014,7 +2014,9 @@ public:
                 return false;
             }
             for (ASR::symbol_t *s : e.scalars) {
-                if (!k.private_scalar(s)) return false;
+                if (!k.private_scalar(s) || k.first_lane_scalars.count(s)) {
+                    return false;
+                }
                 all_inside.insert(s);
             }
             block_scopes.insert(e.block_scopes.begin(), e.block_scopes.end());
@@ -2025,6 +2027,7 @@ public:
             Names names;
             for (ASR::stmt_t *s : groups[j]) names.visit_stmt(*s);
             for (ASR::symbol_t *s : names.found) {
+                if (k.first_lane_scalars.count(s)) return false;
                 if (all_inside.count(s) && !effects[j]->scalars.count(s)) {
                     return false;
                 }
@@ -2374,7 +2377,8 @@ private:
         if (!ASR::is_a<ASR::Var_t>(*e)) return false;
         ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(e)->m_v);
-        if (!ASR::is_a<ASR::Variable_t>(*s) || all_inside.count(s)) {
+        if (!ASR::is_a<ASR::Variable_t>(*s) || all_inside.count(s)
+                || k.first_lane_scalars.count(s)) {
             return false;
         }
         ASR::ttype_t *t = ASRUtils::symbol_type(s);
@@ -3698,7 +3702,8 @@ private:
     }
 
     // Whether every lane of an iteration evaluates `test` alike: it reads
-    // no shared memory and no array, and calls only pure functions.
+    // no shared memory, no array and no scalar only the first lane holds,
+    // and calls only pure functions.
     bool uniform_test(ASR::expr_t *test) {
         if (reads_array_element(test)) return false;
         Effects e(k);
@@ -3707,8 +3712,9 @@ private:
         Names names;
         names.visit_expr(*test);
         for (ASR::symbol_t *s : names.found) {
-            if (ASR::is_a<ASR::Variable_t>(*s)
-                    && ASRUtils::is_array(ASRUtils::symbol_type(s))) {
+            if (k.first_lane_scalars.count(s)
+                    || (ASR::is_a<ASR::Variable_t>(*s)
+                        && ASRUtils::is_array(ASRUtils::symbol_type(s)))) {
                 return false;
             }
         }
