@@ -30,6 +30,9 @@ void set_active_c_long_double_kind(int kind);
 int get_active_c_long_double_kind();
 
 std::string get_unique_ID();
+// An ID that depends only on `data`: the same data gives the same ID in
+// every invocation of the compiler.
+std::string get_content_ID(const std::string &data);
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
 std::string generate_visualize_html(std::string &astr_data_json);
 

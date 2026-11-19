@@ -129,9 +129,35 @@ LCompilers::TempDir temp_dir(TEMP_DIR_PREFIX);
 // replace one of them
 constexpr const char *TEMP_LINK_DIR = "link";
 
-// The unique compilation ID for this invocation of the compiler.
+// The unique ID of the compilation unit being compiled.
 // Used in naming unique symbols during separate compilation.
-const std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
+std::string LCOMPILERS_UNIQUE_ID = LCompilers::get_unique_ID();
+
+// Derives the unit ID from the source file, so that compiling the same file
+// again gives the same symbol names, modfile and object file, while the
+// symbols that every unit generates still differ between the units of a
+// program. The macro definitions are part of it, since one file can be
+// compiled into several units that differ only in them.
+void set_unit_ID(const std::string &infile,
+        const CompilerOptions &compiler_options) {
+    if (!compiler_options.separate_compilation
+            && !compiler_options.generate_code_for_global_procedures) {
+        lcompilers_unique_ID_separate_compilation = "";
+        return;
+    }
+    std::string data = std::filesystem::path(infile).filename().string();
+    data += '\0';
+    std::string input;
+    if (read_file(infile, input)) {
+        data += input;
+    }
+    for (const std::string &define : compiler_options.c_preprocessor_defines) {
+        data += '\0';
+        data += define;
+    }
+    LCOMPILERS_UNIQUE_ID = LCompilers::get_content_ID(data);
+    lcompilers_unique_ID_separate_compilation = LCOMPILERS_UNIQUE_ID;
+}
 
 void print_one_component(std::string component) {
     std::istringstream ss(component);
@@ -2968,6 +2994,9 @@ int main_app(int argc, char *argv[]) {
     }
 
     lcompilers_unique_ID_separate_compilation = ( parser.opts.compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures ) ? LCOMPILERS_UNIQUE_ID : "";
+    if (opts.arg_files.size() > 0) {
+        set_unit_ID(opts.arg_file, compiler_options);
+    }
     if (parser.opts.compiler_options.separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
@@ -3329,6 +3358,7 @@ int main_app(int argc, char *argv[]) {
         };
         std::string tmp_o;
         if (opts.from_asr && arg_file == opts.arg_file) {
+            set_unit_ID(arg_file, compiler_options);
             any_asr_src = true;
             tmp_o = temp_object_file();
 #ifdef HAVE_LFORTRAN_LLVM
@@ -3343,6 +3373,7 @@ int main_app(int argc, char *argv[]) {
 #endif
         } else if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+            set_unit_ID(arg_file, compiler_options);
             any_fortran_src = true;
             if (backend == Backend::x86) {
                 return compile_to_binary_x86(arg_file, outfile,
