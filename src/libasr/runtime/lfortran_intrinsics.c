@@ -21330,6 +21330,9 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
         skip_whitespace_nml(reader, line_buf, line_ptr, line_len, read_len);
         if (*line_ptr && **line_ptr == ',') {
             (*line_ptr)++;
+            // The end of a record after the comma acts as a blank, so the
+            // next name-value subsequence can start on a later record
+            skip_whitespace_nml(reader, line_buf, line_ptr, line_len, read_len);
             // After consuming the comma, check if the next thing looks like a new variable assignment
             // If so, stop reading values and let the main loop handle the new variable
             if (peek_next_is_assignment(*line_ptr)) {
