@@ -512,6 +512,7 @@ RUN(NAME format_hollerith_01 LABELS gfortran llvm)
 RUN(NAME format_hollerith_02 LABELS gfortran llvm)
 RUN(NAME format_hollerith_03 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME format_hollerith_04 LABELS gfortran llvm)
+RUN(NAME format_hollerith_05 LABELS gfortran llvm)
 
 RUN(NAME print_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp llvm2 wasm fortran mlir)
 RUN(NAME print_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 wasm fortran)
@@ -1663,6 +1664,8 @@ RUN(NAME format_118 LABELS gfortran llvm)
 RUN(NAME format_119 LABELS gfortran llvm)
 RUN(NAME format_120 LABELS gfortran llvm) # trim() in an implied-DO output list with T and colon editing (#11408)
 RUN(NAME format_121 LABELS gfortran llvm)
+RUN(NAME format_122 LABELS gfortran llvm) # FORMAT statement starting with a parenthesized group (#17333)
+RUN(NAME format_123 LABELS gfortran llvm) # parentheses inside a quoted string in a format
 RUN(NAME format_z_real16_leak_01 LABELS gfortran llvm) # Z editing of real(16) must not leak (#17861)
 # GFortran 16 lacks the F2023 LZ/LZP/LZS descriptors (13.8.5).
 RUN(NAME format_leading_zero LABELS llvm)

@@ -4883,8 +4883,11 @@ public:
     }
 
     void visit_Format(const AST::Format_t &x) {
-        format_statements[x.m_label] = x.m_fmt;
+        // The parser stores the format without its enclosing parentheses.
+        // Keep them in the format constant, so that the runtime does not take
+        // a leading parenthesized group for the enclosing parentheses.
         std::string fmt_str = "(" + std::string(x.m_fmt) + ")";
+        format_statements[x.m_label] = fmt_str;
         validate_format_string(fmt_str, x.base.base.loc, diag);
         tmp = nullptr;
     }
