@@ -456,3 +456,7 @@ std::tuple<std::string, std::string, std::string> asr_to_py(ASR::TranslationUnit
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef CTYPELIST
+#undef CTYPELIST_FUTURE

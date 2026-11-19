@@ -3628,3 +3628,6 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef CAF_PRIF_VERSION

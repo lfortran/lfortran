@@ -1148,3 +1148,7 @@ std::string get_impure_intrinsic_name(int64_t x) {
 } // namespace ASRUtils
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef INTRINSIC_NAME_CASE
+#undef IMPURE_INTRINSIC_NAME_CASE

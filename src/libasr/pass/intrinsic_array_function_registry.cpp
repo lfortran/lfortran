@@ -208,3 +208,6 @@ namespace IntrinsicArrayFunctionRegistry {
 } // namespace ASRUtils
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef ARRAY_INTRINSIC_NAME_CASE

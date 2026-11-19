@@ -210,3 +210,6 @@ namespace IntrinsicImpureSubroutineRegistry {
 } // namespace ASRUtils
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef INTRINSIC_SUBROUTINE_NAME_CASE

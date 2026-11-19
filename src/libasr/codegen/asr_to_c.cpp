@@ -2353,3 +2353,6 @@ Result<std::string> asr_to_c(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef CHECK_FAST_C

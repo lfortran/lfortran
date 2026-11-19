@@ -4170,3 +4170,7 @@ void pass_allocate_on_assignment(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef remove_original_stmt_if_size_0
+#undef is_array_indexed_with_array_indices_check

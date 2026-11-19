@@ -2767,3 +2767,8 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef bfs_visit_SymbolContainingFunctions
+#undef edit_symbol_reference
+#undef edit_symbol_pointer

@@ -1075,3 +1075,9 @@ void pass_replace_symbolic(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef BASIC_CONST
+#undef BASIC_BINOP
+#undef BASIC_UNARYOP
+#undef BASIC_ATTR

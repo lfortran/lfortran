@@ -16542,3 +16542,8 @@ void RemoveArrayProcessingNodeVisitor::visit_Variable(const ASR::Variable_t& x) 
 
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef UNARYOP_MEMBER_CASE
+#undef BINOP_MEMBER_CASE
+#undef i32j

@@ -2003,3 +2003,6 @@ asr_to_julia(Allocator& al, ASR::TranslationUnit_t& asr, diag::Diagnostics& diag
 };
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef SET_ARR_INTRINSIC_NAME

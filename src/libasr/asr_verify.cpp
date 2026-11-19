@@ -6322,3 +6322,10 @@ bool asr_verify(const ASR::TranslationUnit_t &unit, bool check_external,
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef require
+#undef require_with_loc
+#undef require_id
+#undef require_with_loc_id
+#undef verify_nonscoped_ttype

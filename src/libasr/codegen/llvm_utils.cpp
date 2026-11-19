@@ -11741,3 +11741,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef handle_llvm_pointers2
+#undef handle_llvm_pointers_new_classes
+#undef handle_llvm_pointers1

@@ -4252,3 +4252,6 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
 }
 
 }  // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef INCLUDE_RUNTIME_FUNC

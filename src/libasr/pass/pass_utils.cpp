@@ -1968,3 +1968,7 @@ template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
     } // namespace PassUtils
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef fix_struct_type_scope
+#undef increment_by_one

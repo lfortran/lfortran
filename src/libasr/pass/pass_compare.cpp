@@ -485,4 +485,6 @@ void pass_compare(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
+#undef create_args
+
 } // namespace LCompilers

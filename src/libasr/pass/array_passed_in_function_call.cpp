@@ -1212,8 +1212,6 @@ public:
                     ASR::dimension_t* array_dims = nullptr;
                     int array_rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), array_dims));
                     std::vector<ASR::expr_t*> do_loop_variables;
-                    #define declare(var_name, type, intent)                                     \
-                    b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)
                     for (int i = 0; i < array_rank; i++) {
                         std::string var_name = current_scope->get_unique_name("__lcompilers_i_" + std::to_string(i));
                         ASR::ttype_t* loop_var_type = pass_options.descriptor_index_64

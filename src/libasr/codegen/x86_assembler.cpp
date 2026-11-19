@@ -636,3 +636,6 @@ void emit_print_double(X86Assembler &a, const std::string &name) {
     a.asm_ret();
 }
 } // namespace LFortran
+
+// In a unity build the next source follows in the same translation unit.
+#undef LFORTRAN_LINUX

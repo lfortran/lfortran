@@ -564,4 +564,6 @@ void pass_list_expr(Allocator &al, ASR::TranslationUnit_t &unit,
 }
 
 
+#undef create_args
+
 } // namespace LCompilers
