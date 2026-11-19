@@ -263,6 +263,12 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             }
         }
 
+        // Decline before the copies of the dummies and the result are created.
+        if( !PassUtils::can_inline_in_block(*function, func_call->m_args,
+                func_call->n_args) ) {
+            return false;
+        }
+
         // Function should only have local variables and no external dependencies (nested variables, etc).
         Vec<ASR::symbol_t*> vars; vars.reserve(al, 1);
         VarCollector var_collector(al, vars);
