@@ -11,6 +11,9 @@ program associate_70
     real, pointer :: q(:)
     real, parameter :: p(0:2) = [1.0, 2.0, 3.0]
     type(t) :: tt
+    type(t), parameter :: pt = t([4, 5, 6])
+    type(t) :: ts(0:1)
+    real, target :: a2(0:1)
 
     a = [1.0, 2.0, 3.0, 4.0, 5.0]
     m = 3.0
@@ -83,6 +86,35 @@ program associate_70
     associate (x => tt%v + 1)
         if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 3) error stop
         if (x(3) /= 10) error stop
+    end associate
+
+    ! A component of a named constant has the bounds that LBOUND and UBOUND
+    ! give for it.
+    associate (x => pt%v)
+        if (lbound(x, 1) /= lbound(pt%v, 1)) error stop
+        if (ubound(x, 1) /= ubound(pt%v, 1)) error stop
+        if (sum(x) /= 15) error stop
+    end associate
+    ts(0)%v = [1, 2, 3]
+    ts(1)%v = [4, 5, 6]
+    associate (x => ts(1)%v)
+        if (lbound(x, 1) /= 0 .or. ubound(x, 1) /= 2) error stop
+        if (x(0) /= 4) error stop
+    end associate
+
+    ! The shape of the associate name is that of the selector when the
+    ! construct is entered.
+    associate (x => (b))
+        deallocate(b)
+        allocate(b(0:7))
+        if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
+        if (size(x) /= 5) error stop
+    end associate
+    a2 = 0.0
+    associate (x => (q))
+        q(0:) => a2
+        if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
+        if (size(x) /= 5) error stop
     end associate
 
     call sub(a, a, 3)
