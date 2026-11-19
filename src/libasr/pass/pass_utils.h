@@ -1064,8 +1064,11 @@ namespace LCompilers {
     } // namespace PassUtils
 
     // Instantiated once, in pass_utils.cpp, rather than in every pass.
+    // Virtual visitors are already compiled once.
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
     extern template class ASR::BaseVisitor<PassUtils::UpdateDependenciesVisitor>;
     extern template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
+#endif
 
     namespace PassUtils {
 

@@ -417,8 +417,11 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 } // namespace ASRUtils
 
 // Instantiated once, in asr_utils.cpp, rather than in every file that
-// duplicates an expression or a statement.
+// duplicates an expression or a statement. Virtual visitors are already
+// compiled once.
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
 extern template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+#endif
 
 namespace ASRUtils {
 

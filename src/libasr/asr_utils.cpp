@@ -23,7 +23,9 @@
 
 namespace LCompilers {
 
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
 template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+#endif
 
     namespace ASRUtils  {
 

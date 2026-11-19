@@ -185,6 +185,22 @@ if (WITH_LCOMPILERS_FAST_ALLOC)
     add_definitions("-DLCOMPILERS_FAST_ALLOC=1")
 endif()
 
+# The generated ASR visitors are class templates over the visitor that derives
+# from them, so every visitor compiles its own copy of the whole walk. That is
+# the fastest code, and the slowest to compile. With virtual visitors each
+# walk is compiled once and the visitors override its virtual methods, which
+# compiles much faster. Debug builds use that; Release builds do not.
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(WITH_VIRTUAL_VISITORS_DEFAULT yes)
+else()
+    set(WITH_VIRTUAL_VISITORS_DEFAULT no)
+endif()
+set(WITH_VIRTUAL_VISITORS ${WITH_VIRTUAL_VISITORS_DEFAULT}
+    CACHE BOOL "Compile the generated ASR visitors once, with virtual methods")
+if (WITH_VIRTUAL_VISITORS)
+    add_definitions("-DLCOMPILERS_VIRTUAL_VISITORS=1")
+endif()
+
 
 if (WITH_CCACHE)
     find_program(CCACHE_PROGRAM ccache REQUIRED)
@@ -658,6 +674,7 @@ message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 message("WITH_KOKKOS: ${WITH_KOKKOS}")
 message("WITH_CCACHE: ${WITH_CCACHE}")
+message("WITH_VIRTUAL_VISITORS: ${WITH_VIRTUAL_VISITORS}")
 message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
 message("CFLAGS: ${CMAKE_C_FLAGS}")
 

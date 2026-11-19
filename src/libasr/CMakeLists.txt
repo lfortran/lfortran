@@ -158,6 +158,7 @@ set(SRC
     codegen/asr_to_cuda.cpp
 
     asr_verify.cpp
+    asr_visitors.cpp
     asr_utils.cpp
     casting_utils.cpp
     asr_scopes.cpp

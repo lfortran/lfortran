@@ -2,8 +2,10 @@
 Generate C++ AST node definitions from an ASDL description.
 """
 
+import io
 import os
 from pathlib import Path
+import re
 import sys
 
 import asdl
@@ -4025,6 +4027,168 @@ asr_visitor_files = [
     ]
 
 
+# The visitor families below are class templates over the visitor that derives
+# from them (CRTP), so every visitor instantiates its own copy of the whole
+# walk. That is what an optimized build wants, and what it keeps. A build
+# with LCOMPILERS_VIRTUAL_VISITORS (the default for Debug builds) instead
+# compiles each family once, as `<Family>Virtual<void>`, whose methods are
+# virtual, and every visitor derives from that one class: the methods a
+# visitor defines override the virtual ones. Both builds call the same
+# methods in the same order.
+virtual_visitor_families = {
+    "ASTWalkVisitorVisitor": "BaseWalkVisitor",
+    "ASRPassWalkVisitorVisitor": "ASRPassBaseWalkVisitor",
+    "CallReplacerOnExpressionsVisitor": "CallReplacerOnExpressionsVisitor",
+    "ExprStmtDuplicatorVisitor": "BaseExprStmtDuplicator",
+    "ExprBaseReplacerVisitor": "BaseExprReplacer",
+    "StmtBaseReplacerVisitor": "BaseStmtReplacer",
+}
+
+# BaseVisitor defines its methods at one or two levels of indentation
+base_visitor_indent = "(?:    ){1,2}"
+
+
+def class_methods(text, indent="    "):
+    """
+    The methods defined in the body of a generated class, as
+    (return type, name, parameters) in the order they are defined. `indent`
+    is the indentation of the methods, as a regular expression.
+    """
+    method_re = re.compile(
+        r"^%s(?P<ret>[\w:]+(?:\s*\*+)?)\s+(?P<name>\w+)\((?P<params>[^()]*)\)\s*\{"
+        % indent, re.M)
+    methods = []
+    for m in method_re.finditer(text):
+        params = re.sub(r"/\*.*?\*/", "", m.group("params")).strip()
+        methods.append((m.group("ret"), m.group("name"), params))
+    return methods
+
+
+def parameter_names(params):
+    """
+    Returns the parameters with a name for each, and the list of names.
+    """
+    declared, names = [], []
+    if params == "":
+        return "", ""
+    for i, param in enumerate(params.split(",")):
+        param = param.strip()
+        m = re.search(r"[\s\*&](\w+)$", param)
+        if m:
+            names.append(m.group(1))
+        else:
+            names.append("a%d" % i)
+            param += " " + names[-1]
+        declared.append(param)
+    return ", ".join(declared), ", ".join(names)
+
+
+def parameter_types(params):
+    """
+    The types of the parameters, without the names and the spaces.
+    """
+    types = []
+    for param in params.split(","):
+        param = re.sub(r"(?<=[\s\*&])\w+$", "", param.strip())
+        types.append(re.sub(r"\s+", "", param))
+    return ",".join(types)
+
+
+def add_virtual_visitor(text, name, base_methods):
+    """
+    Renames the generated class template `name` to `<name>Static` and defines
+    `name` over it: as `<name>Static<StructType>` itself, or, with
+    LCOMPILERS_VIRTUAL_VISITORS, as the one `<name>Virtual<void>`.
+
+    `base_methods` are the methods of BaseVisitor if `name` derives from it.
+    """
+    start = text.index("template <class StructType>\nclass " + name)
+    text = text[:start] + re.sub(r"\b%s\b" % name, name + "Static", text[start:])
+    methods = class_methods(text[start:])
+    defined = set((m[1], parameter_types(m[2])) for m in methods)
+    methods += [m for m in base_methods
+        if (m[1], parameter_types(m[2])) not in defined]
+    static = "%sStatic<%sVirtual<Tag>>" % (name, name)
+    out = []
+    emit = out.append
+    emit("")
+    emit("#if defined(LCOMPILERS_VIRTUAL_VISITORS)")
+    emit("")
+    emit("template <class Tag>")
+    emit("class %sVirtual : public %s" % (name, static))
+    emit("{")
+    emit("public:")
+    emit("    using %s::%sStatic;" % (static, name))
+    for ret, method, params in methods:
+        emit("    virtual %s %s(%s);" % (ret, method, parameter_names(params)[0]))
+    emit("};")
+    emit("")
+    for ret, method, params in methods:
+        declared, names = parameter_names(params)
+        emit("template <class Tag>")
+        emit("%s %sVirtual<Tag>::%s(%s) {" % (ret, name, method, declared))
+        emit("    return %s::%s(%s);" % (static, method, names))
+        emit("}")
+        emit("")
+    emit("// Instantiated in asr_visitors.cpp")
+    emit("extern template class %sVirtual<void>;" % name)
+    emit("")
+    emit("template <class StructType>")
+    emit("class %s : public %sVirtual<void>" % (name, name))
+    emit("{")
+    emit("public:")
+    emit("    using %sVirtual<void>::%sVirtual;" % (name, name))
+    emit("};")
+    emit("")
+    emit("#else")
+    emit("")
+    emit("template <class StructType>")
+    emit("class %s : public %sStatic<StructType>" % (name, name))
+    emit("{")
+    emit("public:")
+    emit("    using %sStatic<StructType>::%sStatic;" % (name, name))
+    emit("};")
+    emit("")
+    emit("#endif")
+    emit("")
+    return text + "\n".join(out)
+
+
+def add_virtual_methods(text):
+    """
+    Adds `BaseVisitorVirtual<Base>` after the generated BaseVisitor: `Base`,
+    a visitor that derives from `BaseVisitor<V>`, with every method of
+    BaseVisitor declared virtual. With `V` a class that derives from
+    `BaseVisitorVirtual<Base>`, the visitors that derive from `V` override
+    the methods of `Base`, which is then compiled only once.
+    """
+    out = []
+    emit = out.append
+    methods = class_methods(text, base_visitor_indent)
+    emit("")
+    emit("#if defined(LCOMPILERS_VIRTUAL_VISITORS)")
+    emit("")
+    emit("template <class Base>")
+    emit("class BaseVisitorVirtual : public Base")
+    emit("{")
+    emit("public:")
+    emit("    using Base::Base;")
+    for ret, method, params in methods:
+        emit("    virtual %s %s(%s);" % (ret, method, parameter_names(params)[0]))
+    emit("};")
+    emit("")
+    for ret, method, params in methods:
+        declared, names = parameter_names(params)
+        emit("template <class Base>")
+        emit("%s BaseVisitorVirtual<Base>::%s(%s) {" % (ret, method, declared))
+        emit("    return Base::%s(%s);" % (method, names))
+        emit("}")
+        emit("")
+    emit("#endif")
+    emit("")
+    return text + "\n".join(out)
+
+
 def main(argv):
     if len(argv) == 3:
         def_file, out_file = argv[1:]
@@ -4062,7 +4226,12 @@ def main(argv):
         fp.write(HEAD % subs)
         if not is_asr:
             for visitor in ast_visitors:
-                visitor(fp, data).visit(mod)
+                text = io.StringIO()
+                visitor(text, data).visit(mod)
+                text = text.getvalue()
+                if visitor is ASTVisitorVisitor2:
+                    text = add_virtual_methods(text)
+                fp.write(text)
                 fp.write("\n\n")
         if is_asr:
             for visitor in asr_visitors:
@@ -4077,9 +4246,15 @@ def main(argv):
             generated_files.append(full_filename)
             with open(full_filename, "w", encoding="utf-8") as f:
                 f.write(HEAD_BASE_VISITOR % subs)
+                base_visitor_methods = []
                 for Visitor in asr_base_visitor:
-                    Visitor(f, data).visit(mod)
+                    text = io.StringIO()
+                    Visitor(text, data).visit(mod)
+                    f.write(text.getvalue())
                     f.write("\n\n")
+                    if Visitor is ASTVisitorVisitor2:
+                        base_visitor_methods = class_methods(text.getvalue(),
+                            base_visitor_indent)
                 f.write(FOOT_VISITOR)
 
             # asr_visitor_files
@@ -4089,7 +4264,17 @@ def main(argv):
                 generated_files.append(full_filename)
                 with open(full_filename, "w", encoding="utf-8") as f:
                     f.write(HEAD_VISITOR % subs)
-                    Visitor(f, data).visit(mod)
+                    text = io.StringIO()
+                    Visitor(text, data).visit(mod)
+                    text = text.getvalue()
+                    family = virtual_visitor_families.get(Visitor.__name__)
+                    if family:
+                        derives_from_base_visitor = (
+                            "class %s : public BaseVisitor<" % family) in text
+                        text = add_virtual_visitor(text, family,
+                            base_visitor_methods if derives_from_base_visitor
+                            else [])
+                    f.write(text)
                     f.write("\n\n")
                     f.write(FOOT_VISITOR)
         fp.write(FOOT % subs)

@@ -79,7 +79,7 @@ private :
                     });
                 }
             } 
-            ASR::BaseVisitor<getExternalSymbol>::visit_expr(x);
+            ASR::BaseWalkVisitor<getExternalSymbol>::visit_expr(x);
         }
     };
 

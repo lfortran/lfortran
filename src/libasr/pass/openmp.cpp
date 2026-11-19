@@ -533,12 +533,12 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
 
     void visit_stmt(const ASR::stmt_t &x) {
         if (copies.failed) return;
-        ASR::BaseVisitor<DoConcurrentStatementVisitor>::visit_stmt(x);
+        ASR::CallReplacerOnExpressionsVisitor<DoConcurrentStatementVisitor>::visit_stmt(x);
     }
 
     void visit_expr(const ASR::expr_t &x) {
         if (copies.failed) return;
-        ASR::BaseVisitor<DoConcurrentStatementVisitor>::visit_expr(x);
+        ASR::CallReplacerOnExpressionsVisitor<DoConcurrentStatementVisitor>::visit_expr(x);
     }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
@@ -1086,12 +1086,12 @@ class ParallelRegionVisitor :
 
         void visit_stmt(const ASR::stmt_t &x) {
             if (failed()) return;
-            ASR::BaseVisitor<ParallelRegionVisitor>::visit_stmt(x);
+            ASR::BaseWalkVisitor<ParallelRegionVisitor>::visit_stmt(x);
         }
 
         void visit_symbol(const ASR::symbol_t &x) {
             if (failed()) return;
-            ASR::BaseVisitor<ParallelRegionVisitor>::visit_symbol(x);
+            ASR::BaseWalkVisitor<ParallelRegionVisitor>::visit_symbol(x);
         }
 
         // The type declaration, in `current_scope`, of a variable `var`
