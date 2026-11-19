@@ -12,6 +12,9 @@
 
 namespace LCompilers {
 
+template class ASR::BaseVisitor<PassUtils::UpdateDependenciesVisitor>;
+template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
+
     namespace PassUtils {
 
         class NormalizeStringPhysicalCasts:

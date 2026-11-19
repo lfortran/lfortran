@@ -1061,6 +1061,13 @@ namespace LCompilers {
             */
         };
 
+    } // namespace PassUtils
+
+    // Instantiated once, in pass_utils.cpp, rather than in every pass.
+    extern template class ASR::BaseVisitor<PassUtils::UpdateDependenciesVisitor>;
+    extern template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
+
+    namespace PassUtils {
 
     namespace ReplacerUtils {
         /*

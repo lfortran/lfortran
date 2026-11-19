@@ -23,6 +23,8 @@
 
 namespace LCompilers {
 
+template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+
     namespace ASRUtils  {
 
 class EntryInitializerReference : public ASR::BaseWalkVisitor<EntryInitializerReference>
