@@ -15740,13 +15740,14 @@ static bool parse_real_from_buffer(char* buffer, int field_len,
         }
         return true;
     }
-    // Replace D/d with E for parsing, check for exponent/decimal point
+    // Replace D/d and Q/q with E for parsing, check for exponent/decimal point
     bool has_exponent = false;
     bool has_decimal = false;
     for (int i = 0; i < field_len; i++) {
         if (buffer[i] == '.') {
             has_decimal = true;
-        } else if (buffer[i] == 'D' || buffer[i] == 'd') {
+        } else if (buffer[i] == 'D' || buffer[i] == 'd'
+                || buffer[i] == 'Q' || buffer[i] == 'q') {
             buffer[i] = 'E';
             has_exponent = true;
         } else if (buffer[i] == 'E' || buffer[i] == 'e') {
