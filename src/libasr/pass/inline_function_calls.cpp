@@ -499,8 +499,24 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
         transform_stmts(xx.m_orelse, xx.n_orelse);
     }
 
+    // The bounds and the step of a DO loop are evaluated once, before it
+    // runs: a call in them is inlined before the loop, into the statement
+    // list that contains it. Before the body, since an expression of the
+    // head can be shared with the body, as the target `t(g(i))%v` of an
+    // assignment that array_op made a loop over its elements is: the
+    // body then reads the result too, instead of reading a result that is
+    // computed only inside the body after the head has read it.
     void visit_DoLoop(const ASR::DoLoop_t &x) {
         ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+        ASR::expr_t** current_expr_copy = current_expr;
+        for (ASR::expr_t** e : {&xx.m_head.m_start, &xx.m_head.m_end,
+                &xx.m_head.m_increment}) {
+            if (*e != nullptr && current_body != nullptr) {
+                current_expr = e;
+                call_replacer();
+            }
+        }
+        current_expr = current_expr_copy;
         transform_stmts(xx.m_body, xx.n_body);
         transform_stmts(xx.m_orelse, xx.n_orelse);
     }
