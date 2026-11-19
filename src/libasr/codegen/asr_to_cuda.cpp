@@ -35,15 +35,33 @@ struct CudaDialect {
     // of the stream has finished and flushed its writes. The kernel does
     // not touch memory until `griddepcontrol.wait` returns, which waits for
     // that grid to complete; it is a no-op if the kernel was launched
-    // without a predecessor or without the attribute. The grid never
-    // triggers its dependents early, so they launch when its blocks exit.
-    // The memory clobber keeps the compiler from moving a load above it.
+    // without a predecessor or without the attribute. A grid lets its
+    // dependents start after its main loop (emit_dependents_trigger), or
+    // they launch when its blocks exit. The memory clobber keeps the
+    // compiler from moving a load above the wait.
     void emit_kernel_entry(std::stringstream &src,
             const std::string &indent) const {
-        if (!overlap || emulate_cpu || hip) return;
+        if (!overlaps_kernels()) return;
         src << "#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900\n"
             << indent << "asm volatile(\"griddepcontrol.wait;\" ::: "
             << "\"memory\");\n"
+            << "#endif\n";
+    }
+
+    // Whether kernels overlap the kernel before them (--gpu-overlap).
+    bool overlaps_kernels() const {
+        return overlap && !emulate_cpu && !hip;
+    }
+
+    // Lets the next kernel of the stream start (asr_to_gpu_c.h,
+    // kernel_main_loop): it does not touch memory before it waits for this
+    // one, which has waited for the one before.
+    void emit_dependents_trigger(std::stringstream &src,
+            const std::string &indent) const {
+        if (!overlaps_kernels()) return;
+        src << "#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 900\n"
+            << indent << "asm volatile(\"griddepcontrol.launch_dependents;\""
+            << " ::: \"memory\");\n"
             << "#endif\n";
     }
 

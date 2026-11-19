@@ -60,6 +60,11 @@ struct MetalDialect {
 
     void emit_kernel_entry(std::stringstream &, const std::string &) const {}
 
+    // A Metal kernel starts when the one before it is done.
+    bool overlaps_kernels() const { return false; }
+    void emit_dependents_trigger(std::stringstream &,
+            const std::string &) const {}
+
     // Every kernel parameter is bound to an explicit buffer slot.
     std::string buffer_attr(int index) const {
         return " [[buffer(" + std::to_string(index) + ")]]";
