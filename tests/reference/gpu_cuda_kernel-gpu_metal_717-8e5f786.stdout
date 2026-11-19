@@ -54,6 +54,8 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
     int* __libasr_created__subroutine_from_function_ = ((__workspace_extent) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+    long __libasr_index_0_;
+    long __libasr_index_0_1;
     int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
@@ -61,10 +63,29 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + 1);
     shifted_gpu_14(b[((long)((unsigned int)((i__dc1) - (1))))], __data_b_v + __offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))], __sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 0], __sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 1], (10 * i__dc1), __libasr_created__subroutine_from_function_);
-    {
-        long __off = __offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))];
-        for (int __ei = 0; __ei < (__sizes_b_v[(((long)((unsigned int)(((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))))) * 2 + 0]); __ei++) {
-            __data_b_v[__off + __ei] = __libasr_created__subroutine_from_function_[__ei];
+    if (1) {
+        if (((int)((__sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 0] == (__sizes_b_v[(((long)((unsigned int)(((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))))) * 2 + 0])) && (__sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 1] != 1)))) {
+            __libasr_index_0_1 = ((long)(1));
+            const long __lfortran_end_1 = ((long)(((__sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 1]) + __sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 0] - 1)));
+            #pragma unroll 16
+            for (__libasr_index_0_ = ((long)(__sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 1])); __libasr_index_0_ <= __lfortran_end_1; __libasr_index_0_++) {
+                __data_b_v[__offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))] + ((long)(__libasr_index_0_) - (__sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 1]))] = __libasr_created__subroutine_from_function_[((long)(__libasr_index_0_1) - (1))];
+                __libasr_index_0_1 = (__libasr_index_0_1 + ((long)1));
+            }
+        } else {
+            {
+                long __off = __offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))];
+                for (int __ei = 0; __ei < (__sizes_b_v[(((long)((unsigned int)(((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))))) * 2 + 0]); __ei++) {
+                    __data_b_v[__off + __ei] = __libasr_created__subroutine_from_function_[__ei];
+                }
+            }
+        }
+    } else {
+        {
+            long __off = __offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))];
+            for (int __ei = 0; __ei < (__sizes_b_v[(((long)((unsigned int)(((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))))) * 2 + 0]); __ei++) {
+                __data_b_v[__off + __ei] = __libasr_created__subroutine_from_function_[__ei];
+            }
         }
     }
 }

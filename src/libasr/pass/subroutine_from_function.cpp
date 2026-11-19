@@ -971,6 +971,14 @@ public:
     }
 };
 
+bool call_may_reach_contained_procedure(SymbolTable *routine,
+        ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
+        ASR::expr_t *dt) {
+    std::set<ASR::symbol_t*> active;
+    CallbackAccess callbacks(routine, active);
+    return callbacks.call(name, args, n_args, dt);
+}
+
 class ReplaceFunctionCallWithSubroutineCallVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallWithSubroutineCallVisitor> {
 
@@ -1408,6 +1416,90 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 ASRUtils::struct_needs_finalization(result_struct_sym(value));
         }
 
+        static bool is_numeric_or_logical_array(ASR::expr_t* x) {
+            ASR::ttype_t* type = ASRUtils::expr_type(x);
+            ASR::ttype_t* element = ASRUtils::extract_type(type);
+            return ASRUtils::is_array(type) &&
+                (ASR::is_a<ASR::Integer_t>(*element) ||
+                 ASR::is_a<ASR::UnsignedInteger_t>(*element) ||
+                 ASR::is_a<ASR::Real_t>(*element) ||
+                 ASR::is_a<ASR::Complex_t>(*element) ||
+                 ASR::is_a<ASR::Logical_t>(*element));
+        }
+
+        // Whether `x` is an array of a derived type that is neither
+        // polymorphic nor finalized, whose elements, with their
+        // allocatable components, a move takes along unchanged
+        static bool is_movable_struct_array(ASR::expr_t* x) {
+            ASR::ttype_t* type = ASRUtils::expr_type(x);
+            ASR::ttype_t* element = ASRUtils::extract_type(type);
+            if (!ASRUtils::is_array(type) ||
+                    !ASR::is_a<ASR::StructType_t>(*element) ||
+                    ASRUtils::is_class_type(element)) {
+                return false;
+            }
+            ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(x);
+            return sym != nullptr && !ASRUtils::struct_needs_finalization(
+                ASRUtils::symbol_get_past_external(sym));
+        }
+
+        // `move`, the assignment of an allocatable array result, returned
+        // into a temporary, to an allocatable variable with reallocation,
+        // moves the temporary into the variable, which then has lower
+        // bounds of 1. A variable that is already allocated with the shape
+        // of the result is not reallocated though (F2018 10.2.1.3): it keeps
+        // its bounds, and its storage, which a pointer may be associated
+        // with. The result is copied into such a variable when its bounds
+        // are not all 1 or a pointer may be associated with it, and moved
+        // into it otherwise, which is the same.
+        ASR::stmt_t* make_move_unless_conforming(const Location &loc,
+                ASR::Assignment_t &move) {
+            ASRUtils::ASRBuilder b(al, loc);
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* variable = move.m_target;
+            ASR::expr_t* result = move.m_value;
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::expr_t* conforms = nullptr;
+            ASR::expr_t* other_bounds = nullptr;
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(variable));
+            for (int i = 1; i <= n_dims; i++) {
+                ASR::expr_t* same_extent = b.Eq(
+                    b.ArraySize(duplicator.duplicate_expr(variable),
+                        b.i_t(i, int_type), int_type),
+                    b.ArraySize(duplicator.duplicate_expr(result),
+                        b.i_t(i, int_type), int_type));
+                ASR::expr_t* other_bound = b.NotEq(
+                    b.ArrayLBound(duplicator.duplicate_expr(variable), i),
+                    b.i_t(1, int_type));
+                conforms = conforms ? b.And(conforms, same_extent) : same_extent;
+                other_bounds = other_bounds ? b.Or(other_bounds, other_bound)
+                    : other_bound;
+            }
+            ASR::expr_t* keeps_variable = expr_has_pointer_or_target(variable)
+                ? conforms : b.And(conforms, other_bounds);
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, duplicator.duplicate_expr(variable));
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            move.m_move_allocation = true;
+            move.m_realloc_lhs = true;
+            ASR::stmt_t* copy = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, duplicator.duplicate_expr(variable),
+                duplicator.duplicate_expr(result), nullptr, false, false));
+            ASR::stmt_t* move_into_unallocated = ASRUtils::STMT(
+                ASRUtils::make_Assignment_t_util(al, loc,
+                    duplicator.duplicate_expr(variable),
+                    duplicator.duplicate_expr(result), nullptr, true, true));
+            return b.If(is_allocated,
+                {b.If(keeps_variable, {copy}, {&move.base})},
+                {move_into_unallocated});
+        }
+
         // The derived type of the result of the call `value`. The result
         // variable of a function made a subroutine is its last argument.
         static ASR::symbol_t* result_struct_sym(ASR::expr_t* value) {
@@ -1662,12 +1754,19 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, current_scope, std::nullopt, true));
             pass_result.push_back(al, subrout_call);
 
+            ASR::stmt_t* move_unless_conforming = nullptr;
             if (value_and_target_allocatable_array || use_temp_var_for_return) {
                 if (ASR::is_a<ASR::Assignment_t>(xx)) {
                     ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                     assignment->m_value = target;
 
-                    if (value_and_target_allocatable_array) {
+                    if (value_and_target_allocatable_array &&
+                            assignment->m_realloc_lhs &&
+                            (is_numeric_or_logical_array(assignment->m_target) ||
+                             is_movable_struct_array(assignment->m_target))) {
+                        move_unless_conforming = make_move_unless_conforming(
+                            assignment->base.base.loc, *assignment);
+                    } else if (value_and_target_allocatable_array) {
                         // We are using a temporary so make this assignment a move assignment.
                         // We also set m_realloc_lhs to signal the LLVM backend that the
                         // destination's lower bounds must be reset to 1 (intrinsic-assignment
@@ -1681,6 +1780,10 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
 
                 remove_original_statement = false;
+                if (move_unless_conforming != nullptr) {
+                    pass_result.push_back(al, move_unless_conforming);
+                    remove_original_statement = true;
+                }
                 // An allocatable scalar structure temporary holds the result
                 // only for the assignment: it is deallocated after it, which
                 // finalizes the result (F2018 7.5.6.3 p5).

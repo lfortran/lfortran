@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_shape_11-5cfa744",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/array_shape_11.f90",
+    "infile_hash": "76c4df390a91216a7e142e6dd835acc9517d1330947479e2e6ade635",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-array_shape_11-5cfa744.stderr",
+    "stderr_hash": "52524415d1ecaff34f965dbea95fa1f205b503288477af93534a086e",
+    "returncode": 1
+}

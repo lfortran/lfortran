@@ -157,6 +157,25 @@ use derived_types_238_m, only: t
 use derived_types_238_g, only: tw
 use derived_types_238_m, only: where_mask
 implicit none
+real(4), dimension(3), parameter :: __libasr_created__array_constant_ = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_1 = [1.00000000e+01, 2.00000000e+01,&
+         3.00000000e+01]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_2 = [1.00000000e+00, 1.00000000e+00,&
+         1.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_3 = [7.00000000e+00, 8.00000000e+00,&
+         9.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_4 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_5 = [4.00000000e+00, 5.00000000e+00,&
+         6.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_6 = [2.00000000e+00, 2.00000000e+00,&
+         2.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_7 = [3.00000000e+00, 3.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_8 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_9 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
 logical(4), dimension(3) :: __libasr_created__intrinsic_array_function_Any
 logical(4), dimension(3) :: __libasr_created__intrinsic_array_function_Any1
 logical(4), dimension(:), allocatable :: __libasr_created__intrinsic_array_function_Any10
@@ -229,12 +248,12 @@ type(t), dimension(2) :: arr
 real(4), dimension(3) :: c
 logical(4), dimension(3) :: m
 allocate(a%x(3), a%y(3), a%b(3), a%z(3, 2), a%in%x(3))
-a%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
-a%y = [1.00000000e+01, 2.00000000e+01, 3.00000000e+01]
-a%b = [1.00000000e+00, 1.00000000e+00, 1.00000000e+00]
+a%x = __libasr_created__array_constant_
+a%y = __libasr_created__array_constant_1
+a%b = __libasr_created__array_constant_2
 a%z = real(0, kind=4)
 a%w = [4.00000000e+00, 5.00000000e+00, 6.00000000e+00]
-a%in%x = [7.00000000e+00, 8.00000000e+00, 9.00000000e+00]
+a%in%x = __libasr_created__array_constant_3
 call add(a, c)
 __libasr_created__intrinsic_array_function_Any = c /= __libasr_created_real_compare_right_
 __libasr_created__intrinsic_array_function_Any17 = Any(__libasr_created__intrinsic_array_function_Any)
@@ -294,10 +313,10 @@ if (__libasr_created__intrinsic_array_function_Any24) then
     error stop
 end if
 allocate(arr(1)%x(3), arr(1)%y(3), arr(2)%x(3), arr(2)%y(3))
-arr(1)%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
-arr(1)%y = [4.00000000e+00, 5.00000000e+00, 6.00000000e+00]
-arr(2)%x = [2.00000000e+00, 2.00000000e+00, 2.00000000e+00]
-arr(2)%y = [3.00000000e+00, 3.00000000e+00, 3.00000000e+00]
+arr(1)%x = __libasr_created__array_constant_4
+arr(1)%y = __libasr_created__array_constant_5
+arr(2)%x = __libasr_created__array_constant_6
+arr(2)%y = __libasr_created__array_constant_7
 call element(arr, 1, c)
 __libasr_created__intrinsic_array_function_Any9 = c /= __libasr_created_real_compare_right_7
 __libasr_created__intrinsic_array_function_Any25 = Any(__libasr_created__intrinsic_array_function_Any9)
@@ -320,7 +339,7 @@ __libasr_created__intrinsic_array_function_Any27 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any27) then
     error stop
 end if
-a%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+a%x = __libasr_created__array_constant_8
 call reversed(a, 3)
 deallocate(__libasr_created__intrinsic_array_function_Any12)
 allocate(__libasr_created__intrinsic_array_function_Any12(size(a%x, 1)))
@@ -329,7 +348,7 @@ __libasr_created__intrinsic_array_function_Any28 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any28) then
     error stop
 end if
-a%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+a%x = __libasr_created__array_constant_9
 c = real(0, kind=4)
 call where_mask(a, c)
 deallocate(__libasr_created__intrinsic_array_function_Any13)

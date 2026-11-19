@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-realloc_lhs_unallocated_03-14fb884",
+    "cmd": "lfortran --pass=allocate_unallocated --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --cumulative",
+    "infile": "tests/../integration_tests/realloc_lhs_unallocated_03.f90",
+    "infile_hash": "a01276b7815897584c414726f02f0284bb29e778efaa01885632324a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-realloc_lhs_unallocated_03-14fb884.f90",
+    "stdout_hash": "f02376e1af31efc1fd748fede25a1ede8cdc7c2ae74d8303d76e9ee6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

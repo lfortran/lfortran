@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-inline_loop_subroutine_calls_01-10027aa",
+    "cmd": "lfortran --pass=inline_loop_subroutine_calls --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --fast",
+    "infile": "tests/../integration_tests/inline_loop_subroutine_calls_01.f90",
+    "infile_hash": "c66eb0af5329e2b72e7becc400ec1cecfcf9695eeb5495a79a86fb1b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-inline_loop_subroutine_calls_01-10027aa.f90",
+    "stdout_hash": "cd86834f2e90143e83c4452042654ee4a18389f07a6b3eb2e9abc37f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

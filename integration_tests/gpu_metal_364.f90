@@ -1,8 +1,8 @@
 program gpu_metal_364
-! Expected to fail with bounds checking on, built without
-! --realloc-lhs-arrays. The offloaded loop assigns an array to the component
+! Expected to fail with bounds checking on, built with
+! --no-realloc-lhs-arrays. The offloaded loop assigns an array to the component
 ! t(i)%v itself, and t(2)%v, which the loop writes, is not allocated.
-! Without the option an assignment does not allocate its left-hand side, so
+! With the option an assignment does not allocate its left-hand side, so
 ! the launch reports that t(2)%v is not allocated, as bounds checking does
 ! for the same loop on the CPU, instead of losing the write.
 implicit none

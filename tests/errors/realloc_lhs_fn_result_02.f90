@@ -20,7 +20,7 @@ program realloc_lhs_fn_result_02
 
     integer, allocatable :: t(:)
 
-    ! Without --realloc-lhs-arrays the left hand side stays unallocated, and
+    ! With --no-realloc-lhs-arrays the left hand side stays unallocated, and
     ! the runtime error must say so and point at the option that fixes it.
     t = mkarr_n(4)
 

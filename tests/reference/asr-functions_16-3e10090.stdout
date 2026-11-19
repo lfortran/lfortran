@@ -1406,7 +1406,7 @@
                                         (Var 5 sorted)
                                         (Var 5 list)
                                         ()
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.

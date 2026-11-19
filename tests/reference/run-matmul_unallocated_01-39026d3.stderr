@@ -1,5 +1,5 @@
-runtime error: Argument 7 of subroutine _lcompilers_matmul_real_______0_real_______1_real_______2 is unallocated.
+runtime error: Array 'c' is not allocated. Allocate it explicitly. Remove the '--no-realloc-lhs-arrays' option to allocate it automatically on assignment.
   --> tests/errors/matmul_unallocated_01.f90:10:1
    |
 10 | C = matmul(A, B)
-   | ^ This is unallocated
+   | ^ not allocated here

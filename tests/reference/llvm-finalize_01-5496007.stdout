@@ -36,19 +36,17 @@ define void @__module_finalize_01_mod_ss() {
   store i32* null, i32** %7, align 8
   store %array.1* %arr_desc, %array.1** %arr, align 8
   %8 = load %array.1*, %array.1** %arr, align 8
-  %9 = ptrtoint %array.1* %8 to i64
-  %10 = icmp eq i64 %9, 0
-  br i1 %10, label %merge_allocated, label %check_data
+  %9 = icmp eq %array.1* %8, null
+  br i1 %9, label %merge_allocated, label %check_data
 
 check_data:                                       ; preds = %.entry
-  %11 = getelementptr %array.1, %array.1* %8, i32 0, i32 0
-  %12 = load i32*, i32** %11, align 1
-  %13 = ptrtoint i32* %12 to i64
-  %14 = icmp ne i64 %13, 0
+  %10 = getelementptr %array.1, %array.1* %8, i32 0, i32 0
+  %11 = load i32*, i32** %10, align 1
+  %12 = icmp ne i32* %11, null
   br label %merge_allocated
 
 merge_allocated:                                  ; preds = %check_data, %.entry
-  %is_allocated = phi i1 [ false, %.entry ], [ %14, %check_data ]
+  %is_allocated = phi i1 [ false, %.entry ], [ %12, %check_data ]
   br i1 %is_allocated, label %then, label %ifcont
 
 then:                                             ; preds = %merge_allocated
@@ -56,25 +54,25 @@ then:                                             ; preds = %merge_allocated
   unreachable
 
 ifcont:                                           ; preds = %merge_allocated
-  %15 = load %array.1*, %array.1** %arr, align 8
-  %16 = getelementptr %array.1, %array.1* %15, i32 0, i32 7
-  store i64 0, i64* %16, align 8
-  %17 = getelementptr %array.1, %array.1* %15, i32 0, i32 3
-  store i8 1, i8* %17, align 1
-  %18 = getelementptr %array.1, %array.1* %15, i32 0, i32 8
-  %19 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %18, i32 0, i32 0
-  %20 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %19, i32 0
-  %21 = getelementptr %dimension_descriptor, %dimension_descriptor* %20, i32 0, i32 2
-  %22 = getelementptr %dimension_descriptor, %dimension_descriptor* %20, i32 0, i32 0
-  %23 = getelementptr %dimension_descriptor, %dimension_descriptor* %20, i32 0, i32 1
-  store i64 1, i64* %21, align 8
-  store i64 1, i64* %22, align 8
-  store i64 10, i64* %23, align 8
-  %24 = getelementptr %array.1, %array.1* %15, i32 0, i32 0
-  %25 = call i8* @_lfortran_get_default_allocator()
-  %26 = call i8* @_lfortran_malloc_alloc(i8* %25, i64 40)
-  %27 = bitcast i8* %26 to i32*
-  store i32* %27, i32** %24, align 8
+  %13 = load %array.1*, %array.1** %arr, align 8
+  %14 = getelementptr %array.1, %array.1* %13, i32 0, i32 7
+  store i64 0, i64* %14, align 8
+  %15 = getelementptr %array.1, %array.1* %13, i32 0, i32 3
+  store i8 1, i8* %15, align 1
+  %16 = getelementptr %array.1, %array.1* %13, i32 0, i32 8
+  %17 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %16, i32 0, i32 0
+  %18 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %17, i32 0
+  %19 = getelementptr %dimension_descriptor, %dimension_descriptor* %18, i32 0, i32 2
+  %20 = getelementptr %dimension_descriptor, %dimension_descriptor* %18, i32 0, i32 0
+  %21 = getelementptr %dimension_descriptor, %dimension_descriptor* %18, i32 0, i32 1
+  store i64 1, i64* %19, align 8
+  store i64 1, i64* %20, align 8
+  store i64 10, i64* %21, align 8
+  %22 = getelementptr %array.1, %array.1* %13, i32 0, i32 0
+  %23 = call i8* @_lfortran_get_default_allocator()
+  %24 = call i8* @_lfortran_malloc_alloc(i8* %23, i64 40)
+  %25 = bitcast i8* %24 to i32*
+  store i32* %25, i32** %22, align 8
   br i1 true, label %then1, label %else
 
 then1:                                            ; preds = %ifcont
@@ -99,8 +97,8 @@ FINALIZE_SYMTABLE_ss:                             ; preds = %return
   br label %Finalize_Variable_arr
 
 Finalize_Variable_arr:                            ; preds = %FINALIZE_SYMTABLE_ss
-  %28 = load %array.1*, %array.1** %arr, align 8
-  call void @finalize_allocatable__Array_1_i32(%array.1* %28)
+  %26 = load %array.1*, %array.1** %arr, align 8
+  call void @finalize_allocatable__Array_1_i32(%array.1* %26)
   ret void
 }
 

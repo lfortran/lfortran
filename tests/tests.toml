@@ -1007,6 +1007,17 @@ fortran = true
 pass = "array_struct_temporary"
 
 [[test]]
+filename = "../integration_tests/array_section_assign_15.f90"
+fortran = true
+pass = "full_section_target,array_struct_temporary"
+
+[[test]]
+filename = "../integration_tests/array_section_assign_18.f90"
+fortran = true
+pass = "full_section_target,array_struct_temporary"
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/pointer_intent_in_04.f90"
 fortran = true
 pass = "array_struct_temporary"
@@ -3554,6 +3565,11 @@ filename = "../integration_tests/loop_fusion_04.f90"
 pass = "loop_fusion"
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_hoist_02.f90"
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
 filename = "../integration_tests/functions_05.f90"
 asr = true
 pass_with_llvm = true
@@ -3792,10 +3808,138 @@ continue_compilation = true
 [[test]]
 filename = "../integration_tests/realloc_lhs_20.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/realloc_lhs_22.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_elide_04.f90"
+fortran = true
+pass = "array_op"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_09.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_10.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_11.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_12.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_13.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_14.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_01.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative --realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_02.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative --realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_move_01.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative --realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_result_inplace_01.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_03.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_04.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_05.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_06.f90"
+asr = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_15.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
+filename = "../integration_tests/inline_loop_subroutine_calls_01.f90"
+fortran = true
+pass = "inline_loop_subroutine_calls"
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_version_01.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_07.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_06.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
+
+[[test]]
+filename = "../integration_tests/realloc_lhs_hoist_05.f90"
+fortran = true
+pass = "array_op,hoist_realloc"
+options = "--realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/rewind_inquire_flush.f90"
@@ -4656,6 +4800,7 @@ run = true
 [[test]]
 filename = "errors/matmul_unallocated_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_01.f90"
@@ -4822,6 +4967,14 @@ options = "--realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_328.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_result_realloc_01.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_result_realloc_02.f90"
 gpu_cuda_kernel = true
 
 [[test]]
@@ -5856,6 +6009,12 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_scattered_02.f90"
 gpu_cuda_kernel = true
 
+# An assignment to an allocatable array that one ALLOCATE statement gave the
+# bounds of its value is offloaded; others stay on the host.
+[[test]]
+filename = "../integration_tests/gpu_array_statements_realloc_01.f90"
+gpu_cuda_kernel = true
+
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]
@@ -5865,6 +6024,7 @@ gpu_metal_kernel = true
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_02.f90"
@@ -5873,6 +6033,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_03.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_04.f90"
@@ -5894,6 +6055,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_08.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_09.f90"
@@ -5906,10 +6068,12 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_11.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_12.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_13.f90"
@@ -5926,6 +6090,7 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_16.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_17.f90"
@@ -5942,10 +6107,12 @@ run = true
 [[test]]
 filename = "errors/array_bounds_check_20.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_21.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_bounds_check_22.f90"
@@ -6792,13 +6959,29 @@ run = true
 [[test]]
 filename = "errors/array_shape_07.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_shape_08.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/array_shape_09.f90"
+run = true
+options = "--no-realloc-lhs-arrays"
+
+[[test]]
+filename = "errors/array_shape_10.f90"
+run = true
+options = "--no-realloc-lhs-arrays"
+
+[[test]]
+filename = "errors/array_shape_11.f90"
+run = true
+
+[[test]]
+filename = "errors/array_shape_12.f90"
 run = true
 
 [[test]]
@@ -7161,15 +7344,17 @@ options = "--infer"
 [[test]]
 filename = "errors/infer_realloc_disabled_01.f90"
 run = true
-options = "--infer"
+options = "--infer --no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/allocatable_component_reshape_unallocated_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "infer_first_assignment_01.f90"
@@ -7782,26 +7967,42 @@ asr = true
 [[test]]
 filename = "../integration_tests/derived_types_188.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_01.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_02.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_03.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_04.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
 
 [[test]]
 filename = "errors/realloc_lhs_fn_result_05.f90"
 run = true
+options = "--no-realloc-lhs-arrays"
+
+[[test]]
+filename = "errors/realloc_lhs_disabled_01.f90"
+run = true
+options = "--no-realloc-lhs-arrays"
+
+[[test]]
+filename = "errors/realloc_lhs_disabled_02.f90"
+run = true
+options = "--disable-realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/global_init_01.f90"

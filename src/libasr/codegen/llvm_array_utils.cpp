@@ -1155,9 +1155,12 @@ namespace LCompilers {
             // Example :: For allocatable members in derived types
             // If the descriptor pointer itself is NULL, the array is not allocated
             llvm::BasicBlock *entryBB = builder->GetInsertBlock();
-            llvm::Value* array_ptr_int = builder->CreatePtrToInt(array, llvm::Type::getInt64Ty(context));
-            llvm::Value* is_desc_null = builder->CreateICmpEQ(array_ptr_int, 
-                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+            // The pointers are compared with null as pointers: through
+            // `ptrtoint`, LLVM 11 loads them as integers, and a descriptor
+            // that is split into scalars then holds its data pointer as an
+            // integer, whose `inttoptr` hides that it points to memory the
+            // array allocated itself.
+            llvm::Value* is_desc_null = builder->CreateIsNull(array);
             // Create blocks for conditional execution
             llvm::Function *fn = entryBB->getParent();
             llvm::BasicBlock *checkDataBB = llvm::BasicBlock::Create(context, "check_data", fn);
@@ -1198,9 +1201,7 @@ namespace LCompilers {
                 llvm::Type* const class_type = llvm_utils->getClassType(struct_sym);
                 llvm::Value* const array_data =  builder->CreateLoad(class_type->getPointerTo(), get_pointer_to_data(array_exp, array_type, array, llvm_utils->module));
                 // Check if wrapper pointer is null before dereferencing
-                llvm::Value* wrapper_ptr_int = builder->CreatePtrToInt(array_data, llvm::Type::getInt64Ty(context));
-                llvm::Value* is_wrapper_null = builder->CreateICmpEQ(wrapper_ptr_int,
-                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0));
+                llvm::Value* is_wrapper_null = builder->CreateIsNull(array_data);
                 llvm::BasicBlock *checkWrapperDataBB = llvm::BasicBlock::Create(context, "check_wrapper_data", fn);
                 wrapperNullBB = llvm::BasicBlock::Create(context, "wrapper_null", fn);
                 builder->CreateCondBr(is_wrapper_null, wrapperNullBB, checkWrapperDataBB);
@@ -1214,11 +1215,8 @@ namespace LCompilers {
             } else {
                 memory_holder = get_pointer_to_data(array_exp, array_type, array, llvm_utils->module);
             }
-            llvm::Value* is_data_allocated = builder->CreateICmpNE(
-                builder->CreatePtrToInt(llvm_utils->CreateLoad2(memory_holder_type, memory_holder),
-                    llvm::Type::getInt64Ty(context)),
-                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(memory_holder_type),
-                    llvm::Type::getInt64Ty(context)));
+            llvm::Value* is_data_allocated = builder->CreateIsNotNull(
+                llvm_utils->CreateLoad2(memory_holder_type, memory_holder));
             llvm::BasicBlock *finalDataCheckBB = builder->GetInsertBlock();
             builder->CreateBr(mergeBB);
             // Merge block with PHI node

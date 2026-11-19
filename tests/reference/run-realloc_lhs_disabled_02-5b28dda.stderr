@@ -1,0 +1,5 @@
+runtime error: Array 'x' is not allocated. Allocate it explicitly. Remove the '--no-realloc-lhs-arrays' option to allocate it automatically on assignment.
+ --> tests/errors/realloc_lhs_disabled_02.f90:6:5
+  |
+6 |     x = [1, 2, 3]
+  |     ^ not allocated here

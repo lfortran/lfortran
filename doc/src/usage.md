@@ -255,8 +255,8 @@ compilation options, output options, link options and so on.
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
 * `--print-leading-space`, Print leading white space if format is unspecified
-* `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
-* `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
+* `--realloc-lhs-arrays`, Reallocate allocatable arrays on assignment. This is the default in every mode, including `--fast`; the option is accepted for compatibility
+* `--no-realloc-lhs-arrays`, Do not reallocate allocatable arrays on assignment (`--disable-realloc-lhs-arrays` is an alias); see [Reallocation on assignment](#reallocation-on-assignment)
 * `--target <value>`, Generate code for the given target
 * `-sSETTING[=VALUE]` or `-s SETTING[=VALUE]`, Forward a setting to the Emscripten driver when linking with an LLVM-based backend and `--target=wasm32-unknown-emscripten`. Repeat for multiple settings, for example `-sMODULARIZE -sEXPORT_ES6`. User settings follow the default stack and memory settings, so they can override them. Quote list or string values as single shell arguments, for example `"-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"`. These settings are not host linker flags; `-W` forwarding is unchanged.
 * `--march <value>`, Select the instruction-set architecture. Use `native` for the host ISA.
@@ -460,6 +460,21 @@ before printing.  This is obsolete and LFortran omits this unless
 
 LFortran does not currently expose arbitrary Clang options such as `-flto`.
 Use `--fast` and the target-selection options above for native optimization.
+
+### Reallocation on assignment
+
+An intrinsic assignment `x = expr` to an allocatable array `x` allocates `x`
+when it is not allocated, and reallocates it when it is allocated with a shape
+other than that of `expr` (Fortran 2018, 10.2.1.3). LFortran does this by
+default in every mode, including `--fast`, as GNU, Intel and LLVM Fortran do;
+`--realloc-lhs-arrays` is accepted and changes nothing.
+
+`--no-realloc-lhs-arrays` (or `--disable-realloc-lhs-arrays`) turns the
+reallocation off, like `-fno-realloc-lhs` in GNU Fortran, which saves the
+check of the shape at each such assignment. The program must then allocate
+the array with the shape of the value before it assigns it. Without
+`--fast` a program that does not is stopped with a runtime error that names
+the array; with `--fast` nothing is checked.
 
 ### Procedure values of internal procedures
 

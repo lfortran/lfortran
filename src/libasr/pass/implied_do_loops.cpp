@@ -1348,7 +1348,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 return ;
             }
 
-            if (ASRUtils::is_allocatable(x.m_target) &&
+            if (x.m_realloc_lhs && ASRUtils::is_allocatable(x.m_target) &&
                     ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
                 allocate_target = true;
             }

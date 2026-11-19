@@ -1,5 +1,5 @@
 program gpu_metal_375
-! Without --realloc-lhs-arrays a component the loop writes in both branches
+! With --no-realloc-lhs-arrays a component the loop writes in both branches
 ! of an `if` is not allocated automatically. With bounds checking on, the
 ! launch reports that the written component is not allocated, as the
 ! assignment on the CPU does, instead of crashing.

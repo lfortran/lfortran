@@ -1,0 +1,717 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            lfortran_intrinsic_custom:
+                (IntrinsicModule lfortran_intrinsic_custom),
+            realloc_lhs_unallocated_06:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            io_then_assign:
+                                (ExternalSymbol
+                                    4
+                                    io_then_assign
+                                    2 io_then_assign
+                                    realloc_lhs_unallocated_06_m
+                                    []
+                                    io_then_assign
+                                    Public
+                                ),
+                            s:
+                                (Variable
+                                    4
+                                    s
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    realloc_lhs_unallocated_06
+                    [realloc_lhs_unallocated_06_m]
+                    [(SubroutineCall
+                        4 io_then_assign
+                        ()
+                        [((IntegerConstant 4 (Integer 4) Decimal))
+                        ((Var 4 s))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 4 s)
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 10 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            10.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000001
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                ),
+            realloc_lhs_unallocated_06_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            io_then_assign:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            i:
+                                                (Variable
+                                                    3
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            ios:
+                                                (Variable
+                                                    3
+                                                    ios
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            lfortran_implied_do_i:
+                                                (Variable
+                                                    3
+                                                    lfortran_implied_do_i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            lfortran_iomsg:
+                                                (Variable
+                                                    3
+                                                    lfortran_iomsg
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            n:
+                                                (Variable
+                                                    3
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            newunit:
+                                                (GenericProcedure
+                                                    3
+                                                    newunit
+                                                    [3 newunit_int_1@newunit
+                                                    3 newunit_int_2@newunit
+                                                    3 newunit_int_4@newunit
+                                                    3 newunit_int_8@newunit]
+                                                    Public
+                                                ),
+                                            newunit_int_1@newunit:
+                                                (ExternalSymbol
+                                                    3
+                                                    newunit_int_1@newunit
+                                                    6 newunit_int_1
+                                                    lfortran_intrinsic_custom
+                                                    []
+                                                    newunit_int_1
+                                                    Private
+                                                ),
+                                            newunit_int_2@newunit:
+                                                (ExternalSymbol
+                                                    3
+                                                    newunit_int_2@newunit
+                                                    6 newunit_int_2
+                                                    lfortran_intrinsic_custom
+                                                    []
+                                                    newunit_int_2
+                                                    Private
+                                                ),
+                                            newunit_int_4@newunit:
+                                                (ExternalSymbol
+                                                    3
+                                                    newunit_int_4@newunit
+                                                    6 newunit_int_4
+                                                    lfortran_intrinsic_custom
+                                                    []
+                                                    newunit_int_4
+                                                    Private
+                                                ),
+                                            newunit_int_8@newunit:
+                                                (ExternalSymbol
+                                                    3
+                                                    newunit_int_8@newunit
+                                                    6 newunit_int_8
+                                                    lfortran_intrinsic_custom
+                                                    []
+                                                    newunit_int_8
+                                                    Private
+                                                ),
+                                            opened:
+                                                (Variable
+                                                    3
+                                                    opened
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            s:
+                                                (Variable
+                                                    3
+                                                    s
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            u:
+                                                (Variable
+                                                    3
+                                                    u
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    io_then_assign
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 n)
+                                    (Var 3 s)]
+                                    [(SubroutineCall
+                                        3 newunit_int_4@newunit
+                                        3 newunit
+                                        [((Var 3 u))]
+                                        ()
+                                        .false.
+                                    )
+                                    (FileOpen
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        (StringConstant
+                                            "scratch"
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        (StringConstant
+                                            "formatted"
+                                            (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        )
+                                        ()
+                                        (Var 3 ios)
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (Var 3 ios)
+                                            NotEq
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (FileInquire
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        (Var 3 opened)
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        []
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        ()
+                                        (LogicalNot
+                                            (Var 3 opened)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (FileWrite
+                                        0
+                                        (Var 3 u)
+                                        (Var 3 lfortran_iomsg)
+                                        ()
+                                        ()
+                                        [(StringFormat
+                                            ()
+                                            [(Var 3 n)]
+                                            FormatFortran
+                                            []
+                                            ()
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            ()
+                                        )]
+                                        ()
+                                        ()
+                                        ()
+                                        .true.
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (FileEndfile
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (FileBackspace
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (FileRewind
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Flush
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (FileRead
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                        [(Var 3 i)]
+                                        ()
+                                        .true.
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (FileClose
+                                        0
+                                        (Var 3 u)
+                                        ()
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (Var 3 i)
+                                            NotEq
+                                            (Var 3 n)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 3 x)
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(IntrinsicElementalFunction
+                                                    Real
+                                                    [(Var 3 lfortran_implied_do_i)]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )]
+                                                (Var 3 lfortran_implied_do_i)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Var 3 n)
+                                                ()
+                                                (Real 4)
+                                                ()
+                                            )]
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                            ColMajor
+                                            ()
+                                        )
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )
+                                    (If
+                                        ()
+                                        (IntegerCompare
+                                            (ArraySize
+                                                (Var 3 x)
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (Var 3 n)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                        )]
+                                        []
+                                    )
+                                    (Assignment
+                                        (Var 3 s)
+                                        (IntrinsicArrayFunction
+                                            Sum
+                                            [(Var 3 x)]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    realloc_lhs_unallocated_06_m
+                    ()
+                    [lfortran_intrinsic_custom]
+                    .false.
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

@@ -1332,6 +1332,7 @@ RUN(NAME pointer_section_07 LABELS gfortran llvm)
 RUN(NAME pointer_section_08 LABELS llvm)
 RUN(NAME pointer_section_09 LABELS gfortran llvm)
 RUN(NAME pointer_section_10 LABELS gfortran llvm)
+RUN(NAME pointer_overlap_01 LABELS gfortran llvm)
 RUN(NAME pointer_function_result_01 LABELS gfortran llvm)
 
 RUN(NAME array_section_is_non_allocatable LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3713,6 +3714,72 @@ RUN(NAME realloc_lhs_32 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # same shape is not reallocated (#15956)
 RUN(NAME realloc_lhs_33 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocatable function result defined by intrinsic assignment from an array expression (#3299)
+RUN(NAME realloc_lhs_34 LABELS gfortran llvm) # reallocation on assignment is the default (#10331)
+RUN(NAME realloc_lhs_35 LABELS gfortran llvm) # default reallocation of allocatable dummy arguments and function results (#10331)
+RUN(NAME realloc_lhs_36 LABELS gfortran llvm) # default reallocation of components, rank 2 shape changes and bounds (#10331)
+RUN(NAME realloc_lhs_37 LABELS gfortran llvm c) # the C backend reallocates only an unallocated array or one of another shape
+RUN(NAME realloc_lhs_func_result_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_02 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_03 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_func_result_04 LABELS llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # GFortran returns the result into a variable the function reads
+RUN(NAME realloc_lhs_elide_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # no reallocation when the target is a whole operand of its elemental value
+RUN(NAME realloc_lhs_elide_02 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # no reallocation when an earlier assignment gave the target the shape of the value
+RUN(NAME realloc_lhs_elide_03 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # allocation without a check when the target is known to be unallocated
+RUN(NAME realloc_lhs_elide_04 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # reallocations that remain and those that are elided, see tests/tests.toml
+RUN(NAME realloc_lhs_hoist_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # reallocation of a loop-invariant shape before the loop
+RUN(NAME realloc_lhs_hoist_02 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_hoist_03 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_hoist_04 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_hoist_09 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # calls and element assignments that reallocate components
+RUN(NAME realloc_lhs_hoist_10 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # components of array elements
+RUN(NAME realloc_lhs_hoist_11 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # the shape from the operand the loops do not change
+RUN(NAME realloc_lhs_hoist_12 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # loop bounds that inquire about the variable of a component
+RUN(NAME realloc_lhs_version_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # loops run without reallocations that do nothing
+RUN(NAME realloc_lhs_hoist_08 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # shapes from functions of the arguments, INTENT(IN) calls
+RUN(NAME realloc_lhs_hoist_07 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # component targets
+RUN(NAME realloc_lhs_hoist_06 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # DO WHILE loops
+RUN(NAME realloc_lhs_hoist_05 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # chained work arrays
+RUN(NAME realloc_lhs_hoist_13 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # allocations of unallocated arrays, see tests/tests.toml
+RUN(NAME realloc_lhs_hoist_14 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # calls of functions that read only their arguments
+RUN(NAME realloc_lhs_hoist_15 LABELS gfortran llvm) # extents kept in a scalar, internal procedures that do not name the target
+RUN(NAME realloc_lhs_unallocated_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # plain allocation of certainly unallocated arrays, see tests/tests.toml
+RUN(NAME realloc_lhs_unallocated_02 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # targets that may be allocated keep the test
+RUN(NAME realloc_lhs_unallocated_03 LABELS gfortran llvm) # what internal procedures reach stays possibly allocated
+RUN(NAME realloc_lhs_unallocated_04 LABELS gfortran llvm) # copies of ASSOCIATE selectors start unallocated
+RUN(NAME realloc_lhs_unallocated_05 LABELS gfortran llvm) # allocated() of certainly unallocated arrays is false
+RUN(NAME realloc_lhs_unallocated_06 LABELS gfortran llvm) # OPEN, INQUIRE, CLOSE etc. keep a local certainly unallocated
+RUN(NAME realloc_lhs_move_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # allocatable array results moved into the variable
+RUN(NAME realloc_lhs_result_inplace_01 LABELS gfortran llvm) # explicit-shape results computed into the reallocated target
+RUN(NAME realloc_lhs_result_inplace_02 LABELS llvm) # not when an internal procedure passed to the function reads the target (GFortran 15 gets it wrong)
+RUN(NAME realloc_lhs_promote_01 LABELS gfortran llvm) # constant-size locals reallocated to their shape become arrays of the frame
+RUN(NAME realloc_lhs_reshape_01 LABELS gfortran llvm) # a reshape is reallocated to once, before it is copied
+RUN(NAME realloc_lhs_pack_01 LABELS gfortran llvm) # an array allocated with the extents of another has its shape
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -4304,6 +4371,7 @@ RUN(NAME tbaa_11 LABELS gfortran llvm)
 RUN(NAME tbaa_12 LABELS gfortran llvm)
 RUN(NAME tbaa_13 LABELS gfortran llvm)
 RUN(NAME tbaa_14 LABELS gfortran llvm)
+RUN(NAME tbaa_15 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME test_inquire_size LABELS gfortran llvm )
 RUN(NAME inquire_size_64 LABELS gfortran llvm EXTRAFILES inquire_size_64.c)
 RUN(NAME inquire_size_regions LABELS gfortran llvm llvm_omp GFORTRAN_ARGS -fopenmp)
@@ -6759,6 +6827,10 @@ RUN(NAME array_section_assign_11 LABELS gfortran llvm)
 RUN(NAME array_section_assign_12 LABELS gfortran llvm)
 RUN(NAME array_section_assign_13 LABELS gfortran llvm)
 RUN(NAME array_section_assign_14 LABELS llvm)
+RUN(NAME array_section_assign_15 LABELS gfortran llvm)
+RUN(NAME array_section_assign_16 LABELS gfortran llvm)
+RUN(NAME array_section_assign_17 LABELS gfortran llvm)
+RUN(NAME array_section_assign_18 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
 RUN(NAME array_in_place_sections_01 LABELS gfortran llvm)
 RUN(NAME array_conditional_window_updates LABELS gfortran llvm)
@@ -7162,6 +7234,7 @@ RUN(NAME gpu_lanes_block_03 LABELS gfortran llvm cuda NO_FAST_MATH)
 RUN(NAME gpu_lanes_block_04 LABELS gfortran llvm cuda)
 RUN(NAME gpu_lanes_scattered_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_lanes_scattered_02 LABELS gfortran llvm cuda)
+RUN(NAME gpu_array_statements_realloc_01 LABELS gfortran llvm cuda) # assignments to arrays allocated with the same bounds
 RUN(NAME gpu_lanes_short_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_lanes_unroll_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_lanes_const_trips_01 LABELS gfortran llvm cuda)
@@ -7434,10 +7507,10 @@ RUN(NAME gpu_metal_356 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_372 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_357 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_360 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_361 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_361 LABELS gfortran llvm metal cuda EXTRA_ARGS --no-realloc-lhs-arrays)
 RUN(NAME gpu_metal_362 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_365 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_366 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_366 LABELS gfortran llvm metal cuda EXTRA_ARGS --no-realloc-lhs-arrays)
 RUN(NAME gpu_metal_371 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_367 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_373 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
@@ -7836,12 +7909,12 @@ RUN(NAME gpu_metal_369 LABELS llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_370 LABELS metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 # Expected run-time errors on the GPU backends only. gpu_metal_359 and
 # gpu_metal_363 are GPU-only because the llvm backend still allocates array
-# components in `t(i) = f(...)` without --realloc-lhs-arrays (#9738).
+# components in `t(i) = f(...)` with --no-realloc-lhs-arrays (#9738).
 # gpu_metal_375 is GPU-only for the same reason as gpu_metal_363 (#9738).
-RUN(NAME gpu_metal_375 FAIL NO_FAST LABELS metal cuda) # bounds checking reports a component written in both branches of an `if` that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda) # bounds checking reports a component that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
-RUN(NAME gpu_metal_364 FAIL NO_FAST NO_STD_F23 LABELS llvm metal cuda) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays; --std=f23 allocates it on assignment
+RUN(NAME gpu_metal_375 FAIL NO_FAST LABELS metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component written in both branches of an `if` that is not allocated with --no-realloc-lhs-arrays
+RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component that is not allocated with --no-realloc-lhs-arrays
+RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component an `if` lets the loop write that is not allocated with --no-realloc-lhs-arrays
+RUN(NAME gpu_metal_364 FAIL NO_FAST LABELS llvm metal cuda EXTRA_ARGS --no-realloc-lhs-arrays) # bounds checking reports a component the loop assigns an array to that is not allocated with --no-realloc-lhs-arrays
 RUN(NAME gpu_metal_377 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_377_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_385 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_385_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_395 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_395_mod.f90 EXTRA_ARGS --separate-compilation)
@@ -7864,6 +7937,8 @@ RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_413_
 RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_435_mod.f90 EXTRA_ARGS --separate-compilation $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME inline_function_calls_02 LABELS gfortran llvm EXTRA_ARGS --fast --no-realloc-lhs-arrays) # a call in the bounds of a DO loop
+RUN(NAME inline_loop_subroutine_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast) # small subroutines called in loops, see tests/tests.toml
 
 RUN(NAME gpu_nint_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_nint_02 LABELS gfortran llvm cuda) # metal declines real(8)
@@ -8016,6 +8091,9 @@ RUN(NAME gpu_do_loop_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_03 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_reduction_strided_01 LABELS llvm metal cuda) # gfortran on CI lacks the reduce clause
+RUN(NAME gpu_result_realloc_01 LABELS gfortran llvm metal cuda)
+# Declined on the GPU backends; tests.toml records the errors.
+RUN(NAME gpu_result_realloc_02 LABELS gfortran llvm)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
@@ -8169,6 +8247,7 @@ RUN(NAME all_01 LABELS gfortran llvm)
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
 RUN(NAME runtime_checks_01 LABELS gfortran llvm)
 RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
+RUN(NAME detect_leaks_02 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 # lfortran_display is an LFortran runtime module that GFortran does not have.
 # Its procedures do not link with --separate-compilation yet (#15852).
 RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)

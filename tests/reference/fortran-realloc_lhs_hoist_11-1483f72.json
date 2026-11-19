@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-realloc_lhs_hoist_11-1483f72",
+    "cmd": "lfortran --pass=array_op,hoist_realloc --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --realloc-lhs-arrays",
+    "infile": "tests/../integration_tests/realloc_lhs_hoist_11.f90",
+    "infile_hash": "b977ad46bc2e8d8bc2a4c425e2f0a32397e0f863a7c063f93befc57c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-realloc_lhs_hoist_11-1483f72.f90",
+    "stdout_hash": "1cb79f7eb11c69943b55c3bf8fe1efba3c5b148317cd93976b50b0c4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

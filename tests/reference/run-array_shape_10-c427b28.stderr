@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'x'. Tried to match size 4 of dimension 1 of LHS with size 3 of dimension 1 of RHS. Remove the '--no-realloc-lhs-arrays' option to reallocate the left hand side automatically on assignment.
+  --> tests/errors/array_shape_10.f90:12:5
+   |
+12 |     x = cshift(y, 1)
+   |     ^ LHS size is 4
+   |
+12 |     x = cshift(y, 1)
+   |         ^^^^^^^^^^^^ RHS size is 3

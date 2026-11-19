@@ -10,6 +10,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
@@ -191,6 +192,9 @@ public:
     std::vector<SPath> read;
     // Whether the element reads the target other than element for element.
     bool aliases_target = false;
+    // Whether the value reads the whole target as an operand, which gives
+    // the value the shape of the target.
+    bool reads_whole_target = false;
 
     // nullptr when the value cannot be written element by element.
     ASR::expr_t* element(ASR::expr_t *e) {
@@ -224,6 +228,7 @@ public:
                 if (overlap(p, target) && p != target) {
                     aliases_target = true;
                 }
+                if (p == target) reads_whole_target = true;
                 read.push_back(p);
                 std::vector<ASR::expr_t*> subscripts;
                 for (int d = 0; d < rank; d++) {
@@ -442,6 +447,190 @@ private:
     }
 };
 
+// Groups of allocatable arrays that the statements of a statement list
+// before a statement show to have the same shape: arrays allocated by one
+// ALLOCATE statement with the same bounds, when no statement since can have
+// changed the allocation of any of them. Any call forgets everything, as it
+// may change the allocation of what it can reach.
+class SameShapeFacts {
+public:
+    bool same(ASR::symbol_t *a, ASR::symbol_t *b) const {
+        for (const std::set<ASR::symbol_t*> &g : groups) {
+            if (g.count(a) && g.count(b)) return true;
+        }
+        return false;
+    }
+
+    // Updates the facts with what the statement `x` does.
+    void update(ASR::stmt_t *x) {
+        if (ASR::is_a<ASR::Allocate_t>(*x)) {
+            allocate(*ASR::down_cast<ASR::Allocate_t>(x));
+            return;
+        }
+        Changes c;
+        c.visit_stmt(*x);
+        if (c.unknown) {
+            groups.clear();
+            return;
+        }
+        for (ASR::symbol_t *s : c.changed) forget(s);
+    }
+
+private:
+    std::vector<std::set<ASR::symbol_t*>> groups;
+
+    static ASR::symbol_t* root(ASR::expr_t *e) {
+        while (true) {
+            e = ASRUtils::get_past_array_physical_cast(e);
+            if (ASR::is_a<ASR::Var_t>(*e)) {
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    // The variables whose allocation a statement may change; `unknown` when
+    // it calls a procedure or does something this does not follow.
+    class Changes : public ASR::BaseWalkVisitor<Changes> {
+    public:
+        std::set<ASR::symbol_t*> changed;
+        bool unknown = false;
+
+        void change(ASR::expr_t *e) {
+            ASR::symbol_t *r = root(e);
+            if (r == nullptr) {
+                unknown = true;
+            } else {
+                changed.insert(r);
+            }
+        }
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            // An element or a section is assigned in place.
+            ASR::expr_t *t = ASRUtils::get_past_array_physical_cast(x.m_target);
+            if (!ASR::is_a<ASR::ArrayItem_t>(*t)
+                    && !ASR::is_a<ASR::ArraySection_t>(*t)) {
+                change(t);
+            }
+            if (x.m_move_allocation) change(x.m_value);
+            if (x.m_overloaded) unknown = true;
+            ASR::BaseWalkVisitor<Changes>::visit_Assignment(x);
+        }
+        void visit_Allocate(const ASR::Allocate_t &x) {
+            for (size_t i = 0; i < x.n_args; i++) change(x.m_args[i].m_a);
+            ASR::BaseWalkVisitor<Changes>::visit_Allocate(x);
+        }
+        void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+            for (size_t i = 0; i < x.n_args; i++) change(x.m_args[i].m_a);
+            ASR::BaseWalkVisitor<Changes>::visit_ReAlloc(x);
+        }
+        void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+            for (size_t i = 0; i < x.n_vars; i++) change(x.m_vars[i]);
+            ASR::BaseWalkVisitor<Changes>::visit_ExplicitDeallocate(x);
+        }
+        void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &x) {
+            for (size_t i = 0; i < x.n_vars; i++) change(x.m_vars[i]);
+            ASR::BaseWalkVisitor<Changes>::visit_ImplicitDeallocate(x);
+        }
+        void visit_Associate(const ASR::Associate_t &x) {
+            change(x.m_target);
+            ASR::BaseWalkVisitor<Changes>::visit_Associate(x);
+        }
+        void visit_Nullify(const ASR::Nullify_t &x) {
+            for (size_t i = 0; i < x.n_vars; i++) change(x.m_vars[i]);
+            ASR::BaseWalkVisitor<Changes>::visit_Nullify(x);
+        }
+        void visit_FileRead(const ASR::FileRead_t &/*x*/) { unknown = true; }
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &/*x*/) {
+            unknown = true;
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &/*x*/) {
+            unknown = true;
+        }
+        void visit_IntrinsicImpureSubroutine(
+                const ASR::IntrinsicImpureSubroutine_t &/*x*/) {
+            unknown = true;
+        }
+        void visit_BlockCall(const ASR::BlockCall_t &/*x*/) { unknown = true; }
+        void visit_AssociateBlockCall(
+                const ASR::AssociateBlockCall_t &/*x*/) {
+            unknown = true;
+        }
+    };
+
+    void forget(ASR::symbol_t *s) {
+        for (std::set<ASR::symbol_t*> &g : groups) g.erase(s);
+        groups.erase(std::remove_if(groups.begin(), groups.end(),
+            [](const std::set<ASR::symbol_t*> &g) { return g.size() < 2; }),
+            groups.end());
+    }
+
+    // Whether the ALLOCATE argument `a` allocates a whole allocatable
+    // array with explicit bounds, and nothing else.
+    static bool plain_array(const ASR::alloc_arg_t &a) {
+        return ASR::is_a<ASR::Var_t>(*a.m_a)
+            && ASRUtils::is_allocatable(ASRUtils::expr_type(a.m_a))
+            && ASRUtils::is_array(ASRUtils::expr_type(a.m_a))
+            && a.n_dims > 0 && a.m_len_expr == nullptr
+            && a.m_type == nullptr && a.m_sym_subclass == nullptr
+            && a.n_codims == 0;
+    }
+
+    static bool same_bounds(const ASR::alloc_arg_t &a,
+            const ASR::alloc_arg_t &b) {
+        if (a.n_dims != b.n_dims) return false;
+        for (size_t d = 0; d < a.n_dims; d++) {
+            const ASR::dimension_t &x = a.m_dims[d], &y = b.m_dims[d];
+            if (x.m_length == nullptr || y.m_length == nullptr
+                    || !PassUtils::same_expression(x.m_length, y.m_length)
+                    || (x.m_start == nullptr) != (y.m_start == nullptr)
+                    || (x.m_start != nullptr
+                        && !PassUtils::same_expression(x.m_start,
+                            y.m_start))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // One ALLOCATE statement evaluates the bounds of all its arguments
+    // before it allocates any of them (F2018 9.7.1.2), which therefore get
+    // the same shape when their bounds are the same expressions.
+    void allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::symbol_t *r = root(x.m_args[i].m_a);
+            if (r == nullptr) {
+                groups.clear();
+                return;
+            }
+            forget(r);
+        }
+        if (x.m_stat || x.m_errmsg || x.m_source) return;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!plain_array(x.m_args[i])) continue;
+            std::set<ASR::symbol_t*> g;
+            for (size_t j = i; j < x.n_args; j++) {
+                if (plain_array(x.m_args[j])
+                        && same_bounds(x.m_args[i], x.m_args[j])) {
+                    g.insert(root(x.m_args[j].m_a));
+                }
+            }
+            bool known = false;
+            for (const std::set<ASR::symbol_t*> &h : groups) {
+                known = known || h.count(root(x.m_args[i].m_a));
+            }
+            if (g.size() >= 2 && !known) groups.push_back(g);
+        }
+    }
+};
+
 class ArrayStatements {
 public:
     ArrayStatements(Allocator &al_, ASR::TranslationUnit_t &unit,
@@ -453,9 +642,14 @@ public:
             const std::vector<SPath> *device) {
         Vec<ASR::stmt_t*> out;
         out.reserve(al, n);
+        SameShapeFacts facts;
+        SameShapeFacts *enclosing = shapes;
         for (size_t i = 0; i < n; i++) {
+            shapes = &facts;
             out.push_back(al, statement(stmts[i], scope, device));
+            facts.update(stmts[i]);
         }
+        shapes = enclosing;
         stmts = out.p;
         n = out.n;
     }
@@ -466,6 +660,36 @@ private:
     GpuProcedureImplementations implementations;
     // How many assignments have been sent to the device.
     size_t offloaded = 0;
+    // What the statements before the one being visited in its statement
+    // list show about the shapes of allocatable arrays.
+    SameShapeFacts *shapes = nullptr;
+
+    // Whether the elemental array expression `value` has the shape of the
+    // whole allocatable array `target` by what `shapes` shows: one of the
+    // arrays that give it its shape has the same shape as the target.
+    bool has_target_shape(ASR::expr_t *target, ASR::expr_t *value) {
+        target = ASRUtils::get_past_array_physical_cast(target);
+        value = ASRUtils::get_past_array_physical_cast(value);
+        if (shapes == nullptr || !ASR::is_a<ASR::Var_t>(*target)) return false;
+        if (ASR::is_a<ASR::Var_t>(*value)) {
+            return ASRUtils::is_array(ASRUtils::expr_type(value)) &&
+                shapes->same(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(target)->m_v),
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(value)->m_v));
+        }
+        if (ASRUtils::is_binop_expr(value)) {
+            return has_target_shape(target,
+                    ASRUtils::extract_member_from_binop(value, 0)) ||
+                has_target_shape(target,
+                    ASRUtils::extract_member_from_binop(value, 1));
+        }
+        if (ASRUtils::is_unaryop_expr(value)) {
+            return has_target_shape(target,
+                ASRUtils::extract_member_from_unaryop(value));
+        }
+        return false;
+    }
 
     // The data the device loops of a sequential loop name.
     std::vector<SPath> loop_device_data(ASR::stmt_t **stmts, size_t n) {
@@ -569,7 +793,6 @@ private:
                 && !ASR::is_a<ASR::Logical_t>(*element)) {
             return nullptr;
         }
-        if (ASRUtils::is_allocatable(type) && a.m_realloc_lhs) return nullptr;
         if (!ASR::is_a<ASR::Var_t>(*target)
                 && !ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
             return nullptr;
@@ -605,6 +828,23 @@ private:
         if (value == nullptr || writer.aliases_target) {
             remove_indices(scope, index);
             return nullptr;
+        }
+        // Reallocation on assignment may change the shape of an allocatable
+        // target, which only the host can do. It does not when the value has
+        // the shape of the target: a scalar broadcast to it, an elemental
+        // expression with the whole target as an operand, which has to
+        // conform to it (F2018 10.2.1.3), or one with an operand that the
+        // statements before show to have the shape of the target.
+        if (ASRUtils::is_allocatable(type) && a.m_realloc_lhs) {
+            ASR::expr_t *whole = ASRUtils::get_past_array_physical_cast(
+                a.m_value);
+            if (ASRUtils::is_array(ASRUtils::expr_type(whole))
+                    && !ASR::is_a<ASR::ArrayBroadcast_t>(*whole)
+                    && !writer.reads_whole_target
+                    && !has_target_shape(target, whole)) {
+                remove_indices(scope, index);
+                return nullptr;
+            }
         }
         bool touches = false;
         std::vector<SPath> named = writer.read;

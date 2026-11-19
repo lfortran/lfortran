@@ -1,5 +1,5 @@
 program gpu_metal_361
-! Built without --realloc-lhs-arrays, so the program allocates every
+! Built with --no-realloc-lhs-arrays, so the program allocates every
 ! component the offloaded loops write, with its right size, and bounds
 ! checking must report nothing:
 ! * the first loop writes only the odd elements, under an `if`; the even

@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-realloc_lhs_hoist_15-3a7133b",
+    "cmd": "lfortran --pass=allocate_unallocated --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --cumulative",
+    "infile": "tests/../integration_tests/realloc_lhs_hoist_15.f90",
+    "infile_hash": "e03b93e70da87ae05a9bd843de4bf19f0abb569243f9c0b3b6c06eef",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-realloc_lhs_hoist_15-3a7133b.f90",
+    "stdout_hash": "cbfbe4019a9ba41143b833add41650aaefb8837b2b74fc8462274280",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

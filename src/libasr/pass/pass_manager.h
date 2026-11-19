@@ -18,6 +18,8 @@
 
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
+#include <libasr/pass/hoist_realloc.h>
+#include <libasr/pass/allocate_unallocated.h>
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/global_init.h>
 #include <libasr/pass/replace_implied_do_loops.h>
@@ -81,6 +83,7 @@
 #include <libasr/pass/gpu_array_statements.h>
 #include <libasr/pass/gpu_call_guards.h>
 #include <libasr/pass/dead_array_store.h>
+#include <libasr/pass/full_section_target.h>
 #include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/pass/gpu_memory_space.h>
@@ -120,6 +123,8 @@ namespace LCompilers {
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
             {"allocate_on_assignment", &pass_allocate_on_assignment},
+            {"hoist_realloc", &pass_hoist_realloc},
+            {"allocate_unallocated", &pass_allocate_unallocated},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -156,6 +161,7 @@ namespace LCompilers {
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
             {"dead_array_store", &pass_dead_array_store},
+            {"full_section_target", &pass_full_section_target},
             {"gpu_array_statements", &pass_gpu_array_statements},
             {"gpu_call_guards", &pass_gpu_call_guards},
             {"omp_region_flatten", &pass_flatten_omp_regions},
@@ -186,6 +192,7 @@ namespace LCompilers {
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
+            {"inline_loop_subroutine_calls", &pass_inline_loop_subroutine_calls},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
             {"gpu_struct_component_copies", &pass_gpu_struct_component_copies},
@@ -334,6 +341,10 @@ namespace LCompilers {
                 // the runtime formatter calls, lowered by the passes below
                 // like any other procedure.
                 "dtio_callbacks",
+                // `x(:) = v` assigns to the whole array `x` without
+                // reallocation, so that every pass below treats it exactly
+                // as it treats `x = v` without reallocation.
+                "full_section_target",
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
                 // it, and the pass after that writes the decision into the
@@ -393,6 +404,13 @@ namespace LCompilers {
                 // the dummy into a required one and `present()` into its
                 // presence argument.
                 "intent_out_deallocate",
+                // With --fast, a small subroutine called in a loop, whose body
+                // this file has, becomes statements of the loop, which the
+                // passes below handle as such: a reallocation on assignment in
+                // it can move out of the loop (hoist_realloc). It runs while
+                // optional dummies and host associated variables are what the
+                // source says they are.
+                "inline_loop_subroutine_calls",
                 "transform_optional_argument_functions",
                 "select_case",
                 // With --fast, a call that passes an internal procedure to a
@@ -452,6 +470,13 @@ namespace LCompilers {
                 // An intrinsic assignment allocates its unallocated
                 // allocatable variable, explicitly from here on.
                 "allocate_on_assignment",
+                // A reallocation on assignment that a loop does the same in
+                // every iteration is done once, before the loop.
+                "hoist_realloc",
+                // A reallocation on assignment of an array that is certainly
+                // unallocated, such as the first assignment of a function
+                // result, is a plain allocation.
+                "allocate_unallocated",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
                 "print_struct_type",

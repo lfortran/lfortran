@@ -6426,7 +6426,7 @@ namespace MatMul {
             assert_msg += "`matrix_a(i, k)` and `matrix_b(k, j)`";
         }
         // Note: allocation/reallocation for allocatable results is handled by
-        // the assignment pass based on the --realloc-lhs-arrays flag, not here.
+        // the assignment pass according to the realloc_lhs_arrays option, not here.
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));

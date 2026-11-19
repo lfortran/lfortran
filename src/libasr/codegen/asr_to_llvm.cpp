@@ -340,15 +340,29 @@ private:
         return "";
     }
 
+    // The remedy a runtime error suggests when an assignment needs its
+    // allocatable target allocated, or reallocated to another shape. Only
+    // the opt-out of reallocation on assignment leaves that to the user.
+    std::string realloc_lhs_remedy(const std::string &action) {
+        if (compiler_options.po.realloc_lhs_arrays) {
+            return "";
+        }
+        return " Remove the '--no-realloc-lhs-arrays' option to " + action
+            + " automatically on assignment.";
+    }
+
     void generate_unallocated_array_runtime_error(llvm::Value* is_not_allocated,
                                                   ASR::expr_t* target_expr) {
         std::string target_expr_name = get_expr_name_for_runtime_message(target_expr);
+        std::string message = target_expr_name.empty() ? "Array is not allocated."
+            : "Array '%s' is not allocated.";
+        message += " Allocate it explicitly." + realloc_lhs_remedy("allocate it");
         if (!target_expr_name.empty()) {
             llvm::Value* target_expr_name_llvm = llvm_utils->get_runtime_error_string(
                 target_expr_name);
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
-                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                message,
                 {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
                 infile,
                 location_manager,
@@ -356,7 +370,7 @@ private:
         } else {
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
-                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                message,
                 {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
                 infile,
                 location_manager);
@@ -11216,10 +11230,43 @@ public:
     std::set<llvm::Value*> dummy_array_storage;
 
     // The globals of the module variables that are arrays with a descriptor
-    // (allocatable and pointer arrays): each holds a pointer to the
-    // descriptor of the variable, which only the code the compiler generates
-    // for the variable reads or writes, so these accesses are "descriptor".
+    // (allocatable and pointer arrays), and the parameters of the dummy
+    // arguments that are such arrays (see is_descriptor_pointer_dummy): each
+    // holds or points to the pointer to the descriptor of the variable,
+    // which only the code the compiler generates for the variable reads or
+    // writes, so these accesses are "descriptor". Without the tag a store to
+    // an element of any array could change the pointer, and LLVM would
+    // reload the descriptor of an allocatable dummy argument for every
+    // element of a loop that assigns to an array.
     std::set<llvm::Value*> descriptor_pointer_globals;
+
+    // Whether the parameter of the dummy argument `arg` is the address of
+    // the pointer to the descriptor of an allocatable or pointer array of
+    // the caller, which the caller stores in a variable, a module variable
+    // or a component: storage that holds nothing else, and that a
+    // conforming program cannot make an array element share (see
+    // tbaa_functions).
+    static bool is_descriptor_pointer_dummy(const ASR::Variable_t &arg) {
+        if (arg.m_storage == ASR::storage_typeType::ResultArgument ||
+                arg.m_value_attr || arg.m_is_volatile ||
+                arg.m_is_asynchronous || arg.n_codims != 0 ||
+                !ASRUtils::is_array(arg.m_type) ||
+                !LLVM::is_llvm_pointer(*arg.m_type) ||
+                !(ASRUtils::is_allocatable(arg.m_type) ||
+                  ASRUtils::is_pointer(arg.m_type)) ||
+                ASRUtils::is_assumed_rank_array(arg.m_type) ||
+                ASRUtils::extract_physical_type(arg.m_type) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+            return false;
+        }
+        ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(arg.m_type));
+        return ASR::is_a<ASR::Integer_t>(*element_type) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+            ASR::is_a<ASR::Real_t>(*element_type) ||
+            ASR::is_a<ASR::Complex_t>(*element_type) ||
+            ASR::is_a<ASR::Logical_t>(*element_type);
+    }
 
     static bool is_dummy_array_storage(const ASR::Variable_t &arg) {
         if (arg.m_storage == ASR::storage_typeType::ResultArgument ||
@@ -11693,6 +11740,11 @@ public:
                             is_dummy_array_storage(*arg)) {
                         dummy_array_storage.insert(&llvm_arg);
                         dummy_array_storage.insert(llvm_sym);
+                    }
+                    if (noalias_dummies && llvm_sym == &llvm_arg &&
+                            llvm_arg.getType()->isPointerTy() &&
+                            is_descriptor_pointer_dummy(*arg)) {
+                        descriptor_pointer_globals.insert(&llvm_arg);
                     }
                 }
             }
@@ -16923,8 +16975,7 @@ public:
         if (is_allocatable_descriptor_target) {
             // Only a target that can actually be reallocated is told
             // about the option that would reallocate it.
-            message += " Use '--realloc-lhs-arrays' option to"
-                " reallocate LHS automatically.";
+            message += realloc_lhs_remedy("reallocate the left hand side");
         }
         for (size_t i = 0; i < x.n_checks; i++) {
             const ASR::array_extent_check_t &check = x.m_checks[i];

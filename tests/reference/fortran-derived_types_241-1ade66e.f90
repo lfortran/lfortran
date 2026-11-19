@@ -221,6 +221,28 @@ use derived_types_241_m, only: through_pointer
 use derived_types_241_m, only: to_module
 use derived_types_241_m, only: whole_copy
 implicit none
+real(4), dimension(3), parameter :: __libasr_created__array_constant_ = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+real(4), dimension(2), parameter :: __libasr_created__array_constant_1 = [3.00000000e+00, 4.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_10 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_11 = [1.00000000e+00, 1.00000000e+01,&
+         1.00000000e+02]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_2 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_3 = [4.00000000e+00, 5.00000000e+00,&
+         6.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_4 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_5 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_6 = [4.00000000e+00, 5.00000000e+00,&
+         6.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_7 = [1.00000000e+00, 1.00000000e+01,&
+         1.00000000e+02]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_8 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
+real(4), dimension(3), parameter :: __libasr_created__array_constant_9 = [1.00000000e+00, 2.00000000e+00,&
+         3.00000000e+00]
 real(4), dimension(3), parameter :: __libasr_created__array_reshape_array = [1.00000000e+01, 2.00000000e+01,&
          3.00000000e+01]
 integer(4), dimension(2) :: __libasr_created__array_reshape_shape
@@ -339,8 +361,9 @@ type(t), target :: tg
 type(t), dimension(2) :: u
 type(t), dimension(2) :: v
 allocate(a%x(3), a%z(3, 1))
-a%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+a%x = __libasr_created__array_constant_
 __libasr_created__array_reshape_shape = [3, 1]
+reallocate(a%z(3, 1))
 a%z = reshape(__libasr_created__array_reshape_array, __libasr_created__array_reshape_shape)
 a%w = [4.00000000e+00, 5.00000000e+00, 6.00000000e+00]
 call fixed_add(a, c)
@@ -390,7 +413,7 @@ if (__libasr_created__intrinsic_array_function_Any28) then
     error stop
 end if
 allocate(oa%in%x(2), oc%in%x(2))
-oa%in%x = [3.00000000e+00, 4.00000000e+00]
+oa%in%x = __libasr_created__array_constant_1
 call nested(oa, oc)
 deallocate(__libasr_created__intrinsic_array_function_Any6)
 allocate(__libasr_created__intrinsic_array_function_Any6(size(oc%in%x, 1)))
@@ -417,8 +440,8 @@ if (__libasr_created__intrinsic_array_function_Any31) then
     error stop
 end if
 allocate(u(1)%x(3), u(2)%x(3), v(1)%x(3), v(2)%x(3))
-u(1)%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
-u(2)%x = [4.00000000e+00, 5.00000000e+00, 6.00000000e+00]
+u(1)%x = __libasr_created__array_constant_2
+u(2)%x = __libasr_created__array_constant_3
 v(1)%x = real(0, kind=4)
 v(2)%x = real(0, kind=4)
 call elements(u, v, 2, 2)
@@ -437,7 +460,7 @@ __libasr_created__intrinsic_array_function_Any33 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any33) then
     error stop
 end if
-c%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+c%x = __libasr_created__array_constant_4
 call same_object(c)
 deallocate(__libasr_created__intrinsic_array_function_Any11)
 allocate(__libasr_created__intrinsic_array_function_Any11(size(c%x, 1)))
@@ -446,8 +469,8 @@ __libasr_created__intrinsic_array_function_Any34 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any34) then
     error stop
 end if
-v(1)%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
-v(2)%x = [4.00000000e+00, 5.00000000e+00, 6.00000000e+00]
+v(1)%x = __libasr_created__array_constant_5
+v(2)%x = __libasr_created__array_constant_6
 call same_array(v, 1, 1)
 deallocate(__libasr_created__intrinsic_array_function_Any12)
 allocate(__libasr_created__intrinsic_array_function_Any12(size(v(1)%x, 1)))
@@ -479,7 +502,7 @@ if (__libasr_created__intrinsic_array_function_Any38) then
     error stop
 end if
 allocate(tg%x(3))
-tg%x = [1.00000000e+00, 1.00000000e+01, 1.00000000e+02]
+tg%x = __libasr_created__array_constant_7
 call targets(tg, tg)
 deallocate(__libasr_created_real_compare_left_)
 allocate(__libasr_created_real_compare_left_(size(tg%x, 1)))
@@ -502,7 +525,7 @@ if (__libasr_created__intrinsic_array_function_Any40) then
     error stop
 end if
 p => tg
-tg%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+tg%x = __libasr_created__array_constant_8
 __libasr_created__array_section_ => tg%x(2:3)
 deallocate(__libasr_created__array_section_1)
 allocate(__libasr_created__array_section_1((2 - 1)/1 + 1))
@@ -520,7 +543,7 @@ __libasr_created__intrinsic_array_function_Any41 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any41) then
     error stop
 end if
-tg%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+tg%x = __libasr_created__array_constant_9
 deallocate(__libasr_created__array_section_2)
 allocate(__libasr_created__array_section_2(3))
 __libasr_created__array_section_pointer_1 => p%x(3:1:-1)
@@ -553,7 +576,7 @@ __libasr_created__intrinsic_array_function_Any43 = Any(__libasr_created__intrins
 if (__libasr_created__intrinsic_array_function_Any43) then
     error stop
 end if
-tg%x = [1.00000000e+00, 2.00000000e+00, 3.00000000e+00]
+tg%x = __libasr_created__array_constant_10
 call through_pointer(p, tg)
 deallocate(__libasr_created_real_compare_left_5)
 allocate(__libasr_created_real_compare_left_5(size(tg%x, 1)))
@@ -567,7 +590,7 @@ if (__libasr_created__intrinsic_array_function_Any44) then
     error stop
 end if
 allocate(gt%x(3))
-gt%x = [1.00000000e+00, 1.00000000e+01, 1.00000000e+02]
+gt%x = __libasr_created__array_constant_11
 call module_pointer()
 deallocate(__libasr_created_real_compare_left_6)
 allocate(__libasr_created_real_compare_left_6(size(gt%x, 1)))
