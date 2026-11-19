@@ -138,4 +138,8 @@ endif()
 #    LIBRARY DESTINATION lib
 #)
 
+if (WITH_PCH)
+    target_precompile_headers(lfortran_lib REUSE_FROM asr)
+endif()
+
 add_subdirectory(tests)

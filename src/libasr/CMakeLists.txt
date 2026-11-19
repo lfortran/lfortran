@@ -218,6 +218,29 @@ target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 
 add_library(asr STATIC ${SRC})
+
+# Nearly every source of libasr includes asr_utils.h and pass_utils.h, and
+# parsing them takes longer than compiling a typical pass. A precompiled
+# header parses them once. Compiler caches do not cache a compilation that
+# uses a GCC precompiled header, so builds that use one keep parsing.
+set(WITH_PCH_DEFAULT no)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug"
+        AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+            OR CMAKE_CXX_COMPILER_ID MATCHES Clang)
+        AND NOT CMAKE_CXX_COMPILER_LAUNCHER AND NOT WITH_CCACHE
+        AND NOT EMSCRIPTEN AND NOT LFORTRAN_BUILD_TO_WASM
+        AND NOT CMAKE_VERSION VERSION_LESS 3.16)
+    set(WITH_PCH_DEFAULT yes)
+endif()
+set(WITH_PCH ${WITH_PCH_DEFAULT}
+    CACHE BOOL "Precompile the headers that most of libasr includes")
+if (WITH_PCH)
+    target_precompile_headers(asr PRIVATE
+        <libasr/asr_utils.h>
+        <libasr/pass/pass_utils.h>
+        <libasr/pass/gpu_decline.h>
+        <libasr/codegen/gpu_utils.h>)
+endif()
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 target_link_libraries(asr lfortran_utils)
