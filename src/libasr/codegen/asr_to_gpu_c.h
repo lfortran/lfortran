@@ -3375,6 +3375,7 @@ public:
 
         emitted_funcs.clear();
         std::vector<std::string> kernel_names;
+        kernel_variants.clear();
         for (auto &item : tu.m_symtab->get_scope()) {
             if (ASRUtils::is_device_kernel(item.second)) {
                 ASR::Function_t *kf =
@@ -3384,7 +3385,8 @@ public:
             }
         }
 
-        dialect.emit_translation_unit_epilogue(src, kernel_names);
+        dialect.emit_translation_unit_epilogue(src, kernel_names,
+            kernel_variants);
     }
 
     // Get the device struct name for a struct-typed variable
@@ -4146,6 +4148,24 @@ public:
         indent_level--;
         src << "}\n\n";
 
+        if (!kernel_variant.name.empty()) {
+            std::string kernel_source = src.str().substr(
+                static_cast<size_t>(kernel_variant.start));
+            LCOMPILERS_ASSERT(kernel_source.rfind(kernel_variant.signature, 0)
+                == 0);
+            std::string body = kernel_source.substr(
+                kernel_variant.signature.size());
+            for (const auto &r : dialect.variant_rewrites(
+                    kernel_variant.fixed_lanes)) {
+                size_t at = body.find(r.first);
+                LCOMPILERS_ASSERT(at != std::string::npos);
+                body.replace(at, r.first.size(), r.second);
+            }
+            src << kernel_variant.qualifier << kernel_variant.name << "("
+                << body;
+            kernel_variants.push_back({name, kernel_variant.name});
+        }
+
         dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
@@ -4164,6 +4184,21 @@ public:
         }
         return 0;
     }
+
+    // The second version of the kernel being written, for more blocks per
+    // multiprocessor (emit_kernel_signature): where its source starts, the
+    // start of the kernel's signature, which the second version replaces
+    // by its qualifier and name. No name when there is none.
+    struct KernelVariant {
+        std::streampos start = 0;
+        std::string signature, qualifier, name;
+        // The lanes every launch gives an iteration (kernel_fixed_lanes).
+        int64_t fixed_lanes = 0;
+    };
+    KernelVariant kernel_variant;
+    // The kernels of the translation unit that have a second version, and
+    // its name.
+    std::vector<std::pair<std::string, std::string>> kernel_variants;
 
     // The test, empty for none, of the lanes a launch most often gives the
     // kernel `x`, when they are a run-time value: kernels that every

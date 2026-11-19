@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_variants_01-be3833b",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_variants_01.f90",
+    "infile_hash": "9bf2acce88b42d15cc38f0f1af17871cfe4de7d5c29653c3eccf0d8a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_variants_01-be3833b.stdout",
+    "stdout_hash": "be5c13093027ad49bb8c5da3e52797b5eb5abd47abb498392c042ea4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -142,7 +142,11 @@ values in its private scalars, except for these statements:
   assigns shared memory, calls a procedure that is not pure, takes elements
   of the device heap. The other lanes wait for it, and then take every
   private scalar it assigned from the first lane (GpuLaneBroadcast).
-  Consecutive single statements run together.
+  Consecutive single statements run together, but for groups of them that
+  are written the same way for different elements, such as the rows an
+  iteration of a matrix-vector product finishes once its lanes combined
+  their sums: lane g runs group g (LaneGroups), and the lanes wait for each
+  other only before what reads what another lane assigned.
 * A loop, `if` or block that holds a distributed loop runs on every lane,
   which go through it together; what is inside is rewritten in turn. A
   block that holds none is a statement like any other: it runs on every
@@ -1749,6 +1753,745 @@ struct TripBound {
     ASR::symbol_t *param;
 };
 
+// The variables the statements walked name, with the bodies of the blocks
+// they run, but for the statements in `skip`.
+class Names : public ASR::BaseWalkVisitor<Names> {
+public:
+    std::set<ASR::symbol_t*> found;
+    std::set<const ASR::stmt_t*> skip;
+    std::set<ASR::symbol_t*> blocks;
+    void visit_stmt(const ASR::stmt_t &x) {
+        if (skip.count(&x)) return;
+        BaseWalkVisitor::visit_stmt(x);
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        found.insert(ASRUtils::symbol_get_past_external(x.m_v));
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+// The shared memory statements may read or assign, as the arrays they name
+// and those they assign. `unknown` when that is not known: they call a
+// procedure that is not pure, or name a pointer, which may be any array.
+class Touches : public ASR::BaseWalkVisitor<Touches> {
+public:
+    const KernelInfo &k;
+    std::set<ASR::symbol_t*> named, assigned;
+    bool unknown = false;
+    std::set<ASR::symbol_t*> blocks;
+    explicit Touches(const KernelInfo &k_) : k(k_) {}
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) return;
+        ASR::ttype_t *t = ASRUtils::symbol_type(s);
+        if (ASRUtils::is_pointer(t)) unknown = true;
+        if (ASRUtils::is_array(t)
+                || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t))
+                || k.shared(s)) {
+            named.insert(s);
+        }
+    }
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        ASR::symbol_t *r = root_of(x.m_target);
+        if (r == nullptr) {
+            unknown = true;
+        } else if (!(ASR::is_a<ASR::Var_t>(*x.m_target)
+                && k.private_scalar(r))) {
+            assigned.insert(r);
+        }
+        BaseWalkVisitor::visit_Assignment(x);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (!pure_callee(x.m_name)) unknown = true;
+        BaseWalkVisitor::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        unknown = true;
+        BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        unknown = true;
+        BaseWalkVisitor::visit_GpuAtomicFetchAdd(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+    // Whether these statements and those `other` stands for may access
+    // the same shared memory, one of them assigning it.
+    bool meets(const std::set<ASR::symbol_t*> &other_named,
+            const std::set<ASR::symbol_t*> &other_assigned) const {
+        if (unknown) return true;
+        for (ASR::symbol_t *s : assigned) {
+            if (other_named.count(s) || other_assigned.count(s)) return true;
+        }
+        for (ASR::symbol_t *s : named) {
+            if (other_assigned.count(s)) return true;
+        }
+        return false;
+    }
+};
+
+/*
+Single statements the lanes share out: `groups` lists of statements that
+the first lane would run one after the other, which are written the same
+way but for
+
+* integer expressions that differ by the same multiple of the number of the
+  group in every group, the element a group reads and assigns: `y(n)` in the
+  first, `y(n + 1)` in the second, ... (`affine`), and
+* scalars and constants they read: `a1` in the first, `a2` in the
+  second, ... (selected by the number of the group),
+
+and of which none reads or assigns what another assigns: the elements of
+shared arrays a group assigns are different in every group (at some
+subscript, every access of the array is the same such integer expression),
+and a private scalar a group assigns is its own, assigned before it is
+read and named nowhere else in the kernel (`dead`). And the groups read
+shared memory: a lane waits for what it loads, so lanes that load an
+element each wait once where the first lane would wait for each in turn,
+while statements that only store what the lanes hold already cost the first
+lane little more than one of them, less than the selection, the loop and
+the divergent branch that share them out cost. A q8 matrix-vector product
+of Qwen3.8-27B on an H200 that stores 4 rows per iteration took 0.3 to 1%
+longer when its lanes stored a row each, also with the lane read again
+from the thread index after the loop of the sums, which left that loop as
+it was; one that also adds them to the rows of another vector, and scales
+them by a third, 1.5% shorter. The statements of the first group, with
+each such integer expression `e` turned into `e + g*step` and each such
+scalar into the one of group `g`, are then the statements of group `g`
+(`generic`), which lane g runs: after the lanes
+combined the sums of four rows of a matrix-vector product, four lanes
+finish a row each, as a hand-written kernel does, instead of the first
+lane finishing the four. `reordered` groups are made of statements that
+are not next to each other (`x(n) = x(n) + a1; x(n+1) = ...; xw(n) = x(n) *
+w(n); ...`, grouped by element): then no private scalar is shared by two
+groups either.
+*/
+class LaneGroups {
+public:
+    LaneGroups(const KernelInfo &k_,
+            std::vector<std::vector<ASR::stmt_t*>> groups_, bool reordered_)
+        : k(k_), groups(std::move(groups_)), reordered(reordered_) {}
+
+    // The shared arrays the groups name and those they assign.
+    std::set<ASR::symbol_t*> named, assigned;
+
+    size_t size() const { return groups.size(); }
+
+    const std::vector<std::vector<ASR::stmt_t*>> &statements() const {
+        return groups;
+    }
+
+    // Whether the groups are such groups.
+    bool match() {
+        size_t n = groups.size();
+        for (size_t j = 0; j < n; j++) {
+            effects.emplace_back(new Effects(k));
+            Effects &e = *effects.back();
+            for (ASR::stmt_t *s : groups[j]) e.visit_stmt(*s);
+            if (e.unknown || e.returns || e.private_array || e.associates
+                    || !e.statuses.empty()) {
+                return false;
+            }
+            for (ASR::symbol_t *s : e.scalars) {
+                if (!k.private_scalar(s)) return false;
+                all_inside.insert(s);
+            }
+            block_scopes.insert(e.block_scopes.begin(), e.block_scopes.end());
+        }
+        // A group names a private scalar another assigns only as its own
+        // (the same temporary in groups that run in their order).
+        for (size_t j = 0; j < n; j++) {
+            Names names;
+            for (ASR::stmt_t *s : groups[j]) names.visit_stmt(*s);
+            for (ASR::symbol_t *s : names.found) {
+                if (all_inside.count(s) && !effects[j]->scalars.count(s)) {
+                    return false;
+                }
+            }
+        }
+        if (reordered) {
+            for (size_t i = 0; i < n; i++) {
+                for (size_t j = i + 1; j < n; j++) {
+                    for (ASR::symbol_t *s : effects[i]->scalars) {
+                        if (effects[j]->scalars.count(s)) return false;
+                    }
+                }
+            }
+        }
+        for (size_t j = 1; j < n; j++) {
+            map.clear();
+            reverse.clear();
+            for (size_t q = 0; q < groups[0].size(); q++) {
+                if (!match_stmt(groups[0][q], groups[j][q], j)) return false;
+            }
+        }
+        if (!resolve()) return false;
+        std::set<ASR::symbol_t*> defined;
+        if (!defined_first(groups[0].data(), groups[0].size(), defined)) {
+            return false;
+        }
+        if (!separated() || !reads_shared) return false;
+        return dead();
+    }
+
+    // The statements of the group whose number `g` holds, made of those of
+    // the first group, which they replace.
+    std::vector<ASR::stmt_t*> generic(Allocator &al, ASR::expr_t *g) {
+        for (Slot &s : slots) {
+            ASR::expr_t *e = *s.at;
+            const Location &loc = e->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *t = ASRUtils::expr_type(e);
+            if (s.affine) {
+                ASR::expr_t *gt = b.i2i_t(g, t);
+                *s.at = b.Add(e, s.step == 1 ? gt
+                    : b.Mul(gt, b.i_t(s.step, t)));
+                continue;
+            }
+            ASR::expr_t *chosen = s.values.back();
+            for (size_t j = s.values.size() - 1; j-- > 0;) {
+                chosen = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    b.Eq(g, b.i32(static_cast<int32_t>(j))), s.values[j],
+                    chosen, t, nullptr));
+            }
+            *s.at = chosen;
+        }
+        slots.clear();
+        return groups[0];
+    }
+
+private:
+    const KernelInfo &k;
+    std::vector<std::vector<ASR::stmt_t*>> groups;
+    bool reordered;
+    std::vector<std::unique_ptr<Effects>> effects;
+    // The private scalars the groups assign, and the scopes of their
+    // blocks.
+    std::set<ASR::symbol_t*> all_inside;
+    std::set<SymbolTable*> block_scopes;
+    // Of the group being compared with the first: its scalars and blocks
+    // and the first group's that stand in the same place.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> map, reverse;
+
+    // A place in the statements of the first group that holds a
+    // different expression in another.
+    struct Slot {
+        ASR::expr_t **at;
+        // What each group has there.
+        std::vector<ASR::expr_t*> values;
+        // `*at` plus `step` times the number of the group, which is
+        // `base` plus `offset` in the first.
+        bool affine = false;
+        ASR::expr_t *base = nullptr;
+        int64_t offset = 0, step = 0;
+    };
+    std::vector<Slot> slots;
+    std::map<ASR::expr_t**, size_t> slot_of;
+    // Whether the groups read an element of shared memory (separated).
+    bool reads_shared = false;
+
+    // Whether the group `j` has `s` of its own: a private scalar it
+    // assigns, a block it runs or a local of such a block.
+    bool own(size_t j, ASR::symbol_t *s) const {
+        const Effects &e = *effects[j];
+        return e.scalars.count(s) || e.blocks.count(s) || e.block_local(s);
+    }
+
+    bool bind(ASR::symbol_t *a, ASR::symbol_t *b, bool dry) {
+        auto it = map.find(b);
+        if (it != map.end()) return it->second == a;
+        if (dry || reverse.count(a)) return false;
+        if (ASR::is_a<ASR::Variable_t>(*a) != ASR::is_a<ASR::Variable_t>(*b)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Variable_t>(*a) && !ASRUtils::types_equal(
+                ASRUtils::symbol_type(a), ASRUtils::symbol_type(b),
+                nullptr, nullptr)) {
+            return false;
+        }
+        map[b] = a;
+        reverse[a] = b;
+        return true;
+    }
+
+    bool record(ASR::expr_t **at, ASR::expr_t *b, size_t j) {
+        auto it = slot_of.find(at);
+        size_t i;
+        if (it == slot_of.end()) {
+            i = slots.size();
+            slot_of[at] = i;
+            Slot s;
+            s.at = at;
+            s.values.assign(groups.size(), nullptr);
+            s.values[0] = *at;
+            slots.push_back(s);
+        } else {
+            i = it->second;
+        }
+        slots[i].values[j] = b;
+        return true;
+    }
+
+    // Whether `b`, in group `j`, is `a`, of the first group, but for what
+    // the slots record (none when `dry`).
+    bool match(ASR::expr_t *&a, ASR::expr_t *b, size_t j, bool dry) {
+        if (a == nullptr || b == nullptr) return a == b;
+        ASR::ttype_t *ta = ASRUtils::expr_type(a);
+        if (!ASRUtils::types_equal(ta, ASRUtils::expr_type(b), a, b)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::Var_t>(*a) && ASR::is_a<ASR::Var_t>(*b)) {
+            ASR::symbol_t *x = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(a)->m_v);
+            ASR::symbol_t *y = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(b)->m_v);
+            bool ox = own(0, x), oy = own(j, y);
+            if (ox || oy) return ox && oy && bind(x, y, dry);
+        }
+        bool items = ASR::is_a<ASR::ArrayItem_t>(*a)
+            && ASR::is_a<ASR::ArrayItem_t>(*b);
+        if (!dry && ((ASRUtils::is_integer(*ta) && !ASRUtils::is_array(ta)
+                    && !items)
+                || ASRUtils::expr_value(a) || ASRUtils::expr_value(b))) {
+            if (match(a, b, j, true)) return true;
+            return record(&a, b, j);
+        }
+        if (a->type != b->type) return !dry && record(&a, b, j);
+        switch (a->type) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t *x = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(a)->m_v);
+                ASR::symbol_t *y = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(b)->m_v);
+                if (x == y) return true;
+                return !dry && record(&a, b, j);
+            }
+            case ASR::exprType::IntegerConstant:
+                return ASR::down_cast<ASR::IntegerConstant_t>(a)->m_n
+                    == ASR::down_cast<ASR::IntegerConstant_t>(b)->m_n;
+            case ASR::exprType::RealConstant:
+                return ASR::down_cast<ASR::RealConstant_t>(a)->m_r
+                    == ASR::down_cast<ASR::RealConstant_t>(b)->m_r;
+            case ASR::exprType::LogicalConstant:
+                return ASR::down_cast<ASR::LogicalConstant_t>(a)->m_value
+                    == ASR::down_cast<ASR::LogicalConstant_t>(b)->m_value;
+            case ASR::exprType::IntegerBinOp: {
+                auto *x = ASR::down_cast<ASR::IntegerBinOp_t>(a);
+                auto *y = ASR::down_cast<ASR::IntegerBinOp_t>(b);
+                return x->m_op == y->m_op
+                    && match(x->m_left, y->m_left, j, dry)
+                    && match(x->m_right, y->m_right, j, dry);
+            }
+            case ASR::exprType::RealBinOp: {
+                auto *x = ASR::down_cast<ASR::RealBinOp_t>(a);
+                auto *y = ASR::down_cast<ASR::RealBinOp_t>(b);
+                return x->m_op == y->m_op
+                    && match(x->m_left, y->m_left, j, dry)
+                    && match(x->m_right, y->m_right, j, dry);
+            }
+            case ASR::exprType::LogicalBinOp: {
+                auto *x = ASR::down_cast<ASR::LogicalBinOp_t>(a);
+                auto *y = ASR::down_cast<ASR::LogicalBinOp_t>(b);
+                return x->m_op == y->m_op
+                    && match(x->m_left, y->m_left, j, dry)
+                    && match(x->m_right, y->m_right, j, dry);
+            }
+            case ASR::exprType::IntegerCompare: {
+                auto *x = ASR::down_cast<ASR::IntegerCompare_t>(a);
+                auto *y = ASR::down_cast<ASR::IntegerCompare_t>(b);
+                return x->m_op == y->m_op
+                    && match(x->m_left, y->m_left, j, dry)
+                    && match(x->m_right, y->m_right, j, dry);
+            }
+            case ASR::exprType::RealCompare: {
+                auto *x = ASR::down_cast<ASR::RealCompare_t>(a);
+                auto *y = ASR::down_cast<ASR::RealCompare_t>(b);
+                return x->m_op == y->m_op
+                    && match(x->m_left, y->m_left, j, dry)
+                    && match(x->m_right, y->m_right, j, dry);
+            }
+            case ASR::exprType::IntegerUnaryMinus:
+                return match(ASR::down_cast<ASR::IntegerUnaryMinus_t>(a)
+                    ->m_arg, ASR::down_cast<ASR::IntegerUnaryMinus_t>(b)
+                    ->m_arg, j, dry);
+            case ASR::exprType::RealUnaryMinus:
+                return match(ASR::down_cast<ASR::RealUnaryMinus_t>(a)->m_arg,
+                    ASR::down_cast<ASR::RealUnaryMinus_t>(b)->m_arg, j, dry);
+            case ASR::exprType::LogicalNot:
+                return match(ASR::down_cast<ASR::LogicalNot_t>(a)->m_arg,
+                    ASR::down_cast<ASR::LogicalNot_t>(b)->m_arg, j, dry);
+            case ASR::exprType::Cast: {
+                auto *x = ASR::down_cast<ASR::Cast_t>(a);
+                auto *y = ASR::down_cast<ASR::Cast_t>(b);
+                return x->m_kind == y->m_kind
+                    && match(x->m_arg, y->m_arg, j, dry);
+            }
+            case ASR::exprType::IfExp: {
+                auto *x = ASR::down_cast<ASR::IfExp_t>(a);
+                auto *y = ASR::down_cast<ASR::IfExp_t>(b);
+                return match(x->m_test, y->m_test, j, dry)
+                    && match(x->m_body, y->m_body, j, dry)
+                    && match(x->m_orelse, y->m_orelse, j, dry);
+            }
+            case ASR::exprType::ArrayItem: {
+                auto *x = ASR::down_cast<ASR::ArrayItem_t>(a);
+                auto *y = ASR::down_cast<ASR::ArrayItem_t>(b);
+                if (!ASR::is_a<ASR::Var_t>(*x->m_v)
+                        || !same_expr(x->m_v, y->m_v)
+                        || x->n_args != y->n_args) {
+                    return false;
+                }
+                for (size_t i = 0; i < x->n_args; i++) {
+                    if (x->m_args[i].m_left || x->m_args[i].m_step
+                            || y->m_args[i].m_left || y->m_args[i].m_step
+                            || !match(x->m_args[i].m_right,
+                                y->m_args[i].m_right, j, dry)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                auto *x = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(a);
+                auto *y = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(b);
+                if (x->m_intrinsic_id != y->m_intrinsic_id
+                        || x->m_overload_id != y->m_overload_id
+                        || x->n_args != y->n_args) {
+                    return false;
+                }
+                for (size_t i = 0; i < x->n_args; i++) {
+                    if (!match(x->m_args[i], y->m_args[i], j, dry)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            case ASR::exprType::FunctionCall: {
+                auto *x = ASR::down_cast<ASR::FunctionCall_t>(a);
+                auto *y = ASR::down_cast<ASR::FunctionCall_t>(b);
+                if (ASRUtils::symbol_get_past_external(x->m_name)
+                        != ASRUtils::symbol_get_past_external(y->m_name)
+                        || !pure_callee(x->m_name) || x->m_dt || y->m_dt
+                        || x->n_args != y->n_args) {
+                    return false;
+                }
+                for (size_t i = 0; i < x->n_args; i++) {
+                    if (!match(x->m_args[i].m_value, y->m_args[i].m_value, j,
+                            dry)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
+    bool match_list(ASR::stmt_t **a, size_t na, ASR::stmt_t **b, size_t nb,
+            size_t j) {
+        if (na != nb) return false;
+        for (size_t i = 0; i < na; i++) {
+            if (!match_stmt(a[i], b[i], j)) return false;
+        }
+        return true;
+    }
+
+    bool match_stmt(ASR::stmt_t *a, ASR::stmt_t *b, size_t j) {
+        if (a->type != b->type) return false;
+        switch (a->type) {
+            case ASR::stmtType::Assignment: {
+                auto *x = ASR::down_cast<ASR::Assignment_t>(a);
+                auto *y = ASR::down_cast<ASR::Assignment_t>(b);
+                if (x->m_overloaded || y->m_overloaded
+                        || x->m_realloc_lhs != y->m_realloc_lhs
+                        || x->m_move_allocation != y->m_move_allocation) {
+                    return false;
+                }
+                // A scalar a group assigns is its own (`own`); an element,
+                // one the groups tell apart (`separated`).
+                if (ASR::is_a<ASR::Var_t>(*x->m_target)
+                        && !own(0, root_of(x->m_target))) {
+                    return false;
+                }
+                return match(x->m_target, y->m_target, j, false)
+                    && match(x->m_value, y->m_value, j, false);
+            }
+            case ASR::stmtType::BlockCall: {
+                ASR::symbol_t *x = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(a)->m_m);
+                ASR::symbol_t *y = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(b)->m_m);
+                if (!ASR::is_a<ASR::Block_t>(*x) || !ASR::is_a<ASR::Block_t>(*y)
+                        || !bind(x, y, false)) {
+                    return false;
+                }
+                ASR::Block_t *p = ASR::down_cast<ASR::Block_t>(x);
+                ASR::Block_t *q = ASR::down_cast<ASR::Block_t>(y);
+                return match_list(p->m_body, p->n_body, q->m_body, q->n_body,
+                    j);
+            }
+            case ASR::stmtType::If: {
+                auto *x = ASR::down_cast<ASR::If_t>(a);
+                auto *y = ASR::down_cast<ASR::If_t>(b);
+                return match(x->m_test, y->m_test, j, false)
+                    && match_list(x->m_body, x->n_body, y->m_body, y->n_body,
+                        j)
+                    && match_list(x->m_orelse, x->n_orelse, y->m_orelse,
+                        y->n_orelse, j);
+            }
+            default:
+                return false;
+        }
+    }
+
+    // Whether the group can read `e` in place of what the first group
+    // reads: a constant, or a scalar declared outside the groups that none
+    // of them assigns.
+    bool selectable(ASR::expr_t *e) const {
+        if (ASRUtils::expr_value(e)) return true;
+        if (!ASR::is_a<ASR::Var_t>(*e)) return false;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s) || all_inside.count(s)) {
+            return false;
+        }
+        ASR::ttype_t *t = ASRUtils::symbol_type(s);
+        if (ASRUtils::is_array(t) || ASRUtils::is_pointer(t)
+                || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t))) {
+            return false;
+        }
+        return block_scopes.count(
+            ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab) == 0;
+    }
+
+    bool resolve() {
+        for (Slot &s : slots) {
+            for (ASR::expr_t *&v : s.values) {
+                if (v == nullptr) v = s.values[0];
+            }
+            ASR::ttype_t *t = ASRUtils::expr_type(s.values[0]);
+            if (ASRUtils::is_integer(*t) && !ASRUtils::is_array(t)) {
+                offset_form(s.values[0], s.base, s.offset);
+                bool affine = s.values.size() > 1;
+                Names names;
+                if (s.base) {
+                    names.visit_expr(*s.base);
+                    if (reads_array_element(s.base)) affine = false;
+                }
+                for (ASR::symbol_t *x : names.found) {
+                    if (all_inside.count(x) || block_scopes.count(
+                            ASR::is_a<ASR::Variable_t>(*x)
+                            ? ASR::down_cast<ASR::Variable_t>(x)
+                                ->m_parent_symtab : nullptr)) {
+                        affine = false;
+                    }
+                }
+                for (size_t j = 1; j < s.values.size() && affine; j++) {
+                    ASR::expr_t *base = nullptr;
+                    int64_t offset = 0;
+                    offset_form(s.values[j], base, offset);
+                    if (j == 1) s.step = offset - s.offset;
+                    if ((base == nullptr) != (s.base == nullptr)
+                            || (base && !same_expr(base, s.base))
+                            || s.step == 0
+                            || offset - s.offset
+                                != static_cast<int64_t>(j) * s.step) {
+                        affine = false;
+                    }
+                }
+                if (affine) {
+                    s.affine = true;
+                    continue;
+                }
+            }
+            for (ASR::expr_t *v : s.values) {
+                if (!selectable(v)) return false;
+            }
+        }
+        return true;
+    }
+
+    // Whether the first group assigns each private scalar of its own
+    // before it reads it.
+    bool defined_first(ASR::stmt_t **body, size_t n,
+            std::set<ASR::symbol_t*> &defined) {
+        const std::set<ASR::symbol_t*> &own_scalars = effects[0]->scalars;
+        auto reads = [&](ASR::expr_t *e) {
+            if (e == nullptr) return true;
+            Names names;
+            names.visit_expr(*e);
+            for (ASR::symbol_t *s : names.found) {
+                if (own_scalars.count(s) && !defined.count(s)) return false;
+            }
+            return true;
+        };
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            switch (s->type) {
+                case ASR::stmtType::Assignment: {
+                    auto *a = ASR::down_cast<ASR::Assignment_t>(s);
+                    if (!reads(a->m_value)) return false;
+                    if (ASR::is_a<ASR::Var_t>(*a->m_target)) {
+                        defined.insert(root_of(a->m_target));
+                    } else if (!reads(a->m_target)) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::stmtType::BlockCall: {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::BlockCall_t>(s)->m_m));
+                    if (!defined_first(b->m_body, b->n_body, defined)) {
+                        return false;
+                    }
+                    break;
+                }
+                case ASR::stmtType::If: {
+                    auto *x = ASR::down_cast<ASR::If_t>(s);
+                    if (!reads(x->m_test)) return false;
+                    std::set<ASR::symbol_t*> a = defined, b = defined;
+                    if (!defined_first(x->m_body, x->n_body, a)
+                            || !defined_first(x->m_orelse, x->n_orelse, b)) {
+                        return false;
+                    }
+                    break;
+                }
+                default:
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    // Whether, for every shared array a group assigns, every two accesses
+    // of the first group are different elements in different groups: at
+    // some subscript, both the same expression plus the same multiple of
+    // the number of the group. A group then assigns no element another
+    // reads or assigns.
+    bool separated() {
+        class Accesses : public ASR::BaseWalkVisitor<Accesses> {
+        public:
+            std::vector<ASR::ArrayItem_t*> items;
+            std::set<ASR::ArrayItem_t*> targets;
+            // Arrays named whole, as the argument of a function.
+            std::set<ASR::symbol_t*> whole;
+            std::set<ASR::symbol_t*> blocks;
+            void visit_Assignment(const ASR::Assignment_t &x) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                    targets.insert(ASR::down_cast<ASR::ArrayItem_t>(
+                        x.m_target));
+                }
+                BaseWalkVisitor::visit_Assignment(x);
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                items.push_back(const_cast<ASR::ArrayItem_t*>(&x));
+                for (size_t i = 0; i < x.n_args; i++) {
+                    if (x.m_args[i].m_right) visit_expr(*x.m_args[i].m_right);
+                }
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*s)
+                        && ASRUtils::is_array(ASRUtils::symbol_type(s))) {
+                    whole.insert(s);
+                }
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!blocks.insert(b).second) return;
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                for (size_t i = 0; i < block->n_body; i++) {
+                    visit_stmt(*block->m_body[i]);
+                }
+            }
+        } accesses;
+        for (ASR::stmt_t *s : groups[0]) accesses.visit_stmt(*s);
+        std::map<ASR::symbol_t*, std::vector<ASR::ArrayItem_t*>> by_array;
+        for (ASR::ArrayItem_t *item : accesses.items) {
+            ASR::symbol_t *a = root_of(item->m_v);
+            if (a == nullptr || !ASR::is_a<ASR::Variable_t>(*a)
+                    || ASRUtils::is_pointer(ASRUtils::symbol_type(a))) {
+                return false;
+            }
+            by_array[a].push_back(item);
+            if (k.shared(a)) named.insert(a);
+            if (k.shared(a) && !accesses.targets.count(item)) {
+                reads_shared = true;
+            }
+            if (accesses.targets.count(item)) {
+                if (!k.shared(a)) return false;
+                assigned.insert(a);
+            }
+        }
+        for (ASR::symbol_t *a : accesses.whole) {
+            if (ASRUtils::is_pointer(ASRUtils::symbol_type(a))
+                    || assigned.count(a)) {
+                return false;
+            }
+            if (k.shared(a)) named.insert(a);
+        }
+        auto affine_at = [&](ASR::expr_t **at) -> const Slot* {
+            auto it = slot_of.find(at);
+            if (it == slot_of.end() || !slots[it->second].affine) {
+                return nullptr;
+            }
+            return &slots[it->second];
+        };
+        for (ASR::symbol_t *a : assigned) {
+            const std::vector<ASR::ArrayItem_t*> &items = by_array[a];
+            for (ASR::ArrayItem_t *p : items) {
+                for (ASR::ArrayItem_t *q : items) {
+                    bool apart = false;
+                    for (size_t i = 0; i < p->n_args && i < q->n_args
+                            && !apart; i++) {
+                        const Slot *x = affine_at(&p->m_args[i].m_right);
+                        const Slot *y = affine_at(&q->m_args[i].m_right);
+                        apart = x && y && x->step == y->step
+                            && x->offset == y->offset
+                            && ((x->base == nullptr && y->base == nullptr)
+                                || (x->base && y->base
+                                    && same_expr(x->base, y->base)));
+                    }
+                    if (!apart) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Whether the private scalars the groups assign are named nowhere
+    // else in the kernel: each lane may leave its own value in them.
+    bool dead() {
+        if (all_inside.empty()) return true;
+        Names names;
+        for (const auto &g : groups) {
+            for (ASR::stmt_t *s : g) names.skip.insert(s);
+        }
+        for (size_t i = 0; i < k.fn->n_body; i++) {
+            names.visit_stmt(*k.fn->m_body[i]);
+        }
+        for (ASR::symbol_t *s : all_inside) {
+            if (names.found.count(s)) return false;
+        }
+        return true;
+    }
+};
+
 class LaneRewriter {
 public:
     LaneRewriter(Allocator &al_, KernelInfo &k_) : al(al_), k(k_) {}
@@ -1944,8 +2687,16 @@ public:
                 SharedAccess access(k);
                 for (ASR::stmt_t *s : single) access.visit_stmt(*s);
                 settle_before(access, single[0]->base.loc, out);
-                emit_single(single, out);
-                unsettled.clear();
+                emit_run(single, out);
+                // The run ends at a barrier unless its lanes are left with
+                // nothing to wait for (emit_run).
+                if (out.n > 0 && ASR::is_a<ASR::GpuLaneBarrier_t>(
+                        *out.p[out.n - 1])) {
+                    unsettled.clear();
+                } else {
+                    unsettled.insert(access.reads.begin(),
+                        access.reads.end());
+                }
                 single.clear();
             }
             if (i == n_body) break;
@@ -2789,6 +3540,204 @@ private:
             out.push_back(al, b.Assignment(v, ASRUtils::EXPR(
                 ASR::make_GpuLaneBroadcast_t(al, loc, v,
                     ASRUtils::symbol_type(s), nullptr))));
+        }
+    }
+
+    // A run of single statements, as what the lanes share out (groups of
+    // statements, LaneGroups, and `if` statements whose test every lane
+    // evaluates alike, around such groups) and what the first lane runs
+    // alone.
+    struct RunPart {
+        enum class Kind { Alone, Groups, Branches };
+        Kind kind = Kind::Alone;
+        std::vector<ASR::stmt_t*> stmts;
+        std::shared_ptr<LaneGroups> groups;
+        std::vector<RunPart> body, orelse;
+    };
+
+    // The shared arrays that statements the lanes shared out named and
+    // assigned since the lanes last waited for each other.
+    struct Unwaited {
+        std::set<ASR::symbol_t*> named, assigned;
+        bool empty() const { return named.empty() && assigned.empty(); }
+        void clear() {
+            named.clear();
+            assigned.clear();
+        }
+        void add(const std::set<ASR::symbol_t*> &n,
+                const std::set<ASR::symbol_t*> &a) {
+            named.insert(n.begin(), n.end());
+            assigned.insert(a.begin(), a.end());
+        }
+    };
+
+    // The most statements of a run tried as groups.
+    static constexpr size_t run_groups_max = 64;
+
+    // The run emitted as `emit_single` would, when no part of it is shared
+    // out.
+    void emit_run(const std::vector<ASR::stmt_t*> &stmts,
+            Vec<ASR::stmt_t*> &out) {
+        std::vector<RunPart> parts;
+        if (!plan_run(stmts, parts)) {
+            emit_single(stmts, out);
+            return;
+        }
+        Unwaited unwaited;
+        emit_parts(parts, out, unwaited);
+        if (!unwaited.empty()) {
+            out.push_back(al, ASRUtils::STMT(ASR::make_GpuLaneBarrier_t(al,
+                stmts[0]->base.loc)));
+        }
+    }
+
+    // Whether every lane of an iteration evaluates `test` alike: it reads
+    // no shared memory and no array, and calls only pure functions.
+    bool uniform_test(ASR::expr_t *test) {
+        if (reads_array_element(test)) return false;
+        Effects e(k);
+        e.visit_expr(*test);
+        if (e.shared_effect || e.unknown) return false;
+        Names names;
+        names.visit_expr(*test);
+        for (ASR::symbol_t *s : names.found) {
+            if (ASR::is_a<ASR::Variable_t>(*s)
+                    && ASRUtils::is_array(ASRUtils::symbol_type(s))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // The groups that start at stmts[i], of the most statements, then of
+    // the most groups.
+    std::shared_ptr<LaneGroups> find_groups(
+            const std::vector<ASR::stmt_t*> &stmts, size_t i) {
+        size_t limit = std::min(stmts.size() - i, run_groups_max);
+        for (size_t p = limit; p >= 2; p--) {
+            for (size_t g = p; g >= 2; g--) {
+                if (p % g != 0) continue;
+                size_t per = p / g;
+                for (bool reordered : {false, true}) {
+                    if (reordered && per == 1) continue;
+                    std::vector<std::vector<ASR::stmt_t*>> groups(g);
+                    for (size_t j = 0; j < g; j++) {
+                        for (size_t q = 0; q < per; q++) {
+                            groups[j].push_back(stmts[i + (reordered
+                                ? q*g + j : j*per + q)]);
+                        }
+                    }
+                    auto found = std::make_shared<LaneGroups>(k,
+                        std::move(groups), reordered);
+                    if (found->match()) return found;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    // Splits a run into parts. Whether any is shared out.
+    bool plan_run(const std::vector<ASR::stmt_t*> &stmts,
+            std::vector<RunPart> &parts) {
+        bool any = false;
+        size_t i = 0;
+        while (i < stmts.size()) {
+            ASR::stmt_t *s = stmts[i];
+            if (ASR::is_a<ASR::If_t>(*s) && !stop_record(*s, nullptr)
+                    && uniform_test(ASR::down_cast<ASR::If_t>(s)->m_test)) {
+                auto *x = ASR::down_cast<ASR::If_t>(s);
+                RunPart part;
+                part.kind = RunPart::Kind::Branches;
+                part.stmts.push_back(s);
+                bool a = plan_run(std::vector<ASR::stmt_t*>(x->m_body,
+                    x->m_body + x->n_body), part.body);
+                bool b = plan_run(std::vector<ASR::stmt_t*>(x->m_orelse,
+                    x->m_orelse + x->n_orelse), part.orelse);
+                if (a || b) {
+                    parts.push_back(std::move(part));
+                    any = true;
+                    i++;
+                    continue;
+                }
+            }
+            if (stmts.size() - i >= 2) {
+                std::shared_ptr<LaneGroups> groups = find_groups(stmts, i);
+                if (groups) {
+                    RunPart part;
+                    part.kind = RunPart::Kind::Groups;
+                    for (const auto &g : groups->statements()) {
+                        part.stmts.insert(part.stmts.end(), g.begin(),
+                            g.end());
+                    }
+                    i += part.stmts.size();
+                    part.groups = groups;
+                    parts.push_back(std::move(part));
+                    any = true;
+                    continue;
+                }
+            }
+            if (parts.empty() || parts.back().kind != RunPart::Kind::Alone) {
+                parts.push_back(RunPart());
+            }
+            parts.back().stmts.push_back(s);
+            i++;
+        }
+        return any;
+    }
+
+    // Lane g runs group g, g + lanes, ...; the lanes wait for each other
+    // only before what reads or assigns what a group assigned, or assigns
+    // what one read.
+    void emit_parts(const std::vector<RunPart> &parts, Vec<ASR::stmt_t*> &out,
+            Unwaited &unwaited) {
+        for (const RunPart &part : parts) {
+            const Location &loc = part.stmts[0]->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            auto wait_if = [&](bool meets) {
+                if (!meets) return;
+                out.push_back(al, ASRUtils::STMT(
+                    ASR::make_GpuLaneBarrier_t(al, loc)));
+                unwaited.clear();
+            };
+            if (part.kind == RunPart::Kind::Groups) {
+                Touches t(k);
+                t.named = part.groups->named;
+                t.assigned = part.groups->assigned;
+                wait_if(t.meets(unwaited.named, unwaited.assigned));
+                ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                    loc, 4));
+                ASR::expr_t *g = b.Variable(k.fn->m_symtab,
+                    k.fn->m_symtab->get_unique_name("__gpu_lane_group"), int4,
+                    ASR::intentType::Local);
+                std::vector<ASR::stmt_t*> body = part.groups->generic(al, g);
+                out.push_back(al, b.DoLoop(g, lane_index(loc),
+                    b.i32(static_cast<int32_t>(part.groups->size() - 1)),
+                    body, lanes_var(loc)));
+                unwaited.add(part.groups->named, part.groups->assigned);
+                continue;
+            }
+            Touches t(k);
+            for (ASR::stmt_t *s : part.stmts) t.visit_stmt(*s);
+            wait_if(t.meets(unwaited.named, unwaited.assigned));
+            if (part.kind == RunPart::Kind::Alone) {
+                emit_single(part.stmts, out);
+                unwaited.clear();
+                continue;
+            }
+            auto *x = ASR::down_cast<ASR::If_t>(part.stmts[0]);
+            Vec<ASR::stmt_t*> body, orelse;
+            body.reserve(al, x->n_body + 2);
+            orelse.reserve(al, x->n_orelse + 2);
+            Unwaited a, c;
+            emit_parts(part.body, body, a);
+            emit_parts(part.orelse, orelse, c);
+            x->m_body = body.p;
+            x->n_body = body.n;
+            x->m_orelse = orelse.p;
+            x->n_orelse = orelse.n;
+            out.push_back(al, &x->base);
+            unwaited.add(a.named, a.assigned);
+            unwaited.add(c.named, c.assigned);
         }
     }
 

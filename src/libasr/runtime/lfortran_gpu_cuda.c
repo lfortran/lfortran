@@ -436,6 +436,14 @@ typedef struct slot_cache {
 typedef struct kernel_entry {
     const char *name;
     kernel_func_t func;
+    // A second version of the kernel, held to fewer registers so that more
+    // of its blocks share a multiprocessor (the kernel source registers it
+    // with lfortran_gpu_register_kernel_variant), or NULL. `occupancy`
+    // holds how many blocks of `occupancy_threads` threads of each version
+    // share one (launch_version).
+    kernel_func_t variant;
+    int occupancy_threads;
+    int occupancy[2];
     slot_cache cache;
 } kernel_entry;
 static kernel_entry **kernel_registry = NULL;
@@ -478,6 +486,20 @@ void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
     kernel_registry[n_registered++] = entry;
 }
 
+// The kernel registered last under `name` has a second version, `func`.
+#ifdef __cplusplus
+extern "C"
+#endif
+void lfortran_gpu_register_kernel_variant(const char *name,
+        kernel_func_t func) {
+    for (int i = n_registered; i-- > 0;) {
+        if (strcmp(kernel_registry[i]->name, name) == 0) {
+            kernel_registry[i]->variant = func;
+            return;
+        }
+    }
+}
+
 typedef struct scalar_arg {
     void *data;
     size_t size;
@@ -491,6 +513,7 @@ enum { ARG_NONE = 0, ARG_BUFFER, ARG_SCALAR, ARG_SCRATCH };
 
 struct lfortran_gpu_kernel {
     kernel_func_t func;
+    kernel_entry *entry;
     lfortran_gpu_ctx *ctx;
     void *buffer_host_ptrs[MAX_ARGS];
     void *buffer_device_ptrs[MAX_ARGS];
@@ -1329,6 +1352,7 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
 
     lfortran_gpu_kernel *k = (lfortran_gpu_kernel*)calloc(1, sizeof(lfortran_gpu_kernel));
     k->func = kernel_registry[entry]->func;
+    k->entry = kernel_registry[entry];
     k->ctx = ctx;
     k->n_args = 0;
     k->cache = &kernel_registry[entry]->cache;
@@ -1974,6 +1998,73 @@ static void replay_launch_or_issue(kernel_func_t func, dim3 grid, dim3 block,
 }
 #endif
 
+#if !defined(LFORTRAN_CUDA_CPU_EMULATION) && !defined(LFORTRAN_GPU_HIP)
+static int multiprocessor_count(void) {
+    static int count = -1;
+    if (count < 0) {
+        int device = 0;
+        if (cudaGetDevice(&device) != cudaSuccess
+                || cudaDeviceGetAttribute(&count,
+                    cudaDevAttrMultiProcessorCount, device) != cudaSuccess) {
+            count = 0;
+        }
+    }
+    return count;
+}
+#endif
+
+// The version of the kernel of `k` a launch of `blocks` blocks of
+// `threads` threads runs. The blocks of a launch run in waves: as many at a
+// time as share a multiprocessor, times the multiprocessors. The blocks of
+// a wave share the memory bandwidth of their multiprocessor, so a wave of
+// n blocks each takes about n times as long as a wave of one, and the last
+// wave as long as a full one: the launch takes about ceil(waves) * n. A
+// version that lets more blocks share a multiprocessor pays when it saves
+// a wave. The more blocks a multiprocessor holds, the more loads they keep
+// in flight, which pays for a few more blocks in the waves: the version
+// with more blocks is taken up to 1/64 more. On an H200 (132
+// multiprocessors), a q8 matrix-vector product of 4120 blocks takes 3
+// waves of 14 or 2 of 16 (42 against 32: 27.1 us against 26.1), one of
+// 8704 blocks 5 of either (70 against 80: 52.0 us against 52.4), one of
+// 62,080 blocks 34 or 30 (476 against 480: 325 us against 318). The
+// kernel itself when it has one version, or when the device does not tell
+// its occupancy.
+static kernel_func_t launch_version(lfortran_gpu_kernel *k,
+        long long blocks, int threads) {
+    kernel_entry *e = k->entry;
+    if (e == NULL || e->variant == NULL) return k->func;
+#if defined(LFORTRAN_CUDA_CPU_EMULATION) || defined(LFORTRAN_GPU_HIP)
+    (void)blocks;
+    (void)threads;
+    return k->func;
+#else
+    if (e->occupancy_threads != threads) {
+        e->occupancy_threads = threads;
+        kernel_func_t versions[2] = {e->func, e->variant};
+        for (int v = 0; v < 2; v++) {
+            int n = 0;
+            if (cudaOccupancyMaxActiveBlocksPerMultiprocessor(&n,
+                    (const void*)versions[v], threads, 0) != cudaSuccess) {
+                (void)cudaGetLastError();
+                n = 0;
+            }
+            e->occupancy[v] = n;
+        }
+    }
+    int multiprocessors = multiprocessor_count();
+    if (multiprocessors <= 0 || e->occupancy[0] <= 0
+            || e->occupancy[1] <= 0) {
+        return k->func;
+    }
+    long long cost[2];
+    for (int v = 0; v < 2; v++) {
+        long long wave = (long long)e->occupancy[v] * multiprocessors;
+        cost[v] = (blocks + wave - 1) / wave * e->occupancy[v];
+    }
+    return cost[1] * 64 <= cost[0] * 65 ? e->variant : k->func;
+#endif
+}
+
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
@@ -2134,6 +2225,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     dim3 grid_dim = {(unsigned)grid[0], (unsigned)grid[1], (unsigned)grid[2]};
     dim3 block_dim = {(unsigned)block[0], (unsigned)block[1],
         (unsigned)block[2]};
+    kernel_func_t func = launch_version(k,
+        (long long)grid[0] * grid[1] * grid[2], block[0] * block[1] * block[2]);
 #ifdef LFORTRAN_GPU_OVERLAP
     // --gpu-overlap: the kernels begin with griddepcontrol.wait, so the
     // launch may overlap the end of the previous kernel of the stream. On a
@@ -2148,7 +2241,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     }
     replay_overlap = overlap;
 #endif
-    replay_launch_or_issue(k->func, grid_dim, block_dim, arg_idx, args,
+    replay_launch_or_issue(func, grid_dim, block_dim, arg_idx, args,
         sizes);
     if (reads_in_place) pending_in_place_reads = 1;
 }

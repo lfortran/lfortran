@@ -1,0 +1,707 @@
+#include <stdint.h>
+
+// The lanes of an iteration are consecutive threads of a warp, or,
+// with more than 32 of them, all the threads of a block.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_combine(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
+// The lanes are the warps of a block: each combines its own lanes,
+// and every lane then folds the partial results of the warps in the
+// same order.
+template <int op, typename T>
+__device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, 32));
+    }
+    __shared__ T partial[32];
+    if ((threadIdx.x & 31u) == 0) partial[threadIdx.x >> 5] = v;
+    __syncthreads();
+    T r = partial[0];
+    for (int i = 1; i < (lanes >> 5); i++) {
+        r = __lfortran_lane_combine<op>(r, partial[i]);
+    }
+    __syncthreads();
+    return r;
+}
+
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
+    if (lanes == 32) {
+        // A whole warp, named as a constant: with the mask in a
+        // register nvcc tests every shuffle for diverged lanes.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            v = __lfortran_lane_combine<op>(v,
+                __shfl_xor_sync(0xffffffffu, v, offset, 32));
+        }
+        return v;
+    }
+    if (lanes == 16) {
+        // The common sizes, with the shuffles unrolled.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            if (offset < lanes) {
+                v = __lfortran_lane_combine<op>(v,
+                    __shfl_xor_sync(mask, v, offset, lanes));
+            }
+        }
+        return v;
+    }
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(mask, v, offset, lanes));
+    }
+    return v;
+}
+
+// For a kernel whose iterations may have the lanes of a block. Its
+// barriers keep the other kernels from reordering their loads, so
+// the others do not call these.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce_block(T v, int lanes, unsigned mask) {
+    if (lanes > 32) return __lfortran_block_reduce<op>(v, lanes);
+    return __lfortran_lane_reduce<op>(v, lanes, mask);
+}
+
+__device__ __noinline__ void __lfortran_block_barrier() {
+    __syncthreads();
+}
+
+// Waits for the other lanes of the iteration.
+__device__ inline void __lfortran_lane_barrier(int lanes, unsigned mask) {
+    if (lanes > 1) __syncwarp(mask);
+}
+
+__device__ inline void __lfortran_lane_barrier_block(int lanes, unsigned mask) {
+    if (lanes > 32) __lfortran_block_barrier();
+    else if (lanes > 1) __syncwarp(mask);
+}
+
+template <typename T>
+__device__ __noinline__ T __lfortran_block_broadcast(T v, int lanes) {
+    __shared__ T first;
+    if ((threadIdx.x % (unsigned)lanes) == 0) first = v;
+    __syncthreads();
+    T r = first;
+    __syncthreads();
+    return r;
+}
+
+// The value of the first lane of the iteration, in every lane.
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast(T v, int lanes, unsigned mask) {
+    return lanes > 1 ? __shfl_sync(mask, v, 0, lanes) : v;
+}
+
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast_block(T v, int lanes, unsigned mask) {
+    if (lanes > 32) return __lfortran_block_broadcast(v, lanes);
+    return __lfortran_lane_broadcast(v, lanes, mask);
+}
+
+// The 16 bytes that start at `p`: read at once when `ok` says `p` is a
+// multiple of 16, element by element, put together, when it is not.
+// The elements are taken out of the 16 bytes, so that the two ways
+// meet before the elements are separated. A `pinned` vector is read
+// in the order of the statements (asm volatile).
+template <bool pinned = false, typename T>
+__device__ __forceinline__ uint4 __lfortran_wide_vector(bool ok, const T* p) {
+    if (ok) {
+        if (pinned) {
+            uint4 v;
+            asm volatile("ld.global.v4.u32 {%0,%1,%2,%3}, [%4];"
+                : "=r"(v.x), "=r"(v.y), "=r"(v.z), "=r"(v.w) : "l"(p));
+            return v;
+        }
+        return *reinterpret_cast<const uint4*>(p);
+    }
+    T t[16 / sizeof(T)];
+    #pragma unroll
+    for (int i = 0; i < 16 / (int)sizeof(T); i++) t[i] = p[i];
+    uint4 v;
+    __builtin_memcpy(&v, t, 16);
+    return v;
+}
+
+template <bool pinned = false, typename T>
+__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b) {
+    uint4 v = __lfortran_wide_vector<pinned>(ok, p);
+    const T* e = reinterpret_cast<const T*>(&v);
+    a = e[0]; b = e[1];
+}
+
+template <bool pinned = false, typename T>
+__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b, T &c, T &d) {
+    uint4 v = __lfortran_wide_vector<pinned>(ok, p);
+    const T* e = reinterpret_cast<const T*>(&v);
+    a = e[0]; b = e[1]; c = e[2]; d = e[3];
+}
+
+template <bool pinned = false, typename T>
+__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a0, T &a1, T &a2, T &a3, T &a4, T &a5, T &a6, T &a7) {
+    uint4 v = __lfortran_wide_vector<pinned>(ok, p);
+    const T* e = reinterpret_cast<const T*>(&v);
+    a0 = e[0]; a1 = e[1]; a2 = e[2]; a3 = e[3]; a4 = e[4]; a5 = e[5]; a6 = e[6]; a7 = e[7];
+}
+
+__device__ inline int _lcompilers_shiftl_i32_gpu_40(int x, int y) {
+    int _lcompilers_shiftl_i32{};
+    if ((((int)y) >= 32)) {
+        _lcompilers_shiftl_i32 = 0;
+    } else {
+        _lcompilers_shiftl_i32 = (x << ((int)y));
+    }
+    return _lcompilers_shiftl_i32;
+}
+
+__device__ inline float bf_gpu_31(int16_t v) {
+    float bf{};
+    bf = __int_as_float(((int)(_lcompilers_shiftl_i32_gpu_40(((int)v), 16))));
+    return bf;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0_23gpu_lanes_variants_01_m5gemv4 {
+    int __dim_b_0;
+    int __lb_b_0;
+    int __dim_b_1;
+    int __lb_b_1;
+    int __dim_s_0;
+    int __lb_s_0;
+    int __dim_s_1;
+    int __lb_s_1;
+    int __dim_w_0;
+    int __lb_w_0;
+    int __dim_w_1;
+    int __lb_w_1;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+extern "C" __global__ void __launch_bounds__(64, 14) __lfortran_gpu_kernel_0_23gpu_lanes_variants_01_m5gemv4(
+    int16_t* __restrict__ b,
+    int16_t* __restrict__ s,
+    int* __restrict__ w,
+    float* __restrict__ x,
+    float* __restrict__ y,
+    __ScalarArgs___lfortran_gpu_kernel_0_23gpu_lanes_variants_01_m5gemv4 __scalar_args)
+{
+    int __dim_b_0 = __scalar_args.__dim_b_0;
+    int __lb_b_0 = __scalar_args.__lb_b_0;
+    int __lb_b_1 = __scalar_args.__lb_b_1;
+    int __dim_s_0 = __scalar_args.__dim_s_0;
+    int __lb_s_0 = __scalar_args.__lb_s_0;
+    int __lb_s_1 = __scalar_args.__lb_s_1;
+    int __dim_w_0 = __scalar_args.__dim_w_0;
+    int __lb_w_0 = __scalar_args.__lb_w_0;
+    int __lb_w_1 = __scalar_args.__lb_w_1;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    __gpu_lanes = 64;
+    int __gpu_lanes_n = __gpu_lanes;
+    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+    i__dc = (__flat_idx + 1);
+    {
+        int16_t __gpu_element;
+        int16_t __gpu_element1;
+        int16_t __gpu_element2;
+        int16_t __gpu_element3;
+        int16_t __gpu_element4;
+        int16_t __gpu_element5;
+        int16_t __gpu_element6;
+        int16_t __gpu_element7;
+        int __gpu_wide;
+        int __gpu_wide1;
+        float __gpu_wide10;
+        float __gpu_wide11;
+        float __gpu_wide12;
+        float __gpu_wide13;
+        float __gpu_wide14;
+        float __gpu_wide15;
+        float __gpu_wide16;
+        float __gpu_wide17;
+        float __gpu_wide18;
+        float __gpu_wide19;
+        int __gpu_wide2;
+        int __gpu_wide20;
+        int __gpu_wide21;
+        int __gpu_wide22;
+        int __gpu_wide23;
+        float __gpu_wide24;
+        float __gpu_wide25;
+        float __gpu_wide26;
+        float __gpu_wide27;
+        float __gpu_wide28;
+        float __gpu_wide29;
+        int __gpu_wide3;
+        float __gpu_wide30;
+        float __gpu_wide31;
+        float __gpu_wide32;
+        float __gpu_wide33;
+        float __gpu_wide34;
+        float __gpu_wide35;
+        float __gpu_wide36;
+        float __gpu_wide37;
+        float __gpu_wide38;
+        float __gpu_wide39;
+        float __gpu_wide4;
+        int __gpu_wide40;
+        int __gpu_wide41;
+        int __gpu_wide42;
+        int __gpu_wide43;
+        float __gpu_wide44;
+        float __gpu_wide45;
+        float __gpu_wide46;
+        float __gpu_wide47;
+        float __gpu_wide48;
+        float __gpu_wide49;
+        float __gpu_wide5;
+        float __gpu_wide50;
+        float __gpu_wide51;
+        float __gpu_wide52;
+        float __gpu_wide53;
+        float __gpu_wide54;
+        float __gpu_wide55;
+        float __gpu_wide56;
+        float __gpu_wide57;
+        float __gpu_wide58;
+        float __gpu_wide59;
+        float __gpu_wide6;
+        int __gpu_wide60;
+        int __gpu_wide61;
+        int __gpu_wide62;
+        int __gpu_wide63;
+        float __gpu_wide64;
+        float __gpu_wide65;
+        float __gpu_wide66;
+        float __gpu_wide67;
+        float __gpu_wide68;
+        float __gpu_wide69;
+        float __gpu_wide7;
+        float __gpu_wide70;
+        float __gpu_wide71;
+        float __gpu_wide72;
+        float __gpu_wide73;
+        float __gpu_wide74;
+        float __gpu_wide75;
+        float __gpu_wide76;
+        float __gpu_wide77;
+        float __gpu_wide78;
+        float __gpu_wide79;
+        float __gpu_wide8;
+        float __gpu_wide9;
+        float a1;
+        float a2;
+        float a3;
+        float a4;
+        int c;
+        int n;
+        n = ((4 * i__dc) - 3);
+        a1 = ((float)0);
+        a2 = ((float)0);
+        a3 = ((float)0);
+        a4 = ((float)0);
+        if ((__gpu_lane != 0)) {
+            a1 =   0.00000000000000000e+00f;
+            a2 =   0.00000000000000000e+00f;
+            a3 =   0.00000000000000000e+00f;
+            a4 =   0.00000000000000000e+00f;
+        }
+        if ((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0) && ((true) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
+            c = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_0 = (__dim_w_0 / 4) >= c ? (int)((unsigned)((__dim_w_0 / 4) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 1
+            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, c += (1 * ((int)__gpu_lanes))) {
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)((n + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 1) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide32, __gpu_wide33, __gpu_wide34, __gpu_wide35);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide36, __gpu_wide37, __gpu_wide38, __gpu_wide39);
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 2) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide40, __gpu_wide41, __gpu_wide42, __gpu_wide43);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide44, __gpu_wide45, __gpu_wide46, __gpu_wide47);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide48, __gpu_wide49, __gpu_wide50, __gpu_wide51);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide52, __gpu_wide53, __gpu_wide54, __gpu_wide55);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide56, __gpu_wide57, __gpu_wide58, __gpu_wide59);
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 3) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide60, __gpu_wide61, __gpu_wide62, __gpu_wide63);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide64, __gpu_wide65, __gpu_wide66, __gpu_wide67);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide68, __gpu_wide69, __gpu_wide70, __gpu_wide71);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide72, __gpu_wide73, __gpu_wide74, __gpu_wide75);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide76, __gpu_wide77, __gpu_wide78, __gpu_wide79);
+                __gpu_element = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)((n + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element1 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)((n + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element2 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 1) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element3 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 1) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element4 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 2) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element5 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 2) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element6 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 3) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element7 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 3) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                a1 = (a1 + ((bf_gpu_31(__gpu_element) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide4) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide5)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide6)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide7)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide8) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide9)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide10)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide11))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide12) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide13)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide14)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide15))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide16) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide17)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide18)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide19)))) + (bf_gpu_31(__gpu_element1) * (((((__gpu_wide4 + __gpu_wide5) + (__gpu_wide6 + __gpu_wide7)) + ((__gpu_wide8 + __gpu_wide9) + (__gpu_wide10 + __gpu_wide11))) + ((__gpu_wide12 + __gpu_wide13) + (__gpu_wide14 + __gpu_wide15))) + ((__gpu_wide16 + __gpu_wide17) + (__gpu_wide18 + __gpu_wide19))))));
+                a2 = (a2 + ((bf_gpu_31(__gpu_element2) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide24) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide25)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide26)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide27)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide28) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide29)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide30)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide31))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide32) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide33)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide34)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide35))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide36) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide37)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide38)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide39)))) + (bf_gpu_31(__gpu_element3) * (((((__gpu_wide24 + __gpu_wide25) + (__gpu_wide26 + __gpu_wide27)) + ((__gpu_wide28 + __gpu_wide29) + (__gpu_wide30 + __gpu_wide31))) + ((__gpu_wide32 + __gpu_wide33) + (__gpu_wide34 + __gpu_wide35))) + ((__gpu_wide36 + __gpu_wide37) + (__gpu_wide38 + __gpu_wide39))))));
+                a3 = (a3 + ((bf_gpu_31(__gpu_element4) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide44) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide45)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide46)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide47)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide48) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide49)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide50)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide51))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide52) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide53)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide54)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide55))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide56) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide57)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide58)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide59)))) + (bf_gpu_31(__gpu_element5) * (((((__gpu_wide44 + __gpu_wide45) + (__gpu_wide46 + __gpu_wide47)) + ((__gpu_wide48 + __gpu_wide49) + (__gpu_wide50 + __gpu_wide51))) + ((__gpu_wide52 + __gpu_wide53) + (__gpu_wide54 + __gpu_wide55))) + ((__gpu_wide56 + __gpu_wide57) + (__gpu_wide58 + __gpu_wide59))))));
+                a4 = (a4 + ((bf_gpu_31(__gpu_element6) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide64) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide65)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide66)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide67)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide68) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide69)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide70)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide71))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide72) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide73)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide74)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide75))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide76) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide77)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide78)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide79)))) + (bf_gpu_31(__gpu_element7) * (((((__gpu_wide64 + __gpu_wide65) + (__gpu_wide66 + __gpu_wide67)) + ((__gpu_wide68 + __gpu_wide69) + (__gpu_wide70 + __gpu_wide71))) + ((__gpu_wide72 + __gpu_wide73) + (__gpu_wide74 + __gpu_wide75))) + ((__gpu_wide76 + __gpu_wide77) + (__gpu_wide78 + __gpu_wide79))))));
+            }
+        } else {
+            c = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_1 = (__dim_w_0 / 4) >= c ? (int)((unsigned)((__dim_w_0 / 4) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 1
+            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, c += (1 * ((int)__gpu_lanes))) {
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)((n + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 1) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide32, __gpu_wide33, __gpu_wide34, __gpu_wide35);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide36, __gpu_wide37, __gpu_wide38, __gpu_wide39);
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 2) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide40, __gpu_wide41, __gpu_wide42, __gpu_wide43);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide44, __gpu_wide45, __gpu_wide46, __gpu_wide47);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide48, __gpu_wide49, __gpu_wide50, __gpu_wide51);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide52, __gpu_wide53, __gpu_wide54, __gpu_wide55);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide56, __gpu_wide57, __gpu_wide58, __gpu_wide59);
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 3) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide60, __gpu_wide61, __gpu_wide62, __gpu_wide63);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide64, __gpu_wide65, __gpu_wide66, __gpu_wide67);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide68, __gpu_wide69, __gpu_wide70, __gpu_wide71);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide72, __gpu_wide73, __gpu_wide74, __gpu_wide75);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide76, __gpu_wide77, __gpu_wide78, __gpu_wide79);
+                __gpu_element = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)((n + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element1 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)((n + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element2 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 1) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element3 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 1) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element4 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 2) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element5 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 2) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element6 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 3) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element7 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 3) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                a1 = (a1 + ((bf_gpu_31(__gpu_element) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide4) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide5)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide6)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide7)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide8) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide9)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide10)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide11))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide12) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide13)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide14)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide15))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide16) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide17)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide18)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide19)))) + (bf_gpu_31(__gpu_element1) * (((((__gpu_wide4 + __gpu_wide5) + (__gpu_wide6 + __gpu_wide7)) + ((__gpu_wide8 + __gpu_wide9) + (__gpu_wide10 + __gpu_wide11))) + ((__gpu_wide12 + __gpu_wide13) + (__gpu_wide14 + __gpu_wide15))) + ((__gpu_wide16 + __gpu_wide17) + (__gpu_wide18 + __gpu_wide19))))));
+                a2 = (a2 + ((bf_gpu_31(__gpu_element2) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide24) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide25)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide26)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide27)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide28) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide29)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide30)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide31))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide32) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide33)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide34)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide35))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide36) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide37)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide38)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide39)))) + (bf_gpu_31(__gpu_element3) * (((((__gpu_wide24 + __gpu_wide25) + (__gpu_wide26 + __gpu_wide27)) + ((__gpu_wide28 + __gpu_wide29) + (__gpu_wide30 + __gpu_wide31))) + ((__gpu_wide32 + __gpu_wide33) + (__gpu_wide34 + __gpu_wide35))) + ((__gpu_wide36 + __gpu_wide37) + (__gpu_wide38 + __gpu_wide39))))));
+                a3 = (a3 + ((bf_gpu_31(__gpu_element4) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide44) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide45)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide46)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide47)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide48) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide49)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide50)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide51))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide52) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide53)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide54)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide55))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide56) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide57)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide58)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide59)))) + (bf_gpu_31(__gpu_element5) * (((((__gpu_wide44 + __gpu_wide45) + (__gpu_wide46 + __gpu_wide47)) + ((__gpu_wide48 + __gpu_wide49) + (__gpu_wide50 + __gpu_wide51))) + ((__gpu_wide52 + __gpu_wide53) + (__gpu_wide54 + __gpu_wide55))) + ((__gpu_wide56 + __gpu_wide57) + (__gpu_wide58 + __gpu_wide59))))));
+                a4 = (a4 + ((bf_gpu_31(__gpu_element6) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide64) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide65)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide66)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide67)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide68) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide69)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide70)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide71))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide72) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide73)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide74)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide75))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide76) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide77)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide78)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide79)))) + (bf_gpu_31(__gpu_element7) * (((((__gpu_wide64 + __gpu_wide65) + (__gpu_wide66 + __gpu_wide67)) + ((__gpu_wide68 + __gpu_wide69) + (__gpu_wide70 + __gpu_wide71))) + ((__gpu_wide72 + __gpu_wide73) + (__gpu_wide74 + __gpu_wide75))) + ((__gpu_wide76 + __gpu_wide77) + (__gpu_wide78 + __gpu_wide79))))));
+            }
+        }
+        if (__gpu_lanes_n > 32) {
+            a1 = __lfortran_lane_reduce<0>(a1, 32, 0xffffffffu);
+            a2 = __lfortran_lane_reduce<0>(a2, 32, 0xffffffffu);
+            a3 = __lfortran_lane_reduce<0>(a3, 32, 0xffffffffu);
+            a4 = __lfortran_lane_reduce<0>(a4, 32, 0xffffffffu);
+            __shared__ float __lfortran_partial0_0[32];
+            __shared__ float __lfortran_partial0_1[32];
+            __shared__ float __lfortran_partial0_2[32];
+            __shared__ float __lfortran_partial0_3[32];
+            if ((threadIdx.x & 31u) == 0) {
+                __lfortran_partial0_0[threadIdx.x >> 5] = a1;
+                __lfortran_partial0_1[threadIdx.x >> 5] = a2;
+                __lfortran_partial0_2[threadIdx.x >> 5] = a3;
+                __lfortran_partial0_3[threadIdx.x >> 5] = a4;
+            }
+            __syncthreads();
+            a1 = __lfortran_partial0_0[0];
+            a2 = __lfortran_partial0_1[0];
+            a3 = __lfortran_partial0_2[0];
+            a4 = __lfortran_partial0_3[0];
+            for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                a1 = __lfortran_lane_combine<0>(a1, __lfortran_partial0_0[__i]);
+                a2 = __lfortran_lane_combine<0>(a2, __lfortran_partial0_1[__i]);
+                a3 = __lfortran_lane_combine<0>(a3, __lfortran_partial0_2[__i]);
+                a4 = __lfortran_lane_combine<0>(a4, __lfortran_partial0_3[__i]);
+            }
+        } else {
+            a1 = __lfortran_lane_reduce<0>(a1, __gpu_lanes_n, __gpu_lane_mask);
+            a2 = __lfortran_lane_reduce<0>(a2, __gpu_lanes_n, __gpu_lane_mask);
+            a3 = __lfortran_lane_reduce<0>(a3, __gpu_lanes_n, __gpu_lane_mask);
+            a4 = __lfortran_lane_reduce<0>(a4, __gpu_lanes_n, __gpu_lane_mask);
+        }
+        if ((__gpu_lane == 0)) {
+            y[((int)(n) - (__lb_y_0))] = a1;
+            y[((int)((n + 1)) - (__lb_y_0))] = a2;
+            y[((int)((n + 2)) - (__lb_y_0))] = a3;
+            y[((int)((n + 3)) - (__lb_y_0))] = a4;
+        }
+    }
+}
+
+extern "C" __global__ void __launch_bounds__(64, 16) __lfortran_gpu_kernel_0_23gpu_lanes_variants_01_m5gemv4__blocks16(
+    int16_t* __restrict__ b,
+    int16_t* __restrict__ s,
+    int* __restrict__ w,
+    float* __restrict__ x,
+    float* __restrict__ y,
+    __ScalarArgs___lfortran_gpu_kernel_0_23gpu_lanes_variants_01_m5gemv4 __scalar_args)
+{
+    int __dim_b_0 = __scalar_args.__dim_b_0;
+    int __lb_b_0 = __scalar_args.__lb_b_0;
+    int __lb_b_1 = __scalar_args.__lb_b_1;
+    int __dim_s_0 = __scalar_args.__dim_s_0;
+    int __lb_s_0 = __scalar_args.__lb_s_0;
+    int __lb_s_1 = __scalar_args.__lb_s_1;
+    int __dim_w_0 = __scalar_args.__dim_w_0;
+    int __lb_w_0 = __scalar_args.__lb_w_0;
+    int __lb_w_1 = __scalar_args.__lb_w_1;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    __gpu_lanes = 64;
+    int __gpu_lanes_n = __gpu_lanes;
+    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+    int __gpu_lane = (int)threadIdx.x;
+    unsigned __gpu_iteration_thread = 0u;
+    unsigned __gpu_iteration_block = 1u;
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+    i__dc = (__flat_idx + 1);
+    {
+        int16_t __gpu_element;
+        int16_t __gpu_element1;
+        int16_t __gpu_element2;
+        int16_t __gpu_element3;
+        int16_t __gpu_element4;
+        int16_t __gpu_element5;
+        int16_t __gpu_element6;
+        int16_t __gpu_element7;
+        int __gpu_wide;
+        int __gpu_wide1;
+        float __gpu_wide10;
+        float __gpu_wide11;
+        float __gpu_wide12;
+        float __gpu_wide13;
+        float __gpu_wide14;
+        float __gpu_wide15;
+        float __gpu_wide16;
+        float __gpu_wide17;
+        float __gpu_wide18;
+        float __gpu_wide19;
+        int __gpu_wide2;
+        int __gpu_wide20;
+        int __gpu_wide21;
+        int __gpu_wide22;
+        int __gpu_wide23;
+        float __gpu_wide24;
+        float __gpu_wide25;
+        float __gpu_wide26;
+        float __gpu_wide27;
+        float __gpu_wide28;
+        float __gpu_wide29;
+        int __gpu_wide3;
+        float __gpu_wide30;
+        float __gpu_wide31;
+        float __gpu_wide32;
+        float __gpu_wide33;
+        float __gpu_wide34;
+        float __gpu_wide35;
+        float __gpu_wide36;
+        float __gpu_wide37;
+        float __gpu_wide38;
+        float __gpu_wide39;
+        float __gpu_wide4;
+        int __gpu_wide40;
+        int __gpu_wide41;
+        int __gpu_wide42;
+        int __gpu_wide43;
+        float __gpu_wide44;
+        float __gpu_wide45;
+        float __gpu_wide46;
+        float __gpu_wide47;
+        float __gpu_wide48;
+        float __gpu_wide49;
+        float __gpu_wide5;
+        float __gpu_wide50;
+        float __gpu_wide51;
+        float __gpu_wide52;
+        float __gpu_wide53;
+        float __gpu_wide54;
+        float __gpu_wide55;
+        float __gpu_wide56;
+        float __gpu_wide57;
+        float __gpu_wide58;
+        float __gpu_wide59;
+        float __gpu_wide6;
+        int __gpu_wide60;
+        int __gpu_wide61;
+        int __gpu_wide62;
+        int __gpu_wide63;
+        float __gpu_wide64;
+        float __gpu_wide65;
+        float __gpu_wide66;
+        float __gpu_wide67;
+        float __gpu_wide68;
+        float __gpu_wide69;
+        float __gpu_wide7;
+        float __gpu_wide70;
+        float __gpu_wide71;
+        float __gpu_wide72;
+        float __gpu_wide73;
+        float __gpu_wide74;
+        float __gpu_wide75;
+        float __gpu_wide76;
+        float __gpu_wide77;
+        float __gpu_wide78;
+        float __gpu_wide79;
+        float __gpu_wide8;
+        float __gpu_wide9;
+        float a1;
+        float a2;
+        float a3;
+        float a4;
+        int c;
+        int n;
+        n = ((4 * i__dc) - 3);
+        a1 = ((float)0);
+        a2 = ((float)0);
+        a3 = ((float)0);
+        a4 = ((float)0);
+        if ((__gpu_lane != 0)) {
+            a1 =   0.00000000000000000e+00f;
+            a2 =   0.00000000000000000e+00f;
+            a3 =   0.00000000000000000e+00f;
+            a4 =   0.00000000000000000e+00f;
+        }
+        if ((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0) && ((true) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
+            c = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_0 = (__dim_w_0 / 4) >= c ? (int)((unsigned)((__dim_w_0 / 4) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 1
+            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, c += (1 * ((int)__gpu_lanes))) {
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)((n + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 1) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide32, __gpu_wide33, __gpu_wide34, __gpu_wide35);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide36, __gpu_wide37, __gpu_wide38, __gpu_wide39);
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 2) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide40, __gpu_wide41, __gpu_wide42, __gpu_wide43);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide44, __gpu_wide45, __gpu_wide46, __gpu_wide47);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide48, __gpu_wide49, __gpu_wide50, __gpu_wide51);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide52, __gpu_wide53, __gpu_wide54, __gpu_wide55);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide56, __gpu_wide57, __gpu_wide58, __gpu_wide59);
+                __lfortran_wide_load<true>(true, &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 3) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide60, __gpu_wide61, __gpu_wide62, __gpu_wide63);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide64, __gpu_wide65, __gpu_wide66, __gpu_wide67);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide68, __gpu_wide69, __gpu_wide70, __gpu_wide71);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide72, __gpu_wide73, __gpu_wide74, __gpu_wide75);
+                __lfortran_wide_load(true, &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide76, __gpu_wide77, __gpu_wide78, __gpu_wide79);
+                __gpu_element = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)((n + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element1 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)((n + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element2 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 1) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element3 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 1) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element4 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 2) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element5 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 2) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element6 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 3) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element7 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 3) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                a1 = (a1 + ((bf_gpu_31(__gpu_element) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide4) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide5)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide6)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide7)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide8) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide9)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide10)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide11))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide12) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide13)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide14)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide15))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide16) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide17)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide18)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide19)))) + (bf_gpu_31(__gpu_element1) * (((((__gpu_wide4 + __gpu_wide5) + (__gpu_wide6 + __gpu_wide7)) + ((__gpu_wide8 + __gpu_wide9) + (__gpu_wide10 + __gpu_wide11))) + ((__gpu_wide12 + __gpu_wide13) + (__gpu_wide14 + __gpu_wide15))) + ((__gpu_wide16 + __gpu_wide17) + (__gpu_wide18 + __gpu_wide19))))));
+                a2 = (a2 + ((bf_gpu_31(__gpu_element2) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide24) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide25)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide26)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide27)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide28) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide29)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide30)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide31))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide32) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide33)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide34)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide35))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide36) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide37)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide38)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide39)))) + (bf_gpu_31(__gpu_element3) * (((((__gpu_wide24 + __gpu_wide25) + (__gpu_wide26 + __gpu_wide27)) + ((__gpu_wide28 + __gpu_wide29) + (__gpu_wide30 + __gpu_wide31))) + ((__gpu_wide32 + __gpu_wide33) + (__gpu_wide34 + __gpu_wide35))) + ((__gpu_wide36 + __gpu_wide37) + (__gpu_wide38 + __gpu_wide39))))));
+                a3 = (a3 + ((bf_gpu_31(__gpu_element4) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide44) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide45)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide46)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide47)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide48) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide49)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide50)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide51))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide52) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide53)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide54)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide55))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide56) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide57)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide58)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide59)))) + (bf_gpu_31(__gpu_element5) * (((((__gpu_wide44 + __gpu_wide45) + (__gpu_wide46 + __gpu_wide47)) + ((__gpu_wide48 + __gpu_wide49) + (__gpu_wide50 + __gpu_wide51))) + ((__gpu_wide52 + __gpu_wide53) + (__gpu_wide54 + __gpu_wide55))) + ((__gpu_wide56 + __gpu_wide57) + (__gpu_wide58 + __gpu_wide59))))));
+                a4 = (a4 + ((bf_gpu_31(__gpu_element6) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide64) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide65)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide66)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide67)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide68) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide69)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide70)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide71))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide72) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide73)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide74)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide75))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide76) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide77)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide78)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide79)))) + (bf_gpu_31(__gpu_element7) * (((((__gpu_wide64 + __gpu_wide65) + (__gpu_wide66 + __gpu_wide67)) + ((__gpu_wide68 + __gpu_wide69) + (__gpu_wide70 + __gpu_wide71))) + ((__gpu_wide72 + __gpu_wide73) + (__gpu_wide74 + __gpu_wide75))) + ((__gpu_wide76 + __gpu_wide77) + (__gpu_wide78 + __gpu_wide79))))));
+            }
+        } else {
+            c = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_1 = (__dim_w_0 / 4) >= c ? (int)((unsigned)((__dim_w_0 / 4) - c) / (unsigned)((1 * ((int)__gpu_lanes)))) + 1 : 0;
+            #pragma unroll 1
+            for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, c += (1 * ((int)__gpu_lanes))) {
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)((n + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 1) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide32, __gpu_wide33, __gpu_wide34, __gpu_wide35);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide36, __gpu_wide37, __gpu_wide38, __gpu_wide39);
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 2) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide40, __gpu_wide41, __gpu_wide42, __gpu_wide43);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide44, __gpu_wide45, __gpu_wide46, __gpu_wide47);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide48, __gpu_wide49, __gpu_wide50, __gpu_wide51);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide52, __gpu_wide53, __gpu_wide54, __gpu_wide55);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide56, __gpu_wide57, __gpu_wide58, __gpu_wide59);
+                __lfortran_wide_load<true>((((((__dim_w_0) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)((((4 * c) - 3) + (((int)__lb_w_0) - 1))) - (__lb_w_0)) + (__dim_w_0 * ((int)(((n + 3) + (((int)__lb_w_1) - 1))) - (__lb_w_1)))]), __gpu_wide60, __gpu_wide61, __gpu_wide62, __gpu_wide63);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 15) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide64, __gpu_wide65, __gpu_wide66, __gpu_wide67);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 11) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide68, __gpu_wide69, __gpu_wide70, __gpu_wide71);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 7) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide72, __gpu_wide73, __gpu_wide74, __gpu_wide75);
+                __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)((((16 * c) - 3) + (((int)__lb_x_0) - 1))) - (__lb_x_0))]), __gpu_wide76, __gpu_wide77, __gpu_wide78, __gpu_wide79);
+                __gpu_element = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)((n + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element1 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)((n + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element2 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 1) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element3 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 1) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element4 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 2) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element5 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 2) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                __gpu_element6 = s[((int)(((((c - 1) / 4) + 1) + (((int)__lb_s_0) - 1))) - (__lb_s_0)) + (__dim_s_0 * ((int)(((n + 3) + (((int)__lb_s_1) - 1))) - (__lb_s_1)))];
+                __gpu_element7 = b[((int)(((((c - 1) / 4) + 1) + (((int)__lb_b_0) - 1))) - (__lb_b_0)) + (__dim_b_0 * ((int)(((n + 3) + (((int)__lb_b_1) - 1))) - (__lb_b_1)))];
+                a1 = (a1 + ((bf_gpu_31(__gpu_element) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide4) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide5)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide6)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide7)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide8) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide9)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide10)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide1, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide11))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide12) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide13)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide14)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide2, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide15))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide16) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide17)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide18)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide3, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide19)))) + (bf_gpu_31(__gpu_element1) * (((((__gpu_wide4 + __gpu_wide5) + (__gpu_wide6 + __gpu_wide7)) + ((__gpu_wide8 + __gpu_wide9) + (__gpu_wide10 + __gpu_wide11))) + ((__gpu_wide12 + __gpu_wide13) + (__gpu_wide14 + __gpu_wide15))) + ((__gpu_wide16 + __gpu_wide17) + (__gpu_wide18 + __gpu_wide19))))));
+                a2 = (a2 + ((bf_gpu_31(__gpu_element2) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide24) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide25)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide26)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide20, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide27)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide28) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide29)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide30)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide21, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide31))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide32) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide33)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide34)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide22, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide35))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide36) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide37)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide38)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide23, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide39)))) + (bf_gpu_31(__gpu_element3) * (((((__gpu_wide24 + __gpu_wide25) + (__gpu_wide26 + __gpu_wide27)) + ((__gpu_wide28 + __gpu_wide29) + (__gpu_wide30 + __gpu_wide31))) + ((__gpu_wide32 + __gpu_wide33) + (__gpu_wide34 + __gpu_wide35))) + ((__gpu_wide36 + __gpu_wide37) + (__gpu_wide38 + __gpu_wide39))))));
+                a3 = (a3 + ((bf_gpu_31(__gpu_element4) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide44) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide45)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide46)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide40, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide47)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide48) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide49)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide50)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide41, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide51))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide52) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide53)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide54)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide42, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide55))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide56) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide57)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide58)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide43, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide59)))) + (bf_gpu_31(__gpu_element5) * (((((__gpu_wide44 + __gpu_wide45) + (__gpu_wide46 + __gpu_wide47)) + ((__gpu_wide48 + __gpu_wide49) + (__gpu_wide50 + __gpu_wide51))) + ((__gpu_wide52 + __gpu_wide53) + (__gpu_wide54 + __gpu_wide55))) + ((__gpu_wide56 + __gpu_wide57) + (__gpu_wide58 + __gpu_wide59))))));
+                a4 = (a4 + ((bf_gpu_31(__gpu_element6) * ((((((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide64) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide65)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide66)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide60, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide67)) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide68) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide69)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide70)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide61, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide71))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide72) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide73)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide74)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide62, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide75))) + (((((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30288))))) -   8.38860800000000000e+06f) * __gpu_wide76) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30289))))) -   8.38860800000000000e+06f) * __gpu_wide77)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30290))))) -   8.38860800000000000e+06f) * __gpu_wide78)) + ((__int_as_float(((int)(((int)__byte_perm(__gpu_wide63, 1258291200, 30291))))) -   8.38860800000000000e+06f) * __gpu_wide79)))) + (bf_gpu_31(__gpu_element7) * (((((__gpu_wide64 + __gpu_wide65) + (__gpu_wide66 + __gpu_wide67)) + ((__gpu_wide68 + __gpu_wide69) + (__gpu_wide70 + __gpu_wide71))) + ((__gpu_wide72 + __gpu_wide73) + (__gpu_wide74 + __gpu_wide75))) + ((__gpu_wide76 + __gpu_wide77) + (__gpu_wide78 + __gpu_wide79))))));
+            }
+        }
+        if (__gpu_lanes_n > 32) {
+            a1 = __lfortran_lane_reduce<0>(a1, 32, 0xffffffffu);
+            a2 = __lfortran_lane_reduce<0>(a2, 32, 0xffffffffu);
+            a3 = __lfortran_lane_reduce<0>(a3, 32, 0xffffffffu);
+            a4 = __lfortran_lane_reduce<0>(a4, 32, 0xffffffffu);
+            __shared__ float __lfortran_partial0_0[32];
+            __shared__ float __lfortran_partial0_1[32];
+            __shared__ float __lfortran_partial0_2[32];
+            __shared__ float __lfortran_partial0_3[32];
+            if ((threadIdx.x & 31u) == 0) {
+                __lfortran_partial0_0[threadIdx.x >> 5] = a1;
+                __lfortran_partial0_1[threadIdx.x >> 5] = a2;
+                __lfortran_partial0_2[threadIdx.x >> 5] = a3;
+                __lfortran_partial0_3[threadIdx.x >> 5] = a4;
+            }
+            __syncthreads();
+            a1 = __lfortran_partial0_0[0];
+            a2 = __lfortran_partial0_1[0];
+            a3 = __lfortran_partial0_2[0];
+            a4 = __lfortran_partial0_3[0];
+            for (int __i = 1; __i < (__gpu_lanes_n >> 5); __i++) {
+                a1 = __lfortran_lane_combine<0>(a1, __lfortran_partial0_0[__i]);
+                a2 = __lfortran_lane_combine<0>(a2, __lfortran_partial0_1[__i]);
+                a3 = __lfortran_lane_combine<0>(a3, __lfortran_partial0_2[__i]);
+                a4 = __lfortran_lane_combine<0>(a4, __lfortran_partial0_3[__i]);
+            }
+        } else {
+            a1 = __lfortran_lane_reduce<0>(a1, __gpu_lanes_n, __gpu_lane_mask);
+            a2 = __lfortran_lane_reduce<0>(a2, __gpu_lanes_n, __gpu_lane_mask);
+            a3 = __lfortran_lane_reduce<0>(a3, __gpu_lanes_n, __gpu_lane_mask);
+            a4 = __lfortran_lane_reduce<0>(a4, __gpu_lanes_n, __gpu_lane_mask);
+        }
+        if ((__gpu_lane == 0)) {
+            y[((int)(n) - (__lb_y_0))] = a1;
+            y[((int)((n + 1)) - (__lb_y_0))] = a2;
+            y[((int)((n + 2)) - (__lb_y_0))] = a3;
+            y[((int)((n + 3)) - (__lb_y_0))] = a4;
+        }
+    }
+}
+
