@@ -9978,22 +9978,39 @@ public:
                                     }
                                     if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {
                                         sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, implicit_dictionary[std::string(1, sym[0])], value);
-                                        if (sym_ && sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                                        if (sym_) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
-                                            if (!ASRUtils::is_pointer(v->m_type)) {
-                                                v->m_type = ASRUtils::TYPE(
-                                                    ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
+                                            if (s.n_dim > 0 &&
+                                                    (sa->m_attr == AST::simple_attributeType::AttrPointer ||
+                                                     sa->m_attr == AST::simple_attributeType::AttrAllocatable)) {
+                                                bool is_compile_time = false;
+                                                Vec<ASR::dimension_t> dims;
+                                                dims.reserve(al, 0);
+                                                bool is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
+                                                process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type, false, s.m_name);
+                                                bool is_star_dimension = (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar);
+                                                v->m_type = ASRUtils::make_Array_t_util(al, x.m_syms[i].loc, v->m_type,
+                                                    dims.p, dims.size(), ASR::abiType::Source, false,
+                                                    ASR::array_physical_typeType::DescriptorArray, false,
+                                                    is_star_dimension);
                                             }
-                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
-                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
-                                            if (!ASRUtils::is_allocatable(v->m_type)) {
-                                                v->m_type = ASRUtils::TYPE(
-                                                    ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                            if (sa->m_attr == AST::simple_attributeType::AttrPointer) {
+                                                if (!ASRUtils::is_pointer(v->m_type)) {
+                                                    v->m_type = ASRUtils::TYPE(
+                                                        ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
+                                                }
+                                            } else if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                                                if (!ASRUtils::is_allocatable(v->m_type)) {
+                                                    v->m_type = ASRUtils::TYPE(
+                                                        ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
+                                                }
+                                            } else if (sa->m_attr == AST::simple_attributeType::AttrTarget) {
+                                                v->m_target_attr = true;
+                                            } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
+                                                v->m_is_volatile = true;
+                                            } else if (sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
+                                                v->m_is_asynchronous = true;
                                             }
-                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrVolatile) {
-                                            ASR::down_cast<ASR::Variable_t>(sym_)->m_is_volatile = true;
-                                        } else if (sym_ && sa->m_attr == AST::simple_attributeType::AttrAsynchronous) {
-                                            ASR::down_cast<ASR::Variable_t>(sym_)->m_is_asynchronous = true;
                                         }
                                     }
                                 }
