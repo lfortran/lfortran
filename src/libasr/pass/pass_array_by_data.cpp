@@ -336,6 +336,18 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         // The array dummies of device procedures that keep their
         // descriptor (see DeviceDescriptorDummies).
         std::set<std::pair<ASR::symbol_t*, size_t>> device_descriptor_dummies;
+        // The interface bodies that name an external procedure: not a
+        // module procedure, a dummy procedure or an abstract interface. The
+        // procedure is defined in another compilation unit, possibly in C or
+        // by another Fortran compiler, so the only entry it is known to have
+        // is the one under its own name, which takes arrays by descriptor.
+        // Recorded before the dummies of a procedure are replaced by their
+        // specialisations, while a dummy procedure is still recognisable.
+        // An interface body is always inside a program unit; a declaration
+        // in the translation unit's own scope was added by a pass (e.g. the
+        // coarray pass declares the PRIF module procedures there) and keeps
+        // calling the by-data entry that LFortran compiles for it.
+        std::set<ASR::symbol_t*> external_procedure_interfaces;
 
         PassArrayByDataProcedureVisitor(Allocator& al_, const LCompilers::PassOptions& pass_options_) :
         PassVisitor(al_, nullptr), node_duplicator(al_), pass_options(pass_options_)
@@ -567,6 +579,14 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                         return;
                     }
                     pass_array_by_data_functions.push_back(subrout);
+                    ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(subrout);
+                    if( ftype->m_deftype == ASR::deftypeType::Interface &&
+                            ASRUtils::is_external_procedure_interface(ftype) &&
+                            !ASRUtils::is_abstract_interface(*subrout) &&
+                            !ASRUtils::is_dummy_procedure(*subrout) &&
+                            !ASRUtils::is_tu_scope(subrout->m_symtab->parent) ) {
+                        external_procedure_interfaces.insert(sym);
+                    }
                     if( ASRUtils::is_pass_array_by_data_possible(subrout, arg_indices) ) {
                         ASR::symbol_t* new_sym = insert_new_procedure(subrout, arg_indices);
                         if( new_sym != nullptr ) {
@@ -2093,6 +2113,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     x.n_args, x.m_args, inplace->second.indices);
                 xx.m_args = new_args.p;
                 xx.n_args = new_args.size();
+                return;
+            }
+            // A call to an external procedure through its interface body
+            // stays a call to the procedure itself. The interface is still
+            // specialised, for the procedure pointers and dummy procedures
+            // declared with it.
+            if( v.external_procedure_interfaces.count(subrout_sym) > 0 ) {
+                update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
+                cast_descriptor_actual_to_data_pointer(xx);
+                not_to_be_erased.insert(subrout_sym);
                 return;
             }
             if( !can_edit_call(x.m_args, x.n_args)
