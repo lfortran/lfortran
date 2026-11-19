@@ -33,7 +33,8 @@ checks, or release validation.
   These modes are not just smoke selections.
   The native phase of `Build LFortran to WASM` is Quick's GCC Release
   (`NDEBUG`) build and also uses `-Werror`, matching Exhaustive's
-  `Check Release build`.
+  `Check Release build`. It is also the unity build of `libasr`
+  (`WITH_UNITY_BUILD`), which catches sources that clash.
   Exhaustive checks add missing configurations without replaying Quick.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
   The LLVM 19 WASM compiler is also a Debug build compiled with `-O2`; its

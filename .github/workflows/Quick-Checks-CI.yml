@@ -418,7 +418,8 @@ jobs:
       # Phase 1: Native build. This is Quick's only Linux GCC Release (NDEBUG)
       # build, so it uses -Werror and the LSP/runtime-stacktrace options of
       # Exhaustive's "Check Release build": the Debug builds cannot catch
-      # warnings such as variables used only in assertions.
+      # warnings such as variables used only in assertions. It is also the
+      # unity build of libasr, which fails when two of its sources clash.
       - name: Build native LFortran
         shell: bash -e {0}
         run: |
@@ -431,6 +432,7 @@ jobs:
                 -DWITH_STACKTRACE=no \
                 -DWITH_RUNTIME_STACKTRACE=yes \
                 -DWITH_INTERNAL_ALLOC_CHECK=no \
+                -DWITH_UNITY_BUILD=yes \
                 -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
             mkdir -p src/bin/asset_dir
