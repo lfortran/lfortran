@@ -1028,8 +1028,12 @@ bool set_allocation_size(
                 if ( !m_dims[i].m_length || !m_dims[i].m_start ) {
                     m_dims[i].loc = loc;
                     m_dims[i].m_start = int32_one;
+                    // The size of a rank one array is its extent
+                    ASR::expr_t* dim = n_dims == 1 ? nullptr : ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, loc, i + 1,
+                            ASRUtils::expr_type(int32_one)));
                     m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
-                        al, loc, value, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
+                        al, loc, value, dim, ASRUtils::expr_type(int32_one), nullptr, false));
                 }
                 allocate_dims.push_back(al, m_dims[i]);
             }
