@@ -20977,6 +20977,18 @@ static void to_lowercase(char *str) {
 // Helper to parse a value into a namelist item
 static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, int64_t index) {
     void *ptr = (char*)item->data + index * get_item_stride(item);
+    char *normalized = NULL;
+    if (item->type == LFORTRAN_NML_REAL4 || item->type == LFORTRAN_NML_REAL8 ||
+        item->type == LFORTRAN_NML_COMPLEX4 || item->type == LFORTRAN_NML_COMPLEX8) {
+        // C numeric conversions recognize E exponents, but not Fortran D or Q.
+        // Keep the original token intact for repeated values of other types.
+        normalized = (char*)internal_malloc(strlen(value_str) + 1);
+        strcpy(normalized, value_str);
+        for (char *p = normalized; *p; p++) {
+            if (*p == 'd' || *p == 'D' || *p == 'q' || *p == 'Q') *p = 'e';
+        }
+        value_str = normalized;
+    }
     switch (item->type) {
         case LFORTRAN_NML_INT1:
             *(int8_t*)ptr = (int8_t)atoi(value_str);
@@ -21031,6 +21043,7 @@ static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, in
             break;
         }
     }
+    if (normalized) internal_free(normalized);
 }
 
 // Helper to parse repeat count (e.g., "5*0.0" -> count=5, value="0.0")
