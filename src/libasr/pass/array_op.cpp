@@ -1645,11 +1645,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             // The shape of the target does not change
             return;
         }
-        if (!(realloc_lhs || x.m_realloc_lhs ||
+        if (!(x.m_realloc_lhs ||
                 should_auto_realloc_component_assignment(target))) {
-            // The target keeps its shape, which the value must have
-            // then, but a program can rely on the reallocation anyway
-            facts.forget(target);
+            // The target keeps its shape, which the value must have then.
+            // With reallocation on assignment, this is an assignment that
+            // says so, as `x(:) = v` (see full_section_target.cpp), which
+            // keeps it as an assignment to a section does; without it, a
+            // program can rely on the reallocation anyway.
+            if (!realloc_lhs) {
+                facts.forget(target);
+            }
             return;
         }
         std::vector<ASR::expr_t*> operands;
