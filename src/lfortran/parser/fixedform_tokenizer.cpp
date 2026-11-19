@@ -951,18 +951,6 @@ struct FixedFormStatements {
 
     // The next statement, with its label
     void labeled_statement(unsigned char *&cur) {
-        if (units.empty()) {
-            // A main program can start without the `program` statement
-            unsigned char *body = cur + (has_label(cur) ? 5 : 0);
-            if (!next_is(body, "include")
-                    && unit_statement(body, false) == 0) {
-                push_token(cur, KW_PROGRAM, "program", 7);
-                push_token(cur, TK_NAME, "implicit_program_lfortran", 25);
-                push_newline(cur);
-                units.push_back('p');
-                unit_start = false;
-            }
-        }
         int64_t l = label(cur);
         statement(cur, l);
     }

@@ -1,6 +1,6 @@
 (TranslationUnit
     [(Program
-        __xx_main
+        implicit_program_lfortran
         ()
         [(Declaration
             (AttrType
@@ -74,7 +74,11 @@
             ()
             0)]
             []
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
         )
         (Open
             0
@@ -98,22 +102,30 @@
             []
             [(unit
             10)]
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
         )
         (Nullify
             0
             [p]
             []
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
         )
         (Exit
             0
-            exit
+            ()
             ()
         )
         (Cycle
             0
-            cycle
+            ()
             ()
         )
         (Return
@@ -123,7 +135,11 @@
         )
         (Continue
             0
-            ()
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (EndOfLine)]
+            )
         )
         (Print
             0

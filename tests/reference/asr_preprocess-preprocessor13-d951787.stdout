@@ -2,14 +2,14 @@
     (SymbolTable
         1
         {
-            __xx_main:
+            implicit_program_lfortran:
                 (Program
                     (SymbolTable
                         2
                         {
                             
                         })
-                    __xx_main
+                    implicit_program_lfortran
                     []
                     [(Print
                         (StringConstant

@@ -100,6 +100,11 @@ struct LL {
     size_t n_tokenizer_errors = 0;
     // The token at which a statement at the top level of the file starts
     size_t top_statement = SIZE_MAX;
+    // Interactive mode: declarations, statements and expressions outside of
+    // a program unit are kept as they are, not taken as a main program
+    bool script = false;
+    // A main program without the PROGRAM statement was parsed
+    bool implicit_main = false;
     // The token after the last statement, before its separators
     size_t stmt_end = 0;
     // The token after the statement that ended a labeled DO loop (with the
@@ -1028,8 +1033,7 @@ struct LL {
             return LABELED_END(V[s].n, V[s+1].string, l);
         }
         // An expression has a higher precedence here than a statement, so
-        // a keyword alone on its line is a name (which
-        // fix_program_without_program_line() turns into the statement)
+        // a keyword alone on its line is a name
         switch (K[i]) {
             case KW_STOP: case KW_RETURN: case KW_EXIT: case KW_CYCLE:
             case KW_CONTINUE: case KW_PAUSE: {
@@ -1099,10 +1103,14 @@ struct LL {
         }
     }
 
-    ast_t* subprogram_or_item() {
+    ast_t* subprogram_or_main() {
         ast_t *u = sub_or_func();
-        if (u == nullptr) u = top_level_item();
-        return u;
+        if (u != nullptr) return u;
+        if (script) return top_level_item();
+        // A file has one main program
+        if (implicit_main) unsup(__LINE__);
+        implicit_main = true;
+        return main_program();
     }
 
     // The whole file
@@ -1288,6 +1296,18 @@ struct LL {
         return SUBROUTINE(name, args, b, trivia, decls, ce, l);
     }
 
+    // The name of a main program without the PROGRAM statement
+    static constexpr const char *implicit_program_name
+        = "implicit_program_lfortran";
+
+    ast_t* implicit_program(Vec<ast_t*> &decls, ast_t *trivia,
+            ContainsEnd *ce, Location &l) {
+        return PROGRAM2(m_a, l, LCompilers::s2c(m_a, implicit_program_name),
+            trivia_cast(trivia), decls, CONTAINS(CE_CONTAINS(ce)),
+            CE_CONTAINS(ce).size(), nullptr, END_NAME_LOC(CE_END(ce)),
+            END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), diag);
+    }
+
     ast_t* function(Vec<ast_t*> &mods, ast_t *name, Vec<ast_t*> &args,
             const FunctionClauses &c, ast_t *trivia, Vec<ast_t*> &decls,
             ContainsEnd *ce, Location &l) {
@@ -1302,11 +1322,6 @@ struct LL {
 } // namespace
 
 namespace LCompilers::LFortran {
-
-// Defined in parser.cpp
-bool is_program_needed(AST::TranslationUnit_t &ast);
-void fix_program_without_program_line(Allocator &al,
-    AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics);
 
 void ll_tokenize(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics, LLTokens &t, bool openmp,
@@ -1411,6 +1426,7 @@ Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
         tokens.loc.data(), *tokens.source, loc_offset,
         co.continue_compilation);
     ll.fixed_form = co.fixed_form;
+    ll.script = !co.fixed_form && (co.interactive || co.infer_mode);
     ll.tokenizer_errors = &tokenizer_diagnostics.diagnostics;
     try {
         ll.units();
@@ -1437,16 +1453,6 @@ Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
     }
     AST::TranslationUnit_t *ast = (AST::TranslationUnit_t*)
         AST::make_TranslationUnit_t(al, l, ll.result.p, ll.result.size());
-    if (!co.interactive && !co.infer_mode && !co.fixed_form
-            && is_program_needed(*ast)) {
-        try {
-            fix_program_without_program_line(al, *ast, diagnostics);
-        } catch (const parser_local::ParserAbort &) {
-            if (!co.continue_compilation) {
-                return Error();
-            }
-        }
-    }
     return ast;
 }
 

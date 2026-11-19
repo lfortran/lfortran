@@ -13,7 +13,7 @@
         []
     )
     (Program
-        __xx_main
+        implicit_program_lfortran
         ()
         [(Declaration
             (AttrType

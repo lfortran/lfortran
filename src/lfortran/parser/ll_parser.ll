@@ -91,8 +91,9 @@
 // CONTAINS and the subprograms after it
 %extern contains_block -> Vec<ast_t*> first: KW_CONTAINS
 // A subroutine, a function or a module procedure with its prefixes, or else a
-// declaration, a statement or an expression outside a program unit
-%extern subprogram_or_item -> ast_t*
+// main program without the PROGRAM statement; in interactive mode, a
+// declaration, a statement or an expression instead of the main program
+%extern subprogram_or_main -> ast_t*
 
 // ----------------------------------------------------------------------------
 // Expressions
@@ -1387,12 +1388,22 @@ rule block_data -> ast_t*
     ;
 
 // One item at the top level of a file
+// A main program without the PROGRAM statement
+rule main_program -> ast_t*
+    : decls=decl_statements
+        ( contains=contains_block end=end_program ^ sp=sep
+            => implicit_program(decls, TRIVIA_AFTER(sp, @^), CONTAINS_END2(m_a, contains, end), @^)
+        | end=end_program ^ sp=sep
+            => implicit_program(decls, TRIVIA_AFTER(sp, @^), CONTAINS_END1(m_a, end), @^)
+        )
+    ;
+
 rule unit -> ast_t*
     : program
     | submodule
     | module
     | block_data
-    | subprogram_or_item
+    | subprogram_or_main
     ;
 
 // ----------------------------------------------------------------------------
