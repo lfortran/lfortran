@@ -3592,6 +3592,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     // The assignments whose value reads the target only in place
     std::set<ASR::stmt_t*> assignments_reading_target_in_place;
+    // The values computed into a target whose shape is already checked
+    // against theirs (see make_matmul_result_shape_check)
+    std::set<ASR::expr_t*> values_checked_against_target;
 
     ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -4676,6 +4679,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     operands, false));
                 current_body->push_back(al, make_matmul_result_shape_check(
                     ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expr)));
+                values_checked_against_target.insert(expr);
             }
             ASR::expr_t* target = duplicator.duplicate_expr(matmul_target);
             exprs_with_target[expr] = std::make_pair(target, targetType::OriginalTarget);
@@ -5334,6 +5338,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::expr_t* lhs_var;
     // Sections that ArgSimplifier left in place (see get_sections_read_in_place)
     const std::set<ASR::expr_t*>* sections_read_in_place = nullptr;
+    // Whether Debug checks are generated, and the values whose target
+    // ArgSimplifier already checked (see check_target_shape)
+    bool bounds_checking = false;
+    const std::set<ASR::expr_t*>* values_checked_against_target = nullptr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -5444,6 +5452,134 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
     }
 
+    // The extent `merge(size(a, i), size(a, i + 1), i < dim)` of the result
+    // of a reduction along a constant `dim` (see set_allocation_size) as the
+    // size it selects, which a Debug check can evaluate. nullptr for an
+    // extent with any other elemental intrinsic.
+    static ASR::expr_t* get_checkable_extent(ASR::expr_t* extent) {
+        if( !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*extent) ) {
+            return extent;
+        }
+        ASR::IntrinsicElementalFunction_t* merge =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(extent);
+        if( merge->m_intrinsic_id != static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::Merge) ||
+            merge->n_args != 3 ||
+            !ASR::is_a<ASR::IntegerCompare_t>(*merge->m_args[2]) ) {
+            return nullptr;
+        }
+        ASR::IntegerCompare_t* compare = ASR::down_cast<ASR::IntegerCompare_t>(
+            merge->m_args[2]);
+        int64_t left, right;
+        if( compare->m_op != ASR::cmpopType::Lt ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(compare->m_left) ?
+                ASRUtils::expr_value(compare->m_left) : compare->m_left, left) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(compare->m_right) ?
+                ASRUtils::expr_value(compare->m_right) : compare->m_right, right) ) {
+            return nullptr;
+        }
+        return get_checkable_extent(left < right ? merge->m_args[0] : merge->m_args[1]);
+    }
+
+    // Whether set_allocation_size gives the shape of `value`, a RESHAPE or
+    // an intrinsic array function.
+    static bool is_result_shape_known(ASR::expr_t* value) {
+        if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ||
+            ASR::is_a<ASR::ArrayReshape_t>(*value) ) {
+            return true;
+        }
+        if( !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value) ) {
+            return false;
+        }
+        switch( ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value)->m_arr_intrinsic_id ) {
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Parity):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Sum):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Product):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxVal):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Reduce):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul):
+            case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack): {
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    // An intrinsic array function or a RESHAPE computed into the target of
+    // an assignment that does not reallocate it, such as `x = cshift(y, 1)`,
+    // writes its result into the target as it is. Nothing else compares
+    // their shapes, so in Debug the target is checked here to have the
+    // shape of `value`, as array_op checks it for an element-wise value.
+    void check_target_shape(ASR::expr_t* target, ASR::expr_t* value) {
+        if( !bounds_checking || !ASRUtils::is_array(ASRUtils::expr_type(target)) ||
+            !is_result_shape_known(value) ||
+            (values_checked_against_target != nullptr &&
+             values_checked_against_target->count(value) > 0) ) {
+            return;
+        }
+        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
+        Vec<ASR::dimension_t> dims;
+        bool add_allocated_check = false;
+        ASR::expr_t* len = nullptr;
+        if( !set_allocation_size(al, value, target, dims, n_dims,
+                add_allocated_check, len) ||
+            add_allocated_check || dims.size() != n_dims ) {
+            return;
+        }
+        const Location& loc = value->base.loc;
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::array_extent_check_t> checks;
+        checks.reserve(al, n_dims);
+        for( size_t i = 0; i < n_dims; i++ ) {
+            if( get_checkable_extent(dims[i].m_length) == nullptr ) {
+                return;
+            }
+        }
+        for( size_t i = 0; i < n_dims; i++ ) {
+            ASR::expr_t* extent = duplicator.duplicate_expr(
+                get_checkable_extent(dims[i].m_length));
+            if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(extent)) != 4 ) {
+                extent = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, extent,
+                    ASR::cast_kindType::IntegerToInteger, int32_type, nullptr, nullptr));
+            }
+            ASR::array_extent_check_t check;
+            check.loc = loc;
+            check.m_left = 0;
+            check.m_right = 1;
+            check.m_dim = i + 1;
+            check.m_left_extent = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                duplicator.duplicate_expr(target),
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i + 1, int32_type)),
+                int32_type, nullptr));
+            check.m_right_extent = extent;
+            checks.push_back(al, check);
+        }
+        // The value is named by the target it is computed into
+        ASR::expr_t* result = duplicator.duplicate_expr(target);
+        result->base.loc = loc;
+        Vec<ASR::expr_t*> components;
+        components.reserve(al, 1);
+        components.push_back(al, result);
+        current_body->push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+            al, loc, duplicator.duplicate_expr(target), components.p,
+            components.size(), checks.p, checks.size(), false)));
+    }
+
     bool is_current_expr_linked_to_target_then_return(ASR::expr_t** &current_expr, ExprsWithTargetType& exprs_with_target,
         Vec<ASR::stmt_t*>* &current_body, bool &realloc_lhs, Allocator& al) {
         if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
@@ -5464,6 +5600,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 realloc_lhs ) {
                 insert_allocate_stmt_for_array(al, target, *current_expr,
                                                current_body, nullptr, true);
+            } else if( target_Type == targetType::OriginalTarget &&
+                ASR::is_a<ASR::IntrinsicArrayFunction_t>(**current_expr) ) {
+                check_target_shape(target, *current_expr);
             }
             return true;
         }
@@ -6211,6 +6350,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
+        // The result of a RESHAPE is given to an allocatable target with
+        // its shape, so only another target is checked.
+        if( is_current_expr_linked_to_target(exprs_with_target, current_expr) &&
+            exprs_with_target[*current_expr].second == targetType::OriginalTarget &&
+            !ASRUtils::is_allocatable(ASRUtils::expr_type(
+                ASRUtils::get_past_array_physical_cast(
+                    exprs_with_target[*current_expr].first))) ) {
+            check_target_shape(exprs_with_target[*current_expr].first, *current_expr);
+        }
         ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
         if( x->m_value == nullptr && x->m_result == nullptr && x->m_pad == nullptr &&
             ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_array)) ==
@@ -6493,6 +6641,13 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.current_body = current_body;
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
+    }
+
+    // See ReplaceExprWithTemporary::check_target_shape
+    void check_target_shapes(bool bounds_checking,
+            const std::set<ASR::expr_t*>& values_checked_against_target) {
+        replacer.bounds_checking = bounds_checking;
+        replacer.values_checked_against_target = &values_checked_against_target;
     }
 
     void visit_ttype(const ASR::ttype_t& /*x*/) {
@@ -7701,6 +7856,7 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
         pass_options.realloc_lhs_arrays, call_preparation, sections_read_in_place,
         dummies_sharing_actual, pass_options.stack_arrays);
     c.assignments_reading_target_in_place = &b.assignments_reading_target_in_place;
+    c.check_target_shapes(pass_options.bounds_checking, b.values_checked_against_target);
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
