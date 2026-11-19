@@ -11,6 +11,7 @@ set(PARSER_SRC
 set(SRC
     semantics/ast_symboltable_visitor.cpp
     semantics/ast_body_visitor.cpp
+    semantics/ast_common_visitor.cpp
     semantics/ast_to_asr.cpp
     semantics/elemental_checks.cpp
     semantics/pure_checks.cpp
