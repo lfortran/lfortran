@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <map>
+#include <set>
+#include <string>
 #include <vector>
 
 namespace LCompilers {
@@ -44,8 +46,11 @@ than in an inquiry about its allocation (`allocated(x)`), can allocate or
 define it: after it the array is no longer known to be unallocated. So does
 a loop that names it anywhere, from its first statement on, as its body runs
 again; a call of any procedure that is not pure, in a procedure with
-internal procedures (which can change the variables of their host, also when
-passed as an actual argument); and a label or a GO TO. At the end of an IF
+internal procedures, for the variables of the procedure that an internal
+procedure names (host association, which nested_vars has made the variables
+of storage HostAssociated of the internal procedures: an internal procedure
+can change those, also when it is passed as an actual argument, and no
+others); and a label or a GO TO. At the end of an IF
 the array is unallocated when it is on every branch. Any statement this pass
 does not know forgets everything, and its statements are left as they are.
 
@@ -199,6 +204,9 @@ public:
     Allocator &al;
     SymbolTable *procedure = nullptr;
     bool has_internal_procedures = false;
+    // The names of the variables of the procedure that its internal
+    // procedures, or theirs, reach by host association
+    std::set<std::string> reached;
     size_t allocations = 0;
 
     explicit Unallocated(Allocator &al_) : al(al_) {}
@@ -261,6 +269,30 @@ public:
         for (auto &k : s) k.second = false;
     }
 
+    // What a call that may call an internal procedure can change
+    void kill_reached(State &s) {
+        for (auto &k : s) {
+            if (k.second && reached.count(ASRUtils::symbol_name(k.first[0]))) {
+                k.second = false;
+            }
+        }
+    }
+
+    void collect_reached(SymbolTable *t) {
+        for (auto &item : t->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(item.second);
+            for (auto &v : f->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*v.second) &&
+                        ASR::down_cast<ASR::Variable_t>(v.second)->m_storage ==
+                            ASR::storage_typeType::HostAssociated) {
+                    reached.insert(v.first);
+                }
+            }
+            collect_reached(f->m_symtab);
+        }
+    }
+
     static void join(State &into, const State &other) {
         for (auto &k : into) {
             auto o = other.find(k.first);
@@ -285,8 +317,8 @@ public:
         if (has_internal_procedures) {
             for (ASR::symbol_t *c : m.callees) {
                 if (!is_pure(c)) {
-                    kill_all(s);
-                    return;
+                    kill_reached(s);
+                    break;
                 }
             }
         }
@@ -375,7 +407,7 @@ public:
                 m.visit_expr(*f->m_test);
                 if (m.unknown) kill_all(s);
                 kill(s, m.paths);
-                if (has_internal_procedures && !m.callees.empty()) kill_all(s);
+                if (has_internal_procedures && !m.callees.empty()) kill_reached(s);
                 State t = s, e = s;
                 stmts(f->m_body, f->n_body, t);
                 stmts(f->m_orelse, f->n_orelse, e);
@@ -431,6 +463,9 @@ public:
             case ASR::stmtType::SubroutineCall:
             case ASR::stmtType::IntrinsicImpureSubroutine:
             case ASR::stmtType::Associate:
+            // The binding of a variable to the frame through which internal
+            // procedures reach it (nested_vars): it names the variable
+            case ASR::stmtType::BindReference:
             case ASR::stmtType::Nullify:
             case ASR::stmtType::Print:
             case ASR::stmtType::FileWrite:
@@ -461,6 +496,7 @@ public:
                 has_internal_procedures = true;
             }
         }
+        if (has_internal_procedures) collect_reached(x.m_symtab);
         State s;
         for (auto &item : x.m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;

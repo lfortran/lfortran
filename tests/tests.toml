@@ -3882,6 +3882,12 @@ pass = "allocate_unallocated"
 options = "--cumulative"
 
 [[test]]
+filename = "../integration_tests/realloc_lhs_unallocated_03.f90"
+fortran = true
+pass = "allocate_unallocated"
+options = "--cumulative"
+
+[[test]]
 filename = "../integration_tests/inline_loop_subroutine_calls_01.f90"
 fortran = true
 pass = "inline_loop_subroutine_calls"

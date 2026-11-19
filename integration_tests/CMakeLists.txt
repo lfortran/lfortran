@@ -3768,6 +3768,7 @@ RUN(NAME realloc_lhs_unallocated_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # plain allocation of certainly unallocated arrays, see tests/tests.toml
 RUN(NAME realloc_lhs_unallocated_02 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # targets that may be allocated keep the test
+RUN(NAME realloc_lhs_unallocated_03 LABELS gfortran llvm) # what internal procedures reach stays possibly allocated
 RUN(NAME realloc_lhs_move_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocatable array results moved into the variable
 RUN(NAME realloc_lhs_result_inplace_01 LABELS gfortran llvm) # explicit-shape results computed into the reallocated target
