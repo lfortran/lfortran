@@ -59,11 +59,7 @@
                 ()
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )
         (Assignment
             0
@@ -86,11 +82,7 @@
                 ()
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )
         (Assignment
             0

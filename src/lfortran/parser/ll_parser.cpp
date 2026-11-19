@@ -449,6 +449,16 @@ struct LL {
         return st;
     }
 
+    // A statement; it is an error if none starts here
+    ast_t* required_statement() {
+        ast_t *st = statement();
+        if (st == nullptr) {
+            if (K[i] == TK_LABEL) i++;
+            unsup(__LINE__);
+        }
+        return st;
+    }
+
     // Is the token `j` the END DO statement (and not, say, `enddo = 5`)?
     bool is_enddo(size_t j) const {
         if (K[j] != KW_END_DO && K[j] != KW_ENDDO) return false;
@@ -480,9 +490,7 @@ struct LL {
                     stmt_end = i;
                     sep();
                 } else {
-                    ast_t *st = statement();
-                    if (st == nullptr) unsup(__LINE__);
-                    LIST_ADD(v, st);
+                    LIST_ADD(v, required_statement());
                 }
                 break;
             }
@@ -491,9 +499,7 @@ struct LL {
                 enddo();
                 return v;
             }
-            ast_t *st = statement();
-            if (st == nullptr) unsup(__LINE__);
-            LIST_ADD(v, st);
+            LIST_ADD(v, required_statement());
             // The statement was a loop that ended with this label
             if (do_end == i && do_end_label == label) break;
         }

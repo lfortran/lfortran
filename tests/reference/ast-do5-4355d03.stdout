@@ -63,14 +63,14 @@
                 15
                 j
                 (+ j i)
-                ()
+                (TriviaNode
+                    []
+                    [(EndOfLine)
+                    (EndOfLine)]
+                )
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )
         (Assignment
             0
@@ -90,14 +90,14 @@
                 16
                 enddo
                 5
-                ()
+                (TriviaNode
+                    []
+                    [(EndOfLine)
+                    (EndOfLine)]
+                )
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )
         (Assignment
             0
@@ -117,14 +117,14 @@
                 20
                 j
                 (+ j i)
-                ()
+                (TriviaNode
+                    []
+                    [(EndOfLine)
+                    (EndOfLine)]
+                )
             )]
             ()
-            (TriviaNode
-                []
-                [(EndOfLine)
-                (EndOfLine)]
-            )
+            ()
         )
         (Assignment
             0
