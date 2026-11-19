@@ -21270,11 +21270,36 @@ public:
                                       bound, bound_value);
     }
 
+    // An operator or an elemental intrinsic call that reads a variable, which gfortran cannot fold.
+    static bool is_operation_on_variable(ASR::expr_t* e) {
+        if (ASRUtils::expr_value(e) != nullptr) {
+            return false;
+        }
+        if (!ASRUtils::is_binop_expr(e) && !ASRUtils::is_unaryop_expr(e)
+                && !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+            return false;
+        }
+        return ASRUtils::reads_variable_value(e);
+    }
+
     ASR::asr_t* create_ArrayRank(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"a"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("rank"));
         ASR::expr_t *v_Var = args[0];
+        if (is_operation_on_variable(v_Var)) {
+            diag.add(Diagnostic(
+                "the argument of the `rank` intrinsic must be a data object",
+                Level::Error, Stage::Semantic, {
+                    Label("this expression is not a variable or a constant",
+                        {v_Var->base.loc}),
+                    Label("help: assign the value to a variable and pass "
+                        "the variable instead", {v_Var->base.loc}, false)}));
+            // The node is kept so that the dependencies the argument added stay valid.
+            if (!compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
+        }
 
         ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
         int compile_time_rank = -1;
