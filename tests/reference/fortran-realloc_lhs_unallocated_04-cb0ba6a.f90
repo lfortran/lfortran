@@ -88,7 +88,7 @@ do k = 1, 4
         end do
         deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
         call numbers(k, __libasr_created__subroutine_from_function_)
-        if (Allocated(y)) then
+        if (.false.) then
             if (size(y, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(y, 1) /= 1) then
                 reallocate(y(size(__libasr_created__subroutine_from_function_, 1)))
                 ! CheckBounds LHS = y, RHS = __libasr_created__subroutine_from_function_, 
@@ -153,7 +153,7 @@ do k = 1, 3
         real(4), dimension(:), allocatable :: x
         deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
         call numbers(k + 1, __libasr_created__subroutine_from_function_)
-        if (Allocated(x)) then
+        if (.false.) then
             if (size(x, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(x, 1) /= 1) then
                 reallocate(x(size(__libasr_created__subroutine_from_function_, 1)))
                 ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_, 
@@ -185,7 +185,7 @@ associate_block2 : associate ()
     real(4), dimension(:), allocatable :: x
     deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
     call numbers(2, __libasr_created__subroutine_from_function_)
-    if (Allocated(x)) then
+    if (.false.) then
         if (size(x, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(x, 1) /= 1) then
             reallocate(x(size(__libasr_created__subroutine_from_function_, 1)))
             ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_, 

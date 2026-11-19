@@ -56,6 +56,13 @@ others); and a label or a GO TO. At the end of an IF
 the array is unallocated when it is on every branch. Any statement this pass
 does not know forgets everything, and its statements are left as they are.
 
+An inquiry `allocated(x)` that is the test of an IF is false where the
+array is certainly unallocated: the test becomes the constant, so that only
+the ELSE branch is code that runs. This is also the test that
+subroutine_from_function puts before the move of a function result into
+its target, whose other branch copies the result into an allocated target
+of its shape.
+
 A wrong proof does not go unnoticed: an ALLOCATE of an allocated array is a
 run-time error, without `--fast`.
 */
@@ -210,6 +217,8 @@ public:
     // procedures, or theirs, reach by host association
     std::set<std::string> reached;
     size_t allocations = 0;
+    // Tests of allocation folded to a constant
+    size_t folded = 0;
 
     explicit Unallocated(Allocator &al_) : al(al_) {}
 
@@ -334,6 +343,23 @@ public:
         }
     }
 
+    // `p` of the test `allocated(p)`, or of `.not. allocated(p)` (with
+    // `negated` set), or nullptr
+    static ASR::expr_t* allocation_inquiry(ASR::expr_t *test, bool &negated) {
+        negated = false;
+        if (ASR::is_a<ASR::LogicalNot_t>(*test)) {
+            negated = true;
+            test = ASR::down_cast<ASR::LogicalNot_t>(test)->m_arg;
+        }
+        if (!ASR::is_a<ASR::IntrinsicImpureFunction_t>(*test)) return nullptr;
+        ASR::IntrinsicImpureFunction_t *t = ASR::down_cast<ASR::IntrinsicImpureFunction_t>(test);
+        if (t->m_impure_intrinsic_id != static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated) || t->n_args != 1) {
+            return nullptr;
+        }
+        return t->m_args[0];
+    }
+
     // `if (allocated(p)) deallocate(p)`, or nullptr
     static ASR::expr_t* deallocates_if_allocated(const ASR::If_t &x) {
         if (x.n_orelse != 0 || x.n_body != 1 ||
@@ -400,6 +426,27 @@ public:
             }
             case ASR::stmtType::If: {
                 ASR::If_t *f = ASR::down_cast<ASR::If_t>(x);
+                bool negated = false;
+                if (ASR::expr_t *v = allocation_inquiry(f->m_test, negated)) {
+                    Path p;
+                    auto k = s.end();
+                    if (path_of(v, p)) k = s.find(p);
+                    if (k != s.end() && k->second) {
+                        // The inquiry is false: only the ELSE branch runs.
+                        // So is the test before the move of a function
+                        // result into its target (subroutine_from_function).
+                        bool runs_body = negated;
+                        f->m_test = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al,
+                            f->m_test->base.loc, runs_body, ASRUtils::expr_type(f->m_test)));
+                        folded++;
+                        if (runs_body) {
+                            stmts(f->m_body, f->n_body, s);
+                        } else {
+                            stmts(f->m_orelse, f->n_orelse, s);
+                        }
+                        return;
+                    }
+                }
                 if (ASR::expr_t *v = deallocates_if_allocated(*f)) {
                     effects(*x, s);
                     unallocated(v, s);
@@ -541,7 +588,7 @@ public:
     void visit_Program(const ASR::Program_t &x) {
         Unallocated u(al);
         u.run(const_cast<ASR::Program_t&>(x));
-        allocations += u.allocations;
+        allocations += u.allocations + u.folded;
         for (auto &item : x.m_symtab->get_scope()) visit_symbol(*item.second);
     }
     void visit_Function(const ASR::Function_t &x) {
@@ -551,7 +598,7 @@ public:
         }
         Unallocated u(al);
         u.run(const_cast<ASR::Function_t&>(x));
-        allocations += u.allocations;
+        allocations += u.allocations + u.folded;
         for (auto &item : x.m_symtab->get_scope()) visit_symbol(*item.second);
     }
     void visit_Block(const ASR::Block_t &) {}

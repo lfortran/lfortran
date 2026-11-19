@@ -139,7 +139,7 @@ real(4) :: s
 real(4), dimension(:), allocatable :: x
 deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
 call tensors(3, __libasr_created__subroutine_from_function_)
-if (Allocated(a)) then
+if (.false.) then
     if (size(a, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(a, 1) /= 1) then
         reallocate(a(size(__libasr_created__subroutine_from_function_, 1)))
         ! CheckBounds LHS = a, RHS = __libasr_created__subroutine_from_function_, 
@@ -317,7 +317,7 @@ do k = 1, 4
         type(tensor_t), dimension(:), allocatable :: t
         deallocate(__libasr_created__subroutine_from_function_) ! Implicit deallocate
         call tensors(k, __libasr_created__subroutine_from_function_)
-        if (Allocated(t)) then
+        if (.false.) then
             if (size(t, 1) == size(__libasr_created__subroutine_from_function_, 1) .and. lbound(t, 1) /= 1) then
                 reallocate(t(size(__libasr_created__subroutine_from_function_, 1)))
                 ! CheckBounds LHS = t, RHS = __libasr_created__subroutine_from_function_, 
@@ -342,7 +342,7 @@ if (Abs(s - 2.00000000e+01) > 9.99999997e-07) then
 end if
 deallocate(__libasr_created__subroutine_from_function_4) ! Implicit deallocate
 call numbers(4, __libasr_created__subroutine_from_function_4)
-if (Allocated(x)) then
+if (.false.) then
     if (size(x, 1) == size(__libasr_created__subroutine_from_function_4, 1) .and. lbound(x, 1) /= 1) then
         reallocate(x(size(__libasr_created__subroutine_from_function_4, 1)))
         ! CheckBounds LHS = x, RHS = __libasr_created__subroutine_from_function_4, 
