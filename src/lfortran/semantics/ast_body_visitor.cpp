@@ -5137,26 +5137,6 @@ public:
         }
     }
 
-    // The dimensions of an array of the shape of `array` with a lower bound
-    // of 1 in every dimension. The extents are those of `extents` if given,
-    // otherwise size(array, dim).
-    Vec<ASR::dimension_t> dimensions_with_lower_bound_one(ASR::expr_t* array,
-            ASR::dimension_t* extents, size_t n_dims) {
-        Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
-            al, array->base.loc, 4));
-        for ( size_t d = 0; d < n_dims; d++ ) {
-            ASR::dimension_t dim;
-            dim.loc = array->base.loc;
-            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, array->base.loc, 1, int_type));
-            dim.m_length = extents ? extents[d].m_length :
-                ASRUtils::get_size(array, d + 1, al);
-            dims.push_back(al, dim);
-        }
-        return dims;
-    }
-
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
         std::string name = current_scope->get_unique_name("associate_block");
@@ -5189,7 +5169,9 @@ public:
             // designator cases below, which alias the associate name to the
             // selector's storage, may therefore apply. The parentheses are
             // dropped by visit_Parenthesis, so this is decided on the AST.
-            if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
+            bool selector_is_parenthesized =
+                AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer);
+            if( !selector_is_parenthesized ) {
                 if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                     ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                     if (variable->m_storage != ASR::storage_typeType::Parameter) {
@@ -5282,7 +5264,7 @@ public:
             // A whole array is a variable or a named constant, or a component
             // of a scalar, that is not parenthesized.
             bool selector_is_whole_array =
-                !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) &&
+                !selector_is_parenthesized &&
                 (ASR::is_a<ASR::Var_t>(*tmp_expr) ||
                  (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) &&
                   !ASRUtils::is_array(ASRUtils::expr_type(
@@ -5298,8 +5280,8 @@ public:
                 ASR::dimension_t* selector_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(tmp_type, selector_dims);
                 if ( !ASRUtils::is_dimension_empty(selector_dims, n_dims) ) {
-                    Vec<ASR::dimension_t> dims = dimensions_with_lower_bound_one(
-                        tmp_expr, selector_dims, n_dims);
+                    Vec<ASR::dimension_t> dims = ASRUtils::make_complex_dimensions_bounds(
+                        al, tmp_expr->base.loc, selector_dims, n_dims);
                     tmp_type = ASRUtils::duplicate_type(al,
                         ASRUtils::type_get_past_allocatable_pointer(tmp_type), &dims);
                 } else {
@@ -5361,8 +5343,18 @@ public:
                 body.push_back(al, associate_stmt);
             } else {
                 if ( allocate_with_selector_shape ) {
-                    Vec<ASR::dimension_t> dims = dimensions_with_lower_bound_one(
-                        tmp_expr, nullptr, ASRUtils::extract_n_dims_from_ttype(tmp_type));
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(tmp_type);
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                        al, tmp_expr->base.loc, 4));
+                    for ( size_t d = 0; d < n_dims; d++ ) {
+                        ASR::dimension_t dim;
+                        dim.loc = tmp_expr->base.loc;
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, tmp_expr->base.loc, 1, int_type));
+                        dim.m_length = ASRUtils::get_size(tmp_expr, d + 1, al);
+                        dims.push_back(al, dim);
+                    }
                     ASR::alloc_arg_t alloc_arg;
                     alloc_arg.loc = tmp_expr->base.loc;
                     alloc_arg.m_a = target_var;

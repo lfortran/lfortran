@@ -8,6 +8,7 @@ program associate_70
     real, target :: a(0:4)
     real :: m(0:1, -1:1)
     real, allocatable :: b(:)
+    integer, allocatable :: m2(:, :)
     real, pointer :: q(:)
     real, parameter :: p(0:2) = [1.0, 2.0, 3.0]
     type(t) :: tt
@@ -18,6 +19,8 @@ program associate_70
     a = [1.0, 2.0, 3.0, 4.0, 5.0]
     m = 3.0
     allocate(b(0:4))
+    allocate(m2(0:1, -1:1))
+    m2 = reshape([1, 2, 3, 4, 5, 6], [2, 3])
     b = a
     q(0:) => a
     tt%v = [7, 8, 9]
@@ -64,6 +67,7 @@ program associate_70
     end associate
     associate (x => (b))
         if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
+        if (abs(sum(x) - 15.0) > 1e-6) error stop
     end associate
     associate (x => b + 1.0)
         if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
@@ -71,6 +75,11 @@ program associate_70
     end associate
     associate (x => (q))
         if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
+        if (abs(sum(x) - 15.0) > 1e-6) error stop
+    end associate
+    associate (x => (m2))
+        if (any(lbound(x) /= [1, 1]) .or. any(ubound(x) /= [2, 3])) error stop
+        if (sum(x) /= 21) error stop
     end associate
     associate (x => q + 1.0)
         if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
@@ -135,6 +144,7 @@ contains
         end associate
         associate (x => (d))
             if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
+            if (abs(sum(x) - 15.0) > 1e-6) error stop
         end associate
         associate (x => d + 1.0, y => (d))
             if (lbound(x, 1) /= 1 .or. ubound(x, 1) /= 5) error stop
