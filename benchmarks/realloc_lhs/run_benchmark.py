@@ -11,6 +11,11 @@ pairs: an assignment as Fiats or Formal write it, and an explicit form
 (`<kernel>_x`) that does not rely on reallocation on assignment. The table
 then shows both forms and their ratio for each configuration.
 
+With --rewritten it runs the kernels of realloc_lhs.f90 that are not at the
+floor in pairs with their forms `<kernel>_x` rewritten as the performance
+warning of a remaining check proposes (`x(:) = ...`, or an explicit size
+test where the shape changes).
+
 With --missed it builds realloc_lhs_missed.f90 the same way: kernels whose
 cost is not the check of the reallocation but a temporary, a copy or a heap
 allocation that the compiler adds because the target may be reallocated,
@@ -155,9 +160,17 @@ MISSED_CASES = [
 ]
 
 
+# The kernels of realloc_lhs.f90 that have a rewritten form `<kernel>_x`
+REWRITTEN = ("xadd", "xadd2d", "xadd3d", "xchain", "xchainalloc",
+             "xchainlocal", "modvar", "pairs", "pairsc", "concur", "jagged",
+             "datadep", "alternate", "ctorv", "charcond", "ptrcond")
+
+
 def inner_iterations(kernel, n):
     """The assignments of one repetition of a kernel that runs several,
     so that the table shows the time per assignment."""
+    if kernel.endswith("_x"):
+        kernel = kernel[:-2]
     if kernel in ("pairs", "pairsc"):
         return n * n
     if kernel == "concur":
@@ -373,15 +386,22 @@ def main():
                          "(an assignment that gets a temporary, a copy or a "
                          "heap allocation because it may reallocate its "
                          "target, and its rewrite) instead")
+    ap.add_argument("--rewritten", action="store_true",
+                    help="run the kernels of realloc_lhs.f90 that have a "
+                         "rewritten form (x(:) = ..., or an explicit size "
+                         "test) in pairs with it")
     args = ap.parse_args()
-    if args.apps and args.missed:
-        raise SystemExit("error: --apps and --missed exclude each other")
-    paired = args.apps or args.missed
+    if args.apps + args.missed + args.rewritten > 1:
+        raise SystemExit("error: --apps, --missed and --rewritten exclude "
+                         "each other")
+    paired = args.apps or args.missed or args.rewritten
 
     all_cases = CASES
     if paired:
         all_cases = []
-        for kernel, n, reps, req in (APP_CASES if args.apps else MISSED_CASES):
+        group = (APP_CASES if args.apps else MISSED_CASES if args.missed
+                 else [c for c in CASES if c[0] in REWRITTEN])
+        for kernel, n, reps, req in group:
             all_cases.append((kernel, n, reps, req))
             all_cases.append((kernel + "_x", n, reps, False))
     if args.list:
@@ -619,6 +639,10 @@ def paired_table(cases, results, configs, labels, args, pin, cpu):
                + (". original: the plain assignment; explicit: its rewrite, "
                   "whose target cannot be reallocated (realloc_lhs_missed.f90); "
                   if args.missed else
+                  ". original: the kernel of realloc_lhs.f90; explicit: its "
+                  "rewrite as the performance warning proposes, x(:) = ... "
+                  "or an explicit size test (<kernel>_x); "
+                  if args.rewritten else
                   ". original: the assignment as the application writes it; "
                   "explicit: the same work without relying on reallocation on "
                   "assignment (realloc_lhs_apps.f90); ")

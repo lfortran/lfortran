@@ -54,6 +54,33 @@ interface
     real(dp), intent(in) :: a(:), b(:)
     real(dp), allocatable, intent(inout) :: c(:)
     end subroutine
+    subroutine ext_add_x(a, b, c)
+    import :: dp
+    real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+    end subroutine
+    subroutine ext_add2d_x(a, b, c)
+    import :: dp
+    real(dp), allocatable, intent(inout) :: a(:,:), b(:,:), c(:,:)
+    end subroutine
+    subroutine ext_add3d_x(a, b, c)
+    import :: dp
+    real(dp), allocatable, intent(inout) :: a(:,:,:), b(:,:,:), c(:,:,:)
+    end subroutine
+    subroutine ext_chain_x(a, b, t1, t2, c)
+    import :: dp
+    real(dp), intent(in) :: a(:), b(:)
+    real(dp), allocatable, intent(inout) :: t1(:), t2(:), c(:)
+    end subroutine
+    subroutine ext_chain_alloc_x(a, b, c)
+    import :: dp
+    real(dp), intent(in) :: a(:), b(:)
+    real(dp), allocatable, intent(inout) :: c(:)
+    end subroutine
+    subroutine ext_chain_local_x(a, b, c)
+    import :: dp
+    real(dp), intent(in) :: a(:), b(:)
+    real(dp), allocatable, intent(inout) :: c(:)
+    end subroutine
 end interface
 
 type :: state_t
@@ -805,12 +832,265 @@ do i = 1, reps
 end do
 end subroutine
 
+! The kernels above that are not at the floor, rewritten as the
+! performance warning of a remaining check proposes (`<kernel>_x`, run by
+! run_benchmark.py --rewritten): `x(:) = ...`, which never reallocates, or,
+! for a kernel that really changes the shape, an explicit size test.
+
+subroutine k_xadd_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1) = a(1) + eps
+    call ext_add_x(a, b, c)
+    s = s + c(1 + mod(i, size(c)))
+end do
+end subroutine
+
+subroutine k_xadd2d_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:,:), b(:,:), c(:,:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1,1) = a(1,1) + eps
+    call ext_add2d_x(a, b, c)
+    s = s + c(1 + mod(i, size(c, 1)), 1 + mod(i/size(c, 1), size(c, 2)))
+end do
+end subroutine
+
+subroutine k_xadd3d_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:,:,:), b(:,:,:), c(:,:,:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1,1,1) = a(1,1,1) + eps
+    call ext_add3d_x(a, b, c)
+    s = s + c(1 + mod(i, size(c, 1)), 1 + mod(i/size(c, 1), size(c, 2)), 1)
+end do
+end subroutine
+
+subroutine k_xchain_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+real(dp), allocatable :: t1(:), t2(:)
+integer :: i
+allocate(t1(size(a)), t2(size(a)))
+s = 0
+do i = 1, reps
+    a(1) = a(1) + eps
+    call ext_chain_x(a, b, t1, t2, c)
+    s = s + c(1 + mod(i, size(c)))
+end do
+end subroutine
+
+subroutine k_xchainalloc_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1) = a(1) + eps
+    call ext_chain_alloc_x(a, b, c)
+    s = s + c(1 + mod(i, size(c)))
+end do
+end subroutine
+
+subroutine k_xchainlocal_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1) = a(1) + eps
+    call ext_chain_local_x(a, b, c)
+    s = s + c(1 + mod(i, size(c)))
+end do
+end subroutine
+
+subroutine k_modvar_x(a, b, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i, k
+s = 0
+k = 0
+do i = 1, reps
+    a(1) = a(1) + eps
+    mc(:) = a + b
+    call ext_tick(k)
+    s = s + mc(1 + mod(k, size(mc)))
+end do
+end subroutine
+
+subroutine k_pairs_x(p, reps, s)
+type(particle_t), intent(inout) :: p(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+real(dp), allocatable :: d(:)
+integer :: it, i, j, np
+np = size(p)
+allocate(d(size(p(1)%r)))
+s = 0
+do it = 1, reps
+    do i = 1, np
+        do j = 1, np
+            d(:) = p(j)%r - p(i)%r
+            p(i)%f = p(i)%f + eps*d
+        end do
+    end do
+    s = s + p(1 + mod(it, np))%f(1)
+end do
+end subroutine
+
+subroutine k_pairsc_x(p, reps, s)
+type(particle_t), intent(inout) :: p(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: it, i, j, np
+np = size(p)
+s = 0
+do it = 1, reps
+    do i = 1, np
+        do j = 1, np
+            p(i)%d(:) = p(j)%r - p(i)%r
+            p(i)%f = p(i)%f + eps*p(i)%d
+        end do
+    end do
+    s = s + p(1 + mod(it, np))%f(1)
+end do
+end subroutine
+
+subroutine k_concur_x(p, reps, s)
+type(particle_t), intent(inout) :: p(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: it, i, np
+np = size(p)
+s = 0
+do it = 1, reps
+    p(1)%r(1) = p(1)%r(1) + eps
+    do concurrent (i = 1:np)
+        p(i)%d(:) = p(i)%r + eps*p(i)%v
+    end do
+    s = s + p(1 + mod(it, np))%d(1)
+end do
+end subroutine
+
+subroutine k_jagged_x(rows, out, w, reps, s)
+type(row_t), intent(inout) :: rows(:), out(:)
+real(dp), intent(in) :: w(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: it, i
+s = 0
+do it = 1, reps
+    rows(1)%v(1) = rows(1)%v(1) + eps
+    do i = 1, size(rows)
+        out(i)%v(:) = w(i)*rows(i)%v
+    end do
+    s = s + out(1 + mod(it, size(out)))%v(1)
+end do
+end subroutine
+
+subroutine k_datadep_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i, k, counts(4)
+counts = size(a)
+s = 0
+do i = 1, reps
+    k = counts(1 + mod(i, 4))
+    a(1) = a(1) + eps
+    c(:) = a(1:k) + b(1:k)
+    s = s + c(1 + mod(i, k))
+end do
+end subroutine
+
+! The shape changes: an explicit size test, then `c(:) = ...`
+subroutine k_alternate_x(a, b, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i, k
+s = 0
+do i = 1, reps
+    k = size(a) - mod(i, 2)
+    a(1) = a(1) + eps
+    if (size(c) /= k) then
+        deallocate(c)
+        allocate(c(k))
+    end if
+    c(:) = a(1:k) + b(1:k)
+    s = s + c(1 + mod(i, k))
+end do
+end subroutine
+
+subroutine k_ctorv_x(a, c, reps, s)
+real(dp), allocatable, intent(inout) :: a(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i, j, m
+m = size(a)
+s = 0
+do i = 1, reps
+    a(1) = a(1) + eps
+    c(:) = [(2*a(j), j = 1, m)]
+    s = s + c(1 + mod(i, m))
+end do
+end subroutine
+
+subroutine k_charcond_x(a, c, reps, s)
+character(len=8), allocatable, intent(inout) :: a(:), c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    a(1)(1:1) = achar(65 + mod(i, 26))
+    if (mod(i, 2) == 0) then
+        c(:) = a
+    else
+        c(:) = a(size(a):1:-1)
+    end if
+    s = s + iachar(c(1 + mod(i, size(c)))(1:1))
+end do
+end subroutine
+
+subroutine k_ptrcond_x(p, c, reps, s)
+real(dp), pointer, intent(in) :: p(:)
+real(dp), allocatable, intent(inout) :: c(:)
+integer, intent(in) :: reps
+real(dp), intent(out) :: s
+integer :: i
+s = 0
+do i = 1, reps
+    p(1) = p(1) + eps
+    if (mod(i, 2) == 0) then
+        c(:) = 2*p
+    else
+        c(:) = p + 1
+    end if
+    s = s + c(1 + mod(i, size(c)))
+end do
+end subroutine
+
 end module
 
 program realloc_lhs
 use realloc_kernels
 implicit none
-character(len=32) :: name, arg
+character(len=32) :: name, base, arg
 integer :: n, reps
 real(dp), allocatable :: a(:), b(:), c(:), a2(:,:), b2(:,:), c2(:,:)
 real(dp), allocatable :: a3(:,:,:), b3(:,:,:), c3(:,:,:), w(:)
@@ -832,6 +1112,11 @@ read(arg, *) n
 call get_command_argument(3, arg)
 read(arg, *) reps
 if (n < 3) error stop "n must be at least 3"
+! A rewritten kernel `<kernel>_x` has the data of `<kernel>`
+base = name
+if (len_trim(name) > 2) then
+    if (name(len_trim(name)-1:len_trim(name)) == "_x") base = name(1:len_trim(name)-2)
+end if
 allocate(a(n), b(n), c(n))
 do i = 1, n
     a(i) = i
@@ -839,7 +1124,7 @@ do i = 1, n
 end do
 c = 0
 s = 0
-select case (trim(name))
+select case (trim(base))
 case ("ctor")
     deallocate(c)
     allocate(c(3))
@@ -1000,6 +1285,38 @@ case ("exit2d")
     call k_exit2d(a2, b2, c2, reps, s)
 case ("intabs")
     call k_intabs(ia, ib, reps, s)
+case ("xadd_x")
+    call k_xadd_x(a, b, c, reps, s)
+case ("xadd2d_x")
+    call k_xadd2d_x(a2, b2, c2, reps, s)
+case ("xadd3d_x")
+    call k_xadd3d_x(a3, b3, c3, reps, s)
+case ("xchain_x")
+    call k_xchain_x(a, b, c, reps, s)
+case ("xchainalloc_x")
+    call k_xchainalloc_x(a, b, c, reps, s)
+case ("xchainlocal_x")
+    call k_xchainlocal_x(a, b, c, reps, s)
+case ("modvar_x")
+    call k_modvar_x(a, b, reps, s)
+case ("pairs_x")
+    call k_pairs_x(p, reps, s)
+case ("pairsc_x")
+    call k_pairsc_x(p, reps, s)
+case ("concur_x")
+    call k_concur_x(p, reps, s)
+case ("jagged_x")
+    call k_jagged_x(rows, out, w, reps, s)
+case ("datadep_x")
+    call k_datadep_x(a, b, c, reps, s)
+case ("alternate_x")
+    call k_alternate_x(a, b, c, reps, s)
+case ("ctorv_x")
+    call k_ctorv_x(a, c, reps, s)
+case ("charcond_x")
+    call k_charcond_x(ca, cc, reps, s)
+case ("ptrcond_x")
+    call k_ptrcond_x(pp, c, reps, s)
 case default
     error stop "unknown kernel"
 end select

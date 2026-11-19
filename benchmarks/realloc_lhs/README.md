@@ -96,6 +96,23 @@ shape, so they are also valid without reallocation on assignment and measure
 the overhead of the shape checks. The kernels marked * require reallocation;
 configurations that disable it show them as n/a.
 
+## Rewritten kernels (`--rewritten`)
+
+The kernels above that keep a check in their hot path also come in the
+form the performance warning of a remaining check proposes, `<kernel>_x`:
+the target written as a full section, `x(:) = ...`, which is never
+reallocated and compiles to the code of `x = ...` without reallocation, or,
+for `alternate` and `xchainlocal`, whose shape changes, an explicit size
+test or allocation followed by `x(:) = ...`. `--rewritten` runs them in
+pairs, as `--apps` does, so that the third column of a configuration with
+reallocation (the rewritten form) shows what following the warning gives:
+
+```bash
+pixi run -e llvm11 bench_realloc_lhs --rewritten --placements 4 \
+    "realloc=lfortran --fast --realloc-lhs-arrays" \
+    "no-realloc=lfortran --fast --no-realloc-lhs-arrays"
+```
+
 ## Application kernels (`--apps`)
 
 `realloc_lhs_apps.f90` reproduces assignments that dominate the run time of

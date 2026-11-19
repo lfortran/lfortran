@@ -76,3 +76,68 @@ t1 = a + b
 t2 = t1*a
 c = t2 - b
 end subroutine
+
+! The forms of the procedures above that cannot reallocate, as the
+! performance warning of a remaining check proposes: `x(:) = ...`, which
+! never reallocates, to targets allocated with the shape of the value, and
+! explicit allocations of work arrays (see the `_x` kernels of
+! realloc_lhs.f90)
+subroutine ext_add_x(a, b, c)
+implicit none
+integer, parameter :: dp = kind(1.d0)
+real(dp), allocatable, intent(inout) :: a(:), b(:), c(:)
+c(:) = a + b
+end subroutine
+
+subroutine ext_add2d_x(a, b, c)
+implicit none
+integer, parameter :: dp = kind(1.d0)
+real(dp), allocatable, intent(inout) :: a(:,:), b(:,:), c(:,:)
+c(:,:) = a + b
+end subroutine
+
+subroutine ext_add3d_x(a, b, c)
+implicit none
+integer, parameter :: dp = kind(1.d0)
+real(dp), allocatable, intent(inout) :: a(:,:,:), b(:,:,:), c(:,:,:)
+c(:,:,:) = a + b
+end subroutine
+
+subroutine ext_chain_x(a, b, t1, t2, c)
+implicit none
+integer, parameter :: dp = kind(1.d0)
+real(dp), intent(in) :: a(:), b(:)
+real(dp), allocatable, intent(inout) :: t1(:), t2(:), c(:)
+t1(:) = a + b
+t2(:) = t1*a
+c(:) = t2 - b
+end subroutine
+
+subroutine ext_chain_alloc_x(a, b, c)
+implicit none
+integer, parameter :: dp = kind(1.d0)
+real(dp), intent(in) :: a(:), b(:)
+real(dp), allocatable, intent(inout) :: c(:)
+real(dp), allocatable :: t1(:), t2(:)
+allocate(t1(size(a)), t2(size(a)))
+t1(:) = a + b
+t2(:) = t1*a
+c(:) = t2 - b
+end subroutine
+
+! The work arrays allocated explicitly, `c` tested for its size
+subroutine ext_chain_local_x(a, b, c)
+implicit none
+integer, parameter :: dp = kind(1.d0)
+real(dp), intent(in) :: a(:), b(:)
+real(dp), allocatable, intent(inout) :: c(:)
+real(dp), allocatable :: t1(:), t2(:)
+allocate(t1(size(a)), t2(size(a)))
+t1(:) = a + b
+t2(:) = t1*a
+if (size(c) /= size(a)) then
+    deallocate(c)
+    allocate(c(size(a)))
+end if
+c(:) = t2 - b
+end subroutine
