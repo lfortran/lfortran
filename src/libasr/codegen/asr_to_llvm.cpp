@@ -12253,7 +12253,10 @@ public:
                 llvm::Type* elem_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::extract_type(elem_asr_type), arg->m_type_declaration,
                     module.get());
-                int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_type);
+                // An assumed-rank dummy gets the 15 dim slots of an assumed-rank
+                // C descriptor; only the dims below its run-time rank are copied
+                int n_dims = ASRUtils::is_assumed_rank_array(arg_type) ? 15 :
+                    ASRUtils::extract_n_dims_from_ttype(arg_type);
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t elem_size = data_layout.getTypeAllocSize(elem_llvm_type);
                 // Get the cached internal descriptor type
@@ -12640,10 +12643,24 @@ public:
             }
             llvm::Value* cfi_result = arr_descr->internal_to_cfi(
                 info.desc_array_type, internal_ptr, info.el_type, info.n_dims,
-                el_size, info.type_code, info.cfi_attr, false);
+                el_size, info.type_code, info.cfi_attr, info.n_dims == 15);
             // Copy CFI data back to the original CFI descriptor
             llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type, info.n_dims);
-            uint64_t cfi_size = dl.getTypeAllocSize(cfi_type);
+            llvm::Value* cfi_size = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                dl.getTypeAllocSize(cfi_type));
+            if (info.n_dims == 15) {
+                // Assumed rank: the C descriptor may hold fewer than 15 dims,
+                // so copy the header and as many dims as the rank
+                llvm::Value* rank = builder->CreateZExt(
+                    arr_descr->get_rank(info.desc_array_type, internal_ptr),
+                    llvm::Type::getInt64Ty(context));
+                cfi_size = builder->CreateAdd(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                        dl.getTypeAllocSize(arr_descr->get_cfi_type(info.el_type, 0))),
+                    builder->CreateMul(rank, llvm::ConstantInt::get(
+                        llvm::Type::getInt64Ty(context),
+                        dl.getTypeAllocSize(arr_descr->get_dimension_descriptor_type()))));
+            }
             llvm::Value* orig_cfi_i8 = builder->CreateBitCast(
                 info.original_cfi_ptr,
                 llvm::Type::getInt8Ty(context)->getPointerTo());
