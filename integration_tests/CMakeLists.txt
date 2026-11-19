@@ -6752,6 +6752,8 @@ RUN(NAME proc_ptr_46 LABELS gfortran llvm) # procedure pointer component whose i
 RUN(NAME proc_ptr_47 LABELS gfortran llvm) # same, with an internal procedure as the interface (#15004)
 RUN(NAME proc_ptr_48 LABELS gfortran llvm) # elemental specific intrinsic and nonelemental procedure targets (#16573)
 RUN(NAME proc_ptr_49 LABELS gfortran llvm) # call through a procedure pointer component of a nested component (#17334)
+RUN(NAME proc_ptr_50 LABELS gfortran llvm) # procedure(name), name declared by a procedure declaration statement (#17329)
+RUN(NAME proc_ptr_51 LABELS gfortran llvm) # procedure(name) before its interface outside a module (#17329)
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_03 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_04 LABELS gfortran llvm)
