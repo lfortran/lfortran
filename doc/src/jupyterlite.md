@@ -139,7 +139,7 @@ Three pixi environments back these tasks:
 
 | Environment | Purpose |
 | --- | --- |
-| `wasm-build` | native tools (python, cmake, re2c, bison) plus the Emscripten toolchain (`emcmake`, `emmake`, `node`) |
+| `wasm-build` | native tools (python, cmake, re2c) plus the Emscripten toolchain (`emcmake`, `emmake`, `node`) |
 | `wasm-host` | WASM *target* libraries — `llvm`, `xeus`, `xeus-lite`, `nlohmann_json` — plus the runtime `.mod` files |
 | `lite` | `jupyterlite-xeus` + `jupyter_server`, to assemble and serve the site |
 

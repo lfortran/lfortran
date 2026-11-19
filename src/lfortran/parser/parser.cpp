@@ -5,7 +5,7 @@
 #include <lfortran/ast_kind.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/ll_parser.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <libasr/diagnostics.h>
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
@@ -287,92 +287,8 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co,
         uint32_t loc_offset)
 {
-    // The LL parser; the Bison parser (parse_bison) is kept to compare it with
     LLTokens tokens;
     return ll_parse(al, s, diagnostics, tokens, co, loc_offset);
-}
-
-Result<AST::TranslationUnit_t*> parse_bison(Allocator &al, const std::string &s,
-        diag::Diagnostics &diagnostics, const CompilerOptions &co,
-        uint32_t loc_offset)
-{
-    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
-    p.m_tokenizer.loc_offset = loc_offset;
-    try {
-        if (!p.parse(s)) {
-            if (!co.continue_compilation) {
-                return Error();
-            }
-        };
-    } catch (const parser_local::ParserAbort &) {
-        Error error;
-        return error;
-    }
-    Location l;
-    if (p.result.size() == 0) {
-        l.first=0;
-        l.last=0;
-    } else {
-        l.first=p.result[0]->loc.first;
-        l.last=p.result[p.result.size()-1]->loc.last;
-    }
-    AST::TranslationUnit_t* ast = (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
-        p.result.p, p.result.size());
-    if (!co.interactive && !co.infer_mode && !co.fixed_form && is_program_needed(*ast)) {
-        try {
-            fix_program_without_program_line(al, *ast, diagnostics);
-        }  catch (const parser_local::ParserAbort &) {
-            Error error;
-            if (!co.continue_compilation) {
-                return error;
-            }
-        }
-    }
-    return ast;
-}
-
-bool Parser::parse(const std::string &input)
-{
-    inp = input;
-    if (inp.size() > 0) {
-        if (inp[inp.size()-1] != '\n') inp.append("\n");
-    } else {
-        inp.append("\n");
-    }
-    if (!fixed_form) {
-        m_tokenizer.set_string(inp);
-        try {
-            if (yyparse(*this) == 0) {
-                if (diag.has_error())
-                    return false;
-                return true;
-            }
-        } catch (const parser_local::TokenizerAbort &) {
-            return false;
-        }
-    } else {
-        f_tokenizer.set_string(inp);
-        if (!f_tokenizer.tokenize_input(diag, m_a, this->continue_compilation)) return false;
-        if (yyparse(*this) == 0) {
-            if (diag.has_error())
-                return false;
-            return true;
-        }
-    }
-
-    if (!diag.has_error()) {
-        if (this->continue_compilation) {
-            diag.add(diag::Diagnostic(
-                "Parsing unsuccessful (internal compiler error)",
-                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
-        } else {
-            diag.add(diag::Diagnostic(
-                "Parsing unsuccessful (internal compiler error)",
-                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
-            throw parser_local::ParserAbort();
-        }
-    }
-    return false;
 }
 
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
@@ -926,9 +842,8 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
          *   * Continuation lines after comment(s) or empty lines (they will be
          *     appended to the previous comment, and thus skipped)
          *
-         * After the prescanner, the tokenizer is itself a recursive descent
-         * parser that correctly identifies tokens so that the Bison
-         * parser can parse it correctly.
+         * After the prescanner, the tokenizer splits each statement into
+         * tokens for the parser.
          */
         while (true) {
             const char *p = &s[pos];
@@ -1438,71 +1353,6 @@ std::string token2text(const int token)
             std::cout << "TOKEN: " << token << std::endl;
             throw LCompilersException("Token conversion not implemented yet.");
         }
-    }
-}
-
-void Parser::handle_yyerror(const Location &loc, const std::string &msg)
-{
-    std::string message;
-    if (msg == "syntax is ambiguous") {
-        message = "Internal Compiler Error: syntax is ambiguous in the parser";
-    } else if (msg == "syntax error") {
-        int token;
-        std::string token_str;
-        // Determine the unexpected token's type:
-        if (this->fixed_form) {
-            unsigned int invalid_token = this->f_tokenizer.token_pos;
-            if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
-                message = "unknown error";
-                if (this->continue_compilation) {
-                    diag.add(diag::Diagnostic(
-                        message,
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-                } else {
-                    diag.add(diag::Diagnostic(
-                        message,
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-                    throw parser_local::ParserAbort();
-                }
-            }
-            invalid_token--;
-            LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
-            LCOMPILERS_ASSERT(invalid_token < f_tokenizer.locations.size())
-            token = f_tokenizer.tokens[invalid_token];
-            Location loc = f_tokenizer.locations[invalid_token];
-            token_str = f_tokenizer.token_at_loc(loc);
-        } else {
-            LFortran::YYSTYPE yylval_;
-            YYLTYPE yyloc_;
-            this->m_tokenizer.cur = this->m_tokenizer.tok;
-            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag, this->continue_compilation);
-            token_str = this->m_tokenizer.token();
-        }
-        // Create a nice error message
-        if (token == yytokentype::END_OF_FILE) {
-            message =  "End of file is unexpected here";
-        } else if (token == yytokentype::TK_NEWLINE) {
-            message =  "Newline is unexpected here";
-        } else {
-            std::string token_type = token2text(token);
-            if (token_str == token_type || token_str.size() == 0) {
-                message =  "Token '" + token_type + "' is unexpected here";
-            } else {
-                message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
-            }
-        }
-    } else {
-        message = "Internal Compiler Error: parser returned unknown error";
-    }
-    if (this->continue_compilation) {
-        diag.add(diag::Diagnostic(
-            message,
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-    } else {
-        diag.add(diag::Diagnostic(
-            message,
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-        throw parser_local::ParserAbort();
     }
 }
 

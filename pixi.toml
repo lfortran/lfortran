@@ -366,12 +366,8 @@ fpm = "==0.13.0"
 make = "==4.4.1"
 
 [feature.build.target.unix.dependencies]
-bison = "==3.4"
 # Caffeine's install.sh needs pkg-config (otherwise it installs Homebrew).
 pkg-config = "==0.29.2"
-
-[feature.build.target.win.dependencies]
-m2-bison = "==3.0.4"
 
 [feature.build.tasks]
 # Extra arguments are forwarded to CMake.
@@ -414,7 +410,6 @@ shell = "==0.3.0"
 ccache = "==4.14.1"
 
 [feature.wasm-build.target.unix.dependencies]
-bison = "==3.4"
 # "Build LFortran to WASM" links lfortran.js with Makefiles (see that job).
 make = "==4.4.1"
 

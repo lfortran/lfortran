@@ -1,10 +1,9 @@
-// The LL grammar of free-form Fortran.
+// The LL grammar of Fortran.
 //
 // llgen.py generates the parser from this file (see llgen.py for the format);
 // ll_parser.cpp has the rest of it: the tokens, the predicates, the functions
 // declared here as %extern and the functions that the actions call. The
-// actions build the AST with the macros of semantics.h, like the Bison
-// grammar (parser.yy) does, so both parsers return the same AST.
+// actions build the AST with the macros of semantics.h.
 //
 // A keyword is not reserved: every keyword token is also a name (NAME). The
 // generator tells the alternatives of a rule apart by the next few tokens;
@@ -618,7 +617,7 @@ rule rank_case? -> ast_t*
 // Declarations
 
 // One declaration or statement of the specification and execution parts,
-// which the grammar (like the Bison one) does not keep apart. Only a variable
+// which the grammar does not keep apart. Only a variable
 // declaration and a statement can have a label.
 rule decl_statement? -> ast_t*
     : labeled_decl_or_statement
@@ -905,7 +904,7 @@ rule type_with_kind(size_t s, decl_typeType type) -> ast_t*
 
 // `type(integer)` is the intrinsic type, not a type named `integer`. The
 // location of the type inside `procedure(real(8))` is the one of the whole
-// var_type, as in the Bison grammar.
+// var_type.
 rule var_type -> ast_t*
     : intrinsic_type_spec
     | KW_PROCEDURE "(" ")"          => ATTR_TYPE(Procedure, @$)
@@ -1372,3 +1371,309 @@ rule unit -> ast_t*
     | block_data
     | subprogram_or_item
     ;
+
+// ----------------------------------------------------------------------------
+// Tokens
+//
+// Every token of the tokenizers is declared here, in the order of `enum
+// yytokentype` (tokens.h, generated). `<member>` is the member of YYSTYPE
+// that has the value of the token; a string such as "+" is another name of
+// the token for the rules above. A %keyword is a token that is also a name
+// (NAME).
+//
+// If this list is updated, update also token2text() in parser.cpp.
+
+
+%token END_OF_FILE 0
+%token TK_NEWLINE
+%token <string> TK_NAME
+%token <string> TK_DEF_OP
+%token <int_suffix> TK_INTEGER
+%token <n> TK_LABEL
+%token <string> TK_REAL
+%token <string> TK_BOZ_CONSTANT
+
+%token TK_PLUS "+"
+%token TK_MINUS "-"
+%token TK_STAR "*"
+%token TK_SLASH "/"
+%token TK_COLON ":"
+%token TK_SEMICOLON ";"
+%token TK_COMMA ","
+%token TK_EQUAL "="
+%token TK_LPAREN "("
+%token TK_RPAREN ")"
+%token TK_LBRACKET "["
+%token TK_RBRACKET "]"
+%token TK_LBRACE "{"
+%token TK_RBRACE "}"
+%token TK_RBRACKET_OLD "/)"
+%token TK_PERCENT "%"
+%token TK_VBAR "|"
+%token TK_QUESTION "?"
+
+%token <str_prefix> TK_STRING
+%token <string> TK_COMMENT
+%token <string> TK_EOLCOMMENT
+%token <string> TK_PRAGMA_DECL
+%token <string> TK_OMP
+%token <string> TK_OMP_END
+
+%token TK_DBL_DOT ".."
+%token TK_DBL_COLON "::"
+%token TK_POW "**"
+%token TK_CONCAT "//"
+%token TK_ARROW "=>"
+%token TK_COLON_EQUAL ":="
+
+%token TK_EQ "=="
+%token TK_NE "/="
+%token TK_LT "<"
+%token TK_LE "<="
+%token TK_GT ">"
+%token TK_GE ">="
+
+%token TK_NOT ".not."
+%token TK_AND ".and."
+%token TK_OR ".or."
+%token TK_XOR ".xor."
+%token TK_EQV ".eqv."
+%token TK_NEQV ".neqv."
+%token TK_NIL ".nil."
+
+%token <string> TK_TRUE ".true."
+%token <string> TK_FALSE ".false."
+
+%token <string> TK_FORMAT
+
+// Keywords
+
+%keyword <string> KW_ABSTRACT
+%keyword <string> KW_ALL
+%keyword <string> KW_ALLOCATABLE
+%keyword <string> KW_ALLOCATE
+%keyword <string> KW_ASSIGN
+%keyword <string> KW_ASSIGNMENT
+%keyword <string> KW_ASSOCIATE
+%keyword <string> KW_ASYNCHRONOUS
+%keyword <string> KW_BACKSPACE
+%keyword <string> KW_BIND
+%keyword <string> KW_BLOCK
+%keyword <string> KW_BYTE
+%keyword <string> KW_CALL
+%keyword <string> KW_CASE
+%keyword <string> KW_CHANGE
+%token <string> KW_CHANGE_TEAM
+%keyword <string> KW_CHARACTER
+%keyword <string> KW_CLASS
+%keyword <string> KW_CLOSE
+%keyword <string> KW_CODIMENSION
+%keyword <string> KW_COMMON
+%keyword <string> KW_COMPLEX
+%keyword <string> KW_CONCURRENT
+%keyword <string> KW_CONTAINS
+%keyword <string> KW_CONTIGUOUS
+%keyword <string> KW_CONTINUE
+%keyword <string> KW_CRITICAL
+%keyword <string> KW_CYCLE
+%keyword <string> KW_DATA
+%keyword <string> KW_DEALLOCATE
+%keyword <string> KW_DEFAULT
+%keyword <string> KW_DEFERRED
+%keyword <string> KW_DIMENSION
+%keyword <string> KW_DO
+%keyword <string> KW_DOWHILE
+%keyword <string> KW_DOUBLE
+%keyword <string> KW_DOUBLE_PRECISION
+%keyword <string> KW_DOUBLE_COMPLEX
+%keyword <string> KW_ELEMENTAL
+%keyword <string> KW_ELSE
+%keyword <string> KW_ELSEIF
+%keyword <string> KW_ELSEWHERE
+
+%keyword <string> KW_END
+
+%token <string> KW_END_PROGRAM
+%keyword <string> KW_ENDPROGRAM
+
+%token <string> KW_END_MODULE
+%keyword <string> KW_ENDMODULE
+
+%token <string> KW_END_SUBMODULE
+%keyword <string> KW_ENDSUBMODULE
+
+%token <string> KW_END_BLOCK
+%keyword <string> KW_ENDBLOCK
+
+%token <string> KW_END_BLOCK_DATA
+%keyword <string> KW_ENDBLOCKDATA
+
+%token <string> KW_END_SUBROUTINE
+%keyword <string> KW_ENDSUBROUTINE
+
+%token <string> KW_END_FUNCTION
+%keyword <string> KW_ENDFUNCTION
+
+%token <string> KW_END_PROCEDURE
+%keyword <string> KW_ENDPROCEDURE
+
+%token <string> KW_END_ENUM
+%keyword <string> KW_ENDENUM
+
+%token <string> KW_END_SELECT
+%keyword <string> KW_ENDSELECT
+
+%token <string> KW_END_IF
+%keyword <string> KW_ENDIF
+
+%token <string> KW_END_INTERFACE
+%keyword <string> KW_ENDINTERFACE
+
+%token <string> KW_END_TYPE
+%keyword <string> KW_ENDTYPE
+
+%token <string> KW_END_ASSOCIATE
+%keyword <string> KW_ENDASSOCIATE
+
+%token <string> KW_END_FORALL
+%keyword <string> KW_ENDFORALL
+
+%token <string> KW_END_DO
+%keyword <string> KW_ENDDO
+
+%token <string> KW_END_WHERE
+%keyword <string> KW_ENDWHERE
+
+%token <string> KW_END_CRITICAL
+%keyword <string> KW_ENDCRITICAL
+
+%token <string> KW_END_FILE
+%keyword <string> KW_ENDFILE
+
+%token <string> KW_END_TEAM
+%token <string> KW_ENDTEAM
+
+%keyword <string> KW_ENTRY
+%keyword <string> KW_ENUM
+%keyword <string> KW_ENUMERATOR
+%keyword <string> KW_EQUIVALENCE
+%keyword <string> KW_ERRMSG
+%keyword <string> KW_ERROR
+%keyword <string> KW_EVENT
+%keyword <string> KW_EXIT
+%keyword <string> KW_EXTENDS
+%keyword <string> KW_EXTENSIBLE
+%keyword <string> KW_EXTERNAL
+%keyword <string> KW_FILE
+%keyword <string> KW_FINAL
+%keyword <string> KW_FLUSH
+%keyword <string> KW_FORALL
+%keyword <string> KW_FORMATTED
+%keyword <string> KW_FORM
+%keyword <string> KW_FORM_TEAM
+%keyword <string> KW_FUNCTION
+%keyword <string> KW_GENERIC
+%keyword <string> KW_GO
+%keyword <string> KW_GOTO
+%keyword <string> KW_IF
+%keyword <string> KW_IMAGES
+%keyword <string> KW_IMPLICIT
+%keyword <string> KW_IMPORT
+%keyword <string> KW_IMPURE
+%keyword <string> KW_IN
+%keyword <string> KW_INCLUDE
+%keyword <string> KW_INOUT
+%token <string> KW_IN_OUT
+%keyword <string> KW_INQUIRE
+%keyword <string> KW_INSTANTIATE
+%keyword <string> KW_INTEGER
+%keyword <string> KW_INTENT
+%keyword <string> KW_INTERFACE
+%keyword <string> KW_INTRINSIC
+%keyword <string> KW_IS
+%keyword <string> KW_KIND
+%keyword <string> KW_LEN
+%keyword <string> KW_LOCAL
+%keyword <string> KW_LOCAL_INIT
+%keyword <string> KW_LOGICAL
+%keyword <string> KW_MEMORY
+%keyword <string> KW_MODULE
+%keyword <string> KW_MOLD
+%keyword <string> KW_NAME
+%keyword <string> KW_NAMELIST
+%keyword <string> KW_NEW_INDEX
+%keyword <string> KW_NOPASS
+%keyword <string> KW_NON_INTRINSIC
+%keyword <string> KW_NON_OVERRIDABLE
+%keyword <string> KW_NON_RECURSIVE
+%keyword <string> KW_NONE
+%keyword <string> KW_NULLIFY
+%keyword <string> KW_ONLY
+%keyword <string> KW_OPEN
+%keyword <string> KW_OPERATOR
+%keyword <string> KW_OPTIONAL
+%keyword <string> KW_OUT
+%keyword <string> KW_PARAMETER
+%keyword <string> KW_PASS
+%keyword <string> KW_PAUSE
+%keyword <string> KW_POINTER
+%keyword <string> KW_POST
+%keyword <string> KW_PRECISION
+%keyword <string> KW_PRINT
+%keyword <string> KW_PRIVATE
+%keyword <string> KW_PROCEDURE
+%keyword <string> KW_PROGRAM
+%keyword <string> KW_PROTECTED
+%keyword <string> KW_PUBLIC
+%keyword <string> KW_PURE
+%keyword <string> KW_QUIET
+%keyword <string> KW_RANK
+%keyword <string> KW_READ
+%keyword <string> KW_REAL
+%keyword <string> KW_RECURSIVE
+%keyword <string> KW_REDUCE
+%keyword <string> KW_RESULT
+%keyword <string> KW_RETURN
+%keyword <string> KW_REWIND
+%keyword <string> KW_SAVE
+%keyword <string> KW_SELECT
+%keyword <string> KW_SELECT_CASE
+%keyword <string> KW_SELECT_RANK
+%keyword <string> KW_SELECT_TYPE
+%keyword <string> KW_SEQUENCE
+%keyword <string> KW_SHARED
+%keyword <string> KW_SOURCE
+%keyword <string> KW_STAT
+%keyword <string> KW_STOP
+%keyword <string> KW_SUBMODULE
+%keyword <string> KW_SUBROUTINE
+%keyword <string> KW_SYNC
+%token <string> KW_SYNC_ALL
+%token <string> KW_SYNC_IMAGES
+%token <string> KW_SYNC_MEMORY
+%token <string> KW_SYNC_TEAM
+%keyword <string> KW_TARGET
+%keyword <string> KW_TEAM
+%keyword <string> KW_TEAM_NUMBER
+%keyword <string> KW_REQUIREMENT
+%keyword <string> KW_REQUIRE
+%keyword <string> KW_TEMPLATE
+%keyword <string> KW_THEN
+%keyword <string> KW_TO
+%keyword <string> KW_TYPE
+%keyword <string> KW_UNFORMATTED
+%keyword <string> KW_USE
+%keyword <string> KW_VALUE
+%keyword <string> KW_VOLATILE
+%keyword <string> KW_WAIT
+%keyword <string> KW_WHERE
+%keyword <string> KW_WHILE
+%keyword <string> KW_WRITE
+
+// LFortran specific
+%keyword <string> KW_LIST
+%keyword <string> KW_SET
+%keyword <string> KW_DICT
+%keyword <string> KW_TUPLE
+%token <string> KW_UNION_TYPE
+%token <string> KW_END_UNION_TYPE

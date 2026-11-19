@@ -17,7 +17,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 
-// This is only used in parser.tab.cc, nowhere else, so we simply include
+// This is only used in ll_parser.cpp, nowhere else, so we simply include
 // everything from LCompilers::LFortran::AST to save typing:
 using namespace LCompilers::LFortran::AST;
 using LCompilers::LFortran::StrPrefix;

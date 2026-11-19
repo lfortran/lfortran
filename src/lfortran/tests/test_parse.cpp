@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <lfortran/parser/parser.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <libasr/bigint.h>
 
 using LCompilers::LFortran::parse;
@@ -1304,11 +1304,11 @@ TEST_CASE("Tokenizer") {
 
 TEST_CASE("Every token converts to text") {
     // The interactive prompt and --show-tokens convert every token with
-    // token2text(). UMINUS is the first precedence-only symbol after the
-    // tokens declared in parser.yy.
+    // token2text(). TOKEN_END comes after the tokens declared in
+    // ll_parser.ll.
     using LCompilers::LFortran::token2text;
     CHECK(token2text(tt::END_OF_FILE) == "end of file");
-    for (int token = tt::TK_NEWLINE; token < tt::UMINUS; token++) {
+    for (int token = tt::TK_NEWLINE; token < tt::TOKEN_END; token++) {
         CAPTURE(token);
         CHECK_NOTHROW(token2text(token));
     }

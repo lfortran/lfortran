@@ -5,7 +5,6 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 # We don't execute this if we have a tarball
 if (LFORTRAN_BUILD_ALL)
     find_program(RE2C re2c REQUIRED)
-    find_program(BISON bison REQUIRED)
     # NAMES_PER_DIR: the first PATH entry with either name wins, so an active
     # environment's `python` is preferred over a system `python3`.
     find_program(LFORTRAN_PYTHON NAMES python3 python NAMES_PER_DIR REQUIRED
@@ -19,7 +18,7 @@ if (LFORTRAN_BUILD_ALL)
         DOC "Bash-compatible shell (Prefix shell or bash) that runs build0.sh")
     message(STATUS "Running build0.sh with ${LFORTRAN_SHELL}")
     # Both shells accept --norc; Bash only reads rc files interactively anyway.
-    execute_process(COMMAND "${CMAKE_COMMAND}" -E env "RE2C=${RE2C}" "BISON=${BISON}" "PYTHON=${LFORTRAN_PYTHON}" "${LFORTRAN_SHELL}" "--norc" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E env "RE2C=${RE2C}" "PYTHON=${LFORTRAN_PYTHON}" "${LFORTRAN_SHELL}" "--norc" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
     if (NOT _BUILD0_EXIT EQUAL 0)
         message(FATAL_ERROR "Running build0.sh failed (see error above)")
     endif ()

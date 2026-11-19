@@ -20,5 +20,5 @@
 
 spack:
   # add package specs to the `specs` list
-  specs: [python@3, cmake, llvm@14.0.0, py-toml@0.10.2, re2c@2.2, bison@3.4.2]
+  specs: [python@3, cmake, llvm@14.0.0, py-toml@0.10.2, re2c@2.2]
   view: true

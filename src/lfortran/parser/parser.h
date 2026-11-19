@@ -12,45 +12,11 @@
 
 namespace LCompilers::LFortran {
 
-class Parser
-{
-public:
-    std::string inp;
-
-public:
-    diag::Diagnostics &diag;
-    Allocator &m_a;
-    Tokenizer m_tokenizer;
-    FixedFormTokenizer f_tokenizer;
-    Vec<AST::ast_t*> result;
-    bool fixed_form;
-    bool continue_compilation;
-
-    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false,
-        const bool &continue_compilation=false, const bool &openmp=false)
-            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form},
-            continue_compilation(continue_compilation) {
-        m_tokenizer.openmp_enabled = openmp;
-        result.reserve(al, 32);
-    }
-
-    bool parse(const std::string &input);
-    void handle_yyerror(const Location &loc, const std::string &msg);
-};
-
 // Parses Fortran code to AST
 // `loc_offset` is added to every location the parse produces. Interactive
 // mode gives each cell a range of its own that way; everything else parses a
 // whole file and leaves it at 0.
 Result<AST::TranslationUnit_t*> parse(Allocator &al,
-    const std::string &s,
-    diag::Diagnostics &diagnostics,
-    const CompilerOptions &co,
-    uint32_t loc_offset=0);
-
-// The same with the Bison parser, which the compiler does not use any more;
-// it is kept to compare the LL parser with
-Result<AST::TranslationUnit_t*> parse_bison(Allocator &al,
     const std::string &s,
     diag::Diagnostics &diagnostics,
     const CompilerOptions &co,

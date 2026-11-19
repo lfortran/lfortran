@@ -310,7 +310,7 @@ Do not push an empty commit. Then classify a real failure:
   `0001-cmake-add-generated-header-dir-to-wasm-runtime-includes.patch`. List
   it under `source[0].patches` with a comment saying it is to be upstreamed.
   Paths are relative to the tarball root. If a fix touches a generator
-  input (`parser.yy`, `ASR.asdl`, ...), patch the generated file that ships in
+  input (`ll_parser.ll`, `ASR.asdl`, ...), patch the generated file that ships in
   the tarball as well, because the feedstock never regenerates sources.
   The Linux build compiles the test suite as part of `make all` against the
   glibc 2.17 sysroot, even when the runner's glibc is newer. A GNU function

@@ -13,7 +13,7 @@ Note: The prescanner removes CR from regular code, but not from string literals.
 
 #include <lfortran/parser/parser_exception.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <lfortran/parser/tokenizer.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
@@ -268,7 +268,6 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"where", KW_WHERE},
     {"while", KW_WHILE},
     {"write", KW_WRITE},
-    {"uminus", UMINUS}
     };
     return map;
 }

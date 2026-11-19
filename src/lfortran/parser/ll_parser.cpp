@@ -15,8 +15,7 @@ class `LL` below. This file has the rest of the parser:
 * the functions that the actions of the grammar call, where a macro of
   semantics.h alone is not enough.
 
-The AST is built by the same macros and functions as the Bison parser
-(semantics.h), so both parsers return the same AST, including locations.
+The AST is built by the macros and functions of semantics.h.
 
 Syntax errors: a rule that cannot go on throws `LLUnsupported` at the token
 that it did not expect, and the error is reported there. With
@@ -27,7 +26,7 @@ on with the declarations and statements of the program unit it is in.
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/tokenizer.h>
 #include <lfortran/parser/fixedform_tokenizer.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <lfortran/parser/ll_parser.h>
 #include <lfortran/ast.h>
 #include <lfortran/ast_kind.h>
@@ -37,8 +36,8 @@ on with the declarations and statements of the program unit it is in.
 
 namespace {
 
-// semantics.h is written to be included once, in the Bison parser. Including
-// it here in an unnamed namespace gives this file its own copy of everything.
+// semantics.h is written to be included once. Including it here in an
+// unnamed namespace gives this file its own copy of everything.
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
@@ -156,8 +155,7 @@ struct LL {
     }
 
     // After a syntax error: skips to the end of the statement and over one
-    // separator. Errors in the next two tokens are not reported (as with
-    // the Bison parser, which the messages are compared with).
+    // separator. Errors in the next two tokens are not reported.
     void recover() {
         while (!is_sep(K[i])) {
             if (K[i] == END_OF_FILE) throw LLStop();
@@ -699,7 +697,7 @@ struct LL {
                 }
                 if (K[i] == TK_PRAGMA_DECL) {
                     // A pragma that is not valid is reported, and is a null
-                    // declaration (as in the Bison parser)
+                    // declaration
                     LIST_ADD(v, pragma_decl());
                     continue;
                 }
