@@ -1,71 +1,122 @@
 #!/usr/bin/env python3
 """
 Generates a recursive descent parser in C++ from an LL grammar with
-predicates and actions.
+predicates.
 
-    llgen.py grammar.ll output.cpp
+    llgen.py grammar.ll parser.yy output.h [--report]
 
-The grammar file consists of:
+The output is a list of member functions, one per rule, to be included in the
+class of the parser, which is written by hand (ll_parser.cpp) and provides the
+tokens, the predicates and the functions that the grammar declares as
+`%extern`. The names of the tokens, their aliases ("(" for TK_LPAREN) and the
+types of their values are read from the Bison grammar (parser.yy).
 
-    %code {{            C++ copied to the output as it is: the beginning and
-    ...                 the end of the file, and member functions written by
-    }}                  hand (predicates and helpers).
+Declarations
+------------
 
-    %first NAME: T...   The tokens that a hand-written function can start
-                        with (NAME is any name), for use in a condition.
+    %extern NAME -> TYPE [first: T...] [token: T]
+        A function written by hand that the rules can call. `first` lists
+        the tokens it can start with (NAME is any name, SEP any separator);
+        `token` says that it takes exactly one token of that kind. Without
+        them, it can start with anything.
 
-    %operators NAME OPERAND     A function NAME(min_prec) that parses binary
-        left 8 TK_PLUS { ... }  operators by precedence climbing; operands are
-        right 11 TK_POW { ... } parsed by OPERAND(). An action combines `x`
-    %end                        and `y` into `x`; `op` is the operator token.
+    %predicate NAME
+        A condition written by hand, to be used as `&NAME` or `!NAME`.
 
-    rule NAME(PARAMS) -> TYPE [try]
+    %operators NAME OPERAND
+        left 8 "+" => ADD(x, y, @$)
+        right 11 "**" => POW(x, y, @$)
+    %end
+        A function NAME(min_prec) that parses binary operators by precedence
+        climbing; the operands are parsed by OPERAND. An action combines the
+        operands `x` and `y`; `$op` is the value of the operator token.
+
+Rules
+-----
+
+    rule NAME -> TYPE
         : ALTERNATIVE
         | ALTERNATIVE
         ;
 
-Each rule becomes one member function. An alternative is a sequence of:
+    rule NAME?(PARAMETERS) -> TYPE      `?`: the value is null if the rule
+                                        does not start at the current token
 
-    TK_X  KW_X  "("     a token (a string is an alias, see ALIASES)
-    name(args)          a call of a rule or of a hand-written function
-    x=ITEM              declares `x`: the value of a call, or the index of a
-                        token (its value is V[x], its location Lc[x])
-    x<-ITEM             assigns to an `x` declared before
+An alternative is a sequence of:
+
+    KW_X  TK_X  "("     a token
+    name  name(args)    a call of a rule or of an %extern function; the
+                        argument `@` passes the start of the calling rule,
+                        to a parameter `size_t s` of the called rule, which
+                        then continues the construct of the caller
+    x=ITEM              keeps the value of a call in `x`, or the token:
+                        `$x` is then its value and `@x` its location
+    ITEM?               optional: `x` is null (or false, for a token) if it
+                        is absent
+    ITEM*               repeated, a rule or function with `?` semantics: `x`
+                        is the list of the values
+    ITEM % ","          a list of one or more ITEMs separated by a token
     ( A | B )           a choice; with `?` optional, with `*` repeated
-    TK_X?               an optional token; `x=TK_X?` declares a bool
-    { ... }             C++ code (an action); `@$` is the location from the
-                        first token of the rule to the last token consumed
-    &{ ... }            a predicate: a C++ condition that must hold
+    &[ T1 T2 | T3 ]     a predicate on the next tokens: T1 then T2, or T3;
+                        `_` is any token, NAME any name, SEP any separator
+    ![ ... ]            the negation
+    &name  !name        a %predicate, or its negation
+    ^                   marks the end of the location `@^`
+    => EXPRESSION       the value of the rule: a C++ expression, usually a
+                        call of a macro of semantics.h. `@$` is the location
+                        from the first token of the rule to the last token
+                        consumed, `@^` the same up to the mark `^`.
 
-The generator decides which alternative to take from the tokens that each
-one can start with (its FIRST set) and from the predicates at its beginning,
-trying the alternatives in the order they are written. Large rules become a
-`switch` on the current token. If no alternative applies, a `try` rule
-returns a null value without consuming anything; any other rule gives up
-(`unsup()`), as it does when an expected token is missing.
+An alternative that ends with a call (and has no `=>`) has the value of
+that call.
+
+Choosing an alternative
+-----------------------
+
+The alternatives are tried in the order they are written. The generator
+computes the sequences of tokens that each alternative can start with, as
+far as needed (at most MAX_LOOKAHEAD tokens) to tell it apart from the
+alternatives after it, and tests those tokens, together with the predicates
+at the beginning of the alternative. An alternative that can never be taken
+is an error. With `--report`, the generator lists the alternatives that start
+with a keyword which a later alternative would take as a name, and that have
+no predicate: there the order of the alternatives decides.
 """
 
 import re
 import sys
 
-ALIASES = {
-    "(": "TK_LPAREN", ")": "TK_RPAREN", ",": "TK_COMMA", "=": "TK_EQUAL",
-    "::": "TK_DBL_COLON", ":": "TK_COLON", "=>": "TK_ARROW", "*": "TK_STAR",
-    "/": "TK_SLASH", "[": "TK_LBRACKET", "]": "TK_RBRACKET",
-    "{": "TK_LBRACE", "}": "TK_RBRACE", "%": "TK_PERCENT", "+": "TK_PLUS",
-    "-": "TK_MINUS", "//": "TK_CONCAT", "?": "TK_QUESTION",
-    "..": "TK_DBL_DOT", "/)": "TK_RBRACKET_OLD",
-}
-
-TOKEN_RE = re.compile(r"^(TK_|KW_)[A-Z0-9_]+$|^END_OF_FILE$")
+MAX_LOOKAHEAD = 5
+MAX_SEQUENCES = 64    # of tokens, in the test of one alternative
+END = "..."         # in a token sequence: anything can follow
+SEP_TOKENS = {"TK_NEWLINE", "TK_COMMENT", "TK_EOLCOMMENT", "TK_SEMICOLON"}
 
 
 def error(line, msg):
     sys.exit("llgen: line %d: %s" % (line, msg))
 
 
-def is_name_token(t):
-    return t == "TK_NAME" or (t.startswith("KW_") and t != "KW_IF_STMT")
+# ----------------------------------------------------------------------------
+# Tokens, from the Bison grammar
+
+class Tokens:
+    def __init__(self, filename):
+        self.type = {}      # token -> the member of YYSTYPE with its value
+        self.alias = {}     # "(" -> TK_LPAREN
+        for l in open(filename, encoding="utf-8"):
+            m = re.match(r'%token\s+(?:<(\w+)>\s+)?(\w+)(?:\s+"([^"]+)")?', l)
+            if m:
+                self.type[m.group(2)] = m.group(1)
+                if m.group(3):
+                    self.alias[m.group(3)] = m.group(2)
+
+        order = list(self.type)
+        last = order.index("KW_WRITE")
+        self.names = {t for n, t in enumerate(order) if t == "TK_NAME"
+            or (t.startswith("KW_") and n <= last and t != "KW_IF_STMT")}
+
+    def is_name(self, t):
+        return t in self.names
 
 
 # ----------------------------------------------------------------------------
@@ -74,24 +125,16 @@ def is_name_token(t):
 class Tok:
     def __init__(self, name, line):
         self.name, self.line = name, line
-        self.cap = self.assign = None
+        self.cap = None
         self.optional = False
 
 
 class Call:
     def __init__(self, name, args, line):
         self.name, self.args, self.line = name, args, line
-        self.cap = self.assign = None
-
-
-class Code:
-    def __init__(self, text, line):
-        self.text, self.line = text, line
-
-
-class Pred:
-    def __init__(self, text, line):
-        self.text, self.line = text, line
+        self.cap = None
+        self.suffix = ""        # "", "?", "*" or "%"
+        self.sep = None
 
 
 class Group:
@@ -99,234 +142,280 @@ class Group:
         self.alts, self.suffix, self.line = alts, suffix, line
 
 
+class Pred:
+    def __init__(self, neg, name, pattern, line):
+        self.neg, self.name, self.pattern, self.line = neg, name, pattern, line
+
+
+class Mark:
+    def __init__(self, line):
+        self.line = line
+
+
+class Result:
+    def __init__(self, expr, line):
+        self.expr, self.line = expr, line
+
+
 class Rule:
-    def __init__(self, name, params, type, is_try, alts, line):
+    def __init__(self, name, params, type, nullable, alts, line):
         self.name, self.params, self.type = name, params, type
-        self.is_try, self.alts, self.line = is_try, alts, line
+        self.nullable, self.alts, self.line = nullable, alts, line
 
 
-class First:
-    """The tokens a sequence can start with, and the predicates before them"""
-    def __init__(self):
-        self.tokens = set()
-        self.name = False       # any name
-        self.any = False        # unknown: every token
-        self.preds = []
-
-    def merge(self, other):
-        self.tokens |= other.tokens
-        self.name |= other.name
-        self.any |= other.any
+class Extern:
+    def __init__(self, type, first, single):
+        self.type, self.first, self.single = type, first, single
 
 
 # ----------------------------------------------------------------------------
 # Reading the grammar
 
-def skip_code(s, i, line):
-    """`i` is after an opening brace; returns the index after its match"""
-    depth = 1
-    n = len(s)
-    while i < n:
-        c = s[i]
-        if c == "{":
-            depth += 1
-        elif c == "}":
-            depth -= 1
-            if depth == 0:
-                return i + 1
-        elif c == '"' or c == "'":
-            i += 1
-            while i < n and s[i] != c:
-                if s[i] == "\\":
-                    i += 1
-                i += 1
-        elif s.startswith("//", i):
-            while i < n and s[i] != "\n":
-                i += 1
-            continue
-        i += 1
-    error(line, "unterminated { }")
-
-
-def lex(s, line):
-    """Tokenizes the body of a rule into (kind, value, line)"""
-    out = []
-    i = 0
-    n = len(s)
-    while i < n:
-        c = s[i]
-        if c == "\n":
-            line += 1
-            i += 1
-        elif c.isspace():
-            i += 1
-        elif s.startswith("//", i):
-            while i < n and s[i] != "\n":
-                i += 1
-        elif c == "{" or (c == "&" and s.startswith("&{", i)):
-            start = i + (1 if c == "{" else 2)
-            end = skip_code(s, start, line)
-            out.append(("code" if c == "{" else "pred", s[start:end-1], line))
-            line += s.count("\n", i, end)
-            i = end
-        elif c == '"':
-            j = s.index('"', i + 1)
-            lit = s[i+1:j]
-            if lit not in ALIASES:
-                error(line, 'unknown token "%s"' % lit)
-            out.append(("tok", ALIASES[lit], line))
-            i = j + 1
-        elif c.isalpha() or c == "_":
-            j = i
-            while j < n and (s[j].isalnum() or s[j] == "_"):
-                j += 1
-            word = s[i:j]
-            if TOKEN_RE.match(word):
-                out.append(("tok", word, line))
-                i = j
-            elif j < n and s[j] == "(":
-                depth = 0
-                k = j
-                while True:
-                    if s[k] == "(":
-                        depth += 1
-                    elif s[k] == ")":
-                        depth -= 1
-                        if depth == 0:
-                            break
-                    k += 1
-                out.append(("call", (word, s[j+1:k]), line))
-                line += s.count("\n", i, k)
-                i = k + 1
-            else:
-                out.append(("ident", word, line))
-                i = j
-        elif s.startswith("<-", i):
-            out.append(("sym", "<-", line))
-            i += 2
-        elif c in "()?*|=":
-            out.append(("sym", c, line))
-            i += 1
-        else:
-            error(line, "unexpected character %r" % c)
-    return out
-
-
 class BodyParser:
-    def __init__(self, toks):
-        self.t = toks
+    def __init__(self, text, line, tokens):
+        self.s, self.line, self.tokens = text, line, tokens
         self.i = 0
 
-    def peek(self, kind=None, value=None):
-        if self.i >= len(self.t):
-            return False
-        k, v, _ = self.t[self.i]
-        return (kind is None or k == kind) and (value is None or v == value)
+    def skip(self):
+        s = self.s
+        while self.i < len(s):
+            c = s[self.i]
+            if c == "\n":
+                self.line += 1
+                self.i += 1
+            elif c.isspace():
+                self.i += 1
+            elif s.startswith("//", self.i):
+                while self.i < len(s) and s[self.i] != "\n":
+                    self.i += 1
+            else:
+                break
 
-    def line(self):
-        if self.i < len(self.t):
-            return self.t[self.i][2]
-        return self.t[-1][2]
+    def peek(self, text):
+        self.skip()
+        return self.s.startswith(text, self.i)
+
+    def take(self, text):
+        if self.peek(text):
+            self.i += len(text)
+            return True
+        return False
+
+    def token(self):
+        """A token name or an alias in quotes, at the current position"""
+        self.skip()
+        s = self.s
+        if s[self.i] == '"':
+            j = s.index('"', self.i + 1)
+            lit = s[self.i+1:j]
+            if lit not in self.tokens.alias:
+                error(self.line, 'unknown token "%s"' % lit)
+            self.i = j + 1
+            return self.tokens.alias[lit]
+        m = re.compile(r"\w+").match(s, self.i)
+        if not m:
+            error(self.line, "expected a token")
+        self.i = m.end()
+        return m.group(0)
 
     def alts(self):
         alts = [self.seq()]
-        while self.peek("sym", "|"):
-            self.i += 1
+        while self.take("|"):
             alts.append(self.seq())
         return alts
 
     def seq(self):
         items = []
-        while self.i < len(self.t) and not self.peek("sym", "|") \
-                and not self.peek("sym", ")"):
+        while True:
+            self.skip()
+            if self.i >= len(self.s) or self.s[self.i] in "|)":
+                return items
             items.append(self.item())
-        return items
+            if isinstance(items[-1], Result):
+                self.skip()
+                if self.i < len(self.s) and self.s[self.i] not in "|)":
+                    error(self.line, "nothing can follow `=> ...`")
+                return items
+
+    def balanced(self, open, close):
+        """The text up to the matching `close`; the position is after the
+        `open`"""
+        s = self.s
+        depth = 1
+        j = self.i
+        while depth > 0:
+            if j >= len(s):
+                error(self.line, "unbalanced " + open)
+            if s[j] == open:
+                depth += 1
+            elif s[j] == close:
+                depth -= 1
+            elif s[j] == '"':
+                j = s.index('"', j + 1)
+            j += 1
+        text = s[self.i:j-1]
+        self.line += text.count("\n")
+        self.i = j
+        return text
+
+    def pattern(self):
+        text = self.balanced("[", "]")
+        p = BodyParser(text, self.line, self.tokens)
+        alts = []
+        cur = []
+        while True:
+            p.skip()
+            if p.i >= len(text):
+                break
+            if p.take("|"):
+                alts.append(cur)
+                cur = []
+            else:
+                t = p.token()
+                if t not in ("_", "NAME", "SEP") and t not in self.tokens.type:
+                    error(self.line, "unknown token %s" % t)
+                cur.append(t)
+        alts.append(cur)
+        return alts
+
+    def result(self):
+        """The expression after `=>`: to the end of the line on which its
+        parentheses are balanced"""
+        s = self.s
+        self.skip()
+        j = self.i
+        depth = 0
+        while j < len(s):
+            c = s[j]
+            if c in "([{":
+                depth += 1
+            elif c in ")]}":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif c == '"':
+                j = s.index('"', j + 1)
+            elif c == "\n" and depth == 0:
+                break
+            elif c == "|" and depth == 0 and s[j-1] != "|" \
+                    and s[j+1:j+2] != "|":
+                break
+            j += 1
+        text = s[self.i:j].strip()
+        self.line += s.count("\n", self.i, j)
+        self.i = j
+        return " ".join(text.split())
 
     def item(self):
-        kind, value, line = self.t[self.i]
-        cap = assign = None
-        if kind == "ident":
+        self.skip()
+        s = self.s
+        line = self.line
+        if self.take("=>"):
+            return Result(self.result(), line)
+        if self.take("^"):
+            return Mark(line)
+        if s.startswith("&[", self.i) or s.startswith("![", self.i):
+            neg = s[self.i] == "!"
+            self.i += 2
+            return Pred(neg, None, self.pattern(), line)
+        if s[self.i] in "&!":
+            neg = s[self.i] == "!"
             self.i += 1
-            if self.peek("sym", "="):
-                cap = value
-            elif self.peek("sym", "<-"):
-                assign = value
-            else:
-                error(line, "unexpected name `%s`" % value)
-            self.i += 1
-            kind, value, line = self.t[self.i]
-        self.i += 1
-        if kind == "tok":
-            it = Tok(value, line)
-            if self.peek("sym", "?"):
-                self.i += 1
-                it.optional = True
-        elif kind == "call":
-            it = Call(value[0], value[1], line)
-        elif kind == "code":
-            return Code(value, line)
-        elif kind == "pred":
-            return Pred(value, line)
-        elif kind == "sym" and value == "(":
+            m = re.compile(r"\w+").match(s, self.i)
+            self.i = m.end()
+            return Pred(neg, m.group(0), None, line)
+        if self.take("("):
             alts = self.alts()
-            if not self.peek("sym", ")"):
-                error(self.line(), "expected )")
-            self.i += 1
+            if not self.take(")"):
+                error(self.line, "expected )")
             suffix = ""
-            if self.peek("sym", "?") or self.peek("sym", "*"):
-                suffix = self.t[self.i][1]
+            if s.startswith("?", self.i) or s.startswith("*", self.i):
+                suffix = s[self.i]
                 self.i += 1
             return Group(alts, suffix, line)
-        else:
-            error(line, "unexpected `%s`" % (value,))
-        it.cap, it.assign = cap, assign
+        cap = None
+        m = re.compile(r"(\w+)=(?![>=])").match(s, self.i)
+        if m:
+            cap = m.group(1)
+            self.i = m.end()
+        if s[self.i] == '"' or re.compile(r"(TK_|KW_)\w+|END_OF_FILE\b").match(
+                s, self.i):
+            t = self.token()
+            if t not in self.tokens.type:
+                error(line, "unknown token %s" % t)
+            it = Tok(t, line)
+            it.cap = cap
+            if s.startswith("?", self.i):
+                self.i += 1
+                it.optional = True
+            return it
+        m = re.compile(r"\w+").match(s, self.i)
+        if not m:
+            error(line, "unexpected `%s`" % s[self.i:self.i+10])
+        self.i = m.end()
+        args = ""
+        if s.startswith("(", self.i):
+            self.i += 1
+            args = self.balanced("(", ")")
+        it = Call(m.group(0), args, line)
+        it.cap = cap
+        if s.startswith("?", self.i) or s.startswith("*", self.i):
+            it.suffix = s[self.i]
+            self.i += 1
+        elif self.peek("%"):
+            self.i += 1
+            it.suffix = "%"
+            it.sep = self.token()
         return it
 
 
-def read_grammar(filename):
+def read_grammar(filename, tokens):
     lines = open(filename, encoding="utf-8").read().split("\n")
-    parts = []      # ("code", text) and ("rule", Rule) in order
-    firsts = {}
-    operators = None
+    rules = []
+    externs = {}
+    predicates = set()
+    operators = []
     i = 0
     while i < len(lines):
-        l = lines[i]
-        s = l.strip()
+        s = lines[i].strip()
         if s == "" or s.startswith("//"):
             i += 1
-        elif s == "%code {{":
-            j = i + 1
-            while lines[j].strip() != "}}":
-                j += 1
-            parts.append(("code", "\n".join(lines[i+1:j]) + "\n"))
-            i = j + 1
-        elif s.startswith("%first "):
-            name, toks = s[7:].split(":")
-            f = First()
-            for t in toks.split():
-                if t == "NAME":
-                    f.name = True
-                else:
-                    f.tokens.add(t)
-            firsts[name.strip()] = f
+        elif s.startswith("%extern "):
+            m = re.match(r"%extern\s+(\w+)\s*->\s*(.+?)"
+                r"(?:\s+(first|token):\s*(.*))?$", s)
+            if not m:
+                error(i + 1, "bad %extern")
+            first = None
+            if m.group(4) is not None:
+                p = BodyParser(m.group(4), i + 1, tokens)
+                first = []
+                while True:
+                    p.skip()
+                    if p.i >= len(p.s):
+                        break
+                    first.append(p.token())
+            externs[m.group(1)] = Extern(m.group(2).strip(), first,
+                m.group(3) == "token")
+            i += 1
+        elif s.startswith("%predicate "):
+            predicates.add(s.split()[1])
             i += 1
         elif s.startswith("%operators "):
             _, name, operand = s.split()
             ops = []
             j = i + 1
             while lines[j].strip() != "%end":
-                m = re.match(r"\s*(left|right)\s+(\d+)\s+(\w+)\s+\{(.*)\}\s*$",
+                m = re.match(r'\s*(left|right)\s+(\d+)\s+(\S+)\s+=>\s*(.*)$',
                     lines[j])
                 if not m:
                     error(j + 1, "bad operator line")
-                ops.append((m.group(1), int(m.group(2)), m.group(3),
-                    m.group(4).strip()))
+                t = BodyParser(m.group(3), j + 1, tokens).token()
+                ops.append((m.group(1), int(m.group(2)), t, m.group(4).strip()))
                 j += 1
-            operators = (name, operand, ops)
-            parts.append(("operators", operators))
+            operators.append((name, operand, ops))
             i = j + 1
         elif s.startswith("rule "):
-            m = re.match(r"rule\s+(\w+)\s*\((.*)\)\s*->\s*(.+?)\s*(\btry)?$", s)
+            m = re.match(r"rule\s+(\w+)(\?)?\s*(?:\((.*)\))?\s*->\s*(.+)$", s)
             if not m:
                 error(i + 1, "bad rule header")
             j = i + 1
@@ -335,111 +424,382 @@ def read_grammar(filename):
                 if j >= len(lines):
                     error(i + 1, "rule without the final `;` line")
             body = "\n".join(lines[i+1:j])
-            body = body.lstrip()
-            lead = "\n".join(lines[i+1:j])
-            first_line = i + 2 + (len(lead) - len(lead.lstrip("\n")))
-            if not body.startswith(":"):
+            if not body.lstrip().startswith(":"):
                 error(i + 2, "the alternatives of a rule start with `:`")
-            toks = lex(body[1:], first_line)
-            p = BodyParser(toks)
+            k = body.index(":")
+            p = BodyParser(body[k+1:], i + 2 + body.count("\n", 0, k), tokens)
             alts = p.alts()
-            if p.i != len(toks):
-                error(p.line(), "unexpected `)`")
-            parts.append(("rule", Rule(m.group(1), m.group(2), m.group(3),
-                bool(m.group(4)), alts, i + 1)))
+            p.skip()
+            if p.i != len(p.s):
+                error(p.line, "unexpected `%s`" % p.s[p.i])
+            rules.append(Rule(m.group(1), m.group(3) or "", m.group(4).strip(),
+                bool(m.group(2)), alts, i + 1))
             i = j + 1
         else:
             error(i + 1, "unexpected line: " + s)
-    return parts, firsts
+    return rules, externs, predicates, operators
 
 
 # ----------------------------------------------------------------------------
-# FIRST sets
+# The generator
 
 class Generator:
-    def __init__(self, parts, firsts):
-        self.parts = parts
-        self.rules = {r.name: r for k, r in parts if k == "rule"}
-        self.firsts = dict(firsts)
-        for k, v in parts:
-            if k == "operators":
-                # An expression can start with almost anything
-                f = First()
-                f.any = True
-                self.firsts[v[0]] = f
-        self.rule_first = {}
-        changed = True
-        for name in self.rules:
-            self.rule_first[name] = First()
-        while changed:
-            changed = False
-            for name, r in self.rules.items():
-                f = First()
-                for alt in r.alts:
-                    f.merge(self.first_of(alt))
-                old = self.rule_first[name]
-                if (f.tokens, f.name, f.any) != (old.tokens, old.name, old.any):
-                    self.rule_first[name] = f
-                    changed = True
+    def __init__(self, rules, externs, predicates, operators, tokens):
+        self.rule_list = rules
+        self.rules = {r.name: r for r in rules}
+        self.externs = externs
+        self.predicates = predicates
+        self.operators = operators
+        self.tokens = tokens
+        for name, operand, ops in operators:
+            self.externs[name] = Extern("ast_t*", None, False)
+        self.memo = {}
+        self.busy = set()
         self.out = []
+        self.report = []
+        self.check()
 
-    def first_of(self, items):
-        """FIRST of a sequence, with the predicates that precede its first
-        token"""
-        f = First()
+    def check(self):
+        for r in self.rule_list:
+            for alt in r.alts:
+                self.check_seq(alt, r)
+
+    def check_seq(self, items, r):
         for it in items:
-            if isinstance(it, Code):
-                continue
-            if isinstance(it, Pred):
-                f.preds.append(it.text.strip())
-                continue
-            if isinstance(it, Tok):
-                f.tokens.add(it.name)
-                if it.optional:
-                    continue
-                return f
             if isinstance(it, Call):
-                if it.name in self.rule_first:
-                    f.merge(self.rule_first[it.name])
-                elif it.name in self.firsts:
-                    f.merge(self.firsts[it.name])
-                else:
-                    f.any = True
-                return f
-            if isinstance(it, Group):
-                empty = it.suffix != ""
+                if it.name not in self.rules and it.name not in self.externs:
+                    error(it.line, "unknown rule `%s`" % it.name)
+            elif isinstance(it, Pred) and it.name:
+                if it.name not in self.predicates:
+                    error(it.line, "unknown predicate `%s`" % it.name)
+            elif isinstance(it, Group):
                 for alt in it.alts:
-                    g = self.first_of(alt)
-                    if g.preds:
-                        # A predicate inside a group cannot be hoisted
-                        f.any = True
-                    f.merge(g)
-                    if not g.tokens and not g.name and not g.any:
-                        empty = True
-                if not empty:
-                    return f
-        # The sequence can be empty: anything can follow
-        f.any = True
+                    self.check_seq(alt, r)
+
+    def call_type(self, name):
+        if name in self.rules:
+            return self.rules[name].type
+        return self.externs[name].type
+
+    # ------------------------------------------------------------------
+    # Token sequences that an item, a sequence or a rule can start with.
+    # A sequence shorter than `k` that does not end with END was cut by the
+    # end of the rule: what follows is not known either.
+
+    def first_rule(self, name, k):
+        key = (name, k)
+        if key in self.memo:
+            return self.memo[key]
+        if key in self.busy:
+            return {(END,)}
+        self.busy.add(key)
+        if name in self.rules:
+            f = set()
+            for alt in self.rules[name].alts:
+                f |= self.first_seq(alt, k)
+        else:
+            ext = self.externs[name]
+            if ext.first is None:
+                f = {(END,)}
+            elif ext.single:
+                f = {(t,) for t in ext.first}
+            else:
+                f = {(t, END)[:k] for t in ext.first}
+        self.busy.discard(key)
+        self.memo[key] = f
         return f
 
-    def condition(self, f):
-        """The C++ condition for a FIRST set; None if it is always true"""
-        parts = []
-        if not f.any:
-            toks = sorted(t for t in f.tokens
-                if not (f.name and is_name_token(t)))
-            alts = ["K[i] == %s" % t for t in toks]
-            if f.name:
-                alts.insert(0, "is_name(K[i])")
-            if len(alts) == 1:
-                parts.append(alts[0])
+    def first_item(self, it, k):
+        """The set of sequences; an empty sequence means that the item can
+        be absent"""
+        if isinstance(it, Tok):
+            f = {(it.name,)}
+            if it.optional:
+                f.add(())
+            return f
+        if isinstance(it, Call):
+            f = set(self.first_rule(it.name, k))
+            if it.suffix == "%":
+                f = {t if (len(t) >= k or t[-1:] == (END,)) else t + (END,)
+                    for t in f}
+            elif it.suffix:
+                f.add(())
+            return f
+        if isinstance(it, Group):
+            f = set()
+            for alt in it.alts:
+                f |= self.first_seq(alt, k)
+            if it.suffix:
+                f.add(())
+            return f
+        if isinstance(it, Pred) and it.pattern and not it.neg:
+            # What follows has to match the pattern
+            return {tuple(alt + [END])[:k] for alt in it.pattern}
+        return {()}
+
+    def first_seq(self, items, k):
+        partial = {()}
+        done = set()
+        for it in items:
+            if isinstance(it, Result):
+                break
+            if isinstance(it, Mark) or (isinstance(it, Pred)
+                    and not (it.pattern and not it.neg)):
+                continue
+            f = self.first_item(it, k)
+            new = set()
+            for t in partial:
+                for u in f:
+                    if u == ():
+                        new.add(t)
+                        continue
+                    v = (t + u)[:k]
+                    if len(v) >= k or v[-1] == END:
+                        done.add(v)
+                    else:
+                        new.add(v)
+            partial = new
+            if isinstance(it, Pred) or not partial:
+                # A pattern says what follows; nothing more to add
+                done |= partial
+                partial = set()
+                break
+        return done | partial
+
+    def compatible(self, a, b):
+        """Can a token be both `a` and `b`?"""
+        if a == b or a in ("_", END) or b in ("_", END):
+            return True
+        for x, y in ((a, b), (b, a)):
+            if x == "NAME" and self.tokens.is_name(y):
+                return True
+            if x == "SEP" and y in SEP_TOKENS:
+                return True
+        return False
+
+    def overlap(self, s1, s2):
+        for a in s1:
+            for b in s2:
+                ok = True
+                for x, y in zip(a, b):
+                    if x == END or y == END:
+                        break
+                    if not self.compatible(x, y):
+                        ok = False
+                        break
+                if ok:
+                    return True
+        return False
+
+    def keyword_as_name(self, s1, s2):
+        """Do two sets of sequences overlap because a keyword in one of them
+        is taken as a name in the other?"""
+        for a in s1:
+            for b in s2:
+                ok = True
+                found = False
+                for x, y in zip(a, b):
+                    if x == END or y == END:
+                        break
+                    if not self.compatible(x, y):
+                        ok = False
+                        break
+                    if x != y and "NAME" in (x, y) and "_" not in (x, y):
+                        found = True
+                if ok and found:
+                    return True
+        return False
+
+    def literal_prefix(self, items):
+        n = 0
+        for it in items:
+            if isinstance(it, (Mark, Pred)):
+                continue
+            if isinstance(it, Tok) and not it.optional:
+                n += 1
             else:
-                parts.append("(" + " || ".join(alts) + ")")
-        for p in f.preds:
-            parts.append("(" + p + ")")
+                break
+        return n
+
+    def pattern_depth(self, items):
+        """How far the token patterns at the beginning of an alternative
+        look"""
+        pos = 0
+        depth = 0
+        for it in items:
+            if isinstance(it, Tok) and not it.optional:
+                pos += 1
+            elif isinstance(it, Pred) and it.pattern and not it.neg:
+                depth = max(depth, pos + max(len(a) for a in it.pattern))
+                break
+            elif isinstance(it, (Mark, Pred)):
+                continue
+            else:
+                break
+        return depth
+
+    def leading_preds(self, items):
+        preds = []
+        for it in items:
+            if isinstance(it, Pred):
+                if not (it.pattern and not it.neg):
+                    preds.append(it)
+            elif not isinstance(it, Mark):
+                break
+        return preds
+
+    def decide(self, alts, where, line):
+        """For each alternative: the token sequences to test and its leading
+        predicates"""
+        res = []
+        for n, alt in enumerate(alts):
+            preds = self.leading_preds(alt)
+            later = alts[n+1:]
+            depth = None
+            for k in range(1, MAX_LOOKAHEAD + 1):
+                f = self.first_seq(alt, k)
+                if not any(self.overlap(f, self.first_seq(a, k)) for a in later):
+                    depth = k
+                    break
+            if depth is None:
+                # Not told apart from a later alternative: test all the
+                # tokens that this alternative is known to start with
+                best = self.first_seq(alt, 1)
+                depth = 1
+                for k in range(2, MAX_LOOKAHEAD + 1):
+                    f = self.first_seq(alt, k)
+                    if len(f) > MAX_SEQUENCES:
+                        break
+                    if f != best:
+                        best = f
+                        depth = k
+                if not preds and any(self.keyword_as_name(best,
+                        self.first_seq(a, depth)) for a in later):
+                    self.report.append("%s (line %d): in alternative %d a "
+                        "keyword wins over a name of a later alternative"
+                        % (where, line, n + 1))
+            depth = max(depth, min(2, self.literal_prefix(alt)),
+                min(MAX_LOOKAHEAD, self.pattern_depth(alt)))
+            seqs = self.first_seq(alt, depth)
+            if not preds:
+                for m, (prev, prev_preds) in enumerate(res):
+                    if not prev_preds and prev == seqs:
+                        error(line, "%s: alternatives %d and %d start with "
+                            "the same tokens, so the second one can never "
+                            "be taken" % (where, m + 1, n + 1))
+            res.append((seqs, preds))
+        return res
+
+    # ------------------------------------------------------------------
+    # Conditions
+
+    def trie(self, seqs):
+        root = {}
+        for t in seqs:
+            cur = root
+            for e in t:
+                if e == END:
+                    break
+                cur = cur.setdefault(e, {})
+            # Anything can follow the tokens of the sequence
+            cur[END] = {}
+        return root
+
+    def test(self, e, pos):
+        k = "K[i]" if pos == 0 else "K[i+%d]" % pos
+        if e == "NAME":
+            return "is_name(%s)" % k
+        if e == "SEP":
+            return "is_sep(%s)" % k
+        return "%s == %s" % (k, e)
+
+    def trie_cond(self, node, pos):
+        """The C++ condition for a trie of token sequences; None if it is
+        always true"""
+        if END in node or not node:
+            return None
+        groups = {}
+        for e, sub in node.items():
+            c = self.trie_cond(sub, pos + 1)
+            groups.setdefault(c, []).append(e)
+        parts = []
+        for c, elems in groups.items():
+            if "_" in elems:
+                if c is None:
+                    return None
+                parts.append(c)
+                continue
+            elems = [e for e in elems if not ("NAME" in elems
+                and e != "NAME" and self.tokens.is_name(e))]
+            tests = [self.test(e, pos) for e in sorted(elems)]
+            t = tests[0] if len(tests) == 1 else "(" + " || ".join(tests) + ")"
+            parts.append(t if c is None else "(%s && %s)" % (t, c))
+        if len(parts) == 1:
+            return parts[0]
+        return "(" + " || ".join(parts) + ")"
+
+    def pattern_cond(self, pattern):
+        alts = []
+        for alt in pattern:
+            tests = [self.test(e, n) for n, e in enumerate(alt) if e != "_"]
+            alts.append(" && ".join(tests) if tests else "true")
+        if len(alts) == 1:
+            return alts[0]
+        return " || ".join("(%s)" % a for a in alts)
+
+    def pred_cond(self, p):
+        if p.name:
+            c = "%s()" % p.name
+            return "!" + c if p.neg else c
+        c = self.pattern_cond(p.pattern)
+        if p.neg:
+            return "!(%s)" % c
+        # No parentheses around a single comparison: Clang warns about them
+        return "(%s)" % c if ("&&" in c or "||" in c) else c
+
+    def condition(self, seqs, preds):
+        parts = []
+        c = self.trie_cond(self.trie(seqs), 0)
+        if c is not None:
+            parts.append(c)
+        parts += [self.pred_cond(p) for p in preds]
         if not parts:
             return None
         return " && ".join(parts)
+
+    # ------------------------------------------------------------------
+    # Captures
+
+    def list_type(self, t):
+        if t == "ast_t*":
+            return "Vec<ast_t*>", False
+        if t.endswith("*"):
+            return "Vec<%s>" % t[:-1].strip(), True
+        return "Vec<%s>" % t, False
+
+    def captures(self, items, caps):
+        for it in items:
+            if isinstance(it, Tok) and it.cap:
+                self.add_capture(caps, it.cap,
+                    "bool" if it.optional else "size_t", it)
+            elif isinstance(it, Call) and it.cap:
+                t = self.call_type(it.name)
+                if it.suffix in ("*", "%"):
+                    t = self.list_type(t)[0]
+                self.add_capture(caps, it.cap, t, it)
+            elif isinstance(it, Group):
+                for alt in it.alts:
+                    self.captures(alt, caps)
+
+    def add_capture(self, caps, name, type, it):
+        if name in caps and caps[name][0] != type:
+            error(it.line, "`%s` has two types: %s and %s"
+                % (name, caps[name][0], type))
+        if name in caps and isinstance(it, Tok) \
+                and caps[name][1] != it.name:
+            caps[name] = (type, None)
+        else:
+            caps[name] = (type, it.name if isinstance(it, Tok) else None)
 
     # ------------------------------------------------------------------
     # Code generation
@@ -447,167 +807,286 @@ class Generator:
     def emit(self, indent, text):
         self.out.append("    " * indent + text)
 
-    def emit_code(self, indent, it):
-        text = it.text
-        if "@$" in text:
+    def expand(self, expr, caps, line, indent):
+        """Replaces `$x`, `@x`, `@$` and `@^` in an expression"""
+        def value(m):
+            name = m.group(1)
+            if name not in caps or caps[name][1] is None:
+                error(line, "`$%s` is not a token" % name)
+            field = self.tokens.type[caps[name][1]]
+            if field is None:
+                error(line, "the token of `$%s` has no value" % name)
+            return "V[%s].%s" % (name, field)
+        expr = re.sub(r"\$(\w+)", value, expr)
+        if "@$" in expr:
             self.emit(indent, "l = span(_s);")
-            text = text.replace("@$", "l")
-        lines = text.strip("\n").split("\n")
-        # Remove the common indentation
-        pad = min((len(x) - len(x.lstrip()) for x in lines if x.strip()),
-            default=0)
-        for x in lines:
-            x = x[pad:] if x.strip() else ""
-            self.emit(indent if x else 0, x.rstrip())
+            expr = expr.replace("@$", "l")
+        expr = expr.replace("@^", "lm")
+        for name in set(re.findall(r"@(\w+)", expr)):
+            if name not in caps or caps[name][0] != "size_t":
+                error(line, "`@%s` is not a token" % name)
+            self.emit(indent, "Location l_%s = Lc[%s];" % (name, name))
+        expr = re.sub(r"@(\w+)", r"l_\1", expr)
+        return expr
 
-    def gen_seq(self, items, indent, known_first):
-        """`known_first`: the caller has checked that the current token is
-        the first token of the sequence"""
+    def call_expr(self, it):
+        args = re.sub(r"(^|,\s*)@(?=\s*(,|$))", r"\1_s", it.args)
+        return "%s(%s)" % (it.name, args)
+
+    def gen_seq(self, items, indent, known_first, r, caps):
         first = True
-        for it in items:
-            if isinstance(it, Code):
-                self.emit_code(indent, it)
+        returned = False
+        for n, it in enumerate(items):
+            if isinstance(it, Result):
+                expr = self.expand(it.expr, caps, it.line, indent)
+                if r.type == "void":
+                    self.emit(indent, "%s;" % expr)
+                    self.emit(indent, "return;")
+                else:
+                    self.emit(indent, "return %s;" % expr)
+                returned = True
+                break
+            if isinstance(it, Mark):
+                self.emit(indent, "lm = span(_s);")
                 continue
             if isinstance(it, Pred):
                 if not first:
                     self.emit(indent, "if (!(%s)) unsup(%d);"
-                        % (it.text.strip(), it.line))
+                        % (self.pred_cond(it), it.line))
                 continue
             if isinstance(it, Tok):
                 if it.optional:
                     if it.cap:
-                        self.emit(indent, "bool %s = accept(%s);"
-                            % (it.cap, it.name))
-                    elif it.assign:
-                        self.emit(indent, "%s = accept(%s);"
-                            % (it.assign, it.name))
+                        self.emit(indent, "%s = accept(%s);" % (it.cap, it.name))
                     else:
                         self.emit(indent, "accept(%s);" % it.name)
                 else:
                     if it.cap:
-                        self.emit(indent, "size_t %s = i;" % it.cap)
-                    elif it.assign:
-                        self.emit(indent, "%s = i;" % it.assign)
+                        self.emit(indent, "%s = i;" % it.cap)
                     if first and known_first:
                         self.emit(indent, "i++;")
                     else:
-                        self.emit(indent, "expect_(%s, %d);"
-                            % (it.name, it.line))
+                        self.emit(indent, "expect_(%s, %d);" % (it.name, it.line))
             elif isinstance(it, Call):
-                call = "%s(%s)" % (it.name, it.args)
-                if it.cap:
-                    self.emit(indent, "auto %s = %s;" % (it.cap, call))
-                elif it.assign:
-                    self.emit(indent, "%s = %s;" % (it.assign, call))
-                else:
-                    self.emit(indent, call + ";")
+                if n == len(items) - 1 and not it.cap and not it.suffix \
+                        and r.type != "void":
+                    self.emit(indent, "return %s;" % self.call_expr(it))
+                    returned = True
+                    break
+                self.gen_call(it, indent)
             elif isinstance(it, Group):
-                self.gen_group(it, indent)
+                self.gen_group(it, indent, r, caps)
             first = False
+        return returned
 
-    def single_token(self, items):
-        """True if the sequence starts with one given (not optional) token"""
+    def gen_call(self, it, indent):
+        call = self.call_expr(it)
+        if it.suffix == "?":
+            ext = self.externs.get(it.name)
+            if it.name in self.rules:
+                if not self.rules[it.name].nullable:
+                    error(it.line, "`%s?` needs `rule %s?`" % (it.name, it.name))
+                cond = None
+            elif ext.first is not None:
+                cond = self.condition({(t, END) for t in ext.first}, [])
+            else:
+                cond = None
+            pre = "%s = " % it.cap if it.cap else ""
+            if cond:
+                self.emit(indent, "if (%s) %s%s;" % (cond, pre, call))
+            else:
+                self.emit(indent, "%s%s;" % (pre, call))
+        elif it.suffix in ("*", "%"):
+            deref = self.list_type(self.call_type(it.name))[1]
+            v = it.cap or "_v"
+            if not it.cap:
+                error(it.line, "a list needs a name: `x=%s%s`"
+                    % (it.name, it.suffix))
+            self.emit(indent, "list_new(m_a, %s);" % v)
+            elem = "*_e" if deref else "_e"
+            if it.suffix == "%":
+                self.emit(indent, "do {")
+                self.emit(indent + 1, "auto _e = %s;" % call)
+                self.emit(indent + 1, "%s.push_back(m_a, %s);" % (v, elem))
+                self.emit(indent, "} while (accept(%s));" % it.sep)
+            else:
+                if it.name in self.rules and not self.rules[it.name].nullable:
+                    error(it.line, "`%s*` needs `rule %s?`" % (it.name, it.name))
+                self.emit(indent, "for (;;) {")
+                self.emit(indent + 1, "auto _e = %s;" % call)
+                self.emit(indent + 1, "if (!_e) break;")
+                self.emit(indent + 1, "%s.push_back(m_a, %s);" % (v, elem))
+                self.emit(indent, "}")
+        elif it.cap:
+            self.emit(indent, "%s = %s;" % (it.cap, call))
+        else:
+            self.emit(indent, call + ";")
+
+    def single_token(self, seqs, items):
+        """True if the alternative starts with one given token, which the
+        condition has checked"""
         for it in items:
-            if isinstance(it, (Code, Pred)):
+            if isinstance(it, (Pred, Mark)):
                 continue
             return isinstance(it, Tok) and not it.optional
         return False
 
-    def gen_group(self, g, indent):
-        conds = []
-        for alt in g.alts:
-            conds.append(self.condition(self.first_of(alt)))
+    def gen_group(self, g, indent, r, caps):
+        where = "rule %s, group" % r.name
+        decisions = self.decide(g.alts, where, g.line)
+        conds = [self.condition(s, p) for s, p in decisions]
         if g.suffix == "*":
             if len(g.alts) == 1:
                 if conds[0] is None:
                     error(g.line, "a repeated group needs a condition")
                 self.emit(indent, "while (%s) {" % conds[0])
                 self.gen_seq(g.alts[0], indent + 1,
-                    self.single_token(g.alts[0]))
+                    self.single_token(decisions[0][0], g.alts[0]), r, caps)
                 self.emit(indent, "}")
                 return
             self.emit(indent, "for (;;) {")
-            self.gen_chain(g.alts, conds, indent + 1, "break;", g.line)
+            self.gen_chain(g.alts, decisions, conds, indent + 1, "break;", r,
+                caps, g.line)
             self.emit(indent, "}")
-            return
-        if g.suffix == "?":
-            self.gen_chain(g.alts, conds, indent, None, g.line)
-            return
-        self.gen_chain(g.alts, conds, indent, "unsup(%d);" % g.line, g.line)
+        elif g.suffix == "?":
+            self.gen_chain(g.alts, decisions, conds, indent, None, r, caps,
+                g.line)
+        else:
+            self.gen_chain(g.alts, decisions, conds, indent,
+                "unsup(%d);" % g.line, r, caps, g.line)
 
-    def gen_chain(self, alts, conds, indent, otherwise, line):
-        """if / else if chain over the alternatives"""
+    def gen_chain(self, alts, decisions, conds, indent, otherwise, r, caps,
+            line):
         closed = False
         for n, (alt, cond) in enumerate(zip(alts, conds)):
             if cond is None:
+                if n != len(alts) - 1:
+                    error(line, "alternative %d can never be taken (rule %s)"
+                        % (n + 2, r.name))
                 if n == 0:
                     self.emit(indent, "{")
                 else:
                     self.emit(indent, "} else {")
-                self.gen_seq(alt, indent + 1, False)
+                self.gen_seq(alt, indent + 1, False, r, caps)
                 closed = True
                 break
-            kw = "if" if n == 0 else "} else if"
-            self.emit(indent, "%s (%s) {" % (kw, cond))
-            self.gen_seq(alt, indent + 1, self.single_token(alt))
+            self.emit(indent, "%s (%s) {" % ("if" if n == 0 else "} else if",
+                cond))
+            self.gen_seq(alt, indent + 1,
+                self.single_token(decisions[n][0], alt), r, caps)
         if not closed and otherwise:
             self.emit(indent, "} else {")
             self.emit(indent + 1, otherwise)
         self.emit(indent, "}")
 
+    def declare(self, caps, indent):
+        for name, (type, _) in caps.items():
+            if type.startswith("Vec<"):
+                self.emit(indent, "%s %s;" % (type, name))
+                self.emit(indent, "%s.from_pointer_n(nullptr, 0);" % name)
+            else:
+                self.emit(indent, "%s %s{};" % (type, name))
+            self.emit(indent, "(void)%s;" % name)
+
     def gen_rule(self, r):
         params = r.params.strip()
         self.emit(1, "%s %s(%s) {" % (r.type, r.name, params))
-        self.emit(2, "size_t _s = i;")
+        if re.search(r"\bsize_t s\b", params):
+            self.emit(2, "size_t _s = s;")
+        else:
+            self.emit(2, "size_t _s = i;")
         self.emit(2, "(void)_s;")
-        self.emit(2, "Location l;")
-        self.emit(2, "(void)l;")
-        if r.is_try:
-            none = "return {};"
-        else:
-            none = "unsup(%d);" % r.line
-        firsts = [self.first_of(alt) for alt in r.alts]
-        conds = [self.condition(f) for f in firsts]
-        if len(r.alts) == 1 and not r.is_try:
-            self.gen_seq(r.alts[0], 2, False)
+        self.emit(2, "Location l, lm;")
+        self.emit(2, "(void)l; (void)lm;")
+        none = "return {};" if r.nullable else "unsup(%d);" % r.line
+        decisions = self.decide(r.alts, "rule %s" % r.name, r.line)
+        conds = [self.condition(s, p) for s, p in decisions]
+        all_caps = []
+        for alt in r.alts:
+            caps = {}
+            self.captures(alt, caps)
+            all_caps.append(caps)
+        if len(r.alts) == 1 and not r.nullable:
+            self.declare(all_caps[0], 2)
+            returned = self.gen_seq(r.alts[0], 2, False, r, all_caps[0])
+            if not returned and r.type != "void":
+                self.emit(2, "unsup(%d);" % r.line)
         elif len(r.alts) <= 4:
-            self.gen_chain(r.alts, conds, 2, none, r.line)
+            # if / else if chain; each alternative in its own block
+            closed = False
+            for n, alt in enumerate(r.alts):
+                cond = conds[n]
+                if cond is None:
+                    if n != len(r.alts) - 1:
+                        error(r.line, "alternative %d of rule %s can never "
+                            "be taken" % (n + 2, r.name))
+                    self.emit(2, "{" if n == 0 else "} else {")
+                    closed = True
+                else:
+                    self.emit(2, "%s (%s) {" % ("if" if n == 0
+                        else "} else if", cond))
+                self.declare(all_caps[n], 3)
+                returned = self.gen_seq(alt, 3, cond is not None
+                    and self.single_token(decisions[n][0], alt), r,
+                    all_caps[n])
+                if not returned:
+                    if r.type != "void":
+                        self.emit(3, "unsup(%d);" % r.line)
+                    else:
+                        self.emit(3, "return;")
+            if not closed:
+                self.emit(2, "} else {")
+                self.emit(3, none)
+            self.emit(2, "}")
         else:
-            self.gen_switch(r, firsts, conds, none)
-        if r.type != "void":
-            # Reached only if an alternative does not return
-            self.emit(2, "unsup(%d);" % r.line)
+            self.gen_switch(r, decisions, all_caps, none)
         self.emit(1, "}")
         self.emit(0, "")
 
-    def gen_switch(self, r, firsts, conds, none):
+    def gen_switch(self, r, decisions, all_caps, none):
         """A switch on the current token that jumps to the first alternative
-        (in the order of the grammar) which can start with it and whose
-        predicates hold"""
-        tokens = sorted(set(t for f in firsts for t in f.tokens))
+        (in the order of the grammar) which can start with the next tokens
+        and whose predicates hold"""
+        tries = [self.trie(s) for s, p in decisions]
+        tokens = sorted(set(e for t in tries for e in t
+            if e not in (END, "_", "NAME", "SEP")) | (SEP_TOKENS
+            if any("SEP" in t for t in tries) else set()))
         used = set()
 
         def jumps(tok):
-            """The alternatives to try for `tok` (None: any other token)"""
             lines = []
-            for n, f in enumerate(firsts):
-                if tok is None:
-                    if f.any:
-                        test = ""
-                    elif f.name:
-                        test = "is_name(K[i])"
-                    else:
-                        continue
-                elif f.any or tok in f.tokens \
-                        or (f.name and is_name_token(tok)):
-                    test = ""
-                else:
+            for n, (t, (seqs, preds)) in enumerate(zip(tries, decisions)):
+                subs = []
+                always = False
+                extra = None
+                for e, sub in t.items():
+                    if e in (END, "_"):
+                        if e == END:
+                            always = True
+                        subs.append(sub)
+                    elif tok is None:
+                        if e == "NAME":
+                            extra = "is_name(K[i])"
+                            subs.append(sub)
+                    elif e == tok or (e == "NAME" and self.tokens.is_name(tok)) \
+                            or (e == "SEP" and tok in SEP_TOKENS):
+                        subs.append(sub)
+                if not subs:
                     continue
-                c = " && ".join([test] * bool(test)
-                    + ["(%s)" % p for p in f.preds])
+                parts = []
+                if extra:
+                    parts.append(extra)
+                if not always:
+                    cs = [self.trie_cond(s, 1) for s in subs]
+                    if None not in cs:
+                        cs = list(dict.fromkeys(cs))
+                        parts.append(cs[0] if len(cs) == 1
+                            else "(" + " || ".join(cs) + ")")
+                parts += [self.pred_cond(p) for p in preds]
                 used.add(n)
-                if c:
-                    lines.append("if (%s) goto _alt%d;" % (c, n))
+                if parts:
+                    lines.append("if (%s) goto _alt%d;"
+                        % (" && ".join(parts), n))
                 else:
                     lines.append("goto _alt%d;" % n)
                     return lines, True
@@ -635,17 +1114,19 @@ class Generator:
         self.emit(2, none)
         for n, alt in enumerate(r.alts):
             if n not in used:
-                error(r.line, "alternative %d of `%s` can never be taken"
+                error(r.line, "alternative %d of rule %s can never be taken"
                     % (n + 1, r.name))
             self.emit(2, "_alt%d: {" % n)
-            f = firsts[n]
-            known = self.single_token(alt) and not f.any and not f.name \
-                and len(f.tokens) == 1
-            self.gen_seq(alt, 3, known)
-            if r.type == "void":
-                self.emit(3, "return;")
-            else:
-                self.emit(3, "unsup(%d);" % r.line)
+            self.declare(all_caps[n], 3)
+            t = tries[n]
+            known = self.single_token(decisions[n][0], alt) \
+                and not (set(t) & {END, "_", "NAME", "SEP"})
+            returned = self.gen_seq(alt, 3, known, r, all_caps[n])
+            if not returned:
+                if r.type != "void":
+                    self.emit(3, "unsup(%d);" % r.line)
+                else:
+                    self.emit(3, "return;")
             self.emit(2, "}")
 
     def gen_operators(self, name, operand, ops):
@@ -674,14 +1155,17 @@ class Generator:
         self.emit(3, "i++;")
         if right:
             test = " || ".join("prec == %d" % p for p in right)
-            self.emit(3, "ast_t *y = %s((%s) ? prec : prec + 1);"
-                % (name, test))
+            self.emit(3, "ast_t *y = %s((%s) ? prec : prec + 1);" % (name, test))
         else:
             self.emit(3, "ast_t *y = %s(prec + 1);" % name)
         self.emit(3, "Location l = span(_s);")
         self.emit(3, "switch (t) {")
         for assoc, prec, tok, action in ops:
-            self.emit(4, "case %s: %s break;" % (tok, action))
+            field = self.tokens.type[tok]
+            action = action.replace("@$", "l")
+            if "$op" in action:
+                action = action.replace("$op", "V[op].%s" % field)
+            self.emit(4, "case %s: x = %s; break;" % (tok, action))
         self.emit(4, "default: break;")
         self.emit(3, "}")
         self.emit(2, "}")
@@ -690,26 +1174,31 @@ class Generator:
 
     def generate(self, source):
         self.emit(0, "// Generated by llgen.py from %s; do not edit." % source)
+        self.emit(0, "// Member functions of the parser, one per rule.")
         self.emit(0, "")
-        for kind, v in self.parts:
-            if kind == "code":
-                self.out.append(v.rstrip("\n"))
-                self.emit(0, "")
-            elif kind == "operators":
-                self.gen_operators(*v)
-            else:
-                self.gen_rule(v)
+        for op in self.operators:
+            self.gen_operators(*op)
+        for r in self.rule_list:
+            self.gen_rule(r)
         return "\n".join(self.out) + "\n"
 
 
 def main():
-    if len(sys.argv) != 3:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if len(args) != 3:
         sys.exit(__doc__)
-    parts, firsts = read_grammar(sys.argv[1])
-    g = Generator(parts, firsts)
-    text = g.generate(sys.argv[1].replace("\\", "/").split("/")[-1])
-    with open(sys.argv[2], "w", encoding="utf-8") as f:
+    tokens = Tokens(args[1])
+    rules, externs, predicates, operators = read_grammar(args[0], tokens)
+    g = Generator(rules, externs, predicates, operators, tokens)
+    text = g.generate(args[0].replace("\\", "/").split("/")[-1])
+    with open(args[2], "w", encoding="utf-8") as f:
         f.write(text)
+    if "--report" in sys.argv:
+        for x in dict.fromkeys(g.report):
+            print(x)
+        print("%d rules; in %d alternatives a keyword wins over a name by the "
+            "order of the alternatives" % (len(rules),
+            len(dict.fromkeys(g.report))))
 
 
 if __name__ == "__main__":
