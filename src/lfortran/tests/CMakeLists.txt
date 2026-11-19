@@ -79,9 +79,8 @@ if (WITH_JSON)
     )
 endif()
 if (WITH_LLVM)
-    set(SRC ${SRC}
-        test_llvm.cpp
-    )
+    # First: the longest compilation of the tests starts first.
+    set(SRC test_llvm.cpp ${SRC})
 endif()
 
 if (WITH_LSP)

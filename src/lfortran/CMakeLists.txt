@@ -144,6 +144,12 @@ endif()
 
 if (WITH_PCH)
     target_precompile_headers(lfortran_lib REUSE_FROM asr)
+    # The longest compilations start first (see src/libasr/CMakeLists.txt).
+    set_source_files_properties(
+        semantics/ast_body_visitor.cpp
+        semantics/ast_symboltable_visitor.cpp
+        semantics/ast_common_visitor.cpp
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 endif()
 
 add_subdirectory(tests)

@@ -240,6 +240,14 @@ if (WITH_PCH)
         <libasr/pass/pass_utils.h>
         <libasr/pass/gpu_decline.h>
         <libasr/codegen/gpu_utils.h>)
+    # Ninja starts the compilations that are ready in the order of the
+    # sources, and none of those that use the header is ready before it is
+    # compiled. The longest compilations skip it, so they start first instead
+    # of last and do not hold up the end of the build.
+    set_source_files_properties(
+        codegen/asr_to_llvm.cpp
+        codegen/llvm_utils.cpp
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 endif()
 
 # A unity build compiles the sources in batches, so the headers they share
