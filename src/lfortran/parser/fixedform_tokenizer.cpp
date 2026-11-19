@@ -333,8 +333,6 @@ struct FixedFormStatements {
         Condition,   // `if(x)y=1`: a statement follows the `(...)`
         Format,      // the whole statement is one token
         Assign,      // `assign10toi`
-        Common,      // `common/a/x/b/y`
-        Implicit,    // `implicitdoubleprecision(a-h)`
         EndUnit,     // the end of a program unit
         EndIf,       // `10 endif`
         Contains,    // internal procedures follow
@@ -364,7 +362,7 @@ struct FixedFormStatements {
             {"backspace"}, {"byte", Type},
             {"call"}, {"case default"}, {"character", Type},
             {"class default"}, {"class is", Plain, '('},
-            {"codimension"}, {"common", Common}, {"complex", Type},
+            {"codimension"}, {"common"}, {"complex", Type},
             {"contains", Contains, '$'}, {"contiguous"}, {"cycle"},
             {"data"}, {"dimension"}, {"do", Do},
             {"doublecomplex", Type}, {"doubleprecision", Type},
@@ -380,7 +378,7 @@ struct FixedFormStatements {
             {"equivalence"}, {"error stop"}, {"exit"}, {"external"},
             {"flush"}, {"forall", Condition, '('}, {"format", Format, '('},
             {"goto"},
-            {"if", Condition, '('}, {"implicit", Implicit}, {"import"},
+            {"if", Condition, '('}, {"implicit"}, {"import"},
             {"include"}, {"integer", Type}, {"interface", Interface},
             {"intrinsic"},
             {"logical", Type},
@@ -832,35 +830,6 @@ struct FixedFormStatements {
         return kind;
     }
 
-    // `common/a/x,y/b/z`: a comma is inserted between the blocks if there
-    // is none
-    void common(unsigned char *&cur) {
-        while (*cur == '/') {
-            // The block is `/[name]/` and the objects up to the next `/`
-            // outside of parentheses, or the end of the statement
-            const unsigned char *p = cur + 1;
-            while (!is_eos(p) && *p != '/') p++;
-            if (*p == '/') p++;
-            int depth = 0;
-            while (!is_eos(p)) {
-                if (*p == '(') {
-                    depth++;
-                } else if (*p == ')') {
-                    depth--;
-                } else if (*p == '/' && depth == 0) {
-                    break;
-                }
-                p++;
-            }
-            if (is_eos(p)) break;
-            bool comma = *(p-1) == ',';
-            until(cur, comma ? p - 1 : p);
-            push_token(cur, TK_COMMA, "comma", 5);
-            if (comma) cur++;
-        }
-        rest(cur);
-    }
-
     // The statement at `cur` (after its label, if it has one). On return,
     // `cur` points to the next statement.
     void statement(unsigned char *&cur, int64_t stmt_label) {
@@ -963,16 +932,6 @@ struct FixedFormStatements {
                     if (end > cur && next_is(end, "to")) {
                         until(cur, end);
                         push_keyword(cur, KW_TO, 2);
-                    }
-                    break;
-                }
-                case Common: {
-                    common(cur);
-                    return;
-                }
-                case Implicit: {
-                    if (next_is(cur, "doubleprecision(")) {
-                        push_keyword(cur, KW_DOUBLE, 6);
                     }
                     break;
                 }

@@ -451,7 +451,12 @@ struct LL {
         return st;
     }
 
-    static bool is_enddo(int t) { return t == KW_END_DO || t == KW_ENDDO; }
+    // Is the token `j` the END DO statement (and not, say, `enddo = 5`)?
+    bool is_enddo(size_t j) const {
+        if (K[j] != KW_END_DO && K[j] != KW_ENDDO) return false;
+        if (is_name(K[j+1])) j++;
+        return is_sep(K[j+1]);
+    }
 
     // The loop ends with the statement that has its label, together with
     // the loops around it that have the same label:
@@ -470,7 +475,7 @@ struct LL {
         for (;;) {
             bool labeled = (K[i] == TK_LABEL);
             if (labeled && V[i].n == label) {
-                if (is_enddo(K[i+1])) {
+                if (is_enddo(i + 1)) {
                     // `10 end do` is `10 continue`, which is not kept
                     i += 2;
                     if (is_name(K[i])) i++;
@@ -483,7 +488,7 @@ struct LL {
                 }
                 break;
             }
-            if (is_enddo(K[labeled ? i + 1 : i])) {
+            if (is_enddo(labeled ? i + 1 : i)) {
                 // An END DO that is not the statement with the label
                 enddo();
                 return v;
