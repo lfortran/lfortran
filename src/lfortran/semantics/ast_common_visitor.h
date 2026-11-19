@@ -21270,60 +21270,16 @@ public:
                                       bound, bound_value);
     }
 
-    // Whether `e` reads a variable, directly or through designators and operations.
-    static bool reads_variable(ASR::expr_t* e) {
-        switch (e->type) {
-            case ASR::exprType::Var: {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(e)->m_v);
-                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                    return false;
-                }
-                return ASR::down_cast<ASR::Variable_t>(sym)->m_storage
-                    != ASR::storage_typeType::Parameter;
-            }
-            case ASR::exprType::ArrayItem: {
-                return reads_variable(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
-            }
-            case ASR::exprType::ArraySection: {
-                return reads_variable(ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
-            }
-            case ASR::exprType::StructInstanceMember: {
-                return reads_variable(
-                    ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
-            }
-            case ASR::exprType::Cast: {
-                return reads_variable(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
-            }
-            default: {
-                return is_operation_on_variable(e);
-            }
-        }
-    }
-
     // An operator or an elemental intrinsic call that reads a variable, which gfortran cannot fold.
     static bool is_operation_on_variable(ASR::expr_t* e) {
         if (ASRUtils::expr_value(e) != nullptr) {
             return false;
         }
-        if (ASRUtils::is_binop_expr(e)) {
-            return reads_variable(ASRUtils::extract_member_from_binop(e, 0))
-                || reads_variable(ASRUtils::extract_member_from_binop(e, 1));
-        }
-        if (ASRUtils::is_unaryop_expr(e)) {
-            return reads_variable(ASRUtils::extract_member_from_unaryop(e));
-        }
-        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+        if (!ASRUtils::is_binop_expr(e) && !ASRUtils::is_unaryop_expr(e)
+                && !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
             return false;
         }
-        ASR::IntrinsicElementalFunction_t* f
-            = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
-        for (size_t i = 0; i < f->n_args; i++) {
-            if (f->m_args[i] != nullptr && reads_variable(f->m_args[i])) {
-                return true;
-            }
-        }
-        return false;
+        return ASRUtils::reads_variable_value(e);
     }
 
     ASR::asr_t* create_ArrayRank(const AST::FuncCallOrArray_t& x) {
