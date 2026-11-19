@@ -782,6 +782,7 @@ RUN(NAME goto_06 LABELS gfortran llvm c cpp EXTRA_ARGS --fixed-form GFORTRAN_ARG
 RUN(NAME goto_07 LABELS gfortran llvm)
 RUN(NAME goto_08 LABELS gfortran llvm c cpp)
 RUN(NAME goto_09 LABELS gfortran llvm)
+RUN(NAME goto_10 LABELS gfortran llvm) # labels in a function inlined more than once (#17807)
 
 RUN(NAME subroutines_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm mlir fortran)
 RUN(NAME subroutines_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm fortran)
