@@ -18,6 +18,7 @@
 
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
+#include <libasr/pass/hoist_realloc.h>
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/global_init.h>
 #include <libasr/pass/replace_implied_do_loops.h>
@@ -120,6 +121,7 @@ namespace LCompilers {
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
             {"allocate_on_assignment", &pass_allocate_on_assignment},
+            {"hoist_realloc", &pass_hoist_realloc},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -452,6 +454,9 @@ namespace LCompilers {
                 // An intrinsic assignment allocates its unallocated
                 // allocatable variable, explicitly from here on.
                 "allocate_on_assignment",
+                // A reallocation on assignment that a loop does the same in
+                // every iteration is done once, before the loop.
+                "hoist_realloc",
                 "pass_array_by_data",
                 "array_passed_in_function_call",
                 "print_struct_type",
