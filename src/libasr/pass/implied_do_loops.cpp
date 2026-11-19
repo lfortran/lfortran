@@ -697,6 +697,53 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return false;
     }
 
+    // Whether the constructor's string length may differ from the target's
+    bool string_length_may_differ(ASR::ttype_t* target_type,
+            ASR::ttype_t* constructor_type) {
+        ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
+        ASR::ttype_t* constructor_elem = ASRUtils::extract_type(constructor_type);
+        if (!ASR::is_a<ASR::String_t>(*target_elem) ||
+                !ASR::is_a<ASR::String_t>(*constructor_elem)) {
+            return false;
+        }
+        ASR::expr_t* target_len = ASR::down_cast<ASR::String_t>(target_elem)->m_len;
+        ASR::expr_t* constructor_len =
+            ASR::down_cast<ASR::String_t>(constructor_elem)->m_len;
+        if (constructor_len == nullptr) {
+            return false;
+        }
+        int64_t target_len_value = -1, constructor_len_value = -1;
+        return !(target_len &&
+            ASRUtils::extract_value(ASRUtils::expr_value(target_len), target_len_value) &&
+            ASRUtils::extract_value(ASRUtils::expr_value(constructor_len),
+                constructor_len_value) &&
+            target_len_value == constructor_len_value);
+    }
+
+    bool is_assumed_length_string(ASR::ttype_t* type) {
+        ASR::ttype_t* elem = ASRUtils::extract_type(type);
+        return ASR::is_a<ASR::String_t>(*elem) &&
+            ASR::down_cast<ASR::String_t>(elem)->m_len_kind ==
+                ASR::string_length_kindType::AssumedLength;
+    }
+
+    // Whether `len` uses the variable of an implied-do loop in `values`
+    bool uses_implied_do_variable(ASR::expr_t* len, ASR::expr_t** values,
+            size_t n_values) {
+        for (size_t i = 0; i < n_values; i++) {
+            if (values[i] == nullptr || !ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                continue;
+            }
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+            if ((ASR::is_a<ASR::Var_t>(*idl->m_var) && ASRUtils::expr_references_symbol(
+                    len, ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v)) ||
+                    uses_implied_do_variable(len, idl->m_values, idl->n_values)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // The statements that evaluate a constructor are put in front of
         // the FORALL, where its indices are not defined. A constructor that
@@ -736,6 +783,18 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        if (is_result_var_fixed_size) {
+            ASR::ttype_t* constructor_elem = ASRUtils::extract_type(x->m_type);
+            ASR::expr_t* constructor_len = ASR::is_a<ASR::String_t>(*constructor_elem) ?
+                ASR::down_cast<ASR::String_t>(constructor_elem)->m_len : nullptr;
+            // A length set inside an implied-do loop cannot size the temporary
+            if (!(constructor_len && uses_implied_do_variable(constructor_len,
+                    x->m_args, x->n_args)) &&
+                    (is_assumed_length_string(ASRUtils::expr_type(result_var)) ||
+                    string_length_may_differ(ASRUtils::expr_type(result_var), x->m_type))) {
+                is_result_var_fixed_size = false;
+            }
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
@@ -908,6 +967,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             resultvar2value[result_var] == &(x->base)) {
             is_assignment_value = true;
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
+        }
+        // A temporary cannot have an assumed length
+        if (is_result_var_fixed_size &&
+                is_assumed_length_string(ASRUtils::expr_type(result_var))) {
+            is_result_var_fixed_size = false;
         }
         bool is_named_constant = is_named_array_constant(x, is_assignment_value);
         ASR::ttype_t* result_type_ = nullptr;

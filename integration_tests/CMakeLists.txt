@@ -1354,6 +1354,8 @@ RUN(NAME array_constructor_15 LABELS gfortran llvm) # implied-do with non-defaul
 RUN(NAME array_constructor_16 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_constructor_17 FILE array_constructor_15 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME array_constructor_18 LABELS gfortran llvm) # real(16) arrays from default-real, real(8) and integer constants
+RUN(NAME array_constructor_char_len_01 LABELS gfortran llvm) # a character type-spec cuts or pads every element
+RUN(NAME array_constant_char_assumed_len_01 LABELS gfortran llvm) # constant array assigned to an explicit-shape character(len=*) dummy
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
