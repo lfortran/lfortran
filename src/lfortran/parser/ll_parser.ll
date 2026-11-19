@@ -69,10 +69,9 @@
 %extern labeled_decl_or_statement -> ast_t* first: TK_LABEL
 // A declaration, or else a statement; null if neither starts here
 %extern var_decl_or_statement -> ast_t*
-// DEFERRED declarations of templates, other than DEFERRED INTERFACE
-%extern deferred_decl -> ast_t* first: KW_DEFERRED
-// "{" instantiate_symbol_list_opt "}"
-%extern instantiate_symbols -> Vec<ast_t*> first: "{"
+// An argument of an instantiation: a type if it can be one, else an
+// expression
+%extern instantiate_symbol -> ast_t*
 // CONTAINS and the subprograms after it
 %extern contains_block -> Vec<ast_t*> first: KW_CONTAINS
 // A subroutine, a function or a module procedure with its prefixes, or else a
@@ -785,6 +784,69 @@ rule union_type_decl -> ast_t*
 rule id_list_opt -> Vec<ast_t*>
     : &[ ")" | "}" ]                => empty_list()
     | list=id % ","                 => list
+    ;
+
+// Templates
+
+// "{" instantiate_symbol_list_opt "}"
+rule instantiate_symbols -> Vec<ast_t*>
+    : "{" "}"                       => empty_list()
+    | "{" list=instantiate_arg % "," "}" => list
+    ;
+
+rule instantiate_arg -> ast_t*
+    : &[ NAME "=" ] n=id "=" sym=instantiate_symbol => ATTR_KEYWORD(n, sym, @$)
+    | instantiate_symbol
+    ;
+
+// INSTANTIATE with ONLY, or with a list of symbols, which gives two items
+rule instantiate -> Vec<ast_t*>
+    : KW_INSTANTIATE
+        ( "::" local=id "=>" n=id args=instantiate_symbols sep
+                                    => one_item(INSTANTIATE_SUBP(n, local, args, @$))
+        | "::"? n=id args=instantiate_symbols
+            ( "," KW_ONLY ":" syms=use_symbol_list sep
+                                    => one_item(INSTANTIATE2(n, args, syms, @$))
+            | "," only=instantiate_symbol_list(n, args) sep
+                                    => two_items(only, INSTANTIATE1(n, args, @$))
+            | sep                   => one_item(INSTANTIATE1(n, args, @$))
+            )
+        )
+    ;
+
+rule instantiate_symbol_list(ast_t *n, Vec<ast_t*> &args) -> ast_t*
+    : syms=use_symbol_list          => INSTANTIATE2(n, args, syms, @$)
+    ;
+
+rule deferred_type_decl -> Vec<ast_t*>
+    : KW_DEFERRED KW_TYPE ( "," attrs=deferred_type_attr % "," )? "::" ids=id_list sp=sep
+        => DEFERRED_TYPES(m_a, attrs.p, attrs.size(), ids, TRIVIA_AFTER(sp, @$), @$)
+    ;
+
+rule deferred_type_attr -> ast_t*
+    : KW_ABSTRACT                   => SIMPLE_ATTR(Abstract, @$)
+    | KW_EXTENSIBLE                 => SIMPLE_ATTR(Extensible, @$)
+    ;
+
+// DEFERRED declarations of templates, other than DEFERRED TYPE and DEFERRED
+// INTERFACE
+rule deferred_decl -> ast_t*
+    : KW_DEFERRED
+        ( &[ KW_PROCEDURE "(" NAME ")" "::" | KW_PROCEDURE "(" NAME ")" NAME ]
+            KW_PROCEDURE "(" iface=id ")" "::"? ids=id_list ^ sp=sep
+                => DEFERRED_PROCEDURE(iface, ids, TRIVIA_AFTER(sp, @$), @^)
+        | vt=var_type
+            ( "," attrs=deferred_attr % "," "::" syms=var_sym_decl_list ^ sp=sep
+                => DEFERRED_CONST_DECL(m_a, vt, attrs, syms, TRIVIA_AFTER(sp, @^), @^)
+            | "::" syms=var_sym_decl_list ^ sp=sep
+                => DEFERRED_CONST_DECL_NOATTR(m_a, vt, syms, TRIVIA_AFTER(sp, @^), @^)
+            )
+        )
+    ;
+
+rule deferred_attr -> ast_t*
+    : KW_RANK "(" e=expr_list ")"   => ATTR_RANK(e, @$)
+    | a_var_modifier
     ;
 
 rule id_list -> Vec<ast_t*>

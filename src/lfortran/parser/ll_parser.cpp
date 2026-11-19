@@ -445,29 +445,8 @@ struct LL {
         unsup(__LINE__);
     }
 
-    // "{" instantiate_symbol_list_opt "}"
-    Vec<ast_t*> instantiate_symbols() {
-        expect_(TK_LBRACE, __LINE__);
-        Vec<ast_t*> v;
-        LIST_NEW(v);
-        if (K[i] != TK_RBRACE) {
-            do {
-                size_t s = i;
-                if (is_name(K[i]) && K[i+1] == TK_EQUAL) {
-                    ast_t *n = id();
-                    i++;
-                    ast_t *sym = instantiate_symbol();
-                    Location l = span(s);
-                    LIST_ADD(v, ATTR_KEYWORD(n, sym, l));
-                } else {
-                    LIST_ADD(v, instantiate_symbol());
-                }
-            } while (accept(TK_COMMA));
-        }
-        expect_(TK_RBRACE, __LINE__);
-        return v;
-    }
-
+    // An argument of an instantiation: a type if it can be one, else an
+    // expression
     ast_t* instantiate_symbol() {
         size_t s = i;
         Location l;
@@ -484,127 +463,6 @@ struct LL {
         ast_t *e = expr();
         l = span(s);
         return instantiate_arg_expr(m_a, e, l);
-    }
-
-    Vec<ast_t*> instantiate() {
-        size_t s = i;
-        i++;
-        Vec<ast_t*> v;
-        LIST_NEW(v);
-        Location l;
-        if (accept(TK_DBL_COLON) && is_name(K[i]) && K[i+1] == TK_ARROW) {
-            ast_t *local = id();
-            i++;
-            ast_t *n = id();
-            Vec<ast_t*> args = instantiate_symbols();
-            sep();
-            l = span(s);
-            LIST_ADD(v, INSTANTIATE_SUBP(n, local, args, l));
-            return v;
-        }
-        ast_t *n = id();
-        Vec<ast_t*> args = instantiate_symbols();
-        if (accept(TK_COMMA)) {
-            if (K[i] == KW_ONLY && K[i+1] == TK_COLON) {
-                i += 2;
-                Vec<ast_t*> syms = use_symbol_list();
-                sep();
-                l = span(s);
-                LIST_ADD(v, INSTANTIATE2(n, args, syms, l));
-                return v;
-            }
-            size_t s2 = i;
-            Vec<ast_t*> syms = use_symbol_list();
-            Location l2 = span(s2);
-            sep();
-            l = span(s);
-            LIST_ADD(v, INSTANTIATE2(n, args, syms, l2));
-            LIST_ADD(v, INSTANTIATE1(n, args, l));
-            return v;
-        }
-        sep();
-        l = span(s);
-        LIST_ADD(v, INSTANTIATE1(n, args, l));
-        return v;
-    }
-
-    Vec<ast_t*> deferred_type_decl() {
-        size_t s = i;
-        i += 2;
-        Vec<ast_t*> attrs;
-        bool has_attrs = false;
-        if (K[i] == TK_COMMA) {
-            LIST_NEW(attrs);
-            has_attrs = true;
-            while (accept(TK_COMMA)) {
-                Location l2 = Lc[i];
-                if (accept(KW_ABSTRACT)) {
-                    LIST_ADD(attrs, SIMPLE_ATTR(Abstract, l2));
-                } else {
-                    expect_(KW_EXTENSIBLE, __LINE__);
-                    LIST_ADD(attrs, SIMPLE_ATTR(Extensible, l2));
-                }
-            }
-        }
-        expect_(TK_DBL_COLON, __LINE__);
-        Vec<ast_t*> ids = id_list();
-        Vec<ast_t*> sp = sep();
-        Location l = span(s);
-        if (has_attrs) {
-            return DEFERRED_TYPES(m_a, attrs.p, attrs.size(), ids,
-                TRIVIA_AFTER(sp, l), l);
-        }
-        return DEFERRED_TYPES(m_a, nullptr, 0, ids, TRIVIA_AFTER(sp, l), l);
-    }
-
-    // deferred_const_decl and deferred_proc_decl
-    ast_t* deferred_decl() {
-        size_t s = i;
-        i++;
-        Location l;
-        if (K[i] == KW_PROCEDURE && K[i+1] == TK_LPAREN
-                && is_name(K[i+2]) && K[i+3] == TK_RPAREN
-                && (K[i+4] == TK_DBL_COLON || is_name(K[i+4]))) {
-            i += 2;
-            ast_t *iface = id();
-            i++;
-            accept(TK_DBL_COLON);
-            Vec<ast_t*> ids = id_list();
-            Location l2 = span(s);
-            Vec<ast_t*> sp = sep();
-            l = span(s);
-            return DEFERRED_PROCEDURE(iface, ids, TRIVIA_AFTER(sp, l), l2);
-        }
-        ast_t *vt = var_type();
-        if (K[i] == TK_COMMA) {
-            Vec<ast_t*> attrs;
-            LIST_NEW(attrs);
-            while (accept(TK_COMMA)) {
-                size_t s2 = i;
-                if (K[i] == KW_RANK && K[i+1] == TK_LPAREN) {
-                    i += 2;
-                    Vec<ast_t*> e = expr_list();
-                    expect_(TK_RPAREN, __LINE__);
-                    Location l2 = span(s2);
-                    LIST_ADD(attrs, ATTR_RANK(e, l2));
-                } else {
-                    ast_t *m = var_modifier();
-                    if (m == nullptr) unsup(__LINE__);
-                    LIST_ADD(attrs, m);
-                }
-            }
-            expect_(TK_DBL_COLON, __LINE__);
-            Vec<var_sym_t> syms = var_sym_decl_list();
-            l = span(s);
-            Vec<ast_t*> sp = sep();
-            return DEFERRED_CONST_DECL(m_a, vt, attrs, syms,
-                TRIVIA_AFTER(sp, l), l);
-        }
-        expect_(TK_DBL_COLON, __LINE__);
-        Vec<var_sym_t> syms = var_sym_decl_list();
-        l = span(s);
-        Vec<ast_t*> sp = sep();
-        return DEFERRED_CONST_DECL_NOATTR(m_a, vt, syms, TRIVIA_AFTER(sp, l), l);
     }
 
     // A declaration with a label (not one that starts with an attribute),
@@ -783,6 +641,14 @@ struct LL {
     Vec<FnArg> empty_fnargs() {
         Vec<FnArg> v;
         LIST_NEW(v);
+        return v;
+    }
+
+    Vec<ast_t*> two_items(ast_t *x, ast_t *y) {
+        Vec<ast_t*> v;
+        LIST_NEW(v);
+        LIST_ADD(v, x);
+        LIST_ADD(v, y);
         return v;
     }
 
