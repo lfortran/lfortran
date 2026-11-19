@@ -13274,6 +13274,9 @@ public:
                 // expression, such as c_loc(x) or a function result, is
                 // already the pointer value.
                 load_cptr = false;
+            } else if (ASR::is_a<ASR::FunctionCall_t>(*x.m_ptr)) {
+                // A pointer function result is already the pointer value.
+                load_cptr = false;
             }
             if (load_cptr) {
                 ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
