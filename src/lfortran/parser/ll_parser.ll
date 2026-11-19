@@ -58,8 +58,6 @@
 // can be repeated
 %extern data_sets -> Vec<ast_t*>
 %extern data_stmt_value_list -> Vec<ast_t*>
-// "," and the specifiers of EVENT WAIT
-%extern event_wait_specs -> Vec<ast_t*> first: ","
 // The statements of the DO loop with the label of the token `lab`, up to and
 // including the statement that has the label
 %extern labeled_do_body -> Vec<ast_t*>
@@ -75,9 +73,6 @@
 %extern deferred_decl -> ast_t* first: KW_DEFERRED
 // "{" instantiate_symbol_list_opt "}"
 %extern instantiate_symbols -> Vec<ast_t*> first: "{"
-// The groups of a NAMELIST and the blocks of a COMMON statement
-%extern namelist_group_list -> Vec<namelist_group_t>
-%extern common_block_list -> Vec<common_block_t>
 // CONTAINS and the subprograms after it
 %extern contains_block -> Vec<ast_t*> first: KW_CONTAINS
 // A subroutine, a function or a module procedure with its prefixes, or else a
@@ -375,7 +370,8 @@ rule statement1? -> ast_t*
         "," specs=sync_stat_list ")" => EVENT_POST1(e, specs, @$)
     | KW_EVENT KW_WAIT "(" e=expr
         ( ")"                       => EVENT_WAIT(e, @$) )?
-        specs=event_wait_specs ")"  => EVENT_WAIT1(e, specs, @$)
+        "," ( k=event_wait_kw ( stats=sync_stat_list )? )? ")"
+                                    => EVENT_WAIT1(e, event_wait_specs(k, stats), @$)
     ;
 
 // The format of a PRINT statement; `*` is null
@@ -414,6 +410,10 @@ rule unit_number(size_t s) -> ast_t*
     ;
 
 // [","] sync_stat ["," sync_stat]...
+rule event_wait_kw -> ast_t*
+    : n=id "=" v=expr               => EVENT_WAIT_KW_ARG(n, v, @$)
+    ;
+
 rule sync_stat_list -> Vec<ast_t*>
     : ","? list=sync_stat % ","     => list
     ;
@@ -1131,6 +1131,47 @@ rule coarray_comp_decl -> codimension_t*
         | ":" b=expr                => COARRAY_COMP_DECL2d(a, b, @$)
         )?
                                     => COARRAY_COMP_DECL1d(a, @$)
+    ;
+
+// The groups of a NAMELIST statement: `/g/ a, b /h/ c`, the commas
+// between the groups are optional
+rule namelist_group_list -> Vec<namelist_group_t>
+    : g=slash_name o=plain_name items=namelist_item* => namelist_groups(g, o, items)
+    ;
+
+rule namelist_item? -> ListItem
+    : ","? ( g=slash_name )? o=plain_name => ListItem{g, o}
+    ;
+
+// The blocks of a COMMON statement: `/b/ x, y // z`; a block without a name
+// is the blank common
+rule common_block_list -> Vec<common_block_t>
+    : g=common_block_start? o=common_block_object items=common_item*
+                                    => common_blocks(g, o, items, @$)
+    ;
+
+rule common_item? -> ListItem
+    : ","? g=common_block_start? o=common_block_object => ListItem{g, o}
+    ;
+
+rule common_block_start? -> var_sym_t*
+    : "//"                          => VAR_SYM_EMPTY(@$)
+    | "/" "/"                       => VAR_SYM_EMPTY(@$)
+    | slash_name
+    ;
+
+rule common_block_object -> var_sym_t*
+    : n=id
+        ( "(" d=array_comp_decl_list ")" => VAR_SYM_DIM(n, d.p, d.n, None, @$) )?
+                                    => VAR_SYM_NAME(n, None, @$)
+    ;
+
+rule slash_name -> var_sym_t*
+    : "/" n=id "/"                  => VAR_SYM_NAME(n, None, @$)
+    ;
+
+rule plain_name -> var_sym_t*
+    : n=id                          => VAR_SYM_NAME(n, None, @$)
     ;
 
 rule array_comp_decl_list -> Vec<dimension_t>

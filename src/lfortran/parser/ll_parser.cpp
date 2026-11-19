@@ -59,6 +59,14 @@ struct ConcurrentHeader {
     ast_t *mask;
 };
 
+// An item of the list of a NAMELIST or COMMON statement: an object and the
+// name of the group or block that starts with it (or null)
+struct ListItem {
+    var_sym_t *group;
+    var_sym_t *object;
+    explicit operator bool() const { return object != nullptr; }
+};
+
 // `i = a, b [, c]` of an implied do loop; `step` is null if there is none
 struct DoControl {
     ast_t *var, *start, *end, *step;
@@ -374,27 +382,6 @@ struct LL {
         return v;
     }
 
-    Vec<ast_t*> event_wait_specs() {
-        expect_(TK_COMMA, __LINE__);
-        Vec<ast_t*> specs;
-        LIST_NEW(specs);
-        if (K[i] != TK_RPAREN) {
-            size_t s = i;
-            ast_t *n = id();
-            expect_(TK_EQUAL, __LINE__);
-            ast_t *v = expr();
-            Location l = span(s);
-            LIST_ADD(specs, EVENT_WAIT_KW_ARG(n, v, l));
-            if (K[i] == TK_COMMA) {
-                Vec<ast_t*> stats = sync_stat_list();
-                for (size_t j = 0; j < stats.size(); j++) {
-                    LIST_ADD(specs, stats[j]);
-                }
-            }
-        }
-        return specs;
-    }
-
     Vec<ast_t*> decl_statements() {
         Vec<ast_t*> v;
         LIST_NEW(v);
@@ -637,106 +624,6 @@ struct LL {
         if (r != nullptr) return r;
         i = s;
         return statement();
-    }
-
-    var_sym_t* slash_name() {
-        size_t s = i;
-        expect_(TK_SLASH, __LINE__);
-        ast_t *n = id();
-        expect_(TK_SLASH, __LINE__);
-        Location l = span(s);
-        return VAR_SYM_NAME(n, None, l);
-    }
-
-    var_sym_t* plain_name() {
-        size_t s = i;
-        ast_t *n = id();
-        Location l = span(s);
-        return VAR_SYM_NAME(n, None, l);
-    }
-
-    Vec<namelist_group_t> namelist_group_list() {
-        Vec<namelist_group_t> out;
-        {
-            var_sym_t *name = slash_name();
-            var_sym_t *object = plain_name();
-            NAMELIST_GROUP_1(out, name, object);
-        }
-        while (!is_sep(K[i])) {
-            accept(TK_COMMA);
-            Vec<namelist_group_t> groups = out;
-            if (K[i] == TK_SLASH) {
-                var_sym_t *name = slash_name();
-                var_sym_t *object = plain_name();
-                NAMELIST_GROUP_3(out, groups, name, object);
-            } else {
-                var_sym_t *object = plain_name();
-                NAMELIST_GROUP_2(out, groups, object);
-            }
-        }
-        return out;
-    }
-
-    var_sym_t* common_block_object() {
-        size_t s = i;
-        ast_t *n = id();
-        Location l;
-        if (accept(TK_LPAREN)) {
-            Vec<dimension_t> d = array_comp_decl_list();
-            expect_(TK_RPAREN, __LINE__);
-            l = span(s);
-            return VAR_SYM_DIM(n, d.p, d.n, None, l);
-        }
-        l = span(s);
-        return VAR_SYM_NAME(n, None, l);
-    }
-
-    // common_block_start, if there is one here
-    var_sym_t* common_block_start() {
-        size_t s = i;
-        Location l;
-        if (accept(TK_CONCAT)) {
-            l = span(s);
-            return VAR_SYM_EMPTY(l);
-        }
-        if (!accept(TK_SLASH)) return nullptr;
-        if (accept(TK_SLASH)) {
-            l = span(s);
-            return VAR_SYM_EMPTY(l);
-        }
-        ast_t *n = id();
-        expect_(TK_SLASH, __LINE__);
-        l = span(s);
-        return VAR_SYM_NAME(n, None, l);
-    }
-
-    Vec<common_block_t> common_block_list() {
-        size_t s = i;
-        Vec<common_block_t> out;
-        Location l;
-        {
-            var_sym_t *start = common_block_start();
-            var_sym_t *object = common_block_object();
-            l = span(s);
-            if (start) {
-                COMMON_BLOCK_2(out, start, object, l);
-            } else {
-                COMMON_BLOCK_1(out, object, l);
-            }
-        }
-        while (!is_sep(K[i])) {
-            accept(TK_COMMA);
-            Vec<common_block_t> prev = out;
-            var_sym_t *start = common_block_start();
-            var_sym_t *object = common_block_object();
-            l = span(s);
-            if (start) {
-                COMMON_BLOCK_5(out, prev, start, object, l);
-            } else {
-                COMMON_BLOCK_3(out, prev, object, l);
-            }
-        }
-        return out;
     }
 
     // contains_block
@@ -1163,6 +1050,59 @@ struct LL {
             }
         }
         return h;
+    }
+
+    Vec<ast_t*> event_wait_specs(ast_t *k, Vec<ast_t*> &stats) {
+        Vec<ast_t*> specs;
+        LIST_NEW(specs);
+        if (k) LIST_ADD(specs, k);
+        for (size_t j = 0; j < stats.size(); j++) LIST_ADD(specs, stats[j]);
+        return specs;
+    }
+
+    // The objects after the name of a group are in the group
+    Vec<namelist_group_t> namelist_groups(var_sym_t *g, var_sym_t *o,
+            Vec<ListItem> &items) {
+        Vec<namelist_group_t> out;
+        {
+            NAMELIST_GROUP_1(out, g, o);
+        }
+        for (size_t j = 0; j < items.size(); j++) {
+            Vec<namelist_group_t> groups = out;
+            if (items.p[j].group) {
+                NAMELIST_GROUP_3(out, groups, items.p[j].group,
+                    items.p[j].object);
+            } else {
+                NAMELIST_GROUP_2(out, groups, items.p[j].object);
+            }
+        }
+        return out;
+    }
+
+    // The objects after the name of a block are in the block. The location
+    // of a block is from the start of the list to its first object.
+    Vec<common_block_t> common_blocks(var_sym_t *g, var_sym_t *o,
+            Vec<ListItem> &items, Location &all) {
+        Vec<common_block_t> out;
+        Location l = all;
+        l.last = o->loc.last;
+        if (g) {
+            COMMON_BLOCK_2(out, g, o, l);
+        } else {
+            COMMON_BLOCK_1(out, o, l);
+        }
+        for (size_t j = 0; j < items.size(); j++) {
+            Vec<common_block_t> prev = out;
+            var_sym_t *start = items.p[j].group;
+            var_sym_t *object = items.p[j].object;
+            l.last = object->loc.last;
+            if (start) {
+                COMMON_BLOCK_5(out, prev, start, object, l);
+            } else {
+                COMMON_BLOCK_3(out, prev, object, l);
+            }
+        }
+        return out;
     }
 
     // The name of a main program without the PROGRAM statement
