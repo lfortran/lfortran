@@ -1,5 +1,5 @@
-tokenizer error: Expecting terminating symbol for program
- --> tests/errors/fixed_form_1.f:2:7
+syntax error: Token '::' is unexpected here
+ --> tests/errors/fixed_form_1.f:2:16
   |
 2 |       xinteger :: y
-  |       ^ 
+  |                ^^ 

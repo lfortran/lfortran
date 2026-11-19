@@ -1,5 +1,17 @@
-tokenizer error: Expecting contains keyword before procedure definition
- --> tests/errors/continue_compilation_ff_2.f:3:7
+syntax error: Newline is unexpected here
+ --> tests/errors/continue_compilation_ff_2.f:3:44
   |
 3 |       SUBROUTINE faulty_subroutine(a, b, c)
-  |       ^ 
+  |                                            ^ 
+
+syntax error: Token 'endsubroutine' is unexpected here
+ --> tests/errors/continue_compilation_ff_2.f:5:7
+  |
+5 |       END SUBROUTINE faulty_subroutine
+  |       ^^^^^^^^^^^^^^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+ --> tests/errors/continue_compilation_ff_2.f:4:16
+  |
+4 |       INTEGER, INTENT(IN) :: sub_a
+  |                ^^^^^^^^^^ 
