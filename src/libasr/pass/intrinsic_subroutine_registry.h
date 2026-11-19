@@ -123,6 +123,9 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"getcwd", &GetCwd::create_GetCwdSubroutine},
                 {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
+                // Legacy GNU/F77 extension, equivalent to
+                // `get_environment_variable(name, value)`.
+                {"getenv", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
                 {"cpu_time", &CpuTime::create_CpuTime},
                 {"date_and_time", &DateAndTime::create_DateAndTime},
