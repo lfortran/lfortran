@@ -29966,6 +29966,13 @@ public:
         } else {
             throw CodeGenError("bounds_check_call: Symbol type not supported");
         }
+        // The procedure the messages name. A call through an implicit
+        // interface names a pointer temporary the frontend declared, and
+        // records the procedure the user called as the original name.
+        ASR::symbol_t* reported_name = m_name;
+        if (ASR::is_a<ASR::Variable_t>(*m_name) && x.m_original_name != nullptr) {
+            reported_name = ASRUtils::symbol_get_past_external(x.m_original_name);
+        }
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t* arg_expr = x.m_args[i].m_value;
             if (arg_expr == nullptr) continue;
@@ -30059,7 +30066,7 @@ public:
                                 infile,
                                 location_manager,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)));
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(reported_name)));
                     }
 
                     // Sequence association (F2023 15.5.2.12): an actual
@@ -30117,7 +30124,7 @@ public:
                                             LLVMUtils::RuntimeLabel("Parameter is size %lld, argument is size %lld", {m_dims[j].loc}, {pointer_length, descriptor_length}, false)},
                                         infile,
                                         location_manager,
-                                        llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                        llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(reported_name)),
                                         descriptor_length,
                                         dim,
                                         llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -30133,14 +30140,14 @@ public:
                                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                 infile,
                                 location_manager,
-                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(reported_name)),
                                 desc_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
                         builder->CreateBr(mergeBB);
                         start_new_block(mergeBB);
                     } else if (ASRUtils::has_explicit_dimension_bounds(arr_cast->m_type)) {
-                        emit_sequence_assoc_size_check(m_name, arg_expr,
+                        emit_sequence_assoc_size_check(reported_name, arg_expr,
                             arr_descr->get_array_size(arr_type, arg, nullptr, 8),
                             get_array_size_from_asr_type(arr_cast->m_type), i,
                             ASRUtils::has_deferred_dimension_bound(arr_cast->m_type));
@@ -30185,7 +30192,7 @@ public:
                                             {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                             infile,
                                             location_manager,
-                                            llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                            llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(reported_name)),
                                             fixed_length,
                                             dim,
                                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -30202,13 +30209,13 @@ public:
                                     {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                     infile,
                                     location_manager,
-                                    llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                    llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(reported_name)),
                                     fixed_size,
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                     pointer_size);
                         }
                     } else if (ASRUtils::has_explicit_dimension_bounds(arr_cast->m_type)) {
-                        emit_sequence_assoc_size_check(m_name, arg_expr,
+                        emit_sequence_assoc_size_check(reported_name, arg_expr,
                             llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                 ASRUtils::get_fixed_size_of_array(fixed_size_type)),
                             get_array_size_from_asr_type(arr_cast->m_type), i,
@@ -30250,7 +30257,7 @@ public:
                         } else {
                             llvm::Value* arg_number = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1));
                             llvm::Value* subroutine_name = llvm_utils->get_runtime_error_string(
-                                ASRUtils::symbol_name(m_name));
+                                ASRUtils::symbol_name(reported_name));
                             llvm_utils->generate_runtime_error(is_unallocated,
                                     "Argument %d of subroutine %s is unallocated.",
                                     {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc})},
