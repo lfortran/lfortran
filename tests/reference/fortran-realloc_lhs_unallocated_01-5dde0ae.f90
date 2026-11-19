@@ -396,7 +396,6 @@ do k = 1, 3
     __libasr_created_real_compare_left_ = __libasr_created__subroutine_from_function_
     deallocate(__libasr_created__intrinsic_array_function_Any)
     allocate(__libasr_created__intrinsic_array_function_Any(size(__libasr_created_real_compare_left_, 1)))
-    reallocate(__libasr_created__intrinsic_array_function_Any(size(__libasr_created_real_compare_left_, 1)))
     ! CheckBounds LHS = __libasr_created__intrinsic_array_function_Any, RHS = __libasr_created_real_compare_left_,&
          __libasr__created__var__1__array_constructor_, 
     __libasr_index_0_1 = lbound(__libasr_created_real_compare_left_, 1)

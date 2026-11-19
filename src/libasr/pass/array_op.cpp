@@ -1755,6 +1755,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::Allocate_t* a = ASR::down_cast<ASR::Allocate_t>(&x);
                 for (size_t i = 0; i < a->n_args; i++) {
                     facts.forget(a->m_args[i].m_a);
+                    // Allocated with the extents of another array, as a
+                    // temporary for an operand of the shape of the value is
+                    if (ASR::expr_t* model = allocated_with_shape_of(a->m_args[i])) {
+                        facts.set_same_shape({
+                            ASRUtils::get_past_array_physical_cast(a->m_args[i].m_a),
+                            model});
+                    }
                 }
                 return;
             }
@@ -1780,6 +1787,49 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
         facts.clear();
+    }
+
+    // The tracked array whose extents, `size(y, k)` for every dimension
+    // `k`, the allocation `arg` of a tracked array of the same rank gives,
+    // or nullptr
+    static ASR::expr_t* allocated_with_shape_of(const ASR::alloc_arg_t& arg) {
+        ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(arg.m_a);
+        if (!AllocationFacts::is_tracked(target) || arg.m_len_expr != nullptr ||
+                arg.m_type != nullptr ||
+                (size_t) ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(target)) != arg.n_dims) {
+            return nullptr;
+        }
+        ASR::expr_t* model = nullptr;
+        for (size_t d = 0; d < arg.n_dims; d++) {
+            ASR::expr_t* length = arg.m_dims[d].m_length;
+            while (length != nullptr && ASR::is_a<ASR::Cast_t>(*length)) {
+                length = ASR::down_cast<ASR::Cast_t>(length)->m_arg;
+            }
+            if (length == nullptr || !ASR::is_a<ASR::ArraySize_t>(*length)) {
+                return nullptr;
+            }
+            ASR::ArraySize_t* size = ASR::down_cast<ASR::ArraySize_t>(length);
+            int64_t dim = 0;
+            if (size->m_dim == nullptr || !ASRUtils::extract_value(
+                    ASRUtils::expr_value(size->m_dim), dim) ||
+                    dim != (int64_t) d + 1) {
+                return nullptr;
+            }
+            ASR::expr_t* y = ASRUtils::get_past_array_physical_cast(size->m_v);
+            if (model == nullptr) {
+                model = y;
+            } else if (!PassUtils::same_expression(model, y)) {
+                return nullptr;
+            }
+        }
+        if (model == nullptr || !AllocationFacts::is_tracked(model) ||
+                (size_t) ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(model)) != arg.n_dims ||
+                PassUtils::same_expression(model, target)) {
+            return nullptr;
+        }
+        return model;
     }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {

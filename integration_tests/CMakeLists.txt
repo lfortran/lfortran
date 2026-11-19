@@ -3777,6 +3777,7 @@ RUN(NAME realloc_lhs_result_inplace_01 LABELS gfortran llvm) # explicit-shape re
 RUN(NAME realloc_lhs_result_inplace_02 LABELS llvm) # not when an internal procedure passed to the function reads the target (GFortran 15 gets it wrong)
 RUN(NAME realloc_lhs_promote_01 LABELS gfortran llvm) # constant-size locals reallocated to their shape become arrays of the frame
 RUN(NAME realloc_lhs_reshape_01 LABELS gfortran llvm) # a reshape is reallocated to once, before it is copied
+RUN(NAME realloc_lhs_pack_01 LABELS gfortran llvm) # an array allocated with the extents of another has its shape
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)

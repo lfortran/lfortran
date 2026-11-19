@@ -395,7 +395,6 @@ __1_k4 = 3
 __libasr__created__var__5__array_constant_(__1_k4) = "hi"
 deallocate(__libasr_created__intrinsic_array_function_Any4)
 allocate(__libasr_created__intrinsic_array_function_Any4(size(s, 1)))
-reallocate(__libasr_created__intrinsic_array_function_Any4(size(s, 1)))
 ! CheckBounds LHS = __libasr_created__intrinsic_array_function_Any4, RHS = s, __libasr__created__var__5__array_constant_,&
          
 __libasr_index_0_11 = lbound(s, 1)
