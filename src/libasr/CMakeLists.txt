@@ -81,6 +81,9 @@ set(SRC
     pass/div_to_mul.cpp
     pass/replace_symbolic.cpp
     pass/intrinsic_function.cpp
+    pass/intrinsic_function_registry.cpp
+    pass/intrinsic_array_function_registry.cpp
+    pass/intrinsic_subroutine_registry.cpp
     pass/intrinsic_subroutine.cpp
     pass/loop_fusion.cpp
     pass/sign_from_value.cpp
@@ -155,6 +158,7 @@ set(SRC
     codegen/asr_to_cuda.cpp
 
     asr_verify.cpp
+    asr_visitors.cpp
     asr_utils.cpp
     casting_utils.cpp
     asr_scopes.cpp
@@ -214,6 +218,50 @@ target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 
 add_library(asr STATIC ${SRC})
+
+# Nearly every source of libasr includes asr_utils.h and pass_utils.h, and
+# parsing them takes longer than compiling a typical pass. A precompiled
+# header parses them once. Compiler caches do not cache a compilation that
+# uses a GCC precompiled header, so builds that use one keep parsing.
+set(WITH_PCH_DEFAULT no)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug"
+        AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+            OR CMAKE_CXX_COMPILER_ID MATCHES Clang)
+        AND NOT CMAKE_CXX_COMPILER_LAUNCHER AND NOT WITH_CCACHE
+        AND NOT EMSCRIPTEN AND NOT LFORTRAN_BUILD_TO_WASM
+        AND NOT CMAKE_VERSION VERSION_LESS 3.16)
+    set(WITH_PCH_DEFAULT yes)
+endif()
+set(WITH_PCH ${WITH_PCH_DEFAULT}
+    CACHE BOOL "Precompile the headers that most of libasr includes")
+if (WITH_PCH)
+    target_precompile_headers(asr PRIVATE
+        <libasr/asr_utils.h>
+        <libasr/pass/pass_utils.h>
+        <libasr/pass/gpu_decline.h>
+        <libasr/codegen/gpu_utils.h>)
+    # Ninja starts the compilations that are ready in the order of the
+    # sources, and none of those that use the header is ready before it is
+    # compiled. The longest compilations skip it, so they start first instead
+    # of last and do not hold up the end of the build.
+    set_source_files_properties(
+        codegen/asr_to_llvm.cpp
+        codegen/llvm_utils.cpp
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+endif()
+
+# A unity build compiles the sources in batches, so the headers they share
+# are parsed once for each batch rather than once for each source. Every
+# source then follows others in one translation unit: names local to a source
+# must be unique in libasr, a source undefines the macros it defines, and no
+# source has a `using namespace` at file scope.
+set(WITH_UNITY_BUILD no CACHE BOOL "Compile libasr in batches of sources")
+if (WITH_UNITY_BUILD)
+    set(LFORTRAN_UNITY_BATCH_SIZE 8 CACHE STRING "Sources in a unity batch")
+    set_target_properties(asr PROPERTIES
+        UNITY_BUILD ON
+        UNITY_BUILD_BATCH_SIZE ${LFORTRAN_UNITY_BATCH_SIZE})
+endif()
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
 target_link_libraries(asr lfortran_utils)

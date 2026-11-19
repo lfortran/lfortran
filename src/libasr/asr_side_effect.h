@@ -2,7 +2,7 @@
 #define LIBASR_ASR_SIDE_EFFECT_H
 
 #include <libasr/asr_utils.h>
-#include <libasr/pass/intrinsic_subroutines.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 
 #include <map>
 

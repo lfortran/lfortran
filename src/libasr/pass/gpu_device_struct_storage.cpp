@@ -136,7 +136,7 @@ bool gpu_struct_has_component_arguments(ASR::Function_t &fn,
 
 namespace {
 
-ASR::expr_t* duplicate(Allocator &al, ASR::expr_t *e) {
+ASR::expr_t* storage_duplicate(Allocator &al, ASR::expr_t *e) {
     if (e == nullptr) return nullptr;
     ASRUtils::ExprStmtDuplicator duplicator(al);
     duplicator.allow_procedure_calls = true;
@@ -145,7 +145,7 @@ ASR::expr_t* duplicate(Allocator &al, ASR::expr_t *e) {
     return duplicator.success ? copy : nullptr;
 }
 
-ASR::symbol_t* variable_of(ASR::expr_t *e) {
+ASR::symbol_t* storage_variable_of(ASR::expr_t *e) {
     if (e == nullptr) return nullptr;
     e = ASRUtils::get_past_array_physical_cast(e);
     if (!ASR::is_a<ASR::Var_t>(*e)) return nullptr;
@@ -161,7 +161,7 @@ std::string component_name(ASR::expr_t *e, ASR::symbol_t *base) {
     if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return "";
     ASR::StructInstanceMember_t *m =
         ASR::down_cast<ASR::StructInstanceMember_t>(e);
-    if (variable_of(m->m_v) != base) return "";
+    if (storage_variable_of(m->m_v) != base) return "";
     return ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(m->m_m));
 }
 
@@ -197,7 +197,7 @@ ASR::Function_t* call_target(ASR::symbol_t *name) {
 // associated with, or nullptr when the call does not say.
 ASR::Variable_t* dummy_of(ASR::Function_t *callee, size_t i, size_t n_args) {
     if (callee == nullptr || n_args != callee->n_args) return nullptr;
-    ASR::symbol_t *dummy = variable_of(callee->m_args[i]);
+    ASR::symbol_t *dummy = storage_variable_of(callee->m_args[i]);
     if (dummy == nullptr || !ASR::is_a<ASR::Variable_t>(*dummy)) {
         return nullptr;
     }
@@ -225,7 +225,7 @@ class Bindings : public ASRUtils::BlockBodyWalkVisitor<Bindings> {
     // goes to what it points to.
     bool pointer;
 
-    bool is_target(ASR::expr_t *e) { return variable_of(e) == target; }
+    bool is_target(ASR::expr_t *e) { return storage_variable_of(e) == target; }
 
     // Whether `e` is the target or a part of it: an element, a section or
     // a component.
@@ -380,7 +380,7 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
 
     // Writes `e` in place under the shape flag `shape`.
     ASR::expr_t* rewrite(ASR::expr_t *e, bool shape) {
-        ASR::expr_t *copy = duplicate(al, e);
+        ASR::expr_t *copy = storage_duplicate(al, e);
         if (copy == nullptr) {
             valid = false;
             return nullptr;
@@ -406,7 +406,7 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
         if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return nullptr;
         ASR::StructInstanceMember_t *m =
             ASR::down_cast<ASR::StructInstanceMember_t>(e);
-        ASR::symbol_t *base = variable_of(m->m_v);
+        ASR::symbol_t *base = storage_variable_of(m->m_v);
         auto it = storage.find({base, ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(m->m_m))});
         return it == storage.end() ? nullptr : it->second;
@@ -448,7 +448,7 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
                 array->base.loc, s)), out, depth + 1);
         }
         if (ASR::is_a<ASR::Var_t>(*array)) {
-            ASR::symbol_t *sym = variable_of(array);
+            ASR::symbol_t *sym = storage_variable_of(array);
             if (ASR::Array_t *arr = explicit_shape(sym)) {
                 for (size_t d = 0; d < arr->n_dims; d++) {
                     Extent e;
@@ -508,7 +508,7 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
                 ASR::expr_t *count = b.Div(b.Add(b.Sub(hi, lo), step), step);
                 e.length = ASRUtils::EXPR(ASR::make_IfExp_t(al,
                     array->base.loc, b.Gt(count, b.i_t(0, index_type)),
-                    duplicate(al, count), b.i_t(0, index_type), index_type,
+                    storage_duplicate(al, count), b.i_t(0, index_type), index_type,
                     nullptr));
                 out.push_back(e);
             }
@@ -520,8 +520,8 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
                 ASRUtils::expr_type(array));
             for (size_t d = 0; d < rank; d++) {
                 Extent e;
-                e.lower = b.ArrayLBound(duplicate(al, array), d + 1);
-                e.length = b.ArraySize(duplicate(al, array),
+                e.lower = b.ArrayLBound(storage_duplicate(al, array), d + 1);
+                e.length = b.ArraySize(storage_duplicate(al, array),
                     b.i_t(d + 1, index_type), index_type);
                 out.push_back(e);
             }
@@ -555,7 +555,7 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
             }
             array = ASRUtils::get_past_array_physical_cast(array);
         }
-        return dummies.count(variable_of(array)) > 0;
+        return dummies.count(storage_variable_of(array)) > 0;
     }
 
 public:
@@ -573,7 +573,7 @@ public:
             const StorageMap &storage)
         : al(al), fn(fn), storage(storage) {
         for (size_t i = 0; i < fn.n_args; i++) {
-            if (ASR::symbol_t *dummy = variable_of(fn.m_args[i])) {
+            if (ASR::symbol_t *dummy = storage_variable_of(fn.m_args[i])) {
                 dummies.insert(dummy);
             }
         }
@@ -606,7 +606,7 @@ public:
                 valid = false;
                 return;
             }
-            *current_expr = duplicate(al, var->m_value);
+            *current_expr = storage_duplicate(al, var->m_value);
             return;
         }
         if (lenient && !ASRUtils::is_pointer(var->m_type)) return;
@@ -677,7 +677,7 @@ public:
 
     void replace_ArrayBound(ASR::ArrayBound_t *x) {
         if (dummy_shape(x->m_v) && storage_of(x->m_v) == nullptr &&
-                explicit_shape(variable_of(x->m_v)) == nullptr) {
+                explicit_shape(storage_variable_of(x->m_v)) == nullptr) {
             bool outer = in_shape;
             in_shape = true;
             Base::replace_ArrayBound(x);
@@ -779,7 +779,7 @@ class ComponentShapes :
             ASR::dimension_t dim;
             dim.loc = value->base.loc;
             dim.m_start = b.i_t(1, index_type);
-            dim.m_length = b.ArraySize(duplicate(al, value),
+            dim.m_length = b.ArraySize(storage_duplicate(al, value),
                 b.i_t(d + 1, index_type), index_type);
             shape.push_back(dim);
         }
@@ -820,7 +820,7 @@ public:
                     !ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_value)) {
                 shapes.push_back(value_shape(x.m_value));
             }
-        } else if (variable_of(x.m_target) == base) {
+        } else if (storage_variable_of(x.m_target) == base) {
             // A whole value assigned to the variable, a variable or an
             // element or a component of one: its component has the shape
             // of the component of the value.
@@ -841,7 +841,7 @@ public:
             }
             ASR::expr_t *value = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, x.base.base.loc,
-                    duplicate(al, ASRUtils::get_past_array_physical_cast(
+                    storage_duplicate(al, ASRUtils::get_past_array_physical_cast(
                         x.m_value)),
                     member, ASRUtils::symbol_type(member), nullptr));
             shapes.push_back(value_shape(value));
@@ -861,7 +861,7 @@ public:
     void visit_IntrinsicImpureSubroutine(
             const ASR::IntrinsicImpureSubroutine_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
-            if (variable_of(x.m_args[i]) == base ||
+            if (storage_variable_of(x.m_args[i]) == base ||
                     component_name(x.m_args[i], base) == component) {
                 known = false;
             }
@@ -986,7 +986,7 @@ public:
         if (it->second.effect != CallEffect::Shaped) return it->second.effect;
         std::map<ASR::symbol_t*, ASR::expr_t*> actuals;
         for (size_t i = 0; i < n_args && i < callee.n_args; i++) {
-            ASR::symbol_t *d = variable_of(callee.m_args[i]);
+            ASR::symbol_t *d = storage_variable_of(callee.m_args[i]);
             if (d && args[i].m_value) actuals[d] = args[i].m_value;
         }
         AssociateVarResolver resolver(al, actuals);
@@ -994,8 +994,8 @@ public:
         for (const ASR::dimension_t &dim : it->second.shape) {
             ASR::dimension_t bound;
             bound.loc = dim.loc;
-            bound.m_start = duplicate(al, dim.m_start);
-            bound.m_length = duplicate(al, dim.m_length);
+            bound.m_start = storage_duplicate(al, dim.m_start);
+            bound.m_length = storage_duplicate(al, dim.m_length);
             ASR::expr_t **parts[2] = {&bound.m_start, &bound.m_length};
             for (ASR::expr_t **part : parts) {
                 if (*part == nullptr) continue;
@@ -1085,7 +1085,7 @@ public:
             const std::string &component,
             const std::map<std::string, ASR::symbol_t*> &stored) {
         const Location &loc = value->base.loc;
-        if (variable_of(value) == &var.base) {
+        if (storage_variable_of(value) == &var.base) {
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                 stored.at(component)));
         }
@@ -1094,7 +1094,7 @@ public:
             ? gpu_struct_lookup_member(st, component) : nullptr;
         if (member == nullptr) return nullptr;
         return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc,
-            duplicate(al, value), member, ASRUtils::symbol_type(member),
+            storage_duplicate(al, value), member, ASRUtils::symbol_type(member),
             nullptr));
     }
 
@@ -1116,8 +1116,8 @@ public:
                     scope->get_unique_name(
                         "__gpu_component_index", false),
                     b.int_type(4), ASR::intentType::Local));
-                lower.push_back(b.GetLBound(duplicate(al, target), d + 1));
-                upper.push_back(b.GetUBound(duplicate(al, target), d + 1));
+                lower.push_back(b.GetLBound(storage_duplicate(al, target), d + 1));
+                upper.push_back(b.GetUBound(storage_duplicate(al, target), d + 1));
             }
             Vec<ASR::stmt_t*> body;
             body.reserve(al, st ? st->n_members : 1);
@@ -1147,10 +1147,10 @@ public:
             ASR::Variable_t *m = ASR::down_cast<ASR::Variable_t>(member);
             ASR::expr_t *to = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc,
-                    duplicate(al, target), member, m->m_type, nullptr));
+                    storage_duplicate(al, target), member, m->m_type, nullptr));
             ASR::expr_t *from = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc,
-                    duplicate(al, value), member, m->m_type, nullptr));
+                    storage_duplicate(al, value), member, m->m_type, nullptr));
             ASR::Struct_t *nested = struct_of(m);
             if (!ASRUtils::is_allocatable_or_pointer(m->m_type)) {
                 copy_inline_value(to, from, nested, scope, out);
@@ -1236,8 +1236,8 @@ public:
                 case ASR::stmtType::Assignment: {
                     ASR::Assignment_t *x = ASR::down_cast<ASR::Assignment_t>(s);
                     if (ASRUtils::is_array(ASRUtils::expr_type(x->m_target))
-                            || (variable_of(x->m_target) != &var.base &&
-                                variable_of(x->m_value) != &var.base)) {
+                            || (storage_variable_of(x->m_target) != &var.base &&
+                                storage_variable_of(x->m_value) != &var.base)) {
                         break;
                     }
                     if (lowering_copies) {
@@ -1346,7 +1346,7 @@ void ComponentShapes::call_arguments(const Location &/*loc*/,
             }
             continue;
         }
-        if (variable_of(arg) != base) continue;
+        if (storage_variable_of(arg) != base) continue;
         if (dummy_is_read_only(dummy)) continue;
         if (dummy == nullptr) {
             known = false;
@@ -1381,7 +1381,7 @@ class StorageReplacer : public ASR::BaseExprReplacer<StorageReplacer> {
         if (!ASR::is_a<ASR::StructInstanceMember_t>(*e)) return nullptr;
         ASR::StructInstanceMember_t *m =
             ASR::down_cast<ASR::StructInstanceMember_t>(e);
-        if (variable_of(m->m_v) != var) return nullptr;
+        if (storage_variable_of(m->m_v) != var) return nullptr;
         auto it = stored.find(ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(m->m_m)));
         return it == stored.end() ? nullptr : it->second;
@@ -1466,7 +1466,7 @@ class Allocations : public ASRUtils::BlockBodyWalkVisitor<Allocations> {
     template <typename T>
     void allocation(const T &x) {
         for (size_t i = 0; i < x.n_args; i++) {
-            if (ASR::symbol_t *sym = variable_of(x.m_args[i].m_a)) {
+            if (ASR::symbol_t *sym = storage_variable_of(x.m_args[i].m_a)) {
                 shapes[sym].push_back(&x.m_args[i]);
             }
         }
@@ -1476,7 +1476,7 @@ class Allocations : public ASRUtils::BlockBodyWalkVisitor<Allocations> {
             size_t n_args) {
         ASR::Function_t *callee = call_target(name);
         for (size_t i = 0; i < n_args; i++) {
-            ASR::symbol_t *sym = variable_of(args[i].m_value);
+            ASR::symbol_t *sym = storage_variable_of(args[i].m_value);
             if (sym == nullptr) continue;
             ASR::Variable_t *dummy = dummy_of(callee, i, n_args);
             if (dummy == nullptr || ASRUtils::is_allocatable(dummy->m_type)
@@ -1495,10 +1495,10 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (x.m_realloc_lhs || x.m_move_allocation) {
-            if (ASR::symbol_t *sym = variable_of(x.m_target)) {
+            if (ASR::symbol_t *sym = storage_variable_of(x.m_target)) {
                 reallocated.insert(sym);
             }
-            if (ASR::symbol_t *sym = variable_of(x.m_value)) {
+            if (ASR::symbol_t *sym = storage_variable_of(x.m_value)) {
                 reallocated.insert(sym);
             }
         }
@@ -1506,7 +1506,7 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
-        if (ASR::symbol_t *sym = variable_of(x.m_target)) {
+        if (ASR::symbol_t *sym = storage_variable_of(x.m_target)) {
             reallocated.insert(sym);
         }
         Base::visit_Associate(x);
@@ -1525,7 +1525,7 @@ public:
     void visit_IntrinsicImpureSubroutine(
             const ASR::IntrinsicImpureSubroutine_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
-            if (ASR::symbol_t *sym = variable_of(x.m_args[i])) {
+            if (ASR::symbol_t *sym = storage_variable_of(x.m_args[i])) {
                 reallocated.insert(sym);
             }
         }
@@ -1535,7 +1535,7 @@ public:
     void visit_IntrinsicImpureFunction(
             const ASR::IntrinsicImpureFunction_t &x) {
         for (size_t i = 0; i < x.n_args; i++) {
-            if (ASR::symbol_t *sym = variable_of(x.m_args[i])) {
+            if (ASR::symbol_t *sym = storage_variable_of(x.m_args[i])) {
                 reallocated.insert(sym);
             }
         }
@@ -1661,7 +1661,7 @@ class AllocationBuffers {
                     kept.reserve(al, n_args);
                     std::vector<ASR::stmt_t*> associations;
                     for (size_t k = 0; k < n_args; k++) {
-                        ASR::symbol_t *var = variable_of(args[k].m_a);
+                        ASR::symbol_t *var = storage_variable_of(args[k].m_a);
                         auto it = buffers.find(var);
                         if (it == buffers.end()) {
                             kept.push_back(al, args[k]);
@@ -1772,7 +1772,7 @@ public:
                 ASRUtils::ASRBuilder b(al, at);
                 bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, at,
                     b.Gt(as_type(bound), as_type(one)),
-                    as_type(duplicate(al, bound)), as_type(duplicate(al, one)),
+                    as_type(storage_duplicate(al, bound)), as_type(storage_duplicate(al, one)),
                     type, nullptr));
             }
             if (!ok || bound == nullptr) continue;

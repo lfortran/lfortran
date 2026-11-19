@@ -780,3 +780,6 @@ void TempDir::remove_in_signal_handler() noexcept {
 
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef NOMINMAX

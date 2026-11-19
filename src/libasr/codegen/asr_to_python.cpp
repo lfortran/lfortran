@@ -8,25 +8,26 @@ using LCompilers::ASR::down_cast;
 
 namespace LCompilers {
 
-enum Precedence {
-    Or = 4,
-    And = 5,
-    Not = 6,
-    CmpOp = 7,
-    Add = 12,
-    Sub = 12,
-    Mul = 13,
-    Div = 13,
-    BitNot = 14,
-    UnaryMinus = 14,
-    Exp = 15,
-    Pow = 15,
-    Constant = 18,
-};
 
 class ASRToLpythonVisitor : public ASR::BaseVisitor<ASRToLpythonVisitor>
 {
 public:
+    enum Precedence {
+        Or = 4,
+        And = 5,
+        Not = 6,
+        CmpOp = 7,
+        Add = 12,
+        Sub = 12,
+        Mul = 13,
+        Div = 13,
+        BitNot = 14,
+        UnaryMinus = 14,
+        Exp = 15,
+        Pow = 15,
+        Constant = 18,
+    };
+
     Allocator& al;
     diag::Diagnostics& diag;
     std::string s;

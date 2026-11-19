@@ -4,6 +4,7 @@
 #include "libasr/asr_utils.h"
 #include "libasr/assert.h"
 #include "libasr/exception.h"
+#include <libasr/codegen/codegen_error.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
@@ -36,13 +37,6 @@ static inline void llvm_fn_insert_bb(llvm::Function *fn, llvm::BasicBlock *bb) {
 namespace LCompilers {
 class ASRToLLVMVisitor;
 
-    // Platform dependent fast unique hash:
-    static inline uint64_t get_hash(ASR::asr_t *node)
-    {
-        return (uint64_t)node;
-    }
-
-
     // Return symbolName
     // Adds unqiue symtab ID for Struct and Union
     inline std::string get_type_key(ASR::symbol_t* sym) {
@@ -63,41 +57,6 @@ class ASRToLLVMVisitor;
     }
     inline std::string get_type_key(ASR::Struct_t* sym){
         return get_type_key(&sym->base);
-    }
-
-    namespace {
-
-    // This exception is used to abort the visitor pattern when an error occurs.
-    // This is only used locally in this file, not propagated outside. An error
-    // must be already present in ASRToLLVMVisitor::diag before throwing this
-    // exception. This is checked with an assert when the CodeGenAbort is
-    // caught.
-    class CodeGenAbort
-    {
-    };
-
-    // Local exception that is only used in this file to exit the visitor
-    // pattern and caught later (not propagated outside). It accepts an error
-    // message that is then appended at the end of ASRToLLVMVisitor::diag.  The
-    // `diag` can already contain other errors or warnings.  This is a
-    // convenience class. One can also report the error into `diag` directly and
-    // call `CodeGenAbort` instead.
-    class CodeGenError
-    {
-        public:
-            diag::Diagnostic d;
-        public:
-            CodeGenError(const std::string &msg)
-                : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)}
-            { }
-
-            CodeGenError(const std::string &msg, const Location &loc)
-                : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen, {
-                    diag::Label("", {loc})
-                })}
-            { }
-        };
-
     }
 
     namespace LLVMArrUtils {

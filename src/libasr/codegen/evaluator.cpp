@@ -1697,3 +1697,6 @@ intptr_t WasmLFortranExecutor::get_symbol_address(const std::string &name)
 #endif // __EMSCRIPTEN__
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef LFORTRAN_HAVE_X86_TARGET_PARSER

@@ -14,6 +14,7 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
+#include <libasr/asr_builder.h>
 
 namespace LCompilers {
 
@@ -1527,7 +1528,7 @@ static bool section_int_constant(ASR::expr_t *e, int64_t &out) {
 
 // Whether two designators name the same array: the same variable, or the
 // same component of the same designator.
-static bool same_designator(ASR::expr_t *x, ASR::expr_t *y) {
+static bool array_ops_same_designator(ASR::expr_t *x, ASR::expr_t *y) {
     if (!x || !y || x->type != y->type) return false;
     if (ASR::is_a<ASR::Var_t>(*x)) {
         return ASRUtils::symbol_get_past_external(
@@ -1542,7 +1543,7 @@ static bool same_designator(ASR::expr_t *x, ASR::expr_t *y) {
             ASR::down_cast<ASR::StructInstanceMember_t>(y);
         return ASRUtils::symbol_get_past_external(mx->m_m)
                 == ASRUtils::symbol_get_past_external(my->m_m)
-            && same_designator(mx->m_v, my->m_v);
+            && array_ops_same_designator(mx->m_v, my->m_v);
     }
     return false;
 }
@@ -1562,7 +1563,7 @@ static bool is_bound_of(ASR::expr_t *e, ASR::expr_t *base, size_t d,
             || dim != (int64_t) d + 1) {
         return false;
     }
-    return same_designator(bound->m_v, base);
+    return array_ops_same_designator(bound->m_v, base);
 }
 
 // Whether dimension `d` of the section runs over the whole of that dimension

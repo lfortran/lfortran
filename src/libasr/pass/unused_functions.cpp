@@ -10,12 +10,6 @@
 
 namespace LCompilers {
 
-// Platform dependent fast unique hash:
-uint64_t static get_hash(ASR::asr_t *node)
-{
-    return (uint64_t)node;
-}
-
 class CollectUnusedFunctionsVisitor :
     public ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>
 {

@@ -30,7 +30,7 @@ The value of the expression.
 An intrinsic function is not a symbol: there is no
 [Function](../symbol_nodes/Function.md) to point at, so the call names the
 intrinsic by id. The registry in
-`src/libasr/pass/intrinsic_function_registry.h` owns the mapping from id to
+`src/libasr/pass/intrinsic_function_registry.cpp` owns the mapping from id to
 name, to the compile time evaluation rule and to the lowering.
 
 Elemental means the intrinsic applies to each element of an array argument.

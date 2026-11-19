@@ -1304,3 +1304,6 @@ void pass_promote_allocatable_to_nonallocatable(
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef check_pointer_in_array_size

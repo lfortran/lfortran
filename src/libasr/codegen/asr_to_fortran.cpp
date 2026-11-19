@@ -117,25 +117,26 @@ static std::set<ASR::symbol_t*> unprinted_call_symbols(const ASR::TranslationUni
     return hidden;
 }
 
-enum Precedence {
-    Eqv = 2,
-    NEqv = 2,
-    Or = 3,
-    And = 4,
-    Not = 5,
-    CmpOp = 6,
-    Add = 8,
-    Sub = 8,
-    UnaryMinus = 9,
-    Mul = 10,
-    Div = 10,
-    Pow = 11,
-    Ext = 13,
-};
 
 class ASRToFortranVisitor : public ASR::BaseVisitor<ASRToFortranVisitor>
 {
 public:
+    enum Precedence {
+        Eqv = 2,
+        NEqv = 2,
+        Or = 3,
+        And = 4,
+        Not = 5,
+        CmpOp = 6,
+        Add = 8,
+        Sub = 8,
+        UnaryMinus = 9,
+        Mul = 10,
+        Div = 10,
+        Pow = 11,
+        Ext = 13,
+    };
+
     // `src` acts as a buffer that accumulates the generated Fortran source code
     // as the visitor traverses all the ASR nodes of a program. Each visitor method
     // uses `src` to return the result, and the caller visitor uses `src` as the

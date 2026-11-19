@@ -9,39 +9,13 @@
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/codegen_error.h>
 
 
 namespace LCompilers {
 
-namespace {
-
-    // Local exception that is only used in this file to exit the visitor
-    // pattern and caught later (not propagated outside)
-    class CodeGenError
-    {
-    public:
-        diag::Diagnostic d;
-    public:
-        CodeGenError(const std::string &msg)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)}
-        { }
-
-        CodeGenError(const std::string &msg, const Location &loc)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen,
-                {diag::Label("", {loc})})}
-        { }
-    };
-
-}
-
 using ASR::down_cast;
 using ASR::is_a;
-
-// Platform dependent fast unique hash:
-uint64_t static get_hash(ASR::asr_t *node)
-{
-    return (uint64_t)node;
-}
 
 class ASRToX86Visitor : public ASR::BaseVisitor<ASRToX86Visitor>
 {

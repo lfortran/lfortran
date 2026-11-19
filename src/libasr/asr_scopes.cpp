@@ -10,15 +10,6 @@ std::string lcompilers_commandline_options;
 
 namespace LCompilers  {
 
-template< typename T >
-std::string hexify(T i)
-{
-    std::stringbuf buf;
-    std::ostream os(&buf);
-    os << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << i;
-    return buf.str();
-}
-
 unsigned int symbol_table_counter = 0;
 
 SymbolTable::SymbolTable(SymbolTable *parent) : parent{parent} {

@@ -19,8 +19,13 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_array_functions.h>
 
 namespace LCompilers {
+
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
+template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+#endif
 
     namespace ASRUtils  {
 
@@ -16537,3 +16542,8 @@ void RemoveArrayProcessingNodeVisitor::visit_Variable(const ASR::Variable_t& x) 
 
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef UNARYOP_MEMBER_CASE
+#undef BINOP_MEMBER_CASE
+#undef i32j

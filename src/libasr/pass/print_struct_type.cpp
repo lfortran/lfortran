@@ -119,3 +119,6 @@ void pass_replace_print_struct_type(
 
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef is_struct_type

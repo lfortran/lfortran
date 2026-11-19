@@ -121,7 +121,7 @@ bool mul(int64_t a, int64_t b, int64_t &r) {
     return true;
 }
 
-bool constant_integer(ASR::expr_t *e, int64_t &v) {
+bool guard_constant_integer(ASR::expr_t *e, int64_t &v) {
     ASR::expr_t *value = ASRUtils::expr_value(e);
     if (value == nullptr || !ASR::is_a<ASR::IntegerConstant_t>(*value)) {
         return false;
@@ -376,7 +376,7 @@ private:
 
     std::optional<IntRange> narrow(ASR::expr_t *e) {
         int64_t v = 0;
-        if (constant_integer(e, v)) return IntRange{v, v};
+        if (guard_constant_integer(e, v)) return IntRange{v, v};
         switch (e->type) {
             case ASR::exprType::Var: {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
@@ -386,7 +386,7 @@ private:
                 if (s != nullptr && ASR::is_a<ASR::Variable_t>(*s)) {
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(s);
                     if (var->m_storage == ASR::storage_typeType::Parameter
-                            && constant_integer(var->m_value, v)) {
+                            && guard_constant_integer(var->m_value, v)) {
                         return IntRange{v, v};
                     }
                 }
@@ -428,7 +428,7 @@ ASR::Function_t* called_function(ASR::symbol_t *name) {
     return ASR::down_cast<ASR::Function_t>(s);
 }
 
-ASR::symbol_t* var_symbol(ASR::expr_t *e) {
+ASR::symbol_t* guard_var_symbol(ASR::expr_t *e) {
     if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
     return ASRUtils::symbol_get_past_external(
         ASR::down_cast<ASR::Var_t>(e)->m_v);
@@ -468,18 +468,18 @@ public:
     std::set<ASR::symbol_t*> defined;
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if (ASR::symbol_t *s = var_symbol(x.m_target)) defined.insert(s);
+        if (ASR::symbol_t *s = guard_var_symbol(x.m_target)) defined.insert(s);
         ASR::BaseWalkVisitor<DefinedScalars>::visit_Assignment(x);
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
-        if (ASR::symbol_t *s = var_symbol(x.m_head.m_v)) defined.insert(s);
+        if (ASR::symbol_t *s = guard_var_symbol(x.m_head.m_v)) defined.insert(s);
         ASR::BaseWalkVisitor<DefinedScalars>::visit_DoLoop(x);
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         for (size_t i = 0; i < x.n_head; i++) {
-            if (ASR::symbol_t *s = var_symbol(x.m_head[i].m_v)) {
+            if (ASR::symbol_t *s = guard_var_symbol(x.m_head[i].m_v)) {
                 defined.insert(s);
             }
         }
@@ -500,11 +500,11 @@ private:
     void actuals(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n) {
         ASR::Function_t *fn = called_function(name);
         for (size_t i = 0; i < n; i++) {
-            ASR::symbol_t *s = var_symbol(args[i].m_value);
+            ASR::symbol_t *s = guard_var_symbol(args[i].m_value);
             if (s == nullptr) continue;
             bool in = false;
             if (fn != nullptr && i < fn->n_args) {
-                ASR::symbol_t *d = var_symbol(fn->m_args[i]);
+                ASR::symbol_t *d = guard_var_symbol(fn->m_args[i]);
                 in = d != nullptr && ASR::is_a<ASR::Variable_t>(*d)
                     && ASR::down_cast<ASR::Variable_t>(d)->m_intent
                         == ASR::intentType::In;
@@ -540,9 +540,9 @@ void visit_declarations(Visitor &v, SymbolTable *scope) {
 class KernelGuardFold;
 
 // Hands every call of a copy, and every other use of one, to the fold.
-class CallVisitor : public ASRUtils::BlockBodyWalkVisitor<CallVisitor> {
+class GuardFoldCallVisitor : public ASRUtils::BlockBodyWalkVisitor<GuardFoldCallVisitor> {
 public:
-    explicit CallVisitor(KernelGuardFold &fold_) : fold(fold_) {}
+    explicit GuardFoldCallVisitor(KernelGuardFold &fold_) : fold(fold_) {}
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x);
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x);
@@ -567,7 +567,7 @@ public:
         graph_only = true;
         for (ASR::Function_t *fn : routines()) {
             caller = fn;
-            CallVisitor v(*this);
+            GuardFoldCallVisitor v(*this);
             for (size_t i = 0; i < fn->n_body; i++) v.visit_stmt(*fn->m_body[i]);
             visit_declarations(v, fn->m_symtab);
         }
@@ -690,7 +690,7 @@ private:
         if (seen == calls.end()) return result;
         std::set<ASR::symbol_t*> defined = defined_in(fn.m_body, fn.n_body);
         for (size_t i = 0; i < fn.n_args && i < seen->second.size(); i++) {
-            ASR::symbol_t *d = var_symbol(fn.m_args[i]);
+            ASR::symbol_t *d = guard_var_symbol(fn.m_args[i]);
             if (d == nullptr || !ASR::is_a<ASR::Variable_t>(*d)
                     || !seen->second[i] || defined.count(d) > 0) {
                 continue;
@@ -709,7 +709,7 @@ private:
         caller = &fn;
         facts = dummies;
         dummy_ranges = dummies;
-        CallVisitor v(*this);
+        GuardFoldCallVisitor v(*this);
         visit_declarations(v, fn.m_symtab);
         fold_body(fn.m_body, fn.n_body);
     }
@@ -748,7 +748,7 @@ private:
 
     void visit_calls(ASR::expr_t *e) {
         if (e == nullptr) return;
-        CallVisitor v(*this);
+        GuardFoldCallVisitor v(*this);
         v.visit_expr(*e);
     }
 
@@ -756,14 +756,14 @@ private:
     // to `facts`, when the body does not define it.
     void loop_index(const ASR::do_loop_head_t &head, ASR::stmt_t **body,
             size_t n) {
-        ASR::symbol_t *index = var_symbol(head.m_v);
+        ASR::symbol_t *index = guard_var_symbol(head.m_v);
         if (index == nullptr || head.m_start == nullptr
                 || head.m_end == nullptr) {
             return;
         }
         int64_t step = 1;
         if (head.m_increment != nullptr
-                && !constant_integer(head.m_increment, step)) {
+                && !guard_constant_integer(head.m_increment, step)) {
             return;
         }
         RangeEval eval(facts);
@@ -864,7 +864,7 @@ private:
                 }
                 default: {
                     // Everything inside is judged with what is known here.
-                    CallVisitor v(*this);
+                    GuardFoldCallVisitor v(*this);
                     v.visit_stmt(*s);
                     break;
                 }
@@ -876,23 +876,23 @@ private:
     }
 };
 
-void CallVisitor::visit_FunctionCall(const ASR::FunctionCall_t &x) {
+void GuardFoldCallVisitor::visit_FunctionCall(const ASR::FunctionCall_t &x) {
     fold.call(x.m_name, x.m_args, x.n_args);
-    ASR::BaseWalkVisitor<CallVisitor>::visit_FunctionCall(x);
+    ASR::BaseWalkVisitor<GuardFoldCallVisitor>::visit_FunctionCall(x);
 }
 
-void CallVisitor::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+void GuardFoldCallVisitor::visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
     fold.call(x.m_name, x.m_args, x.n_args);
-    ASR::BaseWalkVisitor<CallVisitor>::visit_SubroutineCall(x);
+    ASR::BaseWalkVisitor<GuardFoldCallVisitor>::visit_SubroutineCall(x);
 }
 
-void CallVisitor::visit_Var(const ASR::Var_t &x) {
+void GuardFoldCallVisitor::visit_Var(const ASR::Var_t &x) {
     fold.named(x);
 }
 
-void CallVisitor::visit_BlockCall(const ASR::BlockCall_t &x) {
+void GuardFoldCallVisitor::visit_BlockCall(const ASR::BlockCall_t &x) {
     fold.block_call(x);
-    ASRUtils::BlockBodyWalkVisitor<CallVisitor>::visit_BlockCall(x);
+    ASRUtils::BlockBodyWalkVisitor<GuardFoldCallVisitor>::visit_BlockCall(x);
 }
 
 } // namespace

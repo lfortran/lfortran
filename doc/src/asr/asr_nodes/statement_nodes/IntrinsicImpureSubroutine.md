@@ -31,7 +31,7 @@ the call names the intrinsic by id instead.
 
 A later pass either lowers the call into ASR of its own or leaves it for the
 backend, which is why the id, and not a name, is what is stored: the registry
-in `src/libasr/pass/intrinsic_function_registry.h` owns the mapping.
+in `src/libasr/pass/intrinsic_subroutine_registry.cpp` owns the mapping.
 
 ## Examples
 

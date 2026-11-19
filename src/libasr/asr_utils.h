@@ -72,6 +72,12 @@
 
 namespace LCompilers  {
 
+// A unique key for an ASR node, for maps keyed by node: its address.
+static inline uint64_t get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
+
     namespace ASRUtils  {
 
 // A specific procedure that shares its generic interface's name is stored in
@@ -413,6 +419,17 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
     ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
 
 };
+
+} // namespace ASRUtils
+
+// Instantiated once, in asr_utils.cpp, rather than in every file that
+// duplicates an expression or a statement. Virtual visitors are already
+// compiled once.
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
+extern template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+#endif
+
+namespace ASRUtils {
 
 static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {

@@ -4,6 +4,7 @@
 #include "libasr/alloc.h"
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/codegen_error.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 namespace LCompilers {
@@ -21,24 +22,6 @@ namespace LCompilers {
         }
         return fmt;
     }
-
-    // Local exception that is only used in this file to exit the visitor
-    // pattern and caught later (not propagated outside)
-    class CodeGenError
-    {
-    public:
-        diag::Diagnostic d;
-    public:
-        CodeGenError(const std::string &msg)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)}
-        { }
-
-        CodeGenError(const std::string &msg, const Location &loc)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen, {
-                diag::Label("", {loc})
-            })}
-        { }
-    };
 
     class Abort {};
 

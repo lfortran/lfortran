@@ -185,6 +185,50 @@ if (WITH_LCOMPILERS_FAST_ALLOC)
     add_definitions("-DLCOMPILERS_FAST_ALLOC=1")
 endif()
 
+# mold links the compiler and its tests several times faster than GNU ld,
+# which every rebuild after an edit pays for. Debug builds on Linux use it
+# when it is installed and the C++ compiler can link a program with it;
+# Release builds keep the default linker.
+set(WITH_MOLD_LINKER_DEFAULT no)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
+        AND NOT LFORTRAN_BUILD_TO_WASM AND NOT LFORTRAN_STATIC_BIN)
+    include(CheckCXXSourceCompiles)
+    set(CMAKE_REQUIRED_FLAGS "-fuse-ld=mold")
+    check_cxx_source_compiles("
+        #include <iostream>
+        #include <stdexcept>
+        int main() {
+            try { throw std::runtime_error(\"x\"); }
+            catch (const std::exception &e) { std::cout << e.what(); }
+            return 0;
+        }" LFORTRAN_CXX_LINKS_WITH_MOLD)
+    unset(CMAKE_REQUIRED_FLAGS)
+    if (LFORTRAN_CXX_LINKS_WITH_MOLD)
+        set(WITH_MOLD_LINKER_DEFAULT yes)
+    endif()
+endif()
+set(WITH_MOLD_LINKER ${WITH_MOLD_LINKER_DEFAULT}
+    CACHE BOOL "Link the executables with mold")
+if (WITH_MOLD_LINKER)
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -fuse-ld=mold")
+endif()
+
+# The generated ASR visitors are class templates over the visitor that derives
+# from them, so every visitor compiles its own copy of the whole walk. That is
+# the fastest code, and the slowest to compile. With virtual visitors each
+# walk is compiled once and the visitors override its virtual methods, which
+# compiles much faster. Debug builds use that; Release builds do not.
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(WITH_VIRTUAL_VISITORS_DEFAULT yes)
+else()
+    set(WITH_VIRTUAL_VISITORS_DEFAULT no)
+endif()
+set(WITH_VIRTUAL_VISITORS ${WITH_VIRTUAL_VISITORS_DEFAULT}
+    CACHE BOOL "Compile the generated ASR visitors once, with virtual methods")
+if (WITH_VIRTUAL_VISITORS)
+    add_definitions("-DLCOMPILERS_VIRTUAL_VISITORS=1")
+endif()
+
 
 if (WITH_CCACHE)
     find_program(CCACHE_PROGRAM ccache REQUIRED)
@@ -658,6 +702,8 @@ message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 message("WITH_KOKKOS: ${WITH_KOKKOS}")
 message("WITH_CCACHE: ${WITH_CCACHE}")
+message("WITH_VIRTUAL_VISITORS: ${WITH_VIRTUAL_VISITORS}")
+message("WITH_MOLD_LINKER: ${WITH_MOLD_LINKER}")
 message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
 message("CFLAGS: ${CMAKE_C_FLAGS}")
 

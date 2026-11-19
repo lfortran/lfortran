@@ -8,8 +8,14 @@
 #include <libasr/casting_utils.h>
 
 #include <iostream>
+#include <libasr/asr_builder.h>
 
 namespace LCompilers {
+
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
+template class ASR::BaseVisitor<PassUtils::UpdateDependenciesVisitor>;
+template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
+#endif
 
     namespace PassUtils {
 
@@ -1962,3 +1968,7 @@ namespace LCompilers {
     } // namespace PassUtils
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef fix_struct_type_scope
+#undef increment_by_one

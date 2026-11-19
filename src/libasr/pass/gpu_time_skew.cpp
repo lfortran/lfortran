@@ -150,7 +150,7 @@ bool host_expr(ASR::expr_t *e) {
 // An element of an array a parallel loop reads or writes, with the affine
 // forms of its subscripts and the conditions that hold where it is
 // accessed.
-struct Access {
+struct SkewAccess {
     ASR::ArrayItem_t *item;
     bool write;
     std::vector<bool> affine;
@@ -165,7 +165,7 @@ class AccessWalk {
 public:
     GpuAffineBuilder &b;
     const std::set<ASR::symbol_t*> &single;
-    std::vector<Access> accesses;
+    std::vector<SkewAccess> accesses;
     // Whole arrays it names outside of an element, a size or a bound.
     std::vector<ASR::expr_t*> wholes;
     bool ok = true;
@@ -174,7 +174,7 @@ public:
         : b(b_), single(s) {}
 
     void access(ASR::ArrayItem_t *x, bool write, const GpuDnf &facts) {
-        Access a;
+        SkewAccess a;
         a.item = x;
         a.write = write;
         a.facts = facts;
@@ -463,7 +463,7 @@ public:
     struct LoopAccesses {
         GpuLoopNest nest;
         bool hot = true;
-        std::vector<Access> accesses;
+        std::vector<SkewAccess> accesses;
         std::vector<ASR::expr_t*> wholes;
         GpuConstraints bounds;
         std::map<std::string, ASR::expr_t*> atoms;

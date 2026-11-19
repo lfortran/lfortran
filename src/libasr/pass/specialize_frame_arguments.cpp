@@ -96,8 +96,6 @@ of a procedure with eligible dummies is processed like any other call.
 
 namespace {
 
-using namespace ProcedureArguments;
-
 // A call, by the fields that the pass reads and rewrites, and the scope it
 // is in
 struct Call {
@@ -264,7 +262,7 @@ bool scalar_interface(ASR::Function_t *iface) {
 // can be passed as a pair, or nullptr. The interface of its actual
 // procedures must be the same (see same_interface).
 ASR::Function_t *pair_interface(ASR::Function_t *f, size_t i) {
-    ASR::Function_t *iface = removable_dummy_interface(f, i);
+    ASR::Function_t *iface = ProcedureArguments::removable_dummy_interface(f, i);
     if (iface == nullptr || !scalar_interface(iface) ||
             !self_contained(iface)) {
         return nullptr;
@@ -274,13 +272,13 @@ ASR::Function_t *pair_interface(ASR::Function_t *f, size_t i) {
 
 // Whether `sym` is a dummy argument of its procedure
 bool is_dummy(ASR::symbol_t *sym) {
-    ASR::symbol_t *owner = scope_owner(ASRUtils::symbol_parent_symtab(sym));
+    ASR::symbol_t *owner = ProcedureArguments::scope_owner(ASRUtils::symbol_parent_symtab(sym));
     if (owner == nullptr || !ASR::is_a<ASR::Function_t>(*owner)) {
         return false;
     }
     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(owner);
     for (size_t i = 0; i < f->n_args; i++) {
-        if (dummy_symbol(f, i) == sym) {
+        if (ProcedureArguments::dummy_symbol(f, i) == sym) {
             return true;
         }
     }
@@ -291,7 +289,7 @@ bool is_dummy(ASR::symbol_t *sym) {
 // nested in through BLOCK and ASSOCIATE constructs
 SymbolTable *procedure_scope(SymbolTable *scope) {
     for (; scope != nullptr; scope = scope->parent) {
-        ASR::symbol_t *owner = scope_owner(scope);
+        ASR::symbol_t *owner = ProcedureArguments::scope_owner(scope);
         if (owner != nullptr && (ASR::is_a<ASR::Function_t>(*owner) ||
                 ASR::is_a<ASR::Program_t>(*owner))) {
             return scope;
@@ -425,7 +423,7 @@ class FrameArgumentSpecializer {
 public:
     Allocator &al;
     // eligible dummy -> its interface
-    std::map<Dummy, ASR::Function_t*> eligible;
+    std::map<ProcedureArguments::Dummy, ASR::Function_t*> eligible;
     // procedure with eligible dummies -> their indices
     std::map<ASR::Function_t*, std::vector<size_t>> eligible_of;
     // procedure with eligible dummies -> the calls in it and the procedures
@@ -456,7 +454,7 @@ public:
     // in `scope`: the host of an internal procedure, otherwise the procedure
     // or main program that makes the call
     SymbolTable *entry_scope(ASR::symbol_t *sym, SymbolTable *scope) {
-        if (is_internal_procedure(sym)) {
+        if (ProcedureArguments::is_internal_procedure(sym)) {
             return ASRUtils::symbol_parent_symtab(sym);
         }
         return procedure_scope(scope);
@@ -468,18 +466,18 @@ public:
             SymbolTable *scope) {
         ASR::symbol_t *p = ASRUtils::symbol_get_past_external(sym);
         if (p == nullptr || !ASR::is_a<ASR::Function_t>(*p) || is_dummy(p) ||
-                !same_interface(iface, ASR::down_cast<ASR::Function_t>(p))) {
+                !ProcedureArguments::same_interface(iface, ASR::down_cast<ASR::Function_t>(p))) {
             return false;
         }
         SymbolTable *host = entry_scope(sym, scope);
         if (host == nullptr ||
-                !in_scope_chain(host, ASRUtils::symbol_parent_symtab(sym))) {
+                !ProcedureArguments::in_scope_chain(host, ASRUtils::symbol_parent_symtab(sym))) {
             return false;
         }
         // The entry calls `sym` by its name, which none of its dummy
         // arguments may hide
         for (size_t i = 0; i < iface->n_args; i++) {
-            if (std::string(ASRUtils::symbol_name(dummy_symbol(iface, i))) ==
+            if (std::string(ASRUtils::symbol_name(ProcedureArguments::dummy_symbol(iface, i))) ==
                     ASRUtils::symbol_name(sym)) {
                 return false;
             }
@@ -511,9 +509,9 @@ public:
             ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(a)->m_v;
             bool dummy = false;
             for (size_t i = 0; f != nullptr && i < f->n_args; i++) {
-                if (dummy_symbol(f, i) == s) {
+                if (ProcedureArguments::dummy_symbol(f, i) == s) {
                     auto e = eligible.find({f, i});
-                    if (e == eligible.end() || !same_interface(iface, e->second)) {
+                    if (e == eligible.end() || !ProcedureArguments::same_interface(iface, e->second)) {
                         return false;
                     }
                     dummy = true;
@@ -532,7 +530,7 @@ public:
     bool passes_internal_procedure(const Call &call, ASR::Function_t *g) {
         for (size_t k: eligible_of.at(g)) {
             ASR::expr_t *a = (*call.args)[k].m_value;
-            if (a != nullptr && ASR::is_a<ASR::Var_t>(*a) && is_internal_procedure(
+            if (a != nullptr && ASR::is_a<ASR::Var_t>(*a) && ProcedureArguments::is_internal_procedure(
                     ASR::down_cast<ASR::Var_t>(a)->m_v)) {
                 return true;
             }
@@ -550,9 +548,9 @@ public:
     // Whether the eligible dummy `d` is only passed on soundly: to an
     // eligible dummy of the same interface, in a call whose eligible dummies
     // can all be paired
-    bool passed_on_soundly(const Dummy &d) {
+    bool passed_on_soundly(const ProcedureArguments::Dummy &d) {
         ASR::Function_t *f = d.first;
-        ASR::symbol_t *sym = dummy_symbol(f, d.second);
+        ASR::symbol_t *sym = ProcedureArguments::dummy_symbol(f, d.second);
         for (const Call &call: calls_of.at(f)) {
             for (size_t j = 0; j < *call.n_args; j++) {
                 ASR::expr_t *a = (*call.args)[j].m_value;
@@ -560,10 +558,10 @@ public:
                         ASR::down_cast<ASR::Var_t>(a)->m_v != sym) {
                     continue;
                 }
-                ASR::Function_t *g = called_procedure(*call.name, call.dt);
+                ASR::Function_t *g = ProcedureArguments::called_procedure(*call.name, call.dt);
                 auto e = g != nullptr ? eligible.find({g, j}) : eligible.end();
                 if (e == eligible.end() ||
-                        !same_interface(e->second, eligible.at(d)) ||
+                        !ProcedureArguments::same_interface(e->second, eligible.at(d)) ||
                         !pairable(call, g, f)) {
                     return false;
                 }
@@ -626,18 +624,18 @@ public:
 
     void analyze(SymbolTable *global_scope) {
         std::vector<ASR::Function_t*> procedures;
-        collect_procedures(global_scope, procedures);
+        ProcedureArguments::collect_procedures(global_scope, procedures);
         for (ASR::Function_t *f: procedures) {
-            DummyUseCollector uses;
+            ProcedureArguments::DummyUseCollector uses;
             std::map<size_t, ASR::Function_t*> interfaces;
             for (size_t i = 0; i < f->n_args; i++) {
                 ASR::Function_t *iface = pair_interface(f, i);
                 if (iface != nullptr) {
-                    uses.dummies[dummy_symbol(f, i)] = i;
+                    uses.dummies[ProcedureArguments::dummy_symbol(f, i)] = i;
                     interfaces[i] = iface;
                 }
             }
-            if (uses.dummies.empty() || !copyable_procedure(f, true)) {
+            if (uses.dummies.empty() || !ProcedureArguments::copyable_procedure(f, true)) {
                 continue;
             }
             for (auto &item: f->m_symtab->get_scope()) {
@@ -720,7 +718,7 @@ public:
                     continue;
                 }
                 for (const Call &call: calls_of.at(f)) {
-                    ASR::Function_t *g = called_procedure(*call.name, call.dt);
+                    ASR::Function_t *g = ProcedureArguments::called_procedure(*call.name, call.dt);
                     if (g != nullptr && eligible_of.count(g) &&
                             pairable(call, g, f) &&
                             (useful.count(g) || passes_internal_procedure(call, g))) {
@@ -809,7 +807,7 @@ public:
                 continue;
             }
             const Location &loc = copy->m_args[i]->base.loc;
-            ASR::symbol_t *dummy = dummy_symbol(copy, i);
+            ASR::symbol_t *dummy = ProcedureArguments::dummy_symbol(copy, i);
             std::string dummy_name = ASRUtils::symbol_name(dummy);
             ASR::Function_t *code;
             if (ASR::is_a<ASR::Function_t>(*dummy)) {
@@ -999,7 +997,7 @@ public:
                     "' that does not take it");
             }
         };
-        ASR::Function_t *g = called_procedure(*call.name, call.dt);
+        ASR::Function_t *g = ProcedureArguments::called_procedure(*call.name, call.dt);
         if (g == nullptr || !eligible_of.count(g) || *call.n_args != g->n_args ||
                 !copy_nameable(*call.name, g)) {
             unpaired();
@@ -1014,10 +1012,10 @@ public:
                 ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(a)->m_v;
                 if (frames.count(s)) {
                     forwarded = true;
-                    ok = same_interface(iface, code_interfaces.at(s));
+                    ok = ProcedureArguments::same_interface(iface, code_interfaces.at(s));
                 } else {
                     ok = can_enter(s, iface, call.scope);
-                    internal = internal || is_internal_procedure(s);
+                    internal = internal || ProcedureArguments::is_internal_procedure(s);
                 }
             }
             if (!ok) {

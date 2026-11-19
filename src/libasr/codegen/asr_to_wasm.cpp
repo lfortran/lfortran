@@ -6,6 +6,7 @@
 #include <libasr/asr.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/codegen_error.h>
 #include <libasr/wasm_visitor.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/wasm_assembler.h>
@@ -26,30 +27,6 @@
 
 namespace LCompilers {
 
-namespace {
-
-// This exception is used to abort the visitor pattern when an error occurs.
-class CodeGenAbort {};
-
-// Local exception that is only used in this file to exit the visitor
-// pattern and caught later (not propagated outside)
-class CodeGenError {
-   public:
-    diag::Diagnostic d;
-
-   public:
-    CodeGenError(const std::string &msg)
-        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)} {}
-
-    CodeGenError(const std::string &msg, const Location &loc)
-        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen,
-                             {diag::Label("", {loc})})} {}
-};
-
-}  // namespace
-
-// Platform dependent fast unique hash:
-static uint64_t get_hash(ASR::asr_t *node) { return (uint64_t)node; }
 
 struct SymbolFuncInfo {
     bool needs_declaration;
@@ -4275,3 +4252,6 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
 }
 
 }  // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef INCLUDE_RUNTIME_FUNC

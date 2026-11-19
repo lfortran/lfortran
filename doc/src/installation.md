@@ -56,6 +56,17 @@ options, and after editing a generator input (`src/libasr/ASR.asdl`,
 `src/libasr/wasm_instructions.txt`, the generator scripts or
 `src/server/generator/`); `rebuild` would compile stale generated sources.
 
+A Debug build is set up to compile quickly; a Release build is set up to run
+quickly. These CMake options select how the compiler itself is compiled
+(none of them changes what it does):
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `WITH_VIRTUAL_VISITORS` | Debug: yes | Compile each generated ASR visitor, and the visitor that the symbol table and body visitors share, once with virtual methods, instead of once for every visitor that derives from it. |
+| `WITH_PCH` | Debug with GCC or Clang and no compiler cache: yes | Precompile the headers that most of `libasr` includes. |
+| `WITH_MOLD_LINKER` | Debug on Linux when `mold` is installed (the `llvm11` environment): yes | Link the executables with mold. |
+| `WITH_UNITY_BUILD` | no | Compile `libasr` in batches of sources (`-DLFORTRAN_UNITY_BATCH_SIZE=8`; 0 puts all of them in one). The fastest clean build, but editing one source recompiles its batch. It requires names local to a source to be unique in `libasr`, every macro a source defines to be undefined at its end, and no `using namespace` at file scope. |
+
 Select another environment explicitly to keep multiple configurations:
 
 ```bash

@@ -77,7 +77,7 @@ struct Candidate {
 
 // The elements the expression reads for certain, as the places that hold
 // them.
-class Collector : public ASR::BaseExprReplacer<Collector> {
+class WideLoadCollector : public ASR::BaseExprReplacer<WideLoadCollector> {
 public:
     std::map<std::string, std::vector<Candidate>> groups;
     // The array whose elements are read.
@@ -113,7 +113,7 @@ public:
         bool is_merge = x->m_intrinsic_id == static_cast<int64_t>(
             ASRUtils::IntrinsicElementalFunctions::Merge);
         if (is_merge) conditional++;
-        ASR::BaseExprReplacer<Collector>::replace_IntrinsicElementalFunction(x);
+        ASR::BaseExprReplacer<WideLoadCollector>::replace_IntrinsicElementalFunction(x);
         if (is_merge) conditional--;
     }
 
@@ -144,7 +144,7 @@ public:
     void replace_ArrayItem(ASR::ArrayItem_t *x) {
         ASR::expr_t **slot = current_expr;
         if (conditional == 0) consider(slot, x);
-        ASR::BaseExprReplacer<Collector>::replace_ArrayItem(x);
+        ASR::BaseExprReplacer<WideLoadCollector>::replace_ArrayItem(x);
     }
 
 private:
@@ -529,7 +529,7 @@ private:
     // which a statement appended to `pre` assigns.
     void rewrite(SymbolTable *scope, ASR::expr_t *&e, Vec<ASR::stmt_t*> &pre) {
         if (e == nullptr) return;
-        Collector c;
+        WideLoadCollector c;
         c.current_expr = &e;
         c.replace_expr(e);
         for (auto &entry : c.groups) {
@@ -656,7 +656,7 @@ public:
 private:
     void expr(ASR::expr_t *e) {
         if (e == nullptr || found) return;
-        Collector c;
+        WideLoadCollector c;
         c.current_expr = &e;
         c.replace_expr(e);
         for (auto &entry : c.groups) {
@@ -888,7 +888,7 @@ private:
 
     void expr(ASR::expr_t *e, std::set<std::string> &keys) {
         if (e == nullptr) return;
-        Collector c;
+        WideLoadCollector c;
         c.current_expr = &e;
         c.replace_expr(e);
         for (auto &entry : c.groups) {

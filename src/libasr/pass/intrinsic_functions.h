@@ -2,6 +2,7 @@
 #define LIBASR_PASS_INTRINSIC_FUNCTIONS_H
 
 #include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_function_ids.h>
 #include <libasr/casting_utils.h>
 #include <libasr/runtime/lfortran_trig.h>
 #include <math.h>
@@ -23,223 +24,6 @@ You can use helper macros and define your own helper macros to reduce
 the code size.
 */
 
-enum class IntrinsicElementalFunctions : int64_t {
-    ObjectType,
-    Kind, // if kind is reordered, update `extract_kind` in `asr_utils.h`
-    Mod, // if mod is reordered, update `pass/openmp.cpp`
-    Sin,
-    Cos,
-    Tan,
-    Asin,
-    Acos,
-    Atan,
-    Sinh,
-    Cosh,
-    Tanh,
-    Atan2,
-    Atan2d,
-    Asinh,
-    Sind,
-    Cosd,
-    Tand,
-    Asind,
-    Acosd,
-    Atand,
-    Acosh,
-    Atanh,
-    Sinpi,
-    Cospi,
-    Tanpi,
-    Asinpi,
-    Acospi,
-    Atanpi,
-    Atan2pi,
-    Erf,
-    Erfc,
-    ErfcScaled,
-    Gamma,
-    Log,
-    Log10,
-    LogGamma,
-    Trunc,
-    Fix,
-    Abs,
-    Aimag,
-    Dreal,
-    Exp,
-    Exp2,
-    Expm1,
-    FMA,
-    FlipSign,
-    Trailz,
-    Isnan,
-    Nearest,
-    Spacing,
-    Modulo,
-    BesselJ0,
-    BesselJ1,
-    BesselJN,
-    BesselY0,
-    BesselY1,
-    BesselYN,
-    SameTypeAs,
-    ExtendsTypeOf,
-    Merge,
-    Mergebits,
-    Shiftr,
-    Rshift,
-    Shiftl,
-    Dshiftl,
-    Dshiftr,
-    Ishft,
-    OutOfRange,
-    Bgt,
-    Blt,
-    Bge,
-    Ble,
-    Lgt,
-    Llt,
-    Lge,
-    Lle,
-    Exponent,
-    Fraction,
-    SetExponent,
-    Not,
-    Iand,
-    Ior,
-    Ieor,
-    Ibclr,
-    Ibset,
-    Btest,
-    Ibits,
-    Leadz,
-    ToLowerCase,
-    Digits,
-    Rrspacing,
-    Repeat,
-    StringContainsSet,
-    StringFindSet,
-    SubstrIndex,
-    Hypot,
-    SelectedIntKind,
-    SelectedRealKind,
-    SelectedCharKind,
-    SelectedLogicalKind,
-    Adjustl,
-    Adjustr,
-    StringConcat,
-    StringLenTrim,
-    StringTrim,
-    Ichar,
-    Char,
-    Achar,
-    Iachar,
-    MinExponent,
-    MaxExponent,
-    FloorDiv,
-    ListIndex,
-    Partition,
-    ListReverse,
-    ListPop,
-    ListReserve,
-    DictKeys,
-    DictValues,
-    SetAdd,
-    SetRemove,
-    Max,
-    Min,
-    Radix,
-    IsContiguous,
-    StorageSize,
-    Scale,
-    Dprod,
-    Range,
-    Sign,
-    CompilerVersion,
-    CommandArgumentCount,
-    ThisImage,
-    NumImages,
-    LCoBound,
-    UCoBound,
-    SignFromValue,
-    Logical,
-    Nint,
-    Idnint,
-    Aint,
-    Anint,
-    Dim,
-    Sqrt,
-    Sngl,
-    Ifix,
-    Idint,
-    Floor,
-    Ceiling,
-    Ishftc,
-    Maskr,
-    Maskl,
-    Epsilon,
-    Precision,
-    Tiny,
-    BitSize,
-    NewLine,
-    Conjg,
-    Huge,
-    Loc,
-    Popcnt,
-    Poppar,
-    Real,
-    Cmplx,
-    SymbolicSymbol,
-    SymbolicAdd,
-    SymbolicSub,
-    SymbolicMul,
-    SymbolicDiv,
-    SymbolicPow,
-    SymbolicPi,
-    SymbolicE,
-    SymbolicInteger,
-    SymbolicDiff,
-    SymbolicExpand,
-    SymbolicSin,
-    SymbolicCos,
-    SymbolicLog,
-    SymbolicExp,
-    SymbolicAbs,
-    SymbolicHasSymbolQ,
-    SymbolicAddQ,
-    SymbolicMulQ,
-    SymbolicPowQ,
-    SymbolicLogQ,
-    SymbolicSinQ,
-    SymbolicGetArgument,
-    Int,
-    Present,
-    And,
-    Or,
-    Xor,
-    Rand
-    // ...
-};
-
-typedef ASR::expr_t* (*impl_function)(
-    Allocator&, const Location &,
-    SymbolTable*, Vec<ASR::ttype_t*>&, ASR::ttype_t *,
-    Vec<ASR::call_arg_t>&, int64_t, int);
-
-typedef ASR::expr_t* (*eval_intrinsic_function)(
-    Allocator&, const Location &, ASR::ttype_t *,
-    Vec<ASR::expr_t*>&, diag::Diagnostics&);
-
-typedef ASR::asr_t* (*create_intrinsic_function)(
-    Allocator&, const Location&,
-    Vec<ASR::expr_t*>&,
-    diag::Diagnostics&);
-
-typedef void (*verify_function)(
-    const ASR::IntrinsicElementalFunction_t&,
-    diag::Diagnostics&);
-
-typedef ASR::expr_t* (*get_initial_value_func)(Allocator&, ASR::ttype_t*);
 
 // Check if expression contains FunctionCall - used to determine if we need
 // FunctionCall wrapper (for proper pass handling) vs direct IntrinsicElementalFunction
@@ -740,7 +524,7 @@ namespace ObjectType {
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_ObjectType(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_ObjectType(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& /*args*/, diag::Diagnostics& /*diag*/) {
         ASRBuilder b(al, loc);
         std::string object_type = "<class '";
@@ -1669,7 +1453,7 @@ namespace Abs {
         }
     }
 
-    static ASR::expr_t *eval_Abs(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Abs(Allocator &al, const Location &loc,
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args, false, true));
         ASR::expr_t* arg = args[0];
@@ -1810,7 +1594,7 @@ namespace Abs {
 
 namespace Radix {
 
-    static ASR::expr_t *eval_Radix(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Radix(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         return b.i32(2);
@@ -1820,7 +1604,7 @@ namespace Radix {
 
 namespace StorageSize {
 
-    static ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_StorageSize(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* arg_type = expr_type(args[0]);
         ASR::ttype_t* type = ASRUtils::type_get_past_array(
@@ -1913,7 +1697,7 @@ namespace StorageSize {
 }  // namespace StorageSize
 
 namespace Scale {
-    static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -1967,7 +1751,7 @@ namespace Scale {
 }  // namespace Scale
 
 namespace Dprod {
-    static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
             ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double value_Y = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -2001,7 +1785,7 @@ namespace Dprod {
 
 namespace SameTypeAs {
 
-    static ASR::expr_t *eval_SameTypeAs(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_SameTypeAs(Allocator &al, const Location &loc,
             ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
@@ -2034,7 +1818,7 @@ namespace SameTypeAs {
 
 namespace ExtendsTypeOf {
 
-    static ASR::expr_t *eval_ExtendsTypeOf(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_ExtendsTypeOf(Allocator &al, const Location &loc,
             ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t *arg_type0 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
@@ -2076,7 +1860,7 @@ namespace ExtendsTypeOf {
 
 namespace Range {
 
-    static ASR::expr_t *eval_Range(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Range(Allocator &al, const Location &loc,
             ASR::ttype_t */*return_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         int64_t range_val = -1;
@@ -2150,7 +1934,7 @@ namespace OutOfRange
         return lf_f128_cmp(lf_f128_abs(v), huge) > 0;
     }
 
-    static ASR::expr_t* eval_OutOfRange(Allocator& al, const Location& loc,
+    static inline ASR::expr_t* eval_OutOfRange(Allocator& al, const Location& loc,
         ASR::ttype_t* return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/){
         ASRUtils::ASRBuilder b(al, loc);
         long long max_val_int = 0;
@@ -2340,7 +2124,7 @@ namespace CompilerVersion {
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         std::string version = version_string();
@@ -2518,7 +2302,7 @@ namespace ThisImage {
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_ThisImage(Allocator &/*al*/, const Location &/*loc*/,
+    static inline ASR::expr_t *eval_ThisImage(Allocator &/*al*/, const Location &/*loc*/,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         // Return nullptr so that the value is not constant-folded.
         // For coarray builds, the coarray pass replaces this with a PRIF runtime call.
@@ -2544,7 +2328,7 @@ namespace LCoBound {
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 3, "lcobound() takes 1 to 3 arguments", x.base.base.loc, diagnostics);
     }
-    static ASR::expr_t *eval_LCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+    static inline ASR::expr_t *eval_LCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
     static inline ASR::asr_t* create_LCoBound(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
@@ -2603,7 +2387,7 @@ namespace UCoBound {
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args >= 1 && x.n_args <= 3, "ucobound() takes 1 to 3 arguments", x.base.base.loc, diagnostics);
     }
-    static ASR::expr_t *eval_UCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
+    static inline ASR::expr_t *eval_UCoBound(Allocator &/*al*/, const Location &/*loc*/, ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         return nullptr;
     }
     static inline ASR::asr_t* create_UCoBound(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
@@ -2665,7 +2449,7 @@ namespace NumImages {
             x.base.base.loc, diagnostics);
     }
 
-    static ASR::expr_t *eval_NumImages(Allocator &/*al*/, const Location &/*loc*/,
+    static inline ASR::expr_t *eval_NumImages(Allocator &/*al*/, const Location &/*loc*/,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         // Return nullptr so that the value is not constant-folded.
         // For coarray builds, the coarray pass replaces this with a PRIF runtime call.
@@ -2689,7 +2473,7 @@ namespace NumImages {
 
 namespace Sign {
 
-    static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::is_real(*t1)) {
             int kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -2756,7 +2540,7 @@ namespace Sign {
 
 namespace Shiftr {
 
-    static ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -2821,7 +2605,7 @@ namespace Shiftr {
 
 namespace Rshift {
 
-    static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (!ASR::is_a<ASR::IntegerConstant_t>(*args[0]) ||
                 !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
@@ -2877,7 +2661,7 @@ namespace Rshift {
 
 namespace Shiftl {
 
-    static ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -2931,7 +2715,7 @@ namespace Shiftl {
 
 namespace Dshiftl {
 
-    static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -2982,7 +2766,7 @@ namespace Dshiftl {
 
 namespace Dshiftr {
 
-    static ASR::expr_t *eval_Dshiftr(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Dshiftr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3087,7 +2871,7 @@ namespace Dreal {
 
 namespace Ishft {
 
-    static ASR::expr_t *eval_Ishft(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ishft(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3169,7 +2953,7 @@ namespace Ishft {
 
 namespace Bgt {
 
-    static ASR::expr_t *eval_Bgt(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Bgt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3207,7 +2991,7 @@ namespace Bgt {
 
 namespace Blt {
 
-    static ASR::expr_t *eval_Blt(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Blt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3245,7 +3029,7 @@ namespace Blt {
 
 namespace Bge {
 
-    static ASR::expr_t *eval_Bge(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Bge(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3283,7 +3067,7 @@ namespace Bge {
 
 namespace Present {
 
-    static ASR::expr_t *eval_Present(Allocator &/*al*/, const Location &/*loc*/,
+    static inline ASR::expr_t *eval_Present(Allocator &/*al*/, const Location &/*loc*/,
         ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) { return nullptr; }
 
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
@@ -3356,7 +3140,7 @@ namespace Present {
 
 namespace Ble {
 
-    static ASR::expr_t *eval_Ble(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ble(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3412,7 +3196,7 @@ static inline std::vector<std::string> blank_pad_string_args(Vec<ASR::expr_t*>& 
 
 namespace Lgt {
 
-    static ASR::expr_t *eval_Lgt(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Lgt(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::vector<std::string> values = blank_pad_string_args(args);
         return make_ConstantWithType(make_LogicalConstant_t, values[0] > values[1], t1, loc);
@@ -3437,7 +3221,7 @@ namespace Lgt {
 
 namespace Llt {
 
-    static ASR::expr_t *eval_Llt(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Llt(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::vector<std::string> values = blank_pad_string_args(args);
         return make_ConstantWithType(make_LogicalConstant_t, values[0] < values[1], t1, loc);
@@ -3462,7 +3246,7 @@ namespace Llt {
 
 namespace Lge {
 
-    static ASR::expr_t *eval_Lge(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Lge(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::vector<std::string> values = blank_pad_string_args(args);
         return make_ConstantWithType(make_LogicalConstant_t, values[0] >= values[1], t1, loc);
@@ -3487,7 +3271,7 @@ namespace Lge {
 
 namespace Lle {
 
-    static ASR::expr_t *eval_Lle(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Lle(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::vector<std::string> values = blank_pad_string_args(args);
         return make_ConstantWithType(make_LogicalConstant_t, values[0] <= values[1], t1, loc);
@@ -3512,7 +3296,7 @@ namespace Lle {
 
 namespace Int {
 
-    static ASR::expr_t *eval_Int(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Int(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t i = -1;
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
@@ -3579,7 +3363,7 @@ namespace Int {
 
 namespace Not {
 
-    static ASR::expr_t *eval_Not(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Not(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t result = ~val;
@@ -3612,7 +3396,7 @@ namespace Not {
 
 namespace Iand {
 
-    static ASR::expr_t *eval_Iand(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Iand(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3648,7 +3432,7 @@ namespace Iand {
 
 namespace And {
 
-    static ASR::expr_t *eval_And(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_And(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
             int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -3688,7 +3472,7 @@ namespace And {
 
 namespace Ior {
 
-    static ASR::expr_t *eval_Ior(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ior(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3724,7 +3508,7 @@ namespace Ior {
 
 namespace Or {
 
-    static ASR::expr_t *eval_Or(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Or(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
             int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -3764,7 +3548,7 @@ namespace Or {
 
 namespace Ieor {
 
-    static ASR::expr_t *eval_Ieor(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ieor(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3796,7 +3580,7 @@ namespace Ieor {
 
 namespace Xor {
 
-    static ASR::expr_t *eval_Xor(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Xor(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
             int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -3836,7 +3620,7 @@ namespace Xor {
 
 namespace Ibits {
 
-    static ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -3876,7 +3660,7 @@ namespace Ibits {
 
 namespace Aint {
 
-    static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         // Truncated in the precision of the argument, then converted to the
@@ -3921,7 +3705,7 @@ namespace Aint {
 
 namespace Anint {
 
-    static ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         // Rounded in the precision of the argument, then converted to the
@@ -3974,7 +3758,7 @@ namespace Anint {
 
 namespace Nint {
 
-    static ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Nint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
@@ -4041,7 +3825,7 @@ namespace Nint {
 
 namespace Idnint {
 
-    static ASR::expr_t *eval_Idnint(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Idnint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 8);
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
@@ -4078,7 +3862,7 @@ namespace Idnint {
 
 namespace Logical {
 
-    static ASR::expr_t *eval_Logical(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Logical(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         bool result = ASR::down_cast<ASR::LogicalConstant_t>(args[0])->m_value;
         return make_ConstantWithType(make_LogicalConstant_t, result, arg_type, loc);
@@ -4102,7 +3886,7 @@ namespace Logical {
 
 namespace Floor {
 
-    static ASR::expr_t *eval_Floor(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Floor(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
@@ -4166,7 +3950,7 @@ namespace Floor {
 
 namespace Ceiling {
 
-    static ASR::expr_t *eval_Ceiling(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ceiling(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
@@ -4245,7 +4029,7 @@ namespace Ceiling {
 
 namespace Dim {
 
-    static ASR::expr_t *eval_Dim(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Dim(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*t1)) {
             int kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -4327,7 +4111,7 @@ namespace Dim {
 
 namespace Sqrt {
 
-    static ASR::expr_t *eval_Sqrt(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Sqrt(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         if (is_real(*arg_type) && ASRUtils::extract_kind_from_ttype_t(arg_type) == 16) {
@@ -4427,7 +4211,7 @@ static inline void call_real16_runtime(Allocator &al, const Location &loc,
 
 namespace Exponent {
 
-    static ASR::expr_t* eval_Exponent(Allocator& al, const Location& loc,
+    static inline ASR::expr_t* eval_Exponent(Allocator& al, const Location& loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* argument_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(argument_type);
@@ -4562,7 +4346,7 @@ namespace Exponent {
 }  // namespace Exponent
 
 namespace Fraction {
-    static ASR::expr_t *eval_Fraction(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Fraction(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* argument_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(argument_type);
@@ -4641,7 +4425,7 @@ namespace Fraction {
 }  // namespace Fraction
 
 namespace SetExponent {
-    static ASR::expr_t *eval_SetExponent(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_SetExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::ttype_t* argument_type = expr_type(args[0]);
         int32_t kind = extract_kind_from_ttype_t(argument_type);
@@ -4731,7 +4515,7 @@ namespace SetExponent {
 
 namespace Sngl {
 
-    static ASR::expr_t *eval_Sngl(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Sngl(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         double val = ASRUtils::real_constant_get_double(
@@ -4757,7 +4541,7 @@ namespace Sngl {
 
 namespace Ifix {
 
-    static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int val = static_cast<int>(ASRUtils::real_constant_get_double(
             ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))));
@@ -4786,7 +4570,7 @@ namespace Ifix {
 
 namespace Idint {
 
-    static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int val = static_cast<int>(ASRUtils::real_constant_get_double(
             ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))));
@@ -4812,7 +4596,7 @@ namespace Idint {
 
 namespace FMA {
 
-    static ASR::expr_t *eval_FMA(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_FMA(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_add(ASRUtils::real_expr_get_r16(args[0]),
@@ -4849,7 +4633,7 @@ namespace FMA {
 
 namespace SignFromValue {
 
-    static ASR::expr_t *eval_SignFromValue(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_SignFromValue(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*t1)) {
             if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
@@ -4906,7 +4690,7 @@ namespace SignFromValue {
 
 namespace FlipSign {
 
-    static ASR::expr_t *eval_FlipSign(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_FlipSign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
@@ -4952,7 +4736,7 @@ namespace FlipSign {
 
 namespace FloorDiv {
 
-    static ASR::expr_t *eval_FloorDiv(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_FloorDiv(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         ASR::ttype_t *type2 = ASRUtils::expr_type(args[1]);
@@ -5055,7 +4839,7 @@ namespace FloorDiv {
 
 namespace Mod {
 
-    static ASR::expr_t *eval_Mod(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Mod(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         bool is_real1 = is_real(*ASRUtils::expr_type(args[0]));
         bool is_real2 = is_real(*ASRUtils::expr_type(args[1]));
@@ -5161,7 +4945,7 @@ namespace Mod {
 
 namespace Ibclr {
 
-    static ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -5211,7 +4995,7 @@ namespace Ibclr {
 
 namespace Ibset {
 
-    static ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -5274,7 +5058,7 @@ namespace Ibset {
 
 namespace Btest {
 
-    static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -5338,7 +5122,7 @@ namespace Popcnt {
         return count;
     }
 
-    static ASR::expr_t *eval_Popcnt(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Popcnt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
         int64_t val = static_cast<int64_t>(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
@@ -5415,7 +5199,7 @@ namespace Popcnt {
 } // namespace Popcnt
 
 namespace Maskl {
-    static ASR::expr_t* eval_Maskl(Allocator& al, const Location& loc,
+    static inline ASR::expr_t* eval_Maskl(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -5488,7 +5272,7 @@ namespace Maskl {
 }  // namespace Maskl
 
 namespace Maskr {
-    static ASR::expr_t* eval_Maskr(Allocator& al, const Location& loc,
+    static inline ASR::expr_t* eval_Maskr(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -5638,7 +5422,7 @@ namespace Merge {
 
 namespace Trailz {
 
-    static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -5700,7 +5484,7 @@ namespace Trailz {
 
 namespace Nearest {
 
-    static ASR::expr_t *eval_Nearest(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Nearest(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (kind == 16) {
@@ -5849,7 +5633,7 @@ namespace Nearest {
 
 namespace Spacing {
 
-    static ASR::expr_t *eval_Spacing(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Spacing(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (kind == 16) {
@@ -5930,7 +5714,7 @@ namespace Spacing {
 
 namespace Modulo {
 
-    static ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
             int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
@@ -6050,7 +5834,7 @@ namespace Modulo {
 
 namespace BesselJN {
 
-    static ASR::expr_t *eval_BesselJN(Allocator& al, const Location& loc,
+    static inline ASR::expr_t *eval_BesselJN(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
             int n = checked_integer_cast<int>(
@@ -6113,7 +5897,7 @@ namespace BesselJN {
 
 namespace BesselYN {
 
-    static ASR::expr_t *eval_BesselYN(Allocator& al, const Location& loc,
+    static inline ASR::expr_t *eval_BesselYN(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
             lf_float128 x = ASRUtils::real_constant_get_r16(
@@ -6176,7 +5960,7 @@ namespace BesselYN {
 
 namespace Poppar {
 
-    static ASR::expr_t *eval_Poppar(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Poppar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::expr_t* count = Popcnt::eval_Popcnt(al, loc, t1, args, diag);
         int64_t result = ASR::down_cast<ASR::IntegerConstant_t>(count)->m_n;
@@ -6211,7 +5995,7 @@ namespace Poppar {
 
 namespace Real {
 
-    static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         std::complex<long double> c10;
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
@@ -6328,7 +6112,7 @@ namespace Cmplx {
         return true;
     }
 
-    static ASR::expr_t *eval_Cmplx(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Cmplx(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         bool kind16 = ASRUtils::extract_kind_from_ttype_t(t1) == 16;
@@ -6542,7 +6326,7 @@ namespace Cmplx {
 
 namespace Mergebits {
 
-    static ASR::expr_t *eval_Mergebits(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Mergebits(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         // The constants are sign-extended from their kind, so merging all 64
         // bits yields the sign-extended result of that kind.
@@ -6591,7 +6375,7 @@ namespace Mergebits {
 
 namespace Leadz {
 
-    static ASR::expr_t *eval_Leadz(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Leadz(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -6658,7 +6442,7 @@ namespace Leadz {
 
 namespace Ishftc {
 
-    static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t shift_signed = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
@@ -6758,7 +6542,7 @@ namespace Ishftc {
 
 namespace Hypot {
 
-    static ASR::expr_t *eval_Hypot(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Hypot(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (kind == 16) {
@@ -6863,7 +6647,7 @@ namespace Hypot {
 
 namespace ToLowerCase {
 
-    static ASR::expr_t *eval_ToLowerCase(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_ToLowerCase(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
 
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
@@ -6936,7 +6720,7 @@ namespace ToLowerCase {
 
 namespace SelectedIntKind {
 
-    static ASR::expr_t *eval_SelectedIntKind(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_SelectedIntKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         ASRUtils::ASRBuilder b(al, loc);
@@ -7242,7 +7026,7 @@ namespace SelectedLogicalKind {
 
 namespace Kind {
 
-    static ASR::expr_t *eval_Kind(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Kind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int result = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         return make_ConstantWithType(make_IntegerConstant_t, result, int32, loc);
@@ -7252,7 +7036,7 @@ namespace Kind {
 
 namespace BitSize {
 
-    static ASR::expr_t *eval_BitSize(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_BitSize(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         return make_ConstantWithType(make_IntegerConstant_t, 8*kind, t1, loc);
@@ -7262,7 +7046,7 @@ namespace BitSize {
 
 namespace NewLine {
 
-    static ASR::expr_t *eval_NewLine(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_NewLine(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         char* new_line_str = (char*)"\n";
         return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_String_t(al, loc,
@@ -7277,7 +7061,7 @@ namespace NewLine {
 
 namespace Adjustl {
 
-    static ASR::expr_t *eval_Adjustl(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Adjustl(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
@@ -7367,7 +7151,7 @@ namespace Adjustl {
 
 namespace Adjustr {
 
-    static ASR::expr_t *eval_Adjustr(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Adjustr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
@@ -7759,7 +7543,7 @@ namespace StringConcat {
 
 namespace StringLenTrim {
 
-    static ASR::expr_t *eval_StringLenTrim(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_StringLenTrim(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(arg->m_type);
@@ -7817,7 +7601,7 @@ namespace StringLenTrim {
 
 namespace StringTrim {
 
-    static ASR::expr_t *eval_StringTrim(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_StringTrim(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         int char_kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -7868,7 +7652,7 @@ namespace StringTrim {
 
 namespace Ichar {
 
-    static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         int64_t result = string_first_code_point(arg);
@@ -7901,7 +7685,7 @@ namespace Ichar {
 
 namespace Char {
 
-    static ASR::expr_t *eval_Char(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Char(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int kind = checked_integer_cast<int>(ASR::down_cast<ASR::String_t>(
@@ -7973,7 +7757,7 @@ namespace Char {
 
 namespace Achar {
 
-    static ASR::expr_t *eval_Achar(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Achar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int kind = checked_integer_cast<int>(ASR::down_cast<ASR::String_t>(
@@ -8059,7 +7843,7 @@ namespace Achar {
 
 namespace Iachar {
 
-    static ASR::expr_t *eval_Iachar(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Iachar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         int64_t result = string_first_code_point(arg);
@@ -8094,7 +7878,7 @@ namespace Iachar {
 
 namespace Digits {
 
-    static ASR::expr_t *eval_Digits(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Digits(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         ASR::ttype_t *type1 = ASRUtils::expr_type(args[0]);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
@@ -8164,7 +7948,7 @@ namespace Digits {
 
 namespace Rrspacing {
 
-    static ASR::expr_t *eval_Rrspacing(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Rrspacing(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         if (kind == 16) {
@@ -8270,7 +8054,7 @@ namespace Rrspacing {
 
 namespace Repeat {
 
-    static ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Repeat(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
         char* str = ASR::down_cast<ASR::StringConstant_t>(expr_value(args[0]))->m_s;
@@ -8407,7 +8191,7 @@ namespace Repeat {
 
 namespace StringContainsSet {
 
-    static ASR::expr_t *eval_StringContainsSet(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_StringContainsSet(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* string_arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         ASR::StringConstant_t* set_arg = ASR::down_cast<ASR::StringConstant_t>(args[1]);
@@ -8551,7 +8335,7 @@ namespace StringContainsSet {
 
 namespace StringFindSet {
 
-    static ASR::expr_t *eval_StringFindSet(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_StringFindSet(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* string_arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         ASR::StringConstant_t* set_arg = ASR::down_cast<ASR::StringConstant_t>(args[1]);
@@ -8686,7 +8470,7 @@ namespace StringFindSet {
 
 namespace SubstrIndex {
 
-    static ASR::expr_t *eval_SubstrIndex(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_SubstrIndex(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::StringConstant_t* string_arg = ASR::down_cast<ASR::StringConstant_t>(args[0]);
         ASR::StringConstant_t* substring_arg = ASR::down_cast<ASR::StringConstant_t>(args[1]);
@@ -8827,7 +8611,7 @@ namespace SubstrIndex {
 
 namespace MinExponent {
 
-    static ASR::expr_t *eval_MinExponent(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_MinExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int m_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         int result;
@@ -8850,7 +8634,7 @@ namespace MinExponent {
 
 namespace MaxExponent {
 
-    static ASR::expr_t *eval_MaxExponent(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_MaxExponent(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int m_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
         int result;
@@ -9437,7 +9221,7 @@ namespace Max {
         }
     }
 
-    static ASR::expr_t *eval_Max(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Max(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
@@ -9718,7 +9502,7 @@ namespace Min {
         }
     }
 
-    static ASR::expr_t *eval_Min(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Min(Allocator &al, const Location &loc,
             ASR::ttype_t *arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
@@ -10024,7 +9808,7 @@ namespace Partition {
 
 namespace Epsilon {
 
-    static ASR::expr_t *eval_Epsilon(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Epsilon(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         double epsilon_val = -1;
         ASRUtils::ASRBuilder b(al, loc);
@@ -10053,7 +9837,7 @@ namespace Epsilon {
 
 namespace Precision {
 
-    static ASR::expr_t *eval_Precision(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Precision(Allocator &al, const Location &loc,
             ASR::ttype_t* /*return_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t precision_val = -1;
         ASRUtils::ASRBuilder b(al, loc);
@@ -10080,7 +9864,7 @@ namespace Precision {
 
 namespace Tiny {
 
-    static ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Tiny(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         double tiny_value = -1;
         ASRUtils::ASRBuilder b(al, loc);
@@ -10110,7 +9894,7 @@ namespace Tiny {
 
 namespace Conjg {
 
-    static ASR::expr_t *eval_Conjg(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Conjg(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         std::complex<double> crv;
         std::complex<long double> c10;
@@ -10165,7 +9949,7 @@ namespace Conjg {
 
 namespace Huge {
 
-    static ASR::expr_t *eval_Huge(Allocator &al, const Location &loc,
+    static inline ASR::expr_t *eval_Huge(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& diag) {
         ASRUtils::ASRBuilder b(al, loc);
         int32_t kind = extract_kind_from_ttype_t(arg_type);
@@ -10214,7 +9998,7 @@ namespace Huge {
 
 namespace Loc {
 
-    static ASR::expr_t* eval_Loc(Allocator &al, const Location &loc,
+    static inline ASR::expr_t* eval_Loc(Allocator &al, const Location &loc,
             ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t* arg = args[0];
         ASR::ttype_t* int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));

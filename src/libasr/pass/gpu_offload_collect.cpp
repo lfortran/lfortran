@@ -318,7 +318,7 @@ void GpuLiveoutWriteBack::run(ASR::Function_t &kernel) {
         Vec<ASR::stmt_t*> with_flags;
         with_flags.reserve(al, body.size() + 2 * deferred.size());
         const Location &loc = s->base.loc;
-        ASR::ttype_t *logical = ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
+        ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
             4));
         for (size_t j = 0; j + 1 < body.size(); j++) {
             with_flags.push_back(al, body[j]);
@@ -327,7 +327,7 @@ void GpuLiveoutWriteBack::run(ASR::Function_t &kernel) {
             with_flags.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, d.first)),
                 ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false,
-                    logical)), nullptr, false, false, false, false)));
+                    logical_type)), nullptr, false, false, false, false)));
         }
         with_flags.push_back(al, body[body.size() - 1]);
         for (auto &d : deferred) {

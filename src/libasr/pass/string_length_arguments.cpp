@@ -473,12 +473,12 @@ public:
         transform_stmts(xx.m_orelse, xx.n_orelse);
         if (test_before.size() == 0) return;
         const Location &loc = x.m_test->base.loc;
-        ASR::ttype_t *logical = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
         Vec<ASR::stmt_t*> exit;
         exit.reserve(al, 1);
         exit.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(al, loc, x.m_name)));
         ASR::stmt_t *exit_if = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
-            ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, x.m_test, logical,
+            ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, x.m_test, logical_type,
                 nullptr)), exit.p, exit.size(), nullptr, 0));
         Vec<ASR::stmt_t*> body;
         body.reserve(al, test_before.size() + 1 + x.n_body);
@@ -490,7 +490,7 @@ public:
             body.push_back(al, x.m_body[i]);
         }
         xx.m_test = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, true,
-            logical));
+            logical_type));
         xx.m_body = body.p;
         xx.n_body = body.size();
     }
@@ -530,10 +530,10 @@ public:
     // The length of the character actual `actual` (its element length if it
     // is an array) as an `integer(8)`. Absent is length 0.
     ASR::expr_t* actual_length(ASR::expr_t *&actual, const Location &loc) {
-        ASR::ttype_t *int8 = hidden_length_type(al, loc);
+        ASR::ttype_t *length_type = hidden_length_type(al, loc);
         if (actual == nullptr) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
-                int8, ASR::integerbozType::Decimal));
+                length_type, ASR::integerbozType::Decimal));
         }
         ASR::expr_t *str_expr = actual;
         while (is_a<ASR::ArrayPhysicalCast_t>(*str_expr)) {
@@ -546,7 +546,7 @@ public:
                 str->m_len && ASRUtils::extract_value(
                     ASRUtils::expr_value(str->m_len), len)) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, len,
-                int8, ASR::integerbozType::Decimal));
+                length_type, ASR::integerbozType::Decimal));
         }
         // The length is taken from the actual itself, which is then
         // evaluated twice: a call with a side effect in it is evaluated
@@ -559,7 +559,7 @@ public:
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
         ASR::expr_t *copy = duplicator.duplicate_expr(str_expr);
-        return ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, copy, int8,
+        return ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, copy, length_type,
             nullptr));
     }
 

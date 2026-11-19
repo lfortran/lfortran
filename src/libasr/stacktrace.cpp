@@ -731,3 +731,6 @@ std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)
 }
 
 } // namespace LCompilers
+
+// In a unity build the next source follows in the same translation unit.
+#undef PACKAGE

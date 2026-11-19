@@ -27,15 +27,16 @@ the number of arguments we could pass to a function would get limited by
 the number of registers available with the CPU.
 
 */
-enum Block {
-    LOOP = 0,
-    IF = 1,
-    BLOCK = 2
-};
 
 class X64Visitor : public WASMDecoder<X64Visitor>,
                    public WASM_INSTS_VISITOR::BaseWASMVisitor<X64Visitor> {
    public:
+    enum Block {
+        LOOP = 0,
+        IF = 1,
+        BLOCK = 2
+    };
+
     X86Assembler &m_a;
     uint32_t cur_func_idx;
     uint32_t block_id;

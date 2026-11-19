@@ -93,27 +93,25 @@ H after that, there is no copy.
 
 namespace {
 
-using namespace ProcedureArguments;
-
 // The largest number of copies in one host.
 constexpr size_t max_copies_per_host = 16;
 
 // The removable dummy procedures of the translation unit: the largest set of
 // dummies of copyable procedures that are only called or passed on to
 // dummies of the set.
-std::set<Dummy> removable_dummies(SymbolTable *global_scope) {
+std::set<ProcedureArguments::Dummy> removable_dummies(SymbolTable *global_scope) {
     std::vector<ASR::Function_t*> procedures;
-    collect_procedures(global_scope, procedures);
-    std::set<Dummy> removable;
-    std::map<Dummy, std::vector<Dummy>> passed_to;
+    ProcedureArguments::collect_procedures(global_scope, procedures);
+    std::set<ProcedureArguments::Dummy> removable;
+    std::map<ProcedureArguments::Dummy, std::vector<ProcedureArguments::Dummy>> passed_to;
     for (ASR::Function_t *f: procedures) {
-        DummyUseCollector collector;
+        ProcedureArguments::DummyUseCollector collector;
         for (size_t i = 0; i < f->n_args; i++) {
-            if (removable_dummy_interface(f, i) != nullptr) {
-                collector.dummies[dummy_symbol(f, i)] = i;
+            if (ProcedureArguments::removable_dummy_interface(f, i) != nullptr) {
+                collector.dummies[ProcedureArguments::dummy_symbol(f, i)] = i;
             }
         }
-        if (collector.dummies.empty() || !copyable_procedure(f)) {
+        if (collector.dummies.empty() || !ProcedureArguments::copyable_procedure(f)) {
             continue;
         }
         for (auto &item: f->m_symtab->get_scope()) {
@@ -131,7 +129,7 @@ std::set<Dummy> removable_dummies(SymbolTable *global_scope) {
                         collector.allowed[d.first]) {
                 continue;
             }
-            Dummy dummy = {f, d.second};
+            ProcedureArguments::Dummy dummy = {f, d.second};
             removable.insert(dummy);
             passed_to[dummy] = collector.passed_to[d.first];
         }
@@ -141,7 +139,7 @@ std::set<Dummy> removable_dummies(SymbolTable *global_scope) {
         changed = false;
         for (auto it = removable.begin(); it != removable.end(); ) {
             bool keep = true;
-            for (const Dummy &next: passed_to[*it]) {
+            for (const ProcedureArguments::Dummy &next: passed_to[*it]) {
                 if (removable.count(next) == 0) {
                     keep = false;
                     break;
@@ -210,7 +208,7 @@ public:
         for (size_t i = 0; i < n_args; i++) {
             ASR::expr_t *arg = args[i].m_value;
             if (arg != nullptr && ASR::is_a<ASR::Var_t>(*arg) &&
-                    is_internal_procedure(ASR::down_cast<ASR::Var_t>(arg)->m_v)) {
+                    ProcedureArguments::is_internal_procedure(ASR::down_cast<ASR::Var_t>(arg)->m_v)) {
                 return true;
             }
         }
@@ -267,7 +265,7 @@ public:
 class ProcedureArgumentSpecializer {
 public:
     Allocator &al;
-    std::set<Dummy> removable;
+    std::set<ProcedureArguments::Dummy> removable;
     // (procedure, host, removed dummies and their actuals) -> copy
     typedef std::tuple<ASR::Function_t*, SymbolTable*,
         std::vector<std::pair<size_t, ASR::symbol_t*>>> CopyKey;
@@ -283,8 +281,8 @@ public:
     ASR::symbol_t *make_copy(ASR::Function_t *g, SymbolTable *host,
             const std::vector<std::pair<size_t, ASR::symbol_t*>> &actuals) {
         SymbolTable *g_scope = g->m_symtab->parent;
-        ASR::symbol_t *g_unit = scope_owner(g_scope);
-        if (!in_scope_chain(host, g_scope) && (g_unit == nullptr ||
+        ASR::symbol_t *g_unit = ProcedureArguments::scope_owner(g_scope);
+        if (!ProcedureArguments::in_scope_chain(host, g_scope) && (g_unit == nullptr ||
                 !ASR::is_a<ASR::Module_t>(*g_unit))) {
             return nullptr;
         }
@@ -304,7 +302,7 @@ public:
         std::set<size_t> removed;
         for (auto &a: actuals) {
             name += std::string("__") + ASRUtils::symbol_name(a.second);
-            ASR::symbol_t *dummy = dummy_symbol(copy, a.first);
+            ASR::symbol_t *dummy = ProcedureArguments::dummy_symbol(copy, a.first);
             if (dummy == nullptr ||
                     ASRUtils::symbol_parent_symtab(dummy) != copy->m_symtab) {
                 return nullptr;
@@ -332,13 +330,13 @@ public:
                 ASRUtils::get_FunctionType(g), copy->m_symtab));
         name = host->get_unique_name(name, false);
         copy->m_name = s2c(al, name);
-        ScopeImporter importer(al, copy->m_symtab, top_level_unit(host));
+        ProcedureArguments::ScopeImporter importer(al, copy->m_symtab, ProcedureArguments::top_level_unit(host));
         importer.visit_Function(*copy);
         if (!importer.ok) {
             return nullptr;
         }
         for (const std::string &module_name: importer.modules) {
-            add_module_dependency(al, host, module_name);
+            ProcedureArguments::add_module_dependency(al, host, module_name);
         }
         host->add_symbol(name, copy_sym);
         return copy_sym;
@@ -348,7 +346,7 @@ public:
     // instead, without the arguments `removed`, or nullptr.
     ASR::symbol_t *specialize(ASR::symbol_t *name, ASR::call_arg_t *args,
             size_t n_args, SymbolTable *scope, std::set<size_t> &removed) {
-        ASR::Function_t *g = called_procedure(name, nullptr);
+        ASR::Function_t *g = ProcedureArguments::called_procedure(name, nullptr);
         if (g == nullptr || n_args != g->n_args) {
             return nullptr;
         }
@@ -361,20 +359,20 @@ public:
                 continue;
             }
             ASR::symbol_t *p = ASR::down_cast<ASR::Var_t>(arg)->m_v;
-            if (!is_internal_procedure(p) || !same_interface(
-                    removable_dummy_interface(g, i),
+            if (!ProcedureArguments::is_internal_procedure(p) || !ProcedureArguments::same_interface(
+                    ProcedureArguments::removable_dummy_interface(g, i),
                     ASR::down_cast<ASR::Function_t>(p))) {
                 continue;
             }
             SymbolTable *p_host = ASRUtils::symbol_parent_symtab(p);
-            if (host == nullptr || in_scope_chain(p_host, host)) {
+            if (host == nullptr || ProcedureArguments::in_scope_chain(p_host, host)) {
                 host = p_host;
-            } else if (!in_scope_chain(host, p_host)) {
+            } else if (!ProcedureArguments::in_scope_chain(host, p_host)) {
                 return nullptr;
             }
             actuals.push_back({i, p});
         }
-        if (actuals.empty() || !in_scope_chain(scope, host)) {
+        if (actuals.empty() || !ProcedureArguments::in_scope_chain(scope, host)) {
             return nullptr;
         }
         for (auto &a: actuals) {
