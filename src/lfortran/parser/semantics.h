@@ -31,7 +31,6 @@ using LCompilers::LFortran::ArgStarKw;
 using LCompilers::LFortran::EndStmt;
 using LCompilers::LFortran::ContainsEnd;
 
-
 static inline expr_t* EXPR(const ast_t *f)
 {
     return down_cast<expr_t>(f);
@@ -123,7 +122,6 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define DECLS(x) VEC_CAST(x, decl_stmt)
 #define STMTS(x) VEC_CAST(x, decl_stmt)
 #define CONTAINS(x) VEC_CAST(x, program_unit)
-#define ATTRS(x) VEC_CAST(x, attribute)
 #define EXPRS(x) VEC_CAST(x, expr)
 #define CASE_STMTS(x) VEC_CAST(x, case_stmt)
 #define RANK_STMTS(x) VEC_CAST(x, rank_stmt)
@@ -280,7 +278,6 @@ static inline void check_decl_order(Vec<ast_t*> &items,
     items.n = n;
 }
 
-
 static inline decl_stmt_t** IFSTMTS(Allocator &al, ast_t* x)
 {
     decl_stmt_t **s = al.allocate<decl_stmt_t*>();
@@ -332,8 +329,6 @@ static inline Vec<kind_item_t> a2kind_list(Allocator &al,
 
 #define SIMPLE_ATTR(x, l) make_SimpleAttribute_t( \
             p.m_a, l, simple_attributeType::Attr##x)
-#define SIMPLE_ATTR_INVALID(l) make_SimpleAttribute_t( \
-            p.m_a, l, (simple_attributeType)-1)
 #define INTENT(x, l) make_AttrIntent_t( \
             p.m_a, l, attr_intentType::x)
 #define BIND(x, l) make_AttrBind_t( \
@@ -452,12 +447,6 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             a2kind_list(p.m_a, l, e).p, 1, \
             nullptr, nullptr, None)
 
-#define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
-            p.m_a, l, \
-            decl_typeType::Type##x, \
-            kind.p, kind.size(), \
-            nullptr, nullptr, None)
-
 #define ATTR_TYPE_NAME(x, name, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
@@ -482,9 +471,6 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             nullptr, 0, \
             down_cast<decl_attribute_t>(attr), \
             nullptr, None)
-
-#define ATTR_NAME(x, l) make_AttrName_t \
-            (p.m_a, l, name2char(x))
 
 // R1630 `keyword = instantiation-arg`
 #define ATTR_KEYWORD(kw, arg, l) make_AttrKeyword_t \
@@ -600,8 +586,6 @@ decl_attribute_t** VAR_DECL_PARAMETERb(Allocator &al,
         VAR_DECL_PARAMETERb(p.m_a, l), 1, \
         varsym.p, varsym.n, \
         trivia_cast(trivia))
-
-
 
 static inline bool has_num_val(expr_t const * const expr, int64_t val) {
     if (expr && is_a<Num_t>(*expr)) {
@@ -744,20 +728,6 @@ static inline common_block_t *make_common_block2(Allocator &al, Location const &
         PLIST_ADD(out, COMMON_BLOCK2(three->m_name, v, l)); \
 
 /* Add (name,varsym) to curr_list, then append other_list */
-static inline void  merge_common_block_lists(Allocator &al,
-            Location const &loc,
-            Vec<common_block_t> &curr_list, ast_t const *name,
-            Vec<var_sym_t> const & varsym,
-            Vec<common_block_t> const &other_list) {
-    curr_list.reserve(al, 1+other_list.size());
-    curr_list.push_back(al, *make_common_block(al, loc, name, varsym));
-    for(common_block_t const & o : other_list) {
-        curr_list.push_back(al, o);
-    }
-}
-
-#define COMMON_BLOCK_MERGE(curr_list, name, varsym, other_list, loc) \
-    merge_common_block_lists(p.m_a, loc, curr_list, name, varsym, other_list)
 
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
@@ -793,7 +763,6 @@ ast_t* data_implied_do(Allocator &al, Location &loc,
         trivia_cast(trivia))
 #define IMPLICIT_NONE_EXTERNAL(l) make_ImplicitNoneExternal_t(p.m_a, l, 0)
 #define IMPLICIT_NONE_TYPE(l) make_ImplicitNoneType_t(p.m_a, l)
-
 
 static inline char * id_if_Name_t(expr_t const * exprNode) {
   char *id = nullptr;
@@ -885,8 +854,6 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
         name2char(name), nullptr, 0, nullptr, 0, nullptr, nullptr, sym, nullptr)
 #define VAR_SYM_EMPTY(loc) VARSYM(p.m_a, loc, \
         nullptr, nullptr, 0, nullptr, 0, nullptr, nullptr, None, nullptr)
-#define VAR_SYM_DIM_EXPR(exp, sym, loc) VARSYM(p.m_a, loc, nullptr, \
-        nullptr, 0, nullptr, 0, nullptr, down_cast<expr_t>(exp), sym, nullptr)
 #define VAR_SYM_DIM_INIT(name, dim, n_dim, init, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), dim, n_dim, nullptr, 0, nullptr, \
         down_cast<expr_t>(init), sym, nullptr)
@@ -898,14 +865,9 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
         down_cast<expr_t>(init), sym, nullptr)
 #define VAR_SYM_DIM(name, dim, n_dim, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), dim, n_dim, nullptr, 0, nullptr, nullptr, sym, nullptr)
-#define VAR_SYM_CODIM(name, codim, n_codim, sym, loc) VARSYM(p.m_a, loc, \
-        name2char(name), nullptr, 0, codim, n_codim, nullptr, nullptr, sym, nullptr)
 #define VAR_SYM_DIM_CODIM(name, dim, n_dim, codim, n_codim, sym, loc) \
         VARSYM(p.m_a, loc, name2char(name), \
         dim, n_dim, codim, n_codim, nullptr, nullptr, sym, nullptr)
-#define VAR_SYM_CODIM_INIT(name, codim, n_codim, init, sym, loc) VARSYM(p.m_a, loc, \
-        name2char(name), nullptr, 0, codim, n_codim, nullptr, \
-        down_cast<expr_t>(init), sym, nullptr)
 #define VAR_SYM_DIM_CODIM_INIT(name, dim, n_dim, codim, n_codim, init, sym, loc) \
         VARSYM(p.m_a, loc, name2char(name), \
         dim, n_dim, codim, n_codim, nullptr, \
@@ -917,35 +879,6 @@ static inline ast_t* slash_init_to_expr(Allocator &al, Location &l, const Vec<as
 #define DECL_OP(op, l) make_AttrIntrinsicOperator_t(p.m_a, l, op)
 #define DECL_DEFOP(optype, l) make_AttrDefinedOperator_t(p.m_a, l, \
         def_op_to_str(p.m_a, optype))
-
-static inline expr_t** DIMS2EXPRS(Allocator &al, const Vec<FnArg> &d)
-{
-    if (d.size() == 0) {
-        return nullptr;
-    } else {
-        expr_t **s = al.allocate<expr_t*>(d.size());
-        for (size_t i=0; i < d.size(); i++) {
-            // TODO: we need to change this to allow both array and fn arguments
-            // Right now we assume everything is a function argument
-            if (d[i].keyword) {
-                if (d[i].kw.m_value) {
-                    s[i] = d[i].kw.m_value;
-                } else {
-                    Location l;
-                    s[i] = EXPR(make_Num_t(al, l, 1, nullptr));
-                }
-            } else {
-                if (d[i].arg.m_end) {
-                    s[i] = d[i].arg.m_end;
-                } else {
-                    Location l;
-                    s[i] = EXPR(make_Num_t(al, l, 1, nullptr));
-                }
-            }
-        }
-        return s;
-    }
-}
 
 static inline Vec<kind_item_t> empty()
 {
@@ -973,35 +906,6 @@ static inline Vec<FnArg> empty1()
     r.from_pointer_n(nullptr, 0);
     return r;
 }
-
-static inline VarType* VARTYPE0_(Allocator &al,
-        const LCompilers::Str &s, const Vec<kind_item_t> kind, Location &l)
-{
-    VarType *r = al.allocate<VarType>(1);
-    r->loc = l;
-    r->string = s;
-    r->identifier = nullptr;
-    r->kind = kind;
-    return r;
-}
-
-static inline VarType* VARTYPE4_(Allocator &al,
-        const LCompilers::Str &s, const ast_t *id, Location &l)
-{
-    VarType *r = al.allocate<VarType>(1);
-    r->loc = l;
-    r->string = s;
-    char *derived_type_name = name2char(id);
-    r->identifier = derived_type_name;
-    Vec<kind_item_t> kind;
-    kind.reserve(al, 1);
-    r->kind = kind;
-    return r;
-}
-
-#define VARTYPE0(s, l) VARTYPE0_(p.m_a, s, empty(), l)
-#define VARTYPE3(s, k, l) VARTYPE0_(p.m_a, s, k, l)
-#define VARTYPE4(s, k, l) VARTYPE4_(p.m_a, s, k, l)
 
 static inline FnArg* DIM1(Allocator &al, Location &l,
     expr_t *a, expr_t *b, expr_t *c, int64_t label)
@@ -1112,7 +1016,6 @@ static inline codimension_t* CODIM1d_star(Allocator &al, Location &l, expr_t *a)
     return s;
 }
 
-
 static inline arg_t* ARGS(Allocator &al, const Vec<ast_t*> args)
 {
     arg_t *a = al.allocate<arg_t>(args.size());
@@ -1136,7 +1039,6 @@ static inline char** REDUCE_ARGS(Allocator &al, const Vec<ast_t*> args)
     }
     return a;
 }
-
 
 static inline reduce_opType convert_id_to_reduce_type(
         const Location &loc, const ast_t *id, LCompilers::diag::Diagnostics &diagnostics)
@@ -1164,7 +1066,6 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define TYPE ast_t*
 
 // Assign last_* location to `a` from `b`
-#define LLOC(a, b) a.last = b.last;
 
 #define ADD(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Add, EXPR(y))
 #define SUB(x, y, l) make_BinOp_t(p.m_a, l, EXPR(x), operatorType::Sub, EXPR(y))
@@ -1240,63 +1141,7 @@ ast_t* implied_do_loop(Allocator &al, Location &loc,
             EXPR_OPT(incr));
 }
 
-ast_t* implied_do1(Allocator &al, Location &loc,
-        ast_t* ex,
-        ast_t* i,
-        ast_t* low,
-        ast_t* high,
-        ast_t* incr) {
-    Vec<ast_t*> v;
-    v.reserve(al, 1);
-    v.push_back(al, ex);
-    return implied_do_loop(al, loc, v, i, low, high, incr);
-}
-
-ast_t* implied_do2(Allocator &al, Location &loc,
-        ast_t* ex1,
-        ast_t* ex2,
-        ast_t* i,
-        ast_t* low,
-        ast_t* high,
-        ast_t* incr) {
-    Vec<ast_t*> v;
-    v.reserve(al, 2);
-    v.push_back(al, ex1);
-    v.push_back(al, ex2);
-    return implied_do_loop(al, loc, v, i, low, high, incr);
-}
-
-ast_t* implied_do3(Allocator &al, Location &loc,
-        ast_t* ex1,
-        ast_t* ex2,
-        Vec<ast_t*> ex_list,
-        ast_t* i,
-        ast_t* low,
-        ast_t* high,
-        ast_t* incr) {
-    Vec<ast_t*> v;
-    v.reserve(al, 2+ex_list.size());
-    v.push_back(al, ex1);
-    v.push_back(al, ex2);
-    for (size_t i=0; i<ex_list.size(); i++) {
-        v.push_back(al, ex_list[i]);
-    }
-    return implied_do_loop(al, loc, v, i, low, high, incr);
-}
-
-#define IMPLIED_DO_LOOP1(ex, i, low, high, l) \
-    implied_do1(p.m_a, l, ex, i, low, high, nullptr)
-#define IMPLIED_DO_LOOP2(ex1, ex2, i, low, high, l) \
-    implied_do2(p.m_a, l, ex1, ex2, i, low, high, nullptr)
-#define IMPLIED_DO_LOOP3(ex1, ex2, ex_list, i, low, high, l) \
-    implied_do3(p.m_a, l, ex1, ex2, ex_list, i, low, high, nullptr)
 // with incr
-#define IMPLIED_DO_LOOP4(ex, i, low, high, incr, l) \
-    implied_do1(p.m_a, l, ex, i, low, high, incr)
-#define IMPLIED_DO_LOOP5(ex1, ex2, i, low, high, incr, l) \
-    implied_do2(p.m_a, l, ex1, ex2, i, low, high, incr)
-#define IMPLIED_DO_LOOP6(ex1, ex2, ex_list, i, low, high, incr, l) \
-    implied_do3(p.m_a, l, ex1, ex2, ex_list, i, low, high, incr)
 
 char *str2str_null(Allocator &al, const LCompilers::Str &s) {
     if (s.p == nullptr) {
@@ -1337,7 +1182,6 @@ char *strptr2str_null(Allocator &al, const LCompilers::Str *s) {
         nullptr, nullptr, 0, nullptr)
 #define GOTO3(id, labels, l) make_GoTo_t(p.m_a, l, 0, name2char(id), \
         nullptr, EXPRS(labels), labels.size(), nullptr)
-
 
 // Reserves room for exactly `n` items; an empty list allocates nothing
 template <typename T>
@@ -1384,14 +1228,6 @@ ast_t* SUBROUTINE_CALL0(Allocator &al, struct_member_t* mem, size_t n,
         /*keyword_t* a_keywords*/ v2.p, /*size_t n_keywords*/ v2.size(),
         /*temp_args*/ v3.p, /*n_temp_args*/ v3.size(), nullptr);
 }
-#define SUBROUTINE_CALL(name, args, l) SUBROUTINE_CALL0(p.m_a, \
-        nullptr, 0, name, args, empty_vecast(), l)
-#define SUBROUTINE_CALL1(mem, name, args, l) SUBROUTINE_CALL0(p.m_a, \
-        mem.p, mem.n, name, args, empty_vecast(), l)
-#define SUBROUTINE_CALL2(name, l) make_SubroutineCall_t(p.m_a, l, 0, \
-        name2char(name), nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, nullptr)
-#define SUBROUTINE_CALL3(mem, name, l) make_SubroutineCall_t(p.m_a, l, 0, \
-        name2char(name), mem.p, mem.n, nullptr, 0, nullptr, 0, nullptr, 0, nullptr)
 #define SUBROUTINE_CALL4(name, temp_args, args, l) SUBROUTINE_CALL0(p.m_a, \
         nullptr, 0, name, args, temp_args, l)
 
@@ -1578,7 +1414,6 @@ ast_t* builtin3(Allocator &al,
             out->kw.m_value = down_cast<expr_t>(arg0); \
         }
 
-
 #define WRITE0(args0, l) WRITE1(p.m_a, args0, empty_vecast(), l)
 #define WRITE(args0, args, l) WRITE1(p.m_a, args0, args, l)
 
@@ -1617,7 +1452,6 @@ ast_t* builtin3(Allocator &al,
         EXPRS(A2LIST(p.m_a, arg)), 1, nullptr, 0, nullptr)
 #define BIND2(args0, l) builtin3(p.m_a, args0, l, make_Bind_t)
 
-
 void CONVERT_FNARRAYARG_FNARG(Allocator &al,
         struct_member_t &s,
         const Vec<FnArg> &args)
@@ -1648,42 +1482,6 @@ void CONVERT_FNARRAYARG_FNARG(Allocator &al,
                 name2char(id), \
                 member.p, member.n);
 
-// Converts (line, col) to a linear position.
-uint64_t linecol_to_pos(const std::string &s, uint16_t line, uint16_t col) {
-    uint64_t pos = 0;
-    uint64_t l = 1;
-    while (true) {
-        if (l == line) break;
-        if (pos >= s.size()) return 0;
-        while (s[pos] != '\n' && pos < s.size()) pos++;
-        l++;
-        pos++;
-    }
-    pos += col-1;
-    if (pos >= s.size()) return 0;
-    return pos;
-}
-
-// Converts a linear position `position` to a (line, col) tuple
-void pos_to_linecol(const std::string &s, uint32_t position,
-            uint32_t &line, uint32_t &col) {
-    uint32_t pos = 0;
-    uint32_t nlpos = 0;
-    line = 1;
-    while (true) {
-        nlpos = pos;
-        if (pos == position) break;
-        while (s[pos] != '\n') {
-            pos++;
-            if (pos == position) break;
-            if (pos == s.size()) break;
-        }
-        line++;
-        pos++;
-    }
-    col = pos-nlpos+1;
-}
-
 #define FORMAT(s, l) make_Format_t(p.m_a, l, 0, s.c_str(p.m_a), nullptr)
 
 #define DATASTMT(x, l) make_DataStmt_t(p.m_a, l, \
@@ -1691,7 +1489,6 @@ void pos_to_linecol(const std::string &s, uint32_t position,
 #define DATA(objects, values, l) make_DataStmtSet_t(p.m_a, l, \
         EXPRS(objects), objects.size(), \
         EXPRS(values), values.size())
-
 
 #define STOP(l) make_Stop_t(p.m_a, l, 0, nullptr, nullptr, nullptr)
 #define STOP1(stop_code, l) make_Stop_t(p.m_a, l, 0, EXPR(stop_code), nullptr, nullptr)
@@ -1878,14 +1675,6 @@ ast_t* PROCEDURE2(Allocator &al, const Location &l, char* a_name,
         /*n_contains*/ CE_CONTAINS(ce).size(), \
         END_LABEL(CE_END(ce)), END_LOC(CE_END(ce)), p.diag)
 
-char *str_or_null(Allocator &al, const LCompilers::Str &s) {
-    if (s.size() == 0) {
-        return nullptr;
-    } else {
-        return s.c_str(al);
-    }
-}
-
 ast_t* FUNCTION2(Allocator &al, const Location &l, char* a_name,
         arg_t* a_args, size_t n_args, decl_attribute_t** a_attributes,
         size_t n_attributes, expr_t* a_return_var, bind_t* a_bind,
@@ -1999,7 +1788,6 @@ return make_Program_t(al, a_loc,
         /*m_end_name*/ end_name);
 
 }
-
 
 #define PROGRAM(name, trivia, decl_stmts, ce, l) \
     PROGRAM2(p.m_a, l, \
@@ -2419,13 +2207,6 @@ static inline void drop_trailing_matching_continue(
         CONCURRENT_LOCALITIES(loc), loc.size(), \
         STMTS(body), body.size(), trivia_cast(trivia), nullptr)
 
-
-#define DO_CONCURRENT_REDUCE(i, a, b, reduce, body, l) make_DoConcurrentLoop_t(p.m_a, l, \
-        name2char(i), EXPR(a), EXPR(b), nullptr, \
-        /*reduce*/ REDUCE_TYPE(reduce), \
-        /*body*/ STMTS(body), \
-        /*n_body*/ body.size(), nullptr)
-
 #define FORALL1(conlist, loc, trivia, body, l) make_ForAll_t(p.m_a, l, 0, nullptr, \
         CONCURRENT_CONTROLS(conlist), conlist.size(), \
         nullptr, \
@@ -2459,7 +2240,6 @@ static inline void drop_trailing_matching_continue(
             : nullptr), \
         name2char(i), EXPR(a), EXPR(b), EXPR(c))
 
-
 #define CONCURRENT_LOCAL(var_list, l) make_ConcurrentLocal_t(p.m_a, l, \
         REDUCE_ARGS(p.m_a, var_list), var_list.size())
 
@@ -2478,17 +2258,9 @@ static inline void drop_trailing_matching_continue(
 #define REDUCE_OP_TYPE_ADD(l) reduce_opType::ReduceAdd
 #define REDUCE_OP_TYPE_MUL(l) reduce_opType::ReduceMul
 #define REDUCE_OP_TYPE_ID(id, l) convert_id_to_reduce_type(l, id, p.diag)
-#define REDUCE_OP_TYPE_INVALID (reduce_opType)-1
 
-#define VAR_SYM_DECL1(id, l)         DECL3(p.m_a, id, nullptr, nullptr)
-#define VAR_SYM_DECL2(id, e, l)      DECL3(p.m_a, id, nullptr, EXPR(e))
-#define VAR_SYM_DECL3(id, a, l)      DECL3(p.m_a, id, &a, nullptr)
-#define VAR_SYM_DECL4(id, a, e, l)   DECL3(p.m_a, id, &a, EXPR(e))
 // TODO: Extend AST to express a => b()
-#define VAR_SYM_DECL5(id, e, l)      DECL3(p.m_a, id, nullptr, EXPR(e))
 // TODO: Extend AST to express a(:) => b()
-#define VAR_SYM_DECL6(id, a, e, l)   DECL3(p.m_a, id, &a, EXPR(e))
-#define VAR_SYM_DECL7(l)             DECL2c(p.m_a, l)
 
 #define ARRAY_COMP_DECL_0i0(a,l)     DIM1(p.m_a, l, nullptr, EXPR(a), nullptr, 0)
 #define ARRAY_COMP_DECL_001(l)       DIM1(p.m_a, l, nullptr, nullptr, EXPR(INT1(l)), 0)
@@ -2535,78 +2307,6 @@ static inline void drop_trailing_matching_continue(
 #define COARRAY_COMP_DECL_star(l)       CODIM1star(p.m_a, l)
 #define COARRAY_COMP_DECL_astar(a, l)   CODIM1astar(p.m_a, l, EXPR(a))
 
-#define VARMOD(a, l) make_Attribute_t(p.m_a, l, \
-        a.c_str(p.m_a), \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        nullptr, \
-        0)
-
-#define VARMOD2(a, b, l) make_Attribute_t(p.m_a, l, \
-        a.c_str(p.m_a), \
-        /*args*/ ATTR_ARG(p.m_a, l, b), \
-        /*n_args*/ 1, \
-        nullptr, \
-        0)
-
-#define FN_MOD1(a, l) make_FnMod_t(p.m_a, l, \
-        a->string.c_str(p.m_a))
-
-#define FN_MOD_PURE(l) make_Attribute_t(p.m_a, l, \
-        nullptr, \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        nullptr, \
-        0)
-
-#define FN_MOD_ELEMENTAL(l) make_Attribute_t(p.m_a, l, \
-        nullptr, \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        nullptr, \
-        0)
-
-#define FN_MOD_RECURSIVE(l) make_Attribute_t(p.m_a, l, \
-        nullptr, \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        nullptr, \
-        0)
-
-#define FN_MOD_MODULE(l) make_Attribute_t(p.m_a, l, \
-        nullptr, \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        nullptr, \
-        0)
-
-#define FN_MOD_IMPURE(l) make_Attribute_t(p.m_a, l, \
-        nullptr, \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        nullptr, \
-        0)
-
-LCompilers::Str Str_from_string(Allocator &al, const std::string &s) {
-        LCompilers::Str r;
-        r.from_str(al, s);
-        return r;
-}
-
-#define VARMOD3(a, l) make_Attribute_t(p.m_a, l, \
-        a.c_str(p.m_a), \
-        /*args*/ ATTR_ARG(p.m_a, l, Str_from_string(p.m_a, "inout")), \
-        /*n_args*/ 1, \
-        nullptr, \
-        0)
-
-#define VARMOD_DIM(a, b, l) make_Attribute_t(p.m_a, l, \
-        a.c_str(p.m_a), \
-        /*args*/ nullptr, \
-        /*n_args*/ 0, \
-        b.p, \
-        b.size())
-
 ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         const Vec<struct_member_t> &member,
         const Vec<FnArg> &args,
@@ -2650,12 +2350,6 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
 }
 #define FUNCCALLORARRAY(id, args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), empty_vecast(), l)
-#define FUNCCALLORARRAY2(members, id, args, l) FUNCCALLORARRAY0(p.m_a, id, \
-        members, args, empty1(), empty_vecast(), l)
-#define FUNCCALLORARRAY3(id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        empty5(), args, subargs, empty_vecast(), l)
-#define FUNCCALLORARRAY4(mem, id, args, subargs, l) FUNCCALLORARRAY0(p.m_a, id, \
-        mem, args, subargs, empty_vecast(), l)
 #define FUNCCALLORARRAY5(id, args, temp_args, l) FUNCCALLORARRAY0(p.m_a, id, empty5(), \
         args, empty1(), temp_args, l)
 
@@ -2710,14 +2404,6 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         /*coarrayarg_t* */ coarr.p, /*size_t s*/ coarr.size(),
         /*keyword_t* */ coarrkw.p, /*size_t */ coarrkw.size());
 }
-#define COARRAY1(id, coargs, l) COARRAY(p.m_a, id, \
-        empty5(), empty1(), coargs, l)
-#define COARRAY2(id, args, coargs, l) COARRAY(p.m_a, id, \
-        empty5(), args, coargs, l)
-#define COARRAY3(mem, id, coargs, l) COARRAY(p.m_a, id, \
-        mem, empty1(), coargs, l)
-#define COARRAY4(mem, id, args, coargs, l) COARRAY(p.m_a, id, \
-        mem, args, coargs, l)
 
 #define SELECT(cond, trivia, body, l) make_Select_t(p.m_a, l, 0, nullptr, \
         EXPR(cond), \
@@ -2841,7 +2527,6 @@ return make_Submodule_t(al, a_loc,
         /*m_end_name*/ a_end_name);
 }
 
-
 #define SUBMODULE(id, name, trivia, decl_stmts, contains, name_opt, l) \
     SUBMODULE2(p.m_a, l, \
         name2char(id), \
@@ -2890,9 +2575,6 @@ ast_t* BLOCKDATA2(Allocator &al, const Location &l, char* a_name,
 #define DEFERRED_INTERFACE_HEADER(l) make_DeferredInterfaceHeader_t(p.m_a, l)
 #define INTERFACE_HEADER_WRITE(x, l) make_InterfaceHeaderWrite_t(p.m_a, l, name2char(x))
 #define INTERFACE_HEADER_READ(x, l) make_InterfaceHeaderRead_t(p.m_a, l, name2char(x))
-
-#define OPERATOR(op, l) intrinsicopType::op
-#define OPERATOR_INVALID(l) (intrinsicopType)-1
 
 #define INTERFACE(header, trivia, contains, l) make_Interface_t(p.m_a, l, \
         down_cast<interface_header_t>(header), \
