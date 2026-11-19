@@ -358,6 +358,8 @@ static inline ASR::asr_t* make_Assignment_t_util(
 /*
 This pass collector that the BinOp only Var nodes and nothing else.
 */
+namespace {
+
 class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
     private:
 
@@ -400,6 +402,8 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
     }
 
 };
+
+} // namespace
 
 /**
  * 1) AssumedLength strings cannot be used as temporaries, hence use to DeferredLength
