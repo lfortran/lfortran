@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/access_paths.h>
 #include <libasr/pass/array_struct_temporary.h>
+#include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
@@ -2892,6 +2893,43 @@ bool is_numeric_array_of_element_type(ASR::ttype_t* x, ASR::ttype_t* y) {
             ASRUtils::extract_kind_from_ttype_t(y_element);
 }
 
+// Whether `x` is an array of numbers (see is_numeric_array_of_element_type),
+// of logicals, or of characters of a constant length, whose element type is
+// that of `y`: an array whose elements a reallocation to the shape of the
+// array leaves for the assignment to define, with no default
+// initialization, allocatable component or length of their own. Arrays of
+// a derived type are not: the result variable of a function has the
+// default initialization of its type and unallocated components when the
+// function starts (F2018 9.7.1.2, 7.5.4.6), which the elements the target
+// already has, or a reallocation without initialization, would not give.
+bool is_result_array_of_element_type(ASR::ttype_t* x, ASR::ttype_t* y) {
+    if( is_numeric_array_of_element_type(x, y) ) {
+        return true;
+    }
+    ASR::ttype_t* x_element = ASRUtils::extract_type(x);
+    ASR::ttype_t* y_element = ASRUtils::extract_type(y);
+    if( !ASRUtils::is_array(x) || x_element->type != y_element->type ||
+        ASRUtils::extract_kind_from_ttype_t(x_element) !=
+            ASRUtils::extract_kind_from_ttype_t(y_element) ) {
+        return false;
+    }
+    if( ASR::is_a<ASR::Logical_t>(*x_element) ) {
+        return true;
+    }
+    if( ASR::is_a<ASR::String_t>(*x_element) ) {
+        int64_t x_len = -1, y_len = -1;
+        ASR::String_t* xs = ASR::down_cast<ASR::String_t>(x_element);
+        ASR::String_t* ys = ASR::down_cast<ASR::String_t>(y_element);
+        return xs->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+            ys->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+            xs->m_len && ys->m_len &&
+            ASRUtils::extract_value(ASRUtils::expr_value(xs->m_len), x_len) &&
+            ASRUtils::extract_value(ASRUtils::expr_value(ys->m_len), y_len) &&
+            x_len == y_len;
+    }
+    return false;
+}
+
 // Whether `x` and `y` are arrays of the same derived type, neither
 // polymorphic nor with final subroutines anywhere in it, so that an
 // allocatable array result `x` can be moved into an allocatable target `y`
@@ -3346,23 +3384,26 @@ bool may_read_target_storage(ASR::expr_t* x, ASR::symbol_t* root,
 // result is an explicit-shape array. The reference must not access the
 // target, which the reallocation may have changed, nor see it defined
 // before the value is evaluated (F2018 10.2.1.3). So:
-// - the target is a whole variable that no pointer reaches (see
-//   get_unaliased_assignment_root), a local variable or a dummy argument of
-//   the procedure of the assignment, which contains no procedure. Only a
-//   procedure contained in that one could access the variable otherwise
-//   (see callee_may_access_target in subroutine_from_function), and no
-//   procedure may reference the actual argument of a dummy argument that
-//   the assignment defines otherwise (F2018 15.5.2.13);
+// - the target is a variable, or a component of one through scalars, that
+//   no pointer reaches (see get_unaliased_assignment_root), a local
+//   variable or a dummy argument of the procedure of the assignment, and
+//   the call cannot reach a procedure contained in that one (see
+//   call_may_reach_contained_procedure): only such a procedure could access
+//   the variable otherwise, and no procedure may reference the actual
+//   argument of a dummy argument that the assignment defines otherwise
+//   (F2018 15.5.2.13);
 // - no actual argument references the target or a pointer (see
 //   may_read_target_storage), as written, before an actual is replaced;
-// - the result is an array of integer, real or complex numbers of the
-//   type of the target: the reallocation compares shapes only, not
-//   character lengths, and an element of a derived type would not get the
-//   default initialization of its components.
+// - the result is an array of the element type of the target, of numbers,
+//   logicals or characters of a constant length (see
+//   is_result_array_of_element_type): the reallocation compares shapes
+//   only, not character lengths, and an element of a derived type would not
+//   get the default initialization of its components.
 bool returns_result_into_reallocated_target(ASR::expr_t* target,
         ASR::expr_t* value, SymbolTable* scope,
         const DummiesSharingActualType& dummies_sharing_actual) {
-    if( !ASR::is_a<ASR::Var_t>(*target) ||
+    if( !(ASR::is_a<ASR::Var_t>(*target) ||
+          ASR::is_a<ASR::StructInstanceMember_t>(*target)) ||
         !ASR::is_a<ASR::FunctionCall_t>(*value) ) {
         return false;
     }
@@ -3371,15 +3412,16 @@ bool returns_result_into_reallocated_target(ASR::expr_t* target,
     if( !ASRUtils::is_allocatable(target_type) ||
         ASRUtils::is_elemental(call->m_name) ||
         ASRUtils::is_allocatable_or_pointer(call->m_type) ||
-        !is_numeric_array_of_element_type(call->m_type, target_type) ||
-        !is_numeric_array_of_element_type(target_type, call->m_type) ||
+        !is_result_array_of_element_type(call->m_type, target_type) ||
+        !is_result_array_of_element_type(target_type, call->m_type) ||
         ASRUtils::extract_n_dims_from_ttype(call->m_type) !=
             ASRUtils::extract_n_dims_from_ttype(target_type) ) {
         return false;
     }
     ASR::symbol_t* component = nullptr;
     ASR::symbol_t* root = get_unaliased_assignment_root(target, component);
-    if( root == nullptr || component != nullptr ||
+    if( root == nullptr ||
+        ASR::is_a<ASR::Var_t>(*target) != (component == nullptr) ||
         dummies_sharing_actual.count(root) > 0 ) {
         return false;
     }
@@ -3399,13 +3441,14 @@ bool returns_result_into_reallocated_target(ASR::expr_t* target,
             has_contained_procedure |= ASR::is_a<ASR::Function_t>(*symbol) ||
                 ASR::is_a<ASR::Template_t>(*symbol);
         });
-    if( has_contained_procedure ||
-        (call->m_dt && may_read_target_storage(call->m_dt, root, nullptr)) ) {
+    if( (has_contained_procedure && call_may_reach_contained_procedure(
+            routine, call->m_name, call->m_args, call->n_args, call->m_dt)) ||
+        (call->m_dt && may_read_target_storage(call->m_dt, root, component)) ) {
         return false;
     }
     for( size_t i = 0; i < call->n_args; i++ ) {
         if( call->m_args[i].m_value &&
-            may_read_target_storage(call->m_args[i].m_value, root, nullptr) ) {
+            may_read_target_storage(call->m_args[i].m_value, root, component) ) {
             return false;
         }
     }

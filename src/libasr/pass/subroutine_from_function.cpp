@@ -971,6 +971,14 @@ public:
     }
 };
 
+bool call_may_reach_contained_procedure(SymbolTable *routine,
+        ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
+        ASR::expr_t *dt) {
+    std::set<ASR::symbol_t*> active;
+    CallbackAccess callbacks(routine, active);
+    return callbacks.call(name, args, n_args, dt);
+}
+
 class ReplaceFunctionCallWithSubroutineCallVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<ReplaceFunctionCallWithSubroutineCallVisitor> {
 

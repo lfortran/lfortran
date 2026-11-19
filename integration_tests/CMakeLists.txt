@@ -3770,6 +3770,8 @@ RUN(NAME realloc_lhs_unallocated_02 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # targets that may be allocated keep the test
 RUN(NAME realloc_lhs_move_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocatable array results moved into the variable
+RUN(NAME realloc_lhs_result_inplace_01 LABELS gfortran llvm) # explicit-shape results computed into the reallocated target
+RUN(NAME realloc_lhs_result_inplace_02 LABELS llvm) # not when an internal procedure passed to the function reads the target (GFortran 15 gets it wrong)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
