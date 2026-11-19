@@ -1,8 +1,8 @@
-syntax error: Newline is unexpected here
- --> tests/errors/continue_compilation_ff_2.f:3:44
+syntax error: Statement or Declaration expected, found Expression
+ --> tests/errors/continue_compilation_ff_2.f:3:7
   |
 3 |       SUBROUTINE faulty_subroutine(a, b, c)
-  |                                            ^ 
+  |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 syntax error: Token 'endsubroutine' is unexpected here
  --> tests/errors/continue_compilation_ff_2.f:5:7

@@ -1,8 +1,8 @@
-syntax error: Newline is unexpected here
- --> tests/errors/continue_compilation_ff_3.f:5:15
+syntax error: Statement or Declaration expected, found Variable name
+ --> tests/errors/continue_compilation_ff_3.f:5:10
   |
 5 |          K K K
-  |               ^ 
+  |          ^^^^^ 
 
 semantic error: Variable 'undef' is not declared
  --> tests/errors/continue_compilation_ff_3.f:7:11

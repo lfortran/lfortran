@@ -38,23 +38,15 @@ def test_diagnostics(client: LFortranLspTestClient) -> None:
     assert validation["params"]["uri"] == doc.uri
     assert validation["params"]["version"] == doc.version
     diagnostics = validation["params"]["diagnostics"]
-    assert len(diagnostics) == 2
+    assert len(diagnostics) == 1
 
-    assert diagnostics[0]["message"] == "Statement or Declaration expected inside program, found Variable name"
+    assert diagnostics[0]["message"] == "Statement or Declaration expected, found Variable name"
     assert diagnostics[0]["range"]["start"]["line"] == 20
     assert diagnostics[0]["range"]["start"]["character"] == 0
     assert diagnostics[0]["range"]["end"]["line"] == 20
     assert diagnostics[0]["range"]["end"]["character"] == 5
     assert diagnostics[0]["severity"] == 1
     assert diagnostics[0]["source"] == "lfortran"
-
-    assert diagnostics[1]["message"] == "Variable 'error' is not declared"
-    assert diagnostics[1]["range"]["start"]["line"] == 20
-    assert diagnostics[1]["range"]["start"]["character"] == 0
-    assert diagnostics[1]["range"]["end"]["line"] == 20
-    assert diagnostics[1]["range"]["end"]["character"] == 5
-    assert diagnostics[1]["severity"] == 1
-    assert diagnostics[1]["source"] == "lfortran"
 
     doc.backspace(5)
     validation = client.await_validation(doc.uri, doc.version)

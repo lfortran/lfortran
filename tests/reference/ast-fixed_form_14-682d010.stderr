@@ -1,5 +1,5 @@
-syntax error: Newline is unexpected here
- --> tests/errors/fixed_form_14.f:3:18
+syntax error: Statement or Declaration expected, found Variable name
+ --> tests/errors/fixed_form_14.f:3:11
   |
 3 |           UNKNOWN
-  |                  ^ 
+  |           ^^^^^^^ 

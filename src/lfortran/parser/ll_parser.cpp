@@ -114,6 +114,11 @@ struct LL {
     bool continue_compilation;
     // After an error, further errors are not reported before this token
     size_t quiet_until = 0;
+    // A message for the error at the token `error_at`, instead of the
+    // unexpected token, and its location
+    std::string error_message;
+    size_t error_at = SIZE_MAX;
+    Location error_loc;
     // The errors of the tokenizer, which has run before the parser; they
     // are reported in the order of the source, with those of the parser
     std::vector<LCompilers::diag::Diagnostic> *tokenizer_errors = nullptr;
@@ -159,9 +164,18 @@ struct LL {
     // Reports the current token as a syntax error
     void syntax_error() {
         flush_tokenizer_errors();
+        bool own_message = !error_message.empty() && error_at == i;
+        std::string message = std::move(error_message);
+        error_message.clear();
         if (i < quiet_until) return;
+        if (own_message) {
+            diag.add(LCompilers::diag::Diagnostic(message,
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::Parser,
+                {LCompilers::diag::Label("", {error_loc})}));
+            return;
+        }
         int token = K[i];
-        std::string message;
         if (token == END_OF_FILE) {
             message = "End of file is unexpected here";
         } else if (token == TK_NEWLINE) {
@@ -436,12 +450,32 @@ struct LL {
         return true;
     }
 
-    // No statement starts at the current token. A name can start an
+    // No statement starts at the current token. If the whole statement is
+    // an expression, that is the error. Otherwise a name can start an
     // assignment, whose left-hand side is an expression in the grammar, so
     // the token to report is the one after that expression.
     [[noreturn]] void statement_error() {
         if (K[i] == TK_LABEL) i++;
-        if (is_name(K[i])) expr();
+        size_t s = i;
+        bool name = is_name(K[i]);
+        ast_t *e;
+        try {
+            e = expr();
+        } catch (const LLUnsupported &) {
+            if (name) throw;
+            i = s;
+            unsup(__LINE__);
+        }
+        if (is_sep(K[i])) {
+            bool variable = e->type == astType::expr
+                && down_cast<expr_t>(e)->type == exprType::Name;
+            error_message = std::string("Statement or Declaration expected, "
+                "found ") + (variable ? "Variable name" : "Expression");
+            error_loc = span(s);
+            error_at = i;
+        } else if (!name) {
+            i = s;
+        }
         unsup(__LINE__);
     }
 

@@ -1,8 +1,8 @@
-syntax error: Newline is unexpected here
-  --> tests/errors/continue_compilation_ff_1.f:93:14
+syntax error: Statement or Declaration expected, found Expression
+  --> tests/errors/continue_compilation_ff_1.f:93:7
    |
 93 |       I == 10
-   |              ^ 
+   |       ^^^^^^^ 
 
 syntax error: Token '.5' (of type 'real') is unexpected here
   --> tests/errors/continue_compilation_ff_1.f:94:14
