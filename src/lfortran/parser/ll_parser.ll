@@ -51,16 +51,12 @@
 %extern id -> ast_t* token: NAME
 // One or more separators (new lines, comments, `;`); the list is the trivia
 %extern sep -> Vec<ast_t*> first: SEP
-// A variable, an array element or section, a component, a function call
-%extern designator -> ast_t* first: NAME
 // "(" expr ")", a complex constant, an implied do loop or a conditional
 // expression
 %extern parenthesized -> ast_t* first: "("
 // A statement with its label and the separator after it; null if no
 // statement starts here
 %extern statement -> ast_t*
-// CALL statement
-%extern call_statement -> ast_t* first: KW_CALL
 // The data_set_list of a DATA statement; an object of one set, which can be
 // an implied do loop; and the values of one set, which can be repeated
 %extern data_sets -> Vec<ast_t*>
@@ -124,6 +120,32 @@
     right 11 "**" => POW(x, y, @$)
     prefix 12 TK_DEF_OP => UNARY_DEFOP($op, x, @$)
 %end
+
+// A variable, an array element or section, a component or a function call:
+// parts separated by `%`, where a part is a name with its arguments, and
+// then a substring range or the cosubscripts; or the instance of a template
+rule designator -> ast_t*
+    : n=id t=instantiate_symbols "(" args=fnarray_arg_list_opt ")"
+                                    => FUNCCALLORARRAY5(n, args, t, @$)
+    | parts=designator_part % "%"
+        ( "[" co=coarray_arg_list "]" => coarray_ref(parts, co, @$)
+        | "(" args=fnarray_arg_list_opt ")" => substring_ref(parts, args, @$)
+        )?
+                                    => designator_ref(parts, @$)
+    ;
+
+rule designator_part -> DesignatorPart
+    : n=id has_args=( "(" args=fnarray_arg_list_opt ")" )?
+                                    => DesignatorPart{n, args, has_args}
+    ;
+
+rule call_statement -> ast_t*
+    : KW_CALL
+        ( n=id t=instantiate_symbols "(" args=fnarray_arg_list_opt ")"
+                                    => SUBROUTINE_CALL4(n, t, args, @$)
+        | parts=designator_part % "%" => call_ref(parts, @$)
+        )
+    ;
 
 rule primary -> ast_t*
     : designator

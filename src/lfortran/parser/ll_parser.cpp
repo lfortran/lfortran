@@ -65,6 +65,13 @@ struct StopCode {
     ast_t *quiet;
 };
 
+// A name with its arguments, a part of a designator
+struct DesignatorPart {
+    ast_t *name;
+    Vec<FnArg> args;
+    bool has_args;
+};
+
 // RESULT and BIND of a function (or null)
 struct FunctionClauses {
     ast_t *result;
@@ -335,98 +342,6 @@ struct LL {
             return COND_EXPR(x, a, b, l);
         }
         return x;
-    }
-
-    // designator: [ member % ]... id [ (args) [ (args) ] ] [ "[" coargs "]" ]
-    // `call_stmt` parses the same for a CALL statement.
-    ast_t* designator(bool call_stmt = false, size_t s0 = 0) {
-        size_t s = call_stmt ? s0 : i;
-        Vec<struct_member_t> members;
-        bool has_members = false;
-        for (;;) {
-            ast_t *name = id();
-            Vec<FnArg> args;
-            bool has_args = false;
-            if (K[i] == TK_LPAREN) {
-                i++;
-                args = fnarray_arg_list_opt();
-                expect_(TK_RPAREN, __LINE__);
-                has_args = true;
-            }
-            if (K[i] == TK_PERCENT) {
-                i++;
-                if (!has_members) {
-                    LIST_NEW(members);
-                    has_members = true;
-                }
-                struct_member_t *m;
-                if (has_args) {
-                    STRUCT_MEMBER2(m, name, args);
-                } else {
-                    STRUCT_MEMBER1(m, name);
-                }
-                PLIST_ADD(members, m);
-                continue;
-            }
-            if (K[i] == TK_LBRACE) {
-                if (has_args || has_members) unsup(__LINE__);
-                Vec<ast_t*> temp_args = instantiate_symbols();
-                expect_(TK_LPAREN, __LINE__);
-                args = fnarray_arg_list_opt();
-                expect_(TK_RPAREN, __LINE__);
-                Location l = span(s);
-                if (call_stmt) return SUBROUTINE_CALL4(name, temp_args, args, l);
-                return FUNCCALLORARRAY5(name, args, temp_args, l);
-            }
-            if (call_stmt) {
-                Location l = span(s);
-                if (has_members) {
-                    if (has_args) return SUBROUTINE_CALL1(members, name, args, l);
-                    return SUBROUTINE_CALL3(members, name, l);
-                }
-                if (has_args) return SUBROUTINE_CALL(name, args, l);
-                return SUBROUTINE_CALL2(name, l);
-            }
-            if (K[i] == TK_LBRACKET) {
-                i++;
-                Vec<CoarrayArg> co = coarray_arg_list();
-                expect_(TK_RBRACKET, __LINE__);
-                Location l = span(s);
-                if (has_members) {
-                    if (has_args) return COARRAY4(members, name, args, co, l);
-                    return COARRAY3(members, name, co, l);
-                }
-                if (has_args) return COARRAY2(name, args, co, l);
-                return COARRAY1(name, co, l);
-            }
-            if (has_args && K[i] == TK_LPAREN) {
-                i++;
-                Vec<FnArg> args2 = fnarray_arg_list_opt();
-                expect_(TK_RPAREN, __LINE__);
-                Location l = span(s);
-                if (has_members) {
-                    return FUNCCALLORARRAY4(members, name, args, args2, l);
-                }
-                return FUNCCALLORARRAY3(name, args, args2, l);
-            }
-            Location l = span(s);
-            if (has_args) {
-                if (has_members) return FUNCCALLORARRAY2(members, name, args, l);
-                return FUNCCALLORARRAY(name, args, l);
-            }
-            if (has_members) {
-                ast_t *out;
-                NAME1(out, name, members, l);
-                return out;
-            }
-            return name;
-        }
-    }
-
-    ast_t* call_statement() {
-        size_t s = i;
-        i++;
-        return designator(true, s);
     }
 
     // statement: [ label ] statement1 sep
@@ -1301,6 +1216,65 @@ struct LL {
     Vec<ast_t*> with_end_label(Vec<ast_t*> &body, const EndStmt &e) {
         append_labeled_end(m_a, body, e.label, e.loc);
         return body;
+    }
+
+    // The members `a(i)%b%` of a designator: all its parts but the last one
+    Vec<struct_member_t> members(Vec<DesignatorPart> &parts) {
+        Vec<struct_member_t> v;
+        if (parts.size() == 1) {
+            v.from_pointer_n(nullptr, 0);
+            return v;
+        }
+        LIST_NEW(v);
+        for (size_t j = 0; j + 1 < parts.size(); j++) {
+            struct_member_t *m;
+            if (parts.p[j].has_args) {
+                STRUCT_MEMBER2(m, parts.p[j].name, parts.p[j].args);
+            } else {
+                STRUCT_MEMBER1(m, parts.p[j].name);
+            }
+            PLIST_ADD(v, m);
+        }
+        return v;
+    }
+
+    ast_t* designator_ref(Vec<DesignatorPart> &parts, Location &l) {
+        DesignatorPart &last = parts.p[parts.size()-1];
+        Vec<struct_member_t> mem = members(parts);
+        if (last.has_args) {
+            return FUNCCALLORARRAY0(m_a, last.name, mem, last.args, empty1(),
+                empty_vecast(), l);
+        }
+        if (parts.size() == 1) return last.name;
+        ast_t *r;
+        NAME1(r, last.name, mem, l);
+        return r;
+    }
+
+    // `x(1:2)(3:4)`: a substring of an array element
+    ast_t* substring_ref(Vec<DesignatorPart> &parts, Vec<FnArg> &args,
+            Location &l) {
+        DesignatorPart &last = parts.p[parts.size()-1];
+        if (!last.has_args) unsup(__LINE__);
+        return FUNCCALLORARRAY0(m_a, last.name, members(parts), last.args,
+            args, empty_vecast(), l);
+    }
+
+    ast_t* coarray_ref(Vec<DesignatorPart> &parts, Vec<CoarrayArg> &co,
+            Location &l) {
+        DesignatorPart &last = parts.p[parts.size()-1];
+        return COARRAY(m_a, last.name, members(parts), last.args, co, l);
+    }
+
+    ast_t* call_ref(Vec<DesignatorPart> &parts, Location &l) {
+        DesignatorPart &last = parts.p[parts.size()-1];
+        Vec<struct_member_t> mem = members(parts);
+        if (last.has_args) {
+            return SUBROUTINE_CALL0(m_a, mem.p, mem.n, last.name, last.args,
+                empty_vecast(), l);
+        }
+        return make_SubroutineCall_t(m_a, l, 0, name2char(last.name), mem.p,
+            mem.n, nullptr, 0, nullptr, 0, nullptr, 0, nullptr);
     }
 
     // The name of a main program without the PROGRAM statement
