@@ -847,8 +847,13 @@ bool process_include(std::string& out, const std::string& s,
         return false;
     }
 
-    // Possible it goes here
-    // lm.files.back().out_start.push_back(out.size());
+    // The included code is an interval of its own, which maps into the
+    // INCLUDE file with the locations collected in `lm_tmp`
+    lm.files.back().out_start.push_back(source_offset(out.size()));
+    lm.files.back().in_start.push_back(source_offset(quote_pos));
+    lm.files.back().include_intervals.push_back(
+        source_offset(lm.files.back().out_start.size()-1));
+    lm.files.back().includes.push_back(lm_tmp.files.back());
     out += include;
     while (pos < s.size() && s[pos] != '\n') pos++;
     lm.files.back().out_start.push_back(source_offset(out.size()));

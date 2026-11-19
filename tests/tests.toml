@@ -7310,6 +7310,21 @@ asr = true
 filename = "errors/include_location_02.f"
 ast = true
 
+# Errors in code from an INCLUDE file are reported in that file: a run-time
+# error (free and fixed form) and a compile-time error in a nested INCLUDE.
+[[test]]
+filename = "errors/include_location_03.f90"
+run = true
+
+[[test]]
+filename = "errors/include_location_04.f"
+run = true
+options = "--fixed-form"
+
+[[test]]
+filename = "errors/include_location_05.f90"
+asr = true
+
 [[test]]
 filename = "coarray_teams_01.f90"
 fortran = true

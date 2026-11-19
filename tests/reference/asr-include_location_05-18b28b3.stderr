@@ -1,0 +1,8 @@
+semantic error: Symbol is already declared in the same scope
+ --> tests/errors/include_location_05b.inc:3:9
+  |
+3 | real :: y
+  |         ^ redeclaration
+  |
+2 | integer :: y
+  |            ~ original declaration
