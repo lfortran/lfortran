@@ -72,6 +72,12 @@
 
 namespace LCompilers  {
 
+// A unique key for an ASR node, for maps keyed by node: its address.
+static inline uint64_t get_hash(ASR::asr_t *node)
+{
+    return (uint64_t)node;
+}
+
     namespace ASRUtils  {
 
 // A specific procedure that shares its generic interface's name is stored in

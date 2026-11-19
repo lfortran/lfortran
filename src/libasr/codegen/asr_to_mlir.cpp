@@ -11,6 +11,7 @@
 
 #include <libasr/codegen/asr_to_mlir.h>
 #include <libasr/containers.h>
+#include <libasr/codegen/codegen_error.h>
 #include <libasr/pass/intrinsic_functions.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
@@ -18,28 +19,6 @@ using LCompilers::ASR::is_a;
 using LCompilers::ASR::down_cast;
 
 namespace LCompilers {
-
-uint64_t static inline get_hash(ASR::asr_t *node) {
-    return (uint64_t)node;
-}
-
-// Local exception that is only used in this file to exit the visitor
-// pattern and caught later (not propagated outside)
-class CodeGenError
-{
-public:
-    diag::Diagnostic d;
-public:
-    CodeGenError(const std::string &msg)
-        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)}
-    { }
-
-    CodeGenError(const std::string &msg, const Location &loc)
-        : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen, {
-            diag::Label("", {loc})
-        })}
-    { }
-};
 
 
 class ASRToMLIRVisitor : public ASR::BaseVisitor<ASRToMLIRVisitor>

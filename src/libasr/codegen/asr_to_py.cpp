@@ -2,6 +2,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/codegen_error.h>
 #include <libasr/string_utils.h>
 
 
@@ -88,22 +89,6 @@
  */
 
 namespace LCompilers {
-
-namespace {
-
-    // Local exception that is only used in this file to exit the visitor
-    // pattern and caught later (not propagated outside)
-    class CodeGenError
-    {
-    public:
-        diag::Diagnostic d;
-    public:
-        CodeGenError(const std::string &msg)
-            : d{diag::Diagnostic(msg, diag::Level::Error, diag::Stage::CodeGen)}
-        { }
-    };
-
-}
 
 using ASR::is_a;
 using ASR::down_cast;

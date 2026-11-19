@@ -43,12 +43,6 @@ namespace LCompilers {
 
 inline constexpr const char* c_parent_component = "_lfortran_parent";
 
-// Platform dependent fast unique hash:
-static inline uint64_t get_hash(ASR::asr_t *node)
-{
-    return (uint64_t)node;
-}
-
 struct SymbolInfo
 {
     bool needs_declaration = true;
