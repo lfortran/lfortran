@@ -17,7 +17,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
 
-// This is only used in parser.tab.cc, nowhere else, so we simply include
+// This is only used in ll_parser.cpp, nowhere else, so we simply include
 // everything from LCompilers::LFortran::AST to save typing:
 using namespace LCompilers::LFortran::AST;
 using LCompilers::LFortran::StrPrefix;
@@ -1339,13 +1339,32 @@ char *strptr2str_null(Allocator &al, const LCompilers::Str *s) {
         nullptr, EXPRS(labels), labels.size(), nullptr)
 
 
+// Reserves room for exactly `n` items; an empty list allocates nothing
+template <typename T>
+static inline void reserve_exact(Allocator &al, Vec<T> &v, size_t n) {
+    if (n == 0) {
+        v.from_pointer_n(nullptr, 0);
+    } else {
+        v.reserve(al, n);
+    }
+}
+
+static inline size_t count_keywords(const Vec<FnArg> &args) {
+    size_t n = 0;
+    for (auto &item : args) {
+        if (item.keyword) n++;
+    }
+    return n;
+}
+
 ast_t* SUBROUTINE_CALL0(Allocator &al, struct_member_t* mem, size_t n,
         const ast_t *id, const Vec<FnArg> &args,
         const Vec<ast_t*> &temp_args, Location &l) {
+    size_t n_kw = count_keywords(args);
     Vec<fnarg_t> v;
-    v.reserve(al, args.size());
+    reserve_exact(al, v, args.size() - n_kw);
     Vec<keyword_t> v2;
-    v2.reserve(al, args.size());
+    reserve_exact(al, v2, n_kw);
     for (auto &item : args) {
         if (item.keyword) {
             v2.push_back(al, item.kw);
@@ -1354,7 +1373,7 @@ ast_t* SUBROUTINE_CALL0(Allocator &al, struct_member_t* mem, size_t n,
         }
     }
     Vec<decl_attribute_t*> v3;
-    v3.reserve(al, temp_args.size());
+    reserve_exact(al, v3, temp_args.size());
     for (size_t i=0; i<temp_args.size(); i++) {
         v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
     }
@@ -2090,7 +2109,13 @@ ast_t* BLOCK2(Allocator &al, const Location &l, trivia_t* a_trivia,
         /*a_orelse*/ IFSTMTS(p.m_a, whereblock), \
         /*n_orelse*/ 1, trivia_cast(trivia), nullptr)
 
-#define LIST_NEW(l) l.reserve(p.m_a, 4)
+// Most lists have one or two items. The memory of a list is never given
+// back, so lists of large items start with room for one item only.
+template <typename T>
+static inline void list_new(Allocator &al, Vec<T> &l) {
+    l.reserve(al, sizeof(T) > 16 ? 1 : 4);
+}
+#define LIST_NEW(l) list_new(p.m_a, l)
 #define LIST_ADD(l, x) l.push_back(p.m_a, x)
 #define PLIST_ADD(l, x) l.push_back(p.m_a, *x)
 
@@ -2588,10 +2613,12 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         const Vec<FnArg> &subargs,
         const Vec<ast_t*> &temp_args,
         Location &l) {
+    size_t n_kw = count_keywords(args);
+    size_t n_subkw = count_keywords(subargs);
     Vec<fnarg_t> v;
-    v.reserve(al, args.size());
+    reserve_exact(al, v, args.size() - n_kw);
     Vec<keyword_t> v2;
-    v2.reserve(al, args.size() + subargs.size());
+    reserve_exact(al, v2, n_kw + n_subkw);
     for (auto &item : args) {
         if (item.keyword) {
             v2.push_back(al, item.kw);
@@ -2600,7 +2627,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         }
     }
     Vec<fnarg_t> v1;
-    v1.reserve(al, subargs.size());
+    reserve_exact(al, v1, subargs.size() - n_subkw);
     for (auto &item : subargs) {
         if (item.keyword) {
             v2.push_back(al, item.kw);
@@ -2609,7 +2636,7 @@ ast_t* FUNCCALLORARRAY0(Allocator &al, const ast_t *id,
         }
     }
     Vec<decl_attribute_t*> v3;
-    v3.reserve(al, temp_args.size());
+    reserve_exact(al, v3, temp_args.size());
     for (size_t i=0; i<temp_args.size(); i++) {
         v3.push_back(al, down_cast<decl_attribute_t>(temp_args[i]));
     }
@@ -3257,7 +3284,34 @@ ast_t* set_trivia(Allocator &al, Location &l,
     }
 }
 
-#define NEWLINE(l) make_EndOfLine_t(p.m_a, l)
+// A list of separators that holds just one end of line is the common case,
+// and set_trivia() treats it like an empty list. Such a list is therefore
+// represented by a null pointer and allocates nothing: `item` is null for an
+// end of line. The end of line and the list are created only when another
+// separator follows; `first_loc` is then the location of that end of line.
+static inline Vec<ast_t*> sep_new(Allocator &al, ast_t *item) {
+    Vec<ast_t*> v;
+    if (item == nullptr) {
+        v.from_pointer_n(nullptr, 0);
+    } else {
+        v.reserve(al, 4);
+        v.push_back(al, item);
+    }
+    return v;
+}
+
+static inline Vec<ast_t*> sep_add(Allocator &al, Vec<ast_t*> v,
+        const Location &first_loc, ast_t *item, const Location &item_loc) {
+    if (v.p == nullptr) {
+        v.reserve(al, 4);
+        v.push_back(al, make_EndOfLine_t(al, first_loc));
+    }
+    if (item == nullptr) {
+        item = make_EndOfLine_t(al, item_loc);
+    }
+    v.push_back(al, item);
+    return v;
+}
 #define SEMICOLON(l) make_Semicolon_t(p.m_a, l)
 #define COMMENT(cmt, l) make_Comment_t(p.m_a, l, cmt.c_str(p.m_a))
 #define EOLCOMMENT(cmt, l) make_EOLComment_t(p.m_a, l, cmt.c_str(p.m_a))

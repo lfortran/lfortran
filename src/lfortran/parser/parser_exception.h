@@ -9,8 +9,7 @@ namespace parser_local {
 
     // Local exceptions that are used to terminate the parser.
     // It is not propagated outside.
-    // This file is included in parser.tab.cc (via semantics.h)
-    // And in parser.cpp. Nowhere else.
+    // This file is included in the parser and the tokenizers. Nowhere else.
     class TokenizerAbort { 
     };
 
