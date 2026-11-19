@@ -1296,6 +1296,13 @@ struct LL {
         return SUBROUTINE(name, args, b, trivia, decls, ce, l);
     }
 
+    // The statements `body` of a block, with a CONTINUE for the label of the
+    // END statement `e` that ends the block
+    Vec<ast_t*> with_end_label(Vec<ast_t*> &body, const EndStmt &e) {
+        append_labeled_end(m_a, body, e.label, e.loc);
+        return body;
+    }
+
     // The name of a main program without the PROGRAM statement
     static constexpr const char *implicit_program_name
         = "implicit_program_lfortran";

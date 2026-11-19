@@ -449,7 +449,13 @@ rule data_stmt_constant -> ast_t*
 
 // IF
 
-rule endif -> void
+// A label of END IF is the label of a CONTINUE at the end of the block
+rule endif -> EndStmt
+    : lab=TK_LABEL endif_kw         => END_STMT(nullptr, $lab, @$)
+    | endif_kw                      => END_STMT(nullptr, 0, @$)
+    ;
+
+rule endif_kw -> void
     : KW_END_IF
     | v=KW_ENDIF                    => warn_endif(@v)
     ;
@@ -471,9 +477,9 @@ rule if_block(size_t s, ast_t *cond) -> ast_t*
     : KW_THEN id? sp=sep body=statement*
         ( KW_ELSE blk=if_construct  => IF3(cond, TRIVIA_AFTER(sp, @$), body, blk, @$)
         | blk=elseif_construct      => IF3(cond, TRIVIA_AFTER(sp, @$), body, blk, @$)
-        | KW_ELSE id? sp2=sep orelse=statement* endif
-                                    => IF2(cond, TRIVIA(sp, sp2, @$), body, orelse, @$)
-        | endif                     => IF1(cond, TRIVIA_AFTER(sp, @$), body, @$)
+        | KW_ELSE id? sp2=sep orelse=statement* e=endif
+                                    => IF2(cond, TRIVIA(sp, sp2, @$), body, with_end_label(orelse, e), @$)
+        | e=endif                   => IF1(cond, TRIVIA_AFTER(sp, @$), with_end_label(body, e), @$)
         )
     ;
 

@@ -320,9 +320,9 @@ struct FixedFormStatements {
     std::vector<YYSTYPE> stypes;
     std::vector<int> tokens;
     std::vector<Location> locations;
-    // The program units that are open: 'p'rogram, 'm'odule, 's'ubroutine,
-    // 'f'unction, 'b'lock data
-    std::vector<char> units;
+    // The number of program units that are open (a main program without the
+    // PROGRAM statement is not counted)
+    int depth = 0;
     // A program unit can start with the next statement
     bool unit_start = true;
 
@@ -334,7 +334,6 @@ struct FixedFormStatements {
         Format,      // the whole statement is one token
         Assign,      // `assign10toi`
         EndUnit,     // the end of a program unit
-        EndIf,       // `10 endif`
         Contains,    // internal procedures follow
         Interface,   // interface bodies follow
     };
@@ -370,7 +369,7 @@ struct FixedFormStatements {
             {"end", EndUnit, '$'}, {"endassociate"}, {"endblock"},
             {"endblockdata", EndUnit}, {"endcritical"}, {"enddo"},
             {"endenum"}, {"endfile"}, {"endforall"},
-            {"endfunction", EndUnit}, {"endif", EndIf}, {"endinterface"},
+            {"endfunction", EndUnit}, {"endif"}, {"endinterface"},
             {"endmodule", EndUnit}, {"endprocedure"},
             {"endprogram", EndUnit}, {"endselect"},
             {"endsubmodule", EndUnit}, {"endsubroutine", EndUnit},
@@ -718,7 +717,7 @@ struct FixedFormStatements {
         if (next_is(cur, "module") && is_name_start(cur[6])) {
             // `module m`; inside of a program unit it is `module procedure`
             // or the prefix of a separate module procedure
-            if (units.empty()) {
+            if (depth == 0) {
                 if (emit) {
                     push_keyword(cur, KW_MODULE, 6);
                     rest(cur);
@@ -832,7 +831,7 @@ struct FixedFormStatements {
 
     // The statement at `cur` (after its label, if it has one). On return,
     // `cur` points to the next statement.
-    void statement(unsigned char *&cur, int64_t stmt_label) {
+    void statement(unsigned char *&cur) {
         if (is_eos(cur) || is_assignment(cur)) {
             if (!is_eos(cur)) unit_start = false;
             rest(cur);
@@ -848,7 +847,7 @@ struct FixedFormStatements {
         if (unit_start) {
             char kind = unit_statement(cur, true);
             if (kind != 0) {
-                units.push_back(kind);
+                depth++;
                 unit_start = false;
                 return;
             }
@@ -880,17 +879,8 @@ struct FixedFormStatements {
                 rest(cur);
                 return;
             }
-            if (e.mode == EndIf && stmt_label != -1) {
-                // The label is the one of a `continue` statement
-                push_token(cur, KW_CONTINUE, "continue", 8);
-                push_newline(cur);
-            } else if (e.mode == EndUnit) {
-                if (stmt_label != -1 && !units.empty()
-                        && (units.back() == 's' || units.back() == 'f')) {
-                    push_token(cur, KW_CONTINUE, "continue", 8);
-                    push_newline(cur);
-                }
-                if (!units.empty()) units.pop_back();
+            if (e.mode == EndUnit) {
+                if (depth > 0) depth--;
                 unit_start = true;
             }
             for (const auto &word : e.words) {
@@ -921,7 +911,7 @@ struct FixedFormStatements {
                     if (is_name_start(*cur)) {
                         // `then`, or the statement that the condition
                         // controls
-                        statement(cur, -1);
+                        statement(cur);
                         return;
                     }
                     break;
@@ -951,8 +941,8 @@ struct FixedFormStatements {
 
     // The next statement, with its label
     void labeled_statement(unsigned char *&cur) {
-        int64_t l = label(cur);
-        statement(cur, l);
+        label(cur);
+        statement(cur);
     }
 
     void tokenize(unsigned char *&cur) {
