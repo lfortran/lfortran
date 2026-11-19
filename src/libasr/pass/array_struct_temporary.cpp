@@ -7286,6 +7286,7 @@ class ReplaceExprWithTemporaryVisitor:
             lhs_array_var && ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             can_rhs_refer_to_lhs(al, lhs_array_var, x.m_value, dummies_sharing_actual);
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
+        size_t body_before = current_body ? current_body->size() : 0;
         // A scalar value is assigned to each element of an array target.
         replacer.in_array_context = ASRUtils::is_array(
             ASRUtils::expr_type(x.m_target));
@@ -7317,6 +7318,26 @@ class ReplaceExprWithTemporaryVisitor:
         }
         if( x.m_value != value_before_replacement ) {
             pass_evaluated_value_to_defined_assignment(x, value_before_replacement);
+        }
+        // A reshape that the code generator copies into its target, which
+        // the statements before have reallocated to the shape of the
+        // reshape (see is_current_expr_linked_to_target_then_return): the
+        // copy does not reallocate it again, so that nothing but that
+        // reallocation changes the allocation of the target, which
+        // hoist_realloc can then move out of a loop.
+        if( x.m_realloc_lhs && current_body &&
+                ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
+            for( size_t i = body_before; i < current_body->size(); i++ ) {
+                ASR::stmt_t* s = current_body->p[i];
+                if( ASR::is_a<ASR::ReAlloc_t>(*s) &&
+                        ASR::down_cast<ASR::ReAlloc_t>(s)->n_args == 1 &&
+                        PassUtils::same_expression(
+                            ASR::down_cast<ASR::ReAlloc_t>(s)->m_args[0].m_a,
+                            ASRUtils::get_past_array_physical_cast(x.m_target)) ) {
+                    const_cast<ASR::Assignment_t&>(x).m_realloc_lhs = false;
+                    break;
+                }
+            }
         }
         current_expr = current_expr_copy_9;
         replacer.is_simd_expression = is_simd_expr_copy;
