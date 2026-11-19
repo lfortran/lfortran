@@ -26,7 +26,9 @@ An array is certainly unallocated where every path that reaches the
 statement leaves it unallocated, by rules that can be read off the source:
 
 * a non-saved allocatable local of the procedure, or of a BLOCK, is
-  unallocated where the procedure or the BLOCK starts;
+  unallocated where the procedure or the BLOCK starts; so is the copy of a
+  selector of an ASSOCIATE construct that is an expression, a local of the
+  construct, where the construct starts;
 * `deallocate(x)`, and `if (allocated(x)) deallocate(x)`, leave `x`
   unallocated. This is also what the procedure does on entry for an
   INTENT(OUT) allocatable dummy argument (intent_out_deallocate) and for the
@@ -453,9 +455,24 @@ public:
                 return;
             }
             case ASR::stmtType::AssociateBlockCall: {
+                // The copy of a selector that is an expression is a local
+                // of the construct, unallocated where it starts, as one of
+                // a BLOCK is
                 ASR::AssociateBlock_t *b = ASR::down_cast<ASR::AssociateBlock_t>(
                     ASR::down_cast<ASR::AssociateBlockCall_t>(x)->m_m);
+                std::vector<Path> locals;
+                for (auto &item : b->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (v->m_intent == ASR::intentType::Local &&
+                            ASRUtils::is_allocatable(v->m_type) &&
+                            !ASRUtils::is_pointer(v->m_type) && own_variable(item.second)) {
+                        s[{item.second}] = true;
+                        locals.push_back({item.second});
+                    }
+                }
                 stmts(b->m_body, b->n_body, s);
+                for (const Path &p : locals) s.erase(p);
                 return;
             }
             case ASR::stmtType::Assignment:
