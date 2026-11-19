@@ -59,6 +59,11 @@ struct ConcurrentHeader {
     ast_t *mask;
 };
 
+// `i = a, b [, c]` of an implied do loop; `step` is null if there is none
+struct DoControl {
+    ast_t *var, *start, *end, *step;
+};
+
 // The stop code and the QUIET specifier of STOP and ERROR STOP (or null)
 struct StopCode {
     ast_t *code;
@@ -259,91 +264,6 @@ struct LL {
         return v;
     }
 
-    // "(" expr ")", a complex constant, an implied do loop or a conditional
-    // expression
-    ast_t* parenthesized() {
-        size_t s = i;
-        i++;
-        ast_t *x = expr();
-        Location l;
-        if (accept(TK_RPAREN)) {
-            l = span(s);
-            return PAREN(x, l);
-        }
-        if (accept(TK_QUESTION)) {
-            ast_t *a = cond_consequent();
-            expect_(TK_COLON, __LINE__);
-            ast_t *b = cond_expr_tail();
-            expect_(TK_RPAREN, __LINE__);
-            l = span(s);
-            return COND_EXPR(x, a, b, l);
-        }
-        expect_(TK_COMMA, __LINE__);
-        // The expressions after the first one, up to the loop variable
-        ast_t *y = nullptr;
-        Vec<ast_t*> rest;
-        rest.from_pointer_n(nullptr, 0);
-        size_t n = 1;
-        for (;;) {
-            if (is_name(K[i]) && K[i+1] == TK_EQUAL) {
-                ast_t *var = id();
-                i++;
-                ast_t *lo = expr();
-                expect_(TK_COMMA, __LINE__);
-                ast_t *hi = expr();
-                ast_t *incr = nullptr;
-                if (accept(TK_COMMA)) incr = expr();
-                expect_(TK_RPAREN, __LINE__);
-                l = span(s);
-                if (n == 1) {
-                    if (incr) return IMPLIED_DO_LOOP4(x, var, lo, hi, incr, l);
-                    return IMPLIED_DO_LOOP1(x, var, lo, hi, l);
-                } else if (n == 2) {
-                    if (incr) return IMPLIED_DO_LOOP5(x, y, var, lo, hi, incr, l);
-                    return IMPLIED_DO_LOOP2(x, y, var, lo, hi, l);
-                }
-                if (incr) return IMPLIED_DO_LOOP6(x, y, rest, var, lo, hi, incr, l);
-                return IMPLIED_DO_LOOP3(x, y, rest, var, lo, hi, l);
-            }
-            ast_t *e = expr();
-            n++;
-            if (n == 2) {
-                y = e;
-            } else {
-                if (n == 3) LIST_NEW(rest);
-                LIST_ADD(rest, e);
-            }
-            if (accept(TK_RPAREN)) {
-                if (n != 2) unsup(__LINE__);
-                l = span(s);
-                return COMPLEX(x, y, l);
-            }
-            expect_(TK_COMMA, __LINE__);
-        }
-    }
-
-    ast_t* cond_consequent() {
-        if (K[i] == TK_NIL) {
-            Location l = Lc[i];
-            i++;
-            return NIL(l);
-        }
-        return expr();
-    }
-
-    ast_t* cond_expr_tail() {
-        size_t s = i;
-        ast_t *x = cond_consequent();
-        if (accept(TK_QUESTION)) {
-            ast_t *a = cond_consequent();
-            expect_(TK_COLON, __LINE__);
-            ast_t *b = cond_expr_tail();
-            Location l = span(s);
-            return COND_EXPR(x, a, b, l);
-        }
-        return x;
-    }
-
     // statement: [ label ] statement1 sep
     // Returns nullptr (and consumes nothing) if no statement starts here.
     ast_t* statement() {
@@ -439,36 +359,6 @@ struct LL {
         return sets;
     }
 
-    ast_t* data_object() {
-        size_t s = i;
-        if (K[i] != TK_LPAREN) return designator();
-        i++;
-        Vec<ast_t*> objects;
-        LIST_NEW(objects);
-        for (;;) {
-            LIST_ADD(objects, data_object());
-            expect_(TK_COMMA, __LINE__);
-            ast_t *type = nullptr;
-            if (K[i] == KW_INTEGER && K[i+1] != TK_EQUAL) {
-                type = var_type();
-                expect_(TK_DBL_COLON, __LINE__);
-            } else if (!(is_name(K[i]) && K[i+1] == TK_EQUAL)) {
-                continue;
-            }
-            ast_t *var = id();
-            expect_(TK_EQUAL, __LINE__);
-            ast_t *lo = expr();
-            expect_(TK_COMMA, __LINE__);
-            ast_t *hi = expr();
-            ast_t *incr = nullptr;
-            if (accept(TK_COMMA)) incr = expr();
-            expect_(TK_RPAREN, __LINE__);
-            Location l = span(s);
-            if (incr) return DATA_IMPLIED_DO2(objects, type, var, lo, hi, incr, l);
-            return DATA_IMPLIED_DO1(objects, type, var, lo, hi, l);
-        }
-    }
-
     Vec<ast_t*> data_stmt_value_list() {
         Vec<ast_t*> v;
         LIST_NEW(v);
@@ -482,48 +372,6 @@ struct LL {
             }
         } while (accept(TK_COMMA));
         return v;
-    }
-
-    // concurrent_control_list [ "," mask ] ")"
-    Vec<ast_t*> concurrent_controls(ast_t *&mask) {
-        Vec<ast_t*> v;
-        LIST_NEW(v);
-        mask = nullptr;
-        do {
-            size_t s = i;
-            ast_t *type = nullptr;
-            if (!(is_name(K[i]) && K[i+1] == TK_EQUAL)) {
-                if (!has_dbl_colon()) {
-                    mask = expr();
-                    break;
-                }
-                type = var_type();
-                expect_(TK_DBL_COLON, __LINE__);
-            }
-            ast_t *var = id();
-            expect_(TK_EQUAL, __LINE__);
-            ast_t *a = expr();
-            expect_(TK_COLON, __LINE__);
-            ast_t *b = expr();
-            Location l;
-            if (accept(TK_COLON)) {
-                ast_t *c = expr();
-                l = span(s);
-                LIST_ADD(v, CONCURRENT_CONTROL2(type, var, a, b, c, l));
-            } else {
-                l = span(s);
-                LIST_ADD(v, CONCURRENT_CONTROL1(type, var, a, b, l));
-            }
-        } while (accept(TK_COMMA));
-        expect_(TK_RPAREN, __LINE__);
-        return v;
-    }
-
-    ConcurrentHeader concurrent_header() {
-        expect_(TK_LPAREN, __LINE__);
-        ConcurrentHeader h;
-        h.controls = concurrent_controls(h.mask);
-        return h;
     }
 
     Vec<ast_t*> event_wait_specs() {
@@ -1275,6 +1123,46 @@ struct LL {
         }
         return make_SubroutineCall_t(m_a, l, 0, name2char(last.name), mem.p,
             mem.n, nullptr, 0, nullptr, 0, nullptr, 0, nullptr);
+    }
+
+    // An implied do loop with the values `x`, `y` (or null) and `ys`
+    ast_t* implied_do(ast_t *x, ast_t *y, Vec<ast_t*> ys, DoControl &d,
+            Location &l) {
+        Vec<ast_t*> v;
+        v.reserve(m_a, 2 + ys.size());
+        v.push_back(m_a, x);
+        if (y) v.push_back(m_a, y);
+        for (size_t j = 0; j < ys.size(); j++) v.push_back(m_a, ys[j]);
+        return implied_do_loop(m_a, l, v, d.var, d.start, d.end, d.step);
+    }
+
+    // An implied do loop of DATA objects: `o`, then `os`
+    ast_t* data_do_loop(ast_t *o, Vec<ast_t*> &os, ast_t *type, ast_t *var,
+            ast_t *a, ast_t *b, ast_t *c, Location &l) {
+        Vec<ast_t*> objects;
+        LIST_NEW(objects);
+        LIST_ADD(objects, o);
+        for (size_t j = 0; j < os.size(); j++) LIST_ADD(objects, os[j]);
+        if (c) return DATA_IMPLIED_DO2(objects, type, var, a, b, c, l);
+        return DATA_IMPLIED_DO1(objects, type, var, a, b, l);
+    }
+
+    // The controls and the mask (only after the last control)
+    ConcurrentHeader concurrent_header_of(Vec<ast_t*> &items) {
+        ConcurrentHeader h;
+        h.mask = nullptr;
+        LIST_NEW(h.controls);
+        for (size_t j = 0; j < items.size(); j++) {
+            ast_t *x = items[j];
+            if (x->type == astType::concurrent_control) {
+                if (h.mask) unsup(__LINE__);
+                LIST_ADD(h.controls, x);
+            } else {
+                if (h.mask) unsup(__LINE__);
+                h.mask = x;
+            }
+        }
+        return h;
     }
 
     // The name of a main program without the PROGRAM statement

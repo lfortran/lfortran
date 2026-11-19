@@ -51,19 +51,13 @@
 %extern id -> ast_t* token: NAME
 // One or more separators (new lines, comments, `;`); the list is the trivia
 %extern sep -> Vec<ast_t*> first: SEP
-// "(" expr ")", a complex constant, an implied do loop or a conditional
-// expression
-%extern parenthesized -> ast_t* first: "("
 // A statement with its label and the separator after it; null if no
 // statement starts here
 %extern statement -> ast_t*
-// The data_set_list of a DATA statement; an object of one set, which can be
-// an implied do loop; and the values of one set, which can be repeated
+// The data_set_list of a DATA statement, and the values of one set, which
+// can be repeated
 %extern data_sets -> Vec<ast_t*>
-%extern data_object -> ast_t*
 %extern data_stmt_value_list -> Vec<ast_t*>
-// "(" concurrent_control_list [ "," mask ] ")" of FORALL and DO CONCURRENT
-%extern concurrent_header -> ConcurrentHeader first: "("
 // "," and the specifiers of EVENT WAIT
 %extern event_wait_specs -> Vec<ast_t*> first: ","
 // The statements of the DO loop with the label of the token `lab`, up to and
@@ -167,6 +161,47 @@ rule primary -> ast_t*
             )
         )?
         list=bracket_list           => ARRAY_IN1(list, @$)
+    ;
+
+// "(" expr ")", a complex constant, an implied do loop or a conditional
+// expression
+rule parenthesized -> ast_t*
+    : "(" x=expr
+        ( ")"                       => PAREN(x, @$)
+        | "?" a=cond_consequent ":" b=cond_expr_tail ")"
+                                    => COND_EXPR(x, a, b, @$)
+        | "," &[ NAME "=" ] d=do_control ")"
+                                    => implied_do(x, nullptr, empty_list(), d, @$)
+        | "," y=expr
+            ( ")"                   => COMPLEX(x, y, @$)
+            | "," ys=implied_do_value* d=do_control ")"
+                                    => implied_do(x, y, ys, d, @$)
+            )
+        )
+    ;
+
+// A value of an implied do loop after the first two
+rule implied_do_value? -> ast_t*
+    : ![ NAME "=" ] x=expr ","      => x
+    ;
+
+// `i = a, b [, c]` of an implied do loop
+rule do_control -> DoControl
+    : var=id "=" a=expr "," b=expr ( "," c=expr )?
+                                    => DoControl{var, a, b, c}
+    ;
+
+rule cond_consequent -> ast_t*
+    : TK_NIL                        => NIL(@$)
+    | expr
+    ;
+
+rule cond_expr_tail -> ast_t*
+    : x=cond_consequent
+        ( "?" a=cond_consequent ":" b=cond_expr_tail
+                                    => COND_EXPR(x, a, b, @$)
+        )?
+                                    => x
     ;
 
 // The values of an array constructor and the bracket that closes it
@@ -446,6 +481,19 @@ rule coarray_association1 -> ast_t*
 
 // DATA statement
 
+// An object of a DATA statement, or an implied do loop of them, whose
+// variable can have the type `integer`
+rule data_object -> ast_t*
+    : designator
+    | "(" o=data_object "," os=data_object_next* ( &[ KW_INTEGER ] t=var_type "::" )?
+        var=id "=" a=expr "," b=expr ( "," c=expr )? ")"
+                                    => data_do_loop(o, os, t, var, a, b, c, @$)
+    ;
+
+rule data_object_next? -> ast_t*
+    : ![ NAME "=" | KW_INTEGER ] o=data_object "," => o
+    ;
+
 rule data_set -> ast_t*
     : objects=data_object % "," "/" values=data_stmt_value_list "/"
                                     => DATA(objects, values, @$)
@@ -539,6 +587,24 @@ rule do_statement -> ast_t*
     | KW_DO ","? var=id "=" a=expr "," b=expr ( "," c=expr )?
         sp=sep body=statement* end_label=enddo
         => do_loop(var, a, b, c, TRIVIA_AFTER(sp, @$), body, end_label, @$)
+    ;
+
+// "(" concurrent_control_list [ "," mask ] ")" of FORALL and DO CONCURRENT
+rule concurrent_header -> ConcurrentHeader
+    : "(" items=concurrent_item % "," ")" => concurrent_header_of(items)
+    ;
+
+// A concurrent control, with its type if it has one, or the mask
+rule concurrent_item -> ast_t*
+    : &[ NAME "=" ] concurrent_control(@, nullptr)
+    | &has_dbl_colon t=var_type "::" concurrent_control(@, t)
+    | expr
+    ;
+
+rule concurrent_control(size_t s, ast_t *type) -> ast_t*
+    : var=id "=" a=expr ":" b=expr
+        ( ":" c=expr                => CONCURRENT_CONTROL2(type, var, a, b, c, @$) )?
+                                    => CONCURRENT_CONTROL1(type, var, a, b, @$)
     ;
 
 rule concurrent_locality? -> ast_t*
