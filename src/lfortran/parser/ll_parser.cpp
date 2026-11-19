@@ -1,13 +1,14 @@
 /*
-The LL parser of free-form Fortran. (Fixed form is parsed by the Bison parser,
-parser.yy.)
+The LL parser of Fortran. Free form is tokenized by the re2c tokenizer
+(tokenizer.re), fixed form by the fixed-form tokenizer
+(fixedform_tokenizer.cpp); the parser is the same for both.
 
 The grammar is in ll_parser.ll. llgen.py generates from it the member
 functions that parse its rules (ll_parser_rules.h), which are included in the
 class `LL` below. This file has the rest of the parser:
 
-* the tokens: the whole file is tokenized first, with the same re2c tokenizer
-  as the Bison parser, into arrays. A keyword is just a kind of name:
+* the tokens: the whole file is tokenized first, into arrays. A keyword is
+  just a kind of name:
   `is_name()` is a range check, a keyword test is an integer comparison;
 * the predicates that the grammar uses (`%predicate`);
 * the few rules that are written by hand (`%extern`);
@@ -25,6 +26,7 @@ on with the declarations and statements of the program unit it is in.
 
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/tokenizer.h>
+#include <lfortran/parser/fixedform_tokenizer.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <lfortran/parser/ll_parser.h>
 #include <lfortran/ast.h>
@@ -73,6 +75,7 @@ struct FunctionClauses {
 struct LL {
     Allocator &m_a;
     LCompilers::diag::Diagnostics &diag;
+    // Fixed form: the semantics.h macros give no style suggestions then
     bool fixed_form = false;
     Vec<ast_t*> result;
     // The semantics.h macros refer to the parser as `p`
@@ -729,10 +732,11 @@ struct LL {
     }
 
     // No statement starts at the current token. A name can start an
-    // assignment, so the token to report is the one after the designator.
+    // assignment, whose left-hand side is an expression in the grammar, so
+    // the token to report is the one after that expression.
     [[noreturn]] void statement_error() {
         if (K[i] == TK_LABEL) i++;
-        if (is_name(K[i])) designator();
+        if (is_name(K[i])) expr();
         unsup(__LINE__);
     }
 
@@ -1402,18 +1406,48 @@ Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
     // The whole file is tokenized first; the errors of the tokenizer are
     // added to the diagnostics as the parser gets to them
     diag::Diagnostics tokenizer_diagnostics;
-    try {
-        ll_tokenize(al, input, tokenizer_diagnostics, tokens, co.openmp,
-            loc_offset, co.continue_compilation);
-    } catch (const parser_local::TokenizerAbort &) {
-        for (auto &d : tokenizer_diagnostics.diagnostics) {
-            diagnostics.diagnostics.push_back(d);
+    if (co.fixed_form) {
+        // The fixed-form tokenizer finds the tokens in the source without
+        // blanks, and reports its errors before the parser starts
+        tokens.input = input;
+        if (input.empty() || input.back() != '\n') tokens.input.append("\n");
+        tokens.source = &tokens.input;
+        FixedFormTokenizer t;
+        t.set_string(tokens.input);
+        if (!t.tokenize_input(diagnostics, al, co.continue_compilation)) {
+            return Error();
         }
-        return Error();
+        tokens.kind = std::move(t.tokens);
+        tokens.value = std::move(t.stypes);
+        tokens.loc = std::move(t.locations);
+        if (tokens.kind.empty() || tokens.kind.back() != END_OF_FILE) {
+            tokens.kind.push_back(END_OF_FILE);
+            tokens.value.push_back(YYSTYPE());
+            tokens.loc.push_back(tokens.loc.empty() ? Location()
+                : tokens.loc.back());
+        }
+        tokens.n = tokens.kind.size();
+        // The parser looks ahead without checks
+        for (size_t j = 0; j < 4; j++) {
+            tokens.kind.push_back(END_OF_FILE);
+            tokens.value.push_back(YYSTYPE());
+            tokens.loc.push_back(tokens.loc.back());
+        }
+    } else {
+        try {
+            ll_tokenize(al, input, tokenizer_diagnostics, tokens, co.openmp,
+                loc_offset, co.continue_compilation);
+        } catch (const parser_local::TokenizerAbort &) {
+            for (auto &d : tokenizer_diagnostics.diagnostics) {
+                diagnostics.diagnostics.push_back(d);
+            }
+            return Error();
+        }
     }
     LL ll(al, diagnostics, tokens.kind.data(), tokens.value.data(),
         tokens.loc.data(), *tokens.source, loc_offset,
         co.continue_compilation);
+    ll.fixed_form = co.fixed_form;
     ll.tokenizer_errors = &tokenizer_diagnostics.diagnostics;
     try {
         ll.units();
@@ -1440,7 +1474,8 @@ Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
     }
     AST::TranslationUnit_t *ast = (AST::TranslationUnit_t*)
         AST::make_TranslationUnit_t(al, l, ll.result.p, ll.result.size());
-    if (!co.interactive && !co.infer_mode && is_program_needed(*ast)) {
+    if (!co.interactive && !co.infer_mode && !co.fixed_form
+            && is_program_needed(*ast)) {
         try {
             fix_program_without_program_line(al, *ast, diagnostics);
         } catch (const parser_local::ParserAbort &) {

@@ -31,7 +31,8 @@ void ll_tokenize(Allocator &al, const std::string &input,
     diag::Diagnostics &diagnostics, LLTokens &tokens, bool openmp=false,
     uint32_t loc_offset=0, bool continue_compilation=false);
 
-// Parses free-form Fortran (already prescanned) to AST with the LL parser
+// Parses Fortran (already prescanned) to AST with the LL parser; fixed form
+// if `co.fixed_form`
 Result<AST::TranslationUnit_t*> ll_parse(Allocator &al,
     const std::string &input, diag::Diagnostics &diagnostics,
     LLTokens &tokens, const CompilerOptions &co, uint32_t loc_offset=0);

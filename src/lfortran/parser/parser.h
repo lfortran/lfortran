@@ -48,7 +48,8 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al,
     const CompilerOptions &co,
     uint32_t loc_offset=0);
 
-// The same with the Bison parser, which is the one used for fixed form
+// The same with the Bison parser, which the compiler does not use any more;
+// it is kept to compare the LL parser with
 Result<AST::TranslationUnit_t*> parse_bison(Allocator &al,
     const std::string &s,
     diag::Diagnostics &diagnostics,
