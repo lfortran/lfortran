@@ -7,7 +7,6 @@ set -e
 set -x
 
 RE2C=${RE2C:-re2c}
-BISON=${BISON:-bison}
 PYTHON=${PYTHON:-python}
 
 # Generate the `version` file (sourced: Windows cannot run the script directly)
@@ -25,13 +24,10 @@ source ci/version.sh
 # Generate the tokenizer and parser
 (cd src/lfortran && "${RE2C}" -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
 (cd src/lfortran && "${RE2C}" -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
-# Use `-r all` in Bison for detailed report. Turned off by default to avoid a
-# Bison timeout issue with it.
-(cd src/lfortran/parser && "${BISON}" -Wall -d parser.yy)
+# Generate the rules of the parser and the tokens from the grammar
+"${PYTHON}" src/lfortran/parser/llgen.py src/lfortran/parser/ll_parser.ll src/lfortran/parser/ll_parser_rules.h src/lfortran/parser/tokens.h
 
 # Generate the LSP sources
 "${PYTHON}" src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
 
-# Single quotes are not allowed in parser.yy (`shell` has no `grep`)
-"${PYTHON}" -c 'import sys; bad = [f"{i}: {l}" for i, l in enumerate(open("src/lfortran/parser/parser.yy", encoding="utf-8"), 1) if chr(39) in l]; sys.exit("".join(bad) + "Single quote not allowed" if bad else 0)'
 echo "OK"

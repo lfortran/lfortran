@@ -115,7 +115,7 @@ you have not observed is a guess.
    CMAKE_BUILD_PARALLEL_LEVEL=<jobs> pixi run -e llvm11 rebuild > build.log 2>&1
    ```
    `rebuild` recompiles only what changed. If the fix edits a generator input
-   (`ASR.asdl`, `AST.asdl`, `parser.yy`, a `.re` tokenizer, or another input
+   (`ASR.asdl`, `AST.asdl`, `ll_parser.ll`, a `.re` tokenizer, or another input
    listed in `AGENTS.md`), use `pixi run -e llvm11 build` instead, which
    regenerates the sources but recompiles almost everything.
 3. Re-run the MRE to verify the fix:

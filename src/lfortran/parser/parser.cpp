@@ -4,7 +4,8 @@
 
 #include <lfortran/ast_kind.h>
 #include <lfortran/parser/parser.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/ll_parser.h>
+#include <lfortran/parser/tokens.h>
 #include <libasr/diagnostics.h>
 #include <libasr/string_utils.h>
 #include <lfortran/parser/parser_exception.h>
@@ -15,354 +16,12 @@
 
 namespace LCompilers::LFortran {
 
-bool is_program_needed(AST::TranslationUnit_t &ast) {
-    for (size_t i = 0; i < ast.n_items; i++) {
-        if (!AST::is_a<AST::mod_t>(*ast.m_items[i])
-            && !AST::is_a<AST::program_unit_t>(*ast.m_items[i])) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool is_program_end(AST::Name_t* name) {
-    // "end program" should not be a name. Ideally, it should be a special entity.
-    // It is used as a Name_t here, so that `end`, `endprogram` and `end program`
-    // can all be handled together and this simplifies the code logic.
-    return (to_lower(name->m_id) == "end" || to_lower(name->m_id) == "endprogram"
-            || to_lower(name->m_id) == "end program");
-}
-
-void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics) {
-    Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
-    Vec<AST::decl_stmt_t*> items; items.reserve(al, 0);
-    Vec<AST::program_unit_t*> contains_body; contains_body.reserve(al, 0);
-    bool contains = false, program_added = false;
-    for (size_t i = 0; i < ast.n_items; i++) {
-        if (program_added) {
-            if (ast.m_items[i]->type == AST::astType::program_unit
-                || ast.m_items[i]->type == AST::astType::mod) {
-                global_items.push_back(al, ast.m_items[i]);
-            } else {
-                diagnostics.add(diag::Diagnostic(
-                    "Only function, subroutine, procedure, module, submodule or"
-                    " block data allowed in global scope in non-interactive mode",
-                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
-                throw parser_local::ParserAbort();
-            }
-        } else if (contains) {
-            if (ast.m_items[i]->type == AST::astType::program_unit) {
-                contains_body.push_back(al, AST::down_cast<AST::program_unit_t>(ast.m_items[i]));
-            } else if (ast.m_items[i]->type == AST::astType::expr) {
-                AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
-                if (AST::is_a<AST::Name_t>(*expr)) {
-                    AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
-                    if (is_program_end(name)) {
-                        AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                            items.p, items.size(), contains_body.p, contains_body.size());
-
-                        global_items.push_back(al, program_ast);
-                        program_added = true;
-                    } else {
-                        diagnostics.add(diag::Diagnostic(
-                            "Expected function, subroutine, procedure in program contains",
-                            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {name->base.base.loc})}));
-                        throw parser_local::ParserAbort();
-                    }
-                } else {
-                    diagnostics.add(diag::Diagnostic(
-                        "Expected function, subroutine, procedure in program contains",
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {expr->base.loc})}));
-                    throw parser_local::ParserAbort();
-                }
-            } else {
-                diagnostics.add(diag::Diagnostic(
-                    "Expected function, subroutine, procedure in program contains",
-                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
-                throw parser_local::ParserAbort();
-            }
-        } else if (ast.m_items[i]->type == AST::astType::decl_stmt) {
-            items.push_back(al, AST::down_cast<AST::decl_stmt_t>(ast.m_items[i]));
-        } else if (ast.m_items[i]->type == AST::astType::expr) {
-            AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
-            if (AST::is_a<AST::Name_t>(*expr)) {
-                AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
-                if (to_lower(name->m_id) == "stop") {
-                    AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(stop_ast));
-                } else if (to_lower(name->m_id) == "return") {
-                    AST::ast_t* return_ast = AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr);
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(return_ast));
-                } else if (to_lower(name->m_id) == "exit") {
-                    AST::ast_t* exit_ast = AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr);
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(exit_ast));
-                } else if (to_lower(name->m_id) == "cycle") {
-                    AST::ast_t* cycle_ast = AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr);
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(cycle_ast));
-                } else if (to_lower(name->m_id) == "continue") {
-                    AST::ast_t* continue_ast = AST::make_Continue_t(al, name->base.base.loc, 0, nullptr);
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(continue_ast));
-                } else if (is_program_end(name)) {
-                    AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
-                    items.p, items.size(), contains_body.p, contains_body.size());
-
-                    global_items.push_back(al, program_ast);
-                    program_added = true;
-                } else if (to_lower(name->m_id) == "contains") {
-                    contains = true;
-                } else {
-                    diagnostics.add(diag::Diagnostic(
-                        "Statement or Declaration expected inside program, found Variable name",
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
-                    throw parser_local::ParserAbort();
-                }
-            } else if (AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
-                AST::FuncCallOrArray_t* func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(expr);
-                if (to_lower(func_call_or_array->m_func) == "allocate") {
-                    AST::ast_t* allocate_ast = AST::make_Allocate_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    func_call_or_array->m_args,
-                                                    func_call_or_array->n_args,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(allocate_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "deallocate") {
-                    AST::ast_t* deallocate_ast = AST::make_Deallocate_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    func_call_or_array->m_args,
-                                                    func_call_or_array->n_args,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(deallocate_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "open") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* open_ast = AST::make_Open_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(open_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "close") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* close_ast = AST::make_Close_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(close_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "nullify") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* nullify_ast = AST::make_Nullify_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(nullify_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "flush") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* flush_ast = AST::make_Flush_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(flush_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "rewind") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* rewind_ast = AST::make_Rewind_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(rewind_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "backspace") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* backspace_ast = AST::make_Backspace_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(backspace_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "endfile" || to_lower(func_call_or_array->m_func) == "end_file") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* endfile_ast = AST::make_Endfile_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(endfile_ast));
-                } else if (to_lower(func_call_or_array->m_func) == "inquire") {
-                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
-                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
-                        args.push_back(al, func_call_or_array->m_args[j].m_end);
-                    }
-                    AST::ast_t* inquire_ast = AST::make_Inquire_t(al,
-                                                    func_call_or_array->base.base.loc,
-                                                    0,
-                                                    args.p,
-                                                    args.n,
-                                                    func_call_or_array->m_keywords,
-                                                    func_call_or_array->n_keywords,
-                                                    nullptr, 0,
-                                                    nullptr);
-
-                    items.push_back(al, AST::down_cast<AST::decl_stmt_t>(inquire_ast));
-                }
-            } else {
-                diagnostics.add(diag::Diagnostic(
-                    "Statement or Declaration expected inside program, found Expression",
-                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
-                throw parser_local::ParserAbort();
-            }
-        } else {
-            global_items.push_back(al, ast.m_items[i]);
-        }
-    }
-    if (!program_added) {
-        diagnostics.add(diag::Diagnostic(
-            "Expected program end",
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.base.base.loc})}));
-        throw parser_local::ParserAbort();
-    }
-    ast.m_items = global_items.p;
-    ast.n_items = global_items.size();
-}
-
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co,
         uint32_t loc_offset)
 {
-    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
-    p.m_tokenizer.loc_offset = loc_offset;
-    try {
-        if (!p.parse(s)) {
-            if (!co.continue_compilation) {
-                return Error();
-            }
-        };
-    } catch (const parser_local::ParserAbort &) {
-        Error error;
-        return error;
-    }
-    Location l;
-    if (p.result.size() == 0) {
-        l.first=0;
-        l.last=0;
-    } else {
-        l.first=p.result[0]->loc.first;
-        l.last=p.result[p.result.size()-1]->loc.last;
-    }
-    AST::TranslationUnit_t* ast = (AST::TranslationUnit_t*)AST::make_TranslationUnit_t(al, l,
-        p.result.p, p.result.size());
-    if (!co.interactive && !co.infer_mode && !co.fixed_form && is_program_needed(*ast)) {
-        try {
-            fix_program_without_program_line(al, *ast, diagnostics);
-        }  catch (const parser_local::ParserAbort &) {
-            Error error;
-            if (!co.continue_compilation) {
-                return error;
-            }
-        }
-    }
-    return ast;
-}
-
-bool Parser::parse(const std::string &input)
-{
-    inp = input;
-    if (inp.size() > 0) {
-        if (inp[inp.size()-1] != '\n') inp.append("\n");
-    } else {
-        inp.append("\n");
-    }
-    if (!fixed_form) {
-        m_tokenizer.set_string(inp);
-        try {
-            if (yyparse(*this) == 0) {
-                if (diag.has_error())
-                    return false;
-                return true;
-            }
-        } catch (const parser_local::TokenizerAbort &) {
-            return false;
-        }
-    } else {
-        f_tokenizer.set_string(inp);
-        if (!f_tokenizer.tokenize_input(diag, m_a, this->continue_compilation)) return false;
-        if (yyparse(*this) == 0) {
-            if (diag.has_error())
-                return false;
-            return true;
-        }
-    }
-
-    if (!diag.has_error()) {
-        if (this->continue_compilation) {
-            diag.add(diag::Diagnostic(
-                "Parsing unsuccessful (internal compiler error)",
-                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
-        } else {
-            diag.add(diag::Diagnostic(
-                "Parsing unsuccessful (internal compiler error)",
-                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
-            throw parser_local::ParserAbort();
-        }
-    }
-    return false;
+    LLTokens tokens;
+    return ll_parse(al, s, diagnostics, tokens, co, loc_offset);
 }
 
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
@@ -916,9 +575,8 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
          *   * Continuation lines after comment(s) or empty lines (they will be
          *     appended to the previous comment, and thus skipped)
          *
-         * After the prescanner, the tokenizer is itself a recursive descent
-         * parser that correctly identifies tokens so that the Bison
-         * parser can parse it correctly.
+         * After the prescanner, the tokenizer splits each statement into
+         * tokens for the parser.
          */
         while (true) {
             const char *p = &s[pos];
@@ -1014,7 +672,24 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
         // if `in_string` is true, keeps track of the quote
         // used for that string
         char quote = '\0';
+        out.reserve(s.size());
         while (pos < s.size()) {
+            if (!newline) {
+                // Fast path: characters that cannot change the prescanner
+                // state are copied in one go
+                size_t run = pos;
+                if (in_comment) {
+                    while (run < s.size() && s[run] != '\n' && s[run] != '&') run++;
+                } else {
+                    while (run < s.size() && s[run] != '\n' && s[run] != '&'
+                            && s[run] != '!' && s[run] != '\'' && s[run] != '"') run++;
+                }
+                if (run > pos) {
+                    out.append(s, pos, run-pos);
+                    pos = run;
+                    continue;
+                }
+            }
             is_within_string(s, pos, quote, in_comment, in_string);
             if (newline && is_include(s, pos)) {
                 int col = 0; // doesn't matter
@@ -1411,71 +1086,6 @@ std::string token2text(const int token)
             std::cout << "TOKEN: " << token << std::endl;
             throw LCompilersException("Token conversion not implemented yet.");
         }
-    }
-}
-
-void Parser::handle_yyerror(const Location &loc, const std::string &msg)
-{
-    std::string message;
-    if (msg == "syntax is ambiguous") {
-        message = "Internal Compiler Error: syntax is ambiguous in the parser";
-    } else if (msg == "syntax error") {
-        int token;
-        std::string token_str;
-        // Determine the unexpected token's type:
-        if (this->fixed_form) {
-            unsigned int invalid_token = this->f_tokenizer.token_pos;
-            if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
-                message = "unknown error";
-                if (this->continue_compilation) {
-                    diag.add(diag::Diagnostic(
-                        message,
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-                } else {
-                    diag.add(diag::Diagnostic(
-                        message,
-                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-                    throw parser_local::ParserAbort();
-                }
-            }
-            invalid_token--;
-            LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
-            LCOMPILERS_ASSERT(invalid_token < f_tokenizer.locations.size())
-            token = f_tokenizer.tokens[invalid_token];
-            Location loc = f_tokenizer.locations[invalid_token];
-            token_str = f_tokenizer.token_at_loc(loc);
-        } else {
-            LFortran::YYSTYPE yylval_;
-            YYLTYPE yyloc_;
-            this->m_tokenizer.cur = this->m_tokenizer.tok;
-            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag, this->continue_compilation);
-            token_str = this->m_tokenizer.token();
-        }
-        // Create a nice error message
-        if (token == yytokentype::END_OF_FILE) {
-            message =  "End of file is unexpected here";
-        } else if (token == yytokentype::TK_NEWLINE) {
-            message =  "Newline is unexpected here";
-        } else {
-            std::string token_type = token2text(token);
-            if (token_str == token_type || token_str.size() == 0) {
-                message =  "Token '" + token_type + "' is unexpected here";
-            } else {
-                message =  "Token '" + token_str + "' (of type '" + token2text(token) + "') is unexpected here";
-            }
-        }
-    } else {
-        message = "Internal Compiler Error: parser returned unknown error";
-    }
-    if (this->continue_compilation) {
-        diag.add(diag::Diagnostic(
-            message,
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-    } else {
-        diag.add(diag::Diagnostic(
-            message,
-            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
-        throw parser_local::ParserAbort();
     }
 }
 

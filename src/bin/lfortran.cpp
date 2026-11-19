@@ -66,7 +66,7 @@
 #include <llvm/Support/Unicode.h>
 #endif
 #include <lfortran/utils.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <string>
 #include <sstream>
 
@@ -324,7 +324,7 @@ bool determine_completeness(std::string command)
     std::vector<LCompilers::LFortran::YYSTYPE> stypes;
     std::vector<std::string> token_strings;
     int tok_ret = emit_tokens2(command, token_strings, toks, stypes);
-    // The token enumerators are in parser.tab.hh
+    // The token enumerators are in tokens.h
     int do_blnc = 0;
     if (std::find(toks.begin(), toks.end(), KW_DO)!=toks.end()
         || std::find(toks.begin(), toks.end(), KW_DOWHILE)!=toks.end()) {

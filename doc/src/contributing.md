@@ -73,7 +73,7 @@ The example below shows the steps it would take to create a caret binary operato
 
 ### Create New Token(s)
 
-We extend the *tokenizer.re* as well as *parser.yy* to add the new token **^**.
+We extend the *tokenizer.re* as well as *ll_parser.ll* to add the new token **^**.
 We also tell LFortran how to print the new token in *parser.cpp*.
 
 :fontawesome-solid-code: *src/lfortran/parser/tokenizer.re*
@@ -81,7 +81,7 @@ We also tell LFortran how to print the new token in *parser.cpp*.
 // "^" { RET(TK_CARET) }
 ```
 
-:fontawesome-solid-code: *src/lfortran/parser/parser.yy*
+:fontawesome-solid-code: *src/lfortran/parser/ll_parser.ll*
 ```
 %token TK_CARET "^"
 ```
@@ -99,7 +99,7 @@ The added code is tested with `lfortran --show-tokens examples2/expr2.f90`
 
 ### Parse the New Token
 
-Now we have to parse the new operator. We add it to the AST by extending the BinOp with a caret operator and modifying the *AST.asdl* file. Then we add it in *parse.yy* to properly parse and generate the new AST in *semantics.h*.Finally we extend *pickle.cpp* so that the new operator can print itself.
+Now we have to parse the new operator. We add it to the AST by extending the BinOp with a caret operator and modifying the *AST.asdl* file. Then we add it in *ll_parser.ll* to properly parse and generate the new AST in *semantics.h*.Finally we extend *pickle.cpp* so that the new operator can print itself.
 
 
 
@@ -108,13 +108,11 @@ Now we have to parse the new operator. We add it to the AST by extending the Bin
 operator = Add | Sub | Mul | Div | Pow | Caret
 ```
 
-:fontawesome-solid-code:*src/lfortran/parser/parser.yy*
+:fontawesome-solid-code:*src/lfortran/parser/ll_parser.ll*
 ```
-%left "^"
-
-expr
-    : id { $$=$1; }
-    | expr "^" expr { $$ = CARET($1, $3, @$); }
+%operators binary primary
+    left 9 "^" => CARET(x, y, @$)
+%end
 ```
 
 :fontawesome-solid-code:*src/lfortran/parser/semantics.h*

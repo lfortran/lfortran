@@ -1,5 +1,5 @@
-syntax error: Expected function, subroutine, procedure in program contains
+syntax error: Token 'print' is unexpected here
  --> tests/errors/program_without_line_02.f90:3:1
   |
 3 | print *, "OK"
-  | ^^^^^^^^^^^^^ 
+  | ^^^^^ 

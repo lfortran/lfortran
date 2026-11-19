@@ -14,8 +14,12 @@
         []
     )
     (Program
-        __xx_main
-        ()
+        implicit_program_lfortran
+        (TriviaNode
+            []
+            [(EndOfLine)
+            (EndOfLine)]
+        )
         [(ImplicitNone
             []
             ()

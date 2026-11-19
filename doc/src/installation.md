@@ -52,7 +52,7 @@ reconfigures CMake, which reruns `build0.sh`: it regenerates `asr.h`, `ast.h`,
 the parser and the other generated sources with new timestamps, so almost
 everything is recompiled. Use `build` for the first build, for new CMake
 options, and after editing a generator input (`src/libasr/ASR.asdl`,
-`grammar/AST.asdl`, `src/lfortran/parser/parser.yy`, the `.re` tokenizers,
+`grammar/AST.asdl`, `src/lfortran/parser/ll_parser.ll`, the `.re` tokenizers,
 `src/libasr/wasm_instructions.txt`, the generator scripts or
 `src/server/generator/`); `rebuild` would compile stale generated sources.
 
@@ -654,7 +654,7 @@ The [Pixi workflow](#pixi-recommended) builds from Git with every dependency
 installed for you. To build from Git with dependencies you provide yourself,
 install the packages that `pixi.toml` lists for the `build` feature and the
 `llvm<N>` feature of the LLVM version you want, at the pinned versions, with
-your package manager. These include Python, CMake, Ninja, `re2c`, `bison`,
+your package manager. These include Python, CMake, Ninja, `re2c`,
 `zlib`, `zstd-static` and `llvmdev`; on Linux also a C/C++ compiler and
 `libunwind` (LLVM 12 and newer). In Ubuntu, you can also install `binutils-dev`
 for stacktraces.
@@ -664,7 +664,7 @@ Clone the LFortran git repository:
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
-Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`; run
+Generate files that are needed for the build (this step depends on `re2c` and `python`; run
 `PYTHON=python3 ./build0.sh` if your system only provides `python3`):
 ```bash
 ./build0.sh
@@ -861,7 +861,6 @@ The instructions from git are to be used when developing LFortran itself.
 minimum dependencies necessary for installing this repository in development
 mode,
 
-- [Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)
 - [LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)
 - [re2c - 2.0.3](https://re2c.org/install/install.html)
 - [binutils - 2.31.90](ftp://sourceware.org/pub/binutils/snapshots/binutils-2.31.90.tar.xz) - Make sure that you should enable the required options related to this dependency to build the dynamic libraries (the ones ending with `.so`).

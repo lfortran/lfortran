@@ -3,7 +3,7 @@
 #include <libasr/config.h>
 #include <lfortran/ast_serialization.h>
 #include <lfortran/parser/parser.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/bwriter.h>

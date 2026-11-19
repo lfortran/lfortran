@@ -1,9 +1,5 @@
-syntax error: Expected program end
- --> tests/errors/program_without_line_cc.f90:1:1 - 2:8
+syntax error: End of file is unexpected here
+ --> tests/errors/program_without_line_cc.f90:3:1
   |
-1 |    print *, "OK"
-  |    ^^^^^^^^^^^^^...
-...
-  |
-2 |    contains
-  | ...^^^^^^^^ 
+3 | 
+  | ^ 

@@ -202,12 +202,6 @@ jobs:
         shell: bash -e {0}
         run: python ci/test_ci.py
 
-      - name: Check Bison Grammar for Essential Conflicts
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
-        shell: bash -e {0}
-        run: |
-          ./ci/grammar_conflicts.sh
-
       # Run last among history checks. Binary script checks out commits in PR history.
       - name: Check for Added Binary Files
         shell: bash -e {0}

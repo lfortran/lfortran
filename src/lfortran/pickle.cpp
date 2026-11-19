@@ -2,7 +2,7 @@
 
 #include <lfortran/pickle.h>
 #include <lfortran/parser/parser.h>
-#include <lfortran/parser/parser.tab.hh>
+#include <lfortran/parser/tokens.h>
 #include <libasr/string_utils.h>
 
 using LCompilers::LFortran::AST::ast_t;
