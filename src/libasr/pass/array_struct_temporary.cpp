@@ -5452,6 +5452,23 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         return exprs_with_target.find(*current_expr) != exprs_with_target.end();
     }
 
+    // Whether `value`, computed into `target`, may read the storage of
+    // `target` while it writes it: it names the variable of `target`, or
+    // an array pointer that may point into `target`, which is a pointer or
+    // a target, e.g. `e = cshift(q, 1)` after `q => e`.
+    bool may_value_overlap_target(ASR::expr_t* target, ASR::expr_t* value) {
+        if( is_common_symbol_present_in_lhs_and_rhs(al, target, value,
+                dummies_sharing_actual) ) {
+            return true;
+        }
+        ASR::expr_t* designator = ASRUtils::get_past_array_physical_cast(target);
+        if( ASR::is_a<ASR::ArraySection_t>(*designator) ) {
+            designator = ASR::down_cast<ASR::ArraySection_t>(designator)->m_v;
+        }
+        return !is_unaliased_designator(designator) &&
+            can_rhs_refer_to_lhs(al, target, value, dummies_sharing_actual);
+    }
+
     // The extent `merge(size(a, i), size(a, i + 1), i < dim)` of the result
     // of a reduction along a constant `dim` (see set_allocation_size) as the
     // size it selects, which a Debug check can evaluate. nullptr for an
@@ -6066,7 +6083,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                  ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
                  ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
                    ASRUtils::is_array(x->m_type)) &&
-                   is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr, dummies_sharing_actual))) ) ||
+                   may_value_overlap_target(target, *current_expr))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
                 (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ||
                 // The call associates its pointer result; the assignment copies from it.
@@ -6129,7 +6146,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             (is_current_expr_linked_to_target(exprs_with_target, current_expr) && ((
              ASRUtils::is_array(ASRUtils::expr_type(exprs_with_target[*current_expr].first)) ||
              ASRUtils::is_array(x->m_type)) &&
-             is_common_symbol_present_in_lhs_and_rhs(al, exprs_with_target[*current_expr].first, *current_expr, dummies_sharing_actual)))
+             may_value_overlap_target(exprs_with_target[*current_expr].first, *current_expr)))
         ) {
             // x = transpose(x), where 'x' is user-variable
             // needs have a temporary, there might be more
