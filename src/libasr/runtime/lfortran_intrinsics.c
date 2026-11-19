@@ -15641,22 +15641,34 @@ static void store_formatted_read_int(void* ptr, int32_t type_code, int64_t value
     }
 }
 
+// Copy the numeric input field `field` to `out` (which may be `field` itself)
+// with its blanks processed, and return the new length. blank_mode: 0 = BN
+// (blank null - ignore blanks), 1 = BZ (blank zero - ignore the leading
+// blanks, treat the others as zeros, so "  -1 " reads as "-10").
+static int process_numeric_field_blanks(const char* field, int field_len,
+        char* out, int blank_mode)
+{
+    int j = 0;
+    for (int i = 0; i < field_len; i++) {
+        if (field[i] != ' ') {
+            out[j++] = field[i];
+        } else if (blank_mode == 1 && j > 0) {
+            out[j++] = '0';
+        }
+    }
+    out[j] = '\0';
+    return j;
+}
+
 // blank_mode: 0 = BN (blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
 static void parse_integer_from_buffer(char* buffer, int field_len,
         void* int_ptr, int32_t type_code, int blank_mode, bool* error)
 {
     // Process buffer according to blank mode
-    char* processed = (char*)internal_malloc(field_len + 1);
-    int j = 0;
-    for (int i = 0; i < field_len; i++) {
-        if (buffer[i] == ' ') {
-            if (blank_mode == 1) processed[j++] = '0';
-        } else {
-            processed[j++] = buffer[i];
-        }
-    }
-    processed[j] = '\0';
-    if (blank_mode == 0 && j == 0) {
+    char* processed = (char*)internal_malloc(field_len + 2);
+    int j = process_numeric_field_blanks(buffer, field_len, processed,
+        blank_mode);
+    if (j == 0) {
         processed[0] = '0';
         processed[1] = '\0';
     }
@@ -16711,18 +16723,8 @@ static bool read_and_parse_real_field(InputSource *inputSource, void* elem_ptr,
             consumed_newline, &buffer, &field_len, pad_no)) {
         return false;
     }
-    if (blank_mode == 0) {
-        int write_idx = 0;
-        for (int ri = 0; ri < field_len; ri++) {
-            if (buffer[ri] != ' ') buffer[write_idx++] = buffer[ri];
-        }
-        buffer[write_idx] = '\0';
-        field_len = write_idx;
-    } else if (blank_mode == 1) {
-        for (int ri = 0; ri < field_len; ri++) {
-            if (buffer[ri] == ' ') buffer[ri] = '0';
-        }
-    }
+    field_len = process_numeric_field_blanks(buffer, field_len, buffer,
+        blank_mode);
     if (decimal_mode == 1) {
         for (int ri = 0; ri < field_len; ri++) {
             if (buffer[ri] == ',') { buffer[ri] = '.'; break; }
