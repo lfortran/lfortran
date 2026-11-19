@@ -4119,6 +4119,7 @@ def add_virtual_visitor(text, name, base_methods):
     emit("{")
     emit("public:")
     emit("    using %s::%sStatic;" % (static, name))
+    emit("    virtual ~%sVirtual() = default;" % name)
     for ret, method, params in methods:
         emit("    virtual %s %s(%s);" % (ret, method, parameter_names(params)[0]))
     emit("};")
@@ -4173,6 +4174,7 @@ def add_virtual_methods(text):
     emit("{")
     emit("public:")
     emit("    using Base::Base;")
+    emit("    virtual ~BaseVisitorVirtual() = default;")
     for ret, method, params in methods:
         emit("    virtual %s %s(%s);" % (ret, method, parameter_names(params)[0]))
     emit("};")
