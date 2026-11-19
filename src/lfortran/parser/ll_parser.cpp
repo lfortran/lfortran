@@ -247,8 +247,6 @@ struct LL {
         return v;
     }
 
-    ast_t* expr() { return binary(1); }
-
     // "(" expr ")", a complex constant, an implied do loop or a conditional
     // expression
     ast_t* parenthesized() {
@@ -502,18 +500,6 @@ struct LL {
         do_end = i;
         do_end_label = label;
         return v;
-    }
-
-    ast_t* assignment_statement() {
-        size_t s = i;
-        ast_t *x = designator();
-        int op = K[i];
-        i++;
-        ast_t *y = expr();
-        Location l = span(s);
-        if (op == TK_ARROW) return ASSOCIATE(x, y, l);
-        if (op == TK_COLON_EQUAL) return INFER_ASSIGNMENT(x, y, l);
-        return ASSIGNMENT(x, y, l);
     }
 
     Vec<ast_t*> data_sets() {
@@ -1332,19 +1318,32 @@ void ll_tokenize(Allocator &al, const std::string &input,
         t.source = &input;
     }
     tok.set_string(*t.source);
-    // A token takes at least one character; the arrays end with several
-    // END_OF_FILE tokens, so that the parser can look ahead without checks
-    size_t max = t.source->size() + 8;
-    if (t.kind.size() < max) {
-        t.kind.resize(max);
-        t.value.resize(max);
-        t.loc.resize(max);
+    // The arrays end with several END_OF_FILE tokens, so that the parser can
+    // look ahead without checks. They grow as needed: a token takes several
+    // characters on average, and the arrays are not worth clearing for the
+    // one token per character that is possible.
+    const size_t margin = 8;
+    size_t capacity = t.kind.size();
+    if (capacity < t.source->size() / 4 + margin) {
+        capacity = t.source->size() / 4 + margin;
+        t.kind.resize(capacity);
+        t.value.resize(capacity);
+        t.loc.resize(capacity);
     }
     int *K = t.kind.data();
     YYSTYPE *V = t.value.data();
     Location *L = t.loc.data();
     size_t n = 0;
     for (;;) {
+        if (n + margin > capacity) {
+            capacity *= 2;
+            t.kind.resize(capacity);
+            t.value.resize(capacity);
+            t.loc.resize(capacity);
+            K = t.kind.data();
+            V = t.value.data();
+            L = t.loc.data();
+        }
         int k = tok.lex(al, V[n], L[n], diagnostics, continue_compilation);
         K[n] = k;
         n++;

@@ -56,10 +56,13 @@ Declarations
     %operators NAME OPERAND
         left 8 "+" => ADD(x, y, @$)
         right 11 "**" => POW(x, y, @$)
+        prefix 11 "-" => UNARY_MINUS(x, @$)
     %end
-        A function NAME(min_prec) that parses binary operators by precedence
+        A function NAME(min_prec = 1) that parses expressions by precedence
         climbing; the operands are parsed by OPERAND. An action combines the
-        operands `x` and `y`; `$op` is the value of the operator token.
+        operands `x` and `y`; `$op` is the value of the operator token. The
+        operand `x` of a prefix operator is NAME(its precedence): all that
+        binds at least that tightly.
 
 Rules
 -----
@@ -542,7 +545,7 @@ def read_grammar(filename, tokens):
             ops = []
             j = i + 1
             while lines[j].strip() != "%end":
-                m = re.match(r'\s*(left|right)\s+(\d+)\s+(\S+)\s+=>\s*(.*)$',
+                m = re.match(r'\s*(left|right|prefix)\s+(\d+)\s+(\S+)\s+=>\s*(.*)$',
                     lines[j])
                 if not m:
                     error(j + 1, "bad operator line")
@@ -1381,7 +1384,9 @@ class Generator:
                     self.emit(3, "return;")
             self.emit(2, "}")
 
-    def gen_operators(self, name, operand, ops):
+    def gen_operators(self, name, operand, all_ops):
+        ops = [op for op in all_ops if op[0] != "prefix"]
+        prefix = [op for op in all_ops if op[0] == "prefix"]
         self.emit(1, "static int %s_precedence(int t) {" % name)
         self.emit(2, "switch (t) {")
         by_prec = {}
@@ -1395,9 +1400,22 @@ class Generator:
         self.emit(1, "}")
         self.emit(0, "")
         right = sorted(set(p for a, p, t, c in ops if a == "right"))
-        self.emit(1, "ast_t* %s(int min_prec) {" % name)
+        self.emit(1, "ast_t* %s(int min_prec = 1) {" % name)
         self.emit(2, "size_t _s = i;")
-        self.emit(2, "ast_t *x = %s();" % operand)
+        self.emit(2, "ast_t *x;")
+        self.emit(2, "switch (K[i]) {")
+        for assoc, prec, tok, action in prefix:
+            action = action.replace("@$", "l").replace("$op",
+                "V[_s].%s" % self.tokens.type[tok])
+            self.emit(3, "case %s: {" % tok)
+            self.emit(4, "i++;")
+            self.emit(4, "x = %s(%d);" % (name, prec))
+            self.emit(4, "Location l = span(_s);")
+            self.emit(4, "x = %s;" % action)
+            self.emit(4, "break;")
+            self.emit(3, "}")
+        self.emit(3, "default: x = %s();" % operand)
+        self.emit(2, "}")
         self.emit(2, "for (;;) {")
         self.emit(3, "int t = K[i];")
         self.emit(3, "int prec = %s_precedence(t);" % name)

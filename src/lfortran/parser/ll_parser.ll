@@ -51,8 +51,6 @@
 %extern id -> ast_t* token: NAME
 // One or more separators (new lines, comments, `;`); the list is the trivia
 %extern sep -> Vec<ast_t*> first: SEP
-// An expression: binary(1)
-%extern expr -> ast_t*
 // A variable, an array element or section, a component, a function call
 %extern designator -> ast_t* first: NAME
 // "(" expr ")", a complex constant, an implied do loop or a conditional
@@ -61,8 +59,6 @@
 // A statement with its label and the separator after it; null if no
 // statement starts here
 %extern statement -> ast_t*
-// expr "=" expr, expr "=>" expr or expr ":=" expr
-%extern assignment_statement -> ast_t* first: NAME
 // CALL statement
 %extern call_statement -> ast_t* first: KW_CALL
 // The data_set_list of a DATA statement; an object of one set, which can be
@@ -101,13 +97,16 @@
 // ----------------------------------------------------------------------------
 // Expressions
 
-%operators binary prefix
+// The operand of a unary minus or plus is everything that binds tighter than
+// they do (just `**`); the operand of `.not.` is a comparison or tighter
+%operators expr primary
     left 1 TK_DEF_OP => DEFOP(x, $op, y, @$)
     left 2 ".eqv." => EQV(x, y, @$)
     left 2 ".neqv." => NEQV(x, y, @$)
     left 3 ".or." => OR(x, y, @$)
     left 3 ".xor." => XOR(x, y, @$)
     left 4 ".and." => AND(x, y, @$)
+    prefix 6 ".not." => NOT(x, @$)
     left 6 "==" => EQ(x, y, @$)
     left 6 "/=" => NE(x, y, @$)
     left 6 "<" => LT(x, y, @$)
@@ -119,18 +118,11 @@
     left 8 "-" => SUB(x, y, @$)
     left 9 "*" => MUL(x, y, @$)
     left 9 "/" => DIV(x, y, @$)
+    prefix 11 "-" => UNARY_MINUS(x, @$)
+    prefix 11 "+" => UNARY_PLUS(x, @$)
     right 11 "**" => POW(x, y, @$)
+    prefix 12 TK_DEF_OP => UNARY_DEFOP($op, x, @$)
 %end
-
-// The operand of a unary minus or plus is everything that binds tighter than
-// they do (just `**`); the operand of `.not.` is a comparison or tighter
-rule prefix -> ast_t*
-    : "-" x=binary(11)              => UNARY_MINUS(x, @$)
-    | "+" x=binary(11)              => UNARY_PLUS(x, @$)
-    | ".not." x=binary(6)           => NOT(x, @$)
-    | op=TK_DEF_OP x=primary        => UNARY_DEFOP($op, x, @$)
-    | primary
-    ;
 
 rule primary -> ast_t*
     : designator
@@ -211,6 +203,14 @@ rule coarray_arg -> CoarrayArg*
 
 // ----------------------------------------------------------------------------
 // Statements
+
+rule assignment_statement -> ast_t*
+    : x=designator
+        ( "=" y=expr                => ASSIGNMENT(x, y, @$)
+        | "=>" y=expr               => ASSOCIATE(x, y, @$)
+        | ":=" y=expr               => INFER_ASSIGNMENT(x, y, @$)
+        )
+    ;
 
 // A statement without its label and the separator after it
 rule statement1? -> ast_t*
