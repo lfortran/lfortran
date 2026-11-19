@@ -2,6 +2,8 @@ module realloc_lhs_move_01_m
 implicit none
 type :: tensor_t
     real(4), dimension(:), allocatable :: values_
+contains
+    procedure :: __libasr_intent_out_reset => __libasr_intent_out_reset_tensor_t
 end type tensor_t
 
 contains
@@ -421,6 +423,14 @@ end if
 print *, "ok"
 
 contains
+
+subroutine __libasr_intent_out_reset_tensor_t(self)
+    use realloc_lhs_move_01_m, only: 1_tensor_t => tensor_t
+    type(1_tensor_t), intent(inout) :: self
+    if (Allocated(self%values_)) then
+        deallocate(self%values_)
+    end if
+end subroutine __libasr_intent_out_reset_tensor_t
 
 real(4) function _lcompilers_real_i32(x)
     integer(4), intent(in) :: x

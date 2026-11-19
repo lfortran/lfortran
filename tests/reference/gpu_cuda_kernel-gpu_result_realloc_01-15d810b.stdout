@@ -4,7 +4,7 @@ struct data_t {
     long v;
 };
 
-__device__ inline void column_device_gt_gpu_60(float* a, int __1a, int __2a, int i, float* v) {
+__device__ inline void column_device_gt_gpu_62(float* a, int __1a, int __2a, int i, float* v) {
     float* __libasr_created_real_binop_right_;
     int __libasr_index_0_;
     int __libasr_index_0_1;
@@ -35,7 +35,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
         int __libasr_index_0_1;
         float y[3];
         __libasr_created__result_metadata_ = 3;
-        column_device_gt_gpu_60(a, 3, 4, i__dc, __libasr_created__subroutine_from_function_);
+        column_device_gt_gpu_62(a, 3, 4, i__dc, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
         #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 3 - 1); __libasr_index_0_++) {
@@ -217,7 +217,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_21gpu_
     }
 }
 
-__device__ inline void fixed_device_gt_gpu_61(float* c, float* v) {
+__device__ inline void fixed_device_gt_gpu_63(float* c, float* v) {
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
@@ -244,7 +244,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_21gpu_
         int __libasr_index_0_;
         int __libasr_index_0_1;
         float y[3];
-        fixed_device_gt_gpu_61(c, __libasr_created__subroutine_from_function_);
+        fixed_device_gt_gpu_63(c, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
         #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 3 - 1); __libasr_index_0_++) {
