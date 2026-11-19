@@ -13,6 +13,8 @@
 #include <vector>
 #include <utility>
 #include <set>
+#include <libasr/pass/intrinsic_function_registry_util.h>
+#include <libasr/pass/intrinsic_array_functions.h>
 
 namespace LCompilers {
 

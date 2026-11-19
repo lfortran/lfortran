@@ -81,6 +81,9 @@ set(SRC
     pass/div_to_mul.cpp
     pass/replace_symbolic.cpp
     pass/intrinsic_function.cpp
+    pass/intrinsic_function_registry.cpp
+    pass/intrinsic_array_function_registry.cpp
+    pass/intrinsic_subroutine_registry.cpp
     pass/intrinsic_subroutine.cpp
     pass/loop_fusion.cpp
     pass/sign_from_value.cpp

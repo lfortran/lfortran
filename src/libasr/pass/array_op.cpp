@@ -12,6 +12,8 @@
 #include <libasr/asr_builder.h>
 
 #include <vector>
+#include <libasr/pass/intrinsic_array_functions.h>
+#include <libasr/pass/intrinsic_function_registry_util.h>
 
 namespace LCompilers {
 
