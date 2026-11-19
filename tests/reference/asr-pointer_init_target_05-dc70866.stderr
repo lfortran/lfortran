@@ -1,0 +1,8 @@
+semantic error: type mismatch in pointer initialization of `q`: the pointer is type(t) and the target is type(u)
+ --> tests/errors/pointer_init_target_05.f90:9:26
+  |
+9 | type(t), pointer :: q => g(2)
+  |                          ^^^^ 
+  |
+8 | type(u), target :: g(3)
+  |                    ~~~~ target declared here

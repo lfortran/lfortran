@@ -1,0 +1,5 @@
+semantic error: every subscript of the pointer initialization target of `q` must be a constant expression
+ --> tests/errors/pointer_init_target_02.f90:7:28
+  |
+7 | type(t), pointer :: q => g(n)
+  |                            ^ 

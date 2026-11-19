@@ -1,0 +1,13 @@
+{
+    "basename": "asr-pointer_init_target_03-f2d6798",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/pointer_init_target_03.f90",
+    "infile_hash": "3f2eab79eb3617e21546416e958ab437a7ca233987115c8b0c47e35e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-pointer_init_target_03-f2d6798.stderr",
+    "stderr_hash": "3fdc7cbea3585de742af290dfbb5d5cb9decb5212f3f742f4d7bce47",
+    "returncode": 2
+}
