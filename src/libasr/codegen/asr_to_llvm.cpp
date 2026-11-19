@@ -2848,8 +2848,36 @@ public:
         return tmp;
     }
 
+    // Assigns `message` to the ERRMSG= variable `errmsg` of an ALLOCATE or
+    // DEALLOCATE statement, if present, as if by intrinsic assignment
+    // (F2023 9.7.5).
+    void assign_errmsg(ASR::expr_t* errmsg, const std::string& message) {
+        if (errmsg == nullptr) {
+            return;
+        }
+        const Location& loc = errmsg->base.loc;
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t* len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            message.size(), int_type, ASR::integerbozType::Decimal));
+        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(errmsg)), len,
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t* value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, message), str_type));
+        int64_t ptr_loads_copy = ptr_loads;
+        llvm::Value* tmp_copy = tmp;
+        this->visit_stmt(*ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            errmsg, value, nullptr, false, false)));
+        ptr_loads = ptr_loads_copy;
+        tmp = tmp_copy;
+    }
+
     template <typename T>
-    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
+    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc,
+            ASR::expr_t* m_source = nullptr, ASR::expr_t* m_errmsg = nullptr) {
+        const std::string errmsg_already_allocated =
+            "attempt to allocate an already allocated object";
         llvm::Value* stat_target = nullptr;
         if (m_stat) {
             int64_t ptr_loads_copy = ptr_loads;
@@ -2864,6 +2892,15 @@ public:
             llvm::Value* stat_zero = llvm::ConstantInt::get(stat_llvm_type, 0);
             builder->CreateStore(stat_zero, stat_target);
         }
+        // A failed allocation of the storage of an allocate-object branches
+        // to `failure_bb` (see LLVMUtils::check_allocation), which skips the
+        // remaining allocate-objects.
+        llvm::BasicBlock* failure_bb = llvm::BasicBlock::Create(context,
+            "allocate.failed", builder->GetInsertBlock()->getParent());
+        llvm::BasicBlock* saved_failure_bb = llvm_utils->allocate_failure_bb;
+        llvm::Value* saved_failure_size = llvm_utils->allocate_failure_size;
+        llvm_utils->allocate_failure_bb = failure_bb;
+        llvm_utils->allocate_failure_size = nullptr;
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t curr_arg = x.m_args[i];
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
@@ -2910,6 +2947,7 @@ public:
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
+                        llvm_utils->check_allocation(malloc_ptr, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                         builder->CreateStore(builder->CreateBitCast(
                             malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
@@ -2932,6 +2970,7 @@ public:
                                 [&]() {
                                     llvm::Type* stat_llvm_type = llvm::Type::getIntNTy(context, 8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
                                     builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+                                    assign_errmsg(m_errmsg, errmsg_already_allocated);
                                 },
                                 [&]() {
                                     do_scalar_alloc();
@@ -3075,6 +3114,7 @@ public:
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg.m_a, curr_arg_m_a_type, llvm_utils->getIntType(4));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
+                        llvm_utils->check_allocation(malloc_ptr, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), malloc_size, llvm::MaybeAlign());
                         llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, curr_arg_m_a_type, module.get());
                         llvm::Value* bitcasted_malloc_ptr = builder->CreateBitCast(
@@ -3129,6 +3169,7 @@ public:
 
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(
                             context, *module, *builder, malloc_size);
+                        llvm_utils->check_allocation(malloc_ptr, malloc_size);
                         builder->CreateMemSet(malloc_ptr, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
                                     malloc_size, llvm::MaybeAlign());
                         if(ASRUtils::is_string_only(dest_asr_type)) { // String type has a state to be cloned.
@@ -3370,12 +3411,30 @@ public:
                             },
                             []() {});
                     }
-                    if (ASRUtils::is_array(array_type) && ASRUtils::is_character(*array_type)) {
+                    bool is_character_array = ASRUtils::is_array(array_type)
+                        && ASRUtils::is_character(*array_type);
+                    // The standard requires a pointer that is not successfully
+                    // allocated to retain its previous association, but the
+                    // descriptor is updated before the data is allocated.
+                    // Disassociate the pointer first (as gfortran does), so that
+                    // a failure never leaves it with half-updated bounds.
+                    // Retaining the previous association is a follow-up.
+                    bool disassociate_pointer = is_pointer_arg && m_stat;
+                    if (is_character_array || disassociate_pointer) {
                         llvm::Value* desc_ptr = llvm_utils->CreateLoad2(
                             type->getPointerTo(), (x_arr && x_arr->getType() != nullptr) ? x_arr : ptr_val);
-                        llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
-                            tmp_expr, ASRUtils::extract_type(array_type), module.get());
-                        llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                        if (is_character_array) {
+                            llvm::Type* llvm_str_desc_type = llvm_utils->get_type_from_ttype_t_util(
+                                tmp_expr, ASRUtils::extract_type(array_type), module.get());
+                            llvm_utils->ensure_string_descriptor_on_heap(type, desc_ptr, llvm_str_desc_type);
+                            if (disassociate_pointer) {
+                                llvm_utils->disassociate_own_string_descriptor(type, desc_ptr,
+                                    llvm_str_desc_type);
+                            }
+                        } else {
+                            arr_descr->reset_is_allocated_flag(type, desc_ptr, llvm_utils->get_el_type(
+                                tmp_expr, ASRUtils::extract_type(alloc_arg_type), module.get()));
+                        }
                     }
                     // A polymorphic array allocated with SOURCE= or MOLD= of a
                     // polymorphic array takes the dynamic type of the mold, which
@@ -3504,6 +3563,7 @@ public:
                         [&]() {
                             llvm::Type* stat_llvm_type = llvm::Type::getIntNTy(context, 8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
                             builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+                            assign_errmsg(m_errmsg, errmsg_already_allocated);
                         },
                         [&]() {
                             do_array_alloc();
@@ -3513,6 +3573,39 @@ public:
                 }
             }
         }
+        llvm::Value* failure_size = llvm_utils->allocate_failure_size;
+        llvm_utils->allocate_failure_bb = saved_failure_bb;
+        llvm_utils->allocate_failure_size = saved_failure_size;
+        if (failure_bb->use_empty()) {
+            failure_bb->eraseFromParent();
+            return;
+        }
+        llvm::BasicBlock* end_bb = llvm::BasicBlock::Create(context, "allocate.end");
+        if (LLVM::get_terminator(builder->GetInsertBlock()) == nullptr) {
+            builder->CreateBr(end_bb);
+        }
+        builder->SetInsertPoint(failure_bb);
+        if (m_stat) {
+            // A processor-dependent positive value (F2023 9.7.4), distinct
+            // from the 1 of an already allocated allocate-object.
+            const int64_t stat_allocation_failed = 2;
+            llvm::Type* stat_llvm_type = llvm::Type::getIntNTy(context,
+                8*ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(m_stat)));
+            builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type,
+                stat_allocation_failed), stat_target);
+            assign_errmsg(m_errmsg, "allocation failed: out of memory");
+        } else {
+            llvm::Value* size = llvm_utils->CreateLoad2(
+                llvm::Type::getInt64Ty(context), failure_size);
+            llvm_utils->generate_runtime_error(llvm::ConstantInt::getTrue(context),
+                "allocation of %lld bytes failed: out of memory",
+                {LLVMUtils::RuntimeLabel("not enough memory for this allocation",
+                    {x.base.base.loc})},
+                infile,
+                location_manager,
+                size);
+        }
+        llvm_utils->start_new_block(end_bb);
     }
 
     // The type identifier of the dynamic type of `arg`, whose value is
@@ -3566,7 +3659,7 @@ public:
 
     void visit_Allocate(const ASR::Allocate_t& x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        visit_AllocateUtil(x, x.m_stat, false, x.m_source);
+        visit_AllocateUtil(x, x.m_stat, false, x.m_source, x.m_errmsg);
     }
 
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
@@ -3822,7 +3915,8 @@ public:
     }
 
     template <typename T>
-    void visit_Deallocate(const T& x, ASR::expr_t* m_stat=nullptr) {
+    void visit_Deallocate(const T& x, ASR::expr_t* m_stat=nullptr,
+            ASR::expr_t* m_errmsg=nullptr) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         llvm::Function* free_fn = llvm_utils->_Deallocate();
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
@@ -3839,6 +3933,7 @@ public:
         auto set_stat_not_allocated = [=]() {
             if (stat_target) {
                 builder->CreateStore(llvm::ConstantInt::get(stat_llvm_type, 1), stat_target);
+                assign_errmsg(m_errmsg, "attempt to deallocate an unallocated object");
             }
         };
         for( size_t i = 0; i < x.n_vars; i++ ) {
@@ -4063,7 +4158,7 @@ public:
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t& x) {
-        visit_Deallocate(x, x.m_stat);
+        visit_Deallocate(x, x.m_stat, x.m_errmsg);
     }
 
     void visit_ListConstant(const ASR::ListConstant_t& x) {

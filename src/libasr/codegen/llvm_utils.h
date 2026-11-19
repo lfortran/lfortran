@@ -488,6 +488,23 @@ class ASRToLLVMVisitor;
 
             void start_new_block(llvm::BasicBlock *bb);
 
+            /*
+             * Set while an ALLOCATE statement is lowered: the block that
+             * handles a failed allocation of the storage of one of its
+             * allocate-objects (it assigns STAT= or initiates error
+             * termination), and the variable that holds the requested
+             * number of bytes. `allocate_failure_bb` is nullptr elsewhere.
+             */
+            llvm::BasicBlock* allocate_failure_bb = nullptr;
+            llvm::Value* allocate_failure_size = nullptr;
+
+            /*
+             * Branches to `allocate_failure_bb` when `ptr`, the result of
+             * an allocation of `size` bytes, is null although `size` is not
+             * zero. Does nothing outside an ALLOCATE statement.
+             */
+            void check_allocation(llvm::Value* ptr, llvm::Value* size);
+
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
 

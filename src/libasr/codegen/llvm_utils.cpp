@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/codegen/llvm_compat.h>
+#include <llvm/IR/MDBuilder.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Local.h>
@@ -2479,6 +2480,25 @@ namespace LCompilers {
         builder->SetInsertPoint(bb);
     }
 
+    void LLVMUtils::check_allocation(llvm::Value* ptr, llvm::Value* size) {
+        llvm::Function* fn = builder->GetInsertBlock()->getParent();
+        if (allocate_failure_bb == nullptr || allocate_failure_bb->getParent() != fn) {
+            return;
+        }
+        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+        size = builder->CreateSExtOrTrunc(size, i64);
+        if (allocate_failure_size == nullptr) {
+            allocate_failure_size = CreateAlloca(i64, nullptr, "allocate_failure_size");
+        }
+        builder->CreateStore(size, allocate_failure_size);
+        llvm::Value* failed = builder->CreateAnd(builder->CreateIsNull(ptr),
+            builder->CreateICmpNE(size, llvm::ConstantInt::get(i64, 0)));
+        llvm::BasicBlock* allocated_bb = llvm::BasicBlock::Create(context, "allocate.ok", fn);
+        llvm::MDNode* unlikely = llvm::MDBuilder(context).createBranchWeights(1, 1 << 20);
+        builder->CreateCondBr(failed, allocate_failure_bb, allocated_bb, unlikely);
+        builder->SetInsertPoint(allocated_bb);
+    }
+
     llvm::Value* LLVMUtils::lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                              std::string runtime_func_name, llvm::Module& module)
     {
@@ -2594,6 +2614,7 @@ namespace LCompilers {
             llvm::Value *mem_to_allocate = llvm::ConstantInt::get(context,
                     llvm::APInt(64, std::max(compileTime_len, (int64_t) 1) * char_kind));
             mem_allocated = LLVM::lfortran_malloc(context, *module, *builder, mem_to_allocate);
+            check_allocation(mem_allocated, mem_to_allocate);
         } else {
             /*
                 --> Handle RunTime Length <--
@@ -2604,6 +2625,7 @@ namespace LCompilers {
                 len = builder->CreateMul(len, llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), char_kind));
             }
             mem_allocated = LLVM::lfortran_string_malloc(context, *module, *builder, len);
+            check_allocation(mem_allocated, len);
         }
 
         /* Store Allocated Memory */
@@ -2933,6 +2955,7 @@ namespace LCompilers {
         llvm::Value* allocated_mem = realloc ?
             LLVMArrUtils::lfortran_realloc(context, *module, *builder, get_string_data(str_type, str), whole_memory_needed)
             : LLVMArrUtils::lfortran_malloc(context, *module, *builder, whole_memory_needed);
+        check_allocation(allocated_mem, whole_memory_needed);
         builder->CreateStore(allocated_mem, get_string_data(str_type, str, true));
     }
 
@@ -10065,7 +10088,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
         llvm::Type* const llvm_underlying_struct_type = llvm_utils->getStructType(data_type_struct, llvm_utils->module);
         
-        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr.
+        // Step 1: ONE class wrapper, stored in array_data_ptr after Step 2.
         // An array that is reallocated keeps its wrapper, and its data is
         // resized below, so that neither of them leaks.
         const int64_t class_wrapper_size = llvm::DataLayout(llvm_utils->module->getDataLayout()).getTypeAllocSize(llvm_class_type);
@@ -10102,10 +10125,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             });
             class_wrapper = builder->CreateLoad(class_wrapper_ptr_type, wrapper_var);
             existing_data = builder->CreateLoad(llvm_utils->i8_ptr, data_var);
-        } else {
-            class_wrapper = allocate_class_wrapper();
         }
-        builder->CreateStore(class_wrapper, array_data_ptr);
         
         // Step 2: Allocate the underlying data array using proper subclass size
         const int64_t underlying_struct_alloc_size = llvm::DataLayout(llvm_utils->module->getDataLayout()).getTypeAllocSize(llvm_underlying_struct_type);
@@ -10118,8 +10138,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         } else {
             data_mem = LLVM::lfortran_malloc(context, *llvm_utils->module, *builder, total_bytes_to_alloc);
         }
+        // The wrapper is allocated and stored once the data is allocated, so
+        // that a failed allocation leaves the array unallocated.
+        llvm_utils->check_allocation(data_mem, total_bytes_to_alloc);
         builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
             total_bytes_to_alloc, llvm::MaybeAlign());
+        if (!realloc) {
+            class_wrapper = allocate_class_wrapper();
+        }
+        builder->CreateStore(class_wrapper, array_data_ptr);
         
         llvm::Value* data_field_ptr = llvm_utils->CreateGEP2(llvm_class_type, class_wrapper, 1);
         llvm::Value* bitcasted_data = data_mem;
@@ -10167,14 +10194,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             throw LCompilers::CodeGenError("Unsupported type-spec for unlimited polymorphic array allocation");
         }
 
-        // Step 1: Allocate ONE class wrapper and store it in array_data_ptr
+        // Step 1: ONE class wrapper, stored in array_data_ptr after Step 2
         int64_t class_wrapper_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_class_type);
-        llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *module, *builder,
-            llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
-        builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
-            class_wrapper_size, llvm::MaybeAlign());
-        llvm::Value* class_wrapper = builder->CreateBitCast(wrapper_mem, llvm_class_type->getPointerTo());
-        builder->CreateStore(class_wrapper, array_data_ptr);
+        auto allocate_class_wrapper = [&]() -> llvm::Value* {
+            llvm::Value* wrapper_mem = LLVM::lfortran_malloc(context, *module, *builder,
+                llvm::ConstantInt::get(context, llvm::APInt(64, class_wrapper_size)));
+            builder->CreateMemSet(wrapper_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
+                class_wrapper_size, llvm::MaybeAlign());
+            return builder->CreateBitCast(wrapper_mem, llvm_class_type->getPointerTo());
+        };
+        llvm::Value* class_wrapper = nullptr;
+        if (realloc) {
+            class_wrapper = allocate_class_wrapper();
+        }
 
         // Step 2: Allocate the data array with the intrinsic element type
         uint64_t element_size = llvm::DataLayout(module->getDataLayout()).getTypeAllocSize(llvm_element_type);
@@ -10191,6 +10223,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         } else {
             data_mem = LLVM::lfortran_malloc(context, *module, *builder, total_bytes);
         }
+        // The wrapper is allocated and stored once the data is allocated, so
+        // that a failed allocation leaves the array unallocated.
+        llvm_utils->check_allocation(data_mem, total_bytes);
+        if (!realloc) {
+            class_wrapper = allocate_class_wrapper();
+        }
+        builder->CreateStore(class_wrapper, array_data_ptr);
         builder->CreateMemSet(data_mem, llvm::ConstantInt::get(context, llvm::APInt(8, 0)),
             total_bytes, llvm::MaybeAlign());
 
