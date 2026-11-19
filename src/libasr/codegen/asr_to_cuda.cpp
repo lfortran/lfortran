@@ -151,14 +151,55 @@ struct CudaDialect {
             min_blocks = ", 1";
         } else if (lane_vectors > 0 && threads_per_block > 0
                 && threads_per_block <= 1536) {
-            int64_t registers = 8 + 8*lane_vectors;
-            int64_t blocks = std::max<int64_t>(1, std::min<int64_t>(
-                1536 / threads_per_block,
-                65536 / (threads_per_block*registers)));
-            min_blocks = ", " + std::to_string(blocks);
+            min_blocks = ", " + std::to_string(lane_vector_blocks(
+                threads_per_block, lane_vectors));
         }
+        return launch_bounds(threads_per_block, min_blocks);
+    }
+
+    // The blocks of a kernel whose lanes read vectors of 16 bytes that
+    // kernel_qualifier lets share a multiprocessor.
+    static int64_t lane_vector_blocks(int64_t threads_per_block,
+            int64_t lane_vectors) {
+        int64_t registers = 8 + 8*lane_vectors;
+        return std::max<int64_t>(1, std::min<int64_t>(
+            1536 / threads_per_block,
+            65536 / (threads_per_block*registers)));
+    }
+
+    static std::string launch_bounds(int64_t threads_per_block,
+            const std::string &min_blocks) {
         return "extern \"C\" __global__ void __launch_bounds__("
             + std::to_string(threads_per_block) + min_blocks + ") ";
+    }
+
+    // The qualifier of a second version of a kernel whose lanes read
+    // vectors of 16 bytes, held to the registers of the next step of
+    // occupancy, which lets more of its blocks share a multiprocessor, and
+    // the blocks: empty and zero when there is none. A thread is given
+    // registers in steps of 8, so the next step has 8 fewer than the
+    // bound of kernel_qualifier leaves. The runtime launches whichever
+    // version fills the waves of the multiprocessors better for the
+    // blocks of the launch (lfortran_gpu_cuda.c): on an H200, the q8
+    // matrix-vector product of 16,480 rows (4 per block, 14 or 16 blocks
+    // per multiprocessor, 2.23 or 1.95 waves of 132) took 28.0 us with 14
+    // and 27.0 with 16, while one of 34,816 rows (4.7 or 4.1 waves) took
+    // 52 and 55.
+    std::pair<std::string, int64_t> occupancy_variant(
+            int64_t threads_per_block, bool few_blocks,
+            int64_t lane_vectors) const {
+        if (emulate_cpu || hip || few_blocks || lane_vectors <= 0
+                || threads_per_block <= 0 || threads_per_block > 1536) {
+            return {"", 0};
+        }
+        int64_t blocks = lane_vector_blocks(threads_per_block, lane_vectors);
+        int64_t registers = 65536 / (threads_per_block*blocks) / 8 * 8 - 8;
+        if (registers < 32) return {"", 0};
+        int64_t more = std::min<int64_t>(1536 / threads_per_block,
+            65536 / (threads_per_block*registers));
+        if (more <= blocks) return {"", 0};
+        return {launch_bounds(threads_per_block, ", " + std::to_string(more)),
+            more};
     }
 
     // A kernel parameter is bound by position, not to a named buffer slot.
@@ -877,7 +918,9 @@ struct CudaDialect {
     }
 
     void emit_translation_unit_epilogue(std::stringstream &src,
-            const std::vector<std::string> &kernel_names) const {
+            const std::vector<std::string> &kernel_names,
+            const std::vector<std::pair<std::string, std::string>>
+                &variants) const {
         if (!emit_registrar) return;
         src << "\n// Auto-generated kernel registration\n";
         if (emulate_cpu) {
@@ -904,13 +947,23 @@ struct CudaDialect {
         if (kernel_names.empty()) return;
         src << "typedef void (*kernel_func_t)(void);\n";
         src << "extern \"C\" void lfortran_gpu_register_kernel("
-               "const char *name, kernel_func_t func);\n\n";
+               "const char *name, kernel_func_t func);\n";
+        if (!variants.empty()) {
+            src << "extern \"C\" void lfortran_gpu_register_kernel_variant("
+                   "const char *name, kernel_func_t func);\n";
+        }
+        src << "\n";
         src << "namespace {\n";
         src << "struct _lfortran_cuda_registrar {\n";
         src << "    _lfortran_cuda_registrar() {\n";
         for (auto &kname : kernel_names) {
             src << "        lfortran_gpu_register_kernel(\""
                 << kname << "\", (kernel_func_t)" << kname << ");\n";
+        }
+        // A second version of a kernel, after the kernel it is one of.
+        for (auto &v : variants) {
+            src << "        lfortran_gpu_register_kernel_variant(\""
+                << v.first << "\", (kernel_func_t)" << v.second << ");\n";
         }
         src << "    }\n";
         src << "} _lfortran_cuda_reg;\n";

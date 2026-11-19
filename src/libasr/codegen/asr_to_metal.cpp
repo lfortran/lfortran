@@ -58,6 +58,12 @@ struct MetalDialect {
         return "kernel void ";
     }
 
+    // A Metal kernel has one version.
+    std::pair<std::string, int64_t> occupancy_variant(int64_t /*threads*/,
+            bool /*few_blocks*/, int64_t /*lane_vectors*/) const {
+        return {"", 0};
+    }
+
     void emit_kernel_entry(std::stringstream &, const std::string &) const {}
 
     // A Metal kernel starts when the one before it is done.
@@ -238,7 +244,9 @@ struct MetalDialect {
             const std::vector<GpuKernelParam> & /*params*/) const {}
 
     void emit_translation_unit_epilogue(std::stringstream & /*src*/,
-            const std::vector<std::string> & /*kernel_names*/) const {}
+            const std::vector<std::string> & /*kernel_names*/,
+            const std::vector<std::pair<std::string, std::string>>
+                & /*variants*/) const {}
 };
 
 Result<std::string> asr_to_metal(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
