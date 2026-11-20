@@ -7177,6 +7177,10 @@ filename = "../integration_tests/allocatable_component_unnamed_unallocated_01.f9
 run = true
 
 [[test]]
+filename = "../integration_tests/allocatable_component_vector_subscript_unallocated_01.f90"
+run = true
+
+[[test]]
 filename = "infer_first_assignment_01.f90"
 asr = true
 options = "--infer"

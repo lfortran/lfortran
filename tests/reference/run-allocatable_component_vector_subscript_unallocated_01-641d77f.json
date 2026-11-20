@@ -1,0 +1,13 @@
+{
+    "basename": "run-allocatable_component_vector_subscript_unallocated_01-641d77f",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/allocatable_component_vector_subscript_unallocated_01.f90",
+    "infile_hash": "48e52efa641c0d5cde2cee02c9c664c6235d42bfef7a2a1afc91beae",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-allocatable_component_vector_subscript_unallocated_01-641d77f.stderr",
+    "stderr_hash": "fd9696eac6ff402827802ae1aae8aad9dce446b64d0104f837a6f7f7",
+    "returncode": 1
+}
