@@ -14015,7 +14015,9 @@ ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
             all_expr_evaluated = false;
         }
     }
-    if (all_expr_evaluated && n_args == 0) {
+    // A character array whose length is known only at runtime, as in
+    // `[character(len=n) :: 'a', 'bb']`, is not a constant.
+    if (all_expr_evaluated) {
         ASR::ttype_t* array_type = ASRUtils::type_get_past_pointer(a_type);
         ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(array_type);
         if (is_character(*array->m_type)) {
