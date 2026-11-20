@@ -14610,6 +14610,16 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     }
 }
 
+// Whether `dt` is the designator `object%component` of the procedure pointer
+// component `proc` itself, rather than the object the component belongs to.
+// The object can be a component too, as `o%in` in `call o%in%p()`.
+static bool is_procedure_component_designator(ASR::expr_t* dt, ASR::symbol_t* proc) {
+    return ASR::is_a<ASR::StructInstanceMember_t>(*dt) &&
+        ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructInstanceMember_t>(dt)->m_m) ==
+        ASRUtils::symbol_get_past_external(proc);
+}
+
 void insert_self_arg(
     Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t*& a_args, size_t& n_args,
@@ -14624,7 +14634,7 @@ void insert_self_arg(
     ASR::call_arg_t self_arg;
     self_arg.loc = a_dt->base.loc;
     if (ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(a_name)) &&
-        ASR::is_a<ASR::StructInstanceMember_t>(*a_dt)) {
+        is_procedure_component_designator(a_dt, a_name)) {
         self_arg.m_value = ASR::down_cast<ASR::StructInstanceMember_t>(a_dt)->m_v;
     } else {
         self_arg.m_value = a_dt;
@@ -14733,7 +14743,7 @@ ASR::asr_t* make_SubroutineCall_t_util(
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
         ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a_name))) &&
-        !ASR::is_a<ASR::StructInstanceMember_t>(*a_dt) ) {
+        !is_procedure_component_designator(a_dt, a_name) ) {
         a_dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, a_loc,
             a_dt, a_name, import_procedure_type(al, ASRUtils::duplicate_type(al,
                 ASRUtils::symbol_type(a_name)), current_scope), nullptr));
