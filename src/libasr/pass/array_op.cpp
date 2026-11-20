@@ -3463,6 +3463,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             // index into a buffer of the correct size.
             ASR::expr_t* underlying_target =
                 ASRUtils::get_past_array_physical_cast(xx.m_target);
+            bool did_realloc = false;
             if ((realloc_lhs ||
                  xx.m_realloc_lhs ||
                  should_auto_realloc_component_assignment(underlying_target)) &&
@@ -3471,7 +3472,24 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
                 ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
                 is_array_indexed_with_array_indices_check(xx.m_value)) {
-                insert_realloc_for_indexed_value(underlying_target, xx.m_value, loc);
+                did_realloc = insert_realloc_for_indexed_value(underlying_target, xx.m_value, loc);
+            }
+            if (bounds_checking && !did_realloc && !xx.m_move_allocation &&
+                (ASR::is_a<ASR::Var_t>(*underlying_target) ||
+                 ASR::is_a<ASR::StructInstanceMember_t>(*underlying_target)) &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
+                ASRUtils::is_array(ASRUtils::expr_type(underlying_target)) &&
+                ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
+                is_array_indexed_with_array_indices_check(xx.m_value)) {
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                ASR::expr_t* result = duplicator.duplicate_expr(underlying_target);
+                result->base.loc = xx.m_value->base.loc;
+                Vec<ASR::expr_t*> components;
+                components.reserve(al, 1);
+                components.push_back(al, result);
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+                    al, loc, duplicator.duplicate_expr(underlying_target),
+                    components.p, components.size(), nullptr, 0, xx.m_move_allocation)));
             }
             generate_loop_for_array_indexed_with_array_indices(
                 x, &(xx.m_target), &(xx.m_value), loc);
