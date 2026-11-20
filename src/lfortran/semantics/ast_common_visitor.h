@@ -5872,6 +5872,23 @@ public:
         }
     }
 
+    // Reports that a DATA statement value of type `value_type` cannot
+    // initialize an object of type `object_type`.
+    [[noreturn]] void data_value_type_error(ASR::ttype_t* object_type,
+            ASR::ttype_t* value_type, const Location& loc) {
+        std::string var_type = ASRUtils::type_to_str_fortran_symbol(
+            object_type, nullptr, true);
+        std::string val_type = ASRUtils::type_to_str_fortran_symbol(
+            value_type, nullptr, true);
+        diag.add(Diagnostic(
+            "Cannot initialize " + var_type + " variable with " + val_type +
+            " value in DATA statement",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})
+            }));
+        throw SemanticAbort();
+    }
+
     void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
@@ -6019,6 +6036,21 @@ public:
                     this->visit_expr(*data_stmt_set->m_value[value_index++]);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
                     current_variable_type_ = temp_current_variable_type_;
+                    // The value is converted to the type of the object, as
+                    // in an intrinsic assignment. As in the other DATA
+                    // paths, the converted value of a constant must be a
+                    // constant, which excludes integer to logical.
+                    ASR::ttype_t* object_type = ASRUtils::expr_type(duplicatedExpr);
+                    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+                    bool constant_value = ASRUtils::expr_value(value) != nullptr;
+                    ImplicitCastRules::set_converted_value(al, value->base.loc,
+                        &value, value_type, object_type, diag);
+                    if (!ASRUtils::types_equal(ASRUtils::expr_type(value),
+                            object_type, value, duplicatedExpr)
+                            || (constant_value && !ASRUtils::expr_value(value))) {
+                        data_value_type_error(object_type, value_type,
+                            value->base.loc);
+                    }
                     if (component_element) {
                         set_data_component_value(component_element,
                             component_parts, duplicatedExpr, value,
@@ -6810,17 +6842,8 @@ public:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                 ASRUtils::expr_type(value), ASRUtils::expr_type(object), diag);
         if (!ASRUtils::types_equal(ASRUtils::expr_type(value), ASRUtils::expr_type(object), value, object)) {
-            std::string var_type = ASRUtils::type_to_str_fortran_symbol(
-                ASRUtils::expr_type(object), nullptr, true);
-            std::string val_type = ASRUtils::type_to_str_fortran_symbol(
-                ASRUtils::expr_type(value), nullptr, true);
-            diag.add(Diagnostic(
-                "Cannot initialize " + var_type + " variable with " + val_type +
-                " value in DATA statement",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
+            data_value_type_error(ASRUtils::expr_type(object),
+                ASRUtils::expr_type(value), x.base.base.loc);
         }
         ASR::expr_t* expression_value = ASRUtils::expr_value(value);
         // Pad/trim a character string constant initializer to match the
