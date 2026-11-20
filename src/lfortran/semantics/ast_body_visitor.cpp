@@ -1309,11 +1309,15 @@ public:
     }
 
     void handle_format() {
+        // The fallback READs of one statement share its entry, so the
+        // statement is diagnosed once.
+        std::set<const AST::decl_stmt_t*> diagnosed;
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
             ASR::asr_t* old_tmp = it->first;
             const AST::decl_stmt_t* x = it->second.first;
             int64_t label = it->second.second;
             if (format_statements.find(label) == format_statements.end()) {
+                if (!diagnosed.insert(x).second) continue;
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
                  {x->base.loc},"Invalid label in this statement");
             } else {
@@ -2455,8 +2459,16 @@ public:
             idl->m_type, idl->m_value));
     }
 
+    // The values of IOSTAT_END and IOSTAT_EOR in ISO_FORTRAN_ENV, which the
+    // runtime library stores in IOSTAT= for these conditions.
+    static constexpr int64_t iostat_end_value = -1;
+    static constexpr int64_t iostat_eor_value = -2;
+
+    // Branches to the END=, ERR= and EOR= labels of a READ after it has
+    // stored its status in a_iostat: EOR= is taken on an end-of-record
+    // condition, END= only on an end-of-file condition and ERR= on an error.
     void emit_read_end_err_label_jumps(int64_t end_label, int64_t err_label,
-            ASR::expr_t* a_iostat, const Location& loc,
+            int64_t eor_label, ASR::expr_t* a_iostat, const Location& loc,
             std::vector<ASR::asr_t*>& tmp_vec) {
         ASR::ttype_t* iostat_type = ASRUtils::type_get_past_pointer(
             ASRUtils::expr_type(a_iostat));
@@ -2464,9 +2476,22 @@ public:
             al, loc, 0, iostat_type));
         ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
             al, loc, compiler_options.po.default_integer_kind));
+        if (eor_label != -1) {
+            ASR::expr_t* eor_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, iostat_eor_value, iostat_type));
+            ASR::expr_t* eor_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                al, loc, a_iostat, ASR::cmpopType::Eq, eor_value, cmp_type, nullptr));
+            Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+            body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(
+                al, loc, eor_label, s2c(al, std::to_string(eor_label)))));
+            tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eor_test,
+                body.p, body.size(), nullptr, 0));
+        }
         if (end_label != -1) {
+            ASR::expr_t* end_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, iostat_end_value, iostat_type));
             ASR::expr_t* eof_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
-                al, loc, a_iostat, ASR::cmpopType::Lt, zero, cmp_type, nullptr));
+                al, loc, a_iostat, ASR::cmpopType::Eq, end_value, cmp_type, nullptr));
             Vec<ASR::stmt_t*> body; body.reserve(al, 1);
             body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(
                 al, loc, end_label, s2c(al, std::to_string(end_label)))));
@@ -2479,6 +2504,56 @@ public:
             Vec<ASR::stmt_t*> body; body.reserve(al, 1);
             body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(
                 al, loc, err_label, s2c(al, std::to_string(err_label)))));
+            tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
+                body.p, body.size(), nullptr, 0));
+        }
+    }
+
+    // Appends the label branches that follow a READ with END=, ERR= or EOR=.
+    // When the compiler inserted the IOSTAT= variable, an end-of-file or an
+    // error condition without its label runs the READ again without IOSTAT=,
+    // so that the runtime library ends the program as it would have.
+    void emit_read_label_branches(ASR::asr_t* read_stmt, int64_t end_label,
+            int64_t err_label, int64_t eor_label, ASR::expr_t* a_iostat,
+            bool inserted_iostat, const Location& loc,
+            std::vector<ASR::asr_t*>& tmp_vec) {
+        emit_read_end_err_label_jumps(end_label, err_label, eor_label,
+            a_iostat, loc, tmp_vec);
+        if (!inserted_iostat) return;
+        ASR::ttype_t* iostat_type = ASRUtils::type_get_past_pointer(
+            ASRUtils::expr_type(a_iostat));
+        ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, 0, iostat_type));
+        ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
+            al, loc, compiler_options.po.default_integer_kind));
+        // Each fallback READ gets its own copy of the expressions:
+        // an ASR expression node must belong to one statement only. A READ
+        // whose FORMAT statement comes later gets its format resolved later.
+        ASR::stmt_t* first_read = ASRUtils::STMT(read_stmt);
+        auto fallback_read = [&]() {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::FileRead_t* read = ASR::down_cast<ASR::FileRead_t>(
+                duplicator.duplicate_stmt(first_read));
+            read->m_iostat = nullptr;
+            auto pending_format = print_statements.find(read_stmt);
+            if (pending_format != print_statements.end()) {
+                print_statements[&read->base.base] = pending_format->second;
+            }
+            return &read->base;
+        };
+        if (end_label == -1) {
+            ASR::expr_t* eof_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                al, loc, a_iostat, ASR::cmpopType::Lt, zero, cmp_type, nullptr));
+            Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+            body.push_back(al, fallback_read());
+            tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
+                body.p, body.size(), nullptr, 0));
+        }
+        if (err_label == -1) {
+            ASR::expr_t* err_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+                al, loc, a_iostat, ASR::cmpopType::Gt, zero, cmp_type, nullptr));
+            Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+            body.push_back(al, fallback_read());
             tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
                 body.p, body.size(), nullptr, 0));
         }
@@ -2602,10 +2677,11 @@ public:
     bool parse_read_label_kwarg(const char* kwarg_name, int64_t& label,
             AST::decl_stmtType _type, const AST::kw_argstar_t& kwarg,
             const Location& loc) {
-        // END= is only valid for READ; ERR= is valid for READ/WRITE
-        bool is_end = (strcmp(kwarg_name, "end") == 0);
+        // END= and EOR= are only valid for READ; ERR= is valid for READ/WRITE
+        bool read_only = (strcmp(kwarg_name, "end") == 0)
+            || (strcmp(kwarg_name, "eor") == 0);
         bool valid_stmt = (_type == AST::decl_stmtType::Read) ||
-                          (!is_end && _type == AST::decl_stmtType::Write);
+                          (!read_only && _type == AST::decl_stmtType::Write);
         if (!valid_stmt) {
             Location diag_loc = kwarg.loc;
             if (diag_loc.first == 0 && diag_loc.last == 0) {
@@ -2871,6 +2947,7 @@ public:
         int64_t m_label = -1;
         int64_t end_label = -1;
         int64_t err_label = -1;
+        int64_t eor_label = -1;
         AST::argstar_t* m_args = nullptr; size_t n_args = 0;
         AST::kw_argstar_t* m_kwargs = nullptr; size_t n_kwargs = 0;
         AST::expr_t** m_values = nullptr; size_t n_values = 0;
@@ -3409,6 +3486,10 @@ public:
                 }
             } else if (m_arg_str == "err") {
                 if (!parse_read_label_kwarg("err", err_label, _type, kwarg, loc)) {
+                    continue;
+                }
+            } else if (m_arg_str == "eor") {
+                if (!parse_read_label_kwarg("eor", eor_label, _type, kwarg, loc)) {
                     continue;
                 }
             } else if (m_arg_str == "nml") {
@@ -4015,9 +4096,10 @@ public:
             dtio_unit = a_unit;
         }
 
+        bool has_read_labels = _type == AST::decl_stmtType::Read
+            && (end_label != -1 || err_label != -1 || eor_label != -1);
         bool inserted_iostat = false;
-        if (_type == AST::decl_stmtType::Read && a_iostat == nullptr
-                && (end_label != -1 || err_label != -1)) {
+        if (has_read_labels && a_iostat == nullptr) {
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             std::string iostat_name = current_scope->get_unique_name("__lfortran_iostat");
             ASR::symbol_t* iostat_sym = declare_implicit_variable2(
@@ -4048,10 +4130,11 @@ public:
                         nullptr, formatted, a_nml, a_rec, a_pad, a_decimal);
                     print_statements[tmp] = std::make_pair(&r->base, label);
                 }
-                if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
+                if (has_read_labels) {
                     tmp_vec.push_back(tmp);
+                    emit_read_label_branches(tmp, end_label, err_label, eor_label,
+                        a_iostat, inserted_iostat, loc, tmp_vec);
                     tmp = nullptr;
-                    emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
                 }
                 if (!post_stmts.empty()) {
                     if (tmp != nullptr) {
@@ -4062,7 +4145,7 @@ public:
                         tmp_vec.push_back((ASR::asr_t*)s);
                     }
                 }
-                if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
+                if (has_read_labels) {
                     tmp_vec.insert(tmp_vec.end(), newline_for_advance.begin(), newline_for_advance.end());
                 }
                 return;
@@ -4136,42 +4219,9 @@ public:
             tmp_vec.push_back(file_write_asr_t);
         }
         tmp_vec.push_back(tmp);
-        if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
-            emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
-            if (inserted_iostat) {
-                ASR::ttype_t* iostat_type = ASRUtils::type_get_past_pointer(
-                    ASRUtils::expr_type(a_iostat));
-                ASR::expr_t* zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, loc, 0, iostat_type));
-                ASR::ttype_t* cmp_type = ASRUtils::TYPE(ASR::make_Logical_t(
-                    al, loc, compiler_options.po.default_integer_kind));
-                // Each fallback READ gets its own copy of the expressions:
-                // an ASR expression node must belong to one statement only.
-                ASR::stmt_t* first_read = ASRUtils::STMT(tmp);
-                auto fallback_read = [&]() {
-                    ASRUtils::ExprStmtDuplicator duplicator(al);
-                    ASR::FileRead_t* read = ASR::down_cast<ASR::FileRead_t>(
-                        duplicator.duplicate_stmt(first_read));
-                    read->m_iostat = nullptr;
-                    return &read->base;
-                };
-                if (end_label == -1) {
-                    ASR::expr_t* eof_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
-                        al, loc, a_iostat, ASR::cmpopType::Lt, zero, cmp_type, nullptr));
-                    Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-                    body.push_back(al, fallback_read());
-                    tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, eof_test,
-                        body.p, body.size(), nullptr, 0));
-                }
-                if (err_label == -1) {
-                    ASR::expr_t* err_test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
-                        al, loc, a_iostat, ASR::cmpopType::Gt, zero, cmp_type, nullptr));
-                    Vec<ASR::stmt_t*> body; body.reserve(al, 1);
-                    body.push_back(al, fallback_read());
-                    tmp_vec.push_back(ASR::make_If_t(al, loc, nullptr, err_test,
-                        body.p, body.size(), nullptr, 0));
-                }
-            }
+        if (has_read_labels) {
+            emit_read_label_branches(tmp, end_label, err_label, eor_label,
+                a_iostat, inserted_iostat, loc, tmp_vec);
         }
         for (ASR::stmt_t* s : post_stmts) {
             tmp_vec.push_back((ASR::asr_t*)s);

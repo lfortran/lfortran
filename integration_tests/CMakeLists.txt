@@ -5331,6 +5331,10 @@ RUN(NAME read_126 LABELS gfortran llvm) # list-directed read of NaN(1) into real
 RUN(NAME read_127 LABELS gfortran llvm) # BZ formatted read ignores the blanks before the sign (#18204)
 RUN(NAME read_129 LABELS gfortran llvm) # formatted read of a Q exponent into real(4) and real(8) (#18199)
 RUN(NAME read_130 LABELS gfortran llvm) # list-directed read of a Q exponent into real and complex (#18199)
+RUN(NAME read_131 FAIL LABELS gfortran llvm) # end of file with ERR= only and a FORMAT statement after the READ
+RUN(NAME read_nonadvance_eor_01 LABELS gfortran llvm) # non-advancing READ branches to EOR= (#17302)
+RUN(NAME read_nonadvance_eor_02 LABELS gfortran llvm) # EOR= with a FORMAT statement after the READ
+RUN(NAME read_nonadvance_eor_03 FAIL LABELS gfortran llvm) # end of file with EOR= only and a FORMAT statement after the READ
 RUN(NAME iomsg_deferred_char_01 LABELS gfortran llvm)
 RUN(NAME read_crlf_01 LABELS gfortran llvm)
 RUN(NAME read_unconnected_unit_01 LABELS gfortran llvm)

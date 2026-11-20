@@ -6512,6 +6512,18 @@ semantic error: Cannot initialize logical(4) variable with integer(4) value in D
 5273 |     data (cc1_didt_l(i), i=1,2) / 1, 0 /  ! {Error} Cannot initialize logical(4) variable with integer(4) value in DATA statement
      |                                   ^ 
 
+semantic error: `eor` is only supported for READ statements
+    --> tests/errors/continue_compilation_1.f90:5280:5
+     |
+5280 |     write (*, '(i0)', advance='no', eor=10) cc1_we_x  ! {Error} `eor` is only supported for READ statements
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: The label 300 does not point to any format statement
+    --> tests/errors/continue_compilation_1.f90:5287:5
+     |
+5287 |     read (*, 300, err=10) cc1_rebf_x  ! {Error} The label 300 does not point to any format statement
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid label in this statement
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
