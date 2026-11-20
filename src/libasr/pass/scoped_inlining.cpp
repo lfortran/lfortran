@@ -12,6 +12,21 @@ struct InlineScope {
     size_t size;
 };
 
+// A statement label belongs to its procedure: the caller may use the same
+// number, and so does every other inlined copy of the body.
+bool has_statement_label(ASR::stmt_t *statement) {
+    struct Labels : ASR::BaseWalkVisitor<Labels> {
+        bool found = false;
+        void visit_GoToTarget(const ASR::GoToTarget_t &) { found = true; }
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            if (x.m_label != -1) found = true;
+        }
+    };
+    Labels labels;
+    labels.visit_stmt(*statement);
+    return labels.found;
+}
+
 bool entered_scope(ASR::stmt_t *statement, InlineScope &scope) {
     if (ASR::is_a<ASR::BlockCall_t>(*statement)) {
         auto *block = ASR::down_cast<ASR::Block_t>(
@@ -31,6 +46,7 @@ bool entered_scope(ASR::stmt_t *statement, InlineScope &scope) {
 bool collect_scopes(InlineScope scope, std::vector<InlineScope> &scopes) {
     scopes.push_back(scope);
     for (size_t i = 0; i < scope.size; i++) {
+        if (has_statement_label(scope.body[i])) return false;
         InlineScope nested;
         if (entered_scope(scope.body[i], nested)) {
             if (!collect_scopes(nested, scopes)) return false;
