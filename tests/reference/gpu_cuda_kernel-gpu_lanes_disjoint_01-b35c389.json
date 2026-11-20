@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_disjoint_01-b35c389",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_disjoint_01.f90",
+    "infile_hash": "0d315b28d27dec5d25194bcc647ba51ad78086fc64e419b4df8d85da",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_disjoint_01-b35c389.stdout",
+    "stdout_hash": "10d5afdccbf6864536fb623eab78af05cf41627dc0b812e409b016fb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -564,7 +564,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_24gpu_
                 }
             }
             r = ((float)(((double)ss[((int)(k) - (__lb_ss_0))]) / pow(  2.00000000000000000e+00, 24)));
-            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
             if ((__gpu_lane == 0)) {
                 y[((int)(i__dc) - (__lb_y_0))] = (a * r);
                 if ((i__dc == 1)) {
@@ -617,7 +616,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_24gpu_
                 }
             }
             r = ((float)(((double)ss[((int)(k) - (__lb_ss_0))]) / pow(  2.00000000000000000e+00, 24)));
-            __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
             if ((__gpu_lane == 0)) {
                 y[((int)(i__dc) - (__lb_y_0))] = (a * r);
                 if ((i__dc == 1)) {
