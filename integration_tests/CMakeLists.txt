@@ -3844,6 +3844,7 @@ RUN(NAME associate_66 LABELS gfortran llvm)
 RUN(NAME associate_67 LABELS gfortran llvm)
 RUN(NAME associate_68 LABELS gfortran llvm)
 RUN(NAME associate_69 LABELS gfortran llvm) # value of an associate name used in a real expression argument
+RUN(NAME associate_70 LABELS gfortran llvm) # lower bounds of an associate name whose selector is an expression
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

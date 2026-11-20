@@ -5169,7 +5169,9 @@ public:
             // designator cases below, which alias the associate name to the
             // selector's storage, may therefore apply. The parentheses are
             // dropped by visit_Parenthesis, so this is decided on the AST.
-            if( !AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer) ) {
+            bool selector_is_parenthesized =
+                AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer);
+            if( !selector_is_parenthesized ) {
                 if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                     ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                     if (variable->m_storage != ASR::storage_typeType::Parameter) {
@@ -5259,6 +5261,45 @@ public:
                 tmp_type = ASRUtils::type_get_past_pointer(tmp_type);
             }
 
+            // A whole array is a variable or a named constant, or a component
+            // of a scalar, that is not parenthesized.
+            bool selector_is_whole_array =
+                !selector_is_parenthesized &&
+                (ASR::is_a<ASR::Var_t>(*tmp_expr) ||
+                 (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) &&
+                  !ASRUtils::is_array(ASRUtils::expr_type(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr)->m_v))));
+            bool allocate_with_selector_shape = false;
+            if ( !create_associate_stmt && !selector_is_whole_array &&
+                    ASRUtils::is_array(tmp_type) ) {
+                // The lower bound of each dimension of the associate name is
+                // LBOUND of the selector (F2018 11.1.3.3), which is 1 unless
+                // the selector is a whole array (F2018 16.9.109). The type of
+                // an expression can carry the bounds of an operand instead,
+                // and that of a parenthesized variable always does.
+                ASR::dimension_t* selector_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(tmp_type, selector_dims);
+                if ( !ASRUtils::is_dimension_empty(selector_dims, n_dims) ) {
+                    Vec<ASR::dimension_t> dims = ASRUtils::make_complex_dimensions_bounds(
+                        al, tmp_expr->base.loc, selector_dims, n_dims);
+                    tmp_type = ASRUtils::duplicate_type(al,
+                        ASRUtils::type_get_past_allocatable_pointer(tmp_type), &dims);
+                } else {
+                    // A variable without a declared shape is copied into an
+                    // allocatable, which would take the bounds of the
+                    // variable when the assignment allocates it. It is
+                    // allocated with the shape of the variable first. A
+                    // polymorphic array and a string whose length is not an
+                    // expression are left to the assignment.
+                    ASR::ttype_t* element_type = ASRUtils::extract_type(tmp_type);
+                    allocate_with_selector_shape = ASR::is_a<ASR::Var_t>(*tmp_expr) &&
+                        !ASRUtils::is_class_type(element_type) &&
+                        !(ASR::is_a<ASR::String_t>(*element_type) &&
+                          ASR::down_cast<ASR::String_t>(element_type)->m_len_kind !=
+                            ASR::string_length_kindType::ExpressionLength);
+                }
+            }
+
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
@@ -5301,6 +5342,35 @@ public:
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, tmp_expr->base.loc, target_var, tmp_expr));
                 body.push_back(al, associate_stmt);
             } else {
+                if ( allocate_with_selector_shape ) {
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(tmp_type);
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, n_dims);
+                    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                        al, tmp_expr->base.loc, 4));
+                    for ( size_t d = 0; d < n_dims; d++ ) {
+                        ASR::dimension_t dim;
+                        dim.loc = tmp_expr->base.loc;
+                        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                            al, tmp_expr->base.loc, 1, int_type));
+                        dim.m_length = ASRUtils::get_size(tmp_expr, d + 1, al);
+                        dims.push_back(al, dim);
+                    }
+                    ASR::alloc_arg_t alloc_arg;
+                    alloc_arg.loc = tmp_expr->base.loc;
+                    alloc_arg.m_a = target_var;
+                    alloc_arg.m_dims = dims.p;
+                    alloc_arg.n_dims = dims.size();
+                    alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_sym_subclass = nullptr;
+                    alloc_arg.m_type = nullptr;
+                    alloc_arg.m_codims = nullptr;
+                    alloc_arg.n_codims = 0;
+                    Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
+                    alloc_args.push_back(al, alloc_arg);
+                    body.push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al,
+                        tmp_expr->base.loc, alloc_args.p, alloc_args.n,
+                        nullptr, nullptr, nullptr)));
+                }
                 ASRUtils::make_ArrayBroadcast_t_util(al, tmp_expr->base.loc, target_var, tmp_expr);
                 // For non-lvalue associate expressions (e.g., array constructors),
                 // always use realloc_lhs to ensure memory is allocated for
