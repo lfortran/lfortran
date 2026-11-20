@@ -258,9 +258,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             enddo_state = 1;
         } else {
             enddo_state = 0;
-            token_loc(loc); line_num++; cur_line=cur;
             last_token = yytokentype::TK_NEWLINE;
         }
+        token_loc(loc);
         return yytokentype::TK_NEWLINE;
     }
     for (;;) {
@@ -638,17 +638,10 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             // Tokens
             newline {
-                if (enddo_newline_process) {
-                    enddo_newline_process = false;
-                    enddo_state = 1;
-                    return yytokentype::TK_NEWLINE;
-                } else {
-                    enddo_newline_process = false;
-                    enddo_insert_count = 0;
-                    token_loc(loc); line_num++; cur_line=cur;
-                    last_token = yytokentype::TK_NEWLINE;
-                    return yytokentype::TK_NEWLINE;
-                }
+                finish_enddo_statement();
+                token_loc(loc); line_num++; cur_line=cur;
+                last_token = yytokentype::TK_NEWLINE;
+                return yytokentype::TK_NEWLINE;
             }
 
             // Single character symbols
@@ -670,7 +663,10 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             "-" { RET(TK_MINUS) }
             "=" { RET(TK_EQUAL) }
             ":" { RET(TK_COLON) }
-            ";" { RET(TK_SEMICOLON) }
+            ";" {
+                finish_enddo_statement();
+                RET(TK_SEMICOLON)
+            }
             "/" { RET(TK_SLASH) }
             "%" { RET(TK_PERCENT) }
             "," { RET(TK_COMMA) }
@@ -826,6 +822,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 if (last_token == yytokentype::TK_NEWLINE) {
                     return yytokentype::TK_COMMENT;
                 } else {
+                    finish_enddo_statement();
                     last_token=yytokentype::TK_NEWLINE;
                     return yytokentype::TK_EOLCOMMENT;
                 }

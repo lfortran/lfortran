@@ -30,6 +30,16 @@ public:
     int enddo_state = 0;
     int enddo_insert_count = 0;
 
+    void finish_enddo_statement()
+    {
+        if (enddo_newline_process) {
+            enddo_newline_process = false;
+            enddo_state = 1;
+        } else {
+            enddo_insert_count = 0;
+        }
+    }
+
 public:
     // Set the string to tokenize. The caller must ensure `str` will stay valid
     // as long as `lex` is being called.
