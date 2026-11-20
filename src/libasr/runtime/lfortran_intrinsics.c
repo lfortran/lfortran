@@ -4821,7 +4821,35 @@ void strip_outer_parenthesis(const char* str, int len, char* output) {
         // closing ')' are silently ignored (matches behavior of other compilers
         // such as flang/gfortran for `print "(a)xx"` etc.).
         for (i = 0; i < len; i++) {
-            if (str[i] == '(') {
+            if (str[i] == '\'' || str[i] == '"') {
+                // Parentheses inside a character string edit descriptor do not
+                // nest. A doubled quote ends one string and starts the next.
+                char quote = str[i];
+                i++;
+                while (i < len && str[i] != quote) {
+                    i++;
+                }
+            } else if (isdigit((unsigned char)str[i])) {
+                // The same holds for the characters of a Hollerith constant.
+                // A count that reaches `len` runs past the end of the format;
+                // stop accumulating there, so that it cannot overflow.
+                int64_t hollerith_len = 0;
+                while (i < len && isdigit((unsigned char)str[i])) {
+                    if (hollerith_len < len) {
+                        hollerith_len = hollerith_len * 10 + (str[i] - '0');
+                    }
+                    i++;
+                }
+                if (i < len && (str[i] == 'h' || str[i] == 'H')) {
+                    if (hollerith_len >= len - i) {
+                        i = len;
+                    } else {
+                        i += (int)hollerith_len;
+                    }
+                } else {
+                    i--;
+                }
+            } else if (str[i] == '(') {
                 nest++;
             } else if (str[i] == ')') {
                 nest--;
