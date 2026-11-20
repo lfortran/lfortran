@@ -29267,6 +29267,14 @@ public:
                             arg_expr, ASRUtils::expr_type(arg_expr), module.get());
                         dt = llvm_utils->CreateLoad2(_type, dt);
                         dt = copy_class_wrapper_for_dummy(arg_expr, dummy->m_type, dt);
+                    } else if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
+                            LLVM::is_llvm_pointer(*dummy->m_type) &&
+                            !ASRUtils::is_array(dummy->m_type)) {
+                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
+                            dummy->m_type, dummy->m_type_declaration, module.get());
+                        llvm::Value* ptr_to_dt = llvm_utils->CreateAlloca(type);
+                        builder->CreateStore(builder->CreateBitCast(dt, type), ptr_to_dt);
+                        dt = ptr_to_dt;
                     }
                     return dt;
                 }
@@ -29413,6 +29421,12 @@ public:
                             llvm::Value* wrapper_data = llvm_utils->CreateLoad2(
                                 llvm_utils->i8_ptr, wrapper_data_slot);
                             builder->CreateStore(wrapper_data, data_ptr);
+                            if (LLVM::is_llvm_pointer(*dummy->m_type)) {
+                                llvm::Value* ptr_to_struct = llvm_utils->CreateAlloca(
+                                    unlimited_polymorphic_type->getPointerTo());
+                                builder->CreateStore(unlimited_polymorphic_struct, ptr_to_struct);
+                                return ptr_to_struct;
+                            }
                             return unlimited_polymorphic_struct;
                         } else {
                             vptr = struct_api->get_pointer_to_method(ASRUtils::symbol_get_past_external(
@@ -29443,6 +29457,12 @@ public:
                             ASRUtils::get_string_type(arg_type), dt);
                     }
                     builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr), data_ptr);
+                    if (LLVM::is_llvm_pointer(*dummy->m_type)) {
+                        llvm::Value* ptr_to_struct = llvm_utils->CreateAlloca(
+                            unlimited_polymorphic_type->getPointerTo());
+                        builder->CreateStore(unlimited_polymorphic_struct, ptr_to_struct);
+                        return ptr_to_struct;
+                    }
                     return unlimited_polymorphic_struct;
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
@@ -29542,6 +29562,12 @@ public:
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                         dummy->m_type, dummy->m_type_declaration, module.get());
                     if (!ASRUtils::is_array(dummy->m_type)) {
+                        if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
+                                LLVM::is_llvm_pointer(*dummy->m_type)) {
+                            llvm::Value* ptr_to_dt = llvm_utils->CreateAlloca(type);
+                            builder->CreateStore(builder->CreateBitCast(dt, type), ptr_to_dt);
+                            return ptr_to_dt;
+                        }
                         return builder->CreateBitCast(dt, type->getPointerTo());
                     } else {
                         return builder->CreateBitCast(dt, type);
@@ -29606,6 +29632,14 @@ public:
                     llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(
                         arg_expr, ASRUtils::expr_type(arg_expr), module.get());
                     dt = llvm_utils->CreateLoad2(_type, dt);
+                } else if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
+                        LLVM::is_llvm_pointer(*dummy->m_type) &&
+                        !ASRUtils::is_array(dummy->m_type)) {
+                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
+                        dummy->m_type, dummy->m_type_declaration, module.get());
+                    llvm::Value* ptr_to_dt = llvm_utils->CreateAlloca(type);
+                    builder->CreateStore(builder->CreateBitCast(dt, type), ptr_to_dt);
+                    dt = ptr_to_dt;
                 }
                 return dt;
             }
@@ -29794,6 +29828,12 @@ public:
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
                     dummy->m_type, dummy->m_type_declaration, module.get());
                 if (!ASRUtils::is_array(dummy->m_type)) {
+                    if (!LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg_expr)) &&
+                            LLVM::is_llvm_pointer(*dummy->m_type)) {
+                        llvm::Value* ptr_to_dt = llvm_utils->CreateAlloca(type);
+                        builder->CreateStore(builder->CreateBitCast(dt, type), ptr_to_dt);
+                        return ptr_to_dt;
+                    }
                     return builder->CreateBitCast(dt, type->getPointerTo());
                 } else {
                     return builder->CreateBitCast(dt, type);
