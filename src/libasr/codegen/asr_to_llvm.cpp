@@ -28655,18 +28655,14 @@ public:
                     int n_dims = assumed_rank_actual ? 15 :
                         ASRUtils::extract_n_dims_from_ttype(actual_type);
                     int8_t cfi_type_code = get_cfi_type_code(elem_asr_type);
+                    // The attribute describes the dummy argument: an array
+                    // section, a pointer or an allocatable actual passed to a
+                    // nonallocatable nonpointer dummy is CFI_attribute_other.
                     int cfi_attr = 0;
-                    if (actual_type && ASRUtils::is_allocatable(actual_type)) {
+                    if (ASRUtils::is_allocatable(orig_arg->m_type)) {
                         cfi_attr = 2;
-                    } else if (actual_type && ASRUtils::is_pointer(actual_type)) {
+                    } else if (ASRUtils::is_pointer(orig_arg->m_type)) {
                         cfi_attr = 1;
-                    }
-                    if (absent_optional_pointer &&
-                            !ASRUtils::is_pointer(orig_arg->m_type) &&
-                            !ASRUtils::is_allocatable(orig_arg->m_type)) {
-                        // The transport pointer does not change the C dummy's
-                        // nonpointer descriptor attribute.
-                        cfi_attr = 0;
                     }
                     llvm::Value* internal_desc_ptr = tmp;
                     tmp = arr_descr->internal_to_cfi(
