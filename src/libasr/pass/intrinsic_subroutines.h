@@ -1200,6 +1200,16 @@ namespace GetEnvironmentVariable {
         };
 
         fill_func_arg_sub("name", get_assumed_len_string(arg_types[0]), In);
+        // Trailing blanks in `name` are insignificant unless `trim_name` is .false.
+        ASR::expr_t* trim_name = has_trim_name ? declare("trim_name", arg_types[arg_types.size() - 1], In) : nullptr;
+        ASR::expr_t* name_len = declare("name_len", int32, Local);
+        ASR::stmt_t* set_trimmed_name_len = b.Assignment(name_len, StringLenTrim::StringLenTrim(b, args[0], int32, scope));
+        if (trim_name) {
+            body.push_back(al, b.If(trim_name, {set_trimmed_name_len},
+                {b.Assignment(name_len, b.StringLen(args[0]))}));
+        } else {
+            body.push_back(al, set_trimmed_name_len);
+        }
         if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {// this is the case where args[1] is `value`
             /*
             interface 
@@ -1256,7 +1266,7 @@ namespace GetEnvironmentVariable {
             ASR::expr_t* length_to_allocate = declare("length_to_allocate", int32, Local);
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
-            call_args.push_back(al, b.StringLen(args[0] /* name */));
+            call_args.push_back(al, name_len);
             body.push_back(al, b.Assignment(length_to_allocate, b.Call(_lfortran_get_length_of_environment_variable, call_args, int32)));
 
             // Declare allocatable string_holder + allocate
@@ -1266,7 +1276,7 @@ namespace GetEnvironmentVariable {
             // Call `_lfortran_get_environment_variable`
             Vec<ASR::call_arg_t> call_to_lfortran_get_environment_variable; call_to_lfortran_get_environment_variable.reserve(al, 2);
             call_to_lfortran_get_environment_variable.push_back(al, {loc, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar)});
-            call_to_lfortran_get_environment_variable.push_back(al, {loc, b.StringLen(args[0] /* name */)});
+            call_to_lfortran_get_environment_variable.push_back(al, {loc, name_len});
             call_to_lfortran_get_environment_variable.push_back(al, {loc, ASRUtils::create_string_physical_cast(al, envVar_string_holder, ASR::CChar)});
             body.push_back(al, b.SubroutineCall(_lfortran_get_environment_variable, call_to_lfortran_get_environment_variable));
 
@@ -1295,13 +1305,13 @@ namespace GetEnvironmentVariable {
                 dep.push_back(al, s2c(al, status_func_name));
                 Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 3);
                 status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
-                status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                status_call_args.push_back(al, name_len);
                 status_call_args.push_back(al, b.StringLen(args[1] /* value */));
                 body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
                 arg_idx++;
             }
             if (has_trim_name) {
-                fill_func_arg_sub("trim_name", arg_types[arg_idx], In);
+                args.push_back(al, trim_name);
             }
         } else if ( !has_value && arg_types.size() >= 2 ) {
             // this is the case where value is not provided
@@ -1319,7 +1329,7 @@ namespace GetEnvironmentVariable {
                 dep.push_back(al, s2c(al, c_func_name));
                 Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
                 call_args.push_back(al,  ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
-                call_args.push_back(al,  b.StringLen(args[0] /*name*/) );
+                call_args.push_back(al, name_len);
                 body.push_back(al, b.Assignment(args[arg_idx], b.Call(s, call_args, arg_types[arg_idx])));
                 arg_idx++;
             }
@@ -1338,13 +1348,13 @@ namespace GetEnvironmentVariable {
                 // Call the status function and assign result
                 Vec<ASR::expr_t*> status_call_args; status_call_args.reserve(al, 2);
                 status_call_args.push_back(al, ASRUtils::create_string_physical_cast(al, args[0], ASR::CChar));
-                status_call_args.push_back(al, b.StringLen(args[0] /* name */));
+                status_call_args.push_back(al, name_len);
                 body.push_back(al, b.Assignment(args[arg_idx], b.Call(_lfortran_get_environment_variable_status, status_call_args, arg_types[arg_idx])));
                 arg_idx++;
             }
 
             if (has_trim_name) {
-                fill_func_arg_sub("trim_name", arg_types[arg_idx], In);
+                args.push_back(al, trim_name);
             }
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
