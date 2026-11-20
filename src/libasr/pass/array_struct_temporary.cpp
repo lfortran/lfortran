@@ -6208,9 +6208,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
         ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+        ASR::ttype_t* source_type = ASRUtils::expr_type(x->m_array);
+        ASR::array_physical_typeType source_ptype =
+            ASRUtils::extract_physical_type(source_type);
+        // The size of a descriptor array, or of an explicit-shape array with
+        // run-time bounds, is unbounded: its copy does not go on the stack.
+        bool is_source_size_known_at_run_time_only =
+            source_ptype == ASR::array_physical_typeType::DescriptorArray ||
+            (source_ptype == ASR::array_physical_typeType::PointerArray &&
+             !ASRUtils::is_fixed_size_array(source_type));
         if( x->m_value == nullptr && x->m_result == nullptr && x->m_pad == nullptr &&
-            ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_array)) ==
-                ASR::array_physical_typeType::DescriptorArray &&
+            is_source_size_known_at_run_time_only &&
             (ASRUtils::is_integer(*element_type) || ASRUtils::is_real(*element_type) ||
              ASRUtils::is_complex(*element_type) || ASRUtils::is_logical(*element_type)) ) {
             // The result owns storage independent of the source, including
