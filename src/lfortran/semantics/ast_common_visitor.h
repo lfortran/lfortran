@@ -2420,12 +2420,15 @@ public:
     std::set<std::string> assgnd_asynchronous;
     // A PARAMETER, POINTER, ALLOCATABLE, TARGET, VOLATILE or ASYNCHRONOUS
     // statement that names an entity not declared yet is recorded above and
-    // applied to the entity when it is declared. Such a statement applies only
-    // to the scoping unit or BLOCK construct in which it appears (8.6), so
-    // this guard gives the unit empty records and restores the host's when it
-    // ends, also when a diagnostic aborts the visit. Otherwise
+    // applied to the entity when it is declared. A DIMENSION or COMMON
+    // statement that gives such an entity its bounds records it in
+    // `symbols_having_only_attributes_without_type`. Such a statement applies
+    // only to the scoping unit or BLOCK construct in which it appears (8.6),
+    // so this guard gives the unit empty records and restores the host's when
+    // it ends, also when a diagnostic aborts the visit. Otherwise
     // `parameter (m = 10)` in one subroutine would make a later `integer m` in
-    // another one a constant.
+    // another one a constant, and `dimension x(1)` would give a later
+    // `real x(2)` in another one the entity and bounds of the first.
     struct PendingAttributeScope {
         CommonVisitor &v;
         std::map<std::string, std::pair<ASR::storage_typeType, AST::expr_t*>> storage;
@@ -2434,6 +2437,7 @@ public:
         std::set<std::string> target;
         std::set<std::string> volatile_;
         std::set<std::string> asynchronous;
+        std::map<std::string, ASR::symbol_t*> only_attributes_without_type;
 
         PendingAttributeScope(CommonVisitor &v_) : v{v_} {
             storage.swap(v.assgnd_storage);
@@ -2442,6 +2446,8 @@ public:
             target.swap(v.assgnd_target);
             volatile_.swap(v.assgnd_volatile);
             asynchronous.swap(v.assgnd_asynchronous);
+            only_attributes_without_type.swap(
+                v.symbols_having_only_attributes_without_type);
         }
         ~PendingAttributeScope() {
             v.assgnd_storage.swap(storage);
@@ -2450,6 +2456,8 @@ public:
             v.assgnd_target.swap(target);
             v.assgnd_volatile.swap(volatile_);
             v.assgnd_asynchronous.swap(asynchronous);
+            v.symbols_having_only_attributes_without_type.swap(
+                only_attributes_without_type);
         }
         PendingAttributeScope(const PendingAttributeScope &) = delete;
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
