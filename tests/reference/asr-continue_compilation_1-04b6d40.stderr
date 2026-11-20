@@ -2144,6 +2144,30 @@ semantic error: type mismatch in initialization: `real` cannot be assigned to `l
 5115 |     logical :: cc1_lani_c(2) = 1.5  ! {Error} type mismatch in initialization: `real` cannot be assigned to `logical[:]`
      |                                ^^^ 
 
+semantic error: 'cc1_pinp_i' is not a procedure with an explicit interface, so it cannot be the interface of a procedure declaration statement
+    --> tests/errors/continue_compilation_1.f90:5295:5
+     |
+5295 |     procedure(cc1_pinp_i), pointer :: cc1_pinp_p  ! {Error} 'cc1_pinp_i' is not a procedure with an explicit interface, so it cannot be the interface of a procedure declaration statement
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
+    --> tests/errors/continue_compilation_1.f90:5303:5
+     |
+5303 |     procedure(cc1_pidl_b), pointer :: cc1_pidl_a  ! {Error} 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
+    --> tests/errors/continue_compilation_1.f90:5304:5
+     |
+5304 |     procedure(cc1_pidl_c), pointer :: cc1_pidl_c  ! {Error} 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'cc1_pidl_a' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:5302:5
+     |
+5302 |     procedure(cc1_pidl_a), pointer :: cc1_pidl_b  ! {Error} Interface 'cc1_pidl_a' is referenced but not defined
+     |     ^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

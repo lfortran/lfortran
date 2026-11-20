@@ -15746,6 +15746,35 @@ public:
                 }
                 type_declaration = existing;
             } else {
+                // An entity declared by a procedure declaration statement
+                // must be declared before it is named as an interface
+                // (F2018 C1515). A use earlier in the source declared a
+                // placeholder for it, which this declaration cannot
+                // complete; that also rejects declarations that name each
+                // other or themselves. A declaration whose interface body
+                // comes later is visited after the declarations that follow
+                // it, so the order of the source is compared, not that of
+                // the visit.
+                if (!is_derived_type) {
+                    bool used_before = func_name == sym;
+                    for (auto &pending : pending_proc_placeholders) {
+                        used_before = used_before || (pending.name == sym
+                            && pending.scope == current_scope
+                            && forward_procedure_targets.count(
+                                pending.placeholder) == 0
+                            && pending.placeholder->base.loc.first
+                                < sym_type->base.base.loc.first);
+                    }
+                    if (used_before) {
+                        diag.add(Diagnostic("'" + sym + "' is used as a "
+                                "procedure interface before this procedure "
+                                "declaration statement declares it",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {sym_type->base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
                 // A module procedure or an internal procedure may be defined
                 // after it is used as an interface. Then the name is not the
@@ -15833,7 +15862,27 @@ public:
                 }
                 type_declaration = v;
                 v = ASRUtils::symbol_get_past_external(v);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*v));
+                if (ASR::is_a<ASR::Variable_t>(*v)) {
+                    // A procedure pointer, a dummy procedure, or an external
+                    // procedure whose interface is defined later is itself
+                    // declared by a procedure declaration statement, and has
+                    // the interface that statement names.
+                    ASR::Variable_t *proc = ASR::down_cast<ASR::Variable_t>(v);
+                    if (proc->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(
+                            *ASRUtils::type_get_past_pointer(proc->m_type))) {
+                        type_declaration = proc->m_type_declaration;
+                        v = ASRUtils::symbol_get_past_external(type_declaration);
+                    }
+                }
+                if (!ASR::is_a<ASR::Function_t>(*v)) {
+                    diag.add(Diagnostic("'" + func_name + "' is not a procedure "
+                            "with an explicit interface, so it cannot be the "
+                            "interface of a procedure declaration statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 type = ASRUtils::import_procedure_type(al,
                     ASR::down_cast<ASR::Function_t>(v)->m_function_signature,
                     current_scope);

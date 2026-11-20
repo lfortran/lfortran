@@ -5287,3 +5287,19 @@ subroutine cc1_read_err_bad_format()
     read (*, 300, err=10) cc1_rebf_x  ! {Error} The label 300 does not point to any format statement
 10  continue
 end subroutine
+
+! The interface named by a procedure declaration statement must be a
+! procedure with an explicit interface.
+subroutine cc1_procedure_interface_not_procedure()
+    integer :: cc1_pinp_i
+    procedure(cc1_pinp_i), pointer :: cc1_pinp_p  ! {Error} 'cc1_pinp_i' is not a procedure with an explicit interface, so it cannot be the interface of a procedure declaration statement
+end subroutine
+
+! An entity declared by a procedure declaration statement must be declared
+! before it is named as an interface, so such declarations cannot name each
+! other or themselves.
+subroutine cc1_procedure_interface_declared_later()
+    procedure(cc1_pidl_a), pointer :: cc1_pidl_b  ! {Error} Interface 'cc1_pidl_a' is referenced but not defined
+    procedure(cc1_pidl_b), pointer :: cc1_pidl_a  ! {Error} 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
+    procedure(cc1_pidl_c), pointer :: cc1_pidl_c  ! {Error} 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
+end subroutine

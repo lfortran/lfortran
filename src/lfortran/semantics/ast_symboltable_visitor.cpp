@@ -6210,6 +6210,18 @@ public:
         std::vector<SymbolTable*> scopes;
         for (auto &pending : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = proc_placeholder_target(pending);
+            // A procedure declaration statement whose interface is declared
+            // later is visited after the declarations that follow it. When
+            // one of them names the procedure it declares, the placeholder
+            // stands for the interface that the procedure was declared with.
+            if (real_sym != nullptr && ASR::is_a<ASR::Variable_t>(
+                    *ASRUtils::symbol_get_past_external(real_sym))) {
+                ASR::symbol_t *iface = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(real_sym))
+                        ->m_type_declaration;
+                real_sym = iface && !is_pending_proc_placeholder(iface)
+                    ? iface : nullptr;
+            }
             if (real_sym == nullptr || !ASR::is_a<ASR::Function_t>(
                     *ASRUtils::symbol_get_past_external(real_sym))) {
                 unresolved_placeholders.push_back(pending);
