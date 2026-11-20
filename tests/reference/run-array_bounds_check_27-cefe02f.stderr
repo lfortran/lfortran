@@ -1,0 +1,5 @@
+runtime error: Argument 2 of subroutine sub is unallocated.
+  --> tests/errors/array_bounds_check_27.f90:10:17
+   |
+10 |     call sub(2, a)
+   |                 ^ This is unallocated
