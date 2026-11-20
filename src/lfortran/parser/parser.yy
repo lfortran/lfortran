@@ -1805,12 +1805,12 @@ statements
     ;
 
 sep
-    : sep sep_one { $$ = $1; LIST_ADD($$, $2); }
-    | sep_one { LIST_NEW($$); LIST_ADD($$, $1); }
+    : sep sep_one { $$ = sep_add(p.m_a, $1, @1, $2, @2); }
+    | sep_one { $$ = sep_new(p.m_a, $1); }
     ;
 
 sep_one
-    : TK_NEWLINE { $$ = NEWLINE(@$); }
+    : TK_NEWLINE { $$ = nullptr; }
     | TK_COMMENT { $$ = COMMENT($1, @$); }
     | TK_EOLCOMMENT { $$ = EOLCOMMENT($1, @$); }
     | ";" { $$ = SEMICOLON(@$); }
