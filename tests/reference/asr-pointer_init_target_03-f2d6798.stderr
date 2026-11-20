@@ -1,5 +1,0 @@
-semantic error: the pointer initialization target of `q` must not have a vector subscript
- --> tests/errors/pointer_init_target_03.f90:6:31
-  |
-6 | type(t), pointer :: q(:) => g([1,2])
-  |                               ^^^^^ 

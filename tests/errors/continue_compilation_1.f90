@@ -5303,3 +5303,24 @@ subroutine cc1_procedure_interface_declared_later()
     procedure(cc1_pidl_b), pointer :: cc1_pidl_a  ! {Error} 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
     procedure(cc1_pidl_c), pointer :: cc1_pidl_c  ! {Error} 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
 end subroutine
+
+! The initial target of a derived-type pointer must be a TARGET designator
+! with constant subscripts and no vector subscript, of the same rank and type.
+module cc1_pointer_init_target
+implicit none
+type :: cc1_pit_t
+    integer :: v
+end type
+type :: cc1_pit_u
+    integer :: v
+end type
+integer :: cc1_pit_n = 2
+type(cc1_pit_t) :: cc1_pit_g0(3)
+type(cc1_pit_t), target :: cc1_pit_g(3)
+type(cc1_pit_u), target :: cc1_pit_gu(3)
+type(cc1_pit_t), pointer :: cc1_pit_q1 => cc1_pit_g0(2)  ! {Error} pointer initialization target `cc1_pit_g0` must have the `target` attribute
+type(cc1_pit_t), pointer :: cc1_pit_q2 => cc1_pit_g(cc1_pit_n)  ! {Error} every subscript of the pointer initialization target of `cc1_pit_q2` must be a constant expression
+type(cc1_pit_t), pointer :: cc1_pit_q3(:) => cc1_pit_g([1,2])  ! {Error} the pointer initialization target of `cc1_pit_q3` must not have a vector subscript
+type(cc1_pit_t), pointer :: cc1_pit_q4 => cc1_pit_g(1:2)  ! {Error} rank mismatch in pointer initialization of `cc1_pit_q4`
+type(cc1_pit_t), pointer :: cc1_pit_q5 => cc1_pit_gu(2)  ! {Error} type mismatch in pointer initialization of `cc1_pit_q5`
+end module cc1_pointer_init_target

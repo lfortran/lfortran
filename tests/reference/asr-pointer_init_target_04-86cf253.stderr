@@ -1,8 +1,0 @@
-semantic error: rank mismatch in pointer initialization of `q`: the pointer has rank 0 and the target has rank 1
- --> tests/errors/pointer_init_target_04.f90:6:26
-  |
-6 | type(t), pointer :: q => g(1:2)
-  |                          ^^^^^^ 
-  |
-5 | type(t), target :: g(3)
-  |                    ~~~~ target declared here

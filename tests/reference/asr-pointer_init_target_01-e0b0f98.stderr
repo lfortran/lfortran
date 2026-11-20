@@ -1,8 +1,0 @@
-semantic error: pointer initialization target `g` must have the `target` attribute
- --> tests/errors/pointer_init_target_01.f90:6:26
-  |
-6 | type(t), pointer :: q => g(2)
-  |                          ^^^^ 
-  |
-5 | type(t) :: g(3)
-  |            ~~~~ declared here

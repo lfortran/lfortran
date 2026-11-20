@@ -8117,23 +8117,3 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_overlap_trigger_01.f90"
 gpu_cuda_kernel = true
 options = "--gpu-overlap"
-
-[[test]]
-filename = "errors/pointer_init_target_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/pointer_init_target_02.f90"
-asr = true
-
-[[test]]
-filename = "errors/pointer_init_target_03.f90"
-asr = true
-
-[[test]]
-filename = "errors/pointer_init_target_04.f90"
-asr = true
-
-[[test]]
-filename = "errors/pointer_init_target_05.f90"
-asr = true
