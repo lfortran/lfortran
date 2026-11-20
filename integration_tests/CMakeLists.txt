@@ -2983,6 +2983,7 @@ RUN(NAME implicit_interface_120 LABELS gfortran llvm EXTRA_ARGS --implicit-inter
     EXTRAFILES implicit_interface_120_m.f90)
 RUN(NAME implicit_interface_121 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # locally typed external function defined later in the file (#4376)
 RUN(NAME implicit_interface_122 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # generic call with a derived-type component array section (#11668)
+RUN(NAME implicit_interface_123 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # integer external function called with an array argument (#16081)
 RUN(NAME implicit_none_external_01 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)

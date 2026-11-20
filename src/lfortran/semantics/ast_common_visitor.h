@@ -2817,6 +2817,8 @@ public:
     bool idl_not_evaluated = false;
     // Whether the implied do loops being visited are in an array constructor
     bool in_array_constructor = false;
+    // The target of the assignment statement being visited
+    const AST::expr_t* assignment_target = nullptr;
     // The variables of the implied do loops whose values are being visited
     std::vector<std::string> implied_do_variables;
 
@@ -3784,6 +3786,31 @@ public:
         return name == "real" || name == "integer" || name == "logical"
             || name == "complex" || name == "character"
             || name == "doubleprecision";
+    }
+
+    // Whether `v` is a local variable or a dummy argument whose only
+    // declaration is a scalar numeric or logical type, so that a reference
+    // to it with a list of positional actual arguments can only be a
+    // reference to a function.
+    bool names_function_with_implicit_interface(ASR::symbol_t* v) {
+        if (!ASR::is_a<ASR::Variable_t>(*v)) {
+            return false;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v);
+        ASR::ttype_t* type = var->m_type;
+        bool scalar_numeric_or_logical = ASR::is_a<ASR::Integer_t>(*type)
+            || ASR::is_a<ASR::UnsignedInteger_t>(*type)
+            || ASR::is_a<ASR::Real_t>(*type)
+            || ASR::is_a<ASR::Complex_t>(*type)
+            || ASR::is_a<ASR::Logical_t>(*type);
+        return scalar_numeric_or_logical
+            && (var->m_intent == ASR::intentType::Local
+                || var->m_intent == ASR::intentType::Unspecified)
+            && var->m_storage == ASR::storage_typeType::Default
+            && var->m_symbolic_value == nullptr
+            && var->n_codims == 0
+            && var->m_common_block == nullptr
+            && !var->m_target_attr;
     }
 
     bool is_procedure_result(const char* name) {
@@ -26792,6 +26819,21 @@ public:
                     var_name, v, old_type, x.base.base.loc);
                 erase_from_external_mapping(var_name);
                 v = implicit_function_reference_target(x, var_name, canonical, old_type);
+            } else if (!compiler_options.implicit_interface && x.n_member == 0 &&
+                    x.n_keywords == 0 && !is_section_designator(x) &&
+                    &x.base != assignment_target &&
+                    current_scope->get_symbol(var_name) == v &&
+                    names_function_with_implicit_interface(v)) {
+                // `integer :: f` followed by `l = f(n)` references an external
+                // function with an implicit interface, not an array element.
+                // A section `f(1:2)` cannot be a function reference, and a
+                // keyword argument `f(x=n)` requires an explicit interface.
+                diag.add(Diagnostic(
+                    "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
             }
         }
         if (v && !compiler_options.implicit_interface && is_external_procedure) {

@@ -5239,3 +5239,26 @@ contains
         print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
     end subroutine cc1_rdo_use
 end module cc1_rank_data_object
+
+! Without --implicit-interface, a name that has only a scalar type
+! declaration and is referenced with an argument list is a function with an
+! implicit interface, not an array or a substring.
+subroutine cc1_typed_external_function_call(n, x, l, r, cc1_tefc_d)
+    integer :: n, l, cc1_tefc_d, cc1_tefc_f1, cc1_tefc_f2, cc1_tefc_f3
+    real :: x(n), r, cc1_tefc_g1, cc1_tefc_g2
+    l = cc1_tefc_f1(n, x)  ! {Error} function interface must be specified explicitly
+    l = cc1_tefc_f2(n)  ! {Error} function interface must be specified explicitly
+    l = cc1_tefc_f3(1.0)  ! {Error} function interface must be specified explicitly
+    r = cc1_tefc_g1()  ! {Error} function interface must be specified explicitly
+    print *, cc1_tefc_g2(r)  ! {Error} function interface must be specified explicitly
+    if (cc1_tefc_d(n) > 0) l = 1  ! {Error} function interface must be specified explicitly
+end subroutine
+
+! A section `f(1:2)` cannot be a function reference and a keyword argument
+! `f(x=n)` requires an explicit interface, so neither suggests
+! --implicit-interface.
+subroutine cc1_typed_external_section_or_keyword(n, l)
+    integer :: n, l, cc1_tesk_f1, cc1_tesk_f2
+    l = cc1_tesk_f1(1:2)  ! {Error} Type mismatch in assignment
+    l = cc1_tesk_f2(x=n)  ! {Error} Array reference is not allowed on scalar variable
+end subroutine

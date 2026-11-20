@@ -9050,7 +9050,9 @@ public:
             ? AST::down_cast<AST::Name_t>(x.m_target)->m_id : nullptr;
         const ASR::DoLoop_t *assigned_loop = assigned_name
             ? do_variable_assigned(assigned_name) : nullptr;
+        assignment_target = x.m_target;
         this->visit_expr(*x.m_target);
+        assignment_target = nullptr;
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
 
         // Handle character array section with substring on LHS:

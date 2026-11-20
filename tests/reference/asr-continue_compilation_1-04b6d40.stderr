@@ -6452,6 +6452,54 @@ semantic error: the argument of the `rank` intrinsic must be a data object
 5239 |         print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
      |                       ~~~~~~~~~~~~~~~~~~~ help: assign the value to a variable and pass the variable instead
 
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+    --> tests/errors/continue_compilation_1.f90:5249:9
+     |
+5249 |     l = cc1_tefc_f1(n, x)  ! {Error} function interface must be specified explicitly
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+    --> tests/errors/continue_compilation_1.f90:5250:9
+     |
+5250 |     l = cc1_tefc_f2(n)  ! {Error} function interface must be specified explicitly
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+    --> tests/errors/continue_compilation_1.f90:5251:9
+     |
+5251 |     l = cc1_tefc_f3(1.0)  ! {Error} function interface must be specified explicitly
+     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+    --> tests/errors/continue_compilation_1.f90:5252:9
+     |
+5252 |     r = cc1_tefc_g1()  ! {Error} function interface must be specified explicitly
+     |         ^^^^^^^^^^^^^ 
+
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+    --> tests/errors/continue_compilation_1.f90:5253:14
+     |
+5253 |     print *, cc1_tefc_g2(r)  ! {Error} function interface must be specified explicitly
+     |              ^^^^^^^^^^^^^^ 
+
+semantic error: function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`
+    --> tests/errors/continue_compilation_1.f90:5254:9
+     |
+5254 |     if (cc1_tefc_d(n) > 0) l = 1  ! {Error} function interface must be specified explicitly
+     |         ^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:5262:5
+     |
+5262 |     l = cc1_tesk_f1(1:2)  ! {Error} Type mismatch in assignment
+     |     ^   ^^^^^^^^^^^^^^^^ type mismatch (`integer` and `integer[:]`)
+
+semantic error: Array reference is not allowed on scalar variable
+    --> tests/errors/continue_compilation_1.f90:5263:9
+     |
+5263 |     l = cc1_tesk_f2(x=n)  ! {Error} Array reference is not allowed on scalar variable
+     |         ^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
