@@ -14,6 +14,7 @@ import select
 import subprocess
 import sys
 import tempfile
+import time
 
 try:
     import pty
@@ -70,31 +71,49 @@ def run(cmd, cwd, no_color, terminal):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
         return p.stdout, p.stderr
     master, slave = pty.openpty()
-    streams = {
-        "stdout": slave if "stdout" in terminal else subprocess.PIPE,
-        "stderr": slave if "stderr" in terminal else subprocess.PIPE,
-    }
-    p = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
-        **streams)
-    os.close(slave)
-    # The outputs are small, so a pipe cannot fill up while the terminal is
-    # read; a hung compiler still fails the test instead of blocking it.
-    out = b""
-    while True:
-        if not select.select([master], [], [], 120)[0]:
-            p.kill()
-            break
-        try:
-            data = os.read(master, 4096)
-        except OSError:
-            break
-        if not data:
-            break
-        out += data
-    os.close(master)
-    stdout = p.stdout.read() if p.stdout else b""
-    stderr = p.stderr.read() if p.stderr else b""
-    p.wait(timeout=120)
+    try:
+        streams = {
+            "stdout": slave if "stdout" in terminal else subprocess.PIPE,
+            "stderr": slave if "stderr" in terminal else subprocess.PIPE,
+        }
+        p = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+            **streams)
+        # Keep `slave` open in the parent until the child exits and `master` is
+        # drained: on macOS, closing the last slave fd (when a short-lived child
+        # exits) can flush unread output from the pty before the parent reads
+        # it, causing `os.read(master, ...)` to return empty output.
+        # The outputs are small, so a pipe cannot fill up while the terminal is
+        # read; a hung compiler still fails the test instead of blocking it.
+        out = b""
+        deadline = time.monotonic() + 120
+        while True:
+            exited = p.poll() is not None
+            remaining = max(0.0, deadline - time.monotonic())
+            timeout = 0.0 if exited else min(0.01, remaining)
+            if select.select([master], [], [], timeout)[0]:
+                try:
+                    data = os.read(master, 4096)
+                except OSError:
+                    break
+                if not data:
+                    break
+                out += data
+                continue
+            if exited:
+                break
+            if time.monotonic() >= deadline:
+                p.kill()
+                break
+        stdout = p.stdout.read() if p.stdout else b""
+        stderr = p.stderr.read() if p.stderr else b""
+        if p.stdout:
+            p.stdout.close()
+        if p.stderr:
+            p.stderr.close()
+        p.wait(timeout=120)
+    finally:
+        os.close(slave)
+        os.close(master)
     if "stderr" in terminal:
         stderr = out
     else:
@@ -132,12 +151,14 @@ def check_stacktrace(lfortran, cwd):
     ]
     for name, no_color, terminal, colored in cases:
         _, stderr = run([os.path.join(cwd, name)], cwd, no_color, terminal)
-        if (ESCAPE in stderr) != colored:
-            failures.append("%s%s (%s on a terminal): the stack trace is "
-                "%scolored:\n%r" % (
-                "" if no_color is None else "NO_COLOR=%r " % no_color, name,
-                ", ".join(terminal) or "nothing",
-                "not " if colored else "", stderr))
+        description = "%s%s (%s on a terminal)" % (
+            "" if no_color is None else "NO_COLOR=%r " % no_color, name,
+            ", ".join(terminal) or "nothing")
+        if not stderr.strip():
+            failures.append("%s: wrote nothing to stderr" % description)
+        elif (ESCAPE in stderr) != colored:
+            failures.append("%s: the stack trace is %scolored:\n%r" % (
+                description, "not " if colored else "", stderr))
     return failures
 
 
