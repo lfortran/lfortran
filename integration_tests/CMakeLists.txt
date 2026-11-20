@@ -5318,6 +5318,8 @@ RUN(NAME read_124 LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp) # li
 RUN(NAME read_125 LABELS gfortran llvm) # list-directed read of a Q exponent into real(16) (#17485)
 RUN(NAME read_126 LABELS gfortran llvm) # list-directed read of NaN(1) into real(selected_real_kind(33)) (#17486)
 RUN(NAME read_127 LABELS gfortran llvm) # BZ formatted read ignores the blanks before the sign (#18204)
+RUN(NAME read_129 LABELS gfortran llvm) # formatted read of a Q exponent into real(4) and real(8) (#18199)
+RUN(NAME read_130 LABELS gfortran llvm) # list-directed read of a Q exponent into real and complex (#18199)
 RUN(NAME iomsg_deferred_char_01 LABELS gfortran llvm)
 RUN(NAME read_crlf_01 LABELS gfortran llvm)
 RUN(NAME read_unconnected_unit_01 LABELS gfortran llvm)
