@@ -21301,15 +21301,22 @@ public:
         }
         // Visit with appropriate load. An allocatable scalar, like a pointer,
         // is held through a pointer that must be loaded to get its value.
-        ASR::ttype_t* arg_type = expr_type(x.m_arg);
-        if (ASRUtils::is_string_only(arg_type)) {
-            this->visit_expr_load_wrapper(x.m_arg, 0);
-        } else if (ASRUtils::is_pointer(arg_type) ||
-                (LLVM::is_llvm_pointer(*arg_type) && !ASRUtils::is_array(arg_type))) {
-            this->visit_expr_load_wrapper(x.m_arg, 2, true);
-            load_non_array_non_character_pointers(x.m_arg, arg_type, tmp);
-        } else {
-            this->visit_expr_load_wrapper(x.m_arg, ptr_loads, true);
+        // ClassToClass, ClassToStruct, and ClassToIntrinsic re-visit x.m_arg
+        // with ptr_loads=0 in their switch cases; skip pre-loading here to
+        // avoid dead loads and dereferencing an unassociated pointer selector.
+        if (x.m_kind != ASR::cast_kindType::ClassToClass &&
+                x.m_kind != ASR::cast_kindType::ClassToStruct &&
+                x.m_kind != ASR::cast_kindType::ClassToIntrinsic) {
+            ASR::ttype_t* arg_type = expr_type(x.m_arg);
+            if (ASRUtils::is_string_only(arg_type)) {
+                this->visit_expr_load_wrapper(x.m_arg, 0);
+            } else if (ASRUtils::is_pointer(arg_type) ||
+                    (LLVM::is_llvm_pointer(*arg_type) && !ASRUtils::is_array(arg_type))) {
+                this->visit_expr_load_wrapper(x.m_arg, 2, true);
+                load_non_array_non_character_pointers(x.m_arg, arg_type, tmp);
+            } else {
+                this->visit_expr_load_wrapper(x.m_arg, ptr_loads, true);
+            }
         }
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
@@ -27668,19 +27675,19 @@ public:
                 // to the intrinsic data inside the polymorphic wrapper.
                 // This ensures write-through for intent(out)/(inout) arguments.
                 this->visit_expr_load_wrapper(x.m_args[i].m_value, 0);
-            } else if((ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) && 
-                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value))) && 
-                        !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)))) {
+            } else if (ASR::is_a<ASR::Cast_t>(*x.m_args[i].m_value) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)))) {
                 this->visit_expr_wrapper(x.m_args[i].m_value);
-                if (ASRUtils::is_class_type(
-                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)))) {
-                    tmp = convert_class_to_type(x.m_args[i].m_value, nullptr, orig_arg->m_type_declaration, orig_arg->m_type, tmp);
-                } else if( orig_arg &&
-                    !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
-                    LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_args[i].m_value)) ) {
-                    llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(
-                        x.m_args[i].m_value, ASRUtils::expr_type(x.m_args[i].m_value), module.get());
-                    tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
+                if (orig_arg && !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
+                    if (ASRUtils::is_class_type(
+                            ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i].m_value)))) {
+                        tmp = convert_class_to_type(x.m_args[i].m_value, nullptr, orig_arg->m_type_declaration, orig_arg->m_type, tmp);
+                    } else if (!LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                            LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_args[i].m_value))) {
+                        llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_args[i].m_value, ASRUtils::expr_type(x.m_args[i].m_value), module.get());
+                        tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
+                    }
                 }
             } else if( ASR::is_a<ASR::FunctionType_t>(
                 *ASRUtils::type_get_past_pointer(
