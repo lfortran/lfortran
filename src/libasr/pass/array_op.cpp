@@ -2175,9 +2175,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (idx.m_left == nullptr && idx.m_step == nullptr &&
                 idx.m_right != nullptr &&
                 ASRUtils::is_array(ASRUtils::expr_type(idx.m_right))) {
+            ASRUtils::ExprStmtDuplicator d(al);
             ASR::expr_t* dim_one = builder.i_t(1, idx_type);
             return ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
-                idx.m_right, dim_one, idx_type, nullptr));
+                d.duplicate_expr(idx.m_right), dim_one, idx_type, nullptr));
         }
         if (idx.m_left != nullptr && idx.m_right != nullptr) {
             ASRUtils::ExprStmtDuplicator d(al);
@@ -2270,9 +2271,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
+        ASRUtils::ExprStmtDuplicator target_duplicator(al);
         ASR::alloc_arg_t aa;
         aa.loc = loc;
-        aa.m_a = target;
+        aa.m_a = target_duplicator.duplicate_expr(target);
         aa.m_dims = realloc_dims.p;
         aa.n_dims = realloc_dims.size();
         aa.m_len_expr = realloc_str_len;
@@ -3459,14 +3461,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             // (computed from the vector subscripts / section bounds)
             // before generating the element-wise loop, so the loop can
             // index into a buffer of the correct size.
+            ASR::expr_t* underlying_target =
+                ASRUtils::get_past_array_physical_cast(xx.m_target);
             if ((realloc_lhs ||
                  xx.m_realloc_lhs ||
-                 should_auto_realloc_component_assignment(xx.m_target)) &&
-                ASR::is_a<ASR::Var_t>(*xx.m_target) &&
-                ASRUtils::is_allocatable(ASRUtils::expr_type(xx.m_target)) &&
+                 should_auto_realloc_component_assignment(underlying_target)) &&
+                (ASR::is_a<ASR::Var_t>(*underlying_target) ||
+                 ASR::is_a<ASR::StructInstanceMember_t>(*underlying_target)) &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
                 ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
                 is_array_indexed_with_array_indices_check(xx.m_value)) {
-                insert_realloc_for_indexed_value(xx.m_target, xx.m_value, loc);
+                insert_realloc_for_indexed_value(underlying_target, xx.m_value, loc);
             }
             generate_loop_for_array_indexed_with_array_indices(
                 x, &(xx.m_target), &(xx.m_value), loc);
