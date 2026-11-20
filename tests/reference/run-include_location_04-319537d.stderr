@@ -1,0 +1,5 @@
+runtime error: Runtime error: Array 'a' index out of bounds. Tried to access index 3 of dimension 1, but valid range is 1 to 2.
+ --> tests/errors/include_location_04.inc:7:10
+  |
+7 |          A(I) =
+  |          ^^^^

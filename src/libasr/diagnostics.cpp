@@ -134,18 +134,28 @@ std::string get_line(std::string str, int n)
 }
 
 // Converts the linear `loc` of the span to lines and columns in the original
-// code and returns the position of `loc.first` in the original code
-static uint32_t populate_span_linecol(diag::Span &s, const LocationManager &lm,
-        bool skip_output_to_input) {
+// code and returns the text of the file `loc.first` is in, or nullptr when
+// that file has to be read from disk
+static const std::string *populate_span_linecol(diag::Span &s,
+        const LocationManager &lm, bool skip_output_to_input) {
     std::string first_filename, last_filename;
-    uint32_t first_pos = skip_output_to_input
-        ? s.loc.first : lm.output_to_input_pos(s.loc.first, false);
-    uint32_t last_pos = skip_output_to_input
-        ? s.loc.last : lm.output_to_input_pos(s.loc.last, true);
-    lm.pos_to_linecol(first_pos,
-        s.first_line, s.first_column, first_filename);
-    lm.pos_to_linecol(last_pos,
-        s.last_line, s.last_column, last_filename);
+    const std::string *source = nullptr;
+    if (skip_output_to_input) {
+        lm.pos_to_linecol(s.loc.first,
+            s.first_line, s.first_column, first_filename);
+        lm.pos_to_linecol(s.loc.last,
+            s.last_line, s.last_column, last_filename);
+        source = lm.source_at(s.loc.first);
+    } else {
+        lm.output_pos_to_linecol(s.loc.first, false,
+            s.first_line, s.first_column, first_filename);
+        lm.output_pos_to_linecol(s.loc.last, true,
+            s.last_line, s.last_column, last_filename);
+        uint32_t include_pos;
+        if (lm.include_at(s.loc.first, include_pos) == nullptr) {
+            source = lm.source_at(lm.output_to_input_pos(s.loc.first, false));
+        }
+    }
     s.filename = first_filename;
     if (first_filename != last_filename
             || s.last_line < s.first_line
@@ -154,7 +164,7 @@ static uint32_t populate_span_linecol(diag::Span &s, const LocationManager &lm,
         s.last_line = s.first_line;
         s.last_column = s.first_column;
     }
-    return first_pos;
+    return source;
 }
 
 // Diagnostics emitted by the C preprocessor itself carry input-buffer
@@ -166,11 +176,11 @@ static bool has_input_offsets(const diag::Diagnostic &d) {
 
 void populate_span(diag::Span &s, const LocationManager &lm,
         bool skip_output_to_input = false) {
-    uint32_t first_pos = populate_span_linecol(s, lm, skip_output_to_input);
-    std::string input;
     // An interactive cell is only ever in memory, so the text comes with the
     // location rather than from a file of that name.
-    const std::string *in_memory = lm.source_at(first_pos);
+    const std::string *in_memory = populate_span_linecol(s, lm,
+        skip_output_to_input);
+    std::string input;
     if (in_memory != nullptr) {
         for (uint32_t i = s.first_line; i <= s.last_line; i++) {
             s.source_code.push_back(get_line(*in_memory, i));

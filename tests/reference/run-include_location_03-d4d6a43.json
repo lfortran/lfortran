@@ -1,0 +1,13 @@
+{
+    "basename": "run-include_location_03-d4d6a43",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/include_location_03.f90",
+    "infile_hash": "d42f7ccac6979cb3a4f6ba43824fbe8749915e880a6d042d5fbbd32d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-include_location_03-d4d6a43.stderr",
+    "stderr_hash": "471f4fef7fcea2511de5ad00f0cb23ab23aedef458645d2f92c1a0ae",
+    "returncode": 1
+}

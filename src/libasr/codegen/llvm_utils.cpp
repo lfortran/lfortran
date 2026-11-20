@@ -495,9 +495,14 @@ namespace LCompilers {
                 + std::to_string(label.spans.size()) + std::string(1, '\0') + label.message;
             for (const diag::Span &span : label.spans) {
                 SpanLineCol s;
-                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.first, false), s.start_l, s.start_c, infile);
-                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.last, false), s.last_l, s.last_c, infile);
-                s.filename = infile;
+                std::string last_filename;
+                lm.output_pos_to_linecol(span.loc.first, false, s.start_l, s.start_c, s.filename);
+                lm.output_pos_to_linecol(span.loc.last, false, s.last_l, s.last_c, last_filename);
+                if (last_filename != s.filename) {
+                    s.last_l = s.start_l;
+                    s.last_c = s.start_c;
+                }
+                if (s.filename.empty()) s.filename = infile;
                 info_key += std::string(1, '\0') + s.filename + ":" + std::to_string(s.start_l)
                     + ":" + std::to_string(s.start_c) + ":" + std::to_string(s.last_l)
                     + ":" + std::to_string(s.last_c);

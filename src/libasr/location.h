@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_PARSER_LOCATION_H
 #define LFORTRAN_PARSER_LOCATION_H
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -126,6 +127,13 @@ struct LocationManager {
         std::vector<uint32_t> in_size0; // Size of the `in` interval
         std::vector<uint32_t> interval_type0; // 0 .... 1:1; 1 ... many to many;
         std::vector<uint32_t> in_newlines0; // position of all \n in the original code
+
+        // INCLUDE files expanded into the output code of this file. The
+        // interval `include_intervals[i]` (an index into `out_start`,
+        // increasing) holds the output code of `includes[i]`, whose own
+        // `out_start` begins at 0 there. An INCLUDE file can include others.
+        std::vector<uint32_t> include_intervals;
+        std::vector<FileLocations> includes;
     };
     std::vector<FileLocations> files;
     // Location is continued for the imported files, i.e.,if the new file is
@@ -265,14 +273,19 @@ struct LocationManager {
         filename = files[index].in_filename;
         // Get the actual location by subtracting the previous file size.
         if (index > 0) position -= file_ends[index - 1];
-        const std::vector<uint32_t> *newlines;
         if (files[index].preprocessor) {
-            newlines = &files[index].in_newlines0;
+            file_pos_to_linecol(files[index].in_newlines0, position, line, col);
         } else {
-            newlines = &files[index].in_newlines;
+            file_pos_to_linecol(files[index].in_newlines, position, line, col);
         }
-        int32_t interval = bisection(*newlines, position);
-        if (interval >= 1 && position == (*newlines)[interval-1]) {
+    }
+
+    // Converts a linear position `position` in a file with the given
+    // positions of `\n` to a (line, col) tuple
+    static void file_pos_to_linecol(const std::vector<uint32_t> &newlines,
+            uint32_t position, uint32_t &line, uint32_t &col) {
+        int32_t interval = bisection(newlines, position);
+        if (interval >= 1 && position == newlines[interval-1]) {
             // position is exactly the \n character, make sure `line` is
             // the line with \n, and `col` points to the position of \n
             interval -= 1;
@@ -281,7 +294,35 @@ struct LocationManager {
         if (line == 1) {
             col = position+1;
         } else {
-            col = position-(*newlines)[interval-1];
+            col = position-newlines[interval-1];
+        }
+    }
+
+    // The innermost INCLUDE file whose expansion holds the position `out_pos`
+    // of the output code, with `in_pos` set to the position in the original
+    // code of that file. Returns nullptr when the position is not in an
+    // INCLUDE file.
+    const FileLocations *include_at(uint32_t out_pos, uint32_t &in_pos) const {
+        if (files.empty()) return nullptr;
+        if (!file_ends.empty() && out_pos > file_ends.back()) return nullptr;
+        uint32_t index = bisection(file_ends, out_pos);
+        if (index != 0 && index == file_ends.size()) index -= 1;
+        const FileLocations *file = &files[index];
+        const FileLocations *include = nullptr;
+        while (true) {
+            uint32_t n_intervals = bisection(file->out_start, out_pos);
+            if (n_intervals == 0) return nullptr;
+            uint32_t interval = n_intervals-1;
+            uint32_t rel_pos = out_pos - file->out_start[interval];
+            auto it = std::lower_bound(file->include_intervals.begin(),
+                file->include_intervals.end(), interval);
+            if (it == file->include_intervals.end() || *it != interval) {
+                in_pos = file->in_start[interval] + rel_pos;
+                return include;
+            }
+            include = &file->includes[it - file->include_intervals.begin()];
+            file = include;
+            out_pos = rel_pos;
         }
     }
 
@@ -291,6 +332,13 @@ struct LocationManager {
     // `show_last`
     void output_pos_to_linecol(uint32_t out_pos, bool show_last,
             uint32_t &line, uint32_t &col, std::string &filename) const {
+        uint32_t in_pos;
+        const FileLocations *include = include_at(out_pos, in_pos);
+        if (include != nullptr) {
+            filename = include->in_filename;
+            file_pos_to_linecol(include->in_newlines, in_pos, line, col);
+            return;
+        }
         pos_to_linecol(output_to_input_pos(out_pos, show_last), line, col,
             filename);
     }

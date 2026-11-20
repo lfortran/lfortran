@@ -1,0 +1,10 @@
+C     THE RUN-TIME ERROR IS AT LINE 7 OF THIS FILE
+      SUBROUTINE SETIT(A, N)
+      INTEGER N
+      DOUBLE PRECISION A(2)
+      INTEGER I
+      DO 10 I = 1, N
+         A(I) =
+     &      DBLE(I)
+   10 CONTINUE
+      END

@@ -11,6 +11,45 @@ namespace LCompilers {
 
 const std::string lfortran_modfile_type_string = "LCompilers Modfile";
 
+// The INCLUDE files of `file`, recursively. An INCLUDE file is not
+// preprocessed, so only the locations of the prescanner are saved.
+template <typename Writer>
+void save_includes(Writer &b, const LocationManager::FileLocations &file) {
+    b.write_int32(checked_integer_cast<uint32_t>(file.includes.size()));
+    for (size_t i = 0; i < file.includes.size(); i++) {
+        const LocationManager::FileLocations &include = file.includes[i];
+        b.write_int32(file.include_intervals[i]);
+        b.write_string(include.in_filename);
+        for (const std::vector<uint32_t> *v : {&include.out_start,
+                &include.in_start, &include.in_newlines}) {
+            b.write_int32(checked_integer_cast<uint32_t>(v->size()));
+            for (auto x: *v) {
+                b.write_int32(x);
+            }
+        }
+        save_includes(b, include);
+    }
+}
+
+template <typename Reader>
+void load_includes(Reader &b, LocationManager::FileLocations &file) {
+    int32_t n_includes = b.read_int32();
+    for (int i = 0; i < n_includes; i++) {
+        LocationManager::FileLocations include;
+        file.include_intervals.push_back(b.read_int32());
+        include.in_filename = b.read_string();
+        for (std::vector<uint32_t> *v : {&include.out_start,
+                &include.in_start, &include.in_newlines}) {
+            int32_t n = b.read_int32();
+            for (int j = 0; j < n; j++) {
+                v->push_back(b.read_int32());
+            }
+        }
+        load_includes(b, include);
+        file.includes.push_back(include);
+    }
+}
+
 inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, LCompilers::LocationManager lm) {
     #ifdef WITH_LFORTRAN_BINARY_MODFILES
     BinaryWriter b;
@@ -90,6 +129,9 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, L
         for(auto i: file.in_newlines0) {
             b.write_int32(i);
         }
+
+        // std::vector<uint32_t> include_intervals, std::vector<FileLocations> includes
+        save_includes(b, file);
     }
 
     // std::vector<uint32_t> file_ends
@@ -205,6 +247,8 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
         for(int i=0; i<n_in_newlines0; i++) {
             file.in_newlines0.push_back(b.read_int32());
         }
+
+        load_includes(b, file);
 
         serialized_lm.files.push_back(file);
     }
