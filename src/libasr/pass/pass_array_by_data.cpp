@@ -121,13 +121,28 @@ static bool has_saved_state(ASR::Function_t* x) {
 // inquiry about its bounds, length, rank or type parameters (ArraySize,
 // ArrayBound, ArrayRank, StringLen, TypeInquiry): a variable, or a section,
 // element, substring or component of one. The subscripts and the types met
-// on the way are references like any other.
+// on the way, and any other object, such as a function reference, are
+// references like any other. An inquiry reference also comes with whether
+// it asks only about the shape of the variable, which the variable's
+// dimensions alone determine: ArraySize, ArrayBound or ArrayRank of the
+// variable, of a section of it, or of a scalar component of either, which
+// has the shape of its parent (see declare_shape_only).
+struct SymbolReference {
+    ASR::symbol_t* symbol;
+    bool inquiry;
+    bool shape;
+};
+
 class SymbolReferences : public ASR::SerializationBaseVisitor<SymbolReferences> {
     typedef ASR::SerializationBaseVisitor<SymbolReferences> Base;
-    // Whether the expression being visited designates an inquired object.
+    // Whether the expression being visited designates an inquired object,
+    // and whether only its shape is inquired about.
     bool inquired = false;
-    // The object of the inquiry being visited.
+    bool shape = false;
+    // The object of the inquiry being visited, and whether only its shape
+    // is inquired about.
     const ASR::expr_t* inquiry_object = nullptr;
+    bool object_shape = false;
     // The base of the designator being visited, which was visited already.
     const ASR::expr_t* visited_base = nullptr;
 
@@ -168,10 +183,10 @@ class SymbolReferences : public ASR::SerializationBaseVisitor<SymbolReferences> 
     }
 
 public:
-    std::vector<std::pair<ASR::symbol_t*, bool>> symbols;
+    std::vector<SymbolReference> symbols;
 
     void write_symbol(const ASR::symbol_t& x) {
-        symbols.push_back({const_cast<ASR::symbol_t*>(&x), inquired});
+        symbols.push_back({const_cast<ASR::symbol_t*>(&x), inquired, shape});
     }
     template <typename... T> void write_int8(T...) {}
     template <typename... T> void write_int64(T...) {}
@@ -188,19 +203,32 @@ public:
             return;
         }
         bool outer_inquired = inquired;
+        bool outer_shape = shape;
         const ASR::expr_t* outer_object = inquiry_object;
-        inquired = &x == inquiry_object || (inquired &&
-            (ASR::is_a<ASR::Var_t>(x) || get_designator_base(x)));
-        if (const ASR::expr_t* base = inquired ? get_designator_base(x) : nullptr) {
+        bool outer_object_shape = object_shape;
+        const ASR::expr_t* base = get_designator_base(x);
+        inquired = &x == inquiry_object && (ASR::is_a<ASR::Var_t>(x) || base);
+        shape = inquired && object_shape;
+        if (inquired && base) {
             inquiry_object = base;
+            bool scalar_member = ASR::is_a<ASR::StructInstanceMember_t>(x) &&
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(&x)) ==
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(
+                    const_cast<ASR::expr_t*>(base)));
+            object_shape = shape && (ASR::is_a<ASR::ArraySection_t>(x) || scalar_member);
             visit_expr(*base);
             visited_base = base;
             inquired = false;
+            shape = false;
         }
         inquiry_object = get_inquiry_object(x);
+        object_shape = ASR::is_a<ASR::ArraySize_t>(x) || ASR::is_a<ASR::ArrayBound_t>(x) ||
+            ASR::is_a<ASR::ArrayRank_t>(x);
         Base::visit_expr(x);
         inquired = outer_inquired;
+        shape = outer_shape;
         inquiry_object = outer_object;
+        object_shape = outer_object_shape;
     }
 };
 
@@ -260,18 +288,38 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
 // `sym`, a local variable of the copy, which its signature refers to only as
 // the object of an inquiry about its bounds, length, rank or type parameters
 // (F2018 10.1.11), such as `x(ubound(w, 1))` with an automatic `w(n + 1)`.
-// The forwarder then declares the variable, so it allocates (and, if the
-// variable has an initializer, initializes) it on entry, and deallocates it
-// on return, but never uses its value. That does not matter, unless the
-// variable is finalized on return, which the user can observe.
+// The forwarder then declares the variable, so it allocates it on entry and
+// deallocates it on return, but never uses its value (see
+// signature_closure for what it declares it as).
 static bool is_kept_for_inquiry(ASR::symbol_t* sym) {
-    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
-    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-    if (var->m_intent != ASR::intentType::Local) return false;
-    return var->m_storage == ASR::storage_typeType::Save ||
-        ASRUtils::is_pointer(var->m_type) || ASRUtils::is_allocatable(var->m_type) ||
-        !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type)) ||
-        !ASRUtils::struct_needs_finalization(var->m_type_declaration);
+    return ASR::is_a<ASR::Variable_t>(*sym) &&
+        ASR::down_cast<ASR::Variable_t>(sym)->m_intent == ASR::intentType::Local;
+}
+
+// Whether a variable that a forwarder keeps can be declared with the type
+// shape_only_type() makes of its own: one that is neither a pointer nor
+// allocatable (whose shape is deferred), nor a procedure variable, and that
+// is a scalar or an array whose physical type does not depend on its
+// element type.
+static bool has_shape_only_type(ASR::Variable_t* var) {
+    ASR::ttype_t* type = var->m_type;
+    if (ASRUtils::is_pointer(type) || ASRUtils::is_allocatable(type) ||
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(type))) return false;
+    if (!ASR::is_a<ASR::Array_t>(*type)) return true;
+    ASR::array_physical_typeType physical = ASR::down_cast<ASR::Array_t>(type)->m_physical_type;
+    return physical == ASR::array_physical_typeType::DescriptorArray ||
+        physical == ASR::array_physical_typeType::PointerArray ||
+        physical == ASR::array_physical_typeType::FixedSizeArray;
+}
+
+// An integer(1) type with the rank, dimensions and physical type of `type`.
+static ASR::ttype_t* shape_only_type(Allocator& al, ASR::ttype_t* type) {
+    const Location& loc = type->base.loc;
+    ASR::ttype_t* byte = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 1));
+    if (!ASR::is_a<ASR::Array_t>(*type)) return byte;
+    ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(type);
+    return ASRUtils::TYPE(ASR::make_Array_t(al, loc, byte, array->m_dims, array->n_dims,
+        array->m_physical_type, array->m_memory_space));
 }
 
 // The symbols of `f` that its signature needs: its dummies, its result and,
@@ -280,24 +328,33 @@ static bool is_kept_for_inquiry(ASR::symbol_t* sym) {
 // Returns false if one of them is neither is_declaration_only(), nor an
 // internal procedure whose own signature closure succeeds, nor a variable
 // that only declarations which are never evaluated (the signatures of such
-// interfaces and the types of procedure variables) refer to and that is a
-// pointer, is allocatable or is not of derived type (see below), nor a
-// local variable that the signature refers to only as the object of
-// inquiries and that is_kept_for_inquiry().
+// interfaces and the types of procedure variables) refer to, nor a local
+// variable that the evaluated declarations refer to only as the object of
+// inquiries (is_kept_for_inquiry), or if such a kept variable is finalized
+// on return (a derived type object of a finalized type that is not saved)
+// and is not in `shape_only`.
+//
+// The kept variables are never used, but the forwarder declares them: for
+// an automatic object, the dimensions and lengths that its declaration
+// evaluates are needed. A kept variable that the signature refers to only
+// by inquiries about its shape (SymbolReference::shape) is added to
+// `shape_only`: the forwarder declares it as an integer(1) object of the
+// same shape instead (shape_only_type), so that it is neither initialized
+// nor finalized and takes little storage. Another kept variable keeps its
+// type; it is not used, so its initialization on entry, if any, does not
+// matter, but its finalization on return would.
 //
 // An internal procedure that the signature needs, as the interface of a
 // dummy procedure or of a procedure pointer component, contributes only its
 // own signature, which `interfaces` maps it to: a procedure whose body was
 // replaced keeps it as an interface (make_interface). That interface is
 // never evaluated, so a variable that only its declarations refer to is
-// kept without its value mattering, as long as it is not a derived type
-// object (which would be initialized and finalized). For example, a bound
-// that is a host dummy reads it through the frame pointer of the host
-// (nested_vars), which is kept, and through getters, which become
-// interfaces too.
+// kept without its value mattering. For example, a bound that is a host
+// dummy reads it through the frame pointer of the host (nested_vars), which
+// is kept, and through getters, which become interfaces too.
 static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>& interfaces,
-        bool evaluated_signature = true) {
+        std::set<ASR::symbol_t*>& shape_only, bool evaluated_signature = true) {
     std::vector<ASR::symbol_t*> pending;
     for (size_t i = 0; i < f->n_args; i++) {
         pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
@@ -309,13 +366,17 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
     // The symbols that only the signatures of interfaces need.
     std::set<ASR::symbol_t*> unevaluated;
     if (!evaluated_signature) unevaluated.insert(pending.begin(), pending.end());
-    // The local variables that the signature refers to only as the objects
-    // of inquiries (see is_kept_for_inquiry).
+    // The local variables that the evaluated declarations refer to only as
+    // the objects of inquiries (see is_kept_for_inquiry).
     std::set<ASR::symbol_t*> inquired;
+    // The variables that the signature keeps although they have storage,
+    // and the symbols that it refers to other than by an inquiry about
+    // their shape.
+    std::set<ASR::symbol_t*> kept, not_shape;
     while (!pending.empty()) {
         ASR::symbol_t* sym = pending.back();
         pending.pop_back();
-        std::vector<std::pair<ASR::symbol_t*, bool>> references;
+        std::vector<SymbolReference> references;
         // Neither the signature of an interface nor the type of a
         // procedure variable is evaluated.
         bool evaluated = !unevaluated.count(sym) && !(ASR::is_a<ASR::Variable_t>(*sym) &&
@@ -336,9 +397,10 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
             sym_references.visit_symbol(*sym);
             references = sym_references.symbols;
         }
-        for (auto& [reference, inquiry] : references) {
+        for (auto& [reference, inquiry, shape] : references) {
             ASR::symbol_t* needed = symbol_of_scope(f->m_symtab, reference);
             if (!needed) continue;
+            if (!shape || needed != reference) not_shape.insert(needed);
             if (!closure.insert(needed).second) {
                 // The value of a local kept for an inquiry is needed after all.
                 if (evaluated && !inquiry && inquired.count(needed)) return false;
@@ -346,7 +408,7 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
                 if (!evaluated || !unevaluated.erase(needed)) continue;
             } else if (is_internal_procedure(f->m_symtab, needed)) {
                 if (!signature_closure(ASR::down_cast<ASR::Function_t>(needed),
-                        interfaces[needed], interfaces, false)) return false;
+                        interfaces[needed], interfaces, shape_only, false)) return false;
                 pending.push_back(needed);
                 continue;
             }
@@ -354,21 +416,130 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
                 if (evaluated && inquiry && needed == reference &&
                         is_kept_for_inquiry(needed)) {
                     inquired.insert(needed);
-                    pending.push_back(needed);
-                    continue;
-                }
-                if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) return false;
-                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(needed)->m_type;
-                if (!ASRUtils::is_pointer(type) && !ASRUtils::is_allocatable(type) &&
-                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+                } else if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) {
                     return false;
                 }
+                kept.insert(needed);
             }
             if (!evaluated) unevaluated.insert(needed);
             pending.push_back(needed);
         }
     }
+    for (ASR::symbol_t* sym : kept) {
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!has_shape_only_type(var)) continue;
+        if (!not_shape.count(sym)) {
+            shape_only.insert(sym);
+        } else if (var->m_storage != ASR::storage_typeType::Save &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type)) &&
+                ASRUtils::struct_needs_finalization(var->m_type_declaration)) {
+            return false;
+        }
+    }
     return true;
+}
+
+// Declares each variable of `shape_only` (see signature_closure), a
+// variable of `copy` or of an interface in it, as an integer(1) object of
+// the same shape, with neither an initializer nor a type declaration. The
+// sections of it that inquiries name get the same element type, and an
+// inquiry about a scalar component of it or of such a section asks about
+// the section, or about the variable (its size or rank) or a section of
+// all of it (its bounds, which are those of an array that is not a whole
+// array, as for the component) instead.
+static void declare_shape_only(Allocator& al, ASR::Function_t* copy,
+        const std::set<ASR::symbol_t*>& shape_only) {
+    for (ASR::symbol_t* sym : shape_only) {
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        var->m_type = shape_only_type(al, var->m_type);
+        var->m_type_declaration = nullptr;
+        var->m_symbolic_value = nullptr;
+        var->m_value = nullptr;
+        SetChar dependencies;
+        dependencies.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, dependencies, var->m_type,
+            nullptr, nullptr, var->m_name);
+        var->m_dependencies = dependencies.p;
+        var->n_dependencies = dependencies.size();
+    }
+    struct Sections : public ASR::BaseWalkVisitor<Sections> {
+        Allocator& al;
+        const std::set<ASR::symbol_t*>& shape_only;
+        Sections(Allocator& al, const std::set<ASR::symbol_t*>& shape_only) :
+            al(al), shape_only(shape_only) {}
+        // `v` without the components that it selects, if it is a variable of
+        // `shape_only` or a section of one; `v` otherwise.
+        ASR::expr_t* without_members(ASR::expr_t* v) {
+            ASR::expr_t* object = v;
+            while (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+                object = ASR::down_cast<ASR::StructInstanceMember_t>(object)->m_v;
+            }
+            ASR::expr_t* base = ASR::is_a<ASR::ArraySection_t>(*object) ?
+                ASR::down_cast<ASR::ArraySection_t>(object)->m_v : object;
+            return ASR::is_a<ASR::Var_t>(*base) &&
+                shape_only.count(ASR::down_cast<ASR::Var_t>(base)->m_v) ? object : v;
+        }
+        void visit_ArraySize(const ASR::ArraySize_t& x) {
+            const_cast<ASR::ArraySize_t&>(x).m_v = without_members(x.m_v);
+            ASR::BaseWalkVisitor<Sections>::visit_ArraySize(x);
+        }
+        void visit_ArrayRank(const ASR::ArrayRank_t& x) {
+            const_cast<ASR::ArrayRank_t&>(x).m_v = without_members(x.m_v);
+            ASR::BaseWalkVisitor<Sections>::visit_ArrayRank(x);
+        }
+        void visit_ArrayBound(const ASR::ArrayBound_t& x) {
+            ASR::expr_t* object = without_members(x.m_v);
+            if (object != x.m_v && ASR::is_a<ASR::Var_t>(*object)) {
+                object = whole_section(object);
+            }
+            const_cast<ASR::ArrayBound_t&>(x).m_v = object;
+            ASR::BaseWalkVisitor<Sections>::visit_ArrayBound(x);
+        }
+        // The section `v(:, ..., :)` of all of the array variable `v`.
+        ASR::expr_t* whole_section(ASR::expr_t* v) {
+            const Location& loc = v->base.loc;
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(v)->m_v;
+            ASR::ttype_t* index = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
+            Vec<ASR::array_index_t> indices;
+            indices.reserve(al, rank);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, rank);
+            for (size_t i = 0; i < rank; i++) {
+                ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                    i + 1, index, ASR::integerbozType::Decimal));
+                ASR::array_index_t ai;
+                ai.loc = loc;
+                ai.m_left = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), dim, index,
+                    ASR::arrayboundType::LBound, nullptr));
+                ai.m_right = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), dim, index,
+                    ASR::arrayboundType::UBound, nullptr));
+                ai.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index,
+                    ASR::integerbozType::Decimal));
+                indices.push_back(al, ai);
+                ASR::dimension_t d;
+                d.loc = loc;
+                d.m_start = nullptr;
+                d.m_length = nullptr;
+                dims.push_back(al, d);
+            }
+            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                ASRUtils::type_get_past_array(ASRUtils::expr_type(v)), dims.p, dims.size(),
+                ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
+            return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, v, indices.p,
+                indices.size(), type, nullptr));
+        }
+        void visit_ArraySection(const ASR::ArraySection_t& x) {
+            ASR::BaseWalkVisitor<Sections>::visit_ArraySection(x);
+            if (ASR::is_a<ASR::Var_t>(*x.m_v) && ASR::is_a<ASR::Array_t>(*x.m_type) &&
+                    shape_only.count(ASR::down_cast<ASR::Var_t>(x.m_v)->m_v)) {
+                const_cast<ASR::ArraySection_t&>(x).m_type = shape_only_type(al, x.m_type);
+            }
+        }
+    } sections(al, shape_only);
+    sections.visit_Function(*copy);
 }
 
 // Makes the internal procedure `x` an interface that keeps only the symbols
@@ -1946,16 +2117,26 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // inquiries about local objects (F2018 10.1.11). The frontend
         // replaces most of those by the bounds and lengths the objects
         // declare, but forwarding does not rely on it: a local that is
-        // only inquired about stays in the forwarder, unused (see
-        // is_kept_for_inquiry), unless it is finalized. Such a local, or
-        // any other symbol with storage or code that the signature needs,
-        // leaves the copy unforwarded, with its own saved state. For an
-        // external procedure declared by an interface body, whose direct
-        // calls reach the original and other references the copy, that
-        // splits the saved state between them; valid code reaches it only
-        // when the frontend could not replace an inquiry about a finalized
-        // local. Evaluating a specification function of the signature in
-        // both entries is harmless: it is pure.
+        // only inquired about stays in the forwarder, unused, and if only
+        // its shape is inquired about, as an integer(1) object of that
+        // shape, which is neither initialized nor finalized. Evaluating a
+        // specification function of the signature in both entries is
+        // harmless: it is pure.
+        //
+        // A copy that is not forwarded keeps its own saved state. For an
+        // external procedure, which another compilation unit can declare
+        // by an interface body, whose direct calls reach the original and
+        // other references the copy, that would split the saved state
+        // between them. Valid code that LFortran compiles does not get
+        // there through signature_closure, which refuses only the value of
+        // a local, which a specification expression cannot use, and a
+        // finalized local inquired about other than by its shape: through
+        // an element, a component that is an array or a function reference,
+        // which the frontend replaces by a constant or the standard does
+        // not allow, or by a signature that is never evaluated, which ASR
+        // verification rejects before this pass. A result that
+        // forwardable_result refuses is an argument by then
+        // (subroutine_from_function), unless a pipeline omits that pass.
         void forward_copies_with_saved_state() {
             for (auto& entry : v.proc2newproc) {
                 if (!ASR::is_a<ASR::Function_t>(*entry.first) ||
@@ -1966,11 +2147,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 bool pointer_result;
                 std::set<ASR::symbol_t*> signature;
                 std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> interfaces;
+                std::set<ASR::symbol_t*> shape_only;
                 if (parent->get_symbol(original->m_name) != entry.first ||
                         parent->get_symbol(copy->m_name) != entry.second.first ||
                         original->n_body == 0 || !has_saved_state(original) ||
-                        !forwardable_result(original, pointer_result) ||
-                        !signature_closure(copy, signature, interfaces)) continue;
+                        !forwardable_result(original, pointer_result)) continue;
+                if (!signature_closure(copy, signature, interfaces, shape_only)) {
+                    LCOMPILERS_ASSERT(!ASRUtils::is_tu_scope(parent));
+                    continue;
+                }
                 forwarded.insert(entry.first);
 
                 Vec<ASR::stmt_t*> body = forwarding_body(original, copy,
@@ -1987,6 +2172,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     make_interface(al, ASR::down_cast<ASR::Function_t>(item.first),
                         item.second);
                 }
+                declare_shape_only(al, copy, shape_only);
             }
         }
 
