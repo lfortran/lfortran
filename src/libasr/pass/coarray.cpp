@@ -3601,12 +3601,55 @@ class CoarrayInitVisitor : public ASR::BaseWalkVisitor<CoarrayInitVisitor> {
         }
 };
 
+// A call that this pass makes to a PRIF procedure passes an array to an
+// assumed-shape dummy by descriptor, as a call written in the source does.
+class PrifDescriptorActuals : public ASR::BaseWalkVisitor<PrifDescriptorActuals> {
+    public:
+        Allocator &al;
+        // The PRIF procedures that this pass declared.
+        std::set<ASR::symbol_t*> prif;
+
+        PrifDescriptorActuals(Allocator &al_) : al(al_) {}
+
+        void cast_actuals(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args) {
+            ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+            if (prif.find(callee) == prif.end()) return;
+            ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(callee);
+            for (size_t i = 0; i < n_args && i < ft->n_arg_types; i++) {
+                ASR::ttype_t *formal = ft->m_arg_types[i];
+                if (args[i].m_value == nullptr || !ASRUtils::is_array(formal) ||
+                        ASRUtils::is_allocatable(formal) || ASRUtils::is_pointer(formal) ||
+                        ASRUtils::extract_physical_type(formal) !=
+                            ASR::array_physical_typeType::DescriptorArray ||
+                        !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
+                    continue;
+                }
+                args[i].m_value = ASRUtils::cast_to_descriptor(al, args[i].m_value);
+            }
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            ASR::BaseWalkVisitor<PrifDescriptorActuals>::visit_SubroutineCall(x);
+            cast_actuals(x.m_name, x.m_args, x.n_args);
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            ASR::BaseWalkVisitor<PrifDescriptorActuals>::visit_FunctionCall(x);
+            cast_actuals(x.m_name, x.m_args, x.n_args);
+        }
+};
+
 void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &po) {
     if (po.coarray != true) {
         return;
     }
     PRIFInterface prif(al, unit, po.separate_compilation);
+    PrifDescriptorActuals descriptor_actuals(al);
+    std::set<ASR::symbol_t*> declared_before;
+    for (auto &item : unit.m_symtab->get_scope()) {
+        declared_before.insert(item.second);
+    }
     // The `lcompilers_prif_*` helpers are defined in every translation unit
     // that needs them, so they must not be exported.
     PassUtils::make_new_tu_functions_private(unit, [&]() {
@@ -3623,7 +3666,19 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
         v.visit_TranslationUnit(unit);
     });
 
-    // Phase 4: Update dependencies
+    // Phase 4: Pass arrays to the PRIF procedures this pass declared by
+    // descriptor
+    for (auto &item : unit.m_symtab->get_scope()) {
+        if (declared_before.find(item.second) == declared_before.end() &&
+                ASR::is_a<ASR::Function_t>(*item.second) &&
+                ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
+                    item.second))->m_deftype == ASR::deftypeType::Interface) {
+            descriptor_actuals.prif.insert(item.second);
+        }
+    }
+    descriptor_actuals.visit_TranslationUnit(unit);
+
+    // Phase 5: Update dependencies
     PassUtils::UpdateDependenciesVisitor(al).visit_TranslationUnit(unit);
 }
 
