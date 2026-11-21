@@ -66,6 +66,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <netdb.h>
 #include <poll.h>
 #include <spawn.h>
 #include <sys/socket.h>
@@ -1015,10 +1016,26 @@ struct InputChannel::Impl {
     }
 };
 
-InputChannel::InputChannel(const std::string &ip, int &port, const std::string &key)
+InputChannel::InputChannel(const std::string &ip, int &port, const std::string &key,
+    bool resolve_host)
 {
     start_sockets();
-    impl = std::make_unique<Impl>(listen_on(ip, port), key);
+    std::string host = ip;
+    if (resolve_host && !serves(host)) {
+        addrinfo hints{}, *result = nullptr;
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        if (getaddrinfo(host.c_str(), nullptr, &hints, &result) != 0)
+            throw std::runtime_error("cannot resolve stdin address: " + host);
+        char numeric[INET_ADDRSTRLEN];
+        const auto *socket_address = reinterpret_cast<const sockaddr_in *>(result->ai_addr);
+        const char *resolved = inet_ntop(AF_INET, &socket_address->sin_addr,
+            numeric, sizeof(numeric));
+        if (resolved) host = numeric;
+        freeaddrinfo(result);
+        if (!resolved) throw std::runtime_error("cannot resolve stdin address: " + ip);
+    }
+    impl = std::make_unique<Impl>(listen_on(host, port), key);
     impl->thread = std::thread([this]() { impl->run(); });
 }
 

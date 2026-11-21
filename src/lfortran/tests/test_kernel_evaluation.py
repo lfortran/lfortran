@@ -595,11 +595,9 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
             client.start_channels()
             client.wait_for_ready(timeout=30)
             if not streaming_only:
-                # In a WITH_XEUS build the default adapter is the Xeus kernel,
-                # which does not interrupt cells yet.
+                # In a WITH_XEUS build the default adapter is the Xeus kernel.
                 builtin = managed or b"xeus-fortran" not in log.read_bytes()
-                if builtin:
-                    check_interruption(client, directory, builtin)
+                check_interruption(client, directory, builtin)
             check_streaming(client, directory)
             check_streaming(client, directory, partial=True)
             if managed:
