@@ -5346,6 +5346,10 @@ public:
             }
             this->visit_expr(*a->m_value[curr_value++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            if (ASR::is_a<ASR::StructConstructor_t>(*value)
+                    && ASRUtils::is_value_constant(value)) {
+                value = fold_struct_constant_arg(value);
+            }
             current_variable_type_ = temp_current_variable_type_;
             ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                 ASRUtils::expr_type(value), array_type->m_type, diag);
@@ -5473,6 +5477,10 @@ public:
                 }
                 this->visit_expr(*a->m_value[j]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                if (ASR::is_a<ASR::StructConstructor_t>(*value)
+                        && ASRUtils::is_value_constant(value)) {
+                    value = fold_struct_constant_arg(value);
+                }
                 if (ASR::is_a<ASR::String_t>(*array_type->m_type)) {
                     ASR::String_t* target_str_type = ASR::down_cast<ASR::String_t>(array_type->m_type);
                     ASR::expr_t* value_to_check = ASRUtils::expr_value(value);
@@ -6035,6 +6043,10 @@ public:
                     }
                     this->visit_expr(*data_stmt_set->m_value[value_index++]);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                    if (ASR::is_a<ASR::StructConstructor_t>(*value)
+                            && ASRUtils::is_value_constant(value)) {
+                        value = fold_struct_constant_arg(value);
+                    }
                     current_variable_type_ = temp_current_variable_type_;
                     // The value is converted to the type of the object, as
                     // in an intrinsic assignment. As in the other DATA
@@ -6835,6 +6847,10 @@ public:
         this->visit_expr(*a->m_value[j++]);
         current_variable_type_ = temp_current_variable_type_;
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
+        if (ASR::is_a<ASR::StructConstructor_t>(*value)
+                && ASRUtils::is_value_constant(value)) {
+            value = fold_struct_constant_arg(value);
+        }
         // The parser ensures object is a TK_NAME
         // The `visit_expr` ensures it resolves as an expression
         // which must be a `Var_t` pointing to a `Variable_t`,
