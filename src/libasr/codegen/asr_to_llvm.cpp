@@ -370,6 +370,27 @@ private:
         }
     }
 
+    void generate_unallocated_array_indexed_runtime_error(llvm::Value* array,
+                                                          ASR::expr_t* array_expr,
+                                                          const std::string& array_name) {
+        llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, array_expr);
+        llvm::Value* cond = builder->CreateNot(is_allocated);
+        if (!array_name.empty()) {
+            llvm_utils->generate_runtime_error(cond,
+                "Array '%s' is indexed but not allocated.",
+                {LLVMUtils::RuntimeLabel("", {array_expr->base.loc})},
+                infile,
+                location_manager,
+                llvm_utils->get_runtime_error_string(array_name));
+        } else {
+            llvm_utils->generate_runtime_error(cond,
+                "Array is indexed but not allocated.",
+                {LLVMUtils::RuntimeLabel("", {array_expr->base.loc})},
+                infile,
+                location_manager);
+        }
+    }
+
     // The data of a polymorphic pointer array descriptor is a {vptr, data*}
     // heap wrapper owned by the pointer (see
     // LLVMUtils::get_or_alloc_class_array_wrapper), so it is freed when the
@@ -5525,14 +5546,7 @@ public:
                 array = llvm_utils->CreateLoad2(array_type, array);
             }
             if (compiler_options.po.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
-                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, x.m_v);
-                llvm::Value* cond = builder->CreateNot(is_allocated);
-                llvm_utils->generate_runtime_error(cond,
-                    "Array '%s' is indexed but not allocated.",
-                    {LLVMUtils::RuntimeLabel("", {x.m_v->base.loc})},
-                    infile,
-                    location_manager,
-                    llvm_utils->get_runtime_error_string(array_name));
+                generate_unallocated_array_indexed_runtime_error(array, x.m_v, array_name);
             }
 
             Vec<llvm::Value*> llvm_diminfo;
@@ -14058,6 +14072,14 @@ public:
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             LLVM::is_llvm_pointer(*value_array_type) ) {
             value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
+        }
+        if (compiler_options.po.bounds_checking &&
+            ASRUtils::is_allocatable(value_array_type) &&
+            ASRUtils::extract_physical_type(value_array_type) ==
+                ASR::array_physical_typeType::DescriptorArray) {
+            generate_unallocated_array_indexed_runtime_error(
+                value_desc, array_section->m_v,
+                get_expr_name_for_runtime_message(array_section->m_v));
         }
         // A character component of a bind(C)/SEQUENCE type is a flat byte blob
         // with no descriptor in front of it, so the address selected above is

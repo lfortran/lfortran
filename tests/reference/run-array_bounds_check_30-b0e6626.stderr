@@ -1,0 +1,5 @@
+runtime error: Array 'r(1)%d' is indexed but not allocated.
+ --> tests/errors/array_bounds_check_30.f90:7:5
+  |
+7 |     r(1)%d(:) = 5
+  |     ^^^^^^^^^
