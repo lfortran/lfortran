@@ -1740,10 +1740,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, loc, 1, int_type));
                 ASR::array_index_t triplet = inner->m_args[triplet_pos];
-                ASR::expr_t* start = triplet.m_left != nullptr ? triplet.m_left :
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                ASR::expr_t* start = triplet.m_left != nullptr ?
+                    to_index_kind(duplicator.duplicate_expr(triplet.m_left)) :
                     PassUtils::get_bound(inner->m_v, triplet_pos + 1, "lbound",
                         al, ikind);
-                ASR::expr_t* step = triplet.m_step != nullptr ? triplet.m_step : one;
+                ASR::expr_t* step = triplet.m_step != nullptr ?
+                    to_index_kind(duplicator.duplicate_expr(triplet.m_step)) : one;
                 ASR::expr_t* lb = PassUtils::get_bound(vector, 1, "lbound", al, ikind);
                 ASR::expr_t* offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                     al, loc, at, ASR::binopType::Sub, lb, int_type, nullptr));
@@ -1887,9 +1890,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::expr_t* index_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, index));
                 if ((i == offset_for_array_indices - 1) && is_value_array && j < rhs_array_indices_args.size() &&
                         rhs_array_indices_args[j].m_left != nullptr) {
-                    index2var[index_expr] = std::make_pair(rhs_array_indices_args[j].m_left, IndexType::ScalarIndex);
+                    index2var[index_expr] = std::make_pair(
+                        to_index_kind(rhs_array_indices_args[j].m_left), IndexType::ScalarIndex);
                     if (rhs_array_indices_args[j].m_step != nullptr) {
-                        index2step[index_expr] = rhs_array_indices_args[j].m_step;
+                        index2step[index_expr] = to_index_kind(rhs_array_indices_args[j].m_step);
                     }
                 } else {
                     ASR::expr_t* bound_expr = vars_expr[i];
@@ -1932,9 +1936,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if( n_array_indices_args > -1 && array_indices_args[array_indices_args_i].m_right != nullptr &&
                 array_indices_args[array_indices_args_i].m_left != nullptr &&
                 array_indices_args[array_indices_args_i].m_step != nullptr) {
-            do_loop_head.m_start = array_indices_args[array_indices_args_i].m_left;
-            do_loop_head.m_end = array_indices_args[array_indices_args_i].m_right;
-            do_loop_head.m_increment = array_indices_args[array_indices_args_i].m_step;
+            do_loop_head.m_start = to_index_kind(array_indices_args[array_indices_args_i].m_left);
+            do_loop_head.m_end = to_index_kind(array_indices_args[array_indices_args_i].m_right);
+            do_loop_head.m_increment = to_index_kind(array_indices_args[array_indices_args_i].m_step);
         } else {
             do_loop_head.m_start = PassUtils::get_bound(
                 index2var[do_loop_head.m_v].first, bound_dim, "lbound", al, get_index_kind());
@@ -1972,9 +1976,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( n_array_indices_args > -1 && array_indices_args[array_indices_args_i].m_right != nullptr &&
                     array_indices_args[array_indices_args_i].m_left != nullptr &&
                     array_indices_args[array_indices_args_i].m_step != nullptr) {
-                do_loop_head.m_start = array_indices_args[array_indices_args_i].m_left;
-                do_loop_head.m_end = array_indices_args[array_indices_args_i].m_right;
-                do_loop_head.m_increment = array_indices_args[array_indices_args_i].m_step;
+                do_loop_head.m_start = to_index_kind(array_indices_args[array_indices_args_i].m_left);
+                do_loop_head.m_end = to_index_kind(array_indices_args[array_indices_args_i].m_right);
+                do_loop_head.m_increment = to_index_kind(array_indices_args[array_indices_args_i].m_step);
             } else {
                 do_loop_head.m_start = PassUtils::get_bound(
                     index2var[do_loop_head.m_v].first, bound_dim, "lbound", al, get_index_kind());
