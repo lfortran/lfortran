@@ -74,6 +74,13 @@ def idle_order(client, msg_ids, timeout=20):
     return order, types
 
 
+def cells_interruptible():
+    """Whether the kernel can stop a cell (FortranEvaluator::interruptible()):
+    there an interrupt or a runtime error ends only the cell."""
+    return sys.platform in ("linux", "darwin") and platform.machine().lower() in (
+        "x86_64", "amd64", "arm64", "aarch64")
+
+
 def run(client, code, timeout=20, **options):
     """Runs a cell and returns its reply and IOPub messages."""
     msg_id = client.execute(code, **options)
@@ -422,8 +429,9 @@ def stalled_connections(exe, cwd):
 
 def read_disconnect(exe, cwd):
     """A READ whose client disconnects fails with an I/O error: with
-    iostat=, the cell gets it and the other clients go on; else it stops
-    the kernel with a runtime error, as it stops a program."""
+    iostat=, the cell gets it and the other clients go on; else the cell
+    fails with a runtime error, which, where cells cannot be interrupted,
+    stops the kernel, as it stops a program."""
     with kernel(exe, cwd) as (process, join, _ports):
         a, b = join(), join()
         check(run(a, "integer :: x = 1, ios = 0")[0]["status"] == "ok", "declaration failed")
@@ -433,9 +441,14 @@ def read_disconnect(exe, cwd):
         check(int(value(b, "ios")) > 0, "the READ did not fail")
         check(value(b, "x") == "1", "the READ set x")
         c = join()
-        c.execute("read(*,*) x", allow_stdin=True)
+        # Its failure must not abort b's later cell.
+        c.execute("read(*,*) x", allow_stdin=True, stop_on_error=False)
         check(c.get_stdin_msg(timeout=20)["msg_type"] == "input_request", "no READ")
         c.stop_channels()
+        if cells_interruptible():
+            check(value(b, "x + 1") == "2", "the session did not go on")
+            check(process.poll() is None, "a failed READ stopped the kernel")
+            return
         try:
             process.wait(timeout=20)
         except subprocess.TimeoutExpired:
@@ -444,9 +457,10 @@ def read_disconnect(exe, cwd):
 
 
 def read_errors(exe, cwd):
-    """A READ without iostat= that fails stops the kernel with the runtime's
-    own message, as it stops a compiled program: an internal READ, a READ of
-    a file, and a READ of stdin."""
+    """A READ without iostat= that fails ends its cell with the runtime's
+    own message: an internal READ, a READ of a file, and a READ of stdin.
+    The cell fails with a RuntimeError and the session goes on; where cells
+    cannot be interrupted, it stops the kernel, as it stops a program."""
     data = cwd / "empty.txt"
     data.write_text("")
     cells = [
@@ -468,14 +482,28 @@ def read_errors(exe, cwd):
                 client.get_stdin_msg(timeout=60)
                 client.input("abc")
             text = ""
+            idle = False
             deadline = time.monotonic() + 20
-            while process.poll() is None and time.monotonic() < deadline:
+            while (process.poll() is None and not idle
+                    and time.monotonic() < deadline):
                 try:
                     msg = client.get_iopub_msg(timeout=0.1)
                 except queue.Empty:
                     continue
-                if parent_id(msg) == msg_id and msg["msg_type"] == "stream":
+                if parent_id(msg) != msg_id:
+                    continue
+                if msg["msg_type"] == "stream":
                     text += msg["content"]["text"]
+                idle = (msg["msg_type"] == "status"
+                        and msg["content"]["execution_state"] == "idle")
+            if cells_interruptible():
+                check(idle, "a failed READ stopped the kernel: %r" % code)
+                reply = reply_to(client, msg_id, 20)
+                check(reply["status"] == "error" and reply["ename"] == "RuntimeError",
+                    (code, reply))
+                check(message in text, "no %r in the output of %r:\n%s" % (message, code, text))
+                check(value(client, "6*7") == "42", "the session did not go on")
+                continue
             try:
                 process.wait(timeout=20)
             except subprocess.TimeoutExpired:
@@ -782,6 +810,28 @@ def stop_ends_session(exe, cwd):
         check(process.wait(timeout=20) == 0, "STOP ended the kernel with an error")
 
 
+def runtime_errors(exe, cwd):
+    """A runtime error ends only its cell, where cells can be interrupted:
+    the prompt shows the error and runs the next cells, also after the
+    errors that the generated code reports itself (an already allocated
+    string, a matmul of mismatched arrays)."""
+    if not cells_interruptible():
+        print("skipped: a runtime error stops the kernel here")
+        return
+    cells = [b"integer :: a(3), i", b"i = 5", b"a(i) = 1", b"print *, 42",
+        b"character(:), allocatable :: t", b"allocate(character(3) :: t)",
+        b"allocate(character(3) :: t)", b"print *, 43",
+        b"real, allocatable :: p(:,:), q(:,:)", b"allocate(p(2,3), q(4,2))",
+        b"p = 1; q = 1", b"print *, size(matmul(p, q))",
+        b"print *, 44"]
+    out = prompt(exe, cwd, stdin=b"\r".join(cells) + b"\r\x04").decode(errors="replace")
+    for expected in ["index out of bounds", "1 | a(i) = 1", "already allocated",
+            "'MatMul' intrinsic dimension mismatch"]:
+        check(expected in out, "no %r in:\n%s" % (expected, out))
+    for n in (42, 43, 44):
+        check(re.search(r"^%d\r?$" % n, out, re.M), "%d is missing:\n%s" % (n, out))
+
+
 def stop_on_error(exe, cwd):
     """The execute_requests that wait behind a cell that fails are aborted
     if it has stop_on_error, else they run."""
@@ -935,8 +985,7 @@ def editing_prompt(exe, cwd, connection=None, expected_status=0):
 def test_interrupt_prompt(exe, cwd):
     """Ctrl-C keeps owning/attached prompts and their state alive, also in
     READ and commands; a control interrupt can end READ without a key."""
-    if sys.platform not in ("linux", "darwin") or platform.machine().lower() not in (
-            "x86_64", "amd64", "arm64", "aarch64"):
+    if not cells_interruptible():
         print("skipped: cells cannot be interrupted here")
         return
     def exercise(connection=None):
@@ -1485,7 +1534,7 @@ CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
     large_output, slow_subscriber_output, oversized_message_output,
-    stalled_connections, read_disconnect, read_errors,
+    stalled_connections, read_disconnect, read_errors, runtime_errors,
     late_stdin, prompt_departure, prompt_killed_in_cell, test_interrupt_prompt,
     terminal_command,
     kernel_parent, stop_ends_session,

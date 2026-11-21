@@ -131,7 +131,8 @@ inline FortranEvaluator::CellResult execute(FortranEvaluator &e,
         stream("stdout", utf8(cell.output.back() == '\n' ? cell.output : cell.output + "\n"));
     }
     if (!cell.ok) {
-        stream("stderr", utf8(cell.error_text()));
+        const std::string error = cell.error_text();
+        if (!error.empty()) stream("stderr", utf8(error));
         return cell;
     }
     if (!cell.diagnostics.empty()) stream("stderr", utf8(cell.diagnostics));
