@@ -10035,7 +10035,8 @@ public:
                                 ) {
                                     ASR::expr_t* value = nullptr;
                                     if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
-                                        this->visit_expr(*s.m_initializer);
+                                        visit_restricted_expr(*s.m_initializer,
+                                            RestrictedExprContext::InitExpr);
                                         value = ASRUtils::EXPR(tmp);
                                     }
                                     if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {

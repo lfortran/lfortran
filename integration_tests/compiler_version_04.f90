@@ -14,6 +14,9 @@ program compiler_version_04
     character(len=*), parameter :: ct = trim(compiler_version())
     character(len=*), parameter :: cc = 'abc' // compiler_version()
     character(len=3), parameter :: c3 = compiler_version()
+    character(len=*), parameter :: arr(2) = [compiler_version(), compiler_version()]
+    character(len=*) :: cs
+    parameter (cs = compiler_version())
 
     if (len(cw) /= len(compiler_version())) error stop
     if (len(cw) <= 0) error stop
@@ -27,5 +30,8 @@ program compiler_version_04
     if (cc(4:) /= compiler_version()) error stop
     if (c3 /= cw(1:3)) error stop
     if (compile_with /= cw) error stop
+    if (len(arr(2)) /= len(cw)) error stop
+    if (arr(1) /= cw .or. arr(2) /= cw) error stop
+    if (cs /= cw) error stop
     print *, len(cw) > 0
 end program

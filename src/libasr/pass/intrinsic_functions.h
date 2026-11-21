@@ -2350,10 +2350,9 @@ namespace CompilerVersion {
     static inline ASR::asr_t* create_CompilerVersion(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         // The version is known at compile time, so the result has its
         // length, as the value does, and can initialize a named constant.
+        // The evaluation cannot fail; an error diag already holds is from
+        // other code.
         ASR::expr_t *m_value = eval_CompilerVersion(al, loc, nullptr, args, diag);
-            if (diag.has_error()) {
-                return nullptr;
-            }
         ASR::ttype_t *return_type = ASRUtils::duplicate_type(al,
             ASRUtils::expr_type(m_value));
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),

@@ -6472,6 +6472,7 @@ RUN(NAME compiler_version_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_04 LABELS gfortran llvm)
 RUN(NAME compiler_options_01 LABELS gfortran llvm)
+RUN(NAME compiler_options_02 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 
 
 RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm mlir x86)

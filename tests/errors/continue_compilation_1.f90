@@ -5303,3 +5303,18 @@ subroutine cc1_procedure_interface_declared_later()
     procedure(cc1_pidl_b), pointer :: cc1_pidl_a  ! {Error} 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
     procedure(cc1_pidl_c), pointer :: cc1_pidl_c  ! {Error} 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
 end subroutine
+
+! A PARAMETER statement initializer is a constant expression, as the
+! initializer of a type declaration with the parameter attribute is.
+subroutine cc1_conditional_expr_in_parameter_stmt()
+    integer :: cc1_cepp_k
+    parameter (cc1_cepp_k = ( .true. ? 1 : 0 ))  ! {Error} a conditional expression is not allowed in a constant expression
+end subroutine
+
+! compiler_version() after an earlier error is still reported cleanly.
+subroutine cc1_compiler_version_after_error()
+    use, intrinsic :: iso_fortran_env, only: compiler_version
+    integer :: cc1_cvae_i
+    cc1_cvae_i = cc1_cvae_undeclared  ! {Error} Variable 'cc1_cvae_undeclared' is not declared
+    print *, compiler_version()
+end subroutine

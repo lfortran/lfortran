@@ -20,11 +20,7 @@ program compiler_options_01
     if (len(co) /= len(compiler_options())) error stop
     if (co /= compiler_options()) error stop
     if (len(co5) /= 5) error stop
-    if (len(co) >= 5) then
-        if (co5 /= co(1:5)) error stop
-    else
-        if (co5 /= co) error stop
-    end if
+    if (co5 /= co(1:min(5, len(co)))) error stop
     if (len(ct) /= len_trim(compiler_options())) error stop
     if (ct /= compiler_options()) error stop
     if (len(cc) /= 1 + len(co)) error stop
