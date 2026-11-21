@@ -806,6 +806,7 @@
                                 ()
                             ))]
                             .false.
+                            .false.
                         )
                         (DebugCheckArrayBounds
                             (Var 2 z)
@@ -825,6 +826,7 @@
                                 (Integer 4)
                                 ()
                             ))]
+                            .false.
                             .false.
                         )
                         (Assignment

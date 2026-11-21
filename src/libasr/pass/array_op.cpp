@@ -2294,7 +2294,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
             al, loc, duplicator.duplicate_expr(target),
             components.p, components.size(), checks.p, checks.size(),
-            move_allocation)));
+            move_allocation, false)));
     }
 
     bool insert_realloc_for_indexed_value(ASR::expr_t* target,
@@ -3838,7 +3838,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 check_components.push_back(al, expr_duplicator.duplicate_expr(underlying_target));
                 pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
                     al, loc, d_target, check_components.p, check_components.size(),
-                    nullptr, 0, x.m_move_allocation)));
+                    nullptr, 0, x.m_move_allocation, true)));
                 debug_inserted.insert(&x);
             }
         }

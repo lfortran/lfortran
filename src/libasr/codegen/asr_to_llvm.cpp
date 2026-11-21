@@ -341,22 +341,29 @@ private:
     }
 
     void generate_unallocated_array_runtime_error(llvm::Value* is_not_allocated,
-                                                  ASR::expr_t* target_expr) {
+                                                  ASR::expr_t* target_expr,
+                                                  bool suggest_realloc_lhs = true) {
         std::string target_expr_name = get_expr_name_for_runtime_message(target_expr);
         if (!target_expr_name.empty()) {
             llvm::Value* target_expr_name_llvm = llvm_utils->get_runtime_error_string(
                 target_expr_name);
+            const std::string msg = suggest_realloc_lhs
+                ? "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically."
+                : "Array '%s' is not allocated. Allocate it manually.";
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
-                "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                msg,
                 {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
                 infile,
                 location_manager,
                 target_expr_name_llvm);
         } else {
+            const std::string msg = suggest_realloc_lhs
+                ? "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically."
+                : "Array is not allocated. Allocate it manually.";
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
-                "Array is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
+                msg,
                 {LLVMUtils::RuntimeLabel("not allocated here", {target_expr->base.loc}, {})},
                 infile,
                 location_manager);
@@ -16977,7 +16984,8 @@ public:
             ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
         if (is_allocatable_descriptor_target && !x.m_move_allocation) {
             llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
-            generate_unallocated_array_runtime_error(is_not_allocated, x.m_target);
+            generate_unallocated_array_runtime_error(
+                is_not_allocated, x.m_target, !x.m_scalar_rhs);
         }
         // The target may be a plain variable, an array element or a
         // derived type component; name it the way the source spells it.

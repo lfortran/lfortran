@@ -8,7 +8,7 @@ Checks at run time that the shapes in an array assignment conform.
 
 ```text
 DebugCheckArrayBounds(expr target, expr* components,
-    array_extent_check* checks, bool move_allocation)
+    array_extent_check* checks, bool move_allocation, bool scalar_rhs)
 ```
 
 ### Arguments
@@ -19,6 +19,7 @@ DebugCheckArrayBounds(expr target, expr* components,
 | `components` | the array operands of the right hand side, whose shapes must match `target`. |
 | `checks` | the extents compared at run time, in order (see [array_extent_check](../helper_nodes/array_extent_check.md)). |
 | `move_allocation` | `true` when the assignment it guards moves an allocation instead of copying. |
+| `scalar_rhs` | `true` when the assignment has a scalar right-hand side (`checks` must be empty); omits the `--realloc-lhs-arrays` hint from the unallocated target diagnostic. |
 
 ### Return values
 
@@ -106,6 +107,7 @@ instead of its extents.
     )
   ]
   :move_allocation false
+  :scalar_rhs false
 )
 ```
 

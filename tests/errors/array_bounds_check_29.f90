@@ -1,4 +1,4 @@
-program array_bounds_check_28
+program array_bounds_check_29
     implicit none
 
     type :: t
@@ -7,4 +7,4 @@ program array_bounds_check_28
 
     type(t) :: r(1)
     r(1)%d = 5
-end program array_bounds_check_28
+end program array_bounds_check_29

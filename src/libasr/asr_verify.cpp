@@ -3051,6 +3051,8 @@ public:
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)), "DebugCheckArrayBounds::m_target must have an Array type");
 
             require(x.n_components > 0, "DebugCheckArrayBounds::n_components should be greater than 0");
+            require(!x.m_scalar_rhs || x.n_checks == 0,
+                "DebugCheckArrayBounds with scalar_rhs must not have extent checks");
             for (size_t i = 0; i < x.n_components; i++) {
                 require(ASR::is_a<ASR::Var_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||
