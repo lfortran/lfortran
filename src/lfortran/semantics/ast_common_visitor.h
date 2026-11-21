@@ -12823,6 +12823,16 @@ public:
                             ASR::array_physical_typeType::FixedSizeArray, true);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
+                    if (storage_type == ASR::storage_typeType::Parameter &&
+                            ASR::is_a<ASR::CompilerOptions_t>(*init_expr)) {
+                        // compiler_options() is a constant expression: the
+                        // named constant is its string, like a literal.
+                        ASR::CompilerOptions_t *co =
+                            ASR::down_cast<ASR::CompilerOptions_t>(init_expr);
+                        init_expr = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
+                            init_expr->base.loc, co->m_compiler_options_str,
+                            ASRUtils::duplicate_type(al, co->m_type)));
+                    }
                     value = ASRUtils::expr_value(init_expr);
 
                     if (is_null_intrinsic_reference(s.m_initializer)
