@@ -4991,6 +4991,7 @@ RUN(NAME external_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_38 LABELS llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_39 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME external_40 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # specific intrinsics of two kinds passed to typed external dummies (#13166)
+RUN(NAME specification_inquiry_01 LABELS gfortran llvm EXTRAFILES specification_inquiry_01b.f90 NO_LLVM_GOC) # not with --separate-compilation: procedure(f) of a module function with a nonconstant array result fails ASR verification there, also on main
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm
@@ -5727,6 +5728,9 @@ RUN(NAME save_32 LABELS gfortran llvm)
 RUN(NAME save_33 LABELS gfortran llvm)
 RUN(NAME save_34 LABELS gfortran llvm)
 RUN(NAME save_35 LABELS gfortran llvm) # bare SAVE keeps PARAMETER constant (#15975)
+RUN(NAME save_39 LABELS gfortran llvm)
+RUN(NAME save_40 LABELS gfortran llvm)
+RUN(NAME save_41 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
