@@ -116,12 +116,62 @@ static bool has_saved_state(ASR::Function_t* x) {
 // Every symbol that an ASR node, or a symbol it owns, refers to. A module
 // file has to resolve each such reference, so the serialization visitor
 // writes all of them; this one records them and writes nothing else.
+//
+// Each reference comes with whether it only designates the object of an
+// inquiry about its bounds, length, rank or type parameters (ArraySize,
+// ArrayBound, ArrayRank, StringLen, TypeInquiry): a variable, or a section,
+// element, substring or component of one. The subscripts and the types met
+// on the way are references like any other.
 class SymbolReferences : public ASR::SerializationBaseVisitor<SymbolReferences> {
+    typedef ASR::SerializationBaseVisitor<SymbolReferences> Base;
+    // Whether the expression being visited designates an inquired object.
+    bool inquired = false;
+    // The object of the inquiry being visited.
+    const ASR::expr_t* inquiry_object = nullptr;
+    // The base of the designator being visited, which was visited already.
+    const ASR::expr_t* visited_base = nullptr;
+
+    static const ASR::expr_t* get_inquiry_object(const ASR::expr_t& x) {
+        switch (x.type) {
+            case ASR::exprType::ArraySize:
+                return ASR::down_cast<ASR::ArraySize_t>(&x)->m_v;
+            case ASR::exprType::ArrayBound:
+                return ASR::down_cast<ASR::ArrayBound_t>(&x)->m_v;
+            case ASR::exprType::ArrayRank:
+                return ASR::down_cast<ASR::ArrayRank_t>(&x)->m_v;
+            case ASR::exprType::StringLen:
+                return ASR::down_cast<ASR::StringLen_t>(&x)->m_arg;
+            case ASR::exprType::TypeInquiry:
+                return ASR::down_cast<ASR::TypeInquiry_t>(&x)->m_arg;
+            default:
+                return nullptr;
+        }
+    }
+
+    // The designator of which `x` is a section, element, substring or
+    // component, or nullptr if `x` is none of these.
+    static const ASR::expr_t* get_designator_base(const ASR::expr_t& x) {
+        switch (x.type) {
+            case ASR::exprType::ArraySection:
+                return ASR::down_cast<ASR::ArraySection_t>(&x)->m_v;
+            case ASR::exprType::ArrayItem:
+                return ASR::down_cast<ASR::ArrayItem_t>(&x)->m_v;
+            case ASR::exprType::StringSection:
+                return ASR::down_cast<ASR::StringSection_t>(&x)->m_arg;
+            case ASR::exprType::StringItem:
+                return ASR::down_cast<ASR::StringItem_t>(&x)->m_arg;
+            case ASR::exprType::StructInstanceMember:
+                return ASR::down_cast<ASR::StructInstanceMember_t>(&x)->m_v;
+            default:
+                return nullptr;
+        }
+    }
+
 public:
-    std::vector<ASR::symbol_t*> symbols;
+    std::vector<std::pair<ASR::symbol_t*, bool>> symbols;
 
     void write_symbol(const ASR::symbol_t& x) {
-        symbols.push_back(const_cast<ASR::symbol_t*>(&x));
+        symbols.push_back({const_cast<ASR::symbol_t*>(&x), inquired});
     }
     template <typename... T> void write_int8(T...) {}
     template <typename... T> void write_int64(T...) {}
@@ -130,6 +180,28 @@ public:
     template <typename... T> void write_real(T...) {}
     template <typename... T> void write_complex_part(T...) {}
     template <typename... T> void write_void(T...) {}
+
+    void visit_expr(const ASR::expr_t& x) {
+        // Each designator node visits its base first.
+        if (&x == visited_base) {
+            visited_base = nullptr;
+            return;
+        }
+        bool outer_inquired = inquired;
+        const ASR::expr_t* outer_object = inquiry_object;
+        inquired = &x == inquiry_object || (inquired &&
+            (ASR::is_a<ASR::Var_t>(x) || get_designator_base(x)));
+        if (const ASR::expr_t* base = inquired ? get_designator_base(x) : nullptr) {
+            inquiry_object = base;
+            visit_expr(*base);
+            visited_base = base;
+            inquired = false;
+        }
+        inquiry_object = get_inquiry_object(x);
+        Base::visit_expr(x);
+        inquired = outer_inquired;
+        inquiry_object = outer_object;
+    }
 };
 
 // The symbol of `scope` that `sym` is, or is declared in, or nullptr if
@@ -184,6 +256,24 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
             ->m_deftype == ASR::deftypeType::Implementation;
 }
 
+// Whether the forwarder of a copy (forward_copies_with_saved_state) can keep
+// `sym`, a local variable of the copy, which its signature refers to only as
+// the object of an inquiry about its bounds, length, rank or type parameters
+// (F2018 10.1.11), such as `x(ubound(w, 1))` with an automatic `w(n + 1)`.
+// The forwarder then declares the variable, so it allocates (and, if the
+// variable has an initializer, initializes) it on entry, and deallocates it
+// on return, but never uses its value. That does not matter, unless the
+// variable is finalized on return, which the user can observe.
+static bool is_kept_for_inquiry(ASR::symbol_t* sym) {
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (var->m_intent != ASR::intentType::Local) return false;
+    return var->m_storage == ASR::storage_typeType::Save ||
+        ASRUtils::is_pointer(var->m_type) || ASRUtils::is_allocatable(var->m_type) ||
+        !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type)) ||
+        !ASRUtils::struct_needs_finalization(var->m_type_declaration);
+}
+
 // The symbols of `f` that its signature needs: its dummies, its result and,
 // transitively, every symbol of `f` that their declarations refer to (types,
 // bounds, lengths, type declarations, derived type components, interfaces).
@@ -191,7 +281,9 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
 // internal procedure whose own signature closure succeeds, nor a variable
 // that only declarations which are never evaluated (the signatures of such
 // interfaces and the types of procedure variables) refer to and that is a
-// pointer, is allocatable or is not of derived type (see below).
+// pointer, is allocatable or is not of derived type (see below), nor a
+// local variable that the signature refers to only as the object of
+// inquiries and that is_kept_for_inquiry().
 //
 // An internal procedure that the signature needs, as the interface of a
 // dummy procedure or of a procedure pointer component, contributes only its
@@ -217,10 +309,13 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
     // The symbols that only the signatures of interfaces need.
     std::set<ASR::symbol_t*> unevaluated;
     if (!evaluated_signature) unevaluated.insert(pending.begin(), pending.end());
+    // The local variables that the signature refers to only as the objects
+    // of inquiries (see is_kept_for_inquiry).
+    std::set<ASR::symbol_t*> inquired;
     while (!pending.empty()) {
         ASR::symbol_t* sym = pending.back();
         pending.pop_back();
-        std::vector<ASR::symbol_t*> references;
+        std::vector<std::pair<ASR::symbol_t*, bool>> references;
         // Neither the signature of an interface nor the type of a
         // procedure variable is evaluated.
         bool evaluated = !unevaluated.count(sym) && !(ASR::is_a<ASR::Variable_t>(*sym) &&
@@ -241,10 +336,12 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
             sym_references.visit_symbol(*sym);
             references = sym_references.symbols;
         }
-        for (ASR::symbol_t* reference : references) {
+        for (auto& [reference, inquiry] : references) {
             ASR::symbol_t* needed = symbol_of_scope(f->m_symtab, reference);
             if (!needed) continue;
             if (!closure.insert(needed).second) {
+                // The value of a local kept for an inquiry is needed after all.
+                if (evaluated && !inquiry && inquired.count(needed)) return false;
                 // Reached again by a declaration that is evaluated.
                 if (!evaluated || !unevaluated.erase(needed)) continue;
             } else if (is_internal_procedure(f->m_symtab, needed)) {
@@ -254,6 +351,12 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
                 continue;
             }
             if (!is_declaration_only(needed)) {
+                if (evaluated && inquiry && needed == reference &&
+                        is_kept_for_inquiry(needed)) {
+                    inquired.insert(needed);
+                    pending.push_back(needed);
+                    continue;
+                }
                 if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) return false;
                 ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(needed)->m_type;
                 if (!ASRUtils::is_pointer(type) && !ASRUtils::is_allocatable(type) &&
@@ -1840,16 +1943,19 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // specification expressions of the dummies and result can use
         // dummies, named constants, COMMON and module variables and
         // non-internal pure functions, which are declarations, and
-        // inquiries about local objects (F2018 10.1.11), which the frontend
-        // is expected to have replaced by the bounds and lengths those
-        // objects declare. If the signature still needs a symbol that has
-        // storage or code, such as a local object that an inquiry the
-        // frontend did not replace refers to, the copy is not forwarded and
-        // keeps its own saved state. For an external procedure declared by
-        // an interface body, whose direct calls reach the original and other
-        // references the copy, that splits the saved state between them.
-        // Evaluating a specification function of the signature in both
-        // entries is harmless: it is pure.
+        // inquiries about local objects (F2018 10.1.11). The frontend
+        // replaces most of those by the bounds and lengths the objects
+        // declare, but forwarding does not rely on it: a local that is
+        // only inquired about stays in the forwarder, unused (see
+        // is_kept_for_inquiry), unless it is finalized. Such a local, or
+        // any other symbol with storage or code that the signature needs,
+        // leaves the copy unforwarded, with its own saved state. For an
+        // external procedure declared by an interface body, whose direct
+        // calls reach the original and other references the copy, that
+        // splits the saved state between them; valid code reaches it only
+        // when the frontend could not replace an inquiry about a finalized
+        // local. Evaluating a specification function of the signature in
+        // both entries is harmless: it is pure.
         void forward_copies_with_saved_state() {
             for (auto& entry : v.proc2newproc) {
                 if (!ASR::is_a<ASR::Function_t>(*entry.first) ||

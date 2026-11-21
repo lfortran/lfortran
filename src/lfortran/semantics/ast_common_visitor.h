@@ -3876,12 +3876,13 @@ public:
     // bounds inquire about each other the size of a replacement can grow by
     // a constant factor at each step. An inquiry whose replacement would
     // exceed `max_replacement_size` nodes is therefore kept, which keeps the
-    // work linear in the size of the declarations. A dummy whose bounds
-    // still make an inquiry about a local is then not replaced in the
-    // signature (see forward_copies_with_saved_state in
-    // pass_array_by_data): such a procedure that has saved state, is
-    // declared by an interface body and is called through a dummy procedure
-    // or a procedure pointer keeps saved state of its own for those calls.
+    // work linear in the size of the declarations.
+    //
+    // Correctness does not depend on every inquiry being replaced: an
+    // inquiry that is kept, like any inquiry this does not recognise, still
+    // evaluates correctly, and where pass_array_by_data needs the signature
+    // without the body it keeps a local that the signature only inquires
+    // about (see is_kept_for_inquiry there), unless the local is finalized.
     class LocalInquiryFolder :
             public ASR::BaseExprReplacer<LocalInquiryFolder> {
         public:
