@@ -2599,6 +2599,7 @@ RUN(NAME bindc_optional_pointer_rank_01 LABELS gfortran llvm EXTRAFILES bindc_op
 RUN(NAME assumed_rank_pointer_slot_01 LABELS gfortran llvm)
 RUN(NAME bindc_optional_associate_01 LABELS gfortran llvm EXTRAFILES bindc_optional_associate_01c.c)
 RUN(NAME bindc_optional_char_01 LABELS gfortran llvm EXTRAFILES bindc_optional_char_01c.c)
+RUN(NAME bindc_optional_absent_01 LABELS gfortran llvm EXTRAFILES bindc_optional_absent_01c.c) # absent optional arguments of bind(c) procedures are passed as NULL
 RUN(NAME bindc_section_01 LABELS gfortran llvm EXTRAFILES bindc_section_01c.c) # non-contiguous section passed to a bind(c) (*) dummy is packed
 RUN(NAME bindc_char_typestar_01 LABELS gfortran llvm EXTRAFILES bindc_char_typestar_01c.c) # character data passed to a bind(c) type(*) assumed-size dummy is the C buffer of its characters
 RUN(NAME bindc_char_section_01 LABELS gfortran llvm EXTRAFILES bindc_char_section_01c.c) # non-contiguous character sections passed to a bind(c) type(*) dummy are packed
