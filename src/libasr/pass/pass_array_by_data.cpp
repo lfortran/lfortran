@@ -13,6 +13,7 @@
 #include <utility>
 #include <deque>
 #include <set>
+#include <map>
 
 /*
 This ASR to ASR pass can be called whenever you want to avoid
@@ -174,11 +175,33 @@ static bool is_declaration_only(ASR::symbol_t* sym) {
     }
 }
 
+// Whether `sym` is an internal procedure of the scope `scope` that has a
+// body.
+static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
+    return ASR::is_a<ASR::Function_t>(*sym) &&
+        ASR::down_cast<ASR::Function_t>(sym)->m_symtab->parent == scope &&
+        ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(sym))
+            ->m_deftype == ASR::deftypeType::Implementation;
+}
+
 // The symbols of `f` that its signature needs: its dummies, its result and,
 // transitively, every symbol of `f` that their declarations refer to (types,
 // bounds, lengths, type declarations, derived type components, interfaces).
 // Returns false if one of them is not is_declaration_only().
-static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure) {
+//
+// An internal procedure that the signature needs, as the interface of a
+// dummy procedure, contributes only its own signature, which `interfaces`
+// maps it to: a procedure whose body was replaced keeps it as an interface
+// (make_interface). That interface is never evaluated, nor is the type of
+// a procedure variable, so a variable that only such declarations refer to
+// is kept without its value mattering, as long as it is not a derived type
+// object (which would be initialized and finalized). For example, a bound
+// that is a host dummy reads it through the frame pointer of the host
+// (nested_vars), which is kept, and through getters, which become
+// interfaces too.
+static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure,
+        std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>& interfaces,
+        bool evaluated_signature = true) {
     std::vector<ASR::symbol_t*> pending;
     for (size_t i = 0; i < f->n_args; i++) {
         pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
@@ -187,19 +210,83 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
         pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_return_var)->m_v);
     }
     closure.insert(pending.begin(), pending.end());
+    // The symbols that only the signatures of interfaces need.
+    std::set<ASR::symbol_t*> unevaluated;
+    if (!evaluated_signature) unevaluated.insert(pending.begin(), pending.end());
     while (!pending.empty()) {
         ASR::symbol_t* sym = pending.back();
         pending.pop_back();
-        SymbolReferences references;
-        references.visit_symbol(*sym);
-        for (ASR::symbol_t* reference : references.symbols) {
+        std::vector<ASR::symbol_t*> references;
+        // Neither the signature of an interface nor the type of a
+        // procedure variable is evaluated.
+        bool evaluated = !unevaluated.count(sym) && !(ASR::is_a<ASR::Variable_t>(*sym) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                ASR::down_cast<ASR::Variable_t>(sym)->m_type)));
+        if (interfaces.count(sym)) {
+            // The internal procedure's signature can refer to symbols of
+            // `f` by host association.
+            evaluated = false;
+            for (ASR::symbol_t* item : interfaces[sym]) {
+                SymbolReferences item_references;
+                item_references.visit_symbol(*item);
+                references.insert(references.end(),
+                    item_references.symbols.begin(), item_references.symbols.end());
+            }
+        } else {
+            SymbolReferences sym_references;
+            sym_references.visit_symbol(*sym);
+            references = sym_references.symbols;
+        }
+        for (ASR::symbol_t* reference : references) {
             ASR::symbol_t* needed = symbol_of_scope(f->m_symtab, reference);
-            if (!needed || !closure.insert(needed).second) continue;
-            if (!is_declaration_only(needed)) return false;
+            if (!needed) continue;
+            if (!closure.insert(needed).second) {
+                // Reached again by a declaration that is evaluated.
+                if (!evaluated || !unevaluated.erase(needed)) continue;
+            } else if (is_internal_procedure(f->m_symtab, needed)) {
+                if (!signature_closure(ASR::down_cast<ASR::Function_t>(needed),
+                        interfaces[needed], interfaces, false)) return false;
+                pending.push_back(needed);
+                continue;
+            }
+            if (!is_declaration_only(needed)) {
+                if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) return false;
+                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(needed)->m_type;
+                if (!ASRUtils::is_pointer(type) && !ASRUtils::is_allocatable(type) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+                    return false;
+                }
+            }
+            if (!evaluated) unevaluated.insert(needed);
             pending.push_back(needed);
         }
     }
     return true;
+}
+
+// Makes the internal procedure `x` an interface that keeps only the symbols
+// of its signature, `signature`. Its name is local to its host, so it is an
+// abstract interface, which names no procedure: one that names an existing
+// procedure would declare a global procedure of that name.
+static void make_interface(Allocator& al, ASR::Function_t* x,
+        const std::set<ASR::symbol_t*>& signature) {
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    ASR::ttype_t* type = duplicator.duplicate_ttype(x->m_function_signature);
+    ASR::down_cast<ASR::FunctionType_t>(type)->m_deftype = ASR::deftypeType::Interface;
+    x->m_function_signature = type;
+    ASR::interface_body_t* body = al.make_new<ASR::interface_body_t>();
+    body->loc = x->base.base.loc;
+    body->m_abstract = true;
+    x->m_interface_body = body;
+    x->m_body = nullptr;
+    x->n_body = 0;
+    x->m_dependencies = nullptr;
+    x->n_dependencies = 0;
+    std::vector<std::string> unused;
+    for (auto& item : x->m_symtab->get_scope()) {
+        if (!signature.count(item.second)) unused.push_back(item.first);
+    }
+    for (auto& name : unused) x->m_symtab->erase_symbol(name);
 }
 
 /*
@@ -1730,11 +1817,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         //
         // The forwarder keeps exactly the symbols its signature needs
         // (signature_closure) and drops the others, which only the old body
-        // used. If the signature needs a symbol that has storage or code,
-        // such as a dummy procedure declared with an internal procedure, the
-        // copy is not forwarded and keeps its own saved state. Evaluating a
-        // specification function of the signature in both entries is
-        // harmless: it is pure.
+        // used. An internal procedure the signature needs, such as the
+        // interface of a dummy procedure, becomes an interface. If the
+        // copy's dummies or result need another symbol that has storage or
+        // code, the copy is not forwarded and keeps its own saved state,
+        // which calls with a section (on the original) and the other calls
+        // (on the copy) then split. Evaluating a specification function of
+        // the signature in both entries is harmless: it is pure.
         void forward_copies_with_saved_state() {
             for (auto& entry : v.proc2newproc) {
                 if (!ASR::is_a<ASR::Function_t>(*entry.first) ||
@@ -1744,11 +1833,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 SymbolTable* parent = original->m_symtab->parent;
                 bool pointer_result;
                 std::set<ASR::symbol_t*> signature;
+                std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> interfaces;
                 if (parent->get_symbol(original->m_name) != entry.first ||
                         parent->get_symbol(copy->m_name) != entry.second.first ||
                         original->n_body == 0 || !has_saved_state(original) ||
                         !forwardable_result(original, pointer_result) ||
-                        !signature_closure(copy, signature)) continue;
+                        !signature_closure(copy, signature, interfaces)) continue;
                 forwarded.insert(entry.first);
 
                 Vec<ASR::stmt_t*> body = forwarding_body(original, copy,
@@ -1761,6 +1851,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     if (!signature.count(item.second)) unused.push_back(item.first);
                 }
                 for (auto& name : unused) copy->m_symtab->erase_symbol(name);
+                for (auto& item : interfaces) {
+                    make_interface(al, ASR::down_cast<ASR::Function_t>(item.first),
+                        item.second);
+                }
             }
         }
 
