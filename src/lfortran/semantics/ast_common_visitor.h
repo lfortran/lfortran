@@ -3325,6 +3325,112 @@ public:
         throw SemanticAbort();
     }
 
+    // `type(t), pointer :: p => tgt` where `tgt` is an array element, an
+    // array section or a component: the base object has the target attribute
+    // and every subscript is a constant expression (F2018 C765), and `tgt`
+    // has the type and rank of `p`.
+    void check_initial_data_target_designator(const std::string& name,
+            ASR::ttype_t* type, ASR::symbol_t* type_declaration,
+            ASR::expr_t* pointer, ASR::expr_t* target, const Location& loc) {
+        auto check_subscripts = [&](ASR::array_index_t* args, size_t n_args) {
+            for (size_t i = 0; i < n_args; i++) {
+                for (ASR::expr_t* subscript : {args[i].m_left, args[i].m_right,
+                        args[i].m_step}) {
+                    if (subscript == nullptr) {
+                        continue;
+                    }
+                    if (ASRUtils::is_array(ASRUtils::expr_type(subscript))) {
+                        diag.add(Diagnostic(
+                            "the pointer initialization target of `" + name +
+                                "` must not have a vector subscript",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {subscript->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    if (!ASRUtils::is_value_constant(
+                            ASRUtils::expr_value(subscript))) {
+                        diag.add(Diagnostic(
+                            "every subscript of the pointer initialization target of `"
+                                + name + "` must be a constant expression",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {subscript->base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
+            }
+        };
+        ASR::expr_t* base = target;
+        while (!ASR::is_a<ASR::Var_t>(*base)) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(base);
+                check_subscripts(item->m_args, item->n_args);
+                base = item->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*base)) {
+                ASR::ArraySection_t* section =
+                    ASR::down_cast<ASR::ArraySection_t>(base);
+                check_subscripts(section->m_args, section->n_args);
+                base = section->m_v;
+            } else {
+                base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
+            }
+        }
+        ASR::Variable_t* base_var = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(base)->m_v));
+        if (!base_var->m_target_attr) {
+            diag.add(Diagnostic(
+                "pointer initialization target `" + std::string(base_var->m_name)
+                    + "` must have the `target` attribute",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc}),
+                    Label("declared here", {base_var->base.base.loc}, false)
+                }));
+            throw SemanticAbort();
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        int pointer_rank = ASRUtils::extract_n_dims_from_ttype(type);
+        int target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+        if (pointer_rank != target_rank) {
+            diag.add(Diagnostic(
+                "rank mismatch in pointer initialization of `" + name
+                    + "`: the pointer has rank " + std::to_string(pointer_rank)
+                    + " and the target has rank " + std::to_string(target_rank),
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc}),
+                    Label("target declared here", {base_var->base.base.loc}, false)
+                }));
+            throw SemanticAbort();
+        }
+        if (!ASRUtils::check_equal_type(ASRUtils::extract_type(type),
+                ASRUtils::extract_type(target_type), pointer, target)) {
+            auto type_name = [](ASR::ttype_t* t, ASR::symbol_t* type_decl) {
+                if (ASR::is_a<ASR::StructType_t>(*t) && type_decl != nullptr) {
+                    return "type(" + std::string(ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(type_decl))) + ")";
+                }
+                return ASRUtils::type_to_str_fortran_symbol(t, type_decl, true);
+            };
+            ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
+            ASR::symbol_t* target_decl = nullptr;
+            if (ASR::is_a<ASR::StructType_t>(*target_elem)) {
+                target_decl = ASRUtils::get_struct_sym_from_struct_expr(target);
+            }
+            diag.add(Diagnostic(
+                "type mismatch in pointer initialization of `" + name
+                    + "`: the pointer is "
+                    + type_name(ASRUtils::extract_type(type), type_declaration)
+                    + " and the target is " + type_name(target_elem, target_decl),
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc}),
+                    Label("target declared here", {base_var->base.base.loc}, false)
+                }));
+            throw SemanticAbort();
+        }
+    }
+
+
     // A name that is not found in the host scope but is a component of the
     // derived type being defined refers to that component, which cannot be
     // referenced in a component declaration.
@@ -12595,6 +12701,24 @@ public:
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
                         if (is_pointer && ASR::is_a<ASR::Var_t>(*init_expr)) {
+                            value = init_expr;
+                        } else if (is_pointer && !is_allocatable &&
+                                ASRUtils::is_pointer_association_initializer(
+                                    init_expr)) {
+                            // `p => tgt(2)`: the target is a designator rather
+                            // than a whole variable. As for a pointer of an
+                            // intrinsic type, the `global_init` pass turns the
+                            // association into a pointer assignment.
+                            ASR::expr_t* pointer_expr = nullptr;
+                            if (variable_added_to_symtab != nullptr) {
+                                pointer_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                    variable_added_to_symtab->base.base.loc,
+                                    &variable_added_to_symtab->base));
+                            }
+                            check_initial_data_target_designator(
+                                std::string(x.m_syms[i].m_name), type,
+                                type_declaration, pointer_expr, init_expr,
+                                s.m_initializer->base.loc);
                             value = init_expr;
                         } else if( ASRUtils::is_value_constant(value) ) {
                         } else if( ASRUtils::is_value_constant(init_expr) ) {

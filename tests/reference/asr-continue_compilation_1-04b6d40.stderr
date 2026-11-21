@@ -2168,6 +2168,45 @@ semantic error: Interface 'cc1_pidl_a' is referenced but not defined
 5302 |     procedure(cc1_pidl_a), pointer :: cc1_pidl_b  ! {Error} Interface 'cc1_pidl_a' is referenced but not defined
      |     ^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: pointer initialization target `cc1_pit_g0` must have the `target` attribute
+    --> tests/errors/continue_compilation_1.f90:5321:43
+     |
+5321 | type(cc1_pit_t), pointer :: cc1_pit_q1 => cc1_pit_g0(2)  ! {Error} pointer initialization target `cc1_pit_g0` must have the `target` attribute
+     |                                           ^^^^^^^^^^^^^ 
+     |
+5318 | type(cc1_pit_t) :: cc1_pit_g0(3)
+     |                    ~~~~~~~~~~~~~ declared here
+
+semantic error: every subscript of the pointer initialization target of `cc1_pit_q2` must be a constant expression
+    --> tests/errors/continue_compilation_1.f90:5322:53
+     |
+5322 | type(cc1_pit_t), pointer :: cc1_pit_q2 => cc1_pit_g(cc1_pit_n)  ! {Error} every subscript of the pointer initialization target of `cc1_pit_q2` must be a constant expression
+     |                                                     ^^^^^^^^^ 
+
+semantic error: the pointer initialization target of `cc1_pit_q3` must not have a vector subscript
+    --> tests/errors/continue_compilation_1.f90:5323:56
+     |
+5323 | type(cc1_pit_t), pointer :: cc1_pit_q3(:) => cc1_pit_g([1,2])  ! {Error} the pointer initialization target of `cc1_pit_q3` must not have a vector subscript
+     |                                                        ^^^^^ 
+
+semantic error: rank mismatch in pointer initialization of `cc1_pit_q4`: the pointer has rank 0 and the target has rank 1
+    --> tests/errors/continue_compilation_1.f90:5324:43
+     |
+5324 | type(cc1_pit_t), pointer :: cc1_pit_q4 => cc1_pit_g(1:2)  ! {Error} rank mismatch in pointer initialization of `cc1_pit_q4`
+     |                                           ^^^^^^^^^^^^^^ 
+     |
+5319 | type(cc1_pit_t), target :: cc1_pit_g(3)
+     |                            ~~~~~~~~~~~~ target declared here
+
+semantic error: type mismatch in pointer initialization of `cc1_pit_q5`: the pointer is type(cc1_pit_t) and the target is type(cc1_pit_u)
+    --> tests/errors/continue_compilation_1.f90:5325:43
+     |
+5325 | type(cc1_pit_t), pointer :: cc1_pit_q5 => cc1_pit_gu(2)  ! {Error} type mismatch in pointer initialization of `cc1_pit_q5`
+     |                                           ^^^^^^^^^^^^^ 
+     |
+5320 | type(cc1_pit_u), target :: cc1_pit_gu(3)
+     |                            ~~~~~~~~~~~~~ target declared here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
