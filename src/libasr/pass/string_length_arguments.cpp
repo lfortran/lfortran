@@ -231,24 +231,32 @@ public:
         const TransformedProcedures &transformed_):
         al{al_}, transformed{transformed_} {}
 
+    // A member of a host frame (see nested_vars) is a Reference to the
+    // procedure entity of the host, so it takes the same new type.
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Variable(x);
         ASR::symbol_t *decl = transformed_procedure(x.m_type_declaration,
             transformed);
+        bool reference = ASRUtils::is_reference(x.m_type);
+        ASR::ttype_t *type = reference
+            ? down_cast<ASR::Reference_t>(x.m_type)->m_type : x.m_type;
         if (decl == nullptr || !is_a<ASR::FunctionType_t>(
-                *ASRUtils::type_get_past_pointer(x.m_type))) {
+                *ASRUtils::type_get_past_pointer(type))) {
             return;
         }
         ASR::Variable_t &xx = const_cast<ASR::Variable_t&>(x);
         ASR::ttype_t *signature = ASRUtils::import_procedure_type(al,
             down_cast<ASR::Function_t>(decl)->m_function_signature,
             xx.m_parent_symtab);
-        if (ASRUtils::is_pointer(xx.m_type)) {
-            xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+        if (ASRUtils::is_pointer(type)) {
+            signature = ASRUtils::TYPE(ASR::make_Pointer_t(al,
                 xx.base.base.loc, signature));
-        } else {
-            xx.m_type = signature;
         }
+        if (reference) {
+            signature = ASRUtils::TYPE(ASR::make_Reference_t(al,
+                xx.base.base.loc, signature));
+        }
+        xx.m_type = signature;
         retyped.insert(&xx.base);
     }
 
