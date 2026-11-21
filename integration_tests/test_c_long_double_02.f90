@@ -20,7 +20,7 @@ real(wp) :: z
 print *, c_long_double, c_long_double_complex, c_sizeof(x), c_long_double_size()
 
 if (c_long_double < 0) error stop
-if (c_long_double_complex >= 0 .and. c_long_double_complex /= c_long_double) error stop
+if (c_long_double_complex /= c_long_double) error stop
 if (c_sizeof(x) /= c_long_double_size()) error stop
 
 ! The kind seen through a module loaded from its modfile, renamed there or
