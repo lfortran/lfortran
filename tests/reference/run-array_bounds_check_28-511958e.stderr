@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'd'. Tried to match size 1 of dimension 1 of LHS with size 2 of dimension 1 of RHS.
+  --> tests/errors/array_bounds_check_28.f90:10:9
+   |
+10 |         d = s(idx)
+   |         ^ LHS size is 1
+   |
+10 |         d = s(idx)
+   |             ^^^^^^ RHS size is 2
