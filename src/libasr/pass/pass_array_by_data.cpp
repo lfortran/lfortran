@@ -187,7 +187,11 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
 // The symbols of `f` that its signature needs: its dummies, its result and,
 // transitively, every symbol of `f` that their declarations refer to (types,
 // bounds, lengths, type declarations, derived type components, interfaces).
-// Returns false if one of them is not is_declaration_only().
+// Returns false if one of them is neither is_declaration_only(), nor an
+// internal procedure whose own signature closure succeeds, nor a variable
+// that only declarations which are never evaluated (the signatures of such
+// interfaces and the types of procedure variables) refer to and that is a
+// pointer, is allocatable or is not of derived type (see below).
 //
 // An internal procedure that the signature needs, as the interface of a
 // dummy procedure or of a procedure pointer component, contributes only its
@@ -250,23 +254,10 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
                 continue;
             }
             if (!is_declaration_only(needed)) {
-                if (!ASR::is_a<ASR::Variable_t>(*needed)) return false;
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(needed);
-                if (evaluated) {
-                    // An automatic object whose bounds or length a dummy's
-                    // bound or length inquires about: the forwarder
-                    // creates it again but never reads its value.
-                    if (var->m_intent != ASRUtils::intent_local ||
-                            var->m_storage != ASR::storage_typeType::Default ||
-                            var->m_symbolic_value || var->m_value ||
-                            ASRUtils::is_pointer(var->m_type) ||
-                            ASRUtils::is_allocatable(var->m_type) ||
-                            ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type))) {
-                        return false;
-                    }
-                } else if (!ASRUtils::is_pointer(var->m_type) &&
-                        !ASRUtils::is_allocatable(var->m_type) &&
-                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type))) {
+                if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) return false;
+                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(needed)->m_type;
+                if (!ASRUtils::is_pointer(type) && !ASRUtils::is_allocatable(type) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
                     return false;
                 }
             }
@@ -1845,19 +1836,20 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // The forwarder keeps exactly the symbols its signature needs
         // (signature_closure) and drops the others, which only the old body
         // used. An internal procedure the signature needs, such as the
-        // interface of a dummy procedure, becomes an interface, and an
-        // automatic object whose bounds or length a specification inquiry
-        // uses is created again. If the copy's dummies or result need
-        // another symbol that has storage or code, the copy is not forwarded
-        // and keeps its own saved state. For an external procedure declared
-        // by an interface body, whose direct calls reach the original and
-        // other references the copy, that would split the state; but the
-        // specification expressions of its dummies and result can only use
-        // dummies, constants, COMMON and module variables, inquiries about
-        // bounds and lengths of local objects, and non-internal pure
-        // functions, all of which the closure keeps. Evaluating a
-        // specification function of the signature in both entries is
-        // harmless: it is pure.
+        // interface of a dummy procedure, becomes an interface. The
+        // specification expressions of the dummies and result can use
+        // dummies, named constants, COMMON and module variables and
+        // non-internal pure functions, which are declarations, and
+        // inquiries about local objects (F2018 10.1.11), which the frontend
+        // is expected to have replaced by the bounds and lengths those
+        // objects declare. If the signature still needs a symbol that has
+        // storage or code, such as a local object that an inquiry the
+        // frontend did not replace refers to, the copy is not forwarded and
+        // keeps its own saved state. For an external procedure declared by
+        // an interface body, whose direct calls reach the original and other
+        // references the copy, that splits the saved state between them.
+        // Evaluating a specification function of the signature in both
+        // entries is harmless: it is pure.
         void forward_copies_with_saved_state() {
             for (auto& entry : v.proc2newproc) {
                 if (!ASR::is_a<ASR::Function_t>(*entry.first) ||
