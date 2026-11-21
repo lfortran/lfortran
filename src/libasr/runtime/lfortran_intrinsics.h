@@ -414,6 +414,13 @@ LFORTRAN_API void* _lfortran_set_display_hooks(
     void (*display_data)(void* context, const char* mime_type, const char* data),
     void (*clear_output)(void* context),
     void* context);
+// Supplies the text of a source that is not a file, such as an interactive
+// cell, from which a runtime error quotes its line: returns it and sets
+// `length`, or returns NULL to read the file of that name.
+typedef const char* (*lfortran_source_provider)(void* context,
+    const char* filename, size_t* length);
+LFORTRAN_API void _lfortran_set_source_provider(lfortran_source_provider provider,
+    void* context);
 LFORTRAN_API void lfortran_display_data(const char* mime_type, const char* data);
 LFORTRAN_API void lfortran_clear_output(void);
 LFORTRAN_API int32_t _lpython_get_argc();

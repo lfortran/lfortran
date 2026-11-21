@@ -173,6 +173,11 @@ bounds, shapes and allocation status, and I/O errors without `iostat=`.
 The session goes on as after an interrupt: what the cell did before the
 error stays done, what it allocated leaks, and the next cells run.
 
+Its message quotes the line of the cell that failed, or of the earlier cell
+that defined the procedure that failed. A cell has no file to read that line
+from, so while a cell runs, `execute()` gives the runtime the session's cell
+sources (`_lfortran_set_source_provider`).
+
 The runtime's `error_exit()`, which every runtime error calls, does this.
 The few checks that the generated code prints itself call it through
 `_lcompilers_error_exit()` when compiled with `CompilerOptions::cell_interrupts`.

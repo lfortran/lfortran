@@ -6594,7 +6594,35 @@ static void runtime_sanitize_line(char *line) {
     }
 }
 
+static lfortran_source_provider source_provider;
+static void *source_context;
+
+LFORTRAN_API void _lfortran_set_source_provider(lfortran_source_provider provider,
+        void *context) {
+    source_provider = provider;
+    source_context = context;
+}
+
 static char* runtime_read_line(const char *filename, unsigned int line_no) {
+    size_t length = 0;
+    const char *text = source_provider
+        ? source_provider(source_context, filename, &length) : NULL;
+    if (text) {
+        const char *end = text + length;
+        for (unsigned int current = 1; current < line_no; current++) {
+            const char *newline = memchr(text, '\n', (size_t)(end - text));
+            if (!newline) return NULL;
+            text = newline + 1;
+        }
+        const char *newline = memchr(text, '\n', (size_t)(end - text));
+        size_t n = newline ? (size_t)(newline - text) : (size_t)(end - text);
+        char *line = (char*)internal_malloc(n + 1);
+        if (!line) return NULL;
+        memcpy(line, text, n);
+        line[n] = '\0';
+        runtime_sanitize_line(line);
+        return line;
+    }
     FILE *file = fopen(filename, "r");
     if (!file) {
         return NULL;

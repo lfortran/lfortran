@@ -90,6 +90,10 @@ extern "C" void *_lfortran_set_display_hooks(
     void (*display_data)(void *context, const char *mime_type, const char *data),
     void (*clear_output)(void *context),
     void *context);
+// Likewise, the source of the line that a runtime error quotes.
+extern "C" void _lfortran_set_source_provider(
+    const char *(*provider)(void *context, const char *filename, size_t *length),
+    void *context);
 
 namespace {
 // The context of the display hooks while FortranEvaluator::execute() runs a
@@ -350,6 +354,21 @@ static void display_data_hook(void *context, const char *mime_type,
 static void clear_output_hook(void *context) {
     DisplayContext &c = *static_cast<DisplayContext *>(context);
     run_hook(c, [&]() { if (c.io.clear_output) c.io.clear_output(); });
+}
+
+// The text of a cell, which a runtime error quotes (`context` is the
+// session's cell_files).
+static const char *cell_source(void *context, const char *filename,
+        size_t *length) {
+    const auto &files = *static_cast<
+        const std::vector<LCompilers::LocationManager::FileLocations> *>(context);
+    for (const auto &file : files) {
+        if (file.in_filename == filename) {
+            *length = file.source.size();
+            return file.source.data();
+        }
+    }
+    return nullptr;
 }
 
 static int read_input(void *context, const char **record, size_t *length) {
@@ -1015,17 +1034,20 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     DisplayContext display{hooks_io, ""};
     InputContext input{hooks_io, ""};
     struct Hooks {
-        Hooks(DisplayContext &display, InputContext &input) {
+        Hooks(DisplayContext &display, InputContext &input,
+                std::vector<LocationManager::FileLocations> &cells) {
             [[maybe_unused]] void *previous = _lfortran_set_display_hooks(display_data_hook,
                 clear_output_hook, &display);
             LCOMPILERS_ASSERT(previous == nullptr);
             _lfortran_stdin_install(input.io.input ? read_input : nullptr, &input);
+            _lfortran_set_source_provider(cell_source, &cells);
         }
         ~Hooks() {
+            _lfortran_set_source_provider(nullptr, nullptr);
             _lfortran_stdin_reset();
             _lfortran_set_display_hooks(nullptr, nullptr, nullptr);
         }
-    } hooks(display, input);
+    } hooks(display, input, cell_files);
     LocationManager lm;
     diag::Diagnostics diagnostics;
     PassManager passes;

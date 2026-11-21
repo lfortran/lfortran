@@ -8265,6 +8265,9 @@ end module
     CHECK(cell.error_text().empty());
     CHECK(out.find("ran") != std::string::npos);
     CHECK(err.find("already allocated") != std::string::npos);
+    // The error quotes the line of the cell it is in.
+    CHECK(err.find("--> <cell 1>:15:") != std::string::npos);
+    CHECK(err.find("15 |     if (rhs > 1) allocate(w(rhs))") != std::string::npos);
     CHECK(cell_value(e, "n") == "1");
     CHECK(cell_value(e, "b%v") == "1");
     std::string output;

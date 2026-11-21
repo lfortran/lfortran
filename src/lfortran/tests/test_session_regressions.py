@@ -825,7 +825,7 @@ def runtime_errors(exe, cwd):
         b"p = 1; q = 1", b"print *, size(matmul(p, q))",
         b"print *, 44"]
     out = prompt(exe, cwd, stdin=b"\r".join(cells) + b"\r\x04").decode(errors="replace")
-    for expected in ["index out of bounds", "already allocated",
+    for expected in ["index out of bounds", "1 | a(i) = 1", "already allocated",
             "'MatMul' intrinsic dimension mismatch"]:
         check(expected in out, "no %r in:\n%s" % (expected, out))
     for n in (42, 43, 44):
