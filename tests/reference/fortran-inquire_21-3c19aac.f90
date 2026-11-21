@@ -51,10 +51,7 @@ end subroutine newunit_int_8
 end module lfortran_intrinsic_custom
 
 program inquire_21
-use lfortran_intrinsic_custom, only: newunit_int_1
-use lfortran_intrinsic_custom, only: newunit_int_2
 use lfortran_intrinsic_custom, only: newunit_int_4
-use lfortran_intrinsic_custom, only: newunit_int_8
 implicit none
 character(len=32, kind=1) :: access
 character(len=32, kind=1) :: action
