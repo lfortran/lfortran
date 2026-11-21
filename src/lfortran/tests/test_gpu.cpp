@@ -2086,16 +2086,21 @@ std::string gpu_sync_trace(const std::string &source,
         scope = ASR::down_cast<ASR::Module_t>(
             unit.m_symtab->get_symbol(module))->m_symtab;
     }
-    // pass_array_by_data may have replaced the procedure by its variant
-    // `<name>_<suffix>`.
-    ASR::symbol_t *sym = scope->get_symbol(name);
+    // Direct calls reach the variant `<name>_<suffix>` that
+    // pass_array_by_data may have made of the procedure. The procedure itself
+    // stays for calls through a procedure pointer, which do not.
+    ASR::symbol_t *sym = nullptr;
     std::string names;
     for (auto &item : scope->get_scope()) {
         names += item.first + " ";
         if (sym == nullptr && item.first.rfind(name + "_", 0) == 0
+                && item.first != name + "__gpu_deferred"
                 && ASR::is_a<ASR::Function_t>(*item.second)) {
             sym = item.second;
         }
+    }
+    if (sym == nullptr) {
+        sym = scope->get_symbol(name);
     }
     INFO(names);
     REQUIRE(sym != nullptr);
