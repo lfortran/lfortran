@@ -50,6 +50,10 @@ input. `execute()` installs the hook through the runtime's C API
 (`src/libasr/runtime/lfortran_stdin.h`) for that cell only and always removes
 it, so a later cell can read again after end of file and unread bytes are
 discarded.
+If the cell can be interrupted (`FortranEvaluator::interruptible()`), the
+hook may return early, with any status, once `CellIO::interrupt_requested`
+returns true: the cell then stops without failing the READ. Otherwise it must
+keep waiting for input, as nothing would stop the cell.
 
 The runtime keeps the record's bytes, its cursor and delimiters, so one record
 can satisfy several list items and one READ can consume several records.
@@ -71,3 +75,61 @@ exercise the JIT result ABI on Windows: there complex(4) comes back as two
 float bit patterns in an integer register and complex(8) through an output
 pointer, and `FortranEvaluator` calls those signatures explicitly rather than
 relying on the C++ `std::complex` return convention.
+
+## Interrupting a cell
+
+A frontend that sets `CellIO::interrupt_requested` can interrupt a running
+cell. The callback is bounded and nonblocking. `execute()` calls it on its
+caller about every 10 milliseconds, and after each of the other `CellIO`
+callbacks, which all run on the caller, while the cell runs on a thread of
+its own. Once it returns true, the cell fails with a `CellResult` named
+`KeyboardInterrupt` ("cell execution interrupted") and no value. Only one
+cell runs at a time: the request is a flag of the process.
+
+The cell's thread stops at a poll. `execute()` compiles the session's cells
+with `CompilerOptions::cell_interrupts` when it can interrupt them
+(`FortranEvaluator::interruptible()`). Such code loads a runtime flag at the
+back edge of a counted `do` (and of `do concurrent`), at the head of a `do
+while` or a `do` with no control, at a backward `goto`, and on entry to a
+procedure. When the flag is set, the poll `longjmp`s back to `execute()`
+(`LLVMEvaluator::run_interruptible`, `src/libasr/runtime/lfortran_interrupt.h`).
+Batch compilation has none of these checks, and no signal is involved.
+
+The polls are between ASR statements, or on entry to a procedure before it
+has done any work, so what the cell assigns stays consistent: an allocatable
+or a deferred-length string that it was assigning can be used, deallocated or
+passed to `move_alloc` by a later cell. A source statement can still stop
+partway when the compiler lowered it to a loop or it calls a procedure: an
+interrupted whole-array assignment such as `a = a + 1` may have updated only
+some elements.
+
+The abandoned frames are not unwound. What the interrupted cell allocated and
+did not free leaks; nothing is rolled back. What it did before the interrupt
+stays done, as in IPython: variables it had assigned keep their new values,
+and output it had written is shown. The session keeps everything that earlier
+cells and the interrupted cell defined. A request is not carried into the
+next cell: an interrupt that arrives while no cell runs does nothing, and
+compilation is not interrupted; a request that is already set stops the cell
+before its code runs.
+
+The runtime's waits stop at once too: SLEEP, which wakes every 10
+milliseconds to look at the request; EXECUTE_COMMAND_LINE, whose command runs
+in a process group of its own, which is killed (with its descendants that stay
+in the group) and reaped first; and a READ from stdin that waits for its
+input. In a process that is the foreground job of a terminal, the command
+runs as with `system()`: the terminal's Ctrl-C reaches it, and the cell waits
+for it.
+
+A poll inside a final subroutine, a defined assignment, or a defined input or
+output procedure returns: these run inside another statement, which must
+finish. The cell stops at the next poll after that statement, so a loop that
+does not end inside one of them is not stopped. A single long call into
+foreign code, or into one runtime or library routine, stops only when that
+call returns; a loop that calls it stops at its next iteration.
+
+Interruption is supported on Linux and macOS (x86-64 and AArch64). It is not
+supported on Windows, in WASM (JupyterLite) or with `--openmp`, where a cell
+runs to its end, and a READ keeps waiting for its input.
+
+The `test_lfortran` cases `FortranEvaluator interrupt*` and the
+`test_session_regressions` case `terminal_command` cover this.

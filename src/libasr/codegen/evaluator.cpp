@@ -1,9 +1,12 @@
 #include <algorithm>
+#include <csetjmp>
 #include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <fstream>
 #include <optional>
+
+#include <libasr/runtime/lfortran_interrupt.h>
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/ADT/STLExtras.h>
@@ -992,6 +995,41 @@ LLVMEvaluator::~LLVMEvaluator()
 {
     jit.reset();
     context.reset();
+}
+
+#if !defined(__EMSCRIPTEN__) && (defined(__linux__) || defined(__APPLE__)) \
+        && (defined(__x86_64__) || defined(__aarch64__))
+bool LLVMEvaluator::interrupt_supported() { return true; }
+
+bool LLVMEvaluator::run_interruptible(void (*fn)(void *), void *context) {
+    if (_lfortran_cell_interrupt_requested()) return false;
+    jmp_buf env;
+    // longjmp returns here. A local changed after setjmp would be
+    // indeterminate, so this buffer is not written again.
+    if (setjmp(env) != 0) {
+        _lfortran_set_interrupt_env(nullptr);
+        return false;
+    }
+    _lfortran_set_interrupt_env(&env);
+    fn(context);
+    _lfortran_set_interrupt_env(nullptr);
+    return true;
+}
+#else
+bool LLVMEvaluator::interrupt_supported() { return false; }
+
+bool LLVMEvaluator::run_interruptible(void (*fn)(void *), void *context) {
+    fn(context);
+    return true;
+}
+#endif
+
+void LLVMEvaluator::request_interrupt() {
+    _lfortran_set_cell_interrupt(1);
+}
+
+void LLVMEvaluator::clear_interrupt() {
+    _lfortran_set_cell_interrupt(0);
 }
 
 void LLVMEvaluator::configure_module(llvm::Module &module) const

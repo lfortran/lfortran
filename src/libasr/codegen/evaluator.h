@@ -157,6 +157,25 @@ public:
         T (*f)(Args...) = (T (*)(Args...))addr;
         return f(args...);
     }
+
+    // Cooperative interruption of one JIT call. run_interruptible() calls
+    // fn(context) on this thread. Code compiled with
+    // CompilerOptions::cell_interrupts polls a process-wide runtime flag at
+    // loop back edges, backward gotos and procedure entry, and longjmps back
+    // here when the flag is set (src/libasr/runtime/lfortran_interrupt.h).
+    // It returns false if the call was abandoned, or if an interrupt was
+    // requested before it began. The abandoned frames are not unwound: what
+    // they allocated leaks, and what they had done stays done. `fn` itself
+    // must not own anything that needs a destructor while it calls JIT code.
+    // Supported on Linux and macOS, x86-64 and AArch64; elsewhere `fn` runs
+    // to its end.
+    static bool interrupt_supported();
+    static bool run_interruptible(void (*fn)(void *context), void *context);
+    // Any thread. The running call notices it at its next poll. The request
+    // is process-wide: only one interruptible call may run at a time.
+    static void request_interrupt();
+    // Clears the request, so that later calls run.
+    static void clear_interrupt();
 };
 
 

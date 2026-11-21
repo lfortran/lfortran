@@ -93,7 +93,23 @@ public:
         // Flush the frontend's transport before STOP terminates the process.
         // Called on the execute() caller, after the last output.
         std::function<void()> flush_on_exit;
+        // If set, the cell runs on a separate thread and execute() asks this
+        // every few milliseconds on the caller, and after each callback above.
+        // Once it returns true, the cell is interrupted (see
+        // interruptible()) and fails with a KeyboardInterrupt. It must not
+        // block or throw. If interruptible(), the `input` callback may return
+        // early, with any status, once this returns true; otherwise it must
+        // keep waiting for input, as nothing would stop the cell.
+        std::function<bool()> interrupt_requested;
     };
+
+    // Whether execute() can interrupt a running cell: native JIT execution
+    // on Linux and macOS (x86-64, AArch64).
+    static bool interrupt_supported();
+    // Whether execute() can interrupt cells of this session: if
+    // interrupt_supported() and without OpenMP, whose threads and locks an
+    // interrupt would abandon.
+    bool interruptible() const;
 
     struct CellResult {
         bool ok = false;
@@ -106,6 +122,8 @@ public:
         // trace (empty without stacktrace support).
         std::string error_name, error_value;
         bool internal_error = false;
+        // An interrupt stopped the cell (error_name "KeyboardInterrupt").
+        bool interrupted = false;
         std::string error_traceback;
 
         // The text a frontend shows for a failed cell.
