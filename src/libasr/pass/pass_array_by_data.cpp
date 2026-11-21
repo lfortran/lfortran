@@ -941,8 +941,9 @@ public:
         }
         for (auto& [object, stand_in] : replacements) *object = stand_in;
         // A saved or initialized variable becomes an unsaved local, which
-        // the forwarder creates and frees on every call: a saved array
-        // would be allocated on every call and never freed.
+        // the forwarder creates and frees on every call like the other
+        // stand-ins: a saved stand-in for a character array would be
+        // allocated on every call and never freed.
         for (ASR::symbol_t* sym : replaced) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
             var->m_type = shape_only_type(al, var->m_type);
