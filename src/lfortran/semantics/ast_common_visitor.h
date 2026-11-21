@@ -9646,6 +9646,15 @@ public:
                                 }
                             } else {
                                 std::string sym = to_lower(s.m_name);
+                                if ((sym == "write" || sym == "read")
+                                        && s.n_dim == 1 && s.m_dim[0].m_end
+                                        && AST::is_a<AST::Name_t>(*s.m_dim[0].m_end)) {
+                                    // `public :: write(formatted)` names the
+                                    // generic "~write_formatted".
+                                    sym = "~" + sym + "_" + to_lower(
+                                        AST::down_cast<AST::Name_t>(
+                                            s.m_dim[0].m_end)->m_id);
+                                }
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPrivate) {
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
