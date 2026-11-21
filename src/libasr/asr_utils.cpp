@@ -1743,7 +1743,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             const std::function<void (const std::string &, const Location &)> err,
                             LCompilers::LocationManager &lm,
                             bool generate_object_code,
-                            bool load_submodules) {
+                            bool load_submodules,
+                            const PrepareModuleLoad &prepare) {
     LCOMPILERS_ASSERT(symtab);
     // In interactive mode each cell is a TranslationUnit chained to the
     // previous one, so a module declared in an earlier cell lives in a parent
@@ -1859,7 +1860,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     if (load_submodules) {
         load_dependent_submodules(al, symtab, mod2, loc,
                                   loaded_submodules, pass_options,
-                                  run_verify, err, lm);
+                                  run_verify, err, lm, prepare);
     }
 
     // Check that all modules are included in ASR now
@@ -1871,6 +1872,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
 
+    if (prepare) prepare(*tu);
     // Fix all external symbols and update dependencies
     fix_translation_unit(al, tu, symtab, run_verify);
     symtab->asr_owner = orig_asr_owner;
@@ -1884,7 +1886,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
                                LCompilers::PassOptions& pass_options,
                                bool run_verify,
                                const std::function<void (const std::string &, const Location &)> err,
-                               LCompilers::LocationManager &lm) {
+                               LCompilers::LocationManager &lm,
+                               const PrepareModuleLoad &prepare) {
     if (startswith(std::string(mod->m_name), "lfortran_intrinsic")) {
         return ;
     }
@@ -1900,7 +1903,7 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         if (dep_sym == nullptr) {
             bool is_intrinsic = startswith(dep_name, "lfortran_intrinsic");
             load_module(al, symtab, dep_name, loc, is_intrinsic, loaded_submodules,
-                        pass_options, run_verify, err, lm, false, true);
+                        pass_options, run_verify, err, lm, false, true, prepare);
             dep_sym = symtab->get_symbol(dep_name);
         }
         if (dep_sym == nullptr) {
@@ -1913,7 +1916,7 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
         ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(dep_sym);
         load_dependent_submodules(al, symtab, dep_mod, loc,
                                   loaded_submodules, pass_options,
-                                  run_verify, err, lm);
+                                  run_verify, err, lm, prepare);
     }
 
     if (mod->m_has_submodules) {
@@ -2006,7 +2009,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
     // Load all the submodules of dependent modules recursively
     for (size_t i=0;i<dependent_modules_with_not_yet_loaded_submodules.size();i++) {
         load_dependent_submodules(al, symtab, dependent_modules_with_not_yet_loaded_submodules[i],
-                                  loc, loaded_submodules, pass_options, run_verify, err, lm);
+                                  loc, loaded_submodules, pass_options, run_verify,
+                                  err, lm, prepare);
     }
 
     symtab->asr_owner = orig_asr_owner;
@@ -16310,7 +16314,8 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Module(ASR::Module_t* module_t,
         module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
         module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
         module_t->m_has_submodules, module_t->m_host_only_object,
-        module_t->m_global_init, module_t->m_start_name, module_t->m_end_name
+        module_t->m_pdt_state, module_t->m_global_init,
+        module_t->m_start_name, module_t->m_end_name
     ));
 }
 
