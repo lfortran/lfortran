@@ -940,12 +940,16 @@ public:
             if (declaration) changed.insert(declaration);
         }
         for (auto& [object, stand_in] : replacements) *object = stand_in;
+        // A saved or initialized variable becomes an unsaved local, which
+        // the forwarder creates and frees on every call: a saved array
+        // would be allocated on every call and never freed.
         for (ASR::symbol_t* sym : replaced) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
             var->m_type = shape_only_type(al, var->m_type);
             var->m_type_declaration = nullptr;
             var->m_symbolic_value = nullptr;
             var->m_value = nullptr;
+            var->m_storage = ASR::storage_typeType::Default;
             changed.insert(sym);
         }
         for (ASR::symbol_t* sym : changed) {
@@ -2518,13 +2522,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // specification expressions of the dummies and result can use
         // dummies, named constants, COMMON and module variables and
         // non-internal pure functions, which are declarations, and
-        // inquiries about local objects (F2018 10.1.11). The frontend
-        // replaces many such inquiries by the bounds and lengths that the
-        // objects declare, but not all of them (for example not one about
-        // a component or an element of a local with a DIM known only at run
-        // time, nor one over its size budget), so forwarding does not rely
-        // on it: the forwarder keeps a local that is only inquired about,
-        // unused, and StandIns::apply() makes its inquiries ask stand-ins
+        // inquiries about local objects (F2018 10.1.11). The forwarder keeps
+        // a local that is only inquired about, unused, and
+        // StandIns::apply() makes its inquiries ask stand-ins
         // with the same answers, so that the forwarder neither initializes
         // nor finalizes it, and allocates at most a byte per element or
         // character of it: only the original does more, once per call.
