@@ -3732,6 +3732,14 @@ RUN(NAME realloc_lhs_32 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # same shape is not reallocated (#15956)
 RUN(NAME realloc_lhs_33 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays) # allocatable function result defined by intrinsic assignment from an array expression (#3299)
+RUN(NAME realloc_lhs_elide_01 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # no reallocation when the target is a whole operand of its elemental value
+RUN(NAME realloc_lhs_elide_02 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # no reallocation when an earlier assignment gave the target the shape of the value
+RUN(NAME realloc_lhs_elide_03 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # allocation without a check when the target is known to be unallocated
+RUN(NAME realloc_lhs_elide_04 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays) # reallocations that remain and those that are elided, see tests/tests.toml
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
