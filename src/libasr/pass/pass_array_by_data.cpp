@@ -964,6 +964,7 @@ class StandIns {
             var->n_dependencies = dependencies.size();
             deferred.insert(sym);
         }
+#if defined(WITH_LFORTRAN_ASSERT)
         for (auto& item : copy->m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
@@ -980,6 +981,7 @@ class StandIns {
         ShapeInquiries inquiries(deferred);
         inquiries.visit_Function(*copy);
         LCOMPILERS_ASSERT(!inquiries.found);
+#endif
     }
 
 public:
