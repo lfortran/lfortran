@@ -16,6 +16,7 @@
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/symbol_expr_substitution.h>
+#include <libasr/pass/intrinsic_function_registry_util.h>
 
 namespace LCompilers {
 

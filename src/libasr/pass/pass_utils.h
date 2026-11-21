@@ -1061,6 +1061,14 @@ namespace LCompilers {
             */
         };
 
+    } // namespace PassUtils
+
+    // Instantiated once, in pass_utils.cpp, rather than in every pass.
+    extern template class ASR::BaseVisitor<PassUtils::UpdateDependenciesVisitor>;
+    extern template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
+
+    namespace PassUtils {
+
     namespace ReplacerUtils {
         /*
         F2018 7.5.10: if the data source `source` of an allocatable

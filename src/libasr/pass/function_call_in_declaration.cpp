@@ -8,6 +8,7 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pickle.h>
+#include <libasr/pass/intrinsic_function_registry_util.h>
 
 namespace LCompilers {
 

@@ -11,6 +11,7 @@
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/access_paths.h>
 #include <unordered_map>
+#include <libasr/asr_builder.h>
 
 namespace LCompilers {
 

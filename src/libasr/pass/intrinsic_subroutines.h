@@ -2,7 +2,8 @@
 #define LIBASR_PASS_INTRINSIC_SUBROUTINES_H
 
 
-#include "libasr/pass/intrinsic_function_registry.h"
+#include <libasr/pass/intrinsic_subroutine_registry.h>
+#include <libasr/pass/intrinsic_impure_functions.h>
 #include <libasr/asr_builder.h>
 #include <libasr/casting_utils.h>
 
@@ -19,46 +20,7 @@ You can use helper macros and define your own helper macros to reduce
 the code size.
 */
 
-enum class IntrinsicImpureSubroutines : int64_t {
-    RandomNumber,
-    RandomInit,
-    RandomSeed,
-    GetCommand,
-    GetEnvironmentVariable,
-    ExecuteCommandLine,
-    GetCommandArgument,
-    CpuTime,
-    Srand,
-    SystemClock,
-    DateAndTime,
-    MoveAlloc,
-    Mvbits,
-    Abort,
-    System,
-    Sleep,
-    CoSum,
-    CoMax,
-    CoMin,
-    CoBroadcast,
-    Exit,
-    GetCwd,
-    Pause,
-    // ...
-};
 
-typedef ASR::stmt_t* (*impl_subroutine)(
-    Allocator&, const Location &,
-    SymbolTable*, Vec<ASR::ttype_t*>&,
-    Vec<ASR::call_arg_t>&, int64_t);
-
-typedef ASR::asr_t* (*create_intrinsic_subroutine)(
-    Allocator&, const Location&,
-    Vec<ASR::expr_t*>&,
-    diag::Diagnostics&);
-
-typedef void (*verify_subroutine)(
-    const ASR::IntrinsicImpureSubroutine_t&,
-    diag::Diagnostics&);
 
 // The type of a dummy for a rank 1 array argument that is accessed element
 // by element from index 1: assumed shape, or assumed size for an assumed-size

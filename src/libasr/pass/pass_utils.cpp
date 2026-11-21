@@ -8,8 +8,12 @@
 #include <libasr/casting_utils.h>
 
 #include <iostream>
+#include <libasr/asr_builder.h>
 
 namespace LCompilers {
+
+template class ASR::BaseVisitor<PassUtils::UpdateDependenciesVisitor>;
+template class ASR::BaseWalkVisitor<PassUtils::UpdateDependenciesVisitor>;
 
     namespace PassUtils {
 

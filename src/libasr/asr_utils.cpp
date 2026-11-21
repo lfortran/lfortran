@@ -19,8 +19,11 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_array_functions.h>
 
 namespace LCompilers {
+
+template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
 
     namespace ASRUtils  {
 
