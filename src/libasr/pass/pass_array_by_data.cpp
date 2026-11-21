@@ -147,11 +147,19 @@ static ASR::expr_t** inquiry_object(ASR::expr_t& x) {
     }
 }
 
-// The designator of which `x` is a section, element, substring or
-// component, or which `x` casts to another physical array type, or nullptr
-// if `x` is none of these.
+// The designator of which `x` is a section, element, substring, component
+// or complex part (F2018 9.4.4), or which `x` casts to another physical
+// array or string type, or nullptr if `x` is none of these. These are all
+// the nodes a designator is made of: the frontend folds a type parameter
+// inquiry (`w%s%len`, `w%c%kind`) to a constant or to an inquiry.
 static ASR::expr_t* designator_base(const ASR::expr_t& x) {
     switch (x.type) {
+        case ASR::exprType::ComplexRe:
+            return ASR::down_cast<ASR::ComplexRe_t>(&x)->m_arg;
+        case ASR::exprType::ComplexIm:
+            return ASR::down_cast<ASR::ComplexIm_t>(&x)->m_arg;
+        case ASR::exprType::StringPhysicalCast:
+            return ASR::down_cast<ASR::StringPhysicalCast_t>(&x)->m_arg;
         case ASR::exprType::ArraySection:
             return ASR::down_cast<ASR::ArraySection_t>(&x)->m_v;
         case ASR::exprType::ArrayItem:
@@ -182,7 +190,8 @@ static ASR::symbol_t* designator_variable(ASR::expr_t* x) {
 //
 // Each reference comes with whether it only designates the object of an
 // inquiry (inquiry_object): a variable, or a section, element, substring,
-// component or physical cast of one, through any number of these. The
+// component, complex part or physical cast of one, through any number of
+// these (designator_base). The
 // subscripts and the types met on the way, and any other object, such as a
 // function reference, are references like any other.
 struct SymbolReference {
@@ -329,12 +338,15 @@ static ASR::ttype_t* shape_only_type(Allocator& al, ASR::ttype_t* type) {
 // of inquiries (F2018 10.1.11), such as `x(ubound(w, 1))` with an automatic
 // `w(n + 1)` or `x(size(w(1)%c, d))`. Such a local, if it has_shape_only_type(),
 // is added to `inquired_only`, and StandIns::apply() replaces its
-// inquiries by inquiries about stand-ins, so that it is neither initialized
-// nor finalized. A variable that the signature refers to otherwise keeps its
-// type. That happens for one that only declarations which are never
-// evaluated (the signatures of interfaces and the types of procedure
-// variables) refer to, whose value then does not matter, and for an
-// ac-implied-do variable, which the signature defines before using it.
+// inquiries by inquiries about stand-ins. Other variables are kept too:
+// one that only declarations which are never evaluated (the signatures of
+// interfaces and the types of procedure variables) refer to, whose value
+// then does not matter, an ac-implied-do variable, which the signature
+// defines before using it, and one an inquiry about which has no stand-in.
+// Whichever way a local is kept, StandIns::apply() then gives it a
+// declaration that neither initializes nor finalizes it on entry or exit,
+// and allocates at most a byte per element or character of it
+// (make_others_inert), and checks that none of them does more.
 //
 // An internal procedure that the signature needs, as the interface of a
 // dummy procedure or of a procedure pointer component, contributes only its
@@ -440,11 +452,14 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
 //
 // The stand-ins are never used otherwise, so they are neither initialized
 // nor finalized and take little storage. A variable some inquiry about
-// which has no such stand-in keeps its type and inquiries, and so is
-// initialized and finalized: a component of a parameterized type, an
-// allocatable or pointer component, the contiguity of a component, or the
-// STORAGE_SIZE of a component of a derived type that the scope does not
-// know.
+// which has no such stand-in keeps its inquiries: one about a component of
+// a parameterized type, an allocatable or pointer component, the
+// contiguity of a component, or the STORAGE_SIZE of a component of a
+// derived type that the scope does not know. It and every other kept local
+// whose declaration would do something on entry or exit are then declared
+// so that it does nothing (make_others_inert): saved, which keeps their
+// type and shape, or, for an automatic object, allocatable and never
+// allocated.
 class StandIns {
     Allocator& al;
     // The variables whose inquiries ask stand-ins.
@@ -452,7 +467,7 @@ class StandIns {
     // The stand-ins made, by their scope, the variable or component whose
     // shape, length or type they have, and that kind of stand-in.
     enum Kind { Shape, Length, Type };
-    std::map<std::tuple<SymbolTable*, ASR::symbol_t*, int>, ASR::symbol_t*> made;
+    std::map<std::tuple<SymbolTable*, ASR::symbol_t*, int, std::string>, ASR::symbol_t*> made;
     // The variables whose declarations now refer to stand-ins.
     std::set<ASR::symbol_t*> changed;
 
@@ -477,6 +492,25 @@ class StandIns {
                 found.push_back({e, declaration});
             }
             ASR::BaseWalkVisitor<Inquiries>::visit_expr(x);
+        }
+    };
+
+    // Whether an inquiry other than about the type or the rank refers to
+    // a variable of `variables`, through any expression.
+    struct ShapeInquiries : public ASR::BaseWalkVisitor<ShapeInquiries> {
+        const std::set<ASR::symbol_t*>& variables;
+        bool found = false;
+        int depth = 0;
+        ShapeInquiries(const std::set<ASR::symbol_t*>& variables) : variables(variables) {}
+        void visit_expr(const ASR::expr_t& x) {
+            bool inquiry = inquiry_object(const_cast<ASR::expr_t&>(x)) &&
+                !ASR::is_a<ASR::TypeInquiry_t>(x) && !ASR::is_a<ASR::ArrayRank_t>(x);
+            depth += inquiry;
+            ASR::BaseWalkVisitor<ShapeInquiries>::visit_expr(x);
+            depth -= inquiry;
+        }
+        void visit_Var(const ASR::Var_t& x) {
+            if (depth > 0 && variables.count(x.m_v)) found = true;
         }
     };
 
@@ -506,9 +540,11 @@ class StandIns {
         return true;
     }
 
-    // The designator of which `x` is a substring, or `x`.
+    // The designator of which `x` is a substring, or a cast to another
+    // physical string type, or `x`.
     static ASR::expr_t* without_substrings(ASR::expr_t* x) {
-        while (ASR::is_a<ASR::StringSection_t>(*x) || ASR::is_a<ASR::StringItem_t>(*x)) {
+        while (ASR::is_a<ASR::StringSection_t>(*x) || ASR::is_a<ASR::StringItem_t>(*x) ||
+                ASR::is_a<ASR::StringPhysicalCast_t>(*x)) {
             x = designator_base(*x);
         }
         return x;
@@ -550,8 +586,11 @@ class StandIns {
             case ASR::exprType::Var:
                 return true;
             case ASR::exprType::ArrayPhysicalCast:
+            case ASR::exprType::StringPhysicalCast:
             case ASR::exprType::ArraySection:
             case ASR::exprType::ArrayItem:
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm:
                 return has_shape(designator_base(*x), contiguity);
             case ASR::exprType::StructInstanceMember: {
                 ASR::StructInstanceMember_t* c = ASR::down_cast<ASR::StructInstanceMember_t>(x);
@@ -602,11 +641,14 @@ class StandIns {
         return has_shape(object, ASR::is_a<ASR::ArrayIsContiguous_t>(*x));
     }
 
-    // The variable of `scope` that stands in for `key`, of `type`.
+    // The variable of `scope` that stands in for `key`, of `type`. A type
+    // stand-in has the type of its designator, which for a complex part
+    // differs from that of the component, so its type is part of its key.
     ASR::expr_t* stand_in(SymbolTable* scope, ASR::symbol_t* key, Kind kind,
             ASR::ttype_t* type, const Location& loc,
             ASR::symbol_t* type_declaration = nullptr) {
-        ASR::symbol_t*& sym = made[std::make_tuple(scope, key, (int) kind)];
+        ASR::symbol_t*& sym = made[std::make_tuple(scope, key, (int) kind,
+            kind == Type ? ASRUtils::get_type_code(type) : std::string())];
         if (!sym) {
             static const char* suffixes[] = {"_shape", "_len", "_type"};
             std::string name = scope->get_unique_name(std::string("__libasr_") +
@@ -632,6 +674,9 @@ class StandIns {
     // have the same lengths.
     ASR::expr_t* length_stand_in(SymbolTable* scope, ASR::expr_t* x) {
         const Location& loc = x->base.loc;
+        if (ASR::is_a<ASR::StringPhysicalCast_t>(*x)) {
+            return length_stand_in(scope, ASR::down_cast<ASR::StringPhysicalCast_t>(x)->m_arg);
+        }
         if (ASR::is_a<ASR::StringSection_t>(*x)) {
             ASR::StringSection_t* s = ASR::down_cast<ASR::StringSection_t>(x);
             return ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
@@ -723,6 +768,20 @@ class StandIns {
                 return ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, base,
                     physical, c->m_new, shape_only_type(al, c->m_type), nullptr));
             }
+            case ASR::exprType::StringPhysicalCast:
+                return shape(scope, designator_base(*x), bounds);
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm: {
+                // A complex part of an array is not a whole array, so its
+                // lower bounds are 1 (F2018 16.9.109).
+                ASR::expr_t* base = shape(scope, designator_base(*x), bounds);
+                ASR::expr_t* whole = base;
+                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*whole)) {
+                    whole = designator_base(*whole);
+                }
+                return bounds && ASRUtils::is_array(ASRUtils::expr_type(whole)) &&
+                    ASR::is_a<ASR::Var_t>(*whole) ? whole_section(whole) : base;
+            }
             case ASR::exprType::ArraySection: {
                 ASR::ArraySection_t* s = ASR::down_cast<ASR::ArraySection_t>(x);
                 return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, shape(scope, s->m_v, bounds),
@@ -797,6 +856,132 @@ class StandIns {
         return shape(scope, object, ASR::is_a<ASR::ArrayBound_t>(*x));
     }
 
+    // Whether `var` is a variable that a procedure creates on every call:
+    // a local that is neither saved, nor in COMMON, nor a named constant,
+    // nor an entry initialized local.
+    static bool is_unsaved_local(ASR::Variable_t* var) {
+        return var->m_intent == ASR::intentType::Local &&
+            var->m_storage == ASR::storage_typeType::Default && !var->m_common_block &&
+            !ASRUtils::is_entry_initialized_local(*var);
+    }
+
+    // Whether an unsaved local of `type` has a size known only at run time
+    // (an automatic object, F2018 8.3): a bound or length that is not a
+    // constant. Allocatable and pointer objects have no such storage.
+    static bool is_automatic(ASR::ttype_t* type) {
+        if (ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)) return false;
+        ASR::dimension_t* dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        int64_t value = 0;
+        for (size_t i = 0; i < rank; i++) {
+            if (!constant(dims[i].m_start, value) || !constant(dims[i].m_length, value)) {
+                return true;
+            }
+        }
+        ASR::ttype_t* element = ASRUtils::type_get_past_array(type);
+        if (!ASR::is_a<ASR::String_t>(*element)) return false;
+        ASR::String_t* string = ASR::down_cast<ASR::String_t>(element);
+        return string->m_len_kind != ASR::string_length_kindType::ExpressionLength ||
+            !constant(string->m_len, value);
+    }
+
+    // Whether declaring an unsaved local of `type` can do anything on
+    // entry or exit other than reserving storage of a size known at
+    // compile time. Every type other than a numeric or logical one counts:
+    // a derived type can have default initialization, finalization,
+    // allocatable components or character components, and the storage of
+    // a character object can be allocated on entry and freed on exit.
+    static bool has_effects(ASR::ttype_t* type) {
+        if (ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type)) return false;
+        ASR::ttype_t* element = ASRUtils::type_get_past_array(type);
+        return !(ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+            ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element)) ||
+            is_automatic(type);
+    }
+
+    // The type of an allocatable of the rank and element type of `type`,
+    // with deferred bounds and length.
+    ASR::ttype_t* deferred_type(ASR::ttype_t* type) {
+        const Location& loc = type->base.loc;
+        ASR::ttype_t* element = ASRUtils::type_get_past_array(type);
+        if (ASR::is_a<ASR::String_t>(*element)) {
+            element = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                ASR::down_cast<ASR::String_t>(element)->m_kind, nullptr,
+                ASR::string_length_kindType::DeferredLength,
+                ASR::string_physical_typeType::DescriptorString));
+        }
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(type);
+        if (rank > 0) {
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, rank);
+            for (size_t i = 0; i < rank; i++) {
+                ASR::dimension_t d;
+                d.loc = loc;
+                d.m_start = nullptr;
+                d.m_length = nullptr;
+                dims.push_back(al, d);
+            }
+            element = ASRUtils::TYPE(ASR::make_Array_t(al, loc, element, dims.p,
+                dims.size(), ASR::array_physical_typeType::DescriptorArray,
+                ASR::memory_spaceType::Global));
+        }
+        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, element));
+    }
+
+    // Gives every other unsaved local of the forwarder `copy` whose
+    // declaration has_effects() one that has none, and checks that none
+    // is left. A kept local is never used other than by the
+    // specification expressions of the signature, so neither its value
+    // nor, for one that is not inquired about, its shape matters:
+    //
+    // - one with a size known at compile time is saved: it has the same
+    //   type and shape, and is initialized once, never on entry, and never
+    //   finalized (F2018 7.5.6.3);
+    // - an automatic one, which a saved variable cannot be (F2018 8.5.16),
+    //   becomes an allocatable of the same rank and type that is never
+    //   allocated. Only type inquiries can ask it: an inquiry about its
+    //   shape or length has a stand-in.
+    void make_others_inert(ASR::Function_t* copy) {
+        std::set<ASR::symbol_t*> stand_ins = replaced, deferred;
+        for (auto& item : made) stand_ins.insert(item.second);
+        for (auto& item : copy->m_symtab->get_scope()) {
+            ASR::symbol_t* sym = item.second;
+            if (!ASR::is_a<ASR::Variable_t>(*sym) || stand_ins.count(sym)) continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!is_unsaved_local(var) || !has_effects(var->m_type)) continue;
+            if (!is_automatic(var->m_type)) {
+                var->m_storage = ASR::storage_typeType::Save;
+                continue;
+            }
+            var->m_type = deferred_type(var->m_type);
+            var->m_symbolic_value = nullptr;
+            var->m_value = nullptr;
+            SetChar dependencies;
+            dependencies.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, dependencies, var->m_type,
+                nullptr, nullptr, var->m_name);
+            var->m_dependencies = dependencies.p;
+            var->n_dependencies = dependencies.size();
+            deferred.insert(sym);
+        }
+        for (auto& item : copy->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (!is_unsaved_local(var) || !has_effects(var->m_type)) continue;
+            // Otherwise only a stand-in for a shape, an integer(1) object,
+            // or for a length, a character scalar, whose storage is a byte
+            // per element or character of what it stands in for.
+            ASR::ttype_t* element = ASRUtils::type_get_past_array(var->m_type);
+            LCOMPILERS_ASSERT(stand_ins.count(item.second) &&
+                ((ASRUtils::is_integer(*element) &&
+                    ASRUtils::extract_kind_from_ttype_t(element) == 1) ||
+                (ASRUtils::is_character(*element) && !ASRUtils::is_array(var->m_type))));
+        }
+        ShapeInquiries inquiries(deferred);
+        inquiries.visit_Function(*copy);
+        LCOMPILERS_ASSERT(!inquiries.found);
+    }
+
 public:
     StandIns(Allocator& al) : al(al) {}
 
@@ -836,6 +1021,7 @@ public:
             var->m_dependencies = dependencies.p;
             var->n_dependencies = dependencies.size();
         }
+        make_others_inert(copy);
     }
 };
 
@@ -2418,9 +2604,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // time, nor one over its size budget), so forwarding does not rely
         // on it: the forwarder keeps a local that is only inquired about,
         // unused, and StandIns::apply() makes its inquiries ask stand-ins
-        // with the same answers, so that it is neither initialized nor
-        // finalized. Evaluating a specification function of the signature
-        // in both entries is harmless: it is pure.
+        // with the same answers. It also declares every local that the
+        // forwarder keeps, however the signature refers to it, so that the
+        // forwarder neither initializes nor finalizes it, and allocates at
+        // most a byte per element or character of it, and checks that
+        // property: only the original does more, once per call.
+        // Evaluating a specification function of the signature in both
+        // entries is harmless: it is pure.
         //
         // A copy that is not forwarded keeps its own saved state. For an
         // external procedure, which another compilation unit can declare
