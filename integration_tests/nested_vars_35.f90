@@ -1,6 +1,7 @@
-! An internal procedure calls a dummy procedure of its host whose interface
-! has an assumed-length character dummy, and the host passes the internal
-! procedure on in a recursive call.
+! An internal procedure calls a dummy procedure and a procedure pointer of
+! its host whose interface has an assumed-length character dummy. The host
+! passes the internal procedure on in a recursive call, which checks that
+! each call reaches the entities of its own host.
 module nested_vars_35_m
 implicit none
 contains
@@ -13,8 +14,10 @@ contains
                 integer, intent(inout) :: k
             end subroutine
         end interface
+        procedure(leaf), pointer :: q
         integer :: k
         k = 0
+        q => s
         if (n == 0) then
             call s("end", k)
             acc = acc + k
@@ -26,6 +29,7 @@ contains
             character(len=*), intent(in) :: name
             integer, intent(inout) :: k
             call s(name // "x", k)
+            call q("", k)
             k = k + n
         end subroutine
     end subroutine
@@ -43,6 +47,6 @@ implicit none
 integer :: acc
 acc = 0
 call walk(3, leaf, acc)
-if (acc /= 12) error stop 1
+if (acc /= 27) error stop 1
 print *, acc
 end program

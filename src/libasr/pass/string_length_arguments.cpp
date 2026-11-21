@@ -231,12 +231,12 @@ public:
         const TransformedProcedures &transformed_):
         al{al_}, transformed{transformed_} {}
 
-    // A member of a host frame (see nested_vars) is a Reference to the
-    // procedure entity of the host, so it takes the same new type.
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Variable(x);
         ASR::symbol_t *decl = transformed_procedure(x.m_type_declaration,
             transformed);
+        // A member of a host frame (see nested_vars) is a Reference to the
+        // procedure entity of the host, so it takes the same new type.
         bool reference = ASRUtils::is_reference(x.m_type);
         ASR::ttype_t *type = reference
             ? down_cast<ASR::Reference_t>(x.m_type)->m_type : x.m_type;
