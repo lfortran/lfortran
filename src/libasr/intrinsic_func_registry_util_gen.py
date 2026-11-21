@@ -1295,7 +1295,8 @@ def gen_verify_args(func_name):
     add_verify_return_type_src(func_name)
     src += indent + "}\n\n"
 
-STORAGE_SIZE_DATA_OBJECT_CHECK = r'''        if (ASRUtils::is_operation_on_variable(args[0])) {
+STORAGE_SIZE_DATA_OBJECT_CHECK = r'''        if ((ASRUtils::is_binop_expr(args[0]) || ASRUtils::is_unaryop_expr(args[0]))
+                && ASRUtils::reads_variable_value(args[0])) {
             diag.add(diag::Diagnostic(
                 "the argument of the `storage_size` intrinsic must be a data object",
                 diag::Level::Error, diag::Stage::Semantic, {
