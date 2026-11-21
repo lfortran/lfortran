@@ -391,13 +391,11 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         visit_symbols_2(x);
     }
 
+    // A binding name is not a linker symbol: a binding of an extension type
+    // overrides the binding of the same name of its parent type, which can
+    // be declared in another module. So it does not get the module prefix of
+    // `update_name`, only the procedure that it is bound to is renamed.
     void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
-        if (bindc_mangling || x.m_abi != ASR::abiType::BindC) {
-            if (all_symbols_mangling || should_mangle) {
-                ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
-                sym_to_renamed[sym] = update_name(x.m_name);
-            }
-        }
         if (c_mangling ) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             mangle_c(sym , std::string(x.m_name));

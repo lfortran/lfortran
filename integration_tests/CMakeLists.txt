@@ -5988,6 +5988,9 @@ RUN(NAME mangle_underscore_04 LABELS gfortran llvm EXTRAFILES mangle_underscore_
 RUN(NAME mangle_underscore_05 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # components used in a procedure copied by pass_array_by_data (#16091)
 RUN(NAME mangle_underscore_06 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # components of a host type in a contained procedure of a pass_array_by_data copy (#16091)
 RUN(NAME mangle_underscore_07 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # structure constructor of a local type in a pass_array_by_data copy (#16091)
+RUN(NAME mangle_underscore_08 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # bindings of an extension type in another module override the parent's (#17305)
+RUN(NAME mangle_underscore_09 LABELS gfortran llvm EXTRAFILES mangle_underscore_09_m.f90
+    EXTRA_ARGS --separate-compilation --all-mangling --mangle-underscore) # bindings override those of a parent type compiled separately (#17305)
 
 RUN(NAME nan_handling_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
