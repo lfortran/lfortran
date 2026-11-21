@@ -23314,6 +23314,7 @@ public:
             if (!ASR::is_a<ASR::Var_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::ArrayItem_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::ArraySection_t>(*tgt_inner) &&
+                !ASR::is_a<ASR::StringSection_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::StructInstanceMember_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::FunctionCall_t>(*tgt_inner) &&
                 !ASR::is_a<ASR::PointerToCPtr_t>(*tgt_inner) &&
