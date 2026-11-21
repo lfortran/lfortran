@@ -3990,7 +3990,10 @@ public:
             // A copy of `e`, a declared bound or length of a local object,
             // of type `type`, with the inquiries about locals that it makes
             // replaced, or nullptr if it refers to anything else or, in a
-            // procedure other than an external one, references a procedure.
+            // procedure other than the definition of an external procedure
+            // (whose parent is the translation unit; an interface body,
+            // also one for an external procedure, belongs to the program
+            // unit that contains it), references a procedure.
             ASR::expr_t* declared(ASR::expr_t *e, ASR::ttype_t *type) {
                 auto it = folded.find(e);
                 if (it == folded.end()) {
