@@ -672,23 +672,10 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
         LCOMPILERS_ASSERT(xx.m_##attr != nullptr);    \
     }    \
 
-// Whether `symtab` belongs to a translation unit compiled in the scope of
-// the one `scope` belongs to. In interactive mode the procedures of earlier
-// cells are edited too (see EditProcedureVisitor::visit_TranslationUnit),
-// and their types can call a helper function that the cell being compiled
-// created for them (see function_call_in_declaration). That reference is
-// already right, and no name resolved from the earlier cell reaches it.
-static inline bool is_in_enclosed_unit(SymbolTable* symtab, SymbolTable* scope) {
-    SymbolTable* unit = symtab->get_tu_scope();
-    SymbolTable* scope_unit = scope->get_tu_scope();
-    return unit != scope_unit && ASRUtils::is_parent(scope_unit, unit);
-}
-
 #define edit_symbol_pointer(attr) ASR::symbol_t* x_sym = x->m_##attr;    \
     SymbolTable* x_sym_symtab = ASRUtils::symbol_parent_symtab(x_sym);    \
     if( x_sym_symtab->get_counter() != current_scope->get_counter() &&    \
-        !ASRUtils::is_parent(x_sym_symtab, current_scope) &&    \
-        !is_in_enclosed_unit(x_sym_symtab, current_scope) ) {    \
+        !ASRUtils::is_parent(x_sym_symtab, current_scope) ) {    \
         std::string x_sym_name = std::string(ASRUtils::symbol_name(x_sym));    \
         x->m_##attr = current_scope->resolve_symbol(x_sym_name);    \
         LCOMPILERS_ASSERT(x->m_##attr != nullptr);    \
@@ -1036,7 +1023,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             const LCompilers::PassOptions& pass_options_):
         al(al_), v(v_), not_to_be_erased(not_to_be_erased_), pass_options(pass_options_) {}
 
-        // this is exactly the same as the one in EditProcedureReplacer
+        // The by-data copy of `old_sym`, or nullptr. A procedure nested in a
+        // copied procedure has a copy in each of them; take the one that the
+        // current scope sees.
         ASR::symbol_t* resolve_new_proc(ASR::symbol_t* old_sym) {
             ASR::symbol_t* ext_sym = ASRUtils::symbol_get_past_external(old_sym);
             if( v.proc2newproc.find(ext_sym) != v.proc2newproc.end() ) {
@@ -2134,8 +2123,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                         continue;
                     }
                     // The implementation of a separate module procedure in a
-                    // submodule is the entry that its interface names.
-                    // Callers use that interface, so it is never redirected.
+                    // submodule is the entry that its interface names, so it
+                    // is never removed: callers outside the submodule reach
+                    // it through that interface.
                     bool protect = false;
                     ASR::asr_t* owner = current_scope->asr_owner;
                     if (ASR::is_a<ASR::symbol_t>(*owner)) {
