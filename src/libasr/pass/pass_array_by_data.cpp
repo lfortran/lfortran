@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/array_by_data.h>
 #include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <algorithm>
 #include <vector>
@@ -14,6 +15,7 @@
 #include <deque>
 #include <set>
 #include <map>
+#include <tuple>
 
 /*
 This ASR to ASR pass can be called whenever you want to avoid
@@ -113,80 +115,95 @@ static bool has_saved_state(ASR::Function_t* x) {
     return false;
 }
 
+// The field that holds the object of `x`, if `x` is an inquiry about the
+// bounds, shape, rank, contiguity, length or type parameters of a data
+// object (F2018 10.1.11): ArraySize, ArrayBound, ArrayRank, SHAPE,
+// ArrayIsContiguous, StringLen or TypeInquiry (KIND, BIT_SIZE,
+// STORAGE_SIZE, ...). nullptr otherwise, or if the inquiry has no object.
+static ASR::expr_t** inquiry_object(ASR::expr_t& x) {
+    switch (x.type) {
+        case ASR::exprType::ArraySize:
+            return &ASR::down_cast<ASR::ArraySize_t>(&x)->m_v;
+        case ASR::exprType::ArrayBound:
+            return &ASR::down_cast<ASR::ArrayBound_t>(&x)->m_v;
+        case ASR::exprType::ArrayRank:
+            return &ASR::down_cast<ASR::ArrayRank_t>(&x)->m_v;
+        case ASR::exprType::ArrayIsContiguous:
+            return &ASR::down_cast<ASR::ArrayIsContiguous_t>(&x)->m_array;
+        case ASR::exprType::StringLen:
+            return &ASR::down_cast<ASR::StringLen_t>(&x)->m_arg;
+        case ASR::exprType::TypeInquiry: {
+            ASR::TypeInquiry_t* inquiry = ASR::down_cast<ASR::TypeInquiry_t>(&x);
+            return inquiry->m_arg ? &inquiry->m_arg : nullptr;
+        }
+        case ASR::exprType::IntrinsicArrayFunction: {
+            ASR::IntrinsicArrayFunction_t* f = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(&x);
+            return f->m_arr_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicArrayFunctions::Shape) && f->n_args > 0 ?
+                &f->m_args[0] : nullptr;
+        }
+        default:
+            return nullptr;
+    }
+}
+
+// The designator of which `x` is a section, element, substring or
+// component, or which `x` casts to another physical array type, or nullptr
+// if `x` is none of these.
+static ASR::expr_t* designator_base(const ASR::expr_t& x) {
+    switch (x.type) {
+        case ASR::exprType::ArraySection:
+            return ASR::down_cast<ASR::ArraySection_t>(&x)->m_v;
+        case ASR::exprType::ArrayItem:
+            return ASR::down_cast<ASR::ArrayItem_t>(&x)->m_v;
+        case ASR::exprType::StringSection:
+            return ASR::down_cast<ASR::StringSection_t>(&x)->m_arg;
+        case ASR::exprType::StringItem:
+            return ASR::down_cast<ASR::StringItem_t>(&x)->m_arg;
+        case ASR::exprType::StructInstanceMember:
+            return ASR::down_cast<ASR::StructInstanceMember_t>(&x)->m_v;
+        case ASR::exprType::ArrayPhysicalCast:
+            return ASR::down_cast<ASR::ArrayPhysicalCast_t>(&x)->m_arg;
+        default:
+            return nullptr;
+    }
+}
+
+// The variable of which the designator `x` is a part, or nullptr if `x` is
+// not a designator.
+static ASR::symbol_t* designator_variable(ASR::expr_t* x) {
+    while (ASR::expr_t* base = designator_base(*x)) x = base;
+    return ASR::is_a<ASR::Var_t>(*x) ? ASR::down_cast<ASR::Var_t>(x)->m_v : nullptr;
+}
+
 // Every symbol that an ASR node, or a symbol it owns, refers to. A module
 // file has to resolve each such reference, so the serialization visitor
 // writes all of them; this one records them and writes nothing else.
 //
 // Each reference comes with whether it only designates the object of an
-// inquiry about its bounds, length, rank or type parameters (ArraySize,
-// ArrayBound, ArrayRank, StringLen, TypeInquiry): a variable, or a section,
-// element, substring or component of one. The subscripts and the types met
-// on the way, and any other object, such as a function reference, are
-// references like any other. An inquiry reference also comes with whether
-// it asks only about the shape of the variable, which the variable's
-// dimensions alone determine: ArraySize, ArrayBound or ArrayRank of the
-// variable, of a section of it, or of a scalar component of either, which
-// has the shape of its parent (see declare_shape_only).
+// inquiry (inquiry_object): a variable, or a section, element, substring,
+// component or physical cast of one, through any number of these. The
+// subscripts and the types met on the way, and any other object, such as a
+// function reference, are references like any other.
 struct SymbolReference {
     ASR::symbol_t* symbol;
     bool inquiry;
-    bool shape;
 };
 
 class SymbolReferences : public ASR::SerializationBaseVisitor<SymbolReferences> {
     typedef ASR::SerializationBaseVisitor<SymbolReferences> Base;
-    // Whether the expression being visited designates an inquired object,
-    // and whether only its shape is inquired about.
+    // Whether the expression being visited designates an inquired object.
     bool inquired = false;
-    bool shape = false;
-    // The object of the inquiry being visited, and whether only its shape
-    // is inquired about.
-    const ASR::expr_t* inquiry_object = nullptr;
-    bool object_shape = false;
+    // The object of the inquiry being visited.
+    const ASR::expr_t* object = nullptr;
     // The base of the designator being visited, which was visited already.
     const ASR::expr_t* visited_base = nullptr;
-
-    static const ASR::expr_t* get_inquiry_object(const ASR::expr_t& x) {
-        switch (x.type) {
-            case ASR::exprType::ArraySize:
-                return ASR::down_cast<ASR::ArraySize_t>(&x)->m_v;
-            case ASR::exprType::ArrayBound:
-                return ASR::down_cast<ASR::ArrayBound_t>(&x)->m_v;
-            case ASR::exprType::ArrayRank:
-                return ASR::down_cast<ASR::ArrayRank_t>(&x)->m_v;
-            case ASR::exprType::StringLen:
-                return ASR::down_cast<ASR::StringLen_t>(&x)->m_arg;
-            case ASR::exprType::TypeInquiry:
-                return ASR::down_cast<ASR::TypeInquiry_t>(&x)->m_arg;
-            default:
-                return nullptr;
-        }
-    }
-
-    // The designator of which `x` is a section, element, substring or
-    // component, or nullptr if `x` is none of these.
-    static const ASR::expr_t* get_designator_base(const ASR::expr_t& x) {
-        switch (x.type) {
-            case ASR::exprType::ArraySection:
-                return ASR::down_cast<ASR::ArraySection_t>(&x)->m_v;
-            case ASR::exprType::ArrayItem:
-                return ASR::down_cast<ASR::ArrayItem_t>(&x)->m_v;
-            case ASR::exprType::StringSection:
-                return ASR::down_cast<ASR::StringSection_t>(&x)->m_arg;
-            case ASR::exprType::StringItem:
-                return ASR::down_cast<ASR::StringItem_t>(&x)->m_arg;
-            case ASR::exprType::StructInstanceMember:
-                return ASR::down_cast<ASR::StructInstanceMember_t>(&x)->m_v;
-            default:
-                return nullptr;
-        }
-    }
 
 public:
     std::vector<SymbolReference> symbols;
 
     void write_symbol(const ASR::symbol_t& x) {
-        symbols.push_back({const_cast<ASR::symbol_t*>(&x), inquired, shape});
+        symbols.push_back({const_cast<ASR::symbol_t*>(&x), inquired});
     }
     template <typename... T> void write_int8(T...) {}
     template <typename... T> void write_int64(T...) {}
@@ -203,32 +220,20 @@ public:
             return;
         }
         bool outer_inquired = inquired;
-        bool outer_shape = shape;
-        const ASR::expr_t* outer_object = inquiry_object;
-        bool outer_object_shape = object_shape;
-        const ASR::expr_t* base = get_designator_base(x);
-        inquired = &x == inquiry_object && (ASR::is_a<ASR::Var_t>(x) || base);
-        shape = inquired && object_shape;
+        const ASR::expr_t* outer_object = object;
+        const ASR::expr_t* base = designator_base(x);
+        inquired = &x == object && (ASR::is_a<ASR::Var_t>(x) || base);
         if (inquired && base) {
-            inquiry_object = base;
-            bool scalar_member = ASR::is_a<ASR::StructInstanceMember_t>(x) &&
-                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(&x)) ==
-                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(
-                    const_cast<ASR::expr_t*>(base)));
-            object_shape = shape && (ASR::is_a<ASR::ArraySection_t>(x) || scalar_member);
+            object = base;
             visit_expr(*base);
             visited_base = base;
             inquired = false;
-            shape = false;
         }
-        inquiry_object = get_inquiry_object(x);
-        object_shape = ASR::is_a<ASR::ArraySize_t>(x) || ASR::is_a<ASR::ArrayBound_t>(x) ||
-            ASR::is_a<ASR::ArrayRank_t>(x);
+        ASR::expr_t** inquiry = inquiry_object(const_cast<ASR::expr_t&>(x));
+        object = inquiry ? *inquiry : nullptr;
         Base::visit_expr(x);
         inquired = outer_inquired;
-        shape = outer_shape;
-        inquiry_object = outer_object;
-        object_shape = outer_object_shape;
+        object = outer_object;
     }
 };
 
@@ -284,23 +289,11 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
             ->m_deftype == ASR::deftypeType::Implementation;
 }
 
-// Whether the forwarder of a copy (forward_copies_with_saved_state) can keep
-// `sym`, a local variable of the copy, which its signature refers to only as
-// the object of an inquiry about its bounds, length, rank or type parameters
-// (F2018 10.1.11), such as `x(ubound(w, 1))` with an automatic `w(n + 1)`.
-// The forwarder then declares the variable, so it allocates it on entry and
-// deallocates it on return, but never uses its value (see
-// signature_closure for what it declares it as).
-static bool is_kept_for_inquiry(ASR::symbol_t* sym) {
-    return ASR::is_a<ASR::Variable_t>(*sym) &&
-        ASR::down_cast<ASR::Variable_t>(sym)->m_intent == ASR::intentType::Local;
-}
-
-// Whether a variable that a forwarder keeps can be declared with the type
-// shape_only_type() makes of its own: one that is neither a pointer nor
-// allocatable (whose shape is deferred), nor a procedure variable, and that
-// is a scalar or an array whose physical type does not depend on its
-// element type.
+// Whether a local variable that a forwarder keeps only for inquiries can
+// be declared with the type shape_only_type() makes of its own: one that is
+// neither a pointer nor allocatable (whose shape is deferred), nor a
+// procedure variable, and that is a scalar or an array whose physical type
+// does not depend on its element type.
 static bool has_shape_only_type(ASR::Variable_t* var) {
     ASR::ttype_t* type = var->m_type;
     if (ASRUtils::is_pointer(type) || ASRUtils::is_allocatable(type) ||
@@ -326,23 +319,22 @@ static ASR::ttype_t* shape_only_type(Allocator& al, ASR::ttype_t* type) {
 // transitively, every symbol of `f` that their declarations refer to (types,
 // bounds, lengths, type declarations, derived type components, interfaces).
 // Returns false if one of them is neither is_declaration_only(), nor an
-// internal procedure whose own signature closure succeeds, nor a variable
-// that only declarations which are never evaluated (the signatures of such
-// interfaces and the types of procedure variables) refer to, nor a local
-// variable that the evaluated declarations refer to only as the object of
-// inquiries (is_kept_for_inquiry), or if such a kept variable is finalized
-// on return (a derived type object of a finalized type that is not saved)
-// and is not in `shape_only`.
+// internal procedure whose own signature closure succeeds, nor a variable.
+// No specification expression refers to such a symbol (a BLOCK, say).
 //
-// The kept variables are never used, but the forwarder declares them: for
-// an automatic object, the dimensions and lengths that its declaration
-// evaluates are needed. A kept variable that the signature refers to only
-// by inquiries about its shape (SymbolReference::shape) is added to
-// `shape_only`: the forwarder declares it as an integer(1) object of the
-// same shape instead (shape_only_type), so that it is neither initialized
-// nor finalized and takes little storage. Another kept variable keeps its
-// type; it is not used, so its initialization on entry, if any, does not
-// matter, but its finalization on return would.
+// A variable that is not a declaration has storage, which the forwarder
+// keeps although it never uses it: for an automatic object, the dimensions
+// and lengths that its declaration evaluates are needed. The specification
+// expressions of a signature refer to a local variable only as the object
+// of inquiries (F2018 10.1.11), such as `x(ubound(w, 1))` with an automatic
+// `w(n + 1)` or `x(size(w(1)%c, d))`. Such a local, if it has_shape_only_type(),
+// is added to `inquired_only`, and StandIns::apply() replaces its
+// inquiries by inquiries about stand-ins, so that it is neither initialized
+// nor finalized. A variable that the signature refers to otherwise keeps its
+// type. That happens for one that only declarations which are never
+// evaluated (the signatures of interfaces and the types of procedure
+// variables) refer to, whose value then does not matter, and for an
+// ac-implied-do variable, which the signature defines before using it.
 //
 // An internal procedure that the signature needs, as the interface of a
 // dummy procedure or of a procedure pointer component, contributes only its
@@ -354,7 +346,7 @@ static ASR::ttype_t* shape_only_type(Allocator& al, ASR::ttype_t* type) {
 // is kept, and through getters, which become interfaces too.
 static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>& interfaces,
-        std::set<ASR::symbol_t*>& shape_only, bool evaluated_signature = true) {
+        std::set<ASR::symbol_t*>& inquired_only, bool evaluated_signature = true) {
     std::vector<ASR::symbol_t*> pending;
     for (size_t i = 0; i < f->n_args; i++) {
         pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
@@ -366,13 +358,10 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
     // The symbols that only the signatures of interfaces need.
     std::set<ASR::symbol_t*> unevaluated;
     if (!evaluated_signature) unevaluated.insert(pending.begin(), pending.end());
-    // The local variables that the evaluated declarations refer to only as
-    // the objects of inquiries (see is_kept_for_inquiry).
-    std::set<ASR::symbol_t*> inquired;
     // The variables that the signature keeps although they have storage,
-    // and the symbols that it refers to other than by an inquiry about
-    // their shape.
-    std::set<ASR::symbol_t*> kept, not_shape;
+    // and the symbols that it refers to other than as the object of an
+    // inquiry.
+    std::set<ASR::symbol_t*> kept, not_inquired;
     while (!pending.empty()) {
         ASR::symbol_t* sym = pending.back();
         pending.pop_back();
@@ -397,28 +386,21 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
             sym_references.visit_symbol(*sym);
             references = sym_references.symbols;
         }
-        for (auto& [reference, inquiry, shape] : references) {
+        for (auto& [reference, inquiry] : references) {
             ASR::symbol_t* needed = symbol_of_scope(f->m_symtab, reference);
             if (!needed) continue;
-            if (!shape || needed != reference) not_shape.insert(needed);
+            if (!inquiry || needed != reference) not_inquired.insert(needed);
             if (!closure.insert(needed).second) {
-                // The value of a local kept for an inquiry is needed after all.
-                if (evaluated && !inquiry && inquired.count(needed)) return false;
                 // Reached again by a declaration that is evaluated.
                 if (!evaluated || !unevaluated.erase(needed)) continue;
             } else if (is_internal_procedure(f->m_symtab, needed)) {
                 if (!signature_closure(ASR::down_cast<ASR::Function_t>(needed),
-                        interfaces[needed], interfaces, shape_only, false)) return false;
+                        interfaces[needed], interfaces, inquired_only, false)) return false;
                 pending.push_back(needed);
                 continue;
             }
             if (!is_declaration_only(needed)) {
-                if (evaluated && inquiry && needed == reference &&
-                        is_kept_for_inquiry(needed)) {
-                    inquired.insert(needed);
-                } else if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) {
-                    return false;
-                }
+                if (!ASR::is_a<ASR::Variable_t>(*needed)) return false;
                 kept.insert(needed);
             }
             if (!evaluated) unevaluated.insert(needed);
@@ -427,120 +409,435 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
     }
     for (ASR::symbol_t* sym : kept) {
         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-        if (!has_shape_only_type(var)) continue;
-        if (!not_shape.count(sym)) {
-            shape_only.insert(sym);
-        } else if (var->m_storage != ASR::storage_typeType::Save &&
-                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(var->m_type)) &&
-                ASRUtils::struct_needs_finalization(var->m_type_declaration)) {
-            return false;
+        if (var->m_intent == ASR::intentType::Local && !not_inquired.count(sym) &&
+                has_shape_only_type(var)) {
+            inquired_only.insert(sym);
         }
     }
     return true;
 }
 
-// Declares each variable of `shape_only` (see signature_closure), a
-// variable of `copy` or of an interface in it, as an integer(1) object of
-// the same shape, with neither an initializer nor a type declaration. The
-// sections of it that inquiries name get the same element type, and an
-// inquiry about a scalar component of it or of such a section asks about
-// the section, or about the variable (its size or rank) or a section of
-// all of it (its bounds, which are those of an array that is not a whole
-// array, as for the component) instead.
-static void declare_shape_only(Allocator& al, ASR::Function_t* copy,
-        const std::set<ASR::symbol_t*>& shape_only) {
-    for (ASR::symbol_t* sym : shape_only) {
-        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-        var->m_type = shape_only_type(al, var->m_type);
-        var->m_type_declaration = nullptr;
-        var->m_symbolic_value = nullptr;
-        var->m_value = nullptr;
-        SetChar dependencies;
-        dependencies.reserve(al, 1);
-        ASRUtils::collect_variable_dependencies(al, dependencies, var->m_type,
-            nullptr, nullptr, var->m_name);
-        var->m_dependencies = dependencies.p;
-        var->n_dependencies = dependencies.size();
+// StandIns::apply() declares each variable of `inquired_only` (see
+// signature_closure), a variable of `copy` or of an interface in it that
+// the signature refers to only as the object of inquiries, as an integer(1)
+// object of the same shape, with neither an initializer nor a type
+// declaration, and makes each inquiry about it, through any designator,
+// ask a stand-in that gives the same answer:
+//
+// - an inquiry about the shape (SIZE, LBOUND, UBOUND, SHAPE, RANK,
+//   IS_CONTIGUOUS) asks about the designator rebuilt on integer(1) objects:
+//   the variable itself, and for an array component of a scalar, an object
+//   with the bounds that the component declares, which are constant. A
+//   component of an array, or an element of one, has the shape of the
+//   array but, not being a whole array, has lower bounds 1, so for LBOUND
+//   and UBOUND it becomes a section of all of the array (F2018 9.5.2,
+//   16.9.109);
+// - LEN asks about a scalar character of the declared length, or about
+//   the same substring of it;
+// - an inquiry about the type (KIND, BIT_SIZE, DIGITS, STORAGE_SIZE, ...)
+//   asks about a scalar of the same intrinsic or character type, or about
+//   a disassociated pointer of the same derived type.
+//
+// The stand-ins are never used otherwise, so they are neither initialized
+// nor finalized and take little storage. A variable some inquiry about
+// which has no such stand-in keeps its type and inquiries, and so is
+// initialized and finalized: a component of a parameterized type, an
+// allocatable or pointer component, the contiguity of a component, or the
+// STORAGE_SIZE of a component of a derived type that the scope does not
+// know.
+class StandIns {
+    Allocator& al;
+    // The variables whose inquiries ask stand-ins.
+    std::set<ASR::symbol_t*> replaced;
+    // The stand-ins made, by their scope, the variable or component whose
+    // shape, length or type they have, and that kind of stand-in.
+    enum Kind { Shape, Length, Type };
+    std::map<std::tuple<SymbolTable*, ASR::symbol_t*, int>, ASR::symbol_t*> made;
+    // The variables whose declarations now refer to stand-ins.
+    std::set<ASR::symbol_t*> changed;
+
+    // Every inquiry about a variable of `variables`, with the variable
+    // whose declaration it is in, if any.
+    struct Inquiries : public ASR::BaseWalkVisitor<Inquiries> {
+        const std::set<ASR::symbol_t*>& variables;
+        std::vector<std::pair<ASR::expr_t*, ASR::symbol_t*>> found;
+        std::set<ASR::expr_t*> seen;
+        ASR::symbol_t* declaration = nullptr;
+        Inquiries(const std::set<ASR::symbol_t*>& variables) : variables(variables) {}
+        void visit_Variable(const ASR::Variable_t& x) {
+            declaration = const_cast<ASR::symbol_t*>(&x.base);
+            ASR::BaseWalkVisitor<Inquiries>::visit_Variable(x);
+            declaration = nullptr;
+        }
+        void visit_expr(const ASR::expr_t& x) {
+            ASR::expr_t* e = const_cast<ASR::expr_t*>(&x);
+            ASR::expr_t** object = inquiry_object(*e);
+            if (object && variables.count(designator_variable(*object)) &&
+                    seen.insert(e).second) {
+                found.push_back({e, declaration});
+            }
+            ASR::BaseWalkVisitor<Inquiries>::visit_expr(x);
+        }
+    };
+
+    static bool constant(ASR::expr_t* e, int64_t& value) {
+        return e && ASRUtils::extract_value(ASRUtils::expr_value(e), value);
     }
-    struct Sections : public ASR::BaseWalkVisitor<Sections> {
-        Allocator& al;
-        const std::set<ASR::symbol_t*>& shape_only;
-        Sections(Allocator& al, const std::set<ASR::symbol_t*>& shape_only) :
-            al(al), shape_only(shape_only) {}
-        // `v` without the components that it selects, if it is a variable of
-        // `shape_only` or a section of one; `v` otherwise.
-        ASR::expr_t* without_members(ASR::expr_t* v) {
-            ASR::expr_t* object = v;
-            while (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
-                object = ASR::down_cast<ASR::StructInstanceMember_t>(object)->m_v;
-            }
-            ASR::expr_t* base = ASR::is_a<ASR::ArraySection_t>(*object) ?
-                ASR::down_cast<ASR::ArraySection_t>(object)->m_v : object;
-            return ASR::is_a<ASR::Var_t>(*base) &&
-                shape_only.count(ASR::down_cast<ASR::Var_t>(base)->m_v) ? object : v;
+
+    // The member variable that the component `x` selects.
+    static ASR::Variable_t* member(const ASR::StructInstanceMember_t* x) {
+        ASR::symbol_t* m = ASRUtils::symbol_get_past_external(x->m_m);
+        return ASR::is_a<ASR::Variable_t>(*m) ? ASR::down_cast<ASR::Variable_t>(m) : nullptr;
+    }
+
+    // Whether the array component `var` has constant bounds.
+    static bool constant_bounds(ASR::Variable_t* var) {
+        if (ASRUtils::is_pointer(var->m_type) || ASRUtils::is_allocatable(var->m_type)) {
+            return false;
         }
-        void visit_ArraySize(const ASR::ArraySize_t& x) {
-            const_cast<ASR::ArraySize_t&>(x).m_v = without_members(x.m_v);
-            ASR::BaseWalkVisitor<Sections>::visit_ArraySize(x);
-        }
-        void visit_ArrayRank(const ASR::ArrayRank_t& x) {
-            const_cast<ASR::ArrayRank_t&>(x).m_v = without_members(x.m_v);
-            ASR::BaseWalkVisitor<Sections>::visit_ArrayRank(x);
-        }
-        void visit_ArrayBound(const ASR::ArrayBound_t& x) {
-            ASR::expr_t* object = without_members(x.m_v);
-            if (object != x.m_v && ASR::is_a<ASR::Var_t>(*object)) {
-                object = whole_section(object);
-            }
-            const_cast<ASR::ArrayBound_t&>(x).m_v = object;
-            ASR::BaseWalkVisitor<Sections>::visit_ArrayBound(x);
-        }
-        // The section `v(:, ..., :)` of all of the array variable `v`.
-        ASR::expr_t* whole_section(ASR::expr_t* v) {
-            const Location& loc = v->base.loc;
-            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(v)->m_v;
-            ASR::ttype_t* index = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
-            Vec<ASR::array_index_t> indices;
-            indices.reserve(al, rank);
-            Vec<ASR::dimension_t> dims;
-            dims.reserve(al, rank);
-            for (size_t i = 0; i < rank; i++) {
-                ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                    i + 1, index, ASR::integerbozType::Decimal));
-                ASR::array_index_t ai;
-                ai.loc = loc;
-                ai.m_left = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
-                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), dim, index,
-                    ASR::arrayboundType::LBound, nullptr));
-                ai.m_right = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
-                    ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), dim, index,
-                    ASR::arrayboundType::UBound, nullptr));
-                ai.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index,
-                    ASR::integerbozType::Decimal));
-                indices.push_back(al, ai);
-                ASR::dimension_t d;
-                d.loc = loc;
-                d.m_start = nullptr;
-                d.m_length = nullptr;
-                dims.push_back(al, d);
-            }
-            ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-                ASRUtils::type_get_past_array(ASRUtils::expr_type(v)), dims.p, dims.size(),
-                ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
-            return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, v, indices.p,
-                indices.size(), type, nullptr));
-        }
-        void visit_ArraySection(const ASR::ArraySection_t& x) {
-            ASR::BaseWalkVisitor<Sections>::visit_ArraySection(x);
-            if (ASR::is_a<ASR::Var_t>(*x.m_v) && ASR::is_a<ASR::Array_t>(*x.m_type) &&
-                    shape_only.count(ASR::down_cast<ASR::Var_t>(x.m_v)->m_v)) {
-                const_cast<ASR::ArraySection_t&>(x).m_type = shape_only_type(al, x.m_type);
+        ASR::dimension_t* dims;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(var->m_type, dims);
+        for (size_t i = 0; i < rank; i++) {
+            int64_t value = 0;
+            if (!constant(dims[i].m_start, value) || !constant(dims[i].m_length, value)) {
+                return false;
             }
         }
-    } sections(al, shape_only);
-    sections.visit_Function(*copy);
-}
+        return true;
+    }
+
+    // The designator of which `x` is a substring, or `x`.
+    static ASR::expr_t* without_substrings(ASR::expr_t* x) {
+        while (ASR::is_a<ASR::StringSection_t>(*x) || ASR::is_a<ASR::StringItem_t>(*x)) {
+            x = designator_base(*x);
+        }
+        return x;
+    }
+
+    // The last component that the designator `x` selects, or nullptr.
+    static ASR::StructInstanceMember_t* last_component(ASR::expr_t* x) {
+        for (; x; x = designator_base(*x)) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x)) {
+                return ASR::down_cast<ASR::StructInstanceMember_t>(x);
+            }
+        }
+        return nullptr;
+    }
+
+    // The declared length of the character designator `x`, or of the one
+    // of which it is a substring, if a stand-in can have it: that of the
+    // variable, or a constant one of a component.
+    static ASR::expr_t* length(ASR::expr_t* x) {
+        x = without_substrings(x);
+        ASR::StructInstanceMember_t* component = last_component(x);
+        ASR::ttype_t* type = component ? (member(component) ? member(component)->m_type : nullptr) :
+            ASRUtils::symbol_type(designator_variable(x));
+        if (!type) return nullptr;
+        ASR::ttype_t* element = ASRUtils::type_get_past_array(type);
+        if (!ASR::is_a<ASR::String_t>(*element)) return nullptr;
+        ASR::String_t* string = ASR::down_cast<ASR::String_t>(element);
+        int64_t value = 0;
+        if (string->m_len_kind != ASR::string_length_kindType::ExpressionLength ||
+                !string->m_len || (component && !constant(string->m_len, value))) {
+            return nullptr;
+        }
+        return string->m_len;
+    }
+
+    // Whether the shape of the designator `x` has a stand-in (shape()).
+    static bool has_shape(ASR::expr_t* x, bool contiguity) {
+        switch (x->type) {
+            case ASR::exprType::Var:
+                return true;
+            case ASR::exprType::ArrayPhysicalCast:
+            case ASR::exprType::ArraySection:
+            case ASR::exprType::ArrayItem:
+                return has_shape(designator_base(*x), contiguity);
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t* c = ASR::down_cast<ASR::StructInstanceMember_t>(x);
+                ASR::Variable_t* var = member(c);
+                if (contiguity || !var) return false;
+                if (ASRUtils::is_array(var->m_type) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(c->m_v))) {
+                    return constant_bounds(var);
+                }
+                return has_shape(c->m_v, contiguity);
+            }
+            default:
+                return false;
+        }
+    }
+
+    // The symbol that declares the derived type of the designator `x` in
+    // the scope of its variable, or nullptr if there is none.
+    static ASR::symbol_t* type_declaration(ASR::expr_t* x) {
+        ASR::symbol_t* var = designator_variable(x);
+        ASR::StructInstanceMember_t* component = last_component(x);
+        if (!component) return ASR::down_cast<ASR::Variable_t>(var)->m_type_declaration;
+        if (!member(component) || !member(component)->m_type_declaration) return nullptr;
+        ASR::symbol_t* type = ASRUtils::symbol_get_past_external(
+            member(component)->m_type_declaration);
+        for (SymbolTable* s = ASRUtils::symbol_parent_symtab(var); s; s = s->parent) {
+            for (auto& item : s->get_scope()) {
+                if (ASRUtils::symbol_get_past_external(item.second) == type) {
+                    return item.second;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    // Whether the inquiry `x` has a stand-in.
+    static bool has_stand_in(ASR::expr_t* x) {
+        ASR::expr_t* object = *inquiry_object(*x);
+        if (ASR::is_a<ASR::StringLen_t>(*x)) return length(object) != nullptr;
+        if (ASR::is_a<ASR::TypeInquiry_t>(*x)) {
+            ASR::ttype_t* element = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(object)));
+            return ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element) ||
+                (ASRUtils::is_character(*element) && length(object)) ||
+                (ASR::is_a<ASR::StructType_t>(*element) && type_declaration(object));
+        }
+        return has_shape(object, ASR::is_a<ASR::ArrayIsContiguous_t>(*x));
+    }
+
+    // The variable of `scope` that stands in for `key`, of `type`.
+    ASR::expr_t* stand_in(SymbolTable* scope, ASR::symbol_t* key, Kind kind,
+            ASR::ttype_t* type, const Location& loc,
+            ASR::symbol_t* type_declaration = nullptr) {
+        ASR::symbol_t*& sym = made[std::make_tuple(scope, key, (int) kind)];
+        if (!sym) {
+            static const char* suffixes[] = {"_shape", "_len", "_type"};
+            std::string name = scope->get_unique_name(std::string("__libasr_") +
+                ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(key)) +
+                suffixes[kind], false);
+            SetChar dependencies;
+            dependencies.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, dependencies, type, nullptr,
+                nullptr, name);
+            sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc,
+                scope, s2c(al, name), dependencies.p, dependencies.size(),
+                ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                type, type_declaration, ASR::abiType::Source, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+            scope->add_symbol(name, sym);
+        }
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
+    // The character designator `x` rebuilt on a scalar character stand-in
+    // with the declared length of the designator of which `x` is a
+    // substring, or of `x` itself: the substrings, with the same bounds,
+    // have the same lengths.
+    ASR::expr_t* length_stand_in(SymbolTable* scope, ASR::expr_t* x) {
+        const Location& loc = x->base.loc;
+        if (ASR::is_a<ASR::StringSection_t>(*x)) {
+            ASR::StringSection_t* s = ASR::down_cast<ASR::StringSection_t>(x);
+            return ASRUtils::EXPR(ASR::make_StringSection_t(al, loc,
+                length_stand_in(scope, s->m_arg), s->m_start, s->m_end, s->m_step,
+                ASRUtils::type_get_past_array(s->m_type), nullptr));
+        }
+        if (ASR::is_a<ASR::StringItem_t>(*x)) {
+            ASR::StringItem_t* s = ASR::down_cast<ASR::StringItem_t>(x);
+            return ASRUtils::EXPR(ASR::make_StringItem_t(al, loc,
+                length_stand_in(scope, s->m_arg), s->m_idx,
+                ASRUtils::type_get_past_array(s->m_type), nullptr));
+        }
+        ASR::StructInstanceMember_t* component = last_component(x);
+        ASR::symbol_t* key = component ? component->m_m : designator_variable(x);
+        ASR::String_t* string = ASR::down_cast<ASR::String_t>(
+            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(x))));
+        ASR::expr_t* len = length(x);
+        ASR::ttype_t* len_type = ASRUtils::expr_type(len);
+        int64_t value = 0;
+        if (constant(len, value)) {
+            len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                std::max<int64_t>(value, 0), len_type, ASR::integerbozType::Decimal));
+        } else {
+            // A negative declared length is zero (F2018 7.4.4.2), which a
+            // scalar has to be declared with.
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 2);
+            args.push_back(al, len);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                len_type, ASR::integerbozType::Decimal)));
+            len = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Max),
+                args.p, args.size(), 0, len_type, nullptr));
+        }
+        return stand_in(scope, key, Length, ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            string->m_kind, len, ASR::string_length_kindType::ExpressionLength,
+            string->m_physical_type)), loc);
+    }
+
+    // The section `v(:, ..., :)` of all of the integer(1) array `v`.
+    ASR::expr_t* whole_section(ASR::expr_t* v) {
+        const Location& loc = v->base.loc;
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(v)->m_v;
+        ASR::ttype_t* index = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v));
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, rank);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, rank);
+        for (size_t i = 0; i < rank; i++) {
+            ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                i + 1, index, ASR::integerbozType::Decimal));
+            ASR::array_index_t ai;
+            ai.loc = loc;
+            ai.m_left = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), dim, index,
+                ASR::arrayboundType::LBound, nullptr));
+            ai.m_right = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)), dim, index,
+                ASR::arrayboundType::UBound, nullptr));
+            ai.m_step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index,
+                ASR::integerbozType::Decimal));
+            indices.push_back(al, ai);
+            ASR::dimension_t d;
+            d.loc = loc;
+            d.m_start = nullptr;
+            d.m_length = nullptr;
+            dims.push_back(al, d);
+        }
+        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 1)), dims.p, dims.size(),
+            ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
+        return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, v, indices.p,
+            indices.size(), type, nullptr));
+    }
+
+    // The designator `x` (has_shape()) rebuilt on integer(1) stand-ins of
+    // the same shape, and of the same bounds if `bounds`.
+    ASR::expr_t* shape(SymbolTable* scope, ASR::expr_t* x, bool bounds) {
+        const Location& loc = x->base.loc;
+        switch (x->type) {
+            case ASR::exprType::ArrayPhysicalCast: {
+                ASR::ArrayPhysicalCast_t* c = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x);
+                ASR::expr_t* base = shape(scope, c->m_arg, bounds);
+                ASR::array_physical_typeType physical =
+                    ASRUtils::extract_physical_type(ASRUtils::expr_type(base));
+                if (physical == c->m_new) return base;
+                return ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc, base,
+                    physical, c->m_new, shape_only_type(al, c->m_type), nullptr));
+            }
+            case ASR::exprType::ArraySection: {
+                ASR::ArraySection_t* s = ASR::down_cast<ASR::ArraySection_t>(x);
+                return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, shape(scope, s->m_v, bounds),
+                    s->m_args, s->n_args, shape_only_type(al, s->m_type), nullptr));
+            }
+            case ASR::exprType::ArrayItem: {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
+                // An element of an array component of an array has the shape
+                // of that array.
+                if (ASRUtils::is_array(item->m_type)) return shape(scope, item->m_v, bounds);
+                return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, shape(scope, item->m_v, bounds),
+                    item->m_args, item->n_args, shape_only_type(al, item->m_type),
+                    item->m_storage_format, nullptr, item->m_in_bounds));
+            }
+            case ASR::exprType::StructInstanceMember: {
+                ASR::StructInstanceMember_t* c = ASR::down_cast<ASR::StructInstanceMember_t>(x);
+                ASR::Variable_t* var = member(c);
+                if (ASRUtils::is_array(var->m_type) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(c->m_v))) {
+                    ASR::dimension_t* declared;
+                    size_t rank = ASRUtils::extract_dimensions_from_ttype(var->m_type, declared);
+                    Vec<ASR::dimension_t> dims;
+                    dims.reserve(al, rank);
+                    for (size_t i = 0; i < rank; i++) {
+                        int64_t start = 0, length = 0;
+                        constant(declared[i].m_start, start);
+                        constant(declared[i].m_length, length);
+                        ASR::ttype_t* index = ASRUtils::expr_type(declared[i].m_length);
+                        ASR::dimension_t d;
+                        d.loc = loc;
+                        d.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            start, index, ASR::integerbozType::Decimal));
+                        d.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                            length, index, ASR::integerbozType::Decimal));
+                        dims.push_back(al, d);
+                    }
+                    return stand_in(scope, c->m_m, Shape, ASRUtils::TYPE(ASR::make_Array_t(al,
+                        loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 1)), dims.p,
+                        dims.size(), ASR::array_physical_typeType::FixedSizeArray,
+                        ASR::memory_spaceType::Global)), loc);
+                }
+                ASR::expr_t* base = shape(scope, c->m_v, bounds);
+                return bounds && ASRUtils::is_array(ASRUtils::expr_type(base)) &&
+                    ASR::is_a<ASR::Var_t>(*base) ? whole_section(base) : base;
+            }
+            default:
+                return x;
+        }
+    }
+
+    // The object that the inquiry `x` (has_stand_in()) asks instead.
+    ASR::expr_t* replacement(ASR::expr_t* x) {
+        ASR::expr_t* object = *inquiry_object(*x);
+        SymbolTable* scope = ASRUtils::symbol_parent_symtab(designator_variable(object));
+        if (ASR::is_a<ASR::StringLen_t>(*x)) return length_stand_in(scope, object);
+        if (ASR::is_a<ASR::TypeInquiry_t>(*x)) {
+            ASR::ttype_t* element = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(object)));
+            if (ASRUtils::is_character(*element)) return length_stand_in(scope, object);
+            if (ASR::is_a<ASR::StructType_t>(*element)) {
+                // STORAGE_SIZE: a pointer, which is neither initialized nor
+                // finalized, of the same type.
+                ASR::symbol_t* declaration = type_declaration(object);
+                return stand_in(scope, declaration, Type, ASRUtils::TYPE(
+                    ASR::make_Pointer_t(al, x->base.loc, element)), x->base.loc,
+                    declaration);
+            }
+            ASR::StructInstanceMember_t* component = last_component(object);
+            return stand_in(scope, component ? component->m_m : designator_variable(object),
+                Type, element, x->base.loc);
+        }
+        return shape(scope, object, ASR::is_a<ASR::ArrayBound_t>(*x));
+    }
+
+public:
+    StandIns(Allocator& al) : al(al) {}
+
+    void apply(ASR::Function_t* copy, const std::set<ASR::symbol_t*>& inquired_only) {
+        Inquiries inquiries(inquired_only);
+        inquiries.visit_Function(*copy);
+        replaced = inquired_only;
+        for (auto& [inquiry, declaration] : inquiries.found) {
+            if (!has_stand_in(inquiry)) {
+                replaced.erase(designator_variable(*inquiry_object(*inquiry)));
+            }
+        }
+        // Every replacement is made before any variable is retyped, from
+        // the types that the inquiries were made with.
+        std::vector<std::pair<ASR::expr_t**, ASR::expr_t*>> replacements;
+        for (auto& [inquiry, declaration] : inquiries.found) {
+            ASR::expr_t** object = inquiry_object(*inquiry);
+            if (!replaced.count(designator_variable(*object))) continue;
+            replacements.push_back({object, replacement(inquiry)});
+            if (declaration) changed.insert(declaration);
+        }
+        for (auto& [object, stand_in] : replacements) *object = stand_in;
+        for (ASR::symbol_t* sym : replaced) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            var->m_type = shape_only_type(al, var->m_type);
+            var->m_type_declaration = nullptr;
+            var->m_symbolic_value = nullptr;
+            var->m_value = nullptr;
+            changed.insert(sym);
+        }
+        for (ASR::symbol_t* sym : changed) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            SetChar dependencies;
+            dependencies.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(al, dependencies, var->m_type,
+                var->m_symbolic_value, var->m_value, var->m_name);
+            var->m_dependencies = dependencies.p;
+            var->n_dependencies = dependencies.size();
+        }
+    }
+};
 
 // Makes the internal procedure `x` an interface that keeps only the symbols
 // of its signature, `signature`.
@@ -2115,26 +2412,24 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // dummies, named constants, COMMON and module variables and
         // non-internal pure functions, which are declarations, and
         // inquiries about local objects (F2018 10.1.11). The frontend
-        // replaces most of those by the bounds and lengths the objects
-        // declare, but forwarding does not rely on it: a local that is
-        // only inquired about stays in the forwarder, unused, and if only
-        // its shape is inquired about, as an integer(1) object of that
-        // shape, which is neither initialized nor finalized. Evaluating a
-        // specification function of the signature in both entries is
-        // harmless: it is pure.
+        // replaces many such inquiries by the bounds and lengths that the
+        // objects declare, but not all of them (for example not one about
+        // a component or an element of a local with a DIM known only at run
+        // time, nor one over its size budget), so forwarding does not rely
+        // on it: the forwarder keeps a local that is only inquired about,
+        // unused, and StandIns::apply() makes its inquiries ask stand-ins
+        // with the same answers, so that it is neither initialized nor
+        // finalized. Evaluating a specification function of the signature
+        // in both entries is harmless: it is pure.
         //
         // A copy that is not forwarded keeps its own saved state. For an
         // external procedure, which another compilation unit can declare
         // by an interface body, whose direct calls reach the original and
         // other references the copy, that would split the saved state
-        // between them. Valid code that LFortran compiles does not get
-        // there through signature_closure, which refuses only the value of
-        // a local, which a specification expression cannot use, and a
-        // finalized local inquired about other than by its shape: through
-        // an element, a component that is an array or a function reference,
-        // which the frontend replaces by a constant or the standard does
-        // not allow, or by a signature that is never evaluated, which ASR
-        // verification rejects before this pass. A result that
+        // between them. signature_closure keeps every variable that the
+        // signature refers to, so it fails only for a symbol that is
+        // neither a variable nor a declaration nor an internal procedure,
+        // which no specification expression refers to. A result that
         // forwardable_result refuses is an argument by then
         // (subroutine_from_function), unless a pipeline omits that pass.
         void forward_copies_with_saved_state() {
@@ -2147,12 +2442,12 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 bool pointer_result;
                 std::set<ASR::symbol_t*> signature;
                 std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> interfaces;
-                std::set<ASR::symbol_t*> shape_only;
+                std::set<ASR::symbol_t*> inquired_only;
                 if (parent->get_symbol(original->m_name) != entry.first ||
                         parent->get_symbol(copy->m_name) != entry.second.first ||
                         original->n_body == 0 || !has_saved_state(original) ||
                         !forwardable_result(original, pointer_result)) continue;
-                if (!signature_closure(copy, signature, interfaces, shape_only)) {
+                if (!signature_closure(copy, signature, interfaces, inquired_only)) {
                     LCOMPILERS_ASSERT(!ASRUtils::is_tu_scope(parent));
                     continue;
                 }
@@ -2172,7 +2467,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     make_interface(al, ASR::down_cast<ASR::Function_t>(item.first),
                         item.second);
                 }
-                declare_shape_only(al, copy, shape_only);
+                StandIns(al).apply(copy, inquired_only);
             }
         }
 

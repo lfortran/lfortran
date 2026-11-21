@@ -3891,7 +3891,8 @@ public:
     // inquiry that is kept, like any inquiry this does not recognise, still
     // evaluates correctly, and where pass_array_by_data needs the signature
     // without the body it keeps a local that the signature only inquires
-    // about (see is_kept_for_inquiry there), unless the local is finalized.
+    // about and makes the inquiries ask stand-ins instead (see StandIns
+    // there), so that the local is neither initialized nor finalized.
     class LocalInquiryFolder :
             public ASR::BaseExprReplacer<LocalInquiryFolder> {
         public:
