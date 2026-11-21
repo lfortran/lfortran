@@ -2687,7 +2687,7 @@ public:
     std::map<uint32_t, std::set<std::string>> &procedure_references;
 
     // Attributes defined before declaration
-    std::map<std::string, ASR::symbol_t*> symbols_having_only_attributes_without_type;
+    std::map<std::pair<SymbolTable*, std::string>, ASR::symbol_t*> symbols_having_only_attributes_without_type;
 
     // procedures explicitly declared with 'intrinsic' attribute
     // e.g. a declaration like: 'intrinsic abs' for an intrinsic
@@ -4147,6 +4147,8 @@ public:
 	std::string sym = to_lower(s.m_name);
 	bool is_proc_arg = (std::find(current_procedure_args.begin(),
 	    current_procedure_args.end(), sym) != current_procedure_args.end());
+	bool is_entry_dummy = (std::find(current_entry_args.begin(),
+	    current_entry_args.end(), sym) != current_entry_args.end());
 	ASR::symbol_t *get_sym = current_scope->get_symbol(sym);
 	// get actual variable from SymTab, not the current line
 	if (get_sym == nullptr) {
@@ -4160,7 +4162,7 @@ public:
 		ASR::ttype_t* typ = implicit_dictionary.at(std::string(1,sym[0]));
 		get_sym = declare_implicit_variable2(s.loc, sym, intent, typ);
 	    } else {
-		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
+		if (symbols_having_only_attributes_without_type.find({current_scope, sym}) == symbols_having_only_attributes_without_type.end()) {
 	            ASR::intentType intent;
 	            ASR::abiType abi;
 	            if (is_proc_arg) {
@@ -4176,7 +4178,7 @@ public:
 	                                                    abi, ASR::accessType::Public, ASR::presenceType::Required,
 	                                                    false, false, false));
 	        } else {
-	            get_sym = symbols_having_only_attributes_without_type[sym];
+	            get_sym = symbols_having_only_attributes_without_type[{current_scope, sym}];
 	        }
 	    }
 	}
@@ -4191,13 +4193,14 @@ public:
                 is_char_type = ASR::is_a<ASR::String_t>(*v->m_type);
             }
 	    process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
-	                 is_proc_arg, s.m_name);
+	                 is_proc_arg || is_entry_dummy, s.m_name);
 
 	    bool is_star_dimension = false;
 
 	    if (s.n_dim > 0) {
 		is_star_dimension = (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
+	    bool is_entry_star_dummy = is_proc_arg || (is_entry_dummy && is_star_dimension);
 
 	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
 		/* You can't specify an attribute such as DIMENSION more than once in a scoping
@@ -4229,7 +4232,7 @@ public:
 		                               : ASR::abiType::Source;
 	        if (!ASRUtils::ttype_set_dimensions(&(v->m_type), dims.data(),
 	                                            dims.size(), al,
-	                                            abi, is_proc_arg,
+	                                            abi, is_entry_star_dummy,
 	                                            is_star_dimension)) {
 	            diag.add(Diagnostic(
 			         "Cannot set dimension for variable of non-numerical type",
@@ -4248,10 +4251,10 @@ public:
 		ASR::abiType abi = is_proc_arg ? current_procedure_abi_type
 		                               : ASR::abiType::Source;
                 v->m_type = ASRUtils::make_Array_t_util(al, loc, nullptr,
-                    dims.p, dims.size(), abi, is_proc_arg,
+                    dims.p, dims.size(), abi, is_entry_star_dummy,
                     ASR::array_physical_typeType::DescriptorArray, false,
                     is_star_dimension);
-                symbols_having_only_attributes_without_type[sym] = get_sym;
+                symbols_having_only_attributes_without_type[{current_scope, sym}] = get_sym;
             }
 	} else {
 	    diag.add(Diagnostic(
@@ -9472,6 +9475,10 @@ public:
         bool is_dimension_star = array_type->m_physical_type !=
                 ASR::array_physical_typeType::DescriptorArray &&
             array_type->m_dims[array_type->n_dims - 1].m_length == nullptr;
+        if (array_type->m_physical_type ==
+                ASR::array_physical_typeType::UnboundedPointerArray) {
+            is_argument = true;
+        }
         return ASRUtils::make_Array_t_util(al, loc, element_type,
             array_type->m_dims, array_type->n_dims, abi, is_argument,
             ASR::array_physical_typeType::DescriptorArray, false,
@@ -11103,7 +11110,10 @@ public:
                         // Check if intent is used on a non-argument variable
                         bool is_argument = std::find(current_procedure_args.begin(),
                                 current_procedure_args.end(), sym) !=
-                                current_procedure_args.end();
+                                current_procedure_args.end()
+                            || std::find(current_entry_args.begin(),
+                                current_entry_args.end(), sym) !=
+                                current_entry_args.end();
                         if (!is_argument) {
                             diag.add(Diagnostic(
                                 "Intent attribute can only be applied to procedure arguments",
@@ -11396,8 +11406,19 @@ public:
                 }
                 ASR::intentType s_intent;
                 bool is_argument = false;
+                // A name that occurs only in an ENTRY statement is a dummy of
+                // that entry. It stays a local of the host: a fixed-size
+                // array there is the master's own storage, and turning it
+                // into a dummy makes the host call pass an unallocated
+                // argument. An assumed-size dummy is the exception. Typing
+                // it as a local gives it a descriptor, while a call with an
+                // implicit interface passes the array's data.
+                std::string decl_name = to_lower(s.m_name);
+                bool is_entry_dummy = std::find(current_entry_args.begin(),
+                    current_entry_args.end(), decl_name) !=
+                    current_entry_args.end();
                 if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), to_lower(s.m_name)) !=
+                        current_procedure_args.end(), decl_name) !=
                         current_procedure_args.end()) {
                     s_intent = ASRUtils::intent_unspecified;
                     is_argument = true;
@@ -11415,6 +11436,7 @@ public:
                 is_allocatable = false;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
+                bool has_explicit_intent_out = false;
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -11422,7 +11444,7 @@ public:
                             AST::AttrIntent_t *ai =
                                 AST::down_cast<AST::AttrIntent_t>(a);
                             // Check if intent is used on a non-argument variable
-                            if (!is_argument) {
+                            if (!is_argument && !is_entry_dummy) {
                                 diag.add(Diagnostic(
                                     "Intent attribute can only be applied to procedure arguments",
                                     Level::Error, Stage::Semantic, {
@@ -11430,22 +11452,27 @@ public:
                                     }));
                                 throw SemanticAbort();
                             }
-                            switch (ai->m_intent) {
-                                case (AST::attr_intentType::In) : {
-                                    s_intent = ASRUtils::intent_in;
-                                    break;
-                                }
-                                case (AST::attr_intentType::Out) : {
-                                    s_intent = ASRUtils::intent_out;
-                                    break;
-                                }
-                                case (AST::attr_intentType::InOut) : {
-                                    s_intent = ASRUtils::intent_inout;
-                                    break;
-                                }
-                                default : {
-                                    s_intent = ASRUtils::intent_unspecified;
-                                    break;
+                            if (ai->m_intent == AST::attr_intentType::Out) {
+                                has_explicit_intent_out = true;
+                            }
+                            if (is_argument) {
+                                switch (ai->m_intent) {
+                                    case (AST::attr_intentType::In) : {
+                                        s_intent = ASRUtils::intent_in;
+                                        break;
+                                    }
+                                    case (AST::attr_intentType::Out) : {
+                                        s_intent = ASRUtils::intent_out;
+                                        break;
+                                    }
+                                    case (AST::attr_intentType::InOut) : {
+                                        s_intent = ASRUtils::intent_inout;
+                                        break;
+                                    }
+                                    default : {
+                                        s_intent = ASRUtils::intent_unspecified;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -11573,7 +11600,7 @@ public:
                                 current_scope, is_derived_type, hidden_derived_type_components);
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
                                 (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                                s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                                s_intent == ASRUtils::intent_inout) || is_argument || is_entry_dummy, s.m_name);
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
                             extract_bind(attr_bd, s_abi, bindc_name, diag, *this);
@@ -11663,7 +11690,7 @@ public:
                         throw SemanticAbort();
                     }
                     
-                    if (s_intent == ASRUtils::intent_out && value_attr) {
+                    if ((s_intent == ASRUtils::intent_out || has_explicit_intent_out) && value_attr) {
                         diag.add(Diagnostic(
                             "`value` attribute conflicts with `intent(out)` attribute",
                             Level::Error, Stage::Semantic, {
@@ -11710,7 +11737,7 @@ public:
                         current_scope, is_derived_type, hidden_derived_type_components);
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
-                        s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                        s_intent == ASRUtils::intent_inout) || is_argument || is_entry_dummy, s.m_name);
                 }
                 // Corank from var_sym codimension (e.g., integer :: x[*])
                 if (s.n_codim > 0) {
@@ -11886,7 +11913,9 @@ public:
                         current_scope, is_derived_type, hidden_derived_type_components);
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
-                        (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                        (s_intent != ASRUtils::intent_local) || is_argument
+                            || (is_entry_dummy && is_dimension_star),
+                        is_dimension_star, is_assumed_rank);
                 }
                 if (corank > 0
                         && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
@@ -12055,12 +12084,12 @@ public:
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
-                        if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
-                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
+                        if ( symbols_having_only_attributes_without_type.find({current_scope, sym}) != symbols_having_only_attributes_without_type.end() ) {
+                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[{current_scope, sym}];
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             symbol_variable->base.base.loc = s.loc;
                             if ( symbol_variable->m_type ) {
-                                if (is_argument && is_dimension_star) {
+                                if ((is_argument || is_entry_dummy) && is_dimension_star) {
                                     symbol_variable->m_type = type;
                                 } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                                     symbol_variable->m_type = make_array_of_declared_element_type(
@@ -12161,7 +12190,7 @@ public:
                             check_namelist_object_type_confirmed(symbol_variable,
                                 type, type_declaration, s.loc);
                         }
-                        if (is_argument && is_dimension_star) {
+                        if ((is_argument || is_entry_dummy) && is_dimension_star) {
                             symbol_variable->m_type = type;
                         } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
                             symbol_variable->m_type = make_array_of_declared_element_type(
@@ -13527,8 +13556,9 @@ public:
                     ASRUtils::anchor_cptr_null_constant_to_type_declaration(
                         al, variable_added_to_symtab->m_symbolic_value, variable_added_to_symtab);
                     if ( !is_implicitly_declared && !is_external) {
-                        if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
-                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
+                        if ( symbols_having_only_attributes_without_type.find({current_scope, sym}) != symbols_having_only_attributes_without_type.end() ) {
+                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[{current_scope, sym}];
+                            symbols_having_only_attributes_without_type.erase({current_scope, sym});
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             if ( symbol_variable->m_type ) {
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
