@@ -3889,11 +3889,32 @@ public:
             // The declared bounds and lengths of locals, with their
             // inquiries replaced, or nullptr if they cannot be.
             std::map<ASR::expr_t*, ASR::expr_t*> &folded;
+            // The declarations of the scoping unit are complete: a local is
+            // known by its attributes alone (see is_local).
+            bool resolved;
+            // Whether an inquiry was replaced.
+            bool replaced = false;
             static constexpr size_t max_replacement_size = 1024;
 
             LocalInquiryFolder(CommonVisitor &v_,
-                    std::map<ASR::expr_t*, ASR::expr_t*> &folded_) :
-                v{v_}, folded{folded_} {}
+                    std::map<ASR::expr_t*, ASR::expr_t*> &folded_,
+                    bool resolved_) : v{v_}, folded{folded_}, resolved{resolved_} {}
+
+            // Whether `sym` is a local object of the current scope (see
+            // is_local_of_current_scoping_unit).
+            bool is_local(ASR::symbol_t *sym) {
+                if (!resolved) {
+                    return v.is_local_of_current_scoping_unit(sym);
+                }
+                if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+                    return false;
+                }
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                return var->m_parent_symtab == v.current_scope
+                    && var->m_storage != ASR::storage_typeType::Parameter
+                    && var->m_intent == ASRUtils::intent_local
+                    && var->m_common_block == nullptr;
+            }
 
             // Whether `e` refers to something other than dummies, named
             // constants, COMMON variables and use-associated entities of the
@@ -3901,14 +3922,14 @@ public:
             class OtherReference :
                     public ASR::BaseWalkVisitor<OtherReference> {
                 public:
-                    CommonVisitor &v;
+                    LocalInquiryFolder &folder;
                     bool found = false;
 
-                    OtherReference(CommonVisitor &v_) : v{v_} {}
+                    OtherReference(LocalInquiryFolder &folder_) : folder{folder_} {}
 
                     void visit_Var(const ASR::Var_t &x) {
-                        if (ASRUtils::symbol_parent_symtab(x.m_v) != v.current_scope ||
-                                v.is_local_of_current_scoping_unit(x.m_v) ||
+                        if (ASRUtils::symbol_parent_symtab(x.m_v) != folder.v.current_scope ||
+                                folder.is_local(x.m_v) ||
                                 !(ASR::is_a<ASR::Variable_t>(*x.m_v) ||
                                     ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v))) {
                             found = true;
@@ -3950,7 +3971,7 @@ public:
                     return nullptr;
                 }
                 ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
-                if (!v.is_local_of_current_scoping_unit(sym)) {
+                if (!is_local(sym)) {
                     return nullptr;
                 }
                 return ASR::down_cast<ASR::Variable_t>(sym);
@@ -3970,7 +3991,7 @@ public:
                     this->current_expr = &result;
                     this->replace_expr(result);
                     this->current_expr = current_expr_copy;
-                    OtherReference other(v);
+                    OtherReference other(*this);
                     other.visit_expr(*result);
                     if (other.found || too_large(result)) {
                         result = nullptr;
@@ -4151,6 +4172,7 @@ public:
             void replace_by(ASR::expr_t *value) {
                 if (value != nullptr && !too_large(value)) {
                     *this->current_expr = value;
+                    replaced = true;
                 }
             }
 
@@ -4186,6 +4208,7 @@ public:
                     local.visit_expr(*x);
                     if (local.found) {
                         *this->current_expr = value;
+                        replaced = true;
                         return;
                     }
                 }
@@ -4243,6 +4266,39 @@ public:
                 replace_by(nonnegative(len));
             }
 
+            // Replaces the inquiries in the bounds and lengths of `type`.
+            void replace_type(ASR::ttype_t *type) {
+                switch (type->type) {
+                    case ASR::ttypeType::Pointer: {
+                        replace_type(ASR::down_cast<ASR::Pointer_t>(type)->m_type);
+                        break;
+                    }
+                    case ASR::ttypeType::Allocatable: {
+                        replace_type(ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
+                        break;
+                    }
+                    case ASR::ttypeType::Array: {
+                        ASR::Array_t *array = ASR::down_cast<ASR::Array_t>(type);
+                        for (size_t i = 0; i < array->n_dims; i++) {
+                            replace_root(array->m_dims[i].m_start);
+                            replace_root(array->m_dims[i].m_length);
+                        }
+                        replace_type(array->m_type);
+                        break;
+                    }
+                    case ASR::ttypeType::String: {
+                        ASR::String_t *str = ASR::down_cast<ASR::String_t>(type);
+                        if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength) {
+                            replace_root(str->m_len);
+                        }
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+            }
+
             // Replaces the inquiries in `e`, which it can replace.
             void replace_root(ASR::expr_t *&e) {
                 if (e == nullptr) {
@@ -4271,9 +4327,61 @@ public:
             folded_declarations.clear();
             folded_declarations_scope = current_scope;
         }
-        LocalInquiryFolder folder(*this, folded_declarations);
+        LocalInquiryFolder folder(*this, folded_declarations, false);
         folder.replace_root(e);
         return e;
+    }
+
+    // Replaces the inquiries about local objects that the bounds and
+    // lengths of the dummies and of the result of `func` still make once
+    // all of its declarations are complete. A bound or a length that
+    // references a generic or type-bound procedure is resolved only then,
+    // after the bounds and lengths that inquire about it, or that it
+    // inquires about, were built (see LocalInquiryFolder).
+    void fold_signature_local_inquiries(ASR::Function_t *func) {
+        SymbolTable *current_scope_copy = current_scope;
+        current_scope = func->m_symtab;
+        std::map<ASR::expr_t*, ASR::expr_t*> folded;
+        ASR::FunctionType_t *func_type = ASRUtils::get_FunctionType(func);
+        size_t n = func->n_args + (func->m_return_var ? 1 : 0);
+        for (size_t i = 0; i < n; i++) {
+            ASR::expr_t *arg = i < func->n_args ? func->m_args[i] : func->m_return_var;
+            if (!ASR::is_a<ASR::Var_t>(*arg) ||
+                    !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(arg)->m_v)) {
+                continue;
+            }
+            ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(arg)->m_v);
+            LocalInquiryFolder folder(*this, folded, true);
+            typename LocalInquiryFolder::LocalReference local(folder);
+            local.visit_ttype(*variable->m_type);
+            if (!local.found) {
+                continue;
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::ttype_t *type = duplicator.duplicate_ttype(variable->m_type);
+            folder.replace_type(type);
+            if (!folder.replaced) {
+                continue;
+            }
+            variable->m_type = type;
+            SetChar dependencies;
+            dependencies.reserve(al, 0);
+            ASRUtils::collect_variable_dependencies(al, dependencies,
+                variable->m_type, nullptr, variable->m_value);
+            variable->m_dependencies = dependencies.p;
+            variable->n_dependencies = dependencies.n;
+            ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args,
+                func->n_args);
+            ASR::ttype_t *param_type = replacer.replace_args_with_FunctionParam(
+                variable->m_type, current_scope);
+            if (i < func->n_args) {
+                func_type->m_arg_types[i] = param_type;
+            } else {
+                func_type->m_return_var_type = param_type;
+            }
+        }
+        current_scope = current_scope_copy;
     }
 
     // Finds the first variable of a BLOCK construct enclosing `scope` that an

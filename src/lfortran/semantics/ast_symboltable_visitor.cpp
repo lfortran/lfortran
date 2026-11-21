@@ -5257,6 +5257,8 @@ public:
             throw LCompilersException("generic_procedures should be resolved"
                 "before evaluating calls to genericProcedure");
         }
+        // The procedures whose declarations had postponed calls.
+        std::vector<ASR::Function_t*> postponed_functions;
         for(auto &[expr_holder, symtable, funcCall, var_name, CheckFunc] :postponed_genericProcedure_calls_vec){
             // Set current scope
             SymbolTable* current_scope_copy = current_scope;
@@ -5336,6 +5338,13 @@ public:
 
             // Revert current scope
             current_scope = current_scope_copy;
+            if (std::find(postponed_functions.begin(), postponed_functions.end(),
+                    func) == postponed_functions.end()) {
+                postponed_functions.push_back(func);
+            }
+        }
+        for (ASR::Function_t* func : postponed_functions) {
+            fold_signature_local_inquiries(func);
         }
         // Clear the delayed generic procedure calls
         postponed_genericProcedure_calls_vec.clear();
