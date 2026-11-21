@@ -687,32 +687,6 @@ public:
         current_symtab = parent_symtab;
     }
 
-    // The interface a separate module procedure was declared with, searched
-    // up the chain of ancestor modules a submodule extends, or nullptr.
-    ASR::Function_t* declared_module_interface(SymbolTable *tu_scope,
-            const char *parent_module, const std::string &name) {
-        std::set<std::string> seen;
-        while (parent_module != nullptr && tu_scope != nullptr) {
-            std::string ancestor = parent_module;
-            if (!seen.insert(ancestor).second) return nullptr;
-            ASR::symbol_t *sym = tu_scope->get_symbol(ancestor);
-            if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) {
-                return nullptr;
-            }
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
-            ASR::symbol_t *declared = m->m_symtab->get_symbol(name);
-            if (declared != nullptr && ASR::is_a<ASR::Function_t>(*declared)) {
-                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(declared);
-                if (ASRUtils::get_FunctionType(f)->m_deftype ==
-                        ASR::deftypeType::Interface) {
-                    return f;
-                }
-            }
-            parent_module = m->m_parent_module;
-        }
-        return nullptr;
-    }
-
     // A submodule supplies the body of a procedure whose interface its
     // ancestor module published. Every caller compiled against that module
     // was checked against the published interface and against nothing else,
@@ -6271,6 +6245,30 @@ static bool declares_frame_type(SymbolTable *scope) {
         }
     }
     return false;
+}
+
+ASR::Function_t* declared_module_interface(SymbolTable *tu_scope,
+        const char *parent_module, const std::string &name) {
+    std::set<std::string> seen;
+    while (parent_module != nullptr && tu_scope != nullptr) {
+        std::string ancestor = parent_module;
+        if (!seen.insert(ancestor).second) return nullptr;
+        ASR::symbol_t *sym = tu_scope->get_symbol(ancestor);
+        if (sym == nullptr || !ASR::is_a<ASR::Module_t>(*sym)) {
+            return nullptr;
+        }
+        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(sym);
+        ASR::symbol_t *declared = m->m_symtab->get_symbol(name);
+        if (declared != nullptr && ASR::is_a<ASR::Function_t>(*declared)) {
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(declared);
+            if (ASRUtils::get_FunctionType(f)->m_deftype ==
+                    ASR::deftypeType::Interface) {
+                return f;
+            }
+        }
+        parent_module = m->m_parent_module;
+    }
+    return nullptr;
 }
 
 bool asr_verify(const ASR::TranslationUnit_t &unit,
