@@ -190,11 +190,11 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
 // Returns false if one of them is not is_declaration_only().
 //
 // An internal procedure that the signature needs, as the interface of a
-// dummy procedure or of a procedure pointer component, contributes only its
-// own signature, which `interfaces` maps it to: a procedure whose body was
-// replaced keeps it as an interface (make_interface). That interface is
-// never evaluated, so a variable that only its declarations refer to is
-// kept without its value mattering, as long as it is not a derived type
+// dummy procedure, contributes only its own signature, which `interfaces`
+// maps it to: a procedure whose body was replaced keeps it as an interface
+// (make_interface). That interface is never evaluated, nor is the type of
+// a procedure variable, so a variable that only such declarations refer to
+// is kept without its value mattering, as long as it is not a derived type
 // object (which would be initialized and finalized). For example, a bound
 // that is a host dummy reads it through the frame pointer of the host
 // (nested_vars), which is kept, and through getters, which become
@@ -265,13 +265,19 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
 }
 
 // Makes the internal procedure `x` an interface that keeps only the symbols
-// of its signature, `signature`.
+// of its signature, `signature`. Its name is local to its host, so it is an
+// abstract interface, which names no procedure: one that names an existing
+// procedure would declare a global procedure of that name.
 static void make_interface(Allocator& al, ASR::Function_t* x,
         const std::set<ASR::symbol_t*>& signature) {
     ASRUtils::ExprStmtDuplicator duplicator(al);
     ASR::ttype_t* type = duplicator.duplicate_ttype(x->m_function_signature);
     ASR::down_cast<ASR::FunctionType_t>(type)->m_deftype = ASR::deftypeType::Interface;
     x->m_function_signature = type;
+    ASR::interface_body_t* body = al.make_new<ASR::interface_body_t>();
+    body->loc = x->base.base.loc;
+    body->m_abstract = true;
+    x->m_interface_body = body;
     x->m_body = nullptr;
     x->n_body = 0;
     x->m_dependencies = nullptr;
