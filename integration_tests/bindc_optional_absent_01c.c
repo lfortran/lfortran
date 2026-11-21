@@ -26,3 +26,16 @@ void bindc_optional_absent_01_cptr(void **p, int *s)
 {
     *s = p != NULL;
 }
+
+void bindc_optional_absent_01_proc(void (*cb)(int), int *s)
+{
+    if (cb != NULL) cb(5);
+    *s = cb != NULL;
+}
+
+int bindc_optional_absent_01_proc_f(void (*cb)(int))
+{
+    if (cb == NULL) return 0;
+    cb(5);
+    return 1;
+}

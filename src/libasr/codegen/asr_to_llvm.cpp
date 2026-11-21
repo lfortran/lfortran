@@ -27352,35 +27352,17 @@ public:
                         llvm_utils->character_type));
                     continue;
                 }
-                llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(orig_arg->m_type, orig_arg->m_type_declaration, module.get());
                 if (x_abi == ASR::abiType::BindC) {
                     // Per Fortran standard, absent optional bind(C) args
-                    // are passed as NULL pointers.
-                    // For array parameters, the LLVM type from
-                    // get_type_from_ttype_t_util is already a descriptor
-                    // pointer matching the function signature, so use it
-                    // as-is. For scalar parameters (including
-                    // allocatable/pointer scalars), add a pointer level to
-                    // match the pass-by-reference calling convention.
-                    llvm::PointerType* null_ptr_type;
-                    ASR::ttype_t* arg_type_no_ap =
-                        ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(
-                            orig_arg->m_type));
-                    if (ASRUtils::is_array(arg_type_no_ap)
-                            && llvm_orig_arg_type->isPointerTy()) {
-                        null_ptr_type = llvm::cast<llvm::PointerType>(
-                            llvm_orig_arg_type);
-                    } else if (LLVM::is_cptr_dummy_passed_by_value(*orig_arg)) {
-                        // The signature takes the `void*` itself.
-                        null_ptr_type = llvm::cast<llvm::PointerType>(
-                            llvm_orig_arg_type);
-                    } else {
-                        null_ptr_type = llvm_orig_arg_type->getPointerTo();
-                    }
-                    args.push_back(llvm::ConstantPointerNull::get(
-                        null_ptr_type));
+                    // are passed as NULL pointers, of the type the
+                    // procedure signature gives the dummy.
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*func_subrout));
+                    std::vector<llvm::Type*> param_types = llvm_utils->convert_args(
+                        *ASR::down_cast<ASR::Function_t>(func_subrout), module.get());
+                    LCOMPILERS_ASSERT(i < param_types.size());
+                    args.push_back(llvm::Constant::getNullValue(param_types[i]));
                 } else {
+                    llvm::Type* llvm_orig_arg_type = llvm_utils->get_type_from_ttype_t_util(orig_arg->m_type, orig_arg->m_type_declaration, module.get());
                     llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, llvm_orig_arg_type);
                     args.push_back(llvm_arg);
                 }
