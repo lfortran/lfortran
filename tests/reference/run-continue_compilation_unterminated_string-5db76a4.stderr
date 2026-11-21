@@ -1,0 +1,17 @@
+tokenizer error: unterminated character constant
+ --> tests/errors/continue_compilation_unterminated_string.f90:2:10
+  |
+2 | print *, '[abc
+  |          ^ character constant is not closed before the end of the line
+
+syntax error: Token ',' is unexpected here
+ --> tests/errors/continue_compilation_unterminated_string.f90:3:8
+  |
+3 | print *, "[abc
+  |        ^ 
+
+tokenizer error: unterminated character constant
+ --> tests/errors/continue_compilation_unterminated_string.f90:3:10
+  |
+3 | print *, "[abc
+  |          ^ character constant is not closed before the end of the line
