@@ -35,9 +35,9 @@ program c_f_pointer_03
     if (size(p) /= 5) error stop
     if (p(5) /= 5) error stop
 
-    call c_f_pointer(cp, p, max(shp, 2*n))
-    if (size(p) /= 10) error stop
-    if (p(6) /= 6) error stop
+    call c_f_pointer(cp, p, max(shp, n))
+    if (size(p) /= 5) error stop
+    if (any(p /= [1, 2, 3, 4, 5])) error stop
 
     call c_f_pointer(cp, q, abs(shp2))
     if (any(shape(q) /= [2, 3])) error stop
