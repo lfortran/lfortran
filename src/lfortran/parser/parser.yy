@@ -15,7 +15,7 @@ see the documentation in that script for details and motivation.
 %locations
 %glr-parser
 %expect    189 // shift/reduce conflicts
-%expect-rr 189 // reduce/reduce conflicts
+%expect-rr 192 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -663,6 +663,7 @@ script_unit
     | derived_type_decl
     | union_type_decl
     | enum_decl
+    | interface_decl
     | interactive_statement %dprec 7
     // expr sep outranks a statement, so a bare allocate(a) or open(u) would be
     // a call. Each statement below is the statement: allocate, deallocate and

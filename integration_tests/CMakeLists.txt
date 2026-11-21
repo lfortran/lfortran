@@ -2830,6 +2830,7 @@ RUN(NAME interface_31 LABELS gfortran llvm)
 RUN(NAME interface_32 LABELS gfortran llvm EXTRAFILES interface_32_module.f90 EXTRA_ARGS --implicit-interface)
 RUN(NAME interface_33 LABELS gfortran llvm EXTRAFILES interface_33_module.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME interface_34 LABELS gfortran llvm)
+RUN(NAME interface_35 LABELS gfortran llvm)
 
 RUN(NAME implicit_interface_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_interface_02 LABELS gfortran llvmImplicit)
