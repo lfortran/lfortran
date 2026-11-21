@@ -5733,6 +5733,7 @@ RUN(NAME save_37 LABELS gfortran llvm)
 RUN(NAME save_38 LABELS gfortran llvm)
 RUN(NAME save_39 LABELS gfortran llvm)
 RUN(NAME save_40 LABELS gfortran llvm)
+RUN(NAME save_41 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
