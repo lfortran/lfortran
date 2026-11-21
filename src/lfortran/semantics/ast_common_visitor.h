@@ -3865,7 +3865,16 @@ public:
     // such a local, such as KIND, is replaced by that value. An inquiry is
     // kept if the declared bounds or length of the object refer to anything
     // other than dummies, named constants, COMMON variables and
-    // use-associated entities of the procedure (such as a host variable).
+    // use-associated entities of the procedure (such as a host variable),
+    // or if they reference a procedure (such as a type-bound or generic
+    // one) and the procedure being declared is not an external procedure.
+    // Other scopes can declare a dummy procedure or a procedure pointer
+    // with the interface of a module, internal or separate module
+    // procedure `s` (`procedure(s) :: z`), and pass_array_by_data does not
+    // yet support a signature that references a procedure there: replacing
+    // the inquiry would turn the ASR verification error that the inquiry
+    // gives into an internal error. Other scopes see an external procedure
+    // through interface bodies of their own.
     //
     // The declared bounds and lengths of each local are replaced once and
     // copied for each inquiry (`folded`). Where it is possible a replacement
@@ -3980,7 +3989,8 @@ public:
 
             // A copy of `e`, a declared bound or length of a local object,
             // of type `type`, with the inquiries about locals that it makes
-            // replaced, or nullptr if it refers to anything else.
+            // replaced, or nullptr if it refers to anything else or, in a
+            // procedure other than an external one, references a procedure.
             ASR::expr_t* declared(ASR::expr_t *e, ASR::ttype_t *type) {
                 auto it = folded.find(e);
                 if (it == folded.end()) {
@@ -3994,7 +4004,10 @@ public:
                     this->current_expr = current_expr_copy;
                     OtherReference other(*this);
                     other.visit_expr(*result);
-                    if (other.found || too_large(result)) {
+                    Call call;
+                    call.visit_expr(*result);
+                    if (other.found || too_large(result) || (call.found &&
+                            !ASRUtils::is_tu_scope(v.current_scope->parent))) {
                         result = nullptr;
                     }
                     it = folded.find(e);
