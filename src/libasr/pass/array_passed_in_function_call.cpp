@@ -21,7 +21,9 @@ using ASR::is_a;
 /*
 This pass collector that the BinOp only Var nodes and nothing else.
 */
-class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
+namespace {
+
+class ArgumentArrayVarCollector: public ASR::BaseWalkVisitor<ArgumentArrayVarCollector> {
     private:
 
     Allocator& al;
@@ -29,7 +31,7 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     public:
 
-    ArrayVarCollector(Allocator& al_, Vec<ASR::expr_t*>& vars_): al(al_), vars(vars_) {}
+    ArgumentArrayVarCollector(Allocator& al_, Vec<ASR::expr_t*>& vars_): al(al_), vars(vars_) {}
 
     void visit_Var(const ASR::Var_t& x) {
         if( ASRUtils::is_array(ASRUtils::symbol_type(x.m_v)) ) {
@@ -52,6 +54,8 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
     }
 
 };
+
+} // namespace
 
 void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
     Vec<ASR::stmt_t*>*& current_body, Vec<ASR::stmt_t*>*& body_after_curr_stmt,
@@ -684,7 +688,7 @@ public:
                 */
     
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
-                ArrayVarCollector array_var_collector(al, array_vars);
+                ArgumentArrayVarCollector array_var_collector(al, array_vars);
                 array_var_collector.visit_expr(*value);
                 Vec<ASR::expr_t*> arrays_with_maximum_rank;
                 arrays_with_maximum_rank.reserve(al, 1);

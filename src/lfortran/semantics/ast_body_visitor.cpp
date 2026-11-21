@@ -12767,11 +12767,11 @@ public:
         tmp = ASR::make_Nullify_t(al, x.base.base.loc, arg_vec.p, arg_vec.size());
     }
 
-    void visit_Requirement(const AST::Requirement_t /*&x*/) {
+    void visit_Requirement(const AST::Requirement_t &/*x*/) {
 
     }
 
-    void visit_Require(const AST::Require_t /*&x*/) {
+    void visit_Require(const AST::Require_t &/*x*/) {
 
     }
 

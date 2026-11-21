@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <libasr/asr_builder.h>
 
 /*
 Need for the pass

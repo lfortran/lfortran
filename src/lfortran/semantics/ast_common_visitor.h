@@ -11,6 +11,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
+#include <libasr/pass/intrinsic_array_functions.h>
+#include <libasr/pass/intrinsic_subroutines.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
@@ -1952,8 +1954,11 @@ public:
         std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &construct_variable_pointers);
 };
 
+// The visitor that SymbolTableVisitor and BodyVisitor derive from, through
+// CommonVisitor (at the end of this file). `Derived` is the visitor itself,
+// or, in a build with LCOMPILERS_VIRTUAL_VISITORS, CommonVisitorShared.
 template <class Derived>
-class CommonVisitor : public AST::BaseVisitor<Derived> {
+class CommonVisitorStatic : public AST::BaseVisitor<Derived> {
 public:
     diag::Diagnostics &diag;
     // Procedure-pointer temporaries of calls through implicit interfaces,
@@ -2430,7 +2435,7 @@ public:
     // another one a constant, and `dimension x(1)` would give a later
     // `real x(2)` in another one the entity and bounds of the first.
     struct PendingAttributeScope {
-        CommonVisitor &v;
+        CommonVisitorStatic &v;
         std::map<std::string, std::pair<ASR::storage_typeType, AST::expr_t*>> storage;
         std::set<std::string> pointer;
         std::set<std::string> allocatable;
@@ -2439,7 +2444,7 @@ public:
         std::set<std::string> asynchronous;
         std::map<std::string, ASR::symbol_t*> only_attributes_without_type;
 
-        PendingAttributeScope(CommonVisitor &v_) : v{v_} {
+        PendingAttributeScope(CommonVisitorStatic &v_) : v{v_} {
             storage.swap(v.assgnd_storage);
             pointer.swap(v.assgnd_pointer);
             allocatable.swap(v.assgnd_allocatable);
@@ -2484,8 +2489,8 @@ public:
     }
 
     struct ImplicitNoneExternalScope {
-        CommonVisitor &v;
-        ImplicitNoneExternalScope(CommonVisitor &v_, AST::decl_stmt_t **items,
+        CommonVisitorStatic &v;
+        ImplicitNoneExternalScope(CommonVisitorStatic &v_, AST::decl_stmt_t **items,
                 size_t n_items, bool inherit) : v{v_} {
             bool host = inherit && !v.implicit_none_external_stack.empty()
                 && v.implicit_none_external_stack.back();
@@ -2620,9 +2625,9 @@ public:
     // which would otherwise leave the flag set for the rest of the run under
     // --continue-compilation.
     struct RestrictedExprScope {
-        CommonVisitor &v;
+        CommonVisitorStatic &v;
         RestrictedExprContext previous;
-        RestrictedExprScope(CommonVisitor &v_, RestrictedExprContext context)
+        RestrictedExprScope(CommonVisitorStatic &v_, RestrictedExprContext context)
                 : v{v_}, previous{v_.restricted_expr_context} {
             v.restricted_expr_context = context;
         }
@@ -2649,10 +2654,10 @@ public:
     // otherwise leave `current_body` pointing to a destroyed list under
     // --continue-compilation. Forgets the DO loops that ended in `body`.
     struct CurrentBodyScope {
-        CommonVisitor &v;
+        CommonVisitorStatic &v;
         Vec<ASR::stmt_t*> *previous_body;
         SymbolTable *previous_scope;
-        CurrentBodyScope(CommonVisitor &v_, Vec<ASR::stmt_t*> *body, SymbolTable *scope)
+        CurrentBodyScope(CommonVisitorStatic &v_, Vec<ASR::stmt_t*> *body, SymbolTable *scope)
                 : v{v_}, previous_body{v_.current_body},
                   previous_scope{v_.current_body_scope} {
             v.current_body = body;
@@ -2825,9 +2830,9 @@ public:
     // Sets `in_array_constructor` and restores it even when the visit throws
     // SemanticAbort.
     struct ArrayConstructorScope {
-        CommonVisitor &v;
+        CommonVisitorStatic &v;
         bool previous;
-        ArrayConstructorScope(CommonVisitor &v_)
+        ArrayConstructorScope(CommonVisitorStatic &v_)
                 : v{v_}, previous{v_.in_array_constructor} {
             v.in_array_constructor = true;
         }
@@ -2841,8 +2846,8 @@ public:
     // Adds `name` to `implied_do_variables` and removes it even when the
     // visit throws SemanticAbort.
     struct ImpliedDoVariableScope {
-        CommonVisitor &v;
-        ImpliedDoVariableScope(CommonVisitor &v_, const std::string &name)
+        CommonVisitorStatic &v;
+        ImpliedDoVariableScope(CommonVisitorStatic &v_, const std::string &name)
                 : v{v_} {
             v.implied_do_variables.push_back(name);
         }
@@ -3035,7 +3040,7 @@ public:
     };
     std::vector<PendingProcPtrInit> pending_proc_ptr_inits;
 
-    CommonVisitor(Allocator &al, SymbolTable *symbol_table,
+    CommonVisitorStatic(Allocator &al, SymbolTable *symbol_table,
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
@@ -4289,9 +4294,9 @@ public:
         class PendingGenericCallFinder :
                 public AST::BaseWalkVisitor<PendingGenericCallFinder> {
         public:
-            CommonVisitor &v;
+            CommonVisitorStatic &v;
             bool found = false;
-            PendingGenericCallFinder(CommonVisitor &v) : v{v} {}
+            PendingGenericCallFinder(CommonVisitorStatic &v) : v{v} {}
 
             void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
                 if (v.is_pending_generic_procedure(x.m_func,
@@ -4338,10 +4343,10 @@ public:
     // Collects them for the specification part `items`, and restores the
     // enclosing scoping unit's set when it goes out of scope.
     struct CommonBlockObjectsScope {
-        CommonVisitor &v;
+        CommonVisitorStatic &v;
         std::set<std::string> previous;
 
-        CommonBlockObjectsScope(CommonVisitor &v_, AST::decl_stmt_t **items,
+        CommonBlockObjectsScope(CommonVisitorStatic &v_, AST::decl_stmt_t **items,
                 size_t n) : v{v_}, previous{v_.current_common_block_objects} {
             v.current_common_block_objects.clear();
             for (size_t i = 0; i < n; i++) {
@@ -4442,7 +4447,7 @@ public:
     class SpecificationExprLocalFinder :
             public ASR::BaseWalkVisitor<SpecificationExprLocalFinder> {
         public:
-            CommonVisitor &v;
+            CommonVisitorStatic &v;
             ASR::symbol_t *local_sym = nullptr;
             Location local_loc = {};
             const ASR::ImpliedDoLoop_t *implied_do_loop = nullptr;
@@ -4450,7 +4455,7 @@ public:
             // being walked.
             std::vector<ASR::symbol_t*> ac_do_variables;
 
-            SpecificationExprLocalFinder(CommonVisitor &v_) : v{v_} {}
+            SpecificationExprLocalFinder(CommonVisitorStatic &v_) : v{v_} {}
 
             void visit_Var(const ASR::Var_t &x) {
                 if (local_sym != nullptr) {
@@ -14276,7 +14281,7 @@ public:
 
     class PDTInitializerReplacer : public ASR::BaseExprReplacer<PDTInitializerReplacer> {
         using Base = ASR::BaseExprReplacer<PDTInitializerReplacer>;
-        CommonVisitor& visitor;
+        CommonVisitorStatic& visitor;
         SymbolTable* template_scope;
         SymbolTable* instance_scope;
         const std::map<int64_t, int64_t>& sentinel_to_actual;
@@ -14293,7 +14298,7 @@ public:
         }
 
     public:
-        PDTInitializerReplacer(CommonVisitor& visitor, SymbolTable* template_scope,
+        PDTInitializerReplacer(CommonVisitorStatic& visitor, SymbolTable* template_scope,
                 SymbolTable* instance_scope,
                 const std::map<int64_t, int64_t>& sentinel_to_actual)
             : visitor(visitor), template_scope(template_scope),
@@ -32692,6 +32697,47 @@ public:
         return ASRUtils::get_struct_sym_from_struct_expr(x);
     }
 };
+
+#if defined(LCOMPILERS_VIRTUAL_VISITORS)
+
+// CommonVisitorStatic compiled once, in ast_common_visitor.cpp, rather than
+// once for SymbolTableVisitor and once for BodyVisitor. The methods that
+// CommonVisitorStatic calls on the visitor that derives from it are virtual
+// here: the methods of AST::BaseVisitor and the two below.
+class CommonVisitorShared :
+    public AST::BaseVisitorVirtual<CommonVisitorStatic<CommonVisitorShared>>
+{
+public:
+    using AST::BaseVisitorVirtual<
+        CommonVisitorStatic<CommonVisitorShared>>::BaseVisitorVirtual;
+    virtual ProcedureDeclaredLater procedure_declared_later(
+        const std::string &name);
+    virtual bool host_contains_procedure(SymbolTable *scope,
+        const std::string &name);
+};
+
+extern template class AST::BaseVisitor<CommonVisitorShared>;
+extern template class CommonVisitorStatic<CommonVisitorShared>;
+extern template class AST::BaseVisitorVirtual<
+    CommonVisitorStatic<CommonVisitorShared>>;
+
+template <class Derived>
+class CommonVisitor : public CommonVisitorShared
+{
+public:
+    using CommonVisitorShared::CommonVisitorShared;
+};
+
+#else
+
+template <class Derived>
+class CommonVisitor : public CommonVisitorStatic<Derived>
+{
+public:
+    using CommonVisitorStatic<Derived>::CommonVisitorStatic;
+};
+
+#endif
 
 } // namespace LCompilers::LFortran
 

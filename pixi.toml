@@ -125,6 +125,9 @@ clangdev = "==9.0.1"
 clangdev = "==10.0.1"
 [feature.llvm11.target.linux.dependencies]
 clangdev = "==11.1.0"
+# Links the compiler and its tests several times faster than ld. The other
+# LLVM environments need a zlib that no mold build accepts.
+mold = "==2.40.0"
 [feature.llvm12.target.linux.dependencies]
 libunwind = "==1.7.2"
 clangdev = "==12.0.1"
