@@ -3686,6 +3686,35 @@ ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
         ASRUtils::symbol_get_past_external(struct_sym)));
 }
 
+// Whether intrinsic assignment applies to a variable of type `target_type`
+// and an expression of type `value_type` that are both of intrinsic type:
+// both numeric or of the same type (Table 10.8), and the expression is a
+// scalar or has the rank of the variable.
+static bool is_intrinsic_assignment(ASR::ttype_t* target_type,
+        ASR::ttype_t* value_type) {
+    ASR::ttype_t* target_elem = ASRUtils::extract_type(target_type);
+    ASR::ttype_t* value_elem = ASRUtils::extract_type(value_type);
+    auto is_numeric = [](ASR::ttype_t* t) {
+        return ASR::is_a<ASR::Integer_t>(*t) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*t) ||
+            ASR::is_a<ASR::Real_t>(*t) || ASR::is_a<ASR::Complex_t>(*t);
+    };
+    auto is_intrinsic = [&](ASR::ttype_t* t) {
+        return is_numeric(t) || ASR::is_a<ASR::Logical_t>(*t) ||
+            ASR::is_a<ASR::String_t>(*t);
+    };
+    if (!is_intrinsic(target_elem) || !is_intrinsic(value_elem)) {
+        return false;
+    }
+    if (!(is_numeric(target_elem) && is_numeric(value_elem)) &&
+            target_elem->type != value_elem->type) {
+        return false;
+    }
+    int value_rank = ASRUtils::extract_n_dims_from_ttype(value_type);
+    return value_rank == 0 ||
+        value_rank == ASRUtils::extract_n_dims_from_ttype(target_type);
+}
+
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
@@ -3695,6 +3724,14 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
     ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
     bool found = false;
+    // A defined assignment cannot redefine an intrinsic assignment
+    // (15.4.3.4.3), but a specific with a class(*) dummy accepts intrinsic
+    // operands too. As GFortran and Flang do, keep the intrinsic assignment
+    // when it applies, otherwise every such assignment, including those in
+    // the specific itself, would call the specific.
+    if (is_intrinsic_assignment(target_type, value_type)) {
+        return false;
+    }
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
     if (!sym) {

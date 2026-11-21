@@ -3530,6 +3530,7 @@ RUN(NAME vector_subscript_02 LABELS gfortran llvm) # vector subscript that is an
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
+RUN(NAME defined_assignment_04 LABELS gfortran llvm)
 RUN(NAME defined_assignment_elemental_01 LABELS gfortran llvm)
 RUN(NAME defined_assignment_elemental_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_override_01 LABELS gfortran llvm)
