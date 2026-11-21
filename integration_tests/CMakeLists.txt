@@ -5838,6 +5838,7 @@ RUN(NAME c_ptr_26 LABELS gfortran llvm)
 RUN(NAME target_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_01 LABELS gfortran llvm)
 RUN(NAME c_f_pointer_02 LABELS gfortran llvm)
+RUN(NAME c_f_pointer_03 LABELS gfortran llvm)
 
 RUN(NAME c_f_proc_ptr_01 LABELS gfortran llvm EXTRAFILES c_f_proc_ptr_01.c) # c_f_procpointer
 RUN(NAME c_f_proc_ptr_02 LABELS gfortran llvm)

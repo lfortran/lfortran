@@ -6997,6 +6997,22 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.in_array_context = false;
     }
 
+    void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_CPtrToPointer(x);
+        // The replacer leaves an elemental intrinsic function reference,
+        // such as `int(shp)`, for array_op to evaluate element by element,
+        // which it does not do for the SHAPE and LOWER arguments of
+        // c_f_pointer. Evaluate such an argument into a temporary.
+        ASR::CPtrToPointer_t& xx = const_cast<ASR::CPtrToPointer_t&>(x);
+        for (ASR::expr_t** arg: {&xx.m_shape, &xx.m_lower_bounds}) {
+            if (is_temporary_needed(*arg)) {
+                *arg = create_and_allocate_temporary_variable_for_array(
+                    *arg, "_c_f_pointer_bounds_", al, current_body,
+                    current_scope, exprs_with_target);
+            }
+        }
+    }
+
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         // Skip temporary creation inside FileWrite Nodes
         // for char array units as array_op pass handles element-wise looping.
@@ -7359,6 +7375,12 @@ class VerifySimplifierASROutput:
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         visit_IO(x);
+    }
+
+    void visit_CPtrToPointer(const ASR::CPtrToPointer_t& x) {
+        check_for_var_if_array(x.m_shape);
+        check_for_var_if_array(x.m_lower_bounds);
+        ASR::BaseWalkVisitor<VerifySimplifierASROutput>::visit_CPtrToPointer(x);
     }
 
     void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args,
