@@ -9700,7 +9700,8 @@ public:
                                         // If it fails (e.g., semantic error), don't create the parameter
                                         // to avoid creating parameters without symbolic_value in continue-compilation mode
                                         try {
-                                            this->visit_expr(*s.m_initializer);
+                                            visit_restricted_expr(*s.m_initializer,
+                                                RestrictedExprContext::InitExpr);
                                             ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
                                             sym_ = ASRUtils::symbol_get_past_external(sym_);
                                             if (ASR::is_a<ASR::Variable_t>(*sym_)) {
@@ -12823,16 +12824,6 @@ public:
                             ASR::array_physical_typeType::FixedSizeArray, true);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
-                    if (storage_type == ASR::storage_typeType::Parameter &&
-                            ASR::is_a<ASR::CompilerOptions_t>(*init_expr)) {
-                        // compiler_options() is a constant expression: the
-                        // named constant is its string, like a literal.
-                        ASR::CompilerOptions_t *co =
-                            ASR::down_cast<ASR::CompilerOptions_t>(init_expr);
-                        init_expr = ASRUtils::EXPR(ASR::make_StringConstant_t(al,
-                            init_expr->base.loc, co->m_compiler_options_str,
-                            ASRUtils::duplicate_type(al, co->m_type)));
-                    }
                     value = ASRUtils::expr_value(init_expr);
 
                     if (is_null_intrinsic_reference(s.m_initializer)
@@ -20073,9 +20064,18 @@ public:
             for (size_t i = 0; i < args.size(); i++) {
                 expr_args.push_back(al, args[i].m_value);
             }
-            return ASRUtils::CompilerOptions::create_CompilerOptions(al, loc, expr_args, diag);
+            ASR::asr_t *options = ASRUtils::CompilerOptions::create_CompilerOptions(
+                al, loc, expr_args, diag);
+            if (options && restricted_expr_context == RestrictedExprContext::InitExpr) {
+                // In an initialization, a constant expression, the reference
+                // is its string, so that it folds like a character literal.
+                ASR::CompilerOptions_t *co = ASR::down_cast2<ASR::CompilerOptions_t>(options);
+                return ASR::make_StringConstant_t(al, loc,
+                    co->m_compiler_options_str, co->m_type);
+            }
+            return options;
         }
-        
+
         // compiler_version() of iso_fortran_env is a constant expression,
         // so a named constant can be initialized with it. Its value is the
         // version of the compiler that compiles the reference.
