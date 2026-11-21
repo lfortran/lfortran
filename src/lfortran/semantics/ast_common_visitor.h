@@ -4038,7 +4038,7 @@ public:
             // `positive` if `extent` is positive, otherwise `otherwise`.
             ASR::expr_t* if_positive(ASR::expr_t *extent, ASR::expr_t *positive,
                     ASR::expr_t *otherwise) {
-                int64_t n;
+                int64_t n = 0;
                 if (ASRUtils::extract_value(ASRUtils::expr_value(extent), n)) {
                     return n > 0 ? positive : otherwise;
                 }
@@ -4056,7 +4056,7 @@ public:
             ASR::expr_t* nonnegative(ASR::expr_t *e) {
                 ASR::ttype_t *type = ASRUtils::expr_type(e);
                 const Location &loc = e->base.loc;
-                int64_t n;
+                int64_t n = 0;
                 if (ASRUtils::extract_value(ASRUtils::expr_value(e), n)) {
                     return constant(std::max<int64_t>(n, 0), type, loc);
                 }
@@ -4091,7 +4091,7 @@ public:
                 if (start == nullptr) {
                     return nullptr;
                 }
-                int64_t s;
+                int64_t s = 0;
                 bool constant_start = ASRUtils::extract_value(
                     ASRUtils::expr_value(start), s);
                 if (constant_start && s == 1) {
@@ -4103,8 +4103,8 @@ public:
                 if (bound == ASR::arrayboundType::LBound) {
                     return if_positive(extent, start, constant(1, type, loc));
                 }
-                int64_t e;
-                ASR::expr_t *end;
+                int64_t e = 0;
+                ASR::expr_t *end = nullptr;
                 ASRUtils::ASRBuilder b(v.al, loc);
                 if (!constant_start) {
                     end = b.Sub(b.Add(start, copy(extent)), constant(1, type, loc));
@@ -4145,7 +4145,7 @@ public:
                 if (array_type->n_dims == 0) {
                     return nullptr;
                 }
-                int64_t d;
+                int64_t d = 0;
                 if (dim != nullptr && ASRUtils::extract_value(
                         ASRUtils::expr_value(dim), d)) {
                     if (d < 1 || d > (int64_t) array_type->n_dims) {
