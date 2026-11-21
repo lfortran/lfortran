@@ -1364,11 +1364,16 @@ int compile_src_to_object_file(const std::string &infile,
     // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
     // so that they are not compiled again; the same holds for the modules
     // that a BLOCK DATA program unit uses
-    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c
+    bool old_retained_module_variables_are_weak =
+        compiler_options.retained_module_variables_are_weak;
+    bool retain_module_variables =
+        !LCompilers::ASRUtils::main_program_present(*asr) && arg_c
             && (compiler_options.generate_code_for_global_procedures
                 || LCompilers::ASRUtils::block_data_present(*asr))
-            && !compiler_options.separate_compilation) {
+            && !compiler_options.separate_compilation;
+    if (retain_module_variables) {
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
+        compiler_options.retained_module_variables_are_weak = true;
     }
 
     diagnostics.diagnostics.clear();
@@ -1376,6 +1381,8 @@ int compile_src_to_object_file(const std::string &infile,
         LCompilers::compile_asr_to_object(
             *asr, infile, outfile, assembly, compiler_options, lpm,
             fe, lm, diagnostics);
+    compiler_options.retained_module_variables_are_weak =
+        old_retained_module_variables_are_weak;
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!pipeline_result.ok) {
         return pipeline_result.status;
