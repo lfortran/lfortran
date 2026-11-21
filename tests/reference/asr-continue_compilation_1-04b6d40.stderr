@@ -2168,6 +2168,15 @@ semantic error: Interface 'cc1_pidl_a' is referenced but not defined
 5302 |     procedure(cc1_pidl_a), pointer :: cc1_pidl_b  ! {Error} Interface 'cc1_pidl_a' is referenced but not defined
      |     ^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: a conditional expression is not allowed in a constant expression
+    --> tests/errors/continue_compilation_1.f90:5311:29
+     |
+5311 |     parameter (cc1_cepp_k = ( .true. ? 1 : 0 ))  ! {Error} a conditional expression is not allowed in a constant expression
+     |                             ^^^^^^^^^^^^^^^^^^ an initialization expression shall be a constant expression (Fortran 2023 C1012)
+     |
+5311 |     parameter (cc1_cepp_k = ( .true. ? 1 : 0 ))  ! {Error} a conditional expression is not allowed in a constant expression
+     |                             ~~~~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.12 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -6547,6 +6556,12 @@ semantic error: The label 300 does not point to any format statement
      |
 5287 |     read (*, 300, err=10) cc1_rebf_x  ! {Error} The label 300 does not point to any format statement
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Invalid label in this statement
+
+semantic error: Variable 'cc1_cvae_undeclared' is not declared
+    --> tests/errors/continue_compilation_1.f90:5318:18
+     |
+5318 |     cc1_cvae_i = cc1_cvae_undeclared  ! {Error} Variable 'cc1_cvae_undeclared' is not declared
+     |                  ^^^^^^^^^^^^^^^^^^^ 'cc1_cvae_undeclared' is undeclared
 
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
