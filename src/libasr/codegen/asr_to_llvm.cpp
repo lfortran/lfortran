@@ -26389,9 +26389,13 @@ public:
                 }
             }
         }
-        if (!x.m_is_formatted) {  // give -1 argument for end of arguments
-            llvm::Value* minus_one = llvm::ConstantInt::get(context, llvm::APInt(32, -1, true));
-            args.push_back(minus_one);
+        if (!x.m_is_formatted) {
+            // -1 ends the items of a record. An unformatted WRITE with an
+            // (empty) `end` writes a part of a record that a later WRITE
+            // completes, which -2 ends.
+            llvm::Value* end_of_items = llvm::ConstantInt::get(context,
+                llvm::APInt(32, x.m_end ? -2 : -1, true));
+            args.push_back(end_of_items);
         } else if (!is_string) {
             fmt.push_back("%s");
             args.push_back(end_data);
