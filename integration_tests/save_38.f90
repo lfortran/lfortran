@@ -1,9 +1,10 @@
 ! An external procedure with an assumed-shape dummy and a saved local,
 ! whose dummy procedure takes its interface from an internal procedure
 ! whose signature refers to a dummy of the host (the bound `m`), called
-! directly, through a dummy procedure and through a procedure pointer: all
-! calls share one saved variable. As in much legacy code, the interface body
-! declares the dummy procedure's array as assumed-size.
+! directly, with a section, through a dummy procedure and through a
+! procedure pointer: all calls share one saved variable. The internal
+! procedure also has an assumed-shape dummy. As in much legacy code, the
+! interface body declares the dummy procedure's other array as assumed-size.
 subroutine save_37_cnt(a, m, f, n)
 double precision, intent(in) :: a(:)
 integer, intent(in) :: m
@@ -11,17 +12,17 @@ procedure(g) :: f
 integer, intent(out) :: n
 integer, save :: k = 0
 k = k + 1
-n = k + 0 * f(a(1:m))
+n = k + 0 * f(a(1:m), a)
 contains
-    integer function g(x)
-    double precision, intent(in) :: x(m)
-    g = int(x(1))
+    integer function g(x, y)
+    double precision, intent(in) :: x(m), y(:)
+    g = int(x(1)) + int(y(1))
     end function
 end subroutine
 
-integer function save_37_h(x)
-double precision, intent(in) :: x(*)
-save_37_h = int(x(1))
+integer function save_37_h(x, y)
+double precision, intent(in) :: x(*), y(:)
+save_37_h = int(x(1)) + int(y(1))
 end function
 
 program save_38
@@ -31,14 +32,14 @@ interface
     double precision, intent(in) :: a(:)
     integer, intent(in) :: m
     interface
-        integer function f(x)
-        double precision, intent(in) :: x(*)
+        integer function f(x, y)
+        double precision, intent(in) :: x(*), y(:)
         end function
     end interface
     integer, intent(out) :: n
     end subroutine
-    integer function save_37_h(x)
-    double precision, intent(in) :: x(*)
+    integer function save_37_h(x, y)
+    double precision, intent(in) :: x(*), y(:)
     end function
 end interface
 procedure(save_37_cnt), pointer :: p
@@ -52,8 +53,10 @@ if (n /= 2) error stop 2
 p => save_37_cnt
 call p(a, 2, save_37_h, n)
 if (n /= 3) error stop 3
-call save_37_cnt(a, 2, save_37_h, n)
+call save_37_cnt(a(1:3:2), 2, save_37_h, n)
 if (n /= 4) error stop 4
+call save_37_cnt(a, 2, save_37_h, n)
+if (n /= 5) error stop 5
 print *, n
 contains
     subroutine run(f, n)
