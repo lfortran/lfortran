@@ -45,6 +45,7 @@
 #include <initializer_list>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <random>
 #include <sstream>
 #include <thread>
@@ -1091,10 +1092,11 @@ namespace {
 // Waits at most `timeout` ms (-1: no limit) for a message from one of
 // `peers`, the client's connections to the kernel; returns its index, -1 if
 // none comes in time, or -2 once the kernel has closed a connection.
-int next_message(Peer *const (&peers)[3], const std::string &key, Message &m, int timeout)
+template <size_t N>
+int next_message(Peer *const (&peers)[N], const std::string &key, Message &m, int timeout)
 {
     for (;;) {
-        for (int i = 0; i < 3; i++) {
+        for (size_t i = 0; i < N; i++) {
             std::vector<std::string> frames;
             while (peers[i]->next(frames)) {
                 if (decode(frames, key, m)) return i;
@@ -1109,7 +1111,7 @@ int next_message(Peer *const (&peers)[3], const std::string &key, Message &m, in
         if (n < 0 && interrupted()) continue;
         if (n < 0) return -2;
         if (n == 0) return -1;
-        for (int i = 0; i < 3; i++) {
+        for (size_t i = 0; i < N; i++) {
             if (fds[i].revents) peers[i]->read();
         }
     }
@@ -1129,6 +1131,8 @@ Client::Client(const std::string &connection_file)
     shell = std::make_unique<Peer>(connect_to(c.ip, c.ports[jupyter::shell]), "DEALER", true,
         session);
     stdin_ = std::make_unique<Peer>(connect_to(c.ip, c.ports[stdin_channel]), "DEALER", true,
+        session);
+    control = std::make_unique<Peer>(connect_to(c.ip, c.ports[jupyter::control]), "DEALER", true,
         session);
     Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
     // As jupyter_client's wait_for_ready(): send kernel_info_requests until
@@ -1154,9 +1158,9 @@ Client::Client(const std::string &connection_file)
 namespace {
 
 // The kernel this prompt started. The destructor ends it on the way out.
-// Ctrl-C ends it too, and that handler does not run destructors, so it can
-// use only a sig_atomic_t and this fixed buffer. A client that only joined
-// leaves both empty.
+// A Ctrl-C that ends the prompt ends it too, and that handler does not run
+// destructors, so it can use only a sig_atomic_t and this fixed buffer. A
+// client that only joined leaves both empty.
 #ifdef _WIN32
 volatile PVOID owned_process = nullptr;
 #else
@@ -1164,6 +1168,18 @@ volatile std::sig_atomic_t owned_pid = 0;
 #endif
 char owned_connection[4096] = {};
 volatile std::sig_atomic_t interrupt_installed = 0;
+// A cell runs; Ctrl-C asks the kernel to interrupt it. Once the cell has
+// ignored that request for a while, the prompt says that another Ctrl-C ends
+// the session (prompt_escape), the last resort for a cell that cannot stop.
+// On Windows, Ctrl-C still ends the prompt and its kernel.
+#ifdef _WIN32
+std::atomic<bool> executing_prompt{false}, prompt_interrupt{false},
+    prompt_escape{false};
+#else
+volatile std::sig_atomic_t executing_prompt = 0;
+volatile std::sig_atomic_t prompt_interrupt = 0;
+volatile std::sig_atomic_t prompt_escape = 0;
+#endif
 // The terminal as it was when the prompt started, which the Ctrl-C handler
 // restores: Ctrl-C at `>>>` arrives while the line editor has it in raw mode.
 volatile std::sig_atomic_t terminal_saved = 0;
@@ -1210,6 +1226,18 @@ BOOL WINAPI interrupt_prompt(DWORD event)
 #else
 extern "C" void interrupt_prompt(int)
 {
+    if (executing_prompt && !prompt_escape) {
+        prompt_interrupt = 1;
+        return;
+    }
+    // The line editor reads Ctrl-C as a key, which clears the line. Between
+    // a cell and the next `>>>`, a Ctrl-C of the terminal is dropped.
+    if (!executing_prompt && terminal_saved) return;
+    if (executing_prompt) {
+        static const char message[] = "\nending the session\n";
+        ssize_t written = write(STDERR_FILENO, message, sizeof(message) - 1);
+        (void)written;
+    }
     release_owned_connection();
     const pid_t pid = static_cast<pid_t>(owned_pid);
     owned_pid = 0;
@@ -1310,8 +1338,9 @@ void handle_interrupt()
     struct sigaction action {};
     action.sa_handler = interrupt_prompt;
     sigemptyset(&action.sa_mask);
-    // The handler does not return, so a restarted read is not needed.
-    action.sa_flags = 0;
+    // The client loop waits with timeouts and polls stdin, so it observes
+    // the interrupt marker without the handler interrupting system calls.
+    action.sa_flags = SA_RESTART;
     if (sigaction(SIGINT, &action, nullptr) == 0) interrupt_installed = 1;
 #endif
 }
@@ -1370,8 +1399,29 @@ void show(const Message &m, bool other,
 
 } // namespace
 
+int Client::stdin_character()
+{
+#ifndef _WIN32
+    pollfd input{STDIN_FILENO, POLLIN, 0};
+    if (::poll(&input, 1, 0) <= 0) return -2;
+#endif
+    // On Windows, where Ctrl-C ends the prompt, a READ blocks as before.
+    return getchar();
+}
+
 bool Client::execute(const std::string &code, bool verbose, const InputSource &input_source)
 {
+    struct Executing {
+        Executing() { prompt_interrupt = 0; prompt_escape = 0; executing_prompt = 1; }
+        ~Executing() { executing_prompt = 0; prompt_escape = 0; prompt_interrupt = 0; }
+    } executing;
+    // A cell stops within milliseconds, but not inside a long foreign call,
+    // nor at all where the kernel cannot interrupt it (Windows). Until this
+    // long after the first Ctrl-C, more presses only repeat the interrupt, so
+    // that impatient presses cannot end the session; after it, the prompt
+    // offers to end the session.
+    const auto escape_after = std::chrono::seconds(2);
+    std::optional<std::chrono::steady_clock::time_point> interrupted;
     Object content{{"code", kernel::utf8(code)}, {"silent", false},
         {"store_history", true}, {"user_expressions", Object{}},
         {"allow_stdin", true}, {"stop_on_error", true}};
@@ -1381,32 +1431,66 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
     // rest of the content.
     if (verbose) request.header["lfortran_verbose"] = true;
     if (!send_message(*shell, request, key)) return false;
-    Peer *const peers[3] = {iopub.get(), shell.get(), stdin_.get()};
+    Peer *const peers[4] = {iopub.get(), shell.get(), stdin_.get(), control.get()};
     bool replied = false, idle = false;
+    std::optional<Message> reading;
+    std::string record;
+    auto interrupt = [&]() {
+        if (!prompt_interrupt) return true;
+        prompt_interrupt = 0;
+        if (reading) {
+            const auto interruptible = reading->content.getBoolean("lfortran_interruptible");
+            // A kernel that does not say so cannot end its READ.
+            if (interruptible && *interruptible) reading.reset();
+        }
+        record.clear();
+        clearerr(stdin);
+        if (!interrupted) interrupted = std::chrono::steady_clock::now();
+        return send_message(*control, new_message("interrupt_request", Object{},
+            Object{}, session), key);
+    };
     while (!replied || !idle) {
+        if (!interrupt()) return false;
+        if (interrupted && !prompt_escape && !replied
+                && std::chrono::steady_clock::now() - *interrupted >= escape_after) {
+            std::cerr << std::endl << "The cell has not stopped. Press Ctrl-C again to "
+                << (owned_connection[0] ? "end this prompt and its kernel, losing the "
+                    "session's state." : "end this prompt; the kernel keeps running.")
+                << std::endl;
+            prompt_escape = 1;
+        }
+        // What is available of the line, without blocking
+        while (reading && !prompt_interrupt) {
+            const int c = input_source ? input_source() : stdin_character();
+            if (c == -2) break;
+            if (c == EOF || c == '\n' || c == '\r' || c == 4) {
+                if ((c == EOF || c == 4) && record.empty()) record = "\x04";
+                clearerr(stdin);
+                Message input = new_message("input_reply", reading->header,
+                    Object{{"value", kernel::utf8(record)}}, session);
+                if (!send_message(*stdin_, input, key)) return false;
+                reading.reset();
+                record.clear();
+            } else {
+                record += static_cast<char>(c);
+            }
+        }
+        if (prompt_interrupt) continue;
         Message m;
-        const int i = next_message(peers, key, m, -1);
+        const int i = next_message(peers, key, m, reading ? 10 : 50);
+        if (i == -1) continue;
         if (i < 0) {
             show_last(request.id());
             return false;
         }
         const std::string type = m.type();
-        if (i == 2 && type == "input_request") {
+        if (i == 2 && type == "input_request" && m.parent_id() == request.id()) {
             // A line of the terminal, ended by Enter (CR or LF); Ctrl-D
             // on an empty line is end of file, which Jupyter clients
             // send as "\x04".
             std::cout << get_string(m.content, "prompt") << std::flush;
-            std::string record;
-            int c;
-            while ((c = input_source ? input_source() : getchar()) != EOF
-                    && c != '\n' && c != '\r' && c != 4) {
-                record += static_cast<char>(c);
-            }
-            if ((c == EOF || c == 4) && record.empty()) record = "\x04";
-            clearerr(stdin);
-            Message input = new_message("input_reply", m.header,
-                Object{{"value", kernel::utf8(record)}}, session);
-            if (!send_message(*stdin_, input, key)) return false;
+            reading.emplace(std::move(m));
+            record.clear();
             continue;
         }
         if (m.parent_id() != request.id()) {
@@ -1417,13 +1501,17 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
         if (i == 1) {
             if (type == "execute_reply") {
                 replied = true;
+                reading.reset();
                 if (get_string(m.content, "status") == "aborted") {
                     std::cerr << "The cell did not run, as a cell before it failed."
                         << std::endl;
                 }
             }
         } else if (type == "status") {
-            if (get_string(m.content, "execution_state") == "idle") idle = true;
+            if (get_string(m.content, "execution_state") == "idle") {
+                idle = true;
+                reading.reset();
+            }
         } else {
             show(m, false);
         }
@@ -2392,6 +2480,8 @@ bool Client::execute(const std::string &, bool, const InputSource &)
 {
     return false;
 }
+
+int Client::stdin_character() { return EOF; }
 
 Client::PollResult Client::poll_others(const DisplaySink &)
 {
