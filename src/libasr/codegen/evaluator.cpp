@@ -1001,26 +1001,35 @@ LLVMEvaluator::~LLVMEvaluator()
         && (defined(__x86_64__) || defined(__aarch64__))
 bool LLVMEvaluator::interrupt_supported() { return true; }
 
-bool LLVMEvaluator::run_interruptible(void (*fn)(void *), void *context) {
-    if (_lfortran_cell_interrupt_requested()) return false;
+LLVMEvaluator::CallStatus LLVMEvaluator::run_interruptible(
+        void (*fn)(void *), void *context) {
+    if (_lfortran_cell_interrupt_requested()) return CallStatus::interrupted;
     jmp_buf env;
-    // longjmp returns here. A local changed after setjmp would be
-    // indeterminate, so this buffer is not written again.
-    if (setjmp(env) != 0) {
-        _lfortran_set_interrupt_env(nullptr);
-        return false;
+    // longjmp returns here: with 1 from an interrupt, with 2 from a runtime
+    // error. A local changed after setjmp would be indeterminate, so this
+    // buffer is not written again. setjmp's value may only be tested.
+    switch (setjmp(env)) {
+        case 0:
+            break;
+        case 2:
+            _lfortran_set_interrupt_env(nullptr);
+            return CallStatus::failed;
+        default:
+            _lfortran_set_interrupt_env(nullptr);
+            return CallStatus::interrupted;
     }
     _lfortran_set_interrupt_env(&env);
     fn(context);
     _lfortran_set_interrupt_env(nullptr);
-    return true;
+    return CallStatus::completed;
 }
 #else
 bool LLVMEvaluator::interrupt_supported() { return false; }
 
-bool LLVMEvaluator::run_interruptible(void (*fn)(void *), void *context) {
+LLVMEvaluator::CallStatus LLVMEvaluator::run_interruptible(
+        void (*fn)(void *), void *context) {
     fn(context);
-    return true;
+    return CallStatus::completed;
 }
 #endif
 

@@ -163,14 +163,17 @@ public:
     // CompilerOptions::cell_interrupts polls a process-wide runtime flag at
     // loop back edges, backward gotos and procedure entry, and longjmps back
     // here when the flag is set (src/libasr/runtime/lfortran_interrupt.h).
-    // It returns false if the call was abandoned, or if an interrupt was
-    // requested before it began. The abandoned frames are not unwound: what
-    // they allocated leaks, and what they had done stays done. `fn` itself
-    // must not own anything that needs a destructor while it calls JIT code.
-    // Supported on Linux and macOS, x86-64 and AArch64; elsewhere `fn` runs
-    // to its end.
+    // A runtime error longjmps back here too, instead of ending the process.
+    // It returns `interrupted` if an interrupt abandoned the call, or was
+    // requested before it began, and `failed` if a runtime error did. The
+    // abandoned frames are not unwound: what they allocated leaks, and what
+    // they had done stays done. `fn` itself must not own anything that needs
+    // a destructor while it calls JIT code. Supported on Linux and macOS,
+    // x86-64 and AArch64; elsewhere `fn` runs to its end, and a runtime
+    // error ends the process.
+    enum class CallStatus { completed, interrupted, failed };
     static bool interrupt_supported();
-    static bool run_interruptible(void (*fn)(void *context), void *context);
+    static CallStatus run_interruptible(void (*fn)(void *context), void *context);
     // Any thread. The running call notices it at its next poll. The request
     // is process-wide: only one interruptible call may run at a time.
     static void request_interrupt();

@@ -190,12 +190,17 @@ part of it not yet sent cannot be dropped. While it is still being sent, the
 latest output is kept and earlier output is replaced by that notice, so nothing
 is lost silently and memory stays bounded.
 
+On Linux and macOS, a runtime error, such as an index out of bounds or a
+failed READ without `iostat=`, ends only its cell: the cell shows the error
+and fails with a `RuntimeError`, and the session goes on. Elsewhere, and with
+`--openmp`, it stops the kernel, as it stops a program.
+
 A READ asks the client that ran the cell. If that client disconnects, the
 READ fails with an I/O error: a READ with `iostat=` gets it and the cell goes
-on, but any other READ stops the kernel with a runtime error, as it stops a
-program. STOP, ERROR STOP and a crash stop the kernel too. A kernel that stops
-ends the session of every client; the prompt that started it then exits with
-the kernel's exit status, as it did when it ran its cells itself.
+on; any other READ fails with a runtime error. STOP, ERROR STOP and a crash
+stop the kernel. A kernel that stops ends the session of every client; the
+prompt that started it then exits with the kernel's exit status, as it did
+when it ran its cells itself.
 
 The prompt that starts a kernel ends that kernel when the prompt exits, and
 removes the connection file. Exiting ends the kernel while another client is

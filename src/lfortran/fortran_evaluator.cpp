@@ -382,34 +382,45 @@ namespace {
 // thrown only after run_interruptible() has returned, so it never unwinds
 // through JIT or runtime frames, and execute_cell() catches it.
 struct CellInterrupted {};
+// Likewise, when a runtime error stopped it.
+struct CellFailed {};
 
-// Calls the function `name` of the JIT with `args`. An interrupt abandons
-// the call at a poll and returns here.
+// Calls the function `name` of the JIT with `args`. If `interruptible`, an
+// interrupt or a runtime error abandons the call and returns here; else a
+// runtime error ends the process.
 #ifdef __EMSCRIPTEN__
 template <typename T, typename... Args>
-T run_cell_code(WasmLFortranExecutor &e, const std::string &name, Args... args) {
+T run_cell_code(WasmLFortranExecutor &e, bool /*interruptible*/,
+        const std::string &name, Args... args) {
     return e.template execfn<T>(name, args...);
 }
 #else
+// Calls `call()`, which an interrupt or a runtime error may abandon.
+template <typename Call>
+void run_trapped(Call &call) {
+    switch (LLVMEvaluator::run_interruptible([](void *c) {
+            (*static_cast<Call *>(c))(); }, &call)) {
+        case LLVMEvaluator::CallStatus::completed: return;
+        case LLVMEvaluator::CallStatus::interrupted: throw CellInterrupted();
+        case LLVMEvaluator::CallStatus::failed: throw CellFailed();
+    }
+}
+
 template <typename T, typename... Args>
-T run_cell_code(LLVMEvaluator &e, const std::string &name, Args... args) {
+T run_cell_code(LLVMEvaluator &e, bool interruptible, const std::string &name,
+        Args... args) {
     // Look it up first: that compiles, which an interrupt must not stop.
     T (*f)(Args...) = reinterpret_cast<T (*)(Args...)>(
         e.get_symbol_address(name));
-    // An interrupt abandons `call`'s frame, which must not own anything.
+    if (!interruptible) return f(args...);
+    // An abandoned call leaves `call`'s frame, which must not own anything.
     if constexpr (std::is_void<T>::value) {
         auto call = [&]() { f(args...); };
-        if (!LLVMEvaluator::run_interruptible([](void *c) {
-                (*static_cast<decltype(call) *>(c))(); }, &call)) {
-            throw CellInterrupted();
-        }
+        run_trapped(call);
     } else {
         T result{};
         auto call = [&]() { result = f(args...); };
-        if (!LLVMEvaluator::run_interruptible([](void *c) {
-                (*static_cast<decltype(call) *>(c))(); }, &call)) {
-            throw CellInterrupted();
-        }
+        run_trapped(call);
         return result;
     }
 }
@@ -705,33 +716,34 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     LLVMEvaluator &e = get_llvm_evaluator();
     e.add_module(std::move(m));
 #endif
+    const bool trap = interruptible();
     if (has_setup) {
-        run_cell_code<void>(e, setup_fn);
+        run_cell_code<void>(e, trap, setup_fn);
     }
     if (has_program) {
-        run_cell_code<void>(e, program_fn);
+        run_cell_code<void>(e, trap, program_fn);
     }
     if (return_type == "integer4") {
-        int32_t r = run_cell_code<int32_t>(e, run_fn);
+        int32_t r = run_cell_code<int32_t>(e, trap, run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = run_cell_code<int64_t>(e, run_fn);
+        int64_t r = run_cell_code<int64_t>(e, trap, run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = run_cell_code<float>(e, run_fn);
+        float r = run_cell_code<float>(e, trap, run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = run_cell_code<double>(e, run_fn);
+        double r = run_cell_code<double>(e, trap, run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
         result.type = EvalResult::complex4;
         if (compiler_options.platform == Platform::Windows) {
             // The JIT returns the two floats in an i64, not a C++ class.
-            uint64_t r = run_cell_code<uint64_t>(e, run_fn);
+            uint64_t r = run_cell_code<uint64_t>(e, trap, run_fn);
             float parts[2];
             static_assert(sizeof(parts) == sizeof(r));
             std::memcpy(parts, &r, sizeof(r));
@@ -744,11 +756,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
             // std::complex<float> follows the HFA convention (S0+S1), so the
             // imaginary part came back as garbage. Read the vector lanes.
             typedef float v2f32 __attribute__((vector_size(8)));
-            v2f32 r = run_cell_code<v2f32>(e, run_fn);
+            v2f32 r = run_cell_code<v2f32>(e, trap, run_fn);
             result.c32.re = r[0];
             result.c32.im = r[1];
 #else
-            std::complex<float> r = run_cell_code<std::complex<float>>(e, run_fn);
+            std::complex<float> r = run_cell_code<std::complex<float>>(e, trap, run_fn);
             result.c32.re = r.real();
             result.c32.im = r.imag();
 #endif
@@ -757,21 +769,21 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.type = EvalResult::complex8;
         if (compiler_options.platform == Platform::Windows) {
             double parts[2];
-            run_cell_code<void>(e, run_fn, parts);
+            run_cell_code<void>(e, trap, run_fn, parts);
             result.c64.re = parts[0];
             result.c64.im = parts[1];
         } else {
-            std::complex<double> r = run_cell_code<std::complex<double>>(e, run_fn);
+            std::complex<double> r = run_cell_code<std::complex<double>>(e, trap, run_fn);
             result.c64.re = r.real();
             result.c64.im = r.imag();
         }
     } else if (return_type == "logical") {
-        int32_t r = run_cell_code<int32_t>(e, run_fn);
+        int32_t r = run_cell_code<int32_t>(e, trap, run_fn);
         result.type = EvalResult::boolean;
         result.b = (r != 0);
     } else if (return_type == "character") {
         StringDescriptor descriptor;
-        run_cell_code<void>(e, run_fn, descriptor.pointer());
+        run_cell_code<void>(e, trap, run_fn, descriptor.pointer());
         result.type = EvalResult::character;
         char *data = descriptor.data();
         int64_t length = descriptor.length();
@@ -786,7 +798,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
             e.execfn<void>("_lfortran_free_alloc", allocator, data);
         }
     } else if (return_type == "void") {
-        run_cell_code<void>(e, run_fn);
+        run_cell_code<void>(e, trap, run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = has_program ? EvalResult::statement : EvalResult::none;
@@ -1075,6 +1087,13 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             out.interrupted = true;
             out.error_name = "KeyboardInterrupt";
             out.error_value = "cell execution interrupted";
+        } catch (const CellFailed &) {
+            // The runtime wrote the error to the cell's stderr.
+            _lfortran_reset_after_interrupt();
+            out.ok = false;
+            out.value = {};
+            out.error_name = "RuntimeError";
+            out.error_value.clear();
 #endif
         } catch (const LCompilersException &error) {
             out.ok = false;

@@ -13,7 +13,9 @@ extern "C" {
  * procedure entry, and calls `_lfortran_stop_if_interrupted` once it is set.
  * `set_cell_interrupt` publishes or clears a request, from any thread.
  * `set_interrupt_env` installs, for the calling thread, the `jmp_buf` (a
- * pointer to it) that `stop_if_interrupted` jumps to; NULL disarms it. While
+ * pointer to it) that `stop_if_interrupted` jumps to, with 1; NULL disarms
+ * it. A runtime error on that thread jumps there too, with 2, instead of
+ * ending the process; STOP and ERROR STOP still end it. While
  * the defer counter is nonzero, a poll returns instead of jumping, so that a
  * call into user code from the middle of a statement (a final subroutine, a
  * defined assignment, a defined input/output procedure) can finish.

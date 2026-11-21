@@ -2829,9 +2829,7 @@ namespace LCompilers {
                 }
                 // TODO: Use new llvm_utils->generate_runtime_error api here
                 print_error(context, *module, *builder, {fmt_ptr});
-                const int exit_code_int = 1;
-                llvm::Value *exit_code = llvm::ConstantInt::get(context, llvm::APInt(32, exit_code_int));
-                exit(context, *module, *builder, exit_code);
+                emit_error_exit();
             }, [&]() {
                 // value is null so do nothing
             });

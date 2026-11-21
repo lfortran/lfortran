@@ -8224,6 +8224,56 @@ TEST_CASE("FortranEvaluator interrupt: a request belongs to its cell") {
     CHECK(cell_value(e, "n") == "4");
 }
 
+// A runtime error ends only its cell, also inside a defined assignment, where
+// an interrupt waits for the call to end. Its message goes to the cell's
+// stderr. What ran before it stays done, and the later cells run and can be
+// interrupted (#14803).
+TEST_CASE("FortranEvaluator: a runtime error ends only its cell") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    run_cell(e, R"(module runtime_error_m
+implicit none
+type :: box
+    integer :: v = 0
+end type
+interface assignment(=)
+    module procedure assign_box
+end interface
+contains
+subroutine assign_box(lhs, rhs)
+    type(box), intent(inout) :: lhs
+    integer, intent(in) :: rhs
+    integer, allocatable :: w(:)
+    allocate(w(rhs))
+    if (rhs > 1) allocate(w(rhs))
+    lhs%v = rhs
+end subroutine
+end module
+)");
+    run_cell(e, "use runtime_error_m");
+    run_cell(e, "type(box) :: b\ninteger :: n = 0");
+    std::string out, err;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int stream, const std::string &text) {
+        (stream == 2 ? err : out) += text;
+    };
+    auto cell = e.execute("n = 1\nb = 1\nprint *, 'ran'\nb = 2\nn = 3", false, io);
+    CHECK(!cell.ok);
+    CHECK(!cell.interrupted);
+    CHECK(cell.error_name == "RuntimeError");
+    CHECK(cell.error_text().empty());
+    CHECK(out.find("ran") != std::string::npos);
+    CHECK(err.find("already allocated") != std::string::npos);
+    CHECK(cell_value(e, "n") == "1");
+    CHECK(cell_value(e, "b%v") == "1");
+    std::string output;
+    check_interrupted(interrupt_at_marker(e,
+        "print *, '@'\ndo\n  n = mod(n + 1, 7)\nend do", output));
+    run_cell(e, "b = 1");
+    CHECK(cell_value(e, "b%v") == "1");
+}
+
 TEST_CASE("FortranEvaluator interrupt: at arbitrary times") {
     if (!FortranEvaluator::interrupt_supported()) return;
     CompilerOptions cu = execute_options();

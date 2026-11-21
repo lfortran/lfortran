@@ -127,6 +127,21 @@ static inline int interrupt_armed(void)
 {
     return interrupt_env != NULL;
 }
+
+/* Ends the program after a runtime error. In a cell, it ends only the
+   cell: it returns to the cell's env (with 2) as an interrupt does, and the
+   session goes on. */
+__attribute__((noreturn))
+static void error_exit(void)
+{
+    jmp_buf *env = interrupt_env;
+    if (env != NULL) {
+        interrupt_env = NULL;
+        interrupt_defer = 0;
+        longjmp(*env, 2);
+    }
+    exit(1);
+}
 #else
 LFORTRAN_API int _lfortran_cell_interrupt;
 LFORTRAN_API void _lfortran_set_cell_interrupt(int requested)
@@ -142,8 +157,6 @@ LFORTRAN_API void _lfortran_interrupt_defer_enter(void) {}
 LFORTRAN_API void _lfortran_interrupt_defer_leave(void) {}
 LFORTRAN_API void _lfortran_stop_if_interrupted(void) {}
 static inline int interrupt_armed(void) { return 0; }
-#endif
-
 /* Ends the program after a runtime error. */
 #ifdef _MSC_VER
 __declspec(noreturn)
@@ -154,6 +167,7 @@ static void error_exit(void)
 {
     exit(1);
 }
+#endif
 
 static lfortran_stdin_provider stdin_provider;
 static void *stdin_context;
@@ -6828,6 +6842,11 @@ LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_in
     }
     internal_free(label_msgs);
     internal_free(error_msg);
+    error_exit();
+}
+
+LFORTRAN_API void _lcompilers_error_exit(void)
+{
     error_exit();
 }
 

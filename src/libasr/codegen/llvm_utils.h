@@ -454,6 +454,20 @@ class ASRToLLVMVisitor;
                 builder->CreateCall(fn, {});
             }
 
+            // Ends the program after a runtime error that was printed. A
+            // cell (cell_interrupts) fails instead: the runtime returns to
+            // the evaluator.
+            void emit_error_exit() {
+                if (cell_interrupts_enabled()) {
+                    llvm::Function *fn = LLVM::get_or_declare_function(
+                        *module, "_lcompilers_error_exit", void_type, {});
+                    builder->CreateCall(fn, {});
+                } else {
+                    exit(context, *module, *builder, llvm::ConstantInt::get(
+                        context, llvm::APInt(32, 1)));
+                }
+            }
+
             // Emit a local getter under native --fast; otherwise cache in entry.
             llvm::Value* get_allocator(llvm::Module* mod);
 

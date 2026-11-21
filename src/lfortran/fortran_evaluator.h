@@ -119,7 +119,10 @@ public:
         std::string diagnostics; // rendered warnings and errors
         // If !ok: the error's name and message (the rendered diagnostics of
         // a CompilerError) and, for an internal compiler error, the stack
-        // trace (empty without stacktrace support).
+        // trace (empty without stacktrace support). A RuntimeError has no
+        // message here: the runtime wrote it to the cell's stderr. A cell
+        // fails with one if interruptible(); otherwise a runtime error ends
+        // the process.
         std::string error_name, error_value;
         bool internal_error = false;
         // An interrupt stopped the cell (error_name "KeyboardInterrupt").

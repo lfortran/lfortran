@@ -547,6 +547,9 @@ typedef struct lfortran_runtime_error_info {
 // The variadic arguments are those of `info->message` followed by those of
 // each label's message, in order.
 LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_info *info, ...);
+// Exits with status 1 after a runtime error that was already printed. In an
+// interactive cell, both end only the cell (lfortran_interrupt.h).
+LFORTRAN_API void _lcompilers_error_exit(void);
 
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)

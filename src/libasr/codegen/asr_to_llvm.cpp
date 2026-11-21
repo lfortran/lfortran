@@ -20584,10 +20584,7 @@ public:
                 llvm::Value *fmt_ptr = LCompilers::create_global_string_ptr(context, *module, *builder, "AssertionError\n");
                 print_error(context, *module, *builder, {fmt_ptr});
             }
-            int exit_code_int = 1;
-            llvm::Value *exit_code = llvm::ConstantInt::get(context,
-                    llvm::APInt(32, exit_code_int));
-            exit(context, *module, *builder, exit_code);
+            llvm_utils->emit_error_exit();
         });
     }
 
