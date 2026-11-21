@@ -353,13 +353,14 @@ def process_running(pid):
     except ProcessLookupError:
         return False
     # Orphaned grandchildren are reaped by the OS, not by the kernel process.
-    stat = Path("/proc") / str(pid) / "stat"
-    if sys.platform.startswith("linux") and stat.exists():
+    if sys.platform.startswith("linux"):
         try:
-            return stat.read_text().split(") ", 1)[1][0] != "Z"
+            stat = (Path("/proc") / str(pid) / "stat").read_text()
         except (FileNotFoundError, ProcessLookupError):
-            # Reading the stat of a process that is being reaped fails with ESRCH.
+            # The zombie was reaped after os.kill() found it, or its stat
+            # fails with ESRCH while it is being reaped.
             return False
+        return stat.split(") ", 1)[1][0] != "Z"
     return True
 
 
