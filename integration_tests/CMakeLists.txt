@@ -5113,6 +5113,7 @@ RUN(NAME nested_vars_31 LABELS gfortran llvm)
 RUN(NAME nested_vars_32 LABELS gfortran llvm)
 RUN(NAME nested_vars_33 LABELS gfortran llvm) # local array of an internal procedure sized by a host program variable (#2430)
 RUN(NAME nested_vars_34 LABELS gfortran llvm) # explicit-shape host array passed from an internal procedure
+RUN(NAME nested_vars_35 LABELS gfortran llvm) # host frame member of a dummy procedure with an assumed-length character dummy
 
 # No `wasm` label: the wasm backend does not support host association yet
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray c)
