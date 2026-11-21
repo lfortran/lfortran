@@ -43,6 +43,22 @@ module bindc_optional_absent_01_m
             import :: c_int, cb_t
             procedure(cb_t), optional :: cb
         end function
+        subroutine chk_arr(n, a, s) bind(c, name="bindc_optional_absent_01_arr")
+            import :: c_int
+            integer(c_int), value :: n
+            integer(c_int), intent(in), optional :: a(n)
+            integer(c_int), intent(out) :: s
+        end subroutine
+        subroutine chk_asz(a, s) bind(c, name="bindc_optional_absent_01_asz")
+            import :: c_int
+            integer(c_int), intent(in), optional :: a(*)
+            integer(c_int), intent(out) :: s
+        end subroutine
+        subroutine chk_ash(a, s) bind(c, name="bindc_optional_absent_01_ash")
+            import :: c_int
+            integer(c_int), intent(in), optional :: a(:)
+            integer(c_int), intent(out) :: s
+        end subroutine
     end interface
     integer :: calls = 0
 contains
@@ -60,6 +76,18 @@ contains
         procedure(cb_t), optional :: cb
         fun_proc = 7
     end function
+
+    integer(c_int) function fun_cptr_in(p) bind(c)
+        type(c_ptr), intent(in), optional :: p
+        fun_cptr_in = 3
+    end function
+
+    subroutine sub_ash(a, s) bind(c)
+        integer(c_int), intent(in), optional :: a(:)
+        integer(c_int), intent(out) :: s
+        s = -1
+        if (present(a)) s = sum(a)
+    end subroutine
 
     subroutine sub_cptr(p) bind(c)
         type(c_ptr), optional :: p
@@ -101,6 +129,7 @@ program bindc_optional_absent_01
     real(c_float) :: r
     type(pt) :: t
     type(c_ptr) :: p
+    integer(c_int) :: v(3)
 
     call ext(2, 3, s)
     if (s /= 5) error stop 1
@@ -141,5 +170,25 @@ program bindc_optional_absent_01
     call sub_proc()
     if (fun_proc() /= 7) error stop 15
     if (calls /= 26) error stop 16
+
+    if (fun_cptr_in() /= 3) error stop 17
+
+    v = [1, 2, 3]
+    call chk_arr(3, v, s)
+    if (s /= 6) error stop 18
+    call chk_arr(3, s=s)
+    if (s /= -1) error stop 19
+    call chk_asz(v, s)
+    if (s /= 6) error stop 20
+    call chk_asz(s=s)
+    if (s /= -1) error stop 21
+    call chk_ash(v, s)
+    if (s /= 1) error stop 22
+    call chk_ash(s=s)
+    if (s /= -1) error stop 23
+    call sub_ash(v, s)
+    if (s /= 6) error stop 24
+    call sub_ash(s=s)
+    if (s /= -1) error stop 25
     print *, "ok"
 end program

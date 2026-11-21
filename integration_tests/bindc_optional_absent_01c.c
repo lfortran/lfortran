@@ -39,3 +39,25 @@ int bindc_optional_absent_01_proc_f(void (*cb)(int))
     cb(5);
     return 1;
 }
+
+void bindc_optional_absent_01_arr(int n, const int *a, int *s)
+{
+    int i;
+    if (a == NULL) {
+        *s = -1;
+        return;
+    }
+    *s = 0;
+    for (i = 0; i < n; i++) *s += a[i];
+}
+
+void bindc_optional_absent_01_asz(const int *a, int *s)
+{
+    *s = a == NULL ? -1 : a[0] + a[1] + a[2];
+}
+
+/* `a` is a C descriptor (CFI_cdesc_t *) when present. */
+void bindc_optional_absent_01_ash(const void *a, int *s)
+{
+    *s = a == NULL ? -1 : 1;
+}
