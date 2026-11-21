@@ -7082,6 +7082,20 @@ filename = "module_struct_global_separate_compilation_01.f90"
 llvm = true
 options = "--separate-compilation"
 
+# The names that carry the ID of the compilation unit are the same in every
+# compilation of a file (#17332).
+[[test]]
+filename = "separate_compilation_unit_id_01.f90"
+asr = true
+options = "--separate-compilation"
+
+# The name of a compiler-generated function does not depend on where the
+# compiler allocated its symbol table (#17332).
+[[test]]
+filename = "separate_compilation_unit_id_02.f90"
+llvm = true
+options = "--separate-compilation"
+
 [[test]]
 filename = "../integration_tests/operator_overloading_12.f90"
 asr = true
