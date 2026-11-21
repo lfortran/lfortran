@@ -2534,9 +2534,13 @@ class MergebotTests(unittest.TestCase):
                 patch.object(self.bot, "check_commits"), \
                 patch.object(self.bot, "run", side_effect=run), \
                 patch.object(self.bot, "cmd_reject", side_effect=lambda args: actions.append("reject")), \
-                patch.object(self.bot, "comment"), patch("builtins.print"):
+                patch.object(self.bot, "comment") as comment, patch("builtins.print"):
             self.bot.cmd_push(self.args(needs_review=True))
         self.assertEqual(actions, ["reject", "push"])
+        # The rejection already explained why; the push comment does not repeat it.
+        comment.assert_called_once()
+        self.assertNotIn("validation evidence", comment.call_args.args[1])
+        self.assertIn("re-review", comment.call_args.args[1])
         self.assertEqual(self.bot.pr_state(1, "L")["approved_head"], "H")
 
     def test_pr_bug_verdict_is_rejected_as_draft(self):
