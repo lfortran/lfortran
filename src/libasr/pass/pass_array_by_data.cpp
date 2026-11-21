@@ -193,10 +193,12 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
 // dummy procedure or of a procedure pointer component, contributes only its
 // own signature, which `interfaces` maps it to: a procedure whose body was
 // replaced keeps it as an interface (make_interface). That interface is
-// never evaluated, so a variable that only its declarations refer to, such
-// as a host variable in a bound, is kept without its value mattering, as
-// long as it is not a derived type object (which would be initialized and
-// finalized).
+// never evaluated, so a variable that only its declarations refer to is
+// kept without its value mattering, as long as it is not a derived type
+// object (which would be initialized and finalized). For example, a bound
+// that is a host dummy reads it through the frame pointer of the host
+// (nested_vars), which is kept, and through getters, which become
+// interfaces too.
 static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>& interfaces,
         bool evaluated_signature = true) {
@@ -1831,8 +1833,14 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         // (signature_closure) and drops the others, which only the old body
         // used. An internal procedure the signature needs, such as the
         // interface of a dummy procedure, becomes an interface. If the
-        // signature needs another symbol that has storage or code, the copy
-        // is not forwarded and keeps its own saved state. Evaluating a
+        // copy's dummies or result need another symbol that has storage or
+        // code, the copy is not forwarded and keeps its own saved state. For
+        // an external procedure declared by an interface body, whose direct
+        // calls reach the original and other references the copy, that would
+        // split the state; but the specification expressions of its dummies
+        // and result can only use dummies, constants, COMMON and module
+        // variables and non-internal pure functions, which are all
+        // declarations. Evaluating a
         // specification function of the signature in both entries is
         // harmless: it is pure.
         void forward_copies_with_saved_state() {
