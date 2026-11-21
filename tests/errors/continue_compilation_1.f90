@@ -5303,3 +5303,12 @@ subroutine cc1_procedure_interface_declared_later()
     procedure(cc1_pidl_b), pointer :: cc1_pidl_a  ! {Error} 'cc1_pidl_a' is used as a procedure interface before this procedure declaration statement declares it
     procedure(cc1_pidl_c), pointer :: cc1_pidl_c  ! {Error} 'cc1_pidl_c' is used as a procedure interface before this procedure declaration statement declares it
 end subroutine
+
+! The `target` argument of `associated` must be a pointer or target
+! variable or function, not an arbitrary expression.
+subroutine associated_target_not_variable_in_continue_compilation_1()
+    implicit none
+    integer, pointer :: a(:)
+    a => null()
+    if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
+end subroutine
