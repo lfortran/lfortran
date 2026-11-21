@@ -4,6 +4,7 @@
 
 #include <lfortran/ast_kind.h>
 #include <lfortran/parser/parser.h>
+#include <lfortran/parser/ll_parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
 #include <libasr/string_utils.h>
@@ -283,6 +284,18 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 }
 
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
+        diag::Diagnostics &diagnostics, const CompilerOptions &co,
+        uint32_t loc_offset)
+{
+    // Free form is parsed by the LL parser, fixed form by the Bison parser
+    if (!co.fixed_form) {
+        LLTokens tokens;
+        return ll_parse(al, s, diagnostics, tokens, co, loc_offset);
+    }
+    return parse_bison(al, s, diagnostics, co, loc_offset);
+}
+
+Result<AST::TranslationUnit_t*> parse_bison(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co,
         uint32_t loc_offset)
 {

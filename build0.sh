@@ -28,6 +28,8 @@ source ci/version.sh
 # Use `-r all` in Bison for detailed report. Turned off by default to avoid a
 # Bison timeout issue with it.
 (cd src/lfortran/parser && "${BISON}" -Wall -d parser.yy)
+# Generate the rules of the prototype LL parser from its grammar
+"${PYTHON}" src/lfortran/parser/llgen.py src/lfortran/parser/ll_parser.ll src/lfortran/parser/parser.yy src/lfortran/parser/ll_parser_rules.h
 
 # Generate the LSP sources
 "${PYTHON}" src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
