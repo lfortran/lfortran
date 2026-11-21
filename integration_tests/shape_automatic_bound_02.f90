@@ -50,6 +50,14 @@ contains
         if (size(d) /= 1) error stop 10
     end subroutine
 
+    ! An array of characters whose length is a dummy
+    subroutine chars(n, m)
+        integer, intent(in) :: n, m
+        character(len=m) :: a(n, 2)
+        integer :: c(product(shape(a)))
+        if (size(c) /= 2*n) error stop 13
+    end subroutine
+
     ! A BLOCK, and an array of the host
     subroutine nested(n)
         integer, intent(in) :: n
@@ -74,11 +82,33 @@ end module
 program shape_automatic_bound_02
 use shape_automatic_bound_02_m
 implicit none
+interface
+    ! An interface body, whose bounds are not captured on entry
+    subroutine shape_automatic_bound_02_ext(n, a, c)
+        integer, intent(in) :: n
+        real, intent(in) :: a(n, 2)
+        integer, intent(out) :: c(product(shape(a)))
+    end subroutine
+end interface
 integer :: y(3, 2)
+real :: a(3, 2)
+integer :: c(6)
 call ranks(4, 5)
 call ranks(1, 3)
 y = 0
 call dummy(3, y)
 call nested(3)
+call chars(3, 4)
+call chars(0, 4)
+a = 0
+call shape_automatic_bound_02_ext(3, a, c)
+if (any(c /= 7)) error stop 14
 print *, "ok"
 end program
+
+subroutine shape_automatic_bound_02_ext(n, a, c)
+    integer, intent(in) :: n
+    real, intent(in) :: a(n, 2)
+    integer, intent(out) :: c(product(shape(a)))
+    c = 7
+end subroutine
