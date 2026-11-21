@@ -5729,6 +5729,10 @@ RUN(NAME save_34 LABELS gfortran llvm)
 RUN(NAME save_35 LABELS gfortran llvm) # bare SAVE keeps PARAMETER constant (#15975)
 RUN(NAME save_37 LABELS gfortran llvm)
 RUN(NAME save_38 LABELS gfortran llvm)
+RUN(NAME save_42 LABELS gfortran llvm)
+RUN(NAME save_43 LABELS gfortran llvm)
+RUN(NAME save_44 LABELS gfortran llvm)
+RUN(NAME save_45 LABELS gfortran llvm)
 RUN(NAME save_46 LABELS gfortran llvm)
 
 
