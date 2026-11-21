@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'r(1)%d'. Tried to match size 1 of dimension 1 of LHS with size 2 of dimension 1 of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+  --> tests/../integration_tests/allocatable_component_vector_subscript_shape_01.f90:14:5
+   |
+14 |     r(1)%d = a([2, 4])
+   |     ^^^^^^ LHS size is 1
+   |
+14 |     r(1)%d = a([2, 4])
+   |              ^^^^^^^^^ RHS size is 2
