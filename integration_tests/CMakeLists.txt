@@ -4991,6 +4991,7 @@ RUN(NAME external_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_38 LABELS llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_39 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME external_40 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # specific intrinsics of two kinds passed to typed external dummies (#13166)
+RUN(NAME external_41 LABELS gfortran llvm EXTRAFILES external_41b.f90 external_41c.c) # external procedure with an assumed-shape dummy declared by an interface body is called by its own name
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm
@@ -5727,6 +5728,7 @@ RUN(NAME save_32 LABELS gfortran llvm)
 RUN(NAME save_33 LABELS gfortran llvm)
 RUN(NAME save_34 LABELS gfortran llvm)
 RUN(NAME save_35 LABELS gfortran llvm) # bare SAVE keeps PARAMETER constant (#15975)
+RUN(NAME save_36 LABELS gfortran llvm)
 RUN(NAME save_37 LABELS gfortran llvm)
 RUN(NAME save_38 LABELS gfortran llvm)
 RUN(NAME save_42 LABELS gfortran llvm)
@@ -5768,6 +5770,7 @@ RUN(NAME entry_28 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME entry_29 LABELS gfortran llvm)
 RUN(NAME entry_30 LABELS gfortran llvm)
 RUN(NAME entry_31 LABELS llvm flang) # not gfortran: GFortran 16.2 miscompiles the overlap of the result variables of a function and its entries (#16215)
+RUN(NAME entry_32 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
