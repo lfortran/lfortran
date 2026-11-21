@@ -3850,6 +3850,335 @@ public:
         return read;
     }
 
+    // A bound or a length of a dummy or of the result can inquire about the
+    // bounds, extents or length of a local object declared before it
+    // (F2018 10.1.11, item 7). Such an inquiry, LBOUND, UBOUND or SIZE (with
+    // a DIM that need not be constant) of a whole explicit-shape array, or
+    // LEN of an explicit-length character object, of an element of one or
+    // of a substring of either, where the object is a local of the
+    // procedure being declared, is replaced by the bound, extent or length
+    // that the object declares. The signature then does not refer to the
+    // procedure's locals, which are not part of its interface. For a
+    // dimension of declared extent `e`, LBOUND is 1 and UBOUND is 0 if `e`
+    // is not positive, as for a whole array, SIZE is max(0, e), and LEN is
+    // max(0, len). An expression with a compile-time value that refers to
+    // such a local, such as KIND, is replaced by that value. An inquiry is
+    // kept if the declared bounds or length of the object refer to anything
+    // other than dummies, named constants, COMMON variables and
+    // use-associated entities of the procedure (such as a host variable).
+    class LocalInquiryFolder :
+            public ASR::BaseExprReplacer<LocalInquiryFolder> {
+        public:
+            CommonVisitor &v;
+
+            LocalInquiryFolder(CommonVisitor &v_) : v{v_} {}
+
+            // Whether `e` refers to something other than dummies, named
+            // constants, COMMON variables and use-associated entities of the
+            // current scope.
+            class OtherReference :
+                    public ASR::BaseWalkVisitor<OtherReference> {
+                public:
+                    CommonVisitor &v;
+                    bool found = false;
+
+                    OtherReference(CommonVisitor &v_) : v{v_} {}
+
+                    void visit_Var(const ASR::Var_t &x) {
+                        if (ASRUtils::symbol_parent_symtab(x.m_v) != v.current_scope ||
+                                v.is_local_of_current_scoping_unit(x.m_v) ||
+                                !(ASR::is_a<ASR::Variable_t>(*x.m_v) ||
+                                    ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v))) {
+                            found = true;
+                        }
+                    }
+            };
+
+            // The local object of the current scope that `e` names, or
+            // nullptr.
+            ASR::Variable_t* local_object(ASR::expr_t *e) {
+                if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) {
+                    return nullptr;
+                }
+                ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+                if (!v.is_local_of_current_scoping_unit(sym)) {
+                    return nullptr;
+                }
+                return ASR::down_cast<ASR::Variable_t>(sym);
+            }
+
+            // A copy of `e`, a declared bound or length of a local object,
+            // of type `type`, with the inquiries about locals that it makes
+            // replaced, or nullptr if it refers to anything else.
+            ASR::expr_t* declared(ASR::expr_t *e, ASR::ttype_t *type) {
+                ASR::expr_t *result = copy(e);
+                ASR::expr_t **current_expr_copy = this->current_expr;
+                this->current_expr = &result;
+                this->replace_expr(result);
+                this->current_expr = current_expr_copy;
+                OtherReference other(v);
+                other.visit_expr(*result);
+                if (other.found) {
+                    return nullptr;
+                }
+                return CastingUtil::perform_casting(result, type, v.al,
+                    result->base.loc);
+            }
+
+            ASR::expr_t* constant(int64_t n, ASR::ttype_t *type,
+                    const Location &loc) {
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(v.al, loc,
+                    n, type));
+            }
+
+            ASR::expr_t* copy(ASR::expr_t *e) {
+                ASRUtils::ExprStmtDuplicator duplicator(v.al);
+                return duplicator.duplicate_expr(e);
+            }
+
+            // `positive` if `extent` is positive, otherwise `otherwise`.
+            ASR::expr_t* if_positive(ASR::expr_t *extent, ASR::expr_t *positive,
+                    ASR::expr_t *otherwise) {
+                int64_t n;
+                if (ASRUtils::extract_value(ASRUtils::expr_value(extent), n)) {
+                    return n > 0 ? positive : otherwise;
+                }
+                const Location &loc = extent->base.loc;
+                ASRUtils::ASRBuilder b(v.al, loc);
+                ASR::expr_t *test = b.Gt(copy(extent),
+                    constant(0, ASRUtils::expr_type(extent), loc));
+                return ASRUtils::EXPR(ASR::make_IfExp_t(v.al, loc, test,
+                    positive, otherwise, ASRUtils::expr_type(positive), nullptr));
+            }
+
+            // The value that `bound` (or SIZE, if `size`) has for the
+            // dimension `i` (0-based) of the explicit-shape array `dims`.
+            ASR::expr_t* dimension_inquiry(ASR::dimension_t *dims, size_t i,
+                    bool size, ASR::arrayboundType bound, ASR::ttype_t *type,
+                    const Location &loc) {
+                ASR::expr_t *extent = declared(dims[i].m_length, type);
+                if (extent == nullptr) {
+                    return nullptr;
+                }
+                int64_t e;
+                bool constant_extent = ASRUtils::extract_value(
+                    ASRUtils::expr_value(extent), e);
+                if (size) {
+                    if (constant_extent) {
+                        return constant(std::max<int64_t>(e, 0), type, loc);
+                    }
+                    return if_positive(extent, copy(extent), constant(0, type, loc));
+                }
+                if (bound == ASR::arrayboundType::LBound) {
+                    ASR::expr_t *start = declared(dims[i].m_start, type);
+                    if (start == nullptr) {
+                        return nullptr;
+                    }
+                    return if_positive(extent, start, constant(1, type, loc));
+                }
+                ASR::expr_t *start = declared(dims[i].m_start, type);
+                if (start == nullptr) {
+                    return nullptr;
+                }
+                int64_t s;
+                ASR::expr_t *end;
+                ASRUtils::ASRBuilder b(v.al, loc);
+                if (!ASRUtils::extract_value(ASRUtils::expr_value(start), s)) {
+                    end = b.Sub(b.Add(start, copy(extent)), constant(1, type, loc));
+                } else if (constant_extent) {
+                    end = constant(s + e - 1, type, loc);
+                } else if (s == 1) {
+                    end = copy(extent);
+                } else {
+                    end = b.Add(copy(extent), constant(s - 1, type, loc));
+                }
+                return if_positive(extent, end, constant(0, type, loc));
+            }
+
+            // The value of an inquiry about the array `array` with `dim`
+            // (nullptr only for SIZE), or nullptr if it is kept.
+            ASR::expr_t* array_inquiry(ASR::expr_t *array, ASR::expr_t *dim,
+                    bool size, ASR::arrayboundType bound, ASR::ttype_t *type,
+                    const Location &loc) {
+                ASR::Variable_t *var = local_object(array);
+                if (var == nullptr) {
+                    return nullptr;
+                }
+                ASR::ttype_t *var_type = ASRUtils::type_get_past_allocatable_pointer(
+                    var->m_type);
+                if (!ASR::is_a<ASR::Array_t>(*var_type) ||
+                        ASRUtils::is_assumed_rank_array(var_type)) {
+                    return nullptr;
+                }
+                ASR::Array_t *array_type = ASR::down_cast<ASR::Array_t>(var_type);
+                if (array_type->m_physical_type ==
+                        ASR::array_physical_typeType::UnboundedPointerArray) {
+                    return nullptr;
+                }
+                for (size_t i = 0; i < array_type->n_dims; i++) {
+                    if (array_type->m_dims[i].m_start == nullptr ||
+                            array_type->m_dims[i].m_length == nullptr) {
+                        return nullptr;
+                    }
+                }
+                if (array_type->n_dims == 0) {
+                    return nullptr;
+                }
+                int64_t d;
+                if (dim != nullptr && ASRUtils::extract_value(
+                        ASRUtils::expr_value(dim), d)) {
+                    if (d < 1 || d > (int64_t) array_type->n_dims) {
+                        return nullptr;
+                    }
+                    return dimension_inquiry(array_type->m_dims, d - 1, size,
+                        bound, type, loc);
+                }
+                std::vector<ASR::expr_t*> values;
+                for (size_t i = 0; i < array_type->n_dims; i++) {
+                    ASR::expr_t *value = dimension_inquiry(array_type->m_dims,
+                        i, size, bound, type, loc);
+                    if (value == nullptr) {
+                        return nullptr;
+                    }
+                    values.push_back(value);
+                }
+                ASRUtils::ASRBuilder b(v.al, loc);
+                if (dim == nullptr) {
+                    // SIZE without DIM: the product of the extents.
+                    ASR::expr_t *result = values[0];
+                    for (size_t i = 1; i < values.size(); i++) {
+                        result = b.Mul(result, values[i]);
+                    }
+                    return result;
+                }
+                // DIM is not constant: select the dimension it names.
+                ASRUtils::ExprStmtDuplicator duplicator(v.al);
+                ASR::expr_t *result = values.back();
+                for (size_t i = values.size() - 1; i-- > 0; ) {
+                    ASR::expr_t *dim_copy = duplicator.duplicate_expr(dim);
+                    ASR::expr_t *test = b.Eq(dim_copy, b.i_t(i + 1,
+                        ASRUtils::expr_type(dim_copy)));
+                    result = ASRUtils::EXPR(ASR::make_IfExp_t(v.al, loc, test,
+                        values[i], result, type, nullptr));
+                }
+                return result;
+            }
+
+            // Whether `e` refers to a local object of the current scope.
+            class LocalReference :
+                    public ASR::BaseWalkVisitor<LocalReference> {
+                public:
+                    LocalInquiryFolder &folder;
+                    bool found = false;
+
+                    LocalReference(LocalInquiryFolder &folder_) : folder{folder_} {}
+
+                    void visit_Var(const ASR::Var_t &x) {
+                        if (folder.local_object(const_cast<ASR::expr_t*>(
+                                &x.base)) != nullptr) {
+                            found = true;
+                        }
+                    }
+            };
+
+            // An expression with a compile-time value that refers to a
+            // local object, which in a specification expression can only be
+            // an inquiry (such as KIND, or SIZE of a constant-shape array or
+            // of a component), is replaced by that value.
+            void replace_expr(ASR::expr_t *x) {
+                if (x == nullptr) {
+                    return;
+                }
+                ASR::expr_t *value = ASRUtils::expr_value(x);
+                if (value != nullptr && value != x &&
+                        ASRUtils::is_value_constant(value)) {
+                    LocalReference local(*this);
+                    local.visit_expr(*x);
+                    if (local.found) {
+                        *this->current_expr = value;
+                        return;
+                    }
+                }
+                ASR::BaseExprReplacer<LocalInquiryFolder>::replace_expr(x);
+            }
+
+            void replace_ArraySize(ASR::ArraySize_t *x) {
+                ASR::BaseExprReplacer<LocalInquiryFolder>::replace_ArraySize(x);
+                ASR::expr_t *value = array_inquiry(x->m_v, x->m_dim, true,
+                    ASR::arrayboundType::LBound, x->m_type, x->base.base.loc);
+                if (value != nullptr) {
+                    *this->current_expr = value;
+                }
+            }
+
+            void replace_ArrayBound(ASR::ArrayBound_t *x) {
+                ASR::BaseExprReplacer<LocalInquiryFolder>::replace_ArrayBound(x);
+                if (x->m_dim == nullptr) {
+                    return;
+                }
+                ASR::expr_t *value = array_inquiry(x->m_v, x->m_dim, false,
+                    x->m_bound, x->m_type, x->base.base.loc);
+                if (value != nullptr) {
+                    *this->current_expr = value;
+                }
+            }
+
+            void replace_StringLen(ASR::StringLen_t *x) {
+                ASR::BaseExprReplacer<LocalInquiryFolder>::replace_StringLen(x);
+                // The length of an element is the length of the array, and
+                // a substring has the length of its type.
+                ASR::expr_t *object = x->m_arg;
+                ASR::ttype_t *object_type = nullptr;
+                if (ASR::is_a<ASR::StringSection_t>(*object)) {
+                    object_type = ASRUtils::expr_type(object);
+                    object = ASR::down_cast<ASR::StringSection_t>(object)->m_arg;
+                }
+                if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+                    object = ASR::down_cast<ASR::ArrayItem_t>(object)->m_v;
+                }
+                ASR::Variable_t *var = local_object(object);
+                if (var == nullptr) {
+                    return;
+                }
+                if (object_type == nullptr) {
+                    object_type = ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable_pointer(var->m_type));
+                }
+                if (!ASR::is_a<ASR::String_t>(*object_type)) {
+                    return;
+                }
+                ASR::String_t *str = ASR::down_cast<ASR::String_t>(object_type);
+                if (str->m_len == nullptr ||
+                        str->m_len_kind != ASR::string_length_kindType::ExpressionLength) {
+                    return;
+                }
+                ASR::expr_t *len = declared(str->m_len, x->m_type);
+                if (len == nullptr) {
+                    return;
+                }
+                int64_t n;
+                if (ASRUtils::extract_value(ASRUtils::expr_value(len), n)) {
+                    *this->current_expr = constant(std::max<int64_t>(n, 0), x->m_type,
+                        x->base.base.loc);
+                    return;
+                }
+                *this->current_expr = if_positive(len, copy(len),
+                    constant(0, x->m_type, x->base.base.loc));
+            }
+    };
+
+    // `e`, a bound or a length of a dummy or of the result, with its
+    // inquiries about local objects replaced, see LocalInquiryFolder.
+    ASR::expr_t* fold_local_inquiries(ASR::expr_t *e) {
+        if (e == nullptr) {
+            return e;
+        }
+        LocalInquiryFolder folder(*this);
+        folder.current_expr = &e;
+        folder.replace_expr(e);
+        return e;
+    }
+
     // Finds the first variable of a BLOCK construct enclosing `scope` that an
     // expression reads at run time (with `only_allocatable_or_pointer`, the
     // first such allocatable or pointer variable).
@@ -4814,6 +5143,7 @@ public:
                         RestrictedExprContext::ArrayBound);
                     // A lower bound is never read through a getter.
                     if (in_signature) {
+                        dim.m_start = fold_local_inquiries(dim.m_start);
                         check_block_variable_reads(dim.m_start, dim.m_start,
                             false);
                     }
@@ -4846,6 +5176,9 @@ public:
                     end = ASRUtils::EXPR(tmp);
                     check_specification_expr(end,
                         RestrictedExprContext::ArrayBound);
+                    if (in_signature) {
+                        end = fold_local_inquiries(end);
+                    }
                     ASR::expr_t* end_read = read_variables_through_getters(end,
                         in_signature);
                     dimension_attribute_error_check(end);
@@ -31266,6 +31599,9 @@ public:
                             RestrictedExprContext::CharacterLength);
                         _processing_char_len = false;
                         check_character_length_expr(len_expr, require_constant_length);
+                        if (in_signature) {
+                            len_expr = fold_local_inquiries(len_expr);
+                        }
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
@@ -31315,6 +31651,9 @@ public:
                             RestrictedExprContext::CharacterLength);
                         _processing_char_len = false;
                         check_character_length_expr(len_expr, require_constant_length);
+                        if (in_signature) {
+                            len_expr = fold_local_inquiries(len_expr);
+                        }
                         ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
                         if (len_value) {
                             str->m_len = len_value;
