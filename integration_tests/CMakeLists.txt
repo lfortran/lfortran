@@ -6470,6 +6470,7 @@ RUN(NAME contiguous_dummy_03 LABELS gfortran llvm) # non-contiguous actual for a
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME compiler_version_04 LABELS gfortran llvm)
 
 
 RUN(NAME exit_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm mlir x86)

@@ -20066,6 +20066,21 @@ public:
             return ASRUtils::CompilerOptions::create_CompilerOptions(al, loc, expr_args, diag);
         }
         
+        // compiler_version() of iso_fortran_env is a constant expression,
+        // so a named constant can be initialized with it. Its value is the
+        // version of the compiler that compiles the reference.
+        if (args.size() == 0 && ASR::is_a<ASR::Function_t>(*f2) &&
+                std::string(ASRUtils::symbol_name(f2)) == "compiler_version") {
+            ASR::Module_t *m = ASRUtils::get_sym_module(f2);
+            if (m && m->m_intrinsic &&
+                    std::string(m->m_name) == "lfortran_intrinsic_iso_fortran_env") {
+                Vec<ASR::expr_t*> expr_args;
+                expr_args.reserve(al, 0);
+                return ASRUtils::CompilerVersion::create_CompilerVersion(
+                    al, loc, expr_args, diag);
+            }
+        }
+
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         if (ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::Intrinsic) {
             std::string func_name = std::string(func->m_name);
