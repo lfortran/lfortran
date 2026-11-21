@@ -2679,9 +2679,9 @@ public:
 
     // In the declarations of the variables and interface bodies of host
     // `f` that wrap_body does not move, and in the interface of `f`,
-    // replaces LBOUND, UBOUND and SIZE of a moved array by the bounds the
-    // array is declared with, so that they do not keep the host from being
-    // wrapped (#16610). It runs before the frame of the host is made,
+    // replaces LBOUND, UBOUND, SIZE and SHAPE of a moved array by the bounds
+    // the array is declared with, so that they do not keep the host from
+    // being wrapped (#16610). It runs before the frame of the host is made,
     // since a local can become a named constant (keep_defined_on_entry).
     // This is an interim workaround, to be replaced by an explicit point in
     // ASR where the locals of a procedure go out of scope (#16575), after

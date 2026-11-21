@@ -3748,6 +3748,8 @@ RUN(NAME automatic_array_09 LABELS gfortran llvm)
 RUN(NAME automatic_array_10 LABELS gfortran llvm cuda metal)
 RUN(NAME automatic_array_11 LABELS gfortran llvm cuda metal)
 RUN(NAME automatic_array_12 LABELS gfortran llvm)
+RUN(NAME shape_automatic_bound_01 LABELS gfortran llvm)
+RUN(NAME shape_automatic_bound_02 LABELS gfortran llvm)
 
 RUN(NAME block_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME block_02 LABELS gfortran llvm fortran)

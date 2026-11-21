@@ -6,6 +6,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/asr_builder.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 
 
@@ -257,6 +258,33 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         *current_expr = bound;
     }
 
+    // SHAPE of one of `arrays` is the array of its extents
+    void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
+        ASR::expr_t* array = x->n_args > 0 ? x->m_args[0] : nullptr;
+        while( array && ASR::is_a<ASR::ArrayPhysicalCast_t>(*array) ) {
+            array = ASR::down_cast<ASR::ArrayPhysicalCast_t>(array)->m_arg;
+        }
+        if( arrays == nullptr || x->m_arr_intrinsic_id !=
+                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape) ||
+                array == nullptr || !ASR::is_a<ASR::Var_t>(*array) ||
+                !is_replaced(array, false) ) {
+            ASR::BaseExprReplacer<ReplaceArrayDimIntrinsicCalls>::replace_IntrinsicArrayFunction(x);
+            return ;
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t n = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(array), dims);
+        ASR::ttype_t* extent_type = ASRUtils::extract_type(x->m_type);
+        Vec<ASR::expr_t*> extents; extents.reserve(al, n);
+        for( size_t i = 0; i < n; i++ ) {
+            extents.push_back(al, extent(copy_of(dims[i].m_length),
+                extent_type, x->base.base.loc));
+        }
+        *current_expr = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+            al, x->base.base.loc, extents.p, extents.n,
+            ASRUtils::duplicate_type(al, x->m_type), ASR::arraystorageType::ColMajor));
+    }
+
 };
 
 /*
@@ -319,6 +347,14 @@ void replace_declared_array_inquiries(Allocator &al, ASR::ttype_t *type,
         const std::set<ASR::symbol_t*> &arrays) {
     DeclaredArrayInquiriesVisitor v(al, arrays);
     v.visit_ttype(*type);
+}
+
+void replace_declared_array_inquiries(Allocator &al, ASR::expr_t *&expr,
+        const std::set<ASR::symbol_t*> &arrays) {
+    ReplaceArrayDimIntrinsicCalls replacer(al, false);
+    replacer.arrays = &arrays;
+    replacer.current_expr = &expr;
+    replacer.replace_expr(expr);
 }
 
 void pass_update_array_dim_intrinsic_calls(Allocator &al, ASR::TranslationUnit_t &unit,

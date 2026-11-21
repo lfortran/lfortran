@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pickle.h>
 
 namespace LCompilers {
@@ -810,6 +811,29 @@ public:
     }
 };
 
+/*
+    The explicit-shape arrays that an expression references. A Var names a
+    Variable directly only in the scope that declares it or a nested one, so
+    the bounds of the array name variables visible where the expression is.
+*/
+class ExplicitShapeArrayCollector : public ASR::BaseWalkVisitor<ExplicitShapeArrayCollector> {
+public:
+    std::set<ASR::symbol_t*> arrays;
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (!ASR::is_a<ASR::Variable_t>(*x.m_v)) return;
+        ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(x.m_v)->m_type;
+        if (!ASR::is_a<ASR::Array_t>(*type)) return;
+        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(type);
+        if (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) return;
+        for (size_t i = 0; i < array_t->n_dims; i++) {
+            if (array_t->m_dims[i].m_start == nullptr ||
+                    array_t->m_dims[i].m_length == nullptr) return;
+        }
+        arrays.insert(x.m_v);
+    }
+};
+
 /* ================================== VISITOR ==================================*/
 
 class FunctionTypeVisitor : public ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>
@@ -881,9 +905,27 @@ public:
         pass_result.reserve(al, 1);
     }
 
-    void call_replacer_(ASR::expr_t* value) {
+    /*
+        A specification expression inquires about the bounds of a local
+        array, never about its elements (F2018 10.1.11). Before `expr` is
+        evaluated in a helper function, the inquiries about an explicit-shape
+        array are replaced by the bounds it is declared with, which for an
+        automatic array are the locals that capture them on entry. The helper
+        is then passed those bounds rather than the array, whose type names
+        variables of the scope that declares it.
+    */
+    void replace_explicit_shape_inquiries(ASR::expr_t* &expr) {
+        ExplicitShapeArrayCollector collector;
+        collector.visit_expr(*expr);
+        if (!collector.arrays.empty()) {
+            replace_declared_array_inquiries(al, expr, collector.arrays);
+        }
+    }
+
+    void call_replacer_(ASR::expr_t* /*value*/) {
+        replace_explicit_shape_inquiries(*current_expr);
         replacer.current_expr = current_expr;
-        replacer.assignment_value = value;
+        replacer.assignment_value = *current_expr;
         replacer.replace_expr(*current_expr);
         replacer.assignment_value = nullptr;
     }
@@ -909,6 +951,7 @@ public:
                 // Intrinsic array functions in a bound are handled by
                 // later passes as before.
                 if (*bound && expr_contains_functionCall_with_Nonscalar_return::check(*bound, true)) {
+                    replace_explicit_shape_inquiries(*bound);
                     replacer.current_expr = bound;
                     replacer.assignment_value = *bound;
                     replacer.replace_with_helper_function_call(*bound);
@@ -923,6 +966,7 @@ public:
         if (!ASRUtils::is_entry_initialized_local(x)) return;
         if (expr_contains_functionCall_with_Nonscalar_return::check(x.m_symbolic_value)) {
             ASR::expr_t** initializer = const_cast<ASR::expr_t**>(&x.m_symbolic_value);
+            replace_explicit_shape_inquiries(*initializer);
             replacer.current_expr = initializer;
             replacer.assignment_value = *initializer;
             replacer.replace_with_helper_function_call(*initializer);
@@ -1180,8 +1224,9 @@ public:
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_len));
             { // Same as `this->call_replacer_()`. We did in here to workaround. In general this needs a refactor.
+                replace_explicit_shape_inquiries(*current_expr);
                 replacer.current_expr = current_expr;
-                replacer.assignment_value = x.m_len;
+                replacer.assignment_value = *current_expr;
                 replacer.replace_with_helper_function_call(*current_expr);
             }
             current_expr = current_expr_copy;
