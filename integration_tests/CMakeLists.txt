@@ -4266,6 +4266,7 @@ RUN(NAME file_open_12 LABELS gfortran llvm)
 RUN(NAME file_open_13 LABELS gfortran llvm)
 RUN(NAME file_open_14 LABELS gfortran llvm)
 RUN(NAME file_open_15 LABELS gfortran llvm)
+RUN(NAME file_open_16 LABELS gfortran llvm)
 RUN(NAME file_stream_read_ahead_01 LABELS gfortran llvm)
 RUN(NAME file_stream_read_ahead_02 LABELS gfortran llvm)
 
