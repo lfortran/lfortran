@@ -3866,12 +3866,34 @@ public:
     // kept if the declared bounds or length of the object refer to anything
     // other than dummies, named constants, COMMON variables and
     // use-associated entities of the procedure (such as a host variable).
+    //
+    // The declared bounds and lengths of each local are replaced once and
+    // copied for each inquiry (`folded`). Where it is possible a replacement
+    // uses each declared expression once: SIZE and LEN are MAX(e, 0), and
+    // LBOUND and UBOUND of a dimension whose lower bound is 1 are 1 and
+    // MAX(e, 0). UBOUND of another dimension needs `e` twice, for its value
+    // and for the test that it is positive, so along a chain of locals whose
+    // bounds inquire about each other the size of a replacement can grow by
+    // a constant factor at each step. An inquiry whose replacement would
+    // exceed `max_replacement_size` nodes is therefore kept, which keeps the
+    // work linear in the size of the declarations. A dummy whose bounds
+    // still make an inquiry about a local is then not replaced in the
+    // signature (see forward_copies_with_saved_state in
+    // pass_array_by_data): such a procedure that has saved state, is
+    // declared by an interface body and is called through a dummy procedure
+    // or a procedure pointer keeps saved state of its own for those calls.
     class LocalInquiryFolder :
             public ASR::BaseExprReplacer<LocalInquiryFolder> {
         public:
             CommonVisitor &v;
+            // The declared bounds and lengths of locals, with their
+            // inquiries replaced, or nullptr if they cannot be.
+            std::map<ASR::expr_t*, ASR::expr_t*> &folded;
+            static constexpr size_t max_replacement_size = 1024;
 
-            LocalInquiryFolder(CommonVisitor &v_) : v{v_} {}
+            LocalInquiryFolder(CommonVisitor &v_,
+                    std::map<ASR::expr_t*, ASR::expr_t*> &folded_) :
+                v{v_}, folded{folded_} {}
 
             // Whether `e` refers to something other than dummies, named
             // constants, COMMON variables and use-associated entities of the
@@ -3894,6 +3916,33 @@ public:
                     }
             };
 
+            // The number of nodes of an expression.
+            class Size : public ASR::BaseWalkVisitor<Size> {
+                public:
+                    size_t n = 0;
+
+                    void visit_expr(const ASR::expr_t &x) {
+                        n++;
+                        ASR::BaseWalkVisitor<Size>::visit_expr(x);
+                    }
+            };
+
+            static bool too_large(ASR::expr_t *e) {
+                Size size;
+                size.visit_expr(*e);
+                return size.n > max_replacement_size;
+            }
+
+            // Whether `e` contains a function reference.
+            class Call : public ASR::BaseWalkVisitor<Call> {
+                public:
+                    bool found = false;
+
+                    void visit_FunctionCall(const ASR::FunctionCall_t &) {
+                        found = true;
+                    }
+            };
+
             // The local object of the current scope that `e` names, or
             // nullptr.
             ASR::Variable_t* local_object(ASR::expr_t *e) {
@@ -3911,16 +3960,28 @@ public:
             // of type `type`, with the inquiries about locals that it makes
             // replaced, or nullptr if it refers to anything else.
             ASR::expr_t* declared(ASR::expr_t *e, ASR::ttype_t *type) {
-                ASR::expr_t *result = copy(e);
-                ASR::expr_t **current_expr_copy = this->current_expr;
-                this->current_expr = &result;
-                this->replace_expr(result);
-                this->current_expr = current_expr_copy;
-                OtherReference other(v);
-                other.visit_expr(*result);
-                if (other.found) {
+                auto it = folded.find(e);
+                if (it == folded.end()) {
+                    // A declaration that inquires about itself is not
+                    // replaced.
+                    folded[e] = nullptr;
+                    ASR::expr_t *result = copy(e);
+                    ASR::expr_t **current_expr_copy = this->current_expr;
+                    this->current_expr = &result;
+                    this->replace_expr(result);
+                    this->current_expr = current_expr_copy;
+                    OtherReference other(v);
+                    other.visit_expr(*result);
+                    if (other.found || too_large(result)) {
+                        result = nullptr;
+                    }
+                    it = folded.find(e);
+                    it->second = result;
+                }
+                if (it->second == nullptr) {
                     return nullptr;
                 }
+                ASR::expr_t *result = copy(it->second);
                 return CastingUtil::perform_casting(result, type, v.al,
                     result->base.loc);
             }
@@ -3951,6 +4012,31 @@ public:
                     positive, otherwise, ASRUtils::expr_type(positive), nullptr));
             }
 
+            // max(0, `e`), which uses `e` once unless it contains a
+            // function reference: MAX of such arguments becomes a call of
+            // a function that the intrinsic function pass creates.
+            ASR::expr_t* nonnegative(ASR::expr_t *e) {
+                ASR::ttype_t *type = ASRUtils::expr_type(e);
+                const Location &loc = e->base.loc;
+                int64_t n;
+                if (ASRUtils::extract_value(ASRUtils::expr_value(e), n)) {
+                    return constant(std::max<int64_t>(n, 0), type, loc);
+                }
+                Call call;
+                call.visit_expr(*e);
+                if (call.found) {
+                    return if_positive(e, copy(e), constant(0, type, loc));
+                }
+                Vec<ASR::expr_t*> args;
+                args.reserve(v.al, 2);
+                args.push_back(v.al, e);
+                args.push_back(v.al, constant(0, type, loc));
+                return ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
+                    v.al, loc, static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::Max),
+                    args.p, args.size(), 0, type, nullptr));
+            }
+
             // The value that `bound` (or SIZE, if `size`) has for the
             // dimension `i` (0-based) of the explicit-shape array `dims`.
             ASR::expr_t* dimension_inquiry(ASR::dimension_t *dims, size_t i,
@@ -3960,35 +4046,32 @@ public:
                 if (extent == nullptr) {
                     return nullptr;
                 }
-                int64_t e;
-                bool constant_extent = ASRUtils::extract_value(
-                    ASRUtils::expr_value(extent), e);
                 if (size) {
-                    if (constant_extent) {
-                        return constant(std::max<int64_t>(e, 0), type, loc);
-                    }
-                    return if_positive(extent, copy(extent), constant(0, type, loc));
-                }
-                if (bound == ASR::arrayboundType::LBound) {
-                    ASR::expr_t *start = declared(dims[i].m_start, type);
-                    if (start == nullptr) {
-                        return nullptr;
-                    }
-                    return if_positive(extent, start, constant(1, type, loc));
+                    return nonnegative(extent);
                 }
                 ASR::expr_t *start = declared(dims[i].m_start, type);
                 if (start == nullptr) {
                     return nullptr;
                 }
                 int64_t s;
+                bool constant_start = ASRUtils::extract_value(
+                    ASRUtils::expr_value(start), s);
+                if (constant_start && s == 1) {
+                    if (bound == ASR::arrayboundType::LBound) {
+                        return constant(1, type, loc);
+                    }
+                    return nonnegative(extent);
+                }
+                if (bound == ASR::arrayboundType::LBound) {
+                    return if_positive(extent, start, constant(1, type, loc));
+                }
+                int64_t e;
                 ASR::expr_t *end;
                 ASRUtils::ASRBuilder b(v.al, loc);
-                if (!ASRUtils::extract_value(ASRUtils::expr_value(start), s)) {
+                if (!constant_start) {
                     end = b.Sub(b.Add(start, copy(extent)), constant(1, type, loc));
-                } else if (constant_extent) {
+                } else if (ASRUtils::extract_value(ASRUtils::expr_value(extent), e)) {
                     end = constant(s + e - 1, type, loc);
-                } else if (s == 1) {
-                    end = copy(extent);
                 } else {
                     end = b.Add(copy(extent), constant(s - 1, type, loc));
                 }
@@ -4052,16 +4135,23 @@ public:
                     return result;
                 }
                 // DIM is not constant: select the dimension it names.
-                ASRUtils::ExprStmtDuplicator duplicator(v.al);
                 ASR::expr_t *result = values.back();
                 for (size_t i = values.size() - 1; i-- > 0; ) {
-                    ASR::expr_t *dim_copy = duplicator.duplicate_expr(dim);
+                    ASR::expr_t *dim_copy = copy(dim);
                     ASR::expr_t *test = b.Eq(dim_copy, b.i_t(i + 1,
                         ASRUtils::expr_type(dim_copy)));
                     result = ASRUtils::EXPR(ASR::make_IfExp_t(v.al, loc, test,
                         values[i], result, type, nullptr));
                 }
                 return result;
+            }
+
+            // Replaces the current expression by `value`, unless it is
+            // nullptr or too large.
+            void replace_by(ASR::expr_t *value) {
+                if (value != nullptr && !too_large(value)) {
+                    *this->current_expr = value;
+                }
             }
 
             // Whether `e` refers to a local object of the current scope.
@@ -4104,11 +4194,8 @@ public:
 
             void replace_ArraySize(ASR::ArraySize_t *x) {
                 ASR::BaseExprReplacer<LocalInquiryFolder>::replace_ArraySize(x);
-                ASR::expr_t *value = array_inquiry(x->m_v, x->m_dim, true,
-                    ASR::arrayboundType::LBound, x->m_type, x->base.base.loc);
-                if (value != nullptr) {
-                    *this->current_expr = value;
-                }
+                replace_by(array_inquiry(x->m_v, x->m_dim, true,
+                    ASR::arrayboundType::LBound, x->m_type, x->base.base.loc));
             }
 
             void replace_ArrayBound(ASR::ArrayBound_t *x) {
@@ -4116,11 +4203,8 @@ public:
                 if (x->m_dim == nullptr) {
                     return;
                 }
-                ASR::expr_t *value = array_inquiry(x->m_v, x->m_dim, false,
-                    x->m_bound, x->m_type, x->base.base.loc);
-                if (value != nullptr) {
-                    *this->current_expr = value;
-                }
+                replace_by(array_inquiry(x->m_v, x->m_dim, false,
+                    x->m_bound, x->m_type, x->base.base.loc));
             }
 
             void replace_StringLen(ASR::StringLen_t *x) {
@@ -4156,16 +4240,26 @@ public:
                 if (len == nullptr) {
                     return;
                 }
-                int64_t n;
-                if (ASRUtils::extract_value(ASRUtils::expr_value(len), n)) {
-                    *this->current_expr = constant(std::max<int64_t>(n, 0), x->m_type,
-                        x->base.base.loc);
+                replace_by(nonnegative(len));
+            }
+
+            // Replaces the inquiries in `e`, which it can replace.
+            void replace_root(ASR::expr_t *&e) {
+                if (e == nullptr) {
                     return;
                 }
-                *this->current_expr = if_positive(len, copy(len),
-                    constant(0, x->m_type, x->base.base.loc));
+                ASR::expr_t **current_expr_copy = this->current_expr;
+                this->current_expr = &e;
+                this->replace_expr(e);
+                this->current_expr = current_expr_copy;
             }
     };
+
+    // The declared bounds and lengths of the locals of
+    // `folded_declarations_scope` with their inquiries replaced, see
+    // LocalInquiryFolder.
+    SymbolTable *folded_declarations_scope = nullptr;
+    std::map<ASR::expr_t*, ASR::expr_t*> folded_declarations;
 
     // `e`, a bound or a length of a dummy or of the result, with its
     // inquiries about local objects replaced, see LocalInquiryFolder.
@@ -4173,9 +4267,12 @@ public:
         if (e == nullptr) {
             return e;
         }
-        LocalInquiryFolder folder(*this);
-        folder.current_expr = &e;
-        folder.replace_expr(e);
+        if (folded_declarations_scope != current_scope) {
+            folded_declarations.clear();
+            folded_declarations_scope = current_scope;
+        }
+        LocalInquiryFolder folder(*this, folded_declarations);
+        folder.replace_root(e);
         return e;
     }
 
