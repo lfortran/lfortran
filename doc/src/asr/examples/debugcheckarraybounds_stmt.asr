@@ -148,6 +148,7 @@
               )
             ]
             :move_allocation false
+            :scalar_rhs false
           )
           (Assignment
             :target (Var

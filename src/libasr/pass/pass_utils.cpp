@@ -986,7 +986,7 @@ namespace LCompilers {
             add_extent_checks(al, checks, 0, target, 1, components[0]);
             return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
                 target, components.p, components.size(), checks.p, checks.size(),
-                move_allocation));
+                move_allocation, false));
         }
 
         ASR::expr_t* make_shape_differs(Allocator &al, const Location &loc,

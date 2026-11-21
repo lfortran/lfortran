@@ -4646,7 +4646,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         components.push_back(al, result);
         return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
             duplicator.duplicate_expr(matmul_target), components.p,
-            components.size(), checks.p, checks.size(), false));
+            components.size(), checks.p, checks.size(), false, false));
     }
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {

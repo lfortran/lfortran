@@ -1,4 +1,4 @@
-runtime error: Array 'r(1)%d' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.
+runtime error: Array 'r(1)%d' is not allocated. Allocate it manually.
  --> tests/errors/array_bounds_check_29.f90:9:5
   |
 9 |     r(1)%d = 5
