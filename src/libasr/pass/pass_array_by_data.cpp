@@ -192,9 +192,14 @@ static bool is_internal_procedure(SymbolTable* scope, ASR::symbol_t* sym) {
 // An internal procedure that the signature needs, as the interface of a
 // dummy procedure or of a procedure pointer component, contributes only its
 // own signature, which `interfaces` maps it to: a procedure whose body was
-// replaced keeps it as an interface (make_interface).
+// replaced keeps it as an interface (make_interface). That interface is
+// never evaluated, so a variable that only its declarations refer to, such
+// as a host variable in a bound, is kept without its value mattering, as
+// long as it is not a derived type object (which would be initialized and
+// finalized).
 static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& closure,
-        std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>& interfaces) {
+        std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>>& interfaces,
+        bool evaluated_signature = true) {
     std::vector<ASR::symbol_t*> pending;
     for (size_t i = 0; i < f->n_args; i++) {
         pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
@@ -203,13 +208,22 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
         pending.push_back(ASR::down_cast<ASR::Var_t>(f->m_return_var)->m_v);
     }
     closure.insert(pending.begin(), pending.end());
+    // The symbols that only the signatures of interfaces need.
+    std::set<ASR::symbol_t*> unevaluated;
+    if (!evaluated_signature) unevaluated.insert(pending.begin(), pending.end());
     while (!pending.empty()) {
         ASR::symbol_t* sym = pending.back();
         pending.pop_back();
         std::vector<ASR::symbol_t*> references;
+        // Neither the signature of an interface nor the type of a
+        // procedure variable is evaluated.
+        bool evaluated = !unevaluated.count(sym) && !(ASR::is_a<ASR::Variable_t>(*sym) &&
+            ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                ASR::down_cast<ASR::Variable_t>(sym)->m_type)));
         if (interfaces.count(sym)) {
             // The internal procedure's signature can refer to symbols of
             // `f` by host association.
+            evaluated = false;
             for (ASR::symbol_t* item : interfaces[sym]) {
                 SymbolReferences item_references;
                 item_references.visit_symbol(*item);
@@ -223,13 +237,25 @@ static bool signature_closure(ASR::Function_t* f, std::set<ASR::symbol_t*>& clos
         }
         for (ASR::symbol_t* reference : references) {
             ASR::symbol_t* needed = symbol_of_scope(f->m_symtab, reference);
-            if (!needed || !closure.insert(needed).second) continue;
-            if (is_internal_procedure(f->m_symtab, needed)) {
+            if (!needed) continue;
+            if (!closure.insert(needed).second) {
+                // Reached again by a declaration that is evaluated.
+                if (!evaluated || !unevaluated.erase(needed)) continue;
+            } else if (is_internal_procedure(f->m_symtab, needed)) {
                 if (!signature_closure(ASR::down_cast<ASR::Function_t>(needed),
-                        interfaces[needed], interfaces)) return false;
-            } else if (!is_declaration_only(needed)) {
-                return false;
+                        interfaces[needed], interfaces, false)) return false;
+                pending.push_back(needed);
+                continue;
             }
+            if (!is_declaration_only(needed)) {
+                if (evaluated || !ASR::is_a<ASR::Variable_t>(*needed)) return false;
+                ASR::ttype_t* type = ASR::down_cast<ASR::Variable_t>(needed)->m_type;
+                if (!ASRUtils::is_pointer(type) && !ASRUtils::is_allocatable(type) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+                    return false;
+                }
+            }
+            if (!evaluated) unevaluated.insert(needed);
             pending.push_back(needed);
         }
     }
