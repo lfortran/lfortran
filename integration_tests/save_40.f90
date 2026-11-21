@@ -41,9 +41,9 @@ end subroutine
 subroutine save_39_t(a, n, x)
 double precision, intent(in) :: a(:)
 integer, intent(in) :: n
-integer :: w(n+1)
+integer :: w(-1:1)
 save
-double precision, intent(inout) :: x(ubound(w, 1))
+double precision, intent(inout) :: x(ubound(w, 1) + n)
 integer :: k = 0
 k = k + 1
 x(1) = k + size(a)
