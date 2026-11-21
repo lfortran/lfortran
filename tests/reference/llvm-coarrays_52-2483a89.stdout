@@ -186,7 +186,7 @@ declare void @__module_prif_prif_get(i32*, %prif_coarray_handle.8*, i64*, void*,
 
 declare void @__module_prif_prif_init(i32*)
 
-declare void @__module_prif_prif_initial_team_index_integer____1(%prif_coarray_handle.8*, i64*, i32*, i32*, i32*, i32*)
+declare void @__module_prif_prif_initial_team_index(%prif_coarray_handle.8*, %array.1.0*, i32*, i32*, i32*)
 
 declare void @__module_prif_prif_stop(i8*, i32*, i32*, i8*, i32*, i64)
 
@@ -221,6 +221,7 @@ define internal i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray
   %call_arg_value2 = alloca i32, align 4
   %call_arg_value1 = alloca i64, align 8
   %call_arg_value = alloca i32, align 4
+  %array_descriptor = alloca %array.1.0, align 8
   %__libasr_created_variable_3 = alloca %string_descriptor, align 8
   %__libasr_created_variable_2 = alloca %string_descriptor, align 8
   %offset_value = alloca i64, align 8
@@ -245,18 +246,44 @@ define internal i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_3, align 8
   %image_num = alloca i32, align 4
   %result = alloca i32, align 4
+  %11 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 0
+  store i64* %sub_value, i64** %11, align 8
+  %12 = load i32, i32* %__1sub, align 1
+  %13 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 7
+  store i64 0, i64* %13, align 8
+  %14 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 3
+  store i8 1, i8* %14, align 1
+  %15 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 8
+  %16 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %15, i32 0, i32 0
+  %17 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %16, i32 0
+  %18 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 2
+  %19 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 0
+  %20 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 1
+  %21 = sext i32 %12 to i64
+  %22 = icmp slt i64 %21, 0
+  %23 = select i1 %22, i64 0, i64 %21
+  store i64 1, i64* %18, align 8
+  store i64 1, i64* %19, align 8
+  store i64 %23, i64* %20, align 8
+  %24 = mul i64 1, %23
+  %25 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 1
+  store i64 8, i64* %25, align 8
+  %26 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 4
+  store i8 10, i8* %26, align 1
+  %27 = getelementptr %array.1.0, %array.1.0* %array_descriptor, i32 0, i32 5
+  store i8 0, i8* %27, align 1
   store i32 0, i32* %call_arg_value, align 4
-  call void @__module_prif_prif_initial_team_index_integer____1(%prif_coarray_handle.8* %coarray_handle, i64* %sub_value, i32* %__1sub, i32* %image_num, i32* %__libasr_created_variable_, i32* %call_arg_value)
-  %11 = bitcast i32* %result to void*
+  call void @__module_prif_prif_initial_team_index(%prif_coarray_handle.8* %coarray_handle, %array.1.0* %array_descriptor, i32* %image_num, i32* %__libasr_created_variable_, i32* %call_arg_value)
+  %28 = bitcast i32* %result to void*
   store i64 4, i64* %call_arg_value1, align 8
   store i32 0, i32* %call_arg_value, align 4
-  %12 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 0
-  %13 = load i8*, i8** %12, align 8
+  %29 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 0
+  %30 = load i8*, i8** %29, align 8
   store i32 0, i32* %call_arg_value2, align 4
   store i32 0, i32* %call_arg_value3, align 4
   store i64 0, i64* %call_arg_value4, align 8
-  %14 = load i64, i64* %call_arg_value4, align 8
-  call void @__module_prif_prif_get(i32* %image_num, %prif_coarray_handle.8* %coarray_handle, i64* %offset_value, void* %11, i64* %call_arg_value1, i32* %__libasr_created_variable_1, i32* %call_arg_value, i8* %13, i32* %call_arg_value2, %string_descriptor* %__libasr_created_variable_3, i32* %call_arg_value3, i64 %14)
+  %31 = load i64, i64* %call_arg_value4, align 8
+  call void @__module_prif_prif_get(i32* %image_num, %prif_coarray_handle.8* %coarray_handle, i64* %offset_value, void* %28, i64* %call_arg_value1, i32* %__libasr_created_variable_1, i32* %call_arg_value, i8* %30, i32* %call_arg_value2, %string_descriptor* %__libasr_created_variable_3, i32* %call_arg_value3, i64 %31)
   br label %return
 
 return:                                           ; preds = %.entry
@@ -266,17 +293,17 @@ return:                                           ; preds = %.entry
   br label %Finalize_Variable___libasr_created_variable_2
 
 Finalize_Variable___libasr_created_variable_2:    ; preds = %"FINALIZE_SYMTABLE_lcompilers_prif_get_integer(4)_integer____1"
-  %15 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 0
-  %16 = load i8*, i8** %15, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %16)
+  %32 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_2, i32 0, i32 0
+  %33 = load i8*, i8** %32, align 8
+  call void @_lfortran_free_alloc(i8* %0, i8* %33)
   br label %Finalize_Variable___libasr_created_variable_3
 
 Finalize_Variable___libasr_created_variable_3:    ; preds = %Finalize_Variable___libasr_created_variable_2
-  %17 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_3, i32 0, i32 0
-  %18 = load i8*, i8** %17, align 8
-  call void @_lfortran_free_alloc(i8* %0, i8* %18)
-  %19 = load i32, i32* %result, align 4
-  ret i32 %19
+  %34 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_3, i32 0, i32 0
+  %35 = load i8*, i8** %34, align 8
+  call void @_lfortran_free_alloc(i8* %0, i8* %35)
+  %36 = load i32, i32* %result, align 4
+  ret i32 %36
 }
 
 define internal i32 @lcompilers_prif_this_image() {
