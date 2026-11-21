@@ -3812,6 +3812,31 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     debug_inserted.insert(&x);
                 }
             }
+        } else if (bounds_checking && !x.m_move_allocation &&
+            debug_inserted.find(&x) == debug_inserted.end() &&
+            ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            // Scalar assignment to an unallocated allocatable array is invalid;
+            // check allocation before generating the loop whose bounds read
+            // from the target descriptor.
+            ASR::expr_t* underlying_target =
+                ASRUtils::get_past_array_physical_cast(x.m_target);
+            if ((ASR::is_a<ASR::Var_t>(*underlying_target) ||
+                 ASR::is_a<ASR::StructInstanceMember_t>(*underlying_target)) &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(underlying_target)) &&
+                ASRUtils::is_array(ASRUtils::expr_type(underlying_target)) &&
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(underlying_target)) ==
+                    ASR::array_physical_typeType::DescriptorArray) {
+                ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                ASR::expr_t* d_target = expr_duplicator.duplicate_expr(underlying_target);
+                Vec<ASR::expr_t*> check_components;
+                check_components.reserve(al, 1);
+                check_components.push_back(al, expr_duplicator.duplicate_expr(underlying_target));
+                pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+                    al, loc, d_target, check_components.p, check_components.size(),
+                    nullptr, 0, x.m_move_allocation)));
+                debug_inserted.insert(&x);
+            }
         }
 
         // Don't generate a loop for a move assignment
