@@ -33,7 +33,8 @@ public:
     // argument rather than source lines (no fixed-form comment lines there)
     Result<std::string> run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
-        bool macro_expansion=false) const;
+        bool macro_expansion=false,
+        const std::string *logical_filename=nullptr) const;
 
     // Return the current token's location
     void token_loc(Location &loc, unsigned char *tok, unsigned char* cur,
@@ -50,7 +51,8 @@ private:
     Result<std::string> run_spliced(const std::string &input,
         LocationManager &lm, cpp_symtab &macro_definitions,
         diag::Diagnostics &diagnostics, bool macro_expansion,
-        const std::vector<uint32_t> *newlines) const;
+        const std::vector<uint32_t> *newlines,
+        const std::string &filename) const;
 };
 
 std::string function_like_macro_expansion(

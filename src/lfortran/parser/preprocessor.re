@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <charconv>
 #include <iostream>
 #include <map>
 
@@ -36,6 +37,46 @@ std::string format_time(const std::tm &tm) {
     std::snprintf(buffer, sizeof(buffer), "%02d:%02d:%02d",
         tm.tm_hour, tm.tm_min, tm.tm_sec);
     return std::string(buffer);
+}
+
+bool parse_line_control(const std::string &text, bool marker,
+        uint32_t &line, std::string &filename) {
+    const char *cur = text.data(), *end = cur + text.size();
+    auto skip_space = [&]() {
+        while (cur != end && std::isspace(static_cast<unsigned char>(*cur))) cur++;
+    };
+    skip_space();
+    auto number = std::from_chars(cur, end, line);
+    if (number.ec != std::errc()) return false;
+    cur = number.ptr;
+    if (cur != end && !std::isspace(static_cast<unsigned char>(*cur))) return false;
+    skip_space();
+    std::string new_filename = filename;
+    bool has_filename = cur != end && *cur == '"';
+    if (has_filename) {
+        const char *start = ++cur;
+        while (cur != end && *cur != '"') {
+            if (*cur == '\\') {
+                cur++;
+                if (cur == end) return false;
+            }
+            cur++;
+        }
+        if (cur == end) return false;
+        new_filename.assign(start, cur);
+        cur++;
+        if (cur != end && !std::isspace(static_cast<unsigned char>(*cur))) return false;
+        skip_space();
+    }
+    if (cur != end && (!marker || !has_filename)) return false;
+    while (cur != end) {
+        if (!std::isdigit(static_cast<unsigned char>(*cur))) return false;
+        while (cur != end && std::isdigit(static_cast<unsigned char>(*cur))) cur++;
+        if (cur != end && !std::isspace(static_cast<unsigned char>(*cur))) return false;
+        skip_space();
+    }
+    filename = new_filename;
+    return true;
 }
 
 } // namespace
@@ -405,12 +446,14 @@ void unsplice_location(Location &loc, const SpliceMap &splices) {
 
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
-        bool macro_expansion) const {
+        bool macro_expansion, const std::string *logical_filename) const {
+    const std::string &filename = logical_filename
+        ? *logical_filename : lm.files.back().in_filename;
     std::string spliced;
     SpliceMap splices;
     if (macro_expansion || !splice_lines(input, spliced, splices)) {
         return run_spliced(input, lm, macro_definitions, diagnostics,
-            macro_expansion, nullptr);
+            macro_expansion, nullptr, filename);
     }
     size_t n_newlines0 = lm.files.back().in_newlines0.size();
     size_t n_newlines = lm.files.back().in_newlines.size();
@@ -418,7 +461,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
     size_t n_intervals = lm.files.back().in_size0.size();
     size_t n_diagnostics = diagnostics.diagnostics.size();
     Result<std::string> res = run_spliced(spliced, lm, macro_definitions,
-        diagnostics, macro_expansion, &splices.newlines);
+        diagnostics, macro_expansion, &splices.newlines, filename);
     for (size_t i = n_diagnostics; i < diagnostics.diagnostics.size(); i++) {
         for (auto &label : diagnostics.diagnostics[i].labels) {
             for (auto &span : label.spans) {
@@ -492,24 +535,39 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
 Result<std::string> CPreprocessor::run_spliced(const std::string &input,
         LocationManager &lm, cpp_symtab &macro_definitions,
         diag::Diagnostics &diagnostics, bool macro_expansion,
-        const std::vector<uint32_t> *newlines) const {
+        const std::vector<uint32_t> *newlines,
+        const std::string &filename) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
     bool fixed_form_comments = compiler_options.fixed_form && !macro_expansion;
     unsigned char *string_start=(unsigned char*)(&input[0]);
     unsigned char *cur = string_start;
     std::string output;
     lm.files.back().preprocessor = true;
-    if (newlines) {
-        lm.files.back().in_newlines0.insert(lm.files.back().in_newlines0.end(),
-            newlines->begin(), newlines->end());
-    } else {
-        lm.get_newlines(input, lm.files.back().in_newlines0);
+    std::vector<uint32_t> input_newlines;
+    if (!newlines) {
+        lm.get_newlines(input, input_newlines);
+        newlines = &input_newlines;
     }
+    lm.files.back().in_newlines0.insert(lm.files.back().in_newlines0.end(),
+        newlines->begin(), newlines->end());
     lm.files.back().out_start0.push_back(0);
     lm.files.back().in_start0.push_back(0);
     std::vector<ConditionalDirective> ConditionalDirective_stack;
     bool branch_enabled = true;
-    macro_definitions["__FILE__"].expansion = "\"" + lm.files.back().in_filename + "\"";
+    // Logical locations affect builtins, not physical diagnostic mappings or
+    // the directory used to look up include files.
+    std::string logical_filename = filename;
+    int64_t line_offset = 0;
+    auto physical_line_at = [&](unsigned char *pos) {
+        uint32_t line, col;
+        LocationManager::file_pos_to_linecol(*newlines,
+            source_offset(pos - string_start), line, col);
+        return line;
+    };
+    auto logical_line_at = [&](unsigned char *pos) {
+        return macro_expansion ? lm.files.back().current_line
+            : static_cast<uint32_t>(physical_line_at(pos) + line_offset);
+    };
     try {
     for (;;) {
         unsigned char *tok = cur;
@@ -581,6 +639,37 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
             "#" whitespace? (comment whitespace?)* newline {
                 if (!branch_enabled) continue;
                 output.append("\n");
+                continue;
+            }
+            "#" whitespace? @t1 ("line" whitespace [^\n\x00]* | digits [^\n\x00]*) @t2 newline {
+                if (!branch_enabled) continue;
+                bool marker = std::isdigit(*t1);
+                std::string control = token(marker ? t1 : t1 + 4, t2);
+                std::string expanded = control;
+                if (!marker) {
+                    LocationManager lm_tmp = lm;
+                    lm_tmp.files.back().current_line = logical_line_at(tok);
+                    Result<std::string> res = run(control, lm_tmp,
+                        macro_definitions, diagnostics, true, &logical_filename);
+                    if (!res.ok) return res.error;
+                    expanded = res.result;
+                }
+                uint32_t line;
+                std::string next_filename = logical_filename;
+                if (parse_line_control(expanded, marker, line, next_filename)) {
+                    line_offset = static_cast<int64_t>(line) - physical_line_at(cur);
+                    logical_filename = next_filename;
+                }
+                if (expanded == control) {
+                    output.append(token(tok, cur));
+                } else {
+                    interval_end_type_0(lm, output.size(), tok - string_start);
+                    output.append(token(tok, t1 + 4));
+                    output.append(expanded);
+                    output.append("\n");
+                    interval_end(lm, output.size(), cur - string_start,
+                        cur - tok, 1);
+                }
                 continue;
             }
             "#" whitespace? "define" whitespace @t1 name @t2 (whitespace? | whitespace @t3 [^\n\x00]* @t4 ) newline  {
@@ -854,7 +943,8 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                 if (include.size() == 0 || include[include.size()-1] != '\n') {
                     include.append("\n");
                 }
-                Result<std::string> res = run(include, lm_tmp, macro_definitions, diagnostics);
+                Result<std::string> res = run(include, lm_tmp, macro_definitions,
+                    diagnostics, false, &filename);
                 if (res.ok) {
                     include = res.result;
                 } else {
@@ -907,12 +997,9 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                         std::vector<std::string> expanded_args = args;
                         for (size_t i = 0; i < args.size(); i++) {
                             LocationManager lm_tmp = lm;
-                            uint32_t pos = source_offset(cur - string_start);
-                            uint32_t line, col;
-                            std::string filename;
-                            lm.pos_to_linecol(pos, line, col, filename);
-                            lm_tmp.files.back().current_line = line;
-                            Result<std::string> res = run(expanded_args[i], lm_tmp, macro_definitions, diagnostics, true);
+                            lm_tmp.files.back().current_line = logical_line_at(cur);
+                            Result<std::string> res = run(expanded_args[i], lm_tmp,
+                                macro_definitions, diagnostics, true, &logical_filename);
                             if (res.ok) {
                                 expanded_args[i] = res.result;
                             } else {
@@ -926,16 +1013,9 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                             expanded_args);
                     } else {
                         if (t == "__LINE__") {
-                            uint32_t line;
-                            if (lm.files.back().current_line == 0) {
-                                uint32_t pos = source_offset(cur-string_start);
-                                uint32_t col;
-                                std::string filename;
-                                lm.pos_to_linecol(pos, line, col, filename);
-                            } else {
-                                line = lm.files.back().current_line;
-                            }
-                            expansion = std::to_string(line);
+                            expansion = std::to_string(logical_line_at(cur));
+                        } else if (t == "__FILE__") {
+                            expansion = "\"" + logical_filename + "\"";
                         } else {
                             expansion = macro_definitions[t].expansion;
                         }
@@ -948,13 +1028,9 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                         expansion2 = expansion;
                         LocationManager lm_tmp = lm; // Make a copy
 
-                        uint32_t pos = source_offset(cur-string_start);
-                        uint32_t line, col;
-                        std::string filename;
-                        lm.pos_to_linecol(pos, line, col, filename);
-                        lm_tmp.files.back().current_line = line;
-
-                        Result<std::string> res = run(expansion2, lm_tmp, macro_definitions, diagnostics, true);
+                        lm_tmp.files.back().current_line = logical_line_at(cur);
+                        Result<std::string> res = run(expansion2, lm_tmp,
+                            macro_definitions, diagnostics, true, &logical_filename);
                         if (res.ok) {
                             expansion = res.result;
                         } else {
