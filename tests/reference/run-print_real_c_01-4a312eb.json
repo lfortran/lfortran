@@ -1,0 +1,13 @@
+{
+    "basename": "run-print_real_c_01-4a312eb",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/print_real_c_01.f90",
+    "infile_hash": "8d4680ced7ec19447c7972ceca963d7eb2a8b8b0606ff1cbb09f5dbe",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-print_real_c_01-4a312eb.stdout",
+    "stdout_hash": "dc3586a44aa43368376546b5dfe14c686ac19180c4455f89905bb739",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

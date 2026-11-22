@@ -42,12 +42,44 @@ int main(int argc, char* argv[])
     x =   1.00000000000000000e+00;
     y =   2.00000000000000000e+00;
     z = func1(x, y);
-    printf("%s%s%f\n", "6.0 == ", " ", z);
+    {
+        const char *__lfortran_print_item0_data = "6.0 == ";
+        struct { const char *data; int64_t len; } __lfortran_print_item0 = { __lfortran_print_item0_data, (int64_t) strlen(__lfortran_print_item0_data) };
+        float __lfortran_print_item1 = z;
+        int64_t __lfortran_print_len;
+        char *__lfortran_print = _lcompilers_string_format_fortran(_lfortran_get_default_allocator(), NULL, 0, "S-DESC-K1,R4", &__lfortran_print_len, 0, 0, 0, 0, 0, 0, 0, 0, NULL, (void *) &__lfortran_print_item0, (void *) &__lfortran_print_item1);
+        printf("%.*s\n", (int) __lfortran_print_len, __lfortran_print);
+        ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), __lfortran_print);
+    }
     z = func1(x, y);
-    printf("%s%s%f\n", "7.0 == ", " ", z);
+    {
+        const char *__lfortran_print_item0_data = "7.0 == ";
+        struct { const char *data; int64_t len; } __lfortran_print_item0 = { __lfortran_print_item0_data, (int64_t) strlen(__lfortran_print_item0_data) };
+        float __lfortran_print_item1 = z;
+        int64_t __lfortran_print_len;
+        char *__lfortran_print = _lcompilers_string_format_fortran(_lfortran_get_default_allocator(), NULL, 0, "S-DESC-K1,R4", &__lfortran_print_len, 0, 0, 0, 0, 0, 0, 0, 0, NULL, (void *) &__lfortran_print_item0, (void *) &__lfortran_print_item1);
+        printf("%.*s\n", (int) __lfortran_print_len, __lfortran_print);
+        ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), __lfortran_print);
+    }
     z = func2(x, y);
-    printf("%s%s%f\n", "6.0 == ", " ", z);
+    {
+        const char *__lfortran_print_item0_data = "6.0 == ";
+        struct { const char *data; int64_t len; } __lfortran_print_item0 = { __lfortran_print_item0_data, (int64_t) strlen(__lfortran_print_item0_data) };
+        float __lfortran_print_item1 = z;
+        int64_t __lfortran_print_len;
+        char *__lfortran_print = _lcompilers_string_format_fortran(_lfortran_get_default_allocator(), NULL, 0, "S-DESC-K1,R4", &__lfortran_print_len, 0, 0, 0, 0, 0, 0, 0, 0, NULL, (void *) &__lfortran_print_item0, (void *) &__lfortran_print_item1);
+        printf("%.*s\n", (int) __lfortran_print_len, __lfortran_print);
+        ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), __lfortran_print);
+    }
     z = func2(x, y);
-    printf("%s%s%f\n", "8.0 == ", " ", z);
+    {
+        const char *__lfortran_print_item0_data = "8.0 == ";
+        struct { const char *data; int64_t len; } __lfortran_print_item0 = { __lfortran_print_item0_data, (int64_t) strlen(__lfortran_print_item0_data) };
+        float __lfortran_print_item1 = z;
+        int64_t __lfortran_print_len;
+        char *__lfortran_print = _lcompilers_string_format_fortran(_lfortran_get_default_allocator(), NULL, 0, "S-DESC-K1,R4", &__lfortran_print_len, 0, 0, 0, 0, 0, 0, 0, 0, NULL, (void *) &__lfortran_print_item0, (void *) &__lfortran_print_item1);
+        printf("%.*s\n", (int) __lfortran_print_len, __lfortran_print);
+        ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), __lfortran_print);
+    }
     return 0;
 }
