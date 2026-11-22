@@ -269,7 +269,8 @@ With `--cpp`, `#line <number> ["filename"]` and numeric line markers
 (`# <number> ["filename"]`) set the logical location used by `__LINE__` and
 `__FILE__`. Numeric markers can also have flags after the filename. The number
 applies to the following source line; omitting the filename keeps the current
-logical name.
+logical name. Filename operands are C string literals: escapes such as `\056`
+and `\x2E` are decoded before updating the logical name.
 These locations also apply inside macro expansions. An included file has its
 own logical location, and returning from it restores the including file's
 location. Logical filenames do not change include search paths. This controls

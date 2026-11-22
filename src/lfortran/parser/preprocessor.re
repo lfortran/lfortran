@@ -39,6 +39,58 @@ std::string format_time(const std::tm &tm) {
     return std::string(buffer);
 }
 
+bool parse_line_filename(const char *&cur, const char *end, std::string &filename) {
+    cur++;
+    filename.clear();
+    while (cur != end && *cur != '"') {
+        char ch = *cur++;
+        if (ch == '\\') {
+            if (cur == end) return false;
+            ch = *cur++;
+            if (ch >= '0' && ch <= '7') {
+                unsigned int value = ch - '0';
+                for (int i = 1; i < 3 && cur != end && *cur >= '0' && *cur <= '7'; i++) {
+                    value = 8 * value + (*cur++ - '0');
+                }
+                ch = static_cast<char>(value);
+            } else if (ch == 'x' || ch == 'u' || ch == 'U') {
+                const char *escape_end = end;
+                if (ch != 'x') {
+                    int digits = ch == 'u' ? 4 : 8;
+                    if (end - cur < digits) return false;
+                    escape_end = cur + digits;
+                }
+                uint32_t value;
+                auto number = std::from_chars(cur, escape_end, value, 16);
+                if (number.ec != std::errc()
+                    || (ch != 'x' && number.ptr != escape_end)) return false;
+                cur = number.ptr;
+                if (ch == 'x') {
+                    ch = static_cast<char>(value);
+                } else {
+                    if (value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff)) return false;
+                    utf8_encode_codepoint(filename, value);
+                    continue;
+                }
+            } else {
+                switch (ch) {
+                    case 'a': ch = '\a'; break;
+                    case 'b': ch = '\b'; break;
+                    case 'f': ch = '\f'; break;
+                    case 'n': ch = '\n'; break;
+                    case 'r': ch = '\r'; break;
+                    case 't': ch = '\t'; break;
+                    case 'v': ch = '\v'; break;
+                }
+            }
+        }
+        filename += ch;
+    }
+    if (cur == end) return false;
+    cur++;
+    return true;
+}
+
 bool parse_line_control(const std::string &text, bool marker,
         uint32_t &line, std::string &filename) {
     const char *cur = text.data(), *end = cur + text.size();
@@ -54,17 +106,7 @@ bool parse_line_control(const std::string &text, bool marker,
     std::string new_filename = filename;
     bool has_filename = cur != end && *cur == '"';
     if (has_filename) {
-        const char *start = ++cur;
-        while (cur != end && *cur != '"') {
-            if (*cur == '\\') {
-                cur++;
-                if (cur == end) return false;
-            }
-            cur++;
-        }
-        if (cur == end) return false;
-        new_filename.assign(start, cur);
-        cur++;
+        if (!parse_line_filename(cur, end, new_filename)) return false;
         if (cur != end && !std::isspace(static_cast<unsigned char>(*cur))) return false;
         skip_space();
     }
@@ -1015,7 +1057,8 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                         if (t == "__LINE__") {
                             expansion = std::to_string(logical_line_at(cur));
                         } else if (t == "__FILE__") {
-                            expansion = "\"" + logical_filename + "\"";
+                            expansion = "\"" + replace(logical_filename,
+                                R"([\\"])", R"(\$&)") + "\"";
                         } else {
                             expansion = macro_definitions[t].expansion;
                         }
