@@ -1,0 +1,24 @@
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+
+
+
+// Implementations
+int main(int argc, char* argv[])
+{
+    _lpython_set_argv(argc, argv);
+    bool f;
+    bool l;
+    l = true;
+    f = false;
+    printf("%s\n", (l) ? "T" : "F");
+    printf("%s\n", (f) ? "T" : "F");
+    printf("%s%s%d\n", (l) ? "T" : "F", " ", 5);
+    printf("%s%s%s%s%s\n", (l) ? "T" : "F", " ", (f) ? "T" : "F", " ", (l) ? "T" : "F");
+    return 0;
+}

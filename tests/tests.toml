@@ -2344,6 +2344,11 @@ run = true
 filename = "../integration_tests/print_12.f90"
 run = true
 
+# The C backend prints a logical as T or F, not as the integer 1 or 0.
+[[test]]
+filename = "../integration_tests/print_logical_c_01.f90"
+c = true
+
 [[test]]
 filename = "../integration_tests/read_40.f90"
 run = true
