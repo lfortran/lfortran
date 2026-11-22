@@ -136,21 +136,6 @@ static bool may_copy(ASR::Function_t* x) {
 }
 
 /*
-The by-data copy of a procedure is a private optimization, never a
-contract. The procedure's own name always stays its complete entry, with
-the descriptor ABI. Only a direct call that sees the definition (in the same
-translation unit, or of a module procedure, whose callers make the same copy
-from the same module) calls the copy. Calls through an interface body, a
-procedure pointer or a dummy procedure, and references to the procedure as
-a value, use the procedure itself. So an interface body, which has no
-definition, is never copied.
-*/
-static bool may_copy(ASR::Function_t* x) {
-    return ASRUtils::get_FunctionType(x)->m_deftype ==
-            ASR::deftypeType::Implementation;
-}
-
-/*
 A device procedure is transformed in place (see proc2inplace below), so a
 dummy it takes by data is taken that way from every caller, and addressed
 as contiguous. A caller that cannot redirect a call to a copy has no

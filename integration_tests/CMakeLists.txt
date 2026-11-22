@@ -5744,8 +5744,6 @@ RUN(NAME save_46 LABELS gfortran llvm)
 RUN(NAME save_47 LABELS gfortran llvm)
 RUN(NAME save_48 LABELS gfortran llvm EXTRAFILES save_48b.f90)
 RUN(NAME save_49 LABELS gfortran llvm EXTRAFILES save_49b.f90 EXTRA_ARGS --separate-compilation)
-RUN(NAME save_46 LABELS gfortran llvm)
-RUN(NAME save_47 LABELS gfortran llvm)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
