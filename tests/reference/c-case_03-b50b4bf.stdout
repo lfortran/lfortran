@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     if (marks >= 40 + b) {
         printf("%s\n","Pass!");
     }
-    else if (0 <= marks <= 39 - a) {
+    else if ((marks >= 0 && marks <= 39 - a)) {
         printf("%s\n","Failed!");
     }
     else {

@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
     if (marks_fixed >= 40 + bp) {
         printf("%s\n","Pass!");
     }
-    else if (0 <= marks_fixed <= 39 - ap) {
+    else if ((marks_fixed >= 0 && marks_fixed <= 39 - ap)) {
         printf("%s\n","Failed!");
     }
     else {

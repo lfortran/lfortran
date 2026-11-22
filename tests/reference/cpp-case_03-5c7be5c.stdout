@@ -43,7 +43,7 @@ std::cout<< "Invalid marks"<<std::endl;
     if (marks >= 40 + b) {
 std::cout<< "Pass!"<<std::endl;
     }
-    else if (0 <= marks <= 39 - a) {
+    else if ((marks >= 0 && marks <= 39 - a)) {
 std::cout<< "Failed!"<<std::endl;
     }
     else {
