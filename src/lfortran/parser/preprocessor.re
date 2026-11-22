@@ -101,13 +101,12 @@ bool parse_line_control(const std::string &text, bool marker,
     auto number = std::from_chars(cur, end, line);
     if (number.ec != std::errc()) return false;
     cur = number.ptr;
-    if (cur != end && !std::isspace(static_cast<unsigned char>(*cur))) return false;
+    if (cur != end && *cur != '"' && !std::isspace(static_cast<unsigned char>(*cur))) return false;
     skip_space();
     std::string new_filename = filename;
     bool has_filename = cur != end && *cur == '"';
     if (has_filename) {
         if (!parse_line_filename(cur, end, new_filename)) return false;
-        if (cur != end && !std::isspace(static_cast<unsigned char>(*cur))) return false;
         skip_space();
     }
     if (cur != end && (!marker || !has_filename)) return false;
