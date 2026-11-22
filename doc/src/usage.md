@@ -279,6 +279,8 @@ quoting, including escaped quotes; numeric-marker operands are not expanded.
 Builtins in continued directives retain their operand locations, including
 lines crossed by block comments.
 Newlines in logical filenames are re-escaped when emitting `__FILE__`.
+Generated filename strings remain single tokens during macro rescanning;
+macro-like text inside them is not expanded.
 These locations also apply inside macro expansions. An included file has its
 own logical location, and returning from it restores the including file's
 location. Logical filenames do not change include search paths. This controls

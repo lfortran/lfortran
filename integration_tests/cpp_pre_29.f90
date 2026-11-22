@@ -35,4 +35,8 @@ if (__LINE__ /= 102) error stop 7
 #line \
 __LINE__
 if (__LINE__ /= 2) error stop 8
+#line 110 "macro-comment.f90"
+#line ID/* spanning
+comment */(__LINE__)
+if (__LINE__ /= 111) error stop 9
 end program
