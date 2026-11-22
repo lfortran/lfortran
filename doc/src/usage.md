@@ -275,6 +275,8 @@ the line number and the opening filename quote is optional. C block comments
 separate directive tokens, but remain literal inside quoted filenames.
 Standard `#line` operands support macro expansion using C string-literal
 quoting, including escaped quotes; numeric-marker operands are not expanded.
+Builtins in continued directives retain their operand locations, including
+lines crossed by block comments.
 Newlines in logical filenames are re-escaped when emitting `__FILE__`.
 These locations also apply inside macro expansions. An included file has its
 own logical location, and returning from it restores the including file's

@@ -54,6 +54,8 @@ private:
     // Preprocess `input` in which backslash-newline sequences have already
     // been spliced (called by `run`). `newlines` are the positions in `input`
     // that end the original lines (if nullptr, the newlines of `input`).
+    // In a macro-expansion context, explicit `newlines` describe a source
+    // fragment starting at `current_line`, rather than a replacement body.
     Result<std::string> run_spliced(const std::string &input,
         LocationManager &lm, cpp_symtab &macro_definitions,
         diag::Diagnostics &diagnostics, bool macro_expansion,
