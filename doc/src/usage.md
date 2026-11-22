@@ -270,7 +270,8 @@ With `--cpp`, `#line <number> ["filename"]` and numeric line markers
 `__FILE__`. Numeric markers can also have flags after the filename. The number
 applies to the following source line; omitting the filename keeps the current
 logical name. Filename operands are C string literals: escapes such as `\056`
-and `\x2E` are decoded before updating the logical name. Whitespace between
+and `\x2E` are decoded before updating the logical name. A decoded NUL terminates
+the logical filename. Whitespace between
 the line number and the opening filename quote is optional. C block comments
 separate directive tokens, but remain literal inside quoted filenames.
 Standard `#line` operands support macro expansion using C string-literal

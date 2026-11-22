@@ -88,6 +88,8 @@ bool parse_line_filename(const char *&cur, const char *end, std::string &filenam
     }
     if (cur == end) return false;
     cur++;
+    // Like GNU CPP, logical filenames end at the first decoded NUL.
+    filename.erase(std::find(filename.begin(), filename.end(), '\0'), filename.end());
     return true;
 }
 
