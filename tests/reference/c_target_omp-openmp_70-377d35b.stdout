@@ -64,7 +64,14 @@ int main(int argc, char* argv[])
 
 
 
-    printf("%f%s%f\n", a->data[(0 + (1 * (5 - 1)))], " ", b->data[(0 + (1 * (5 - 1)))]);
+    {
+        float __lfortran_print_item0 = a->data[(0 + (1 * (5 - 1)))];
+        float __lfortran_print_item1 = b->data[(0 + (1 * (5 - 1)))];
+        int64_t __lfortran_print_len;
+        char *__lfortran_print = _lcompilers_string_format_fortran(_lfortran_get_default_allocator(), NULL, 0, "R4,R4", &__lfortran_print_len, 0, 0, 0, 0, 0, 0, 0, 0, NULL, (void *) &__lfortran_print_item0, (void *) &__lfortran_print_item1);
+        printf("%.*s\n", (int) __lfortran_print_len, __lfortran_print);
+        ALLOCATOR_DEALLOC(_lfortran_get_default_allocator(), __lfortran_print);
+    }
     if (a->data[(0 + (1 * (5 - 1)))] != (float)(1705)) {
         fprintf(stderr, "ERROR STOP");
         exit(1);
