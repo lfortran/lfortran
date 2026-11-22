@@ -1,4 +1,4 @@
-module array_constructor_19_mod
+module array_constructor_20_mod
     implicit none
     type :: item
         integer :: v = 0
@@ -36,8 +36,8 @@ contains
     end function
 end module
 
-program array_constructor_19
-    use array_constructor_19_mod
+program array_constructor_20
+    use array_constructor_20_mod
     implicit none
     integer :: a(1)
     type(item) :: b(1)
