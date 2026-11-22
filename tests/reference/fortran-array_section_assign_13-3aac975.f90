@@ -1,9 +1,9 @@
 module array_section_assign_13_mod
 implicit none
 type :: sgd_t
-    integer(4) :: a = 1
-    integer(4) :: start_index = 1
     real(4), dimension(:), allocatable :: velocity
+    integer(4) :: start_index = 1
+    integer(4) :: a = 1
 end type sgd_t
 
 contains

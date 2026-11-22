@@ -1,9 +1,9 @@
 module derived_types_241_m
 implicit none
 type :: t
-    real(4), dimension(3) :: w
     real(4), dimension(:), allocatable :: x
     real(4), dimension(:, :), allocatable :: z
+    real(4), dimension(3) :: w
 end type t
 type :: outer
     type(t) :: in
