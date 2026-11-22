@@ -5976,8 +5976,8 @@ RUN(NAME cpp_pre_22 LABELS gfortran llvm
 
 RUN(NAME cpp_pre_23 LABELS gfortran llvm
     EXTRA_ARGS --cpp
-    INCLUDE_PATH cpp_pre_23
-    COPY_TO_BIN cpp_pre_23
+    INCLUDE_PATH cpp_pre_23_include
+    COPY_TO_BIN cpp_pre_23_include
     GFORTRAN_ARGS -cpp)
 
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
