@@ -91,6 +91,19 @@ bool parse_line_filename(const char *&cur, const char *end, std::string &filenam
     return true;
 }
 
+std::string quote_line_filename(const std::string &filename) {
+    std::string quoted = "\"";
+    for (char ch : filename) {
+        if (ch == '\n') {
+            quoted += "\\n";
+        } else {
+            if (ch == '\\' || ch == '"') quoted += '\\';
+            quoted += ch;
+        }
+    }
+    return quoted + "\"";
+}
+
 bool parse_line_control(const std::string &text, bool marker,
         uint32_t &line, std::string &filename) {
     const char *cur = text.data(), *end = cur + text.size();
@@ -1056,8 +1069,7 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                         if (t == "__LINE__") {
                             expansion = std::to_string(logical_line_at(cur));
                         } else if (t == "__FILE__") {
-                            expansion = "\"" + replace(logical_filename,
-                                R"([\\"])", R"(\$&)") + "\"";
+                            expansion = quote_line_filename(logical_filename);
                         } else {
                             expansion = macro_definitions[t].expansion;
                         }
