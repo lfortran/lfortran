@@ -271,7 +271,11 @@ With `--cpp`, `#line <number> ["filename"]` and numeric line markers
 applies to the following source line; omitting the filename keeps the current
 logical name. Filename operands are C string literals: escapes such as `\056`
 and `\x2E` are decoded before updating the logical name. Whitespace between
-the line number and the opening filename quote is optional.
+the line number and the opening filename quote is optional. C block comments
+separate directive tokens, but remain literal inside quoted filenames.
+Standard `#line` operands support macro expansion using C string-literal
+quoting, including escaped quotes; numeric-marker operands are not expanded.
+Newlines in logical filenames are re-escaped when emitting `__FILE__`.
 These locations also apply inside macro expansions. An included file has its
 own logical location, and returning from it restores the including file's
 location. Logical filenames do not change include search paths. This controls

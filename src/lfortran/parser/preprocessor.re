@@ -287,7 +287,45 @@ void consume_string_literal(std::string &arg, unsigned char *&cur) {
     }
 }
 
-std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) {
+// Line-control operands use C quoting and comment separators, including
+// while expanding macros. Ordinary Fortran text keeps its own quoting rules.
+bool consume_line_control_token(std::string &text,
+        unsigned char *string_start, unsigned char *&cur) {
+    unsigned char *start = cur;
+    if (*cur == '"' || *cur == '\'') {
+        unsigned char quote = *cur++;
+        while (*cur != quote) {
+            if (*cur == '\0' || *cur == '\n') {
+                Location loc;
+                loc.first = source_offset(start - string_start);
+                loc.last = loc.first;
+                throw PreprocessorError("unterminated string literal in line control", loc);
+            }
+            if (*cur == '\\' && cur[1] != '\0' && cur[1] != '\n') cur++;
+            cur++;
+        }
+        cur++;
+        text.append(reinterpret_cast<char *>(start), cur - start);
+        return true;
+    }
+    if (*cur == '/' && cur[1] == '*') {
+        cur += 2;
+        while (*cur != '\0' && !(*cur == '*' && cur[1] == '/')) cur++;
+        if (*cur == '\0') {
+            Location loc;
+            loc.first = source_offset(start - string_start);
+            loc.last = loc.first;
+            throw PreprocessorError("unterminated comment in line control", loc);
+        }
+        cur += 2;
+        text += ' ';
+        return true;
+    }
+    return false;
+}
+
+std::string match_parentheses(unsigned char *string_start, unsigned char *&cur,
+        CPPTokenMode token_mode) {
     LCOMPILERS_ASSERT(*cur == '(')
     unsigned char *old_cur = cur;
     std::string arg;
@@ -300,8 +338,10 @@ std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) 
             loc.last = loc.first;
             throw PreprocessorError("unmatched parentheses", loc);
         }
+        if (token_mode == CPPTokenMode::LineControl
+                && consume_line_control_token(arg, string_start, cur)) continue;
         if (*cur == '(') {
-            arg += match_parentheses(string_start, cur);
+            arg += match_parentheses(string_start, cur, token_mode);
             LCOMPILERS_ASSERT(*cur == ')')
         } else if (*cur == '"' || *cur == '\'') {
             consume_string_literal(arg, cur);
@@ -316,7 +356,8 @@ std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) 
 
 // Parse a macro call argument, e.g. in:
 // ASSERT(fn(3, 5))
-std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur, unsigned char *&cur) {
+std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur,
+        unsigned char *&cur, CPPTokenMode token_mode) {
     std::string arg;
     while (*cur != ')' && *cur != ',') {
         if (*cur == '\0') {
@@ -325,8 +366,10 @@ std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur,
             loc.last = loc.first;
             throw PreprocessorError("Argument list is not closed with ')'", loc);
         }
+        if (token_mode == CPPTokenMode::LineControl
+                && consume_line_control_token(arg, string_start, cur)) continue;
         if (*cur == '(') {
-            arg += match_parentheses(string_start, cur);
+            arg += match_parentheses(string_start, cur, token_mode);
             LCOMPILERS_ASSERT(*cur == ')')
         } else if (*cur == '"' || *cur == '\'') {
             consume_string_literal(arg, cur);
@@ -338,7 +381,9 @@ std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur,
     return arg;
 }
 
-std::vector<std::string> parse_arguments(unsigned char *string_start, unsigned char *&cur, bool skip_spaces) {
+std::vector<std::string> parse_arguments(unsigned char *string_start,
+        unsigned char *&cur, bool skip_spaces,
+        CPPTokenMode token_mode=CPPTokenMode::Fortran) {
     std::vector<std::string> args;
     LCOMPILERS_ASSERT(*cur == '(');
     unsigned char *old_cur = cur;
@@ -347,7 +392,7 @@ std::vector<std::string> parse_arguments(unsigned char *string_start, unsigned c
         if (skip_spaces) {
             args.push_back(parse_argument(string_start, old_cur, cur));
         } else {
-            args.push_back(parse_argument2(string_start, old_cur, cur));
+            args.push_back(parse_argument2(string_start, old_cur, cur, token_mode));
         }
         if (*cur == ',') cur++;
     }
@@ -500,14 +545,15 @@ void unsplice_location(Location &loc, const SpliceMap &splices) {
 
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
-        bool macro_expansion, const std::string *logical_filename) const {
+        bool macro_expansion, const std::string *logical_filename,
+        CPPTokenMode token_mode) const {
     const std::string &filename = logical_filename
         ? *logical_filename : lm.files.back().in_filename;
     std::string spliced;
     SpliceMap splices;
     if (macro_expansion || !splice_lines(input, spliced, splices)) {
         return run_spliced(input, lm, macro_definitions, diagnostics,
-            macro_expansion, nullptr, filename);
+            macro_expansion, nullptr, filename, token_mode);
     }
     size_t n_newlines0 = lm.files.back().in_newlines0.size();
     size_t n_newlines = lm.files.back().in_newlines.size();
@@ -515,7 +561,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
     size_t n_intervals = lm.files.back().in_size0.size();
     size_t n_diagnostics = diagnostics.diagnostics.size();
     Result<std::string> res = run_spliced(spliced, lm, macro_definitions,
-        diagnostics, macro_expansion, &splices.newlines, filename);
+        diagnostics, macro_expansion, &splices.newlines, filename, token_mode);
     for (size_t i = n_diagnostics; i < diagnostics.diagnostics.size(); i++) {
         for (auto &label : diagnostics.diagnostics[i].labels) {
             for (auto &span : label.spans) {
@@ -590,7 +636,7 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
         LocationManager &lm, cpp_symtab &macro_definitions,
         diag::Diagnostics &diagnostics, bool macro_expansion,
         const std::vector<uint32_t> *newlines,
-        const std::string &filename) const {
+        const std::string &filename, CPPTokenMode token_mode) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
     bool fixed_form_comments = compiler_options.fixed_form && !macro_expansion;
     unsigned char *string_start=(unsigned char*)(&input[0]);
@@ -627,6 +673,15 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
         unsigned char *tok = cur;
         unsigned char *mar;
         unsigned char *t1, *t2, *t3, *t4;
+        if (token_mode == CPPTokenMode::LineControl) {
+            std::string text;
+            if (consume_line_control_token(text, string_start, cur)) {
+                interval_end_type_0(lm, output.size(), tok - string_start);
+                output.append(text);
+                interval_end(lm, output.size(), cur - string_start, cur - tok, 1);
+                continue;
+            }
+        }
         if (fixed_form_comments && (cur == string_start || cur[-1] == '\n')
                 && (*cur == 'c' || *cur == 'C' || *cur == '*')) {
             // Fixed-form comment line: copy it verbatim, so that quotes in
@@ -648,7 +703,7 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
             end = "\x00";
             newline = "\n";
             single_line_comment = "//" [^\n\x00]*;
-            multi_line_comment = "/*" ([^*\x00] | "*"[^/\x00])* "*/";
+            multi_line_comment = "/*" ([^*\x00] | "*"+[^*/\x00])* "*"+"/";
             unterminated_multi_line_comment = "/*" ([^*\x00] | "*"[^/\x00])* "\x00";
             comment = (single_line_comment | multi_line_comment);
             whitespace = [ \t\v\r]+;
@@ -695,16 +750,28 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                 output.append("\n");
                 continue;
             }
-            "#" whitespace? @t1 ("line" whitespace [^\n\x00]* | digits [^\n\x00]*) @t2 newline {
-                if (!branch_enabled) continue;
+            line_control_space = [ \t\v\f\r] | multi_line_comment;
+            "#" line_control_space* @t1 ("line" line_control_space | digits) {
+                if (!branch_enabled) {
+                    while (*cur != '\0' && *cur != '\n') cur++;
+                    continue;
+                }
                 bool marker = std::isdigit(*t1);
-                std::string control = token(marker ? t1 : t1 + 4, t2);
+                cur = marker ? t1 : t1 + 4;
+                std::string control;
+                while (*cur != '\n' && *cur != '\0') {
+                    if (!consume_line_control_token(control, string_start, cur)) {
+                        control += *cur++;
+                    }
+                }
+                if (*cur == '\n') cur++;
                 std::string expanded = control;
                 if (!marker) {
                     LocationManager lm_tmp = lm;
                     lm_tmp.files.back().current_line = logical_line_at(tok);
                     Result<std::string> res = run(control, lm_tmp,
-                        macro_definitions, diagnostics, true, &logical_filename);
+                        macro_definitions, diagnostics, true, &logical_filename,
+                        CPPTokenMode::LineControl);
                     if (!res.ok) return res.error;
                     expanded = res.result;
                 }
@@ -714,13 +781,12 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                     line_offset = static_cast<int64_t>(line) - physical_line_at(cur);
                     logical_filename = next_filename;
                 }
-                if (expanded == control) {
-                    output.append(token(tok, cur));
+                std::string directive = (marker ? "# " : "#line") + expanded + "\n";
+                if (directive == token(tok, cur)) {
+                    output.append(directive);
                 } else {
                     interval_end_type_0(lm, output.size(), tok - string_start);
-                    output.append(token(tok, t1 + 4));
-                    output.append(expanded);
-                    output.append("\n");
+                    output.append(directive);
                     interval_end(lm, output.size(), cur - string_start,
                         cur - tok, 1);
                 }
@@ -1040,7 +1106,7 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                     if (macro_definitions[t].function_like) {
                         while (*cur == ' ' || *cur == '\t') cur++;
                         std::vector<std::string> args;
-                        args = parse_arguments(string_start, cur, false);
+                        args = parse_arguments(string_start, cur, false, token_mode);
                         if (*cur != ')') {
                             Location loc;
                             loc.first = source_offset(cur - string_start);
@@ -1053,7 +1119,8 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                             LocationManager lm_tmp = lm;
                             lm_tmp.files.back().current_line = logical_line_at(cur);
                             Result<std::string> res = run(expanded_args[i], lm_tmp,
-                                macro_definitions, diagnostics, true, &logical_filename);
+                                macro_definitions, diagnostics, true, &logical_filename,
+                                token_mode);
                             if (res.ok) {
                                 expanded_args[i] = res.result;
                             } else {
@@ -1064,7 +1131,7 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                             macro_definitions[t].args,
                             macro_definitions[t].expansion,
                             args,
-                            expanded_args);
+                            expanded_args, token_mode);
                     } else {
                         if (t == "__LINE__") {
                             expansion = std::to_string(logical_line_at(cur));
@@ -1084,7 +1151,8 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
 
                         lm_tmp.files.back().current_line = logical_line_at(cur);
                         Result<std::string> res = run(expansion2, lm_tmp,
-                            macro_definitions, diagnostics, true, &logical_filename);
+                            macro_definitions, diagnostics, true, &logical_filename,
+                            token_mode);
                         if (res.ok) {
                             expansion = res.result;
                         } else {
@@ -1209,7 +1277,7 @@ std::string function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,
             std::vector<std::string> &call_args,
-            std::vector<std::string> &expanded_args) {
+            std::vector<std::string> &expanded_args, CPPTokenMode token_mode) {
     LCOMPILERS_ASSERT(expansion[expansion.size()] == '\0');
     unsigned char *string_start=(unsigned char*)(&expansion[0]);
     unsigned char *cur = string_start;
@@ -1217,6 +1285,8 @@ std::string function_like_macro_expansion(
     for (;;) {
         unsigned char *tok = cur;
         unsigned char *mar;
+        if (token_mode == CPPTokenMode::LineControl
+                && consume_line_control_token(output, string_start, cur)) continue;
         /*!re2c
             re2c:define:YYCURSOR = cur;
             re2c:define:YYMARKER = mar;

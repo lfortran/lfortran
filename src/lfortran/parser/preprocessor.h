@@ -22,6 +22,11 @@ struct CPPMacro {
 
 typedef std::map<std::string, CPPMacro> cpp_symtab;
 
+enum class CPPTokenMode {
+    Fortran,
+    LineControl
+};
+
 class CPreprocessor
 {
 public:
@@ -34,7 +39,8 @@ public:
     Result<std::string> run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
         bool macro_expansion=false,
-        const std::string *logical_filename=nullptr) const;
+        const std::string *logical_filename=nullptr,
+        CPPTokenMode token_mode=CPPTokenMode::Fortran) const;
 
     // Return the current token's location
     void token_loc(Location &loc, unsigned char *tok, unsigned char* cur,
@@ -52,14 +58,15 @@ private:
         LocationManager &lm, cpp_symtab &macro_definitions,
         diag::Diagnostics &diagnostics, bool macro_expansion,
         const std::vector<uint32_t> *newlines,
-        const std::string &filename) const;
+        const std::string &filename, CPPTokenMode token_mode) const;
 };
 
 std::string function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,
             std::vector<std::string> &call_args,
-            std::vector<std::string> &expanded_args);
+            std::vector<std::string> &expanded_args,
+            CPPTokenMode token_mode=CPPTokenMode::Fortran);
 
 } // namespace LCompilers::LFortran
 
