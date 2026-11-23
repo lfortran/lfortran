@@ -210,6 +210,31 @@ public:
             CArrayMemberStorage::InlinePointerDescriptor;
     }
 
+    // Automatic CHARACTER lengths are fixed on entry, even if their length
+    // expressions change before a later assignment.
+    std::map<const ASR::Variable_t*, std::string> c_inline_char_lengths;
+
+    bool c_inline_char_storage(const ASR::Variable_t &v) const {
+        // A nonallocatable scalar owns its storage inline; a dummy borrows
+        // the actual buffer, and BIND(C) keeps its external representation.
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(v.m_type);
+        if (!is_c || !ASR::is_a<ASR::String_t>(*type) ||
+                ASRUtils::is_array(v.m_type) ||
+                ASRUtils::is_allocatable(v.m_type) ||
+                ASRUtils::is_pointer(v.m_type) ||
+                ASRUtils::is_arg_dummy(v.m_intent) ||
+                v.m_intent == ASRUtils::intent_return_var ||
+                v.m_abi == ASR::abiType::BindC) {
+            return false;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+            v.m_parent_symtab->asr_owner);
+        if (ASR::is_a<ASR::Union_t>(*owner)) {
+            return false;
+        }
+        return !ASR::is_a<ASR::Struct_t>(*owner) ||
+            ASR::down_cast<ASR::Struct_t>(owner)->m_abi != ASR::abiType::BindC;
+    }
 
     // Output configuration:
     // Use std::string or char*
@@ -1684,7 +1709,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             self().visit_expr(*call_arg);
             src = self().convert_procedure_actual(call_arg, f->m_args[i], src);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
-            if (ASR::is_a<ASR::Var_t>(*call_arg)
+            bool borrowed_char_arg = false;
+            if (is_c && ASRUtils::is_character(*type) &&
+                    !ASRUtils::is_array(type) &&
+                    ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t* formal = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                borrowed_char_arg = ASR::is_a<ASR::Variable_t>(*formal) &&
+                    ASRUtils::is_character(
+                        *ASR::down_cast<ASR::Variable_t>(formal)->m_type);
+            }
+            if (borrowed_char_arg) {
+                args += src;
+            } else if (ASR::is_a<ASR::Var_t>(*call_arg)
                 && ASR::is_a<ASR::Variable_t>(
                     *ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(m_args[i].m_value)->m_v))) {
@@ -2029,6 +2066,73 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src.clear();
         }
         src = check_tmp_buffer();
+        if (is_c && !ASRUtils::is_array(m_target_type) &&
+                ASR::is_a<ASR::String_t>(
+                    *ASRUtils::type_get_past_allocatable_pointer(
+                        m_target_type))) {
+            std::string prelude = std::move(src);
+            ASR::String_t* lhs_type = ASRUtils::get_string_type(
+                x.m_target);
+            ASR::String_t* rhs_type = ASRUtils::get_string_type(
+                x.m_value);
+            if (lhs_type->m_kind != 1 || rhs_type->m_kind != 1 ||
+                    !lhs_type->m_len || !rhs_type->m_len) {
+                throw CodeGenError("character assignment requires explicit "
+                    "kind=1 lengths in the c backend", x.base.base.loc);
+            }
+            ASR::Variable_t* target_var = nullptr;
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                target_var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x.m_target)->m_v));
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(
+                    *x.m_target)) {
+                target_var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(
+                            x.m_target)->m_m));
+            }
+            if (!target_var || (!c_inline_char_storage(*target_var) &&
+                    (!ASRUtils::is_arg_dummy(target_var->m_intent) ||
+                     ASRUtils::is_allocatable(target_var->m_type) ||
+                     ASRUtils::is_pointer(target_var->m_type) ||
+                     ASRUtils::is_array(target_var->m_type)))) {
+                throw CodeGenError("character assignment needs fixed storage "
+                    "or a nonallocatable dummy in the c backend",
+                    x.base.base.loc);
+            }
+            auto stored_length = c_inline_char_lengths.find(target_var);
+            std::string lhs_len;
+            if (stored_length != c_inline_char_lengths.end()) {
+                lhs_len = stored_length->second;
+            } else {
+                self().visit_expr(*lhs_type->m_len);
+                lhs_len = std::move(src);
+            }
+            self().visit_expr(*rhs_type->m_len);
+            std::string rhs_len = std::move(src);
+            std::string prefix = "_lfortran_char_copy_" +
+                std::to_string(const_vars_count++);
+            std::string dest = prefix + "_dest";
+            std::string len = prefix + "_len";
+            std::string source_len = prefix + "_source_len";
+            src = prelude + indent + "{\n"
+                + indent + "    char* " + dest + " = " + target + ";\n"
+                + indent + "    int64_t " + len + " = " + lhs_len + ";\n"
+                + indent + "    if (" + len + " < 0) " + len + " = 0;\n"
+                + indent + "    int64_t " + source_len + " = " +
+                    rhs_len + ";\n"
+                + indent + "    if (" + source_len + " < 0) " +
+                    source_len + " = 0;\n"
+                + indent + "    _lfortran_copy_str_and_pad(" + dest +
+                    ", " + len + ", " + value + ", " +
+                    source_len + ", 1);\n";
+            if (c_inline_char_storage(*target_var)) {
+                src += indent + "    " + dest + "[" + len + "] = '\\0';\n";
+            }
+            src += indent + "}\n";
+            return;
+        }
         if (is_c && !ASRUtils::is_array(m_target_type) &&
                 (ASRUtils::is_pointer(m_target_type) ||
                  ASRUtils::is_allocatable(m_target_type))) {
@@ -3070,7 +3174,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 }
             } else if ((sv->m_intent == ASRUtils::intent_inout
                 || sv->m_intent == ASRUtils::intent_out)
-                && !ASRUtils::is_aggregate_type(sv->m_type)) {
+                && !ASRUtils::is_aggregate_type(sv->m_type) &&
+                !(ASRUtils::is_character(*sv->m_type) &&
+                  !ASRUtils::is_allocatable(sv->m_type) &&
+                  !ASRUtils::is_pointer(sv->m_type))) {
                 src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
             } else {
                 src = std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name);
