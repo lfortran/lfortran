@@ -76,7 +76,7 @@ def substr (s : String) (i j : Int) : String :=
   let b := j.toNat
   if b <= a then "" else String.ofList ((cs.drop a).take (b - a))
 
-def halt (code : UInt8) : IO α :=
+def halt {α : Type} (code : UInt8) : IO α :=
   IO.Process.exit code
 
 def stopCode (i : Int) : UInt8 :=
@@ -206,7 +206,7 @@ structure Arr (α : Type) where
   exts : Array Nat
   data : Array α
 
-instance [Inhabited α] : Inhabited (Arr α) where
+instance {α : Type} [Inhabited α] : Inhabited (Arr α) where
   default := { lbs := #[], exts := #[], data := #[] }
 
 def Arr.map {α β : Type} (f : α → β) (a : Arr α) : Arr β :=
