@@ -363,7 +363,7 @@ macro(RUN)
     list(APPEND LFORTRAN_REGISTERED_TESTS "${RUN_NAME}")
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu|hip)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu|hip|lean)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
@@ -458,6 +458,8 @@ endmacro(COMPILE)
 # wasm          --- compile to WASM binary directly
 # mlir          --- generate mlir, convert to llvm ir and compile to binary
 # llvm_single_invocation --- compile all sources in a single LFortran invocation
+# lean          --- translate with --backend=lean and execute with `lean --run`
+#                 (lean/run_integration_tests.py; not selected by LFORTRAN_BACKEND)
 
 # `reduce` is not supported by GFortran yet:
 # RUN(NAME doconcurrentloop_02 LABELS gfortran)
