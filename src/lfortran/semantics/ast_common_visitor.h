@@ -9146,6 +9146,44 @@ public:
         throw SemanticAbort();
     }
 
+    // Expands `n*value` repeat entries of an old-style slash initializer
+    // (integer x(5) /N*0, 1/) when `n` is a compile-time integer constant.
+    // Same logic as the repeat handling in visit_DataStmt.
+    AST::expr_t* expand_slash_init_repeats(AST::expr_t *init) {
+        bool is_list = AST::is_a<AST::ArrayInitializer_t>(*init);
+        AST::ArrayInitializer_t *old = is_list
+            ? AST::down_cast<AST::ArrayInitializer_t>(init) : nullptr;
+        size_t n_items = is_list ? old->n_args : 1;
+        AST::expr_t **items = is_list ? old->m_args : &init;
+        Vec<AST::expr_t*> out;
+        out.reserve(al, n_items * 2);
+        bool changed = false;
+        for (size_t k = 0; k < n_items; k++) {
+            AST::expr_t *e = items[k];
+            if (AST::is_a<AST::BinOp_t>(*e)) {
+                AST::BinOp_t *b = AST::down_cast<AST::BinOp_t>(e);
+                if (b->m_op == AST::operatorType::Mul) {
+                    this->visit_expr(*b->m_left);
+                    ASR::expr_t *v = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                    if (v && ASR::is_a<ASR::IntegerConstant_t>(*v)) {
+                        int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n;
+                        for (int64_t r = 0; r < n; r++) {
+                            out.push_back(al, b->m_right);
+                        }
+                        changed = true;
+                        continue;
+                    }
+                }
+            }
+            out.push_back(al, e);
+        }
+        if (!changed) return init;
+        if (out.size() == 1) return out[0];
+        return AST::down_cast<AST::expr_t>(AST::make_ArrayInitializer_t(al,
+            init->base.loc, old ? old->m_vartype : nullptr,
+            old ? old->m_classtype : nullptr, out.data(), out.size()));
+    }
+
     void emit_fortran_slash_init_warning(const AST::var_sym_t &s) {
         LCOMPILERS_ASSERT(s.m_initializer != nullptr);
         std::string init_str = "<expr>";
@@ -12647,6 +12685,7 @@ public:
                 } else if (s.m_initializer != nullptr) {
                     if (s.m_sym == AST::symbolType::SlashInit) {
                         emit_fortran_slash_init_warning(s);
+                        s.m_initializer = expand_slash_init_repeats(s.m_initializer);
                     }
                     // Defer procedure pointer initialization when the target
                     // procedure is not yet in scope (e.g. module contains).
