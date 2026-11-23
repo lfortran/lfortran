@@ -597,7 +597,7 @@ public:
                             indent + "if (" + length + " < 0) " +
                             length + " = 0;\n" + indent;
                     }
-                    c_inline_char_lengths[&v] = length;
+                    c_character_lengths[&v] = length;
                     sub += (v.m_storage == ASR::storage_typeType::Parameter
                         ? "const char " : "char ") +
                         std::string(v.m_name) + "[" + length + " + 1]";
@@ -1797,14 +1797,7 @@ R"(    // Initialise Numpy
         if (is_internal) {
             visit_expr(*x.m_unit);
             std::string target = src;
-            std::string target_len;
-            int64_t const_len;
-            if (ASRUtils::extract_value(internal_type->m_len, const_len)) {
-                target_len = std::to_string(const_len);
-            } else {
-                visit_expr(*internal_type->m_len);
-                target_len = src;
-            }
+            std::string target_len = c_character_length(x.m_unit, loc);
             std::string char_kind = std::to_string(internal_type->m_kind);
             out += inner_indent + "int64_t __lfortran_target_len = " + target_len + ";\n";
             ASR::symbol_t* unit_sym = ASR::is_a<ASR::Var_t>(*x.m_unit)
@@ -2283,6 +2276,14 @@ R"(    // Initialise Numpy
         return mapping;
     }
     void visit_StringLen(const ASR::StringLen_t &x) {
+        ASR::Variable_t* var = c_character_designator_variable(x.m_arg);
+        if (var) {
+            auto stored_length = c_character_lengths.find(var);
+            if (stored_length != c_character_lengths.end()) {
+                src = stored_length->second;
+                return;
+            }
+        }
         CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_arg);
         src = "strlen(" + src + ")";
