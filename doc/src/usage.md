@@ -259,6 +259,9 @@ compilation options, output options, link options and so on.
 
 * `--fixed-form`, Parse the file assuming Fortran 66 format (6 spaces)
 * `--fixed-form-infer`, Use heuristics to infer if a file is in fixed form
+* `-ffixed-line-length-N`, In fixed form, the last column that holds code
+  (default 72, as in gfortran); `-ffixed-line-length-none` (or `0`) removes
+  the limit. Text after that column is ignored.
 
 ### Source code processing
 
