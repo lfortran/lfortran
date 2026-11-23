@@ -209,7 +209,7 @@ public:
         collect_loop_vars(x.m_body, x.n_body);
 
         std::string header = "noncomputable def "
-            + lean_name(x.m_name, loc) + " (fp : Float64Model)";
+            + lean_name(x.m_name, loc) + " (fp : FPModel)";
         std::set<std::string> args;
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::Variable_t *v = ASRUtils::EXPR2VAR(x.m_args[i]);
@@ -330,8 +330,9 @@ public:
 
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         lean_type(x.m_type, x.base.base.loc);
-        src = real_literal(x.m_r, x.base.base.loc);
-        prec = prec_atom;
+        // A literal is the rounding of its exact value to floating point
+        src = "fp.round " + real_literal(x.m_r, x.base.base.loc);
+        prec = prec_app;
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {

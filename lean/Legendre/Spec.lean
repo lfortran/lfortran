@@ -19,12 +19,13 @@ noncomputable def P : ℕ → ℝ → ℝ
   | 1, x => x
   | n + 2, x => ((2 * n + 3) * x * P (n + 1) x - (n + 1) * P n x) / (n + 2)
 
-/-- An implementation `f fp n x` of `P_n(x)`, evaluated with any binary64
-rounding `fp`, has absolute error at most `10^-11` for `0 ≤ n ≤ 100` and
-`|x| ≤ 1`. -/
-def LegendreSpec (f : Float64Model → ℤ → ℝ → ℝ) : Prop :=
-  ∀ (fp : Float64Model) (n : ℤ) (x : ℝ),
-    0 ≤ n → n ≤ 100 → |x| ≤ 1 →
+/-- An implementation `f fp n x` of `P_n(x)` has absolute error at most
+`10^-11` for `0 ≤ n ≤ 100` and floating-point `x` with `|x| ≤ 1`, in every
+arithmetic `fp` at least as accurate as binary64 (`u ≤ 2^-53`) with underflow
+error `η ≤ 2^-1000` and range `M ≥ 2^10`. -/
+def LegendreSpec (f : FPModel → ℤ → ℝ → ℝ) : Prop :=
+  ∀ (fp : FPModel), fp.u ≤ 1 / 2 ^ 53 → fp.η ≤ 1 / 2 ^ 1000 → 2 ^ 10 ≤ fp.M →
+  ∀ (n : ℤ) (x : ℝ), x ∈ fp.F → 0 ≤ n → n ≤ 100 → |x| ≤ 1 →
     |f fp n x - P n.toNat x| ≤ 1 / 10 ^ 11
 
 end Legendre
