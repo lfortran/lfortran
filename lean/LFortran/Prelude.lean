@@ -5,49 +5,57 @@ import Mathlib.Data.Real.Basic
 
 Runtime model used by the code that `lfortran --show-lean` generates.
 
-`real(8)` values are modelled as real numbers. Every floating-point operation is
-the exact real operation followed by a rounding function `fp.rnd`. The rounding
-function is a parameter, constrained only by two facts that hold for IEEE-754
-binary64 round-to-nearest:
+Floating-point values are modelled as real numbers. The arithmetic is a
+parameter `fp : FPModel`: a set `F` of floating-point numbers, operations
+`add sub mul div`, and a rounding `round` (used for type conversions and
+literals). The only assumptions are error bounds of the form
 
-* `rnd_err`: the standard error model with an absolute underflow term,
-  valid away from overflow;
-* `rnd_int`: integers of magnitude at most `2^53` are representable and hence
-  rounded exactly.
+  `|computed - exact| ≤ u * |exact| + η`  when `|exact| ≤ M`,
 
-Theorems proved against this model therefore hold for any rounding satisfying
-these facts, in particular IEEE-754 binary64 round-to-nearest. The model has no
-infinities or NaNs, and Lean's `x / 0 = 0` differs from IEEE; a proof must keep
-intermediate values bounded and divisors nonzero.
+for operands in `F`, and that results stay in `F`. Here `u` is the unit
+roundoff, `η` an absolute error allowed by underflow, and `M` the range in
+which the bounds hold. Nothing is assumed beyond `M` (overflow), for division
+by zero, or for operands outside `F`, so proofs must keep values in range.
+
+The model covers many arithmetics; `LFortran/Models/` proves that IEEE-754
+binary64 round-to-nearest, binary64 with flush-to-zero, and the systems of
+Trefethen & Bau and of Higham are all instances. See `lean/README.md`.
 -/
 
 namespace LFortran
 
-/-- Unit roundoff of binary64: `2^-53`. -/
-noncomputable def unitRoundoff : ℝ := 1 / 2 ^ 53
+/-- An abstract floating-point arithmetic. -/
+structure FPModel where
+  /-- The floating-point numbers. -/
+  F : Set ℝ
+  /-- Unit roundoff. -/
+  u : ℝ
+  /-- Absolute error allowed by underflow. -/
+  η : ℝ
+  /-- The bounds hold for exact results of magnitude at most `M`. -/
+  M : ℝ
+  round : ℝ → ℝ
+  add : ℝ → ℝ → ℝ
+  sub : ℝ → ℝ → ℝ
+  mul : ℝ → ℝ → ℝ
+  div : ℝ → ℝ → ℝ
+  round_mem : ∀ y, |y| ≤ M → round y ∈ F
+  round_err : ∀ y, |y| ≤ M → |round y - y| ≤ u * |y| + η
+  add_mem : ∀ a ∈ F, ∀ b ∈ F, |a + b| ≤ M → add a b ∈ F
+  add_err : ∀ a ∈ F, ∀ b ∈ F, |a + b| ≤ M →
+    |add a b - (a + b)| ≤ u * |a + b| + η
+  sub_mem : ∀ a ∈ F, ∀ b ∈ F, |a - b| ≤ M → sub a b ∈ F
+  sub_err : ∀ a ∈ F, ∀ b ∈ F, |a - b| ≤ M →
+    |sub a b - (a - b)| ≤ u * |a - b| + η
+  mul_mem : ∀ a ∈ F, ∀ b ∈ F, |a * b| ≤ M → mul a b ∈ F
+  mul_err : ∀ a ∈ F, ∀ b ∈ F, |a * b| ≤ M →
+    |mul a b - a * b| ≤ u * |a * b| + η
+  div_mem : ∀ a ∈ F, ∀ b ∈ F, b ≠ 0 → |a / b| ≤ M → div a b ∈ F
+  div_err : ∀ a ∈ F, ∀ b ∈ F, b ≠ 0 → |a / b| ≤ M →
+    |div a b - a / b| ≤ u * |a / b| + η
 
-/-- Absolute rounding error bound in the subnormal range: `2^-1075`. -/
-noncomputable def underflowError : ℝ := 1 / 2 ^ 1075
-
-/-- A model of IEEE-754 binary64 round-to-nearest arithmetic. -/
-structure Float64Model where
-  rnd : ℝ → ℝ
-  rnd_err : ∀ y : ℝ, |y| ≤ 2 ^ 1000 →
-    |rnd y - y| ≤ unitRoundoff * |y| + underflowError
-  rnd_int : ∀ i : ℤ, |i| ≤ 2 ^ 53 → rnd (i : ℝ) = (i : ℝ)
-
-namespace Float64Model
-
-variable (fp : Float64Model)
-
-noncomputable def add (a b : ℝ) : ℝ := fp.rnd (a + b)
-noncomputable def sub (a b : ℝ) : ℝ := fp.rnd (a - b)
-noncomputable def mul (a b : ℝ) : ℝ := fp.rnd (a * b)
-noncomputable def div (a b : ℝ) : ℝ := fp.rnd (a / b)
-/-- Conversion `integer -> real(8)`. -/
-noncomputable def ofInt (i : ℤ) : ℝ := fp.rnd (i : ℝ)
-
-end Float64Model
+/-- Conversion `integer -> real`. -/
+noncomputable def FPModel.ofInt (fp : FPModel) (i : ℤ) : ℝ := fp.round (i : ℝ)
 
 /-- The iteration space of the Fortran loop `do k = lo, hi`. -/
 def intRange (lo hi : ℤ) : List ℤ :=
