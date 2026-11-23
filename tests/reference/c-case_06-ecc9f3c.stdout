@@ -21,13 +21,15 @@ int main(int argc, char* argv[])
     const float cp =   1.00000000000000000e+00;
     static float d =   2.00000000000000000e+00;
     const float dp =   2.00000000000000000e+00;
-    const char* grade_fixed = "B";
+    const char grade_fixed[1 + 1] = "B";
     int32_t marks;
     const int32_t marks_fixed = 94;
-    if (grade_fixed == "A") {
+    const char* _lfortran_select_case_0 = grade_fixed;
+    int64_t _lfortran_select_case_0_len = 1;
+    if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "A", 1) == 0) {
         printf("%s\n","Excellent!");
     }
-    else if (grade_fixed == "B") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "B", 1) == 0) {
         if (a == b) {
             printf("%s\n","a == b");
             if (ap == bp) {
@@ -50,13 +52,13 @@ int main(int argc, char* argv[])
             }
         }
     }
-    else if (grade_fixed == "C") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "C", 1) == 0) {
         printf("%s\n","Well done");
     }
-    else if (grade_fixed == "D") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "D", 1) == 0) {
         printf("%s\n","You passed");
     }
-    else if (grade_fixed == "F") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "F", 1) == 0) {
         printf("%s\n","Better try again");
     }
     else {
