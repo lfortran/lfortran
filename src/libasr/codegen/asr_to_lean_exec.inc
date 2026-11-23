@@ -1031,7 +1031,6 @@ public:
                 unsupported("intrinsic '" + raw + "' is", loc);
             }
         };
-        auto arg1 = [&]() { need(1); return lower(args[0]); };
         bool arr = type && is_arr(type);
         if (name_is(k, "abs")) {
             need(1);
@@ -2659,7 +2658,6 @@ public:
     // the elsewhere arm). Nested where and non-assignment statements are
     // rejected.
     void emit_where(const ASR::Where_t &x) {
-        const Location &loc = x.base.base.loc;
         if (!is_arr(ASRUtils::expr_type(x.m_test))) {
             Val t = lower(x.m_test);
             out += indent() + "if " + t.src + " then\n";
