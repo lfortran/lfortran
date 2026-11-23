@@ -145,7 +145,10 @@ With `--fast`, the LLVM backend uses Fortran dummy-argument restrictions to
 mark eligible parameters `noalias`. It also distinguishes array data from
 compiler-managed descriptors and struct pointer fields using TBAA. Numeric
 and logical elements share one data class, so this metadata does not claim
-that two data arrays cannot overlap.
+that two data arrays cannot overlap. `--fast-safe` runs the same
+optimizations and does not add this metadata, `nsw` on signed arithmetic, or
+fast-math `nnan`/`ninf`: those facts mean a runtime error cannot happen, and
+this mode still checks.
 
 For direct component accesses through nonpointer, non-TARGET CLASS variables,
 ASR storage facts distinguish inline numeric/logical components from elements

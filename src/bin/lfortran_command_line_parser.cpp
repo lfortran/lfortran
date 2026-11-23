@@ -447,6 +447,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
+        app.add_flag("--fast-safe", compiler_options.po.fast_safe, "Optimizations of --fast, with runtime checks on")->group(group_miscellaneous_options);
         app.add_flag("--no-fast-math", compiler_options.po.no_fast_math, "Disable fast-math optimizations (preserve NaN/Inf semantics)")->group(group_miscellaneous_options);
         app.add_flag("--realloc-lhs-arrays", compiler_options.po.realloc_lhs_arrays, "Reallocate left hand side automatically for arrays")->group(group_miscellaneous_options);
         app.add_flag("--disable-realloc-lhs-arrays", disable_realloc_lhs, "Disables reallocating left hand side automatically for arrays")->group(group_miscellaneous_options);
@@ -454,8 +455,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--stack-arrays", compiler_options.po.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
         app.add_flag("--descriptor-index-64", compiler_options.descriptor_index_64, "Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)")->group(group_miscellaneous_options);
         app.add_flag("--detect-leaks", compiler_options.detect_leaks, "Print a memory leak report")->group(group_miscellaneous_options);
-        app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
-        app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
+        CLI::Option *array_bounds_checking = app.add_flag("--array-bounds-checking", compiler_options.po.bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
+        CLI::Option *no_array_bounds_checking = app.add_flag("--no-array-bounds-checking", disable_bounds_checking, "Disables runtime array bounds checking")->group(group_miscellaneous_options);
         app.add_flag("--strict-array-bounds-checking", compiler_options.po.strict_bounds_checking, "Enables strict runtime array bounds checking: Array passed into subroutine must exactly match the expected size")->group(group_miscellaneous_options);
 
         // LSP specific options
@@ -566,7 +567,27 @@ namespace LCompilers::CommandLineInterface {
             );
         }
 
-        if (disable_bounds_checking || compiler_options.po.fast) {
+        if (compiler_options.po.fast && compiler_options.po.fast_safe) {
+            throw lc::LCompilersException(
+                "error: --fast and --fast-safe cannot be used together");
+        }
+        // --fast-safe is the optimization pipeline of --fast. The checks and
+        // the facts that a runtime error cannot happen stay as in Debug.
+        if (compiler_options.po.fast_safe) {
+            compiler_options.po.fast = true;
+        }
+        bool explicit_bounds_on = array_bounds_checking->count() > 0;
+        bool explicit_bounds_off = no_array_bounds_checking->count() > 0;
+        if (explicit_bounds_on && explicit_bounds_off) {
+            throw lc::LCompilersException(
+                "error: --array-bounds-checking and --no-array-bounds-checking"
+                " cannot be used together");
+        }
+        // An explicit bounds flag wins over the mode. Otherwise --fast turns
+        // every check off and --fast-safe leaves them on.
+        if (explicit_bounds_off ||
+                (!explicit_bounds_on && compiler_options.po.fast
+                    && !compiler_options.po.fast_safe)) {
             compiler_options.po.bounds_checking = false;
             compiler_options.po.strict_bounds_checking = false;
         }

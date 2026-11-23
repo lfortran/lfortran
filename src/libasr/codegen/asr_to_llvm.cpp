@@ -1085,7 +1085,8 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         heap_fixed_size_arrays.reserve(al, 1);
 
-        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
+        if (compiler_options.po.assume_no_runtime_errors()
+                && !compiler_options.po.no_fast_math) {
             llvm::FastMathFlags fmf;
             fmf.setFast();
             builder->setFastMathFlags(fmf);
@@ -8966,7 +8967,8 @@ public:
                 command_line_args, false);
         llvm::Function *F = llvm::Function::Create(function_type,
                 llvm::Function::ExternalLinkage, program_fn_name, module.get());
-        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
+        if (compiler_options.po.assume_no_runtime_errors()
+                && !compiler_options.po.no_fast_math) {
             F->addFnAttr("no-nans-fp-math", "true");
             F->addFnAttr("no-infs-fp-math", "true");
             F->addFnAttr("no-signed-zeros-fp-math", "true");
@@ -11193,10 +11195,13 @@ public:
     }
 
     // Whether the LLVM backend gives LLVM alias information (noalias
-    // parameters and return values, TBAA): under --fast, and not for OpenMP,
-    // coarray or GPU code (see dummies_may_be_noalias).
+    // parameters and return values, TBAA): under --fast, and not for
+    // --fast-safe, OpenMP, coarray or GPU code (see dummies_may_be_noalias).
+    // --fast-safe still checks aliasing, so it cannot tell LLVM the call is
+    // alias-free.
     bool alias_info_enabled() const {
-        return compiler_options.po.fast && !compiler_options.openmp &&
+        return compiler_options.po.assume_no_runtime_errors()
+            && !compiler_options.openmp &&
             !compiler_options.po.coarray &&
             !compiler_options.po.gpu_offload_metal &&
             !compiler_options.po.gpu_offload_cuda;
@@ -12292,7 +12297,8 @@ public:
         convert_call_args_depth = 0;
         list_call_arg_to_finalize.clear();
         bindc_stride_exits.clear();
-        if (compiler_options.po.fast && !compiler_options.po.no_fast_math) {
+        if (compiler_options.po.assume_no_runtime_errors()
+                && !compiler_options.po.no_fast_math) {
             F->addFnAttr("no-nans-fp-math", "true");
             F->addFnAttr("no-infs-fp-math", "true");
             F->addFnAttr("no-signed-zeros-fp-math", "true");
@@ -19842,7 +19848,9 @@ public:
         // Signed integer overflow makes a Fortran program non-conforming, so
         // under --fast the arithmetic is marked nsw, as GCC assumes by default.
         // This lets LLVM widen 32-bit subscripts to 64-bit induction variables.
-        bool nsw = signed_int && compiler_options.po.fast;
+        // --fast-safe does not: overflow is still a runtime error to check,
+        // and until that check exists the arithmetic stays wrapping.
+        bool nsw = signed_int && compiler_options.po.assume_no_runtime_errors();
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 tmp = builder->CreateAdd(left_val, right_val, "", false, nsw);

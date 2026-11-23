@@ -2344,7 +2344,8 @@ int link_executable(const std::vector<std::string> &infiles,
                     // approximations of division, square root and the
                     // transcendental functions, as the host code does (the
                     // fast-math flags of asr_to_llvm.cpp).
-                    bool device_fast_math = compiler_options.po.fast
+                    bool device_fast_math =
+                        compiler_options.po.assume_no_runtime_errors()
                         && !compiler_options.po.no_fast_math
                         && !emulate_cpu && !hip;
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"

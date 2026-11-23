@@ -7,6 +7,54 @@
 using LCompilers::CommandLineInterface::LFortranCommandLineParser;
 using LCompilers::CommandLineInterface::emscripten_link_options;
 
+TEST_CASE("--fast-safe keeps optimizations and runtime checks")
+{
+    const char *safe[] = {"lfortran", "--fast-safe", "input.f90"};
+    LFortranCommandLineParser safe_parser(3, safe);
+    REQUIRE_NOTHROW(safe_parser.parse());
+    CHECK(safe_parser.opts.compiler_options.po.fast);
+    CHECK(safe_parser.opts.compiler_options.po.fast_safe);
+    CHECK(safe_parser.opts.compiler_options.po.bounds_checking);
+    CHECK(!safe_parser.opts.compiler_options.po.assume_no_runtime_errors());
+
+    const char *fast[] = {"lfortran", "--fast", "input.f90"};
+    LFortranCommandLineParser fast_parser(3, fast);
+    REQUIRE_NOTHROW(fast_parser.parse());
+    CHECK(fast_parser.opts.compiler_options.po.fast);
+    CHECK(!fast_parser.opts.compiler_options.po.fast_safe);
+    CHECK(!fast_parser.opts.compiler_options.po.bounds_checking);
+    CHECK(fast_parser.opts.compiler_options.po.assume_no_runtime_errors());
+
+    const char *both[] = {"lfortran", "--fast", "--fast-safe", "input.f90"};
+    LFortranCommandLineParser both_parser(4, both);
+    CHECK_THROWS_WITH_AS(both_parser.parse(),
+        "error: --fast and --fast-safe cannot be used together",
+        LCompilers::LCompilersException);
+
+    const char *fast_checks[] = {"lfortran", "--fast",
+        "--array-bounds-checking", "input.f90"};
+    LFortranCommandLineParser fast_checks_parser(4, fast_checks);
+    REQUIRE_NOTHROW(fast_checks_parser.parse());
+    CHECK(fast_checks_parser.opts.compiler_options.po.fast);
+    CHECK(fast_checks_parser.opts.compiler_options.po.bounds_checking);
+    CHECK(fast_checks_parser.opts.compiler_options.po.assume_no_runtime_errors());
+
+    const char *safe_off[] = {"lfortran", "--fast-safe",
+        "--no-array-bounds-checking", "input.f90"};
+    LFortranCommandLineParser safe_off_parser(4, safe_off);
+    REQUIRE_NOTHROW(safe_off_parser.parse());
+    CHECK(safe_off_parser.opts.compiler_options.po.fast_safe);
+    CHECK(!safe_off_parser.opts.compiler_options.po.bounds_checking);
+
+    const char *conflict[] = {"lfortran", "--array-bounds-checking",
+        "--no-array-bounds-checking", "input.f90"};
+    LFortranCommandLineParser conflict_parser(4, conflict);
+    CHECK_THROWS_WITH_AS(conflict_parser.parse(),
+        "error: --array-bounds-checking and --no-array-bounds-checking"
+        " cannot be used together",
+        LCompilers::LCompilersException);
+}
+
 TEST_CASE("Emscripten settings accept attached and separated arguments")
 {
     const char *argv[] = {"lfortran", "--target=wasm32-unknown-emscripten",

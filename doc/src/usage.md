@@ -274,7 +274,8 @@ compilation options, output options, link options and so on.
 
 ### Compiler feature selections
 
-* `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
+* `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored. Runtime checks are off, and LLVM is told that the corresponding errors cannot happen (`nsw`, `noalias`, TBAA, and fast-math `nnan`/`ninf`).
+* `--fast-safe`, The optimizations of `--fast`, with every runtime check still on. LLVM is not told that a runtime error cannot happen, so a failing check is reported instead of becoming undefined behavior. It selects the native CPU the same way `--fast` does. It cannot be combined with `--fast`. `--array-bounds-checking` and `--no-array-bounds-checking` override the check either mode would select.
 * `--implicit-argument-casting`, Allow implicit argument casting
 * `--internal-procedure-thunks <K>`, The number of instances of a procedure that can be active at the same time while holding procedure values of its internal procedures (default 8); see [Procedure values of internal procedures](#procedure-values-of-internal-procedures)
 * `--implicit-interface`, Allow implicit interface

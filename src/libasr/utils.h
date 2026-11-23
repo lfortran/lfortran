@@ -55,8 +55,11 @@ struct PassOptions {
     std::string runtime_library_dir;
     bool always_run = false; // for unused_functions pass
     bool inline_external_symbol_calls = true; // for inline_function_calls pass
-    bool fast = false; // is fast flag enabled.
+    bool fast = false; // optimizations of --fast and --fast-safe
     bool no_fast_math = false; // disable fast-math optimizations (NaN, Inf, etc.)
+    // --fast-safe: the optimizations of --fast, with every runtime check
+    // still on. LLVM is not told that a runtime error cannot happen.
+    bool fast_safe = false;
     bool verbose = false; // For developer debugging
     bool dump_all_passes = false; // For developer debugging
     bool dump_fortran = false; // For developer debugging
@@ -145,6 +148,14 @@ struct PassOptions {
     // The number of activations of a host that can hold a procedure value of
     // one of its internal procedures at the same time (nested_vars)
     int64_t internal_procedure_thunks = 8;
+
+    // --fast may tell LLVM that a runtime error cannot happen: signed
+    // overflow is `nsw`, dummies are `noalias` with TBAA, and floating-point
+    // math is `nnan` and `ninf`. --fast-safe keeps the optimizations and
+    // does not.
+    bool assume_no_runtime_errors() const {
+        return fast && !fast_safe;
+    }
 };
 
 struct CompilerOptions {

@@ -6485,7 +6485,7 @@ public:
             case ASR::exprType::RealBinOp: {
                 ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
                 ASR::expr_t *rsqrt_arg = nullptr;
-                if (co.po.fast && !co.po.no_fast_math
+                if (co.po.assume_no_runtime_errors() && !co.po.no_fast_math
                         && op->m_op == ASR::binopType::Div
                         && is_real_one(op->m_left)) {
                     rsqrt_arg = sqrt_argument(op->m_right);

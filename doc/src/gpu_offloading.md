@@ -1329,7 +1329,9 @@ With `--fast` (and without `--no-fast-math`) the CUDA and HIP device code
 computes `1/sqrt(x)` as `rsqrt(x)`, one operation where a correctly rounded
 quotient of a correctly rounded root takes two long ones: an n-body
 force loop ran 16% faster on an H100. The result can differ from the exact
-one in the last bit, as host code under `--fast` can.
+one in the last bit, as host code under `--fast` can. `--fast-safe` does not
+rewrite the quotient and does not pass `--use_fast_math` to the device
+compiler.
 
 ### Packed data: unrolling by the divisor
 
