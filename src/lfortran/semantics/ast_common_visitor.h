@@ -9586,7 +9586,9 @@ public:
                         // private :: x, y, z
                         for (size_t i=0; i<x.n_syms; i++) {
                             AST::var_sym_t &s = x.m_syms[i];
-                            if (s.m_name == nullptr) {
+                            if (s.m_name == nullptr
+                                    && !AST::is_a<AST::AttrWrite_t>(*s.m_spec)
+                                    && !AST::is_a<AST::AttrRead_t>(*s.m_spec)) {
                                 if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
                                     // Operator Overloading Encountered
                                     if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
@@ -9645,15 +9647,21 @@ public:
                                     throw SemanticAbort();
                                 }
                             } else {
-                                std::string sym = to_lower(s.m_name);
-                                if ((sym == "write" || sym == "read")
-                                        && s.n_dim == 1 && s.m_dim[0].m_end
-                                        && AST::is_a<AST::Name_t>(*s.m_dim[0].m_end)) {
-                                    // `public :: write(formatted)` names the
-                                    // generic "~write_formatted".
-                                    sym = "~" + sym + "_" + to_lower(
-                                        AST::down_cast<AST::Name_t>(
-                                            s.m_dim[0].m_end)->m_id);
+                                std::string sym;
+                                if (s.m_name != nullptr) {
+                                    sym = to_lower(s.m_name);
+                                } else if (AST::is_a<AST::AttrWrite_t>(*s.m_spec)) {
+                                    // public :: write(formatted)
+                                    sym = defined_io_generic_name(true,
+                                        AST::down_cast<AST::AttrWrite_t>(
+                                            s.m_spec)->m_id,
+                                        s.m_spec->base.loc);
+                                } else {
+                                    // public :: read(formatted)
+                                    sym = defined_io_generic_name(false,
+                                        AST::down_cast<AST::AttrRead_t>(
+                                            s.m_spec)->m_id,
+                                        s.m_spec->base.loc);
                                 }
                                 if (sa->m_attr == AST::simple_attributeType
                                         ::AttrPrivate) {

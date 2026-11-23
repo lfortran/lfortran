@@ -1948,6 +1948,18 @@ public:
         s += ")";
     }
 
+    void visit_AttrWrite(const AttrWrite_t &x) {
+        s = "write(";
+        s.append(x.m_id);
+        s += ")";
+    }
+
+    void visit_AttrRead(const AttrRead_t &x) {
+        s = "read(";
+        s.append(x.m_id);
+        s += ")";
+    }
+
     void visit_AttrStat(const AttrStat_t &x) {
         std::string r;
         r = "stat = ";
