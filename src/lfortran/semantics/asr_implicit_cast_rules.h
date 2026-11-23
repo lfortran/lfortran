@@ -175,10 +175,10 @@ public:
           return;
       }
 
-    ASR::ttype_t *source_type2 = ASRUtils::type_get_past_array(
-      ASRUtils::type_get_past_pointer(source_type));
-    ASR::ttype_t *dest_type2 = ASRUtils::type_get_past_array(
-      ASRUtils::type_get_past_pointer(dest_type));
+    // Allocatable is a wrapper, like Pointer. The cast kind comes from the
+    // element types; an allocatable integer array is still an integer array.
+    ASR::ttype_t *source_type2 = ASRUtils::extract_type(source_type);
+    ASR::ttype_t *dest_type2 = ASRUtils::extract_type(dest_type);
     if (source_type2->type == dest_type2->type ||
         ASRUtils::is_same_type_pointer(source_type, dest_type)) {
       bool is_source_pointer = ASRUtils::is_pointer(source_type);
