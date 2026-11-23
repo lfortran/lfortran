@@ -110,14 +110,13 @@ noncomputable def legendre_poly (fp : FPModel) (n : ℤ) (x : ℝ) : ℝ := Id.r
   return p
 ```
 
-The translation is faithful to Fortran's evaluation rules rather than to the
-mathematics:
+The translation preserves the operation tree chosen by LFortran's ASR rather
+than replacing floating-point expressions by exact real arithmetic:
 
 * `real(8)` values are real numbers, and **every operation is rounded**:
-  `(2*k-1)*x*b` is `((2*k-1)*x)*b`, evaluated left to right as in the source,
-  with the integer `2*k-1` converted to real (`fp.ofInt`, itself a rounding)
-  and each product rounded by `fp.mul`. Literals such as `1.0_dp` are rounded
-  too (`fp.round`).
+  the ASR groups `(2*k-1)*x*b` as `((2*k-1)*x)*b`, with the integer `2*k-1`
+  converted to real (`fp.ofInt`, itself a rounding) and each product rounded
+  by `fp.mul`. Literals such as `1.0_dp` are rounded too (`fp.round`).
 * `integer` is `ℤ`, with exact arithmetic (overflow is out of scope in this
   prototype).
 * The arithmetic `fp : FPModel` is a parameter (Section 3), so one proof covers
@@ -127,6 +126,15 @@ mathematics:
   example needs (module functions on `integer` and `real(8)` scalars,
   assignments, `if`, `return`, unit-step `do` loops, `+ - * /`). Anything else
   is rejected with an error rather than translated approximately.
+
+Fortran permits mathematically equivalent rearrangements subject to its rules
+on parentheses, even when floating-point results differ; it does not require
+this particular evaluation order (see the
+[Fortran discussion of mathematical equivalence](https://fortran.bcs.org/2012/math_equiv2.pdf)).
+The theorem therefore applies to this operation tree. Applying it to an
+executable requires that compilation preserve the tree's values under the
+stated arithmetic assumptions (Sections 5 and 6), not merely that fast-math
+be disabled.
 
 ### 2.3 The specification
 
@@ -155,40 +163,73 @@ It contains four decisions to review:
   (`x ∈ fp.F`, for binary64 "a finite double") with `|x| <= 1`. Nothing is
   claimed outside this domain.
 * **The accuracy.** Absolute error at most `10^-11` (Section 2.4).
-* **The arithmetic.** Any `FPModel` at least as accurate as binary64: unit
-  roundoff `u <= 2^-53`, underflow error `η <= 2^-1000` and range
-  `M >= 2^10`.
+* **The arithmetic.** Any `FPModel` with unit roundoff `u <= 2^-53`,
+  underflow error `η <= 2^-1000` and range `M >= 2^10`. The relative bound
+  matches binary64 round-to-nearest, but the underflow allowance is looser
+  and the required range smaller. These hypotheses also admit arithmetic
+  such as flush-to-zero (Section 4).
 
 ### 2.4 Choosing the tolerance
 
-A requested accuracy can be false, true but not provable by a given argument,
-or proved:
+A requested accuracy can be false, unproved, or proved. Its status depends on
+whether it is required only for IEEE binary64 or for every admissible
+`FPModel`:
 
 * **1e-14 is false.** The measured error 1.78e-13 already exceeds it, so no
-  proof can exist.
-* **1e-12 is probably true but not provable by worst-case analysis.** It holds
-  on all tested points, but a proof that only uses the error bound of each
-  operation must allow every rounding error to take its worst value and sign.
-  The best such bound at `n = 100` is about 3e-12.
-* **1e-11 is proved.** The proof gives about 9.9e-12.
+  proof of that accuracy for the measured implementation can exist.
+* **1e-12 is unproved here for IEEE binary64.** It holds on all tested points,
+  but that is not a proof over all inputs. A sharper proof could exploit
+  IEEE-specific facts that the abstract model does not require.
+* **1e-12 is false for the full `FPModel` specification.** The model admits
+  artificial arithmetics that exceed this tolerance, as shown below.
+* **1e-11 is proved for every admissible `FPModel`.** The proof gives about
+  9.9e-12; no optimality claim is made for this bound.
 
-A proof of a weaker statement does not establish a stronger one: if the
-specification asks for `1e-12`, the final step of the proof (checking
-`9.9e-12 <= 1e-12` with exact rational arithmetic) fails and Lean rejects
-the proof. The result is then "not proven", which is different from "false".
+For an analytic counterexample to the universal `1e-12` bound, take `F = ℝ`,
+`u = 2^-53`, `η = 0`, `M = 2^10`, exact rounding/conversions and addition,
+and let multiplication, subtraction and division return `q·exact`, where
+`q = 1+u`. These operations satisfy the `FPModel` error and closure bounds.
+This is not IEEE binary64. At `x = 1`, the generated code has `y_0 = y_1 = 1`
+and
+
+```
+k·y_k = (2k-1)q^4·y_(k-1) - (k-1)q^3·y_(k-2).
+```
+
+Writing `Δ_k = y_k - y_(k-1)` gives
+
+```
+k·Δ_k = (k-1)q^3·Δ_(k-1)
+        + ((2k-1)q^4 - (k-1)q^3 - k)·y_(k-1).
+```
+
+For `k >= 2`, the coefficient of `y_(k-1)` is at least `(5k-1)u`.
+Starting with `Δ_1 = 0`, induction gives `y_k >= 1` and `Δ_k >= 2ku`
+for `k >= 2`. Thus `y_100 - P_100(1) >= 10098u > 1e-12`.
+This calculation explains the distinction; it is not an additional
+Lean-checked theorem in this directory.
+
+A proof of a weaker statement does not establish a stronger one: checking
+`9.9e-12 <= 1e-12` fails. Failure of that argument alone would mean "not
+proven", not "false". The counterexample above separately rules out the
+stronger universal specification, while leaving the IEEE-specific conjecture
+open.
 
 ### 2.5 How the proof works
 
-The proof (`Legendre/Proof.lean`, `Legendre/Proof/*.lean`) has four steps:
+The proof (`Legendre/Proof.lean`, `Legendre/Proof/*.lean`) uses the fixed
+ceilings `U = 2^-53` and `E = 2^-1000`, not the individual model's `fp.u`
+and `fp.η`. It has four steps:
 
 1. **Loop to recursion.** The `for` loop of the generated code is rewritten as
    a recursive sequence `y_m` of computed values.
 2. **One step of the loop.** Using only the error bound of each of its eight
    rounded operations (five arithmetic operations, three conversions), the
    computed `y_k` differs from the exact recurrence applied to the computed
-   `y_{k-1}`, `y_{k-2}` by at most `|r_k| ≤ 18u` (to first order the constant
-   is `17 - 11/k`), as long as the computed values stay within `1 + 10^-10`
-   in magnitude, which the induction maintains.
+   `y_{k-1}`, `y_{k-2}` by at most `|r_k| ≤ 18U`, as long as the computed
+   values stay within `1 + 10^-10` in magnitude, which the induction
+   maintains. This bound includes the allowed absolute underflow error;
+   it is not a bound of `18·fp.u` when `fp.u` is smaller than `U`.
 3. **Propagation.** The errors `e_k = y_k - P_k(x)` satisfy
    `e_k = ((2k-1) x e_{k-1} - (k-1) e_{k-2})/k + r_k`. Bounding this term by
    term, `|e_k| <= (2k-1)/k |e_{k-1}| + (k-1)/k |e_{k-2}| + |r_k|`, is too
@@ -197,16 +238,21 @@ The proof (`Legendre/Proof.lean`, `Legendre/Proof/*.lean`) has four steps:
    `T(p, q) = p^2 + q^2 - 2xpq = (q - xp)^2 + (1 - x^2) p^2`, which does not
    increase along the exact recurrence when `|x| <= 1`. Its square root is a
    seminorm, so each rounding error adds at most `|r_k|` to it, and the errors
-   grow only quadratically: `|e_n| <= n·ε_0 + n(n-1)/2·18u`, where `ε_0` is
-   the rounding error of the literal `1.0`. The same form also proves
-   `|P_n(x)| <= 1`, which keeps the intermediate values (and the per-step
-   errors) bounded.
-4. **The numbers.** For `n <= 100` this is about `9.9e-12 <= 10^-11`.
+   grow only quadratically: `|e_n| <= n·ε_0 + n(n-1)/2·18U` for
+   `1 <= n <= 100`, where `ε_0 = U + E` bounds the rounding error of the
+   literal `1.0`. The case `n = 0` is handled separately by `|e_0| <= ε_0`.
+   The same form also proves `|P_n(x)| <= 1`, which keeps the intermediate
+   values (and the per-step errors) bounded.
+4. **The numbers.** The largest bound for `0 <= n <= 100` is
+   `100(U+E) + 4950·18U`, about `9.9e-12`, below `10^-11`.
 
-The proof is 50 times more pessimistic than the measured error because it
-assumes every rounding error is as large as possible and of the worst sign;
-real rounding errors vary in size and sign and largely cancel. Proving bounds
-close to the observed error would need a different kind of argument.
+The bound is roughly 50 times larger than the measured error. The generic
+proof permits worst-case operation errors, allows rounding errors in `1.0`
+and the small integer conversions that are exact in IEEE binary64, and uses
+conservative propagation inequalities. Rounding errors can be correlated;
+the measurements alone do not establish cancellation as the explanation for
+the gap. A sharper IEEE-specific proof could exploit exactness and additional
+structure.
 
 ## 3. The floating-point model
 
@@ -266,8 +312,8 @@ Trefethen & Bau ──► Higham ──► FPModel ◄── binary64 with flush
 `Legendre/Corollaries.lean` applies `legendre_correct` to each of them
 (`legendre_correct_binary64`, `legendre_correct_binary64FTZ`,
 `legendre_correct_higham`, `legendre_correct_trefethenBau`). The proof gives
-an error bound of about `9.9e-12` (with `u = 2^-53`); the measured error is
-`1.78e-13`.
+an error bound of about `9.9e-12` using the fixed ceiling `U = 2^-53`; the
+measured error is `1.78e-13`.
 
 Differences in detail:
 
@@ -292,12 +338,13 @@ Differences in detail:
   `η` (for example `2^-1074 · 2^1000`). It is covered by excluding subnormals
   from `F`: then no operand is ever subnormal and DAZ never applies, but a
   program's inputs must be non-subnormal (the hypothesis `x ∈ fp.F`).
-* **Not covered:** directed rounding (needs `u = 2^-52`; an `FPModel`, but
-  outside the Legendre specification's `u ≤ 2^-53`), and the program
-  transformations of `-ffast-math` (reassociation, contraction into fused
-  multiply-add, approximate reciprocals). Those change which operations run,
-  so the compiled program no longer matches the translated one; no rounding
-  model can account for them.
+* **Not automatically covered:** directed rounding needs the larger relative
+  bound `u = 2^-52`, outside the Legendre specification's `u ≤ 2^-53`.
+  Transformations such as reassociation, contraction into fused multiply-add,
+  and replacement of division by approximate reciprocals can change which
+  operations run. The current proof does not automatically transfer to the
+  changed operation tree; modelling and verifying such transformations is
+  possible (Section 6).
 
 ## 5. What the theorem guarantees, and what is trusted
 
@@ -313,14 +360,18 @@ A human still has to trust:
   program uses it, satisfies the `FPModel` assumptions required by the
   specification: every operation, conversion and literal yields a double, with
   error at most `2^-53·|exact| + 2^-1000` when `|exact| <= 2^10` (and the
-  divisor is nonzero). This is much weaker than IEEE conformance: the bound is
-  half a unit in the last place only at the bottom of each binade and allows
-  almost a full unit near its top, so roundings other than round-to-nearest
-  qualify, and operations may round differently from one another;
-* **the translation**: that LFortran's Lean backend preserves the meaning of
-  the Fortran code; the backend itself is not verified;
-* **the compilation**: that the executable performs the same operations in
-  the same order as the source (Section 6).
+  divisor is nonzero). This is much weaker than IEEE conformance: within a
+  normal binary64 binade, the relative term alone ranges from half a unit in
+  the last place to almost a full unit. The absolute term can dominate near
+  underflow, so the complete bound is not a half-to-one-ULP constraint.
+  Roundings other than round-to-nearest can qualify, and operations may round
+  differently from one another;
+* **the translation**: that LFortran's Lean backend correctly models the ASR
+  operation tree chosen for the Fortran source; the backend itself is not
+  verified;
+* **the compilation**: that the executable implements that operation tree's
+  values under the stated arithmetic assumptions, or that a separate proof
+  establishes the required accuracy after transformations (Section 6).
 
 `LFortran/Models/` is not part of what has to be trusted: it proves that
 IEEE 754 round-to-nearest (and flush-to-zero) arithmetic satisfies these
@@ -334,9 +385,10 @@ example `n > 100`, NaN or infinite `x`), or about performance.
 
 ## 6. Compiler optimizations, fast-math, and levels of verification
 
-The proof is about the program at the level of the source code: the backend
-translates LFortran's ASR before any lowering or optimization. What runs is
-the compiled program, so the question is which compiler transformations
+The proof is about the source-level ASR operation tree: the backend translates
+it before any lowering or optimization. It is not a proof about every
+evaluation permitted by Fortran or about the final machine code. What runs
+is the compiled program, so the question is which compiler transformations
 preserve the proved property.
 
 **Value-preserving transformations** (register allocation, inlining, loop
@@ -344,8 +396,12 @@ transformations that keep the order of floating-point operations, ...) do not
 change any computed value, so the theorem applies unchanged. Such a
 transformation can in principle be verified once for all programs, as in the
 CompCert C compiler, whose correctness proof in Coq includes floating-point
-semantics (via the Flocq library), or checked automatically per
-transformation, as Alive2 does for LLVM optimizations.
+semantics (via the Flocq library). Another approach is to check individual
+transformation instances, as
+[Alive2](https://web.ist.utl.pt/nuno.lopes/pubs/alive2-pldi21.pdf) does for LLVM.
+Alive2 performs **bounded** translation validation: its loop-unrolling bounds
+can leave errors undetected, so a successful bounded check is not a general
+proof for arbitrarily many loop iterations.
 
 **Value-changing transformations**, typically enabled by fast-math, change the
 computed values:
@@ -355,20 +411,32 @@ computed values:
   holds for binary64 with flush-to-zero for non-subnormal inputs.
 * *reassociation* (`(a+b)+c` to `a+(b+c)`), *contraction* of `a*b+c` into a
   fused multiply-add, and *approximate reciprocals* change which operations
-  are performed. No arithmetic model covers them; the program itself changes.
+  are performed. The current operation tree and proof do not automatically
+  cover the transformed program.
 
-Such transformations cannot be verified for all programs, because they really
-do break some programs, namely those whose accuracy depends on the exact
-order of operations (compensated summation, error-free transformations such
-as the double-double reference in `legendre_accuracy.f90`). They can be
-verified **per program**: the compiler can emit Lean code after each
-transformation (after each ASR pass, and in principle for LLVM IR and
-assembly) and the proof is redone for that code against the same
-specification. A program whose accuracy is robust to reordering is then
-proved correct for the optimized code too, and a non-robust program fails to
-prove, which is the right answer. This suggests a division: passes that are
-correct for every program are verified once; fast-math passes are verified
-per program.
+These are not unconditional value-preserving transformations: they can break
+programs whose accuracy depends on the exact order of operations, such as
+compensated summation and the error-free transformations in the double-double
+reference in `legendre_accuracy.f90`. This does not preclude reusable proofs
+under sufficient side conditions. A transformation can be proved to preserve
+values, or a specified accuracy contract, whenever those conditions hold.
+
+Arithmetic models can also be extended or instantiated to cover optimized
+operations. FMA can be represented explicitly and its error analyzed. An
+approximate division implementation can implement `fp.div` if its aggregate
+error and result membership satisfy the existing contract on the required
+domain. A looser error bound would instead require checking whether the
+specification and proof still apply.
+
+Another route is verification **per program**: the compiler can emit Lean
+code after transformations (after ASR passes, and in principle for LLVM IR and
+assembly), and that code can be proved against the same specification. If an
+optimized program violates the specification, no sound proof can establish
+it; inability to find a proof does not by itself establish a violation.
+A practical design can combine reusable pass proofs, discharge their side
+conditions for each use, and use program-specific accuracy proofs where
+needed. Fast-math does not impose an absolute boundary between reusable and
+per-program verification.
 
 Verifying the **machine code** directly, using formal models of the
 instruction set (for example the Sail models of the Arm, RISC-V and x86
@@ -396,15 +464,24 @@ in the model. This has been done before in other provers, for example John
 Harrison's HOL Light proofs of Intel's floating-point algorithms, and the
 CRlibm library with the Gappa tool.
 
-**Why Fortran rather than Lean?** Lean can compile programs, but its built-in
-`Float` type has no proved floating-point semantics, so proofs about Lean
-programs that use it face the same modelling problem, and Lean is not aimed at
-producing vectorized numerical code. Fortran has optimizing compilers and a
-large body of existing scientific code that could be verified without being
-rewritten. Writing algorithms in Lean and translating them to Fortran is also
-possible; the translation would then have to be trusted instead.
+**Why Fortran rather than Lean?** Lean can compile programs. Since Lean 4.33,
+`Float` has a logical `Float.Model` for basic arithmetic and square root,
+usable in proofs; this includes the 4.33.1 version pinned here (see the
+[Lean floating-point documentation](https://lean-lang.org/doc/reference/4.33.1/Basic-Types/Floating-Point-Numbers/)).
+Numerical analysis still needs supporting mathematical lemmas, and agreement
+between the logical model and native execution remains part of the trusted
+implementation, supported by empirical testing rather than a proof about the
+target machine. The reason for using Fortran here is its optimizing compilers
+and large body of existing scientific code that could be verified without
+being rewritten, not an absence of Lean floating-point semantics. Writing
+algorithms in Lean and translating them to Fortran is also possible; unless
+verified, that translation would have to be trusted.
 
 **Next steps** for the infrastructure: `sqrt` and fused multiply-add in
-`FPModel`; Higham's `γ_n` lemma (`∏(1+δ_i)^{±1} = 1+θ_n`, `|θ_n| <= nu/(1-nu)`)
-to make proofs shorter; a connection to a complete IEEE formalization such as
-FloatSpec (a Lean port of Flocq); and a larger Fortran subset in the backend.
+`FPModel`; Higham's `γ_n` lemma to make proofs shorter (for `n` factors with
+`|δ_i| <= u`, `0 <= u` and `nu < 1`, it gives
+`∏(1+δ_i)^{±1} = 1+θ_n`, `|θ_n| <= nu/(1-nu)`); a connection to a more
+comprehensive floating-point formalization, such as
+[FloatSpec](https://github.com/Beneficial-AI-Foundation/FloatSpec), an ongoing
+Lean port of Flocq whose roadmap still lists correctness work; and a larger
+Fortran subset in the backend.
