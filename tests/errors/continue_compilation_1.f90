@@ -5327,3 +5327,15 @@ subroutine associated_target_not_variable_in_continue_compilation_1()
     a => null()
     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
 end subroutine
+
+! The argument of STORAGE_SIZE must be a data object, so an operator
+! expression that reads a variable is rejected.
+subroutine cc1_storage_size_expr()
+    integer :: cc1_sse_a(2, 3), cc1_sse_i
+    real :: cc1_sse_x
+    logical :: cc1_sse_l
+    print *, storage_size(cc1_sse_a + 1)  ! {Error} the argument of the `storage_size` intrinsic must be a data object
+    print *, storage_size(-cc1_sse_i)  ! {Error} the argument of the `storage_size` intrinsic must be a data object
+    print *, storage_size(cc1_sse_x * 2.0, 8)  ! {Error} the argument of the `storage_size` intrinsic must be a data object
+    print *, storage_size(.not. cc1_sse_l)  ! {Error} the argument of the `storage_size` intrinsic must be a data object
+end subroutine
