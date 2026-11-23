@@ -5327,3 +5327,11 @@ subroutine associated_target_not_variable_in_continue_compilation_1()
     a => null()
     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
 end subroutine
+
+! Allocating an unlimited polymorphic (class(*)) variable requires a
+! type-spec, SOURCE=, or MOLD= so the runtime type is known.
+subroutine unlimited_polymorphic_allocate_no_typespec_1()
+    implicit none
+    class(*), allocatable :: u(:)
+    allocate(u(2))  ! {Error} allocating unlimited polymorphic 'u' requires a type-spec, SOURCE=, or MOLD=
+end subroutine
