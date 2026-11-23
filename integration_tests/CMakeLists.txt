@@ -1189,7 +1189,7 @@ RUN(NAME arrays_134 LABELS gfortran llvm) # size() of an explicit-shape dummy wi
 RUN(NAME arrays_135 LABELS lean gfortran llvm llvmStackArray) # loops over 16-byte aligned stack arrays, promoted allocatables under --fast
 RUN(NAME arrays_136 LABELS lean gfortran llvm) # explicit-shape dummies with integer(int64) and integer(2) extents, int8 element to default integer (#7609)
 RUN(NAME arrays_137 LABELS gfortran llvm) # list-directed write of real arrays with vector subscripts (#3695)
-RUN(NAME arrays_138 LABELS lean gfortran llvm) # local array with huge(0) elements (#6508)
+RUN(NAME arrays_138 LABELS gfortran llvm) # local array with huge(0) elements (#6508)
 RUN(NAME arrays_139 LABELS gfortran llvm) # local array of 1e7 elements must not overflow the stack (#5427)
 RUN(NAME arrays_140 LABELS gfortran llvm) # non-default integer kind triplet bounds with vector subscript (#18320)
 
@@ -2376,7 +2376,7 @@ RUN(NAME intrinsics_515 LABELS gfortran llvm) # selected_real_kind returns -1/-2
 RUN(NAME intrinsics_516 LABELS gfortran llvm) # x87 kind-10 constant folds (#17201)
 RUN(NAME intrinsics_517 LABELS gfortran llvm) # sin/acos/atan of x87 kind 10 (#17497)
 RUN(NAME intrinsics_518 LABELS gfortran llvm) # real(16) parameter gamma/log_gamma/hypot/bessel/erfc_scaled (#15730)
-RUN(NAME intrinsics_519 LABELS lean gfortran llvm) # digits/maxexponent/minexponent of x87 kind 10 (#15050)
+RUN(NAME intrinsics_519 LABELS gfortran llvm) # digits/maxexponent/minexponent of x87 kind 10 (#15050)
 RUN(NAME eoshift_default_boundary_complex_01 LABELS gfortran llvm) # eoshift of a complex array without BOUNDARY (#16933)
 RUN(NAME eoshift_default_boundary_char_01 LABELS gfortran llvm) # eoshift of a character array without BOUNDARY (#14677)
 RUN(NAME intrinsics_520 LABELS gfortran llvm) # x= keyword for sind and atand (#17843)
@@ -8170,7 +8170,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real_star_02 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
-    RUN(NAME real80_intrinsic_math_01 LABELS lean llvm) # sinpi etc. in parameters; GFortran does not have these intrinsics
+    RUN(NAME real80_intrinsic_math_01 LABELS llvm) # sinpi etc. in parameters; GFortran does not have these intrinsics
     RUN(NAME real80_array_constructor_01 LABELS gfortran llvm)
     RUN(NAME complex10_arith_01 LABELS gfortran llvm)
     RUN(NAME complex10_array_01 LABELS gfortran llvm)
