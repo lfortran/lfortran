@@ -3543,6 +3543,7 @@ RUN(NAME c_pointer_dummy_abi_01 LABELS gfortran llvm c)
 RUN(NAME c_pointer_host_reference_01 LABELS gfortran llvm c)
 RUN(NAME c_pointer_allocatable_derived_01 LABELS gfortran llvm c)
 RUN(NAME c_pointer_associated_empty_01 LABELS gfortran c) # LLVM zero-sized TARGET bug: #14340
+RUN(NAME c_associated_fixed_component_01 LABELS gfortran llvm c)
 RUN(NAME c_scalar_allocatable_dummy_01 LABELS gfortran llvm c)
 RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
