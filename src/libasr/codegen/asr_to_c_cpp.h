@@ -169,6 +169,19 @@ public:
         return std::move(src);
     }
 
+    bool c_inline_pointer_array_member(
+            const ASR::StructInstanceMember_t &member) const {
+        // A Reference member borrows a descriptor rather than owning one inline.
+        return is_c && !ASRUtils::get_reference_member(member) &&
+            ASRUtils::is_pointer(member.m_type) &&
+            ASRUtils::is_array(member.m_type);
+    }
+
+    bool c_inline_pointer_array_member(ASR::expr_t* expr) const {
+        return ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
+            c_inline_pointer_array_member(
+                *ASR::down_cast<ASR::StructInstanceMember_t>(expr));
+    }
 
     // Output configuration:
     // Use std::string or char*
@@ -2433,12 +2446,144 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = indent + reference + " = &(" + variable + ");\n";
     }
 
+    std::string c_pointer_association_value(ASR::expr_t* value) {
+        self().visit_expr(*value);
+        std::string rhs = std::move(src);
+        ASR::ttype_t* type = ASRUtils::expr_type(value);
+        ASR::ttype_t* storage_type =
+            ASRUtils::type_get_past_allocatable(type);
+        if (ASR::is_a<ASR::PointerNullConstant_t>(*value) ||
+                ASR::is_a<ASR::GetPointer_t>(*value) ||
+                ASRUtils::is_pointer(type) || ASRUtils::is_array(type) ||
+                ASRUtils::is_character(*type) ||
+                (ASR::is_a<ASR::StructType_t>(*storage_type) &&
+                 (ASR::is_a<ASR::Var_t>(*value) ||
+                  c_scalar_allocatable(type)))) {
+            return rhs;
+        }
+        return "&(" + rhs + ")";
+    }
+
     void visit_Associate(const ASR::Associate_t &x) {
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
             handle_array_section_association_to_pointer(x);
-        } else {
-            throw CodeGenError("Associate only implemented for ArraySection so far");
+            return;
         }
+        if (!is_c || x.m_form != ASR::pointer_bounds_formType::NoPointerBounds) {
+            throw CodeGenError("pointer bounds association is not supported by "
+                "the c backend yet", x.base.base.loc);
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        if (!ASRUtils::is_pointer(target_type)) {
+            throw CodeGenError("association target is not a pointer",
+                x.base.base.loc);
+        }
+        self().visit_expr(*x.m_target);
+        std::string target = std::move(src);
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        if (ASRUtils::is_array(target_type)) {
+            bool inline_target = c_inline_pointer_array_member(x.m_target);
+            bool borrowed_descriptor = inline_target;
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                borrowed_descriptor = ASRUtils::is_arg_dummy(
+                    ASRUtils::EXPR2VAR(x.m_target)->m_intent);
+            }
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                if (borrowed_descriptor) {
+                    src = indent + target + "->data = NULL;\n"
+                        + indent + target + "->is_allocated = false;\n";
+                } else {
+                    src = indent + "if (" + target + " != NULL) {\n"
+                        + indent + "    " + target + "->data = NULL;\n"
+                        + indent + "    " + target + "->is_allocated = false;\n"
+                        + indent + "}\n";
+                }
+                return;
+            }
+            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+            if (!ASRUtils::is_array(value_type) ||
+                    (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
+                     ASRUtils::extract_physical_type(value_type) ==
+                         ASR::array_physical_typeType::FixedSizeArray)) {
+                throw CodeGenError("association with this array designator is "
+                    "not supported by the c backend yet",
+                    x.m_value->base.loc);
+            }
+            self().visit_expr(*x.m_value);
+            std::string value = std::move(src);
+            std::string tmp_name =
+                current_scope->get_unique_name("_c_associate_value");
+            src = indent + "{\n"
+                + indent + "    const void* " + tmp_name +
+                    " = (const void*) (" + value + ");\n"
+                + indent + "    if (" + tmp_name + " != NULL) {\n";
+            if (!borrowed_descriptor) {
+                src += indent + "        if (" + target + " == NULL) " +
+                    target + " = (void*) _lfortran_calloc_alloc("
+                    "_lfortran_get_default_allocator(), 1, sizeof(*" +
+                    target + "));\n";
+            }
+            src += indent + "        memcpy(" + target + ", " + tmp_name +
+                    ", sizeof(*" + target + "));\n"
+                + indent + "        " + target + "->is_allocated = false;\n"
+                + indent + (borrowed_descriptor ? "    } else {\n" :
+                    "    } else if (" + target + " != NULL) {\n")
+                + indent + "        " + target + "->data = NULL;\n"
+                + indent + "        " + target + "->is_allocated = false;\n"
+                + indent + "    }\n"
+                + indent + "}\n";
+        } else {
+            src = indent + target + " = " +
+                c_pointer_association_value(x.m_value) + ";\n";
+        }
+    }
+
+    void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {
+        if (!is_c) {
+            throw CodeGenError("associated is not supported by the cpp "
+                "backend yet", x.base.base.loc);
+        }
+        if (compiler_options.po.fast && x.m_value) {
+            self().visit_expr(*x.m_value);
+            return;
+        }
+        self().visit_expr(*x.m_ptr);
+        std::string ptr = std::move(src);
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_ptr);
+        if (ASRUtils::is_array(type)) {
+            std::string condition = "(" +
+                (c_inline_pointer_array_member(x.m_ptr) ? "" :
+                    ptr + " != NULL && ") +
+                ptr + "->data != NULL)";
+            if (x.m_tgt) {
+                self().visit_expr(*x.m_tgt);
+                std::string target = std::move(src);
+                int rank = ASRUtils::extract_n_dims_from_ttype(type);
+                condition = "(" + condition +
+                    (c_inline_pointer_array_member(x.m_tgt) ? "" :
+                        " && " + target + " != NULL") +
+                    " && " + ptr + "->data == " + target +
+                    "->data && " + ptr + "->n_dims == " + target +
+                    "->n_dims";
+                for (int i = 0; i < rank; i++) {
+                    std::string dim = std::to_string(i);
+                    condition += " && " + target + "->dims[" + dim +
+                        "].length > 0 && " + ptr + "->dims[" + dim +
+                        "].length == " + target + "->dims[" + dim +
+                        "].length && " + ptr + "->dims[" + dim +
+                        "].stride == " + target + "->dims[" + dim +
+                        "].stride";
+                }
+                condition += ")";
+            }
+            src = condition;
+        } else if (x.m_tgt) {
+            src = "(" + ptr + " != NULL && " + ptr + " == " +
+                c_pointer_association_value(x.m_tgt) + ")";
+        } else {
+            src = "(" + ptr + " != NULL)";
+        }
+        last_expr_precedence = 2;
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
@@ -2868,11 +3013,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         c_scalar_allocatable_value(sv->m_type)) {
                     src = "(*" + src + ")";
                 }
-            } else if ((sv->m_intent == ASRUtils::intent_in
-                || sv->m_intent == ASRUtils::intent_inout)
-                && ASRUtils::is_array(sv->m_type)
-                && ASRUtils::is_pointer(sv->m_type)) {
-                src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
             } else if ((sv->m_intent == ASRUtils::intent_inout
                 || sv->m_intent == ASRUtils::intent_out)
                 && !ASRUtils::is_aggregate_type(sv->m_type)) {
@@ -2923,12 +3063,19 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bool designates_value = ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
             ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v);
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
-                ASRUtils::get_reference_member(
-                    *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_v))) {
-            // A referenced variable of derived type is designated by its
-            // address, as a Var of it is.
-            designates_value = false;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
+            const ASR::StructInstanceMember_t &parent =
+                *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_v);
+            ASR::ttype_t* parent_type = ASRUtils::expr_type(x.m_v);
+            // A referenced variable of derived type, and a pointer or
+            // allocatable scalar component, is designated by its address,
+            // as a Var of it is.
+            if (ASRUtils::get_reference_member(parent) ||
+                    (!ASRUtils::is_array(parent_type) &&
+                     (ASRUtils::is_pointer(parent_type) ||
+                      ASRUtils::is_allocatable(parent_type)))) {
+                designates_value = false;
+            }
         }
         if (designates_value) {
             return der_expr + "." + member;
@@ -2944,6 +3091,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             // A member of Reference type designates the variable whose
             // address it holds.
             src = "(*" + src + ")";
+            last_expr_precedence = 2;
+        }
+        if (c_inline_pointer_array_member(x)) {
+            src = "(&(" + src + "))";
             last_expr_precedence = 2;
         }
         if (!c_scalar_allocatable_as_storage &&
@@ -3537,8 +3688,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string out = "";
         for (size_t i=0; i<x.n_args; i++) {
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
-            if (!ASR::is_a<ASR::Var_t>(*tmp_expr)) {
-                throw CodeGenError("Cannot deallocate variables in expression " +
+            if (!ASR::is_a<ASR::Var_t>(*tmp_expr) &&
+                    !ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                throw CodeGenError("Cannot allocate expression " +
                                     ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
                                     tmp_expr->base.loc);
             }
@@ -3551,6 +3703,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 sym = std::move(src);
             }
             if (ASRUtils::is_array(type)) {
+                if (is_c && !c_inline_pointer_array_member(tmp_expr)) {
+                    out += indent + "if (" + sym + " == NULL) " + sym +
+                        " = (void*) _lfortran_calloc_alloc(_lfortran_get_default_allocator(),"
+                        " 1, sizeof(*" + sym + "));\n";
+                }
                 std::string size_str = "1";
                 out += indent + sym + "->n_dims = " + std::to_string(x.m_args[i].n_dims) + ";\n";
                 std::string stride = "1";
@@ -3577,11 +3734,24 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     out += stride + ";\n";
                     stride = "(" + stride + " * " + l + ")";
                 }
-                std::string ty = CUtils::get_c_type_from_ttype_t(
-                    ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(type)));
+                ASR::ttype_t* elem = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(type));
+                std::string ty;
+                if (ASR::is_a<ASR::StructType_t>(*elem)) {
+                    ASR::symbol_t* derived = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
+                    LCOMPILERS_ASSERT(derived &&
+                        ASR::is_a<ASR::Struct_t>(*derived));
+                    ty = std::string("struct ") + ASRUtils::symbol_name(derived);
+                } else {
+                    ty = CUtils::get_c_type_from_ttype_t(elem);
+                }
                 size_str += "*sizeof(" + ty + ")";
-                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
+                out += indent + sym + "->data = (" + ty + "*) " +
+                    (is_c && ASR::is_a<ASR::StructType_t>(*elem)
+                        ? "_lfortran_calloc_alloc(_lfortran_get_default_allocator(), 1, "
+                        : "_lfortran_malloc_alloc(_lfortran_get_default_allocator(), ")
+                    + size_str + ")";
                 out += ";\n";
                 out += indent + sym + "->is_allocated = true;\n";
             } else {
