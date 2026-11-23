@@ -1360,6 +1360,15 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        // `nullify(p)` and `nullify (p)` (prescanned to `nullify(p)`, any
+        // case). Assignments such as `nullify = 1` or `nullify(i) = 1`
+        // were already handled above.
+        if (next_is(cur, "nullify")) {
+            push_token_advance(cur, "nullify");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "goto")) {
             push_token_advance(cur, "goto");
             tokenize_line(cur);
