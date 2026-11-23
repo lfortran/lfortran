@@ -1,9 +1,12 @@
 import Mathlib.Data.Real.Basic
 
 /-!
-# LFortran Lean backend prelude (prototype)
+# LFortran proof runtime
 
-Runtime model used by the code that `lfortran --show-lean` generates.
+The Lean backend is one translator. `--show-lean` aims it here: integers are
+`ℤ`, reals are `ℝ`, and real arithmetic is an abstract `FPModel` so a proof
+can bound rounding error. `--backend=lean` aims the same translator at
+`LFortran.Exec`, which Lean can execute. This file is not a second language.
 
 Floating-point values are modelled as real numbers. The arithmetic is a
 parameter `fp : FPModel`: a set `F` of floating-point numbers, operations

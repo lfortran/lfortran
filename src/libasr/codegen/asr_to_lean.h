@@ -6,16 +6,15 @@
 
 namespace LCompilers {
 
-    // Prototype: translate a small Fortran subset to Lean 4 code that uses
-    // the `LFortran.Prelude` floating-point model. `filename` is only used in
-    // the generated header comment.
+    // Proof mode of the Lean backend: the same translator as
+    // `asr_to_lean_exec`, emitting noncomputable code over `FPModel`
+    // (`LFortran.Prelude`). `filename` is only used in the header comment.
     Result<std::string> asr_to_lean(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, const std::string &filename);
 
-    // Executable translation. Unlike `asr_to_lean`, the result is computable
-    // Lean 4: a program becomes `def main` that `lean --run` can execute.
-    // Integers use their two's-complement width, real(4)/real(8) are Float32
-    // and Float, and `stop` / `error stop` leave the process.
+    // Executable mode. A program becomes `def main` that `lean --run` can
+    // execute. Integers use their two's-complement width, real(4)/real(8)
+    // are Float32 and Float, and `stop` / `error stop` leave the process.
     Result<std::string> asr_to_lean_exec(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, const std::string &filename);
 

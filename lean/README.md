@@ -14,10 +14,11 @@ repository root:
 pixi run -e llvm11 bash lean/run.sh
 ```
 
-`--show-lean` is the proof translation above: noncomputable code over an
-abstract `FPModel`, which Lean cannot execute. `--backend=lean` is a second
-translation of the same ASR, before any ASR pass, into computable Lean with a
-`def main` that `lean --run` executes. The two translations are independent.
+There is one Lean backend. `--show-lean` runs it in proof mode: noncomputable
+code over `LFortran.Prelude` and an abstract `FPModel`, which is what the
+Legendre proof checks. `--backend=lean` runs the same translator in executable
+mode: computable code over `LFortran.Exec`, with a `def main` that `lean --run`
+executes. Both see the ASR before any ASR pass.
 `stop` and `error stop` leave the process. Integration tests labeled `lean`
 are run that way, locally and in the Linux LLVM 11 Quick job:
 

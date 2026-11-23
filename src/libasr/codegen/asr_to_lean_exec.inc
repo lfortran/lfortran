@@ -171,6 +171,12 @@ class ASRToLeanExec {
 public:
     std::string out;
     std::string filename;
+    // Proof mode (`--show-lean`) is the same translator aimed at
+    // `LFortran.Prelude`: integers are `ℤ`, reals are `ℝ`, and real
+    // arithmetic goes through an `fp : FPModel` argument. Executable mode
+    // (`--backend=lean`) stays on `LFortran.Exec`.
+    bool proof = false;
+    std::set<ASR::Variable_t*> proof_loop_vars;
     int indent_level = 0;
     SymbolTable *scope = nullptr;
     std::vector<SymbolTable*> scope_stack;
@@ -271,6 +277,7 @@ public:
     }
 
     std::string int_ty(int k, const Location &loc) {
+        if (proof) return "ℤ";
         switch (k) {
             case 1: return "Int8";
             case 2: return "Int16";
@@ -281,6 +288,7 @@ public:
     }
 
     std::string real_ty(int k, const Location &loc) {
+        if (proof) return "ℝ";
         switch (k) {
             case 4: return "Float32";
             case 8: return "Float";
@@ -374,12 +382,36 @@ public:
     }
 
     std::string of_int(ASR::ttype_t *t, int64_t n, const Location &loc) {
+        if (proof) {
+            return n < 0 ? "(" + std::to_string(n) + ")" : std::to_string(n);
+        }
         std::string ty = int_ty(kind_of(elem_type(t), loc), loc);
         std::string lit = n < 0 ? "(" + std::to_string(n) + ")" : std::to_string(n);
         return ty + ".ofInt " + lit;
     }
 
+    // Exact value of a double, as a Lean real: an integer, or `(m / 2^e : ℝ)`.
+    std::string proof_real_lit(double v, const Location &loc) {
+        if (!std::isfinite(v)) unsupported("non-finite real constant", loc);
+        if (v == std::trunc(v) && std::fabs(v) < 0x1p62) {
+            int64_t i = (int64_t) v;
+            return i < 0 ? "(" + std::to_string(i) + ")" : std::to_string(i);
+        }
+        int e;
+        double f = std::frexp(v, &e);
+        int64_t m = (int64_t) std::ldexp(f, 53);
+        e -= 53;
+        while (m % 2 == 0) {
+            m /= 2;
+            e++;
+        }
+        std::string ms = std::to_string(m);
+        if (e < 0) return "(" + ms + " / 2^" + std::to_string(-e) + " : ℝ)";
+        return "(" + ms + " * 2^" + std::to_string(e) + " : ℝ)";
+    }
+
     std::string real_zero(ASR::ttype_t *t, const Location &loc) {
+        if (proof) return "0";
         int k = kind_of(elem_type(t), loc);
         if (k == 8) {
             return "Float.ofBits (0 : UInt64)";
@@ -749,7 +781,9 @@ public:
     }
 
     std::string var_lean(ASR::Variable_t *v) {
-        if (proc && proc->has_result && proc->fn->m_return_var
+        // Proof mode keeps the Fortran name. The Legendre proof reads the
+        // generated function, and `lfResult` is only an executable-mode detail.
+        if (!proof && proc && proc->has_result && proc->fn->m_return_var
                 && ASRUtils::EXPR2VAR(proc->fn->m_return_var) == v) {
             return "lfResult";
         }
@@ -800,6 +834,21 @@ public:
             || is_arr(ASRUtils::expr_type(right));
         if (op == ASR::binopType::Pow) {
             return pow_op(left, right, type, loc, arr);
+        }
+        if (proof && !arr && type && ASR::is_a<ASR::Real_t>(*past_wrappers(
+                elem_type(type)))) {
+            const char *fn = nullptr;
+            switch (op) {
+                case ASR::binopType::Add: fn = "fp.add"; break;
+                case ASR::binopType::Sub: fn = "fp.sub"; break;
+                case ASR::binopType::Mul: fn = "fp.mul"; break;
+                case ASR::binopType::Div: fn = "fp.div"; break;
+                default: unsupported("this real operator is", loc);
+            }
+            Val l = lower(left);
+            Val r = lower(right);
+            return {std::string(fn) + " " + exec_atom(l) + " " + exec_atom(r),
+                epApp};
         }
         std::string sop;
         int p = epAdd;
@@ -904,6 +953,18 @@ public:
         }
         bool arr = is_arr(ASRUtils::expr_type(left))
             || is_arr(ASRUtils::expr_type(right));
+        if (proof && !arr) {
+            std::string sop;
+            switch (op) {
+                case ASR::cmpopType::Eq: sop = "="; break;
+                case ASR::cmpopType::NotEq: sop = "≠"; break;
+                case ASR::cmpopType::Lt: sop = "<"; break;
+                case ASR::cmpopType::LtE: sop = "≤"; break;
+                case ASR::cmpopType::Gt: sop = ">"; break;
+                case ASR::cmpopType::GtE: sop = "≥"; break;
+            }
+            return infix(lower(left), sop, lower(right), epCmp);
+        }
         // `<` `>` `<=` `>=` are `Prop` in Lean. An array of those cannot be
         // stored or negated; `decide` makes the comparison a `Bool`.
         bool rel = op != ASR::cmpopType::Eq && op != ASR::cmpopType::NotEq;
@@ -945,6 +1006,7 @@ public:
             case ASR::cast_kindType::IntegerToInteger:
                 return int_ty(kind_of(to, loc), loc) + ".ofInt (" + arg + ").toInt";
             case ASR::cast_kindType::IntegerToReal:
+                if (proof) return "fp.ofInt " + arg;
                 return real_ty(kind_of(to, loc), loc) + ".ofInt (" + arg + ").toInt";
             case ASR::cast_kindType::RealToInteger:
                 return int_ty(kind_of(to, loc), loc) + ".ofInt ("
@@ -1606,6 +1668,7 @@ public:
             }
         }
         std::string call = call_name(sym);
+        if (proof) call += " fp";
         for (const std::string &s : passed) call += " " + s;
         size_t arity = 1;
         if (p.ret_type == "Unit" || p.ret_expr.empty()) {
@@ -1689,6 +1752,9 @@ public:
             }
             case ASR::exprType::RealConstant: {
                 auto &x = *ASR::down_cast<ASR::RealConstant_t>(e);
+                if (proof) {
+                    return {"fp.round " + proof_real_lit(x.m_r, loc), epApp};
+                }
                 int k = kind_of(x.m_type, loc);
                 double r = x.m_r;
                 if (k == 8) {
@@ -1996,14 +2062,14 @@ public:
                     return "Float32.ofBits (" + hex_bits(u) + " : UInt32)";
                 };
                 return {"({ re := " + bits(x.m_re) + ", im := " + bits(x.m_im)
-                    + " } : " + lean_scalar(x.m_type, loc) + ")", prec_atom};
+                    + " } : " + lean_scalar(x.m_type, loc) + ")", epAtom};
             }
             case ASR::exprType::ComplexConstructor: {
                 auto &x = *ASR::down_cast<ASR::ComplexConstructor_t>(e);
                 Val re = lower(x.m_re);
                 Val im = lower(x.m_im);
                 return {"({ re := " + re.src + ", im := " + im.src + " } : "
-                    + lean_scalar(x.m_type, loc) + ")", prec_atom};
+                    + lean_scalar(x.m_type, loc) + ")", epAtom};
             }
             case ASR::exprType::ComplexUnaryMinus: {
                 auto &x = *ASR::down_cast<ASR::ComplexUnaryMinus_t>(e);
@@ -2011,9 +2077,9 @@ public:
                 std::string ns = lean_scalar(elem_type(x.m_type), loc);
                 if (is_arr(ASRUtils::expr_type(x.m_arg))) {
                     return {"LFortran.Exec.Arr.map (fun lfX => " + ns
-                        + ".neg lfX) " + exec_atom(a), prec_app};
+                        + ".neg lfX) " + exec_atom(a), epApp};
                 }
-                return {ns + ".neg " + exec_atom(a), prec_app};
+                return {ns + ".neg " + exec_atom(a), epApp};
             }
             case ASR::exprType::ComplexCompare: {
                 auto &x = *ASR::down_cast<ASR::ComplexCompare_t>(e);
@@ -2026,7 +2092,7 @@ public:
                     ASRUtils::expr_type(x.m_left)), loc);
                 std::string eq = ns + ".eq " + exec_atom(l) + " " + exec_atom(r);
                 if (x.m_op == ASR::cmpopType::NotEq) eq = "(!" + eq + ")";
-                return {eq, prec_app};
+                return {eq, epApp};
             }
             case ASR::exprType::ComplexBinOp: {
                 auto &x = *ASR::down_cast<ASR::ComplexBinOp_t>(e);
@@ -2045,10 +2111,10 @@ public:
                 Val r = lower(x.m_right);
                 if (la && ra) {
                     return {"LFortran.Exec.Arr.zipWith " + ns + " "
-                        + exec_atom(l) + " " + exec_atom(r), prec_app};
+                        + exec_atom(l) + " " + exec_atom(r), epApp};
                 }
                 if (la || ra) unsupported("this complex operator is", loc);
-                return {ns + " " + exec_atom(l) + " " + exec_atom(r), prec_app};
+                return {ns + " " + exec_atom(l) + " " + exec_atom(r), epApp};
             }
             case ASR::exprType::StructInstanceMember:
                 return lower_member(*ASR::down_cast<ASR::StructInstanceMember_t>(e));
@@ -2325,6 +2391,21 @@ public:
             unsupported("this do loop is", loc);
         }
         std::string vn = var_lean(iv);
+        if (proof) {
+            bool unit = !h.m_increment
+                || (ASR::is_a<ASR::IntegerConstant_t>(*h.m_increment)
+                    && ASR::down_cast<ASR::IntegerConstant_t>(
+                        h.m_increment)->m_n == 1);
+            if (!unit) unsupported("this do loop is", loc);
+            Val lo = lower(h.m_start);
+            Val hi = lower(h.m_end);
+            out += indent() + "for " + vn + " in intRange " + lo.src + " "
+                + hi.src + " do\n";
+            indent_level++;
+            body();
+            indent_level--;
+            return;
+        }
         std::string lo = bind_val(lower(h.m_start), "lfLo");
         std::string hi = bind_val(lower(h.m_end), "lfHi");
         std::string st;
@@ -2940,7 +3021,9 @@ public:
         if (p.has_result) {
             types.push_back(lean_type(result->m_type, loc,
                 result->m_type_declaration));
-            exprs.push_back("lfResult");
+            exprs.push_back(proof
+                ? lean_name(result->m_name, result->base.base.loc)
+                : "lfResult");
         }
         for (const ArgPlan &a : p.args) {
             if (!a.pass_out) continue;
@@ -3014,6 +3097,7 @@ public:
     }
 
     void emit_var(ASR::Variable_t *v, bool inout_shadow, bool out_only) {
+        if (proof && proof_loop_vars.count(v)) return;
         const Location &loc = v->base.base.loc;
         std::string name = var_lean(v);
         ASR::symbol_t *dt = v->m_type_declaration;
@@ -3058,8 +3142,8 @@ public:
                 dummies.insert(a.var);
             }
         }
-        if (result) {
-            out += indent() + "let mut lfResult : "
+        if (result && !(proof && proof_loop_vars.count(result))) {
+            out += indent() + "let mut " + var_lean(result) + " : "
                 + lean_type(result->m_type, result->base.base.loc,
                     result->m_type_declaration) + " := "
                 + zero_value(result->m_type, result->base.base.loc,
@@ -3088,12 +3172,47 @@ public:
         }
     }
 
+    void collect_proof_loops(ASR::stmt_t **body, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (!s) continue;
+            if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::DoLoop_t>(s);
+                if (d.m_head.m_v && ASR::is_a<ASR::Var_t>(*d.m_head.m_v)) {
+                    proof_loop_vars.insert(ASRUtils::EXPR2VAR(d.m_head.m_v));
+                }
+                collect_proof_loops(d.m_body, d.n_body);
+                collect_proof_loops(d.m_orelse, d.n_orelse);
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::If_t>(s);
+                collect_proof_loops(d.m_body, d.n_body);
+                collect_proof_loops(d.m_orelse, d.n_orelse);
+            } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::WhileLoop_t>(s);
+                collect_proof_loops(d.m_body, d.n_body);
+                collect_proof_loops(d.m_orelse, d.n_orelse);
+            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                for (size_t h = 0; h < d.n_head; h++) {
+                    if (d.m_head[h].m_v && ASR::is_a<ASR::Var_t>(*d.m_head[h].m_v)) {
+                        proof_loop_vars.insert(ASRUtils::EXPR2VAR(d.m_head[h].m_v));
+                    }
+                }
+                collect_proof_loops(d.m_body, d.n_body);
+            }
+        }
+    }
+
     void emit_fn(ProcInfo &p) {
         proc = &p;
         scope = p.fn->m_symtab;
         tmp_n = 0;
+        proof_loop_vars.clear();
+        if (proof) collect_proof_loops(p.fn->m_body, p.fn->n_body);
         const Location &loc = p.fn->base.base.loc;
-        out += "def " + lean_name(p.fn->m_name, loc);
+        out += proof ? "noncomputable def " : "def ";
+        out += lean_name(p.fn->m_name, loc);
+        if (proof) out += " (fp : FPModel)";
         for (const ArgPlan &a : p.args) {
             if (!a.pass_in) continue;
             out += " (" + lean_name(a.var->m_name, a.var->base.base.loc) + " : "
@@ -3246,7 +3365,7 @@ public:
             }
             unsupported("this top-level entity is", s->base.loc);
         }
-        if (!prog) {
+        if (!prog && !proof) {
             unsupported("a file with no program is", tu.base.base.loc);
         }
         for (ASR::Module_t *m : mods) {
@@ -3264,9 +3383,11 @@ public:
             }
         }
         for (ASR::Function_t *fn : top) analyze(fn);
-        for (ASR::symbol_t *s : exec_symbols_in_order(prog->m_symtab)) {
-            if (ASR::is_a<ASR::Function_t>(*s)) {
-                analyze(ASR::down_cast<ASR::Function_t>(s));
+        if (prog) {
+            for (ASR::symbol_t *s : exec_symbols_in_order(prog->m_symtab)) {
+                if (ASR::is_a<ASR::Function_t>(*s)) {
+                    analyze(ASR::down_cast<ASR::Function_t>(s));
+                }
             }
         }
         // Owners of escaped variables perform IO. Propagate after that, so a
@@ -3287,11 +3408,16 @@ public:
                 }
             }
         }
-        out = "-- Generated by LFortran (`lfortran --backend=lean " + filename
-            + "`). Do not edit.\nimport LFortran.Exec\n\n";
+        if (proof) {
+            out = "-- Generated by LFortran (`lfortran --show-lean " + filename
+                + "`). Do not edit.\nimport LFortran.Prelude\n\nopen LFortran\n\n";
+        } else {
+            out = "-- Generated by LFortran (`lfortran --backend=lean " + filename
+                + "`). Do not edit.\nimport LFortran.Exec\n\n";
+        }
         for (ASR::Module_t *m : mods) note_symtab(m->m_symtab);
         for (ASR::Function_t *fn : top) note_symtab(fn->m_symtab);
-        note_symtab(prog->m_symtab);
+        if (prog) note_symtab(prog->m_symtab);
         {
             std::vector<ASR::Struct_t*> roots(struct_roots.begin(),
                 struct_roots.end());
@@ -3308,6 +3434,13 @@ public:
             emit_group(fns, lean_name(m->m_name, m->base.base.loc));
         }
         if (!top.empty()) emit_group(top, "");
+        if (!prog) {
+            while (out.size() >= 2 && out.back() == '\n'
+                    && out[out.size() - 2] == '\n') {
+                out.pop_back();
+            }
+            return;
+        }
         std::vector<ASR::Function_t*> contained;
         collect_fns(prog->m_symtab, contained);
         emit_group(contained, "");
