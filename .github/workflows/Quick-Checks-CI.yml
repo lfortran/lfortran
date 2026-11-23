@@ -177,9 +177,9 @@ jobs:
             fi
             export PATH="$HOME/.elan/bin:$PATH"
             export PYTHONUNBUFFERED=1
-            # A few generated programs take longer to elaborate on a busy
-            # 4-core runner than they do locally.
-            pixi run -e llvm11 python lean/run_integration_tests.py --timeout 120 --jobs 4
+            # Two Lean processes fit in the hosted runner's memory. Four of them
+            # made the runner lose contact before the step finished.
+            pixi run -e llvm11 python lean/run_integration_tests.py --timeout 120 --jobs 2
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
         shell: bash -e {0}
