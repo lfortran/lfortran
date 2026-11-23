@@ -4531,6 +4531,11 @@ RUN(NAME class_174 LABELS gfortran llvm)
 RUN(NAME class_175 LABELS gfortran llvm EXTRAFILES class_175_ext.f90)
 RUN(NAME class_176 LABELS gfortran llvm)
 RUN(NAME class_intent_out_inherited_c_01 LABELS gfortran llvm c)
+RUN(NAME c_reset_alloc_component_01 LABELS gfortran llvm c)
+RUN(NAME c_reset_pointer_component_01 LABELS gfortran llvm c)
+RUN(NAME intent_out_inherited_alloc_cleanup_01 LABELS gfortran llvm c)
+RUN(NAME intent_out_inherited_alloc_cleanup_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
 RUN(NAME class_182 LABELS gfortran llvm c)
 RUN(NAME class_183 LABELS gfortran llvm c)
 RUN(NAME class_intent_out_reset_01 LABELS gfortran llvm)

@@ -137,6 +137,11 @@ public:
     std::map<std::string, std::string> emit_headers;
     std::string array_types_decls;
     std::string forward_decl_functions;
+    // The functions that release the allocatable components of a derived
+    // type, by the type, and their definitions.
+    std::map<const ASR::Struct_t*, std::string> c_struct_cleanup_funcs;
+    std::string c_struct_cleanup_bodies;
+    size_t c_cleanup_counter = 0;
     // A scalar allocatable's C owner pointer is distinct from its value.
     bool c_scalar_allocatable_as_storage = false;
 
@@ -763,7 +768,8 @@ public:
                 "{\n    int32_t lower_bound, length, stride;\n};\n" + array_types_decls;
         }
 
-        return to_include + head + array_types_decls + forward_decl_functions + unit_src +
+        return to_include + head + array_types_decls + forward_decl_functions +
+              c_struct_cleanup_bodies + unit_src +
               ds_funcs_defined + util_funcs_defined;
     }
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -3878,6 +3884,123 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
     }
 
+    std::string c_cleanup_struct_array(ASR::Struct_t* st,
+            const std::string& descriptor, const std::string& indent) {
+        std::string id = std::to_string(c_cleanup_counter++);
+        std::string n = "_lfortran_cleanup_count_" + id;
+        std::string d = "_lfortran_cleanup_dim_" + id;
+        std::string i = "_lfortran_cleanup_index_" + id;
+        std::string func = c_cleanup_struct_name(st);
+        return indent + "int64_t " + n + " = 1;\n"
+            + indent + "for (int32_t " + d + " = 0; " + d + " < " +
+                descriptor + "->n_dims; " + d + "++) " + n + " *= " +
+                descriptor + "->dims[" + d + "].length;\n"
+            + indent + "for (int64_t " + i + " = 0; " + i + " < " + n +
+                "; " + i + "++) {\n"
+            + indent + "    " + func + "(&(" + descriptor + "->data[" + i +
+                "]));\n"
+            + indent + "}\n";
+    }
+
+    std::string c_cleanup_struct_name(ASR::Struct_t* st) {
+        auto found = c_struct_cleanup_funcs.find(st);
+        if (found != c_struct_cleanup_funcs.end()) {
+            return found->second;
+        }
+        std::string name = "_lfortran_cleanup_struct_" +
+            std::to_string(c_cleanup_counter++);
+        // Register first so allocatable components can recursively use this
+        // type's cleanup function.
+        c_struct_cleanup_funcs[st] = name;
+        forward_decl_functions += "static void " + name + "(struct " +
+            st->m_name + "* object);\n";
+        std::string body;
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t* member = st->m_symtab->get_symbol(st->m_members[i]);
+            LCOMPILERS_ASSERT(member && ASR::is_a<ASR::Variable_t>(*member));
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(member);
+            if (var->m_storage == ASR::storage_typeType::Parameter ||
+                    ASRUtils::is_pointer(var->m_type)) {
+                continue;
+            }
+            ASR::Struct_t* nested = nullptr;
+            if (var->m_type_declaration) {
+                ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+                LCOMPILERS_ASSERT(decl);
+                if (ASR::is_a<ASR::Struct_t>(*decl)) {
+                    nested = ASR::down_cast<ASR::Struct_t>(decl);
+                }
+            }
+            std::string field = "object->" + std::string(var->m_name);
+            if (ASRUtils::is_allocatable(var->m_type)) {
+                if (ASRUtils::is_array(var->m_type)) {
+                    body += "    if (" + field + " != NULL) {\n";
+                    body += "        if (" + field + "->is_allocated) {\n";
+                    if (nested) {
+                        body += c_cleanup_struct_array(nested, field, "            ");
+                    }
+                    body += "            _lfortran_free_alloc("
+                        "_lfortran_get_default_allocator(), (char*)" +
+                        field + "->data);\n";
+                    body += "        }\n";
+                    body += "        _lfortran_free_alloc("
+                        "_lfortran_get_default_allocator(), (char*)" +
+                        field + ");\n";
+                    body += "        " + field + " = NULL;\n";
+                } else {
+                    body += "    if (" + field + " != NULL) {\n";
+                    if (nested) {
+                        body += "        " + c_cleanup_struct_name(nested) +
+                            "(" + field + ");\n";
+                    }
+                    body += "        _lfortran_free_alloc("
+                        "_lfortran_get_default_allocator(), (char*)" +
+                        field + ");\n";
+                    body += "        " + field + " = NULL;\n";
+                }
+                body += "    }\n";
+            } else if (nested && ASRUtils::is_array(var->m_type)) {
+                ASR::dimension_t* dims = nullptr;
+                size_t rank = ASRUtils::extract_dimensions_from_ttype(
+                    var->m_type, dims);
+                if (ASRUtils::is_fixed_size_array(dims, rank)) {
+                    std::string idx = "_lfortran_cleanup_index_" +
+                        std::to_string(c_cleanup_counter++);
+                    body += "    for (int64_t " + idx + " = 0; " + idx +
+                        " < " + std::to_string(
+                            ASRUtils::get_fixed_size_of_array(dims, rank)) +
+                        "; " + idx + "++) {\n";
+                    body += "        " + c_cleanup_struct_name(nested) +
+                        "(&(" + field + "[" + idx + "]));\n";
+                    body += "    }\n";
+                } else {
+                    body += "    if (" + field + " != NULL && " + field +
+                        "->data != NULL) {\n";
+                    body += c_cleanup_struct_array(nested, field, "        ");
+                    body += "    }\n";
+                }
+            } else if (nested) {
+                body += "    " + c_cleanup_struct_name(nested) +
+                    "(&(" + field + "));\n";
+            }
+        }
+        if (st->m_parent) {
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*parent));
+            body += "    " + c_cleanup_struct_name(
+                ASR::down_cast<ASR::Struct_t>(parent)) + "(&(object->" +
+                c_parent_component + "));\n";
+        }
+        if (body.empty()) {
+            body = "    (void)object;\n";
+        }
+        c_struct_cleanup_bodies += "static void " + name + "(struct " +
+            st->m_name + "* object)\n{\n" + body + "}\n";
+        return name;
+    }
+
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (!is_c) {
@@ -3908,9 +4031,21 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 self().visit_expr(*operand);
                 value = std::move(src);
             }
+            ASR::ttype_t* elem = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(type));
+            ASR::Struct_t* derived = nullptr;
+            if (ASR::is_a<ASR::StructType_t>(*elem)) {
+                ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(operand));
+                LCOMPILERS_ASSERT(decl && ASR::is_a<ASR::Struct_t>(*decl));
+                derived = ASR::down_cast<ASR::Struct_t>(decl);
+            }
             if (ASRUtils::is_array(type)) {
                 out += indent + "if (" + value + " != NULL && " + value +
                     "->is_allocated) {\n";
+                if (derived) {
+                    out += c_cleanup_struct_array(derived, value, indent + "    ");
+                }
                 out += indent + "    _lfortran_free_alloc("
                     "_lfortran_get_default_allocator(), (char*)" + value +
                     "->data);\n";
@@ -3918,6 +4053,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 out += indent + "    " + value + "->is_allocated = false;\n";
             } else {
                 out += indent + "if (" + value + " != NULL) {\n";
+                if (derived) {
+                    out += indent + "    " + c_cleanup_struct_name(derived) +
+                        "(" + value + ");\n";
+                }
                 out += indent + "    _lfortran_free_alloc("
                     "_lfortran_get_default_allocator(), (char*)" + value +
                     ");\n";
