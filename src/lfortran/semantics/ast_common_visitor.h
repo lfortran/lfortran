@@ -9700,7 +9700,8 @@ public:
                                         // If it fails (e.g., semantic error), don't create the parameter
                                         // to avoid creating parameters without symbolic_value in continue-compilation mode
                                         try {
-                                            this->visit_expr(*s.m_initializer);
+                                            visit_restricted_expr(*s.m_initializer,
+                                                RestrictedExprContext::InitExpr);
                                             ASR::expr_t* init_val = ASRUtils::EXPR(tmp);
                                             sym_ = ASRUtils::symbol_get_past_external(sym_);
                                             if (ASR::is_a<ASR::Variable_t>(*sym_)) {
@@ -10034,7 +10035,8 @@ public:
                                 ) {
                                     ASR::expr_t* value = nullptr;
                                     if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
-                                        this->visit_expr(*s.m_initializer);
+                                        visit_restricted_expr(*s.m_initializer,
+                                            RestrictedExprContext::InitExpr);
                                         value = ASRUtils::EXPR(tmp);
                                     }
                                     if ( implicit_dictionary[std::string(1, sym[0])] != nullptr ) {
@@ -20063,9 +20065,33 @@ public:
             for (size_t i = 0; i < args.size(); i++) {
                 expr_args.push_back(al, args[i].m_value);
             }
-            return ASRUtils::CompilerOptions::create_CompilerOptions(al, loc, expr_args, diag);
+            ASR::asr_t *options = ASRUtils::CompilerOptions::create_CompilerOptions(
+                al, loc, expr_args, diag);
+            if (options && restricted_expr_context == RestrictedExprContext::InitExpr) {
+                // In an initialization, a constant expression, the reference
+                // is its string, so that it folds like a character literal.
+                ASR::CompilerOptions_t *co = ASR::down_cast2<ASR::CompilerOptions_t>(options);
+                return ASR::make_StringConstant_t(al, loc,
+                    co->m_compiler_options_str, co->m_type);
+            }
+            return options;
         }
-        
+
+        // compiler_version() of iso_fortran_env is a constant expression,
+        // so a named constant can be initialized with it. Its value is the
+        // version of the compiler that compiles the reference.
+        if (args.size() == 0 && ASR::is_a<ASR::Function_t>(*f2) &&
+                std::string(ASRUtils::symbol_name(f2)) == "compiler_version") {
+            ASR::Module_t *m = ASRUtils::get_sym_module(f2);
+            if (m && m->m_intrinsic &&
+                    std::string(m->m_name) == "lfortran_intrinsic_iso_fortran_env") {
+                Vec<ASR::expr_t*> expr_args;
+                expr_args.reserve(al, 0);
+                return ASRUtils::CompilerVersion::create_CompilerVersion(
+                    al, loc, expr_args, diag);
+            }
+        }
+
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(f2);
         if (ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::Intrinsic) {
             std::string func_name = std::string(func->m_name);
