@@ -180,6 +180,13 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     static bool can_have_reset_binding(SymbolTable* tu_scope,
             ASR::Struct_t* st) {
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(&st->base);
+        // A type declared in a BLOCK or ASSOCIATE construct has its binding's
+        // procedure in the scope of that construct, which is implemented by
+        // the procedure or program that contains it.
+        while (owner != nullptr && (ASR::is_a<ASR::Block_t>(*owner) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+            owner = ASRUtils::get_asr_owner(owner);
+        }
         if (owner == nullptr) return false;
         if (ASR::is_a<ASR::Function_t>(*owner)) {
             // Only a procedure this unit defines can hold the procedure
@@ -581,15 +588,26 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 
                 ASR::stmt_t* init_stmt = nullptr;
                 if (ASRUtils::is_pointer(m_var->m_type)) {
-                    // Only handle pointer-null defaults. We rebuild the
-                    // PointerNullConstant using `member_expr` as its
-                    // `var_expr`, and its type, so codegen can resolve the
-                    // underlying procedure interface (when the pointer
-                    // targets a procedure) without relying on a symbol from
-                    // the declaring module's scope. The type of the default
-                    // itself can be the interface as a template declares it.
                     if (!ASR::is_a<ASR::PointerNullConstant_t>(
-                            *m_var->m_symbolic_value)) continue;
+                            *m_var->m_symbolic_value)) {
+                        // A pointer with a default target is associated with
+                        // that target again. The target can name what only
+                        // the type's own scope sees, so it is imported.
+                        init_stmt = ASRUtils::STMT(
+                            ASRUtils::make_Associate_t_util(al, loc,
+                                member_expr, import_expr_references(al,
+                                    m_var->m_symbolic_value,
+                                    current_scope)));
+                        out_stmts.push_back(al, init_stmt);
+                        continue;
+                    }
+                    // A null default is rebuilt as a PointerNullConstant
+                    // using `member_expr` as its `var_expr`, and its type, so
+                    // codegen can resolve the underlying procedure interface
+                    // (when the pointer targets a procedure) without relying
+                    // on a symbol from the declaring module's scope. The
+                    // type of the default itself can be the interface as a
+                    // template declares it.
                     ASR::expr_t* null_value = ASRUtils::EXPR(
                         ASR::make_PointerNullConstant_t(al, loc,
                             ASRUtils::expr_type(member_expr), member_expr));
