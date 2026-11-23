@@ -1,0 +1,13 @@
+{
+    "basename": "c-print_logical_c_01-2fa471d",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/../integration_tests/print_logical_c_01.f90",
+    "infile_hash": "cc767ee6c25f49eb477344c4542ed9be2b72e0da6ac559fc73970cc8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c-print_logical_c_01-2fa471d.stdout",
+    "stdout_hash": "8a8739069a3fefd05fa7095d345c6b9025b5cd3cf4c1faa715586f98",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
