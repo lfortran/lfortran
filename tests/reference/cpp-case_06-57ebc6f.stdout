@@ -89,7 +89,7 @@ std::cout<< "Invalid marks"<<std::endl;
     if (marks_fixed >= 40 + bp) {
 std::cout<< "Pass!"<<std::endl;
     }
-    else if (0 <= marks_fixed <= 39 - ap) {
+    else if ((marks_fixed >= 0 && marks_fixed <= 39 - ap)) {
 std::cout<< "Failed!"<<std::endl;
     }
     else {
