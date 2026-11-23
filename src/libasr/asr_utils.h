@@ -4201,9 +4201,10 @@ class CheckSymbolReplacer: public ASR::BaseExprReplacer<CheckSymbolReplacer> {
 
     ASR::symbol_t* handle_symbol(ASR::symbol_t* x);
 
+    // A Var is not a call, so it adds no function dependency (only call
+    // targets do, as in asr_verify), e.g. the struct in a Cast's m_dest.
     void replace_Var(ASR::Var_t *x) {
         x->m_v = handle_symbol(x->m_v);
-        ADD_ASR_DEPENDENCIES(current_scope, x->m_v, current_function_dependencies);
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
