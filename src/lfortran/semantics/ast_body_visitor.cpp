@@ -1371,6 +1371,39 @@ public:
         format_label_dtio.clear();
     }
 
+    // The call that assigns a new unit number to `unit` for the NEWUNIT=
+    // specifier of OPEN: a call of the runtime's specific `newunit_int_<k>`
+    // for the kind `k` of `unit`. NEWUNIT= is not a procedure reference, so
+    // the procedure is taken from the runtime module, not looked up by name
+    // in this scope, where a user `newunit` or `implicit none (external)`
+    // would apply. It is imported under a name no user symbol can have.
+    ASR::asr_t* make_newunit_call(ASR::expr_t* unit, const Location& loc) {
+        SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
+        std::set<std::string> empty_set;
+        ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab,
+            "lfortran_intrinsic_custom", loc, true, empty_set,
+            compiler_options.po, !diag.has_error(),
+            [&](const std::string &msg, const Location &loc) {
+                diag.add(Diagnostic(msg, Level::Error, Stage::Semantic,
+                    {Label("", {loc})}));
+                throw SemanticAbort();
+            }, lm, compiler_options.separate_compilation);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(unit));
+        ASR::symbol_t *specific = m->m_symtab->get_symbol(
+            "newunit_int_" + std::to_string(kind));
+        LCOMPILERS_ASSERT(specific != nullptr);
+        ASR::symbol_t *proc = import_generic_specific(specific, "newunit");
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, 1);
+        ASR::call_arg_t arg;
+        arg.loc = unit->base.loc;
+        arg.m_value = unit;
+        args.push_back(al, arg);
+        return ASRUtils::make_SubroutineCall_t_util(al, loc, proc, nullptr,
+            args.p, args.size(), nullptr, nullptr, false, current_scope,
+            current_function_dependencies);
+    }
+
     void visit_Open(const AST::Open_t& x) {
         mark_IO_side_effect();
         ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr,
@@ -1421,19 +1454,7 @@ public:
                 }
 
                 if ( m_arg_str == std::string("newunit") ) {
-                    Vec<AST::fnarg_t> args;
-                    args.reserve(al, 0);
-                    AST::fnarg_t arg;
-                    arg.loc = x.base.base.loc;
-                    arg.m_label = 0;
-                    arg.m_start = nullptr;
-                    arg.m_step = nullptr;
-                    arg.m_end = kwarg.m_value;
-                    args.push_back(al, arg);
-                    AST::SubroutineCall_t* subrout_call = AST::down_cast2<AST::SubroutineCall_t>(
-                        AST::make_SubroutineCall_t(al, x.base.base.loc, 0, s2c(al, "newunit"), nullptr, 0, args.p, args.size(), nullptr, 0, nullptr, 0, nullptr));
-                    visit_SubroutineCall(*subrout_call);
-                    tmp_vec.push_back(tmp);
+                    tmp_vec.push_back(make_newunit_call(a_newunit, x.base.base.loc));
                 }
             } else if( m_arg_str == std::string("file") ) {
                 if( a_filename != nullptr ) {
