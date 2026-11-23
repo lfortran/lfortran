@@ -3243,6 +3243,30 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "NULL";
     }
 
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        if (is_c && x.m_impure_intrinsic_id ==
+                static_cast<int64_t>(
+                    ASRUtils::IntrinsicImpureFunctions::Allocated)) {
+            LCOMPILERS_ASSERT(x.n_args == 1 &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[0])));
+            self().visit_expr(*x.m_args[0]);
+            std::string arg = std::move(src);
+            if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0]))) {
+                src = "(" + arg + " != NULL && " + arg +
+                    "->is_allocated)";
+            } else {
+                src = "(" + arg + " != NULL)";
+            }
+            last_expr_precedence = 2;
+            return;
+        }
+        throw CodeGenError(
+            ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id)
+                + " is not implemented by the "
+                + (is_c ? "c" : "cpp") + " backend",
+            x.base.base.loc);
+    }
+
     void visit_GetPointer(const ASR::GetPointer_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
