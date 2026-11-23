@@ -3144,8 +3144,21 @@ ast_t* REQUIREMENT2(Allocator &al, const Location &l, char* a_name,
         VEC_CAST(attr, decl_attribute), attr.size(), name2char(id), \
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         trivia_cast(trivia))
-#define FINAL_NAME(name, trivia, l) make_FinalName_t(p.m_a, l, name2char(name), \
-        trivia_cast(trivia))
+// One FINAL statement may name several subroutines (F2018 R753). Each name
+// is the same FinalName node a one-name statement already produces, so
+// semantics registers every subroutine. Trailing trivia stays on the last
+// name; with one name that is the whole statement, as before.
+static inline Vec<ast_t*> final_subroutine_names(Allocator &al,
+        const Vec<ast_t*> &names, ast_t *trivia, const Location &l) {
+    Vec<ast_t*> out;
+    out.reserve(al, names.size());
+    for (size_t i = 0; i < names.size(); i++) {
+        ast_t *item_trivia = (i + 1 == names.size()) ? trivia : nullptr;
+        out.push_back(al, make_FinalName_t(al, l, name2char(names.p[i]),
+            trivia_cast(item_trivia)));
+    }
+    return out;
+}
 #define PRIVATE(syms, trivia, l) make_Private_t(p.m_a, l, trivia_cast(trivia))
 
 #define CRITICAL(trivia, stmts, l) make_Critical_t(p.m_a, l, 0, nullptr, \
