@@ -43,6 +43,7 @@
 #include <libasr/codegen/asr_to_c.h>
 #include <libasr/codegen/asr_to_wasm.h>
 #include <libasr/codegen/asr_to_julia.h>
+#include <libasr/codegen/asr_to_lean.h>
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/asr_to_metal.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -2020,6 +2021,23 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
     symbol_table = old_symbol_table;
     if (asr.ok) {
         return asr_to_julia(al, *asr.result, diagnostics);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
+Result<std::string> FortranEvaluator::get_lean(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    const std::string &filename)
+{
+    // Src -> AST -> ASR -> Lean
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        return asr_to_lean(*asr.result, diagnostics, filename);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;

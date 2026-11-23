@@ -35,6 +35,7 @@ set(SRC
     codegen/asr_to_cpp.cpp
     codegen/asr_to_c.cpp
     codegen/asr_to_julia.cpp
+    codegen/asr_to_lean.cpp
     codegen/asr_to_python.cpp
     codegen/asr_to_fortran.cpp
     codegen/asr_to_py.cpp
