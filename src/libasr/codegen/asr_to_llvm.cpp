@@ -11197,8 +11197,7 @@ public:
     // Whether the LLVM backend gives LLVM alias information (noalias
     // parameters and return values, TBAA): under --fast, and not for
     // --fast-safe, OpenMP, coarray or GPU code (see dummies_may_be_noalias).
-    // --fast-safe still checks aliasing, so it cannot tell LLVM the call is
-    // alias-free.
+    // --fast-safe does not attach noalias or TBAA.
     bool alias_info_enabled() const {
         return compiler_options.po.assume_no_runtime_errors()
             && !compiler_options.openmp &&
@@ -19848,8 +19847,7 @@ public:
         // Signed integer overflow makes a Fortran program non-conforming, so
         // under --fast the arithmetic is marked nsw, as GCC assumes by default.
         // This lets LLVM widen 32-bit subscripts to 64-bit induction variables.
-        // --fast-safe does not: overflow is still a runtime error to check,
-        // and until that check exists the arithmetic stays wrapping.
+        // --fast-safe leaves these operations wrapping.
         bool nsw = signed_int && compiler_options.po.assume_no_runtime_errors();
         switch (x.m_op) {
             case ASR::binopType::Add: {
