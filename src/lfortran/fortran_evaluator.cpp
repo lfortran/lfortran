@@ -2044,6 +2044,22 @@ Result<std::string> FortranEvaluator::get_lean(const std::string &code,
     }
 }
 
+Result<std::string> FortranEvaluator::get_lean_exec(const std::string &code,
+    LocationManager &lm, diag::Diagnostics &diagnostics,
+    const std::string &filename)
+{
+    SymbolTable *old_symbol_table = symbol_table;
+    symbol_table = nullptr;
+    Result<ASR::TranslationUnit_t*> asr = get_asr2(code, lm, diagnostics);
+    symbol_table = old_symbol_table;
+    if (asr.ok) {
+        return asr_to_lean_exec(*asr.result, diagnostics, filename);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return asr.error;
+    }
+}
+
 // asr_t &asr accepts only TranslationUnit and Module's type for now
 Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
 #ifdef HAVE_LFORTRAN_MLIR

@@ -1,11 +1,22 @@
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <functional>
+#include <iomanip>
+#include <map>
 #include <set>
+#include <sstream>
 #include <vector>
 
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_walk_visitor.h>
 #include <libasr/codegen/asr_to_lean.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 
 namespace LCompilers {
 
@@ -413,5 +424,7 @@ Result<std::string> asr_to_lean(ASR::TranslationUnit_t &asr,
     }
     return v.out;
 }
+
+#include "asr_to_lean_exec.inc"
 
 } // namespace LCompilers

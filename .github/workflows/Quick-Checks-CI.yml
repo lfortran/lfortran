@@ -164,6 +164,20 @@ jobs:
         run: |
             pixi run -e llvm11 bash lean/check_translation.sh
 
+      # Programs labeled `lean` are translated with --backend=lean and executed
+      # by `lean --run`. Separate from the proof job: this checks behavior,
+      # not the Legendre proof.
+      - name: Test Lean backend execution
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            if ! command -v elan >/dev/null 2>&1; then
+                curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+                    | sh -s -- -y --default-toolchain none
+            fi
+            export PATH="$HOME/.elan/bin:$PATH"
+            pixi run -e llvm11 python lean/run_integration_tests.py
+
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
         shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
