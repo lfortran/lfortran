@@ -265,11 +265,17 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             // global and keep their names. Like GFortran, exactly one
             // underscore is appended, also to a name that already ends in
             // one, so that `f` and `f_` stay distinct (`f_` and `f__`).
+            // A BIND(C) binding label (no NAME=, or a non-blank NAME=) is a
+            // C name, not a Fortran external symbol, so it is not mangled.
+            // A blank NAME= has no binding label and stays eligible.
             bool global_definition = !ASRUtils::is_declaration_deftype(f_type->m_deftype)
                 && f_type->m_abi == ASR::abiType::Source
                 && ASRUtils::is_tu_scope(x.m_symtab->parent);
-            if (ASRUtils::is_external_procedure_interface(f_type)
-                    || global_definition) {
+            bool has_binding_label = f_type->m_abi == ASR::abiType::BindC
+                && !(f_type->m_bindc_name && f_type->m_bindc_name[0] == '\0');
+            if (!has_binding_label
+                    && (ASRUtils::is_external_procedure_interface(f_type)
+                        || global_definition)) {
                 std::string name = x.m_name;
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||
