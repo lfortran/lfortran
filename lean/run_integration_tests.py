@@ -250,9 +250,12 @@ def main():
                 passed.append(name)
             else:
                 reasons.setdefault(reason, []).append(name)
+                print(f"  {kind}: {name}: {reason}", flush=True)
             if done % 200 == 0 or done == len(tasks):
-                print(f"  {done}/{len(tasks)}  pass {counts.get('pass', 0)}")
-    print("results:", ", ".join(f"{k} {v}" for k, v in sorted(counts.items())))
+                print(f"  {done}/{len(tasks)}  pass {counts.get('pass', 0)}",
+                      flush=True)
+    print("results:", ", ".join(f"{k} {v}" for k, v in sorted(counts.items())),
+          flush=True)
     if args.all or args.apply:
         ranked = sorted(reasons.items(), key=lambda kv: -len(kv[1]))
         print("top rejections:")

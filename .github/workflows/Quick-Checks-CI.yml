@@ -176,7 +176,10 @@ jobs:
                     | sh -s -- -y --default-toolchain none
             fi
             export PATH="$HOME/.elan/bin:$PATH"
-            pixi run -e llvm11 python lean/run_integration_tests.py
+            export PYTHONUNBUFFERED=1
+            # A few generated programs take longer to elaborate on a busy
+            # 4-core runner than they do locally.
+            pixi run -e llvm11 python lean/run_integration_tests.py --timeout 120 --jobs 4
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
         shell: bash -e {0}
