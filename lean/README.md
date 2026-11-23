@@ -29,7 +29,7 @@ lake build --wfail
 | `Legendre/Generated.lean` | the implementation in Lean | `lfortran --show-lean` |
 | `Legendre/Spec.lean` | what the code must satisfy | human, reviewed |
 | `LFortran/Prelude.lean` | the arithmetic model `FPModel` | human, reviewed |
-| `LFortran/Models/*.lean` | IEEE binary64 and textbook models as `FPModel`s | definitions reviewed by a human, proofs by AI |
+| `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s (not trusted) | proofs (AI), checked by Lean |
 | `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the proofs | proofs (AI), checked by Lean |
 
 ## 1. The idea
@@ -309,13 +309,25 @@ A human still has to trust:
 
 * **the specification**: that `Spec.lean` and the arithmetic hypotheses say
   what is wanted;
-* **the arithmetic model**: that `binary64Model` matches IEEE 754, i.e. that
-  each operation's exact result is rounded to nearest (the definitions in
-  `LFortran/Models/Binary64.lean` follow the standard's wording);
+* **the arithmetic**: that the machine's double-precision arithmetic, as the
+  program uses it, satisfies the `FPModel` assumptions required by the
+  specification: every operation, conversion and literal yields a double, with
+  error at most `2^-53·|exact| + 2^-1000` when `|exact| <= 2^10` (and the
+  divisor is nonzero). This is much weaker than IEEE conformance: the bound is
+  half a unit in the last place only at the bottom of each binade and allows
+  almost a full unit near its top, so roundings other than round-to-nearest
+  qualify, and operations may round differently from one another;
 * **the translation**: that LFortran's Lean backend preserves the meaning of
   the Fortran code; the backend itself is not verified;
 * **the compilation**: that the executable performs the same operations in
   the same order as the source (Section 6).
+
+`LFortran/Models/` is not part of what has to be trusted: it proves that
+IEEE 754 round-to-nearest (and flush-to-zero) arithmetic satisfies these
+assumptions. Someone who justifies the assumption by the hardware's IEEE
+conformance can rely on that proof, and then only has to check that the
+definitions `binary64` and `IsRoundToNearest` in
+`LFortran/Models/Binary64.lean` match the standard.
 
 The theorem says nothing about inputs outside the specified domain (for
 example `n > 100`, NaN or infinite `x`), or about performance.
