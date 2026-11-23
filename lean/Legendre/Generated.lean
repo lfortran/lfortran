@@ -5,12 +5,12 @@ open LFortran
 
 namespace legendre_mod
 
-noncomputable def legendre_poly (fp : Float64Model) (n : ℤ) (x : ℝ) : ℝ := Id.run do
+noncomputable def legendre_poly (fp : FPModel) (n : ℤ) (x : ℝ) : ℝ := Id.run do
   let mut p : ℝ := 0
   let mut a : ℝ := 0
   let mut b : ℝ := 0
   let mut c : ℝ := 0
-  a := 1
+  a := fp.round 1
   b := x
   if n = 0 then
     p := a
