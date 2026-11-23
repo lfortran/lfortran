@@ -1048,9 +1048,34 @@ R"(
         }
     }
 
+    // Defines at file scope the structs, enums and unions that `scope`
+    // declares, except the frame types (see declare_frame_types).
+    void define_types_in_scope(SymbolTable* scope) {
+        std::map<std::string, std::vector<std::string>> struct_dep_graph;
+        for (auto &item : scope->get_scope()) {
+            if ((ASR::is_a<ASR::Struct_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
+                    ASR::is_a<ASR::Union_t>(*item.second)) &&
+                    !ASRUtils::is_frame_type(item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_dep_graph[item.first] = struct_deps_vec;
+            }
+        }
+        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+        for (auto &item : struct_deps) {
+            ASR::symbol_t* struct_sym = scope->get_symbol(item);
+            visit_symbol(*struct_sym);
+        }
+    }
+
     void visit_Program(const ASR::Program_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
+        define_types_in_scope(x.m_symtab);
         declare_frame_types(*x.m_symtab);
         // Topologically sort all program functions
         // and then define them in the right order
