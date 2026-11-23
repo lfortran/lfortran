@@ -13,18 +13,20 @@ int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
     static char grade[1 + 1] = "B";
-    if (grade == "A") {
+    const char* _lfortran_select_case_0 = grade;
+    int64_t _lfortran_select_case_0_len = 1;
+    if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "A", 1) == 0) {
         printf("%s\n","Excellent!");
     }
-    else if (grade == "B") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "B", 1) == 0) {
     }
-    else if (grade == "C") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "C", 1) == 0) {
         printf("%s\n","Well done");
     }
-    else if (grade == "D") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "D", 1) == 0) {
         printf("%s\n","You passed");
     }
-    else if (grade == "F") {
+    else if (str_compare(_lfortran_select_case_0, _lfortran_select_case_0_len, "F", 1) == 0) {
         printf("%s\n","Better try again");
     }
     else {
