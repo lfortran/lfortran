@@ -32012,29 +32012,17 @@ public:
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {
-                        remote_sym = AST::down_cast<AST::UseWrite_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~write_" + remote_sym;
+                        remote_sym = defined_io_generic_name(true,
+                            AST::down_cast<AST::UseWrite_t>(
+                                x.m_symbols[i])->m_id,
+                            x.m_symbols[i]->base.loc);
                         break;
                     }
                     case AST::use_symbolType::UseRead: {
-                        remote_sym = AST::down_cast<AST::UseRead_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~read_" + remote_sym;
+                        remote_sym = defined_io_generic_name(false,
+                            AST::down_cast<AST::UseRead_t>(
+                                x.m_symbols[i])->m_id,
+                            x.m_symbols[i]->base.loc);
                         break;
                     }
                     default:
@@ -32104,29 +32092,17 @@ public:
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {
-                        remote_sym = AST::down_cast<AST::UseWrite_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~write_" + remote_sym;
+                        remote_sym = defined_io_generic_name(true,
+                            AST::down_cast<AST::UseWrite_t>(
+                                x.m_symbols[i])->m_id,
+                            x.m_symbols[i]->base.loc);
                         break;
                     }
                     case AST::use_symbolType::UseRead: {
-                        remote_sym = AST::down_cast<AST::UseRead_t>(
-                            x.m_symbols[i])->m_id;
-                        if (remote_sym != "formatted" && remote_sym != "unformatted") {
-                            diag.add(diag::Diagnostic(
-                                "Can only be `formatted` or `unformatted`",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {x.m_symbols[i]->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        remote_sym = "~read_" + remote_sym;
+                        remote_sym = defined_io_generic_name(false,
+                            AST::down_cast<AST::UseRead_t>(
+                                x.m_symbols[i])->m_id,
+                            x.m_symbols[i]->base.loc);
                         break;
                     }
                     default:
@@ -32181,6 +32157,22 @@ public:
                 }
             }
         }
+    }
+
+    // The name of the defined input/output generic `write(formatted)`,
+    // `write(unformatted)`, `read(formatted)` or `read(unformatted)`:
+    // "~write_formatted", "~write_unformatted", ...
+    std::string defined_io_generic_name(bool is_write, const char *kind,
+            const Location &loc) {
+        std::string k = to_lower(kind);
+        if (k != "formatted" && k != "unformatted") {
+            diag.add(diag::Diagnostic(
+                "Can only be `formatted` or `unformatted`",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        return (is_write ? "~write_" : "~read_") + k;
     }
 
     // check if the operator name need to be updated or not, and return it

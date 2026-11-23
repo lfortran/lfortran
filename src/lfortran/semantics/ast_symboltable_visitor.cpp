@@ -4505,26 +4505,14 @@ public:
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
             fill_interface_proc_names_with_loc(x, assgn_proc_names_locations);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
-            std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id);
-            if (op_name != "formatted" && op_name != "unformatted") {
-                diag.add(diag::Diagnostic(
-                    "Can only be `formatted` or `unformatted`",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_header->base.loc})}));
-                throw SemanticAbort();
-            }
-            op_name = "~write_" + op_name;
+            std::string op_name = defined_io_generic_name(true,
+                AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id,
+                x.m_header->base.loc);
             defined_op_procs[op_name] = interface_specifics(x);
         }  else if (AST::is_a<AST::InterfaceHeaderRead_t>(*x.m_header)) {
-            std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id);
-            if (op_name != "formatted" && op_name != "unformatted") {
-                diag.add(diag::Diagnostic(
-                    "Can only be `formatted` or `unformatted`",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_header->base.loc})}));
-                throw SemanticAbort();
-            }
-            op_name = "~read_" + op_name;
+            std::string op_name = defined_io_generic_name(false,
+                AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id,
+                x.m_header->base.loc);
             defined_op_procs[op_name] = interface_specifics(x);
         }  else {
             diag.add(diag::Diagnostic(
