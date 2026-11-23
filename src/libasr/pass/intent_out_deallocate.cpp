@@ -180,6 +180,13 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     static bool can_have_reset_binding(SymbolTable* tu_scope,
             ASR::Struct_t* st) {
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(&st->base);
+        // A type declared in a BLOCK or ASSOCIATE construct has its binding's
+        // procedure in the scope of that construct, which is implemented by
+        // the procedure or program that contains it.
+        while (owner != nullptr && (ASR::is_a<ASR::Block_t>(*owner) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+            owner = ASRUtils::get_asr_owner(owner);
+        }
         if (owner == nullptr) return false;
         if (ASR::is_a<ASR::Function_t>(*owner)) {
             // Only a procedure this unit defines can hold the procedure
