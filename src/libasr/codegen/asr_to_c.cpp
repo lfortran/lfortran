@@ -92,6 +92,7 @@ public:
                              bool is_pointer,
                              ASR::abiType m_abi,
                              bool is_simd_array,
+                             bool inline_pointer_member = false,
                              const std::string &data_init = "") {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string type_name_copy = type_name;
@@ -103,9 +104,13 @@ public:
             sub = original_type_name + " " + v_m_name + " __attribute__ (( vector_size(sizeof(" + original_type_name + ") * " + std::to_string(size) + ") ))";
             return;
         }
-        if( declare_value ) {
+        if (inline_pointer_member) {
+            LCOMPILERS_ASSERT(!declare_value && !dummy);
+            // The component owns its descriptor inline, not the target data.
+            sub = type_name_without_ptr + " " + v_m_name;
+        } else if( declare_value ) {
             std::string variable_name = std::string(v_m_name) + "_value";
-            sub = format_type_c("", type_name_without_ptr, variable_name, use_ref, dummy) + ";\n";
+            sub = format_type_c("", type_name_without_ptr, variable_name, use_ref, dummy) + " = {0};\n";
             sub += indent + format_type_c("", type_name, v_m_name, use_ref, dummy);
             sub += " = &" + variable_name;
             if( !is_pointer ) {
@@ -170,6 +175,9 @@ public:
             } else if( ASRUtils::is_array(mem_type) ) {
                 ASR::dimension_t* m_dims = nullptr;
                 size_t n_dims = ASRUtils::extract_dimensions_from_ttype(mem_type, m_dims);
+                if (ASRUtils::is_pointer(mem_type)) {
+                    continue;
+                }
                 std::string mem_var_name = current_scope->get_unique_name(
                     member_name + std::to_string(counter));
                 counter += 1;
@@ -230,7 +238,7 @@ public:
                                     v.m_intent != ASRUtils::intent_unspecified &&
                                     !is_struct_type_member && !is_module_var) || force_declare,
                                     is_fixed_size, false, ASR::abiType::Source, is_simd_array,
-                                    data_init);
+                                    false, data_init);
             }
         } else {
             bool is_fixed_size = true;
@@ -328,11 +336,14 @@ public:
             do_not_initialize = false;
         }
         std::string sub;
+        bool is_array = ASRUtils::is_array(v.m_type);
+        // A pointer-array dummy borrows its actual's writable descriptor,
+        // whether that descriptor is local or stored inline in a component.
         bool use_ref = (v.m_intent == ASRUtils::intent_out ||
                         v.m_intent == ASRUtils::intent_inout ||
                         (c_scalar_allocatable(v.m_type) &&
-                         v.m_intent == ASRUtils::intent_unspecified));
-        bool is_array = ASRUtils::is_array(v.m_type);
+                         v.m_intent == ASRUtils::intent_unspecified))
+                    && !(is_array && ASRUtils::is_pointer(v.m_type));
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v.m_type, m_dims);
@@ -370,6 +381,9 @@ public:
             return sub;
         }
         if (ASRUtils::is_pointer(v_m_type)) {
+            bool is_struct_member = ASR::is_a<ASR::Struct_t>(
+                *ASR::down_cast<ASR::symbol_t>(
+                    v.m_parent_symtab->asr_owner));
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v_m_type)->m_type;
             t2 = ASRUtils::type_get_past_array(t2);
             if (ASRUtils::is_integer(*t2)) {
@@ -388,7 +402,9 @@ public:
                                         v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified, is_fixed_size, true, ASR::abiType::Source, false);
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member, is_fixed_size, true,
+                                        ASR::abiType::Source, false, is_struct_member);
                 } else {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
@@ -410,8 +426,10 @@ public:
                                         v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified,
-                                        is_fixed_size, true, ASR::abiType::Source, false);
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member,
+                                        is_fixed_size, true, ASR::abiType::Source, false,
+                                        is_struct_member);
                 } else {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
@@ -446,8 +464,10 @@ public:
                                         v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified,
-                                        is_fixed_size, true, ASR::abiType::Source, is_simd_array);
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member,
+                                        is_fixed_size, true, ASR::abiType::Source, is_simd_array,
+                                        is_struct_member);
                 } else {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
@@ -467,8 +487,10 @@ public:
                                         v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified,
-                                        is_fixed_size, false, ASR::abiType::Source, false);
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member,
+                                        is_fixed_size, false, ASR::abiType::Source, false,
+                                        is_struct_member);
                  } else {
                     std::string ptr_char = "*";
                     if( !use_ptr_for_derived_type ) {

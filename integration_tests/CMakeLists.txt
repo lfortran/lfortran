@@ -3536,6 +3536,13 @@ RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod
 RUN(NAME derived_types_261 LABELS gfortran llvm) # allocate a character(len=3), pointer :: tags(:) component (#16909)
 RUN(NAME derived_types_262 LABELS gfortran llvm) # copy and SELECT CASE on a character component of a SEQUENCE type (#17335)
 RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
+RUN(NAME c_pointer_dummy_abi_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_host_reference_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_allocatable_derived_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_associated_empty_01 LABELS gfortran c) # LLVM zero-sized TARGET bug: #14340
 RUN(NAME c_scalar_allocatable_dummy_01 LABELS gfortran llvm c)
 RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
