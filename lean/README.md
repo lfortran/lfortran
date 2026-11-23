@@ -14,6 +14,81 @@ repository root:
 pixi run -e llvm11 bash lean/run.sh
 ```
 
+`--show-lean` is the proof translation above: noncomputable code over an
+abstract `FPModel`, which Lean cannot execute. `--backend=lean` is a second
+translation of the same ASR, before any ASR pass, into computable Lean with a
+`def main` that `lean --run` executes. The two translations are independent.
+`stop` and `error stop` leave the process. Integration tests labeled `lean`
+are run that way, locally and in the Linux LLVM 11 Quick job:
+
+```bash
+pixi run -e llvm11 python lean/run_integration_tests.py
+pixi run -e llvm11 python lean/run_integration_tests.py --all
+```
+
+`--all` tries every integration test and reports what the backend still
+rejects. `--apply` adds the `lean` label to tests that pass and removes it
+from tests that no longer do. A test is labeled only when its exit code
+agrees with the `RUN()` entry (zero, unless the entry is `FAIL`). The latest
+sweep passes 1695 integration tests and labels 1691 of them; the other four
+have no `LABELS` list to attach the word to. The runtime is
+`lean/LFortran/Exec.lean` (no Mathlib). The toolchain is `lean/lean-toolchain`.
+
+### Executable backend decisions
+
+These are deliberate limits of `--backend=lean`. A test that depends on a
+behavior below and gets a different result is not labeled.
+
+- Integers are `Int8`/`Int16`/`Int32`/`Int64` and wrap. Division truncates
+  toward zero. `real(4)` is `Float32` and `real(8)` is `Float`, built with
+  `Float.ofBits` so the bits match IEEE. `real(16)` is rejected. `complex`
+  is a pair struct with the usual arithmetic. `logical` is `Bool`.
+  `character` is `String`, blank-padded and truncated to its declared length.
+- Arrays are column-major values (`LFortran.Exec.Arr`) with a lower bound
+  per dimension. A scalar assigned to an array fills every element.
+- An allocatable or a pointer is the value itself, not an alias. `allocate`
+  replaces an array (`Arr.make`); a deferred shape starts empty. Scalar
+  `allocate` does nothing. Pointer assignment copies. A later write through
+  one name is not visible through the other. `allocated()` is not tracked.
+- An assumed-shape or deferred-shape `intent(out)` dummy is still passed in,
+  because the caller owns the shape. A scalar broadcast onto an array whose
+  shape is not known stays a scalar: an operation maps it across the other
+  operand, and assigning it fills the array that is already there.
+- A module variable, or a local used by a contained procedure, lives in a
+  process-wide table in `Exec` keyed by `owner.name`. Each `lean --run` is
+  its own process. The first read returns the type's zero unless `main` has
+  stored the initializer. A procedure that touches one of these, prints,
+  stops, or calls such a procedure is an `IO` action. Block and associate
+  locals do not escape. A derived-type value is not put in those tables, so
+  a module variable or a host-associated variable of derived type is rejected.
+- List-directed `write` to `*`, unit 6, or unit 0 is one line on stdout, with
+  the same spacing as `print *`. Any other unit, namelist, unformatted I/O,
+  an internal file, or a format string is rejected. `iostat`, when present,
+  is set to 0.
+- An array section with exactly one subscript range is a rank-1 copy whose
+  lower bound is 1. Assigning to that section writes the elements back.
+  Several ranges, and implied-do constructors, are rejected.
+- `reshape` without `pad` or `order` reuses the source elements and takes
+  the extents from the shape array. Lower bounds are 1. A size mismatch is
+  not checked.
+- `transfer` / bit cast uses the folded value when ASR has one, and is the
+  identity when the two Lean types are the same. Anything else is rejected.
+- `do concurrent` with no reduction clause runs as a sequential counted loop.
+  Reductions and an empty head are rejected. Named `cycle` of an outer loop
+  is rejected.
+- `where` evaluates the mask once. Each assignment in the body is computed
+  for the whole array and then stored only at elements where the mask is
+  true. The `elsewhere` arm stores where it is false. A nested `where`, or a
+  statement that is not an assignment, is rejected. `<`, `>`, `<=`, and `>=`
+  are emitted with `decide`, because those Lean operators are propositions
+  and a mask has to be a `Bool` array.
+- A derived type is a Lean `structure`. Components inherited with `extends`
+  are fields of the child, in parent-then-child order. There is no dynamic
+  type. A component, including a pointer or allocatable component, is a
+  value, so two names never alias. A type that contains itself (a linked
+  list node, for example) is rejected. `class(*)` is rejected. Enums and
+  unions are rejected. Type-bound calls are rejected.
+
 or only the Lean part (no LFortran build needed):
 
 ```bash
@@ -28,6 +103,7 @@ lake build --wfail
 | `legendre_accuracy.f90` | measured accuracy | programmer |
 | `Legendre/Generated.lean` | the implementation in Lean | `lfortran --show-lean` |
 | `Legendre/Spec.lean` | what the code must satisfy | human, reviewed |
+| `LFortran/Exec.lean` | runtime for `--backend=lean` (`Arr`, complex, cells) | human, reviewed |
 | `LFortran/Prelude.lean` | the arithmetic model `FPModel` | human, reviewed |
 | `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s (not trusted) | proofs (AI), checked by Lean |
 | `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the proofs | proofs (AI), checked by Lean |
