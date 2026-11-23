@@ -210,6 +210,10 @@ public:
     Result<std::string> get_lean(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics,
         const std::string &filename);
+    // Executable Lean, for `lfortran --backend=lean`.
+    Result<std::string> get_lean_exec(const std::string &code,
+        LocationManager &lm, diag::Diagnostics &diagnostics,
+        const std::string &filename);
     Result<std::unique_ptr<MLIRModule>> get_mlir(
         ASR::asr_t &asr, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,

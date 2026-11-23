@@ -114,7 +114,7 @@ namespace lsi = LCompilers::LLanguageServer::Interface;
 #endif
 
 enum Backend {
-    llvm, c, cpp, x86, wasm, fortran, mlir
+    llvm, c, cpp, x86, wasm, fortran, mlir, lean
 };
 
 // The private directory of the intermediate files of this invocation: the
@@ -1008,6 +1008,40 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
+}
+
+int emit_lean_exec(const std::string &infile, const std::string &outfile,
+        bool to_file, CompilerOptions &compiler_options)
+{
+    std::string input = read_file_ok(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    LCompilers::diag::Diagnostics diagnostics;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
+    }
+    LCompilers::Result<std::string> lean = fe.get_lean_exec(input, lm, diagnostics,
+        std::filesystem::path(infile).filename().string());
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!lean.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+    if (!to_file) {
+        std::cout << lean.result;
+        return 0;
+    }
+    std::ofstream out(outfile);
+    if (!out) {
+        std::cerr << "error: could not write '" << outfile << "'\n";
+        return 1;
+    }
+    out << lean.result;
+    return 0;
 }
 
 int emit_lean(const std::string &infile, CompilerOptions &compiler_options)
@@ -3115,8 +3149,10 @@ int main_app(int argc, char *argv[]) {
         backend = Backend::fortran;
     } else if (opts.arg_backend == "mlir") {
         backend = Backend::mlir;
+    } else if (opts.arg_backend == "lean") {
+        backend = Backend::lean;
     } else {
-        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
+        std::cerr << "The backend must be one of: llvm, c, cpp, x86, wasm, fortran, mlir, lean." << std::endl;
         return 1;
     }
 
@@ -3275,6 +3311,10 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_lean) {
         return emit_lean(opts.arg_file, compiler_options);
+    }
+    if (backend == Backend::lean) {
+        bool to_file = !compiler_options.arg_o.empty();
+        return emit_lean_exec(opts.arg_file, outfile, to_file, compiler_options);
     }
     if (opts.show_gpu_kernel_source) {
         return emit_gpu_kernel_source(opts.arg_file, lfortran_pass_manager,
