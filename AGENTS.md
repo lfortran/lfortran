@@ -154,6 +154,7 @@ Available skills:
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
+| `low-risk` | Judge from the diff whether a PR fits a low-risk kind (test only, table entry, tiny crash fix, ...) and add the `low risk` label; no auto-merge |
 | `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
 | `mergebot` | Babysit `auto-merge`-labeled PRs: keep them rebased, wait for CI, and merge or squash-merge them; remove the label when anyone else pushes or the PR fails |
 | `approvebot` | Label ready PRs by Push Access members with write access `bot-approved` (in scope, a listed narrow kind, test proven to fail on main) or `needs-review`, with a signed reason; learn from the maintainer's reactions through calibration PRs; never applies `auto-merge` |
