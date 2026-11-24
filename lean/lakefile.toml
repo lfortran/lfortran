@@ -1,5 +1,5 @@
 name = "legendre"
-defaultTargets = ["LFortran", "Legendre"]
+defaultTargets = ["LFortran", "Legendre", "Examples"]
 
 [leanOptions]
 autoImplicit = false
@@ -16,3 +16,7 @@ globs = ["LFortran.+"]
 [[lean_lib]]
 name = "Legendre"
 globs = ["Legendre.+"]
+
+[[lean_lib]]
+name = "Examples"
+globs = ["Examples.+"]

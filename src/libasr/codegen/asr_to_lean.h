@@ -6,17 +6,15 @@
 
 namespace LCompilers {
 
-    // Template mode of the Lean backend (`--show-lean`): the same translator
-    // as `asr_to_lean_exec`, emitting each procedure once over
-    // `[FInt ι] [FReal α]` (`LFortran.Arith`) plus a `_float` wrapper at its
-    // kinds. Proofs instantiate the template at `ℤ` and an `FPModel`;
-    // `lean --run` uses the wrapper. `filename` is only used in the header.
+    // `--show-lean`: every procedure becomes one Lean template over
+    // `K : Kinds` (`lean/LFortran/Arith.lean`). Proofs instantiate it at
+    // `ℤ`/`ℝ` with an arithmetic model; a program's `main` instantiates it at
+    // `LFortran.machine`. `filename` is only used in the header comment.
     Result<std::string> asr_to_lean(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, const std::string &filename);
 
-    // Executable mode. A program becomes `def main` that `lean --run` can
-    // execute. Integers use their two's-complement width, real(4)/real(8)
-    // are Float32 and Float, and `stop` / `error stop` leave the process.
+    // `--backend=lean`: the same code, for a file that has a program; its
+    // `main` is what `lean --run` executes.
     Result<std::string> asr_to_lean_exec(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, const std::string &filename);
 

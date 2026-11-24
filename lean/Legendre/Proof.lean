@@ -7,7 +7,15 @@ import Legendre.Proof.Bound
 /-!
 # Correctness of `legendre_poly`
 
-The loop computes `y m` (`Legendre/Proof/Loop.lean`), starting from
+Two parts, then their combination.
+
+**Exact arithmetic** (`legendre_exact_eq`): the generated template at
+`FPModel.exact` computes Mathlib's Legendre polynomial `legendreP n x` for
+every `n ≥ 0` and real `x`. The loop evaluates Bonnet's recurrence `P`
+(`Legendre/Proof/Loop.lean`), and `P = legendreP`
+(`Legendre/Proof/Bonnet.lean`).
+
+**Rounding** (`legendre_rounding`): the loop computes `y m`, starting from
 `y 0 = fp.round 1` and `y 1 = x`. In an `Admissible` arithmetic without a
 guard digit (`NoGuardModel`, unit roundoff at most `U`) every computed value
 stays in `fp.F`, and each iteration commits a local rounding error of at most
@@ -17,10 +25,10 @@ stays in `fp.F`, and each iteration commits a local rounding error of at most
 (`Legendre/Proof/Bound.lean`) shows that they grow at most like
 `(m + 1) ε0 + m (m + 1) / 2 · R`, which is at most `89201 U` for `m ≤ 99`.
 
-Every `FPModel` is a `NoGuardModel` (`FPModel.toNoGuard`), and the generated
-template at an `FPModel` is the same function as at `fp.toNoGuard`
-(`legendre_fortran_eq`), so `legendre_correct` (`U = 2^-53`, `10^-11`) is a
-corollary.
+**Combined** (`legendre_ng_correct`, `legendre_correct`): every `FPModel` is
+a `NoGuardModel` (`FPModel.toNoGuard`), and the template at an `FPModel` is
+the same function as at `fp.toNoGuard` (`legendre_fortran_eq`), so
+`legendre_correct` (`U = 2^-53`, `10^-11`) is a corollary.
 -/
 
 open LFortran Legendre
@@ -161,12 +169,53 @@ end LegendreProof
 
 open LegendreProof
 
-/-- Accuracy of the shared `legendre_poly` in every admissible arithmetic
-without a guard digit. -/
-theorem legendre_ng_correct : LegendreSpecNoGuard legendre_ng := by
-  intro fp U hU0 hU hu hη hM n x hxF hn0 hn100 hx
+/-! ### Exact arithmetic -/
+
+/-- The generated template `legendre_poly` at `proofKinds` and an `FPModel`
+(both real kinds use `fp`). -/
+noncomputable def legendre_fortran (fp : FPModel) (n : ℤ) (x : ℝ) : ℝ :=
+  @legendre_mod.legendre_poly proofKinds (FKinds.ofModel fp fp) n x
+
+/-- At an `FPModel` it is the same function as at `fp.toNoGuard`. -/
+theorem legendre_fortran_eq (fp : FPModel) (n : ℤ) (x : ℝ) :
+    legendre_fortran fp n x = legendre_ng fp.toNoGuard n x := rfl
+
+/-- The generated template evaluated in exact real arithmetic. -/
+noncomputable def legendre_exact (n : ℤ) (x : ℝ) : ℝ := legendre_fortran (FPModel.exact) n x
+
+lemma y_exact (x : ℝ) : ∀ m : ℕ, y (FPModel.exact).toNoGuard x m = P m x
+  | 0 => rfl
+  | 1 => rfl
+  | m + 2 => by
+    rw [y, y_exact x m, y_exact x (m + 1), P]
+    simp only [step, FPModel.toNoGuard, FPModel.exact, id]
+    push_cast
+    ring_nf
+
+/-- **Exact step.** In exact arithmetic the generated code computes Mathlib's
+Legendre polynomial `P_n(x)` for every `n ≥ 0` and every real `x`. -/
+theorem legendre_exact_eq (n : ℕ) (x : ℝ) : legendre_exact n x = legendreP n x := by
+  rw [← P_eq_legendreP, legendre_exact, legendre_fortran_eq]
+  cases n with
+  | zero => exact legendre_zero _ x
+  | succ m =>
+    push_cast
+    rw [legendre_succ, y_exact]
+
+#print axioms legendre_exact_eq
+
+/-! ### Rounding error -/
+
+/-- **Rounding step.** In every admissible arithmetic without a guard digit
+(unit roundoff at most `U`), the computed value differs from the exact-arithmetic
+value by at most `89201 U`, for `0 ≤ n ≤ 100` and floating-point `|x| ≤ 1`. -/
+theorem legendre_rounding (fp : NoGuardModel) (U : ℝ) (hU0 : 0 ≤ U) (hU : U ≤ 1 / 2 ^ 40)
+    (hu : fp.u ≤ U) (hη : fp.η ≤ U / 10 ^ 6) (hM : 2 ^ 10 ≤ fp.M) (n : ℤ) (x : ℝ)
+    (hxF : x ∈ fp.F) (hn0 : 0 ≤ n) (hn100 : n ≤ 100) (hx : |x| ≤ 1) :
+    |legendre_ng fp n x - legendre_exact n x| ≤ 89201 * U := by
   have hfp : Admissible fp U := ⟨hU0, hU, hu, hη, hM⟩
   obtain ⟨k, rfl⟩ := Int.eq_ofNat_of_zero_le hn0
+  rw [legendre_exact_eq, ← P_eq_legendreP]
   cases k with
   | zero =>
     have hB0 : ε0 U ≤ 89201 * U := by simpa [B] using B_le hU0 (m := 0) (by norm_num)
@@ -174,18 +223,22 @@ theorem legendre_ng_correct : LegendreSpecNoGuard legendre_ng := by
   | succ m =>
     have hm : m ≤ 99 := by omega
     have hcast : ((m + 1 : ℕ) : ℤ) = (m : ℤ) + 1 := by push_cast; ring
-    rw [hcast, legendre_succ, show ((m : ℤ) + 1).toNat = m + 1 by omega]
+    rw [hcast, legendre_succ]
     exact (Inv_all fp hfp hxF hx m hm).2.2.2.1.trans (B_le hU0 hm)
 
+#print axioms legendre_rounding
+
+/-! ### Combined: accuracy against Mathlib's Legendre polynomial -/
+
+/-- Accuracy of the shared `legendre_poly` in every admissible arithmetic
+without a guard digit. -/
+theorem legendre_ng_correct : LegendreSpecNoGuard legendre_ng := by
+  intro fp U hU0 hU hu hη hM n x hxF hn0 hn100 hx
+  have h := legendre_rounding fp U hU0 hU hu hη hM n x hxF hn0 hn100 hx
+  obtain ⟨k, rfl⟩ := Int.eq_ofNat_of_zero_le hn0
+  rwa [legendre_exact_eq] at h
+
 #print axioms legendre_ng_correct
-
-/-- The generated template `legendre_poly` at `ℤ` and an `FPModel`. -/
-noncomputable def legendre_fortran (fp : FPModel) (n : ℤ) (x : ℝ) : ℝ :=
-  @legendre_mod.legendre_poly ℤ ℝ _ (FReal.ofModel fp) n x
-
-/-- At an `FPModel` it is the same function as at `fp.toNoGuard`. -/
-theorem legendre_fortran_eq (fp : FPModel) (n : ℤ) (x : ℝ) :
-    legendre_fortran fp n x = legendre_ng fp.toNoGuard n x := rfl
 
 theorem legendre_correct :
     LegendreSpec legendre_fortran := by
@@ -210,14 +263,7 @@ theorem legendre_correct :
 #print axioms legendre_correct
 
 /-- The assumptions of `LegendreSpec` are satisfiable: exact arithmetic on all
-of `ℝ` (`u = η = 0`, `M = 2^10`) is an admissible `FPModel`. -/
+of `ℝ` with range `M = 2^10` is an admissible `FPModel`. -/
 example : ∃ fp : FPModel, fp.u ≤ 1 / 2 ^ 53 ∧ fp.η ≤ 1 / 2 ^ 1000 ∧ 2 ^ 10 ≤ fp.M ∧
     (1 : ℝ) ∈ fp.F :=
-  ⟨{ F := Set.univ, u := 0, η := 0, M := 2 ^ 10, round := id,
-     add := (· + ·), sub := (· - ·), mul := (· * ·), div := (· / ·),
-     round_mem := fun _ _ => trivial, round_err := fun _ _ => by simp,
-     add_mem := fun _ _ _ _ _ => trivial, add_err := fun _ _ _ _ _ => by simp,
-     sub_mem := fun _ _ _ _ _ => trivial, sub_err := fun _ _ _ _ _ => by simp,
-     mul_mem := fun _ _ _ _ _ => trivial, mul_err := fun _ _ _ _ _ => by simp,
-     div_mem := fun _ _ _ _ _ _ => trivial, div_err := fun _ _ _ _ _ _ => by simp },
-   by norm_num, by norm_num, le_refl _, trivial⟩
+  ⟨FPModel.exact (2 ^ 10), by simp [FPModel.exact], by simp [FPModel.exact], le_refl _, trivial⟩

@@ -1,9 +1,8 @@
-import LFortran.Arith
 import Legendre.Generated
 
 /-!
-Run the generated `legendre_poly` through its `Int32`/`Float` wrapper
-`legendre_poly_float`.
+Run the generated template `legendre_poly` at `LFortran.machine`
+(`Int32`, `Float`), the instantiation `legendre_float_correct` is about.
 
 `P_n(1) = 1` and `P_2(1/2) = -1/8`. Exit 1 if the `Float` value disagrees.
 -/
@@ -11,7 +10,7 @@ Run the generated `legendre_poly` through its `Int32`/`Float` wrapper
 open LFortran
 
 def step (n : Int32) (x : Float) : Float :=
-  legendre_mod.legendre_poly_float n x
+  legendre_mod.legendre_poly (K := machine) n x
 
 def close (got expected : Float) : Bool :=
   let d := got - expected
