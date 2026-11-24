@@ -583,6 +583,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_ast> data_stmt_value_list
 %type <ast> data_stmt_repeat
 %type <ast> data_stmt_constant
+%type <ast> data_complex_part
 %type <ast> data_object
 %type <ast> integer_type_spec
 %type <vec_kind_arg> kind_arg_list
@@ -1573,6 +1574,14 @@ signed_numeric_constant
     | "+" signed_numeric_constant %prec UMINUS { $$ = UNARY_PLUS ($2, @$); }
     ;
 
+// F2023 R719/R720: real-part and imag-part are a signed numeric literal or a
+// named constant (a name), not a general expression. A sign on a name, as in
+// (-a, 0.0), is not a complex literal.
+data_complex_part
+    : signed_numeric_constant { $$ = $1; }
+    | id { $$ = $1; }
+    ;
+
 data_stmt_constant
     : designator { $$ = $1; }
     | signed_numeric_constant { $$ = $1; }
@@ -1580,7 +1589,7 @@ data_stmt_constant
     | TK_BOZ_CONSTANT { $$ = BOZ($1, @$); }
     | ".true."  { $$ = TRUE($1, @$); }
     | ".false." { $$ = FALSE($1, @$); }
-    | "(" signed_numeric_constant "," signed_numeric_constant ")" { $$ = COMPLEX($2, $4, @$); }
+    | "(" data_complex_part "," data_complex_part ")" { $$ = COMPLEX($2, $4, @$); }
 
     ;
 

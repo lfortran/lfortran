@@ -696,6 +696,8 @@ RUN(NAME data_23 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME data_24 LABELS gfortran llvm)
 RUN(NAME data_27 LABELS gfortran llvm)
 RUN(NAME data_28 LABELS gfortran llvm)
+# Named constant as a real or imaginary part of a complex literal in DATA
+RUN(NAME data_30 LABELS gfortran llvm)
 # GFortran 13 ICEs on vector subscripts in DATA ("Vector sections in data statements")
 RUN(NAME data_29 LABELS llvm)
 RUN(NAME data_vector_subscript LABELS llvm)
