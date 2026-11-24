@@ -298,7 +298,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
         app.add_flag("--version", opts.arg_version, "Display compiler version information");
         app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC, -fPIE & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
+        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC, -fPIE, -fdefault-integer-8 & -ffixed-line-length-N|none supported for now)")->allow_extra_args(false);
         app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
         app.add_option("--fpe-trap", fpe_traps_str, "Enable floating point exception trapping. Comma-separated list of: invalid, zero, overflow, underflow, inexact, denormal");
 
@@ -669,6 +669,21 @@ namespace LCompilers::CommandLineInterface {
                 compiler_options.po.default_integer_kind = 8;
                 compiler_options.descriptor_index_64 = true;
                 compiler_options.po.descriptor_index_64 = true;
+            } else if (lc::startswith(f_flag, "fixed-line-length-")) {
+                // Same spelling and meaning as gfortran: the last column that
+                // holds code in fixed-form source; `none` or 0 for no limit
+                std::string n = f_flag.substr(std::string("fixed-line-length-").size());
+                if (n == "none" || n == "0") {
+                    compiler_options.fixed_form_line_length = 0;
+                } else if (!n.empty() && n.size() <= 9
+                        && n.find_first_not_of("0123456789") == std::string::npos) {
+                    compiler_options.fixed_form_line_length = std::stoi(n);
+                } else {
+                    throw lc::LCompilersException(
+                        "Invalid value in `-f" + f_flag + "`: expected a "
+                        "number or `none`"
+                    );
+                }
             } else {
                 throw lc::LCompilersException(
                     "The flag `-f" + f_flag + "` is not supported"

@@ -1238,7 +1238,7 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
                             compiler_options.po.include_dirs.end());
         Result<std::string> prescan_res = LFortran::prescan(*code, lm,
             compiler_options.fixed_form, compiler_options.openmp, include_dirs,
-            diagnostics);
+            diagnostics, compiler_options.fixed_form_line_length);
         if (prescan_res.ok) {
             tmp = prescan_res.result;
         } else {

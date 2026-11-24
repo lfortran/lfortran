@@ -154,6 +154,9 @@ struct CompilerOptions {
     PassOptions po;
 
     bool fixed_form = false;
+    // Fixed-form: the last column that holds code (-ffixed-line-length-N);
+    // 0 means there is no limit (-ffixed-line-length-none)
+    int fixed_form_line_length = 72;
     bool interactive = false;
     // Emit the polls that let an interactive cell be interrupted (set by
     // FortranEvaluator when it can interrupt cells; see
