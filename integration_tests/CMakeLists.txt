@@ -1824,6 +1824,7 @@ RUN(NAME int_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # in
 RUN(NAME int_02 LABELS gfortran wasm fortran) # int symboltable
 RUN(NAME int_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # large int and prints array
 
+RUN(NAME lean_sin_kernels_01 LABELS gfortran llvm lean) # Lean templates: generated main
 RUN(NAME lean_names_01 LABELS gfortran llvm lean) # Lean keywords as names, sign with -0.0
 RUN(NAME intrinsics_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sqrt, abs, log
 RUN(NAME intrinsics_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sin
