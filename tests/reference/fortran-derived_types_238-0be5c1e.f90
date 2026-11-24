@@ -30,12 +30,12 @@ type :: inner
     real(4), dimension(:), allocatable :: x
 end type inner
 type :: t
-    real(4), dimension(:), allocatable :: b
-    type(inner) :: in
-    real(4), dimension(3) :: w
     real(4), dimension(:), allocatable :: x
     real(4), dimension(:), allocatable :: y
+    real(4), dimension(:), allocatable :: b
     real(4), dimension(:, :), allocatable :: z
+    real(4), dimension(3) :: w
+    type(inner) :: in
 end type t
 
 contains
