@@ -6,14 +6,14 @@ import Mathlib.Tactic.Ring
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.LinearCombination
 import Legendre.Spec
-import Legendre.Shared
+import Legendre.Generated
 import LFortran.Arith.Model
 
 /-!
 # The loop of `legendre_poly` as a recursion
 
-`legendre_ng m n x` is the shared `legendre_poly` (`Legendre/Shared.lean`)
-in a `NoGuardModel` `m`. `y m x k` is the value of `b` after the iterations
+`legendre_ng m n x` is the generated template `legendre_poly`
+(`Legendre/Generated.lean`) in a `NoGuardModel` `m`. `y m x k` is the value of `b` after the iterations
 `k = 2, ..., k` of the Fortran loop (with `y m x 0 = m.round 1`, the initial
 value of `a`), so that `legendre_ng m 0 x = m.round 1` and
 `legendre_ng m (k + 1) x = y m x (k + 1)`.
@@ -56,18 +56,18 @@ lemma fold_eq (fp : NoGuardModel) (x : ℝ) (m : ℕ) :
     have : y fp x (m + 2) = step fp x ((m : ℤ) + 2) (y fp x m) (y fp x (m + 1)) := rfl
     rw [this, add_assoc, one_add_one_eq_two]
 
-/-- The shared `legendre_poly` in a `NoGuardModel`. -/
+/-- The generated `legendre_poly` in a `NoGuardModel`. -/
 noncomputable def legendre_ng (fp : NoGuardModel) (n : ℤ) (x : ℝ) : ℝ :=
-  @legendre_shared.legendre_poly ℤ ℝ _ _ (FReal.ofNoGuard fp) n x
+  @legendre_mod.legendre_poly ℤ ℝ _ (FReal.ofNoGuard fp) n x
 
 lemma legendre_zero (fp : NoGuardModel) (x : ℝ) : legendre_ng fp 0 x = fp.round 1 := by
-  simp [legendre_ng, legendre_shared.legendre_poly]
+  simp [legendre_ng, legendre_mod.legendre_poly]
 
 lemma legendre_succ (fp : NoGuardModel) (x : ℝ) (m : ℕ) :
     legendre_ng fp ((m : ℤ) + 1) x = y fp x (m + 1) := by
   have hne : ((m : ℤ) + 1) ≠ 0 := by omega
   obtain ⟨c, hc⟩ := fold_eq fp x m
   simp only [step] at hc
-  simp [legendre_ng, legendre_shared.legendre_poly, range_eq_intRange, hne, hc]
+  simp [legendre_ng, legendre_mod.legendre_poly, range_eq_intRange, hne, hc]
 
 end LegendreProof
