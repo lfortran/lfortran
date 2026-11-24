@@ -8,7 +8,9 @@ import LFortran.Models.HighamBinary64
 `legendre_correct` holds for every `FPModel` with `u ≤ 2^-53`, `η ≤ 2^-1000`
 and `M ≥ 2^10`. These corollaries instantiate it with the arithmetic systems
 of `LFortran/Models/`: the error of `legendre_poly` is at most `10^-11` for
-`0 ≤ n ≤ 100` and floating-point `|x| ≤ 1` in each of them.
+`0 ≤ n ≤ 100` and floating-point `|x| ≤ 1` in each of them. Without a guard
+digit and with a Cray's `u ≤ 2^-46` it is at most `1.3 · 10^-9`
+(`legendre_correct_noGuard`).
 -/
 
 open LFortran Legendre
@@ -47,7 +49,19 @@ theorem legendre_correct_trefethenBau (A : TrefethenBau) (hε : A.εmach ≤ 1 /
   legendre_correct (A.toFPModel (2 ^ 10)) hε
     (show (0 : ℝ) ≤ 1 / 2 ^ 1000 by norm_num) le_rfl n x hx hn0 hn hx1
 
+/-- Arithmetic without a guard digit, as accurate as a Cray (`u ≤ 2^-46`):
+the error is at most `89201 · 2^-46 < 1.3 · 10^-9`. -/
+theorem legendre_correct_noGuard (fp : NoGuardModel) (hu : fp.u ≤ 1 / 2 ^ 46)
+    (hη : fp.η ≤ 1 / 2 ^ 46 / 10 ^ 6) (hM : 2 ^ 10 ≤ fp.M)
+    (n : ℤ) (x : ℝ) (hx : x ∈ fp.F) (hn0 : 0 ≤ n) (hn : n ≤ 100) (hx1 : |x| ≤ 1) :
+    |LegendreProof.legendre_ng fp n x - P n.toNat x| ≤ 13 / 10 ^ 10 := by
+  have h := legendre_ng_correct fp (1 / 2 ^ 46) (by positivity) (by norm_num) hu hη hM
+    n x hx hn0 hn hx1
+  have h2 : (89201 : ℝ) * (1 / 2 ^ 46) ≤ 13 / 10 ^ 10 := by norm_num
+  linarith
+
 #print axioms legendre_correct_binary64
 #print axioms legendre_correct_binary64FTZ
 #print axioms legendre_correct_higham
 #print axioms legendre_correct_trefethenBau
+#print axioms legendre_correct_noGuard
