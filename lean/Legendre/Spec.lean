@@ -1,6 +1,7 @@
 import LFortran.Prelude
 import LFortran.NoGuard
 import Mathlib.RingTheory.Polynomial.ShiftedLegendre
+import LFortran.FloatAddReal
 
 /-!
 # Specification of `legendre_poly` (hand-written, human-reviewed)
@@ -38,5 +39,14 @@ def LegendreSpecNoGuard (f : NoGuardModel → ℤ → ℝ → ℝ) : Prop :=
   ∀ (fp : NoGuardModel) (U : ℝ), 0 ≤ U → U ≤ 1 / 2 ^ 40 → fp.u ≤ U → fp.η ≤ U / 10 ^ 6 →
   2 ^ 10 ≤ fp.M → ∀ (n : ℤ) (x : ℝ), x ∈ fp.F → 0 ≤ n → n ≤ 100 → |x| ≤ 1 →
     |f fp n x - legendreP n.toNat x| ≤ 89201 * U
+
+/-- **The run.** The function `lfortran --backend=lean` executes, at
+`Int32` and Lean's `Float`, returns for `0 ≤ n ≤ 100` and every finite
+`Float` `x` with `|x| ≤ 1` a finite `Float` within `10^-11` of `P_n(x)`.
+`floatValue` is the real number a `Float` denotes (`none` for infinities
+and NaN), read from Lean's `Float.Model`. -/
+def LegendreFloatSpec (f : Int32 → Float → Float) : Prop :=
+  ∀ (n : ℕ) (xf : Float) (x : ℝ), n ≤ 100 → floatValue xf = some x → |x| ≤ 1 →
+    ∃ v, floatValue (f (Int32.ofInt n) xf) = some v ∧ |v - legendreP n x| ≤ 1 / 10 ^ 11
 
 end Legendre

@@ -67,16 +67,29 @@ instance : FInt Int64 where
   lt := fun a b => decide (a < b)
   le := fun a b => decide (a ≤ b)
 
+/-- The IEEE sign bit of an unpacked float (`false` for NaN). -/
+def unpackedSignbit : Float.Model.UnpackedFloat → Bool
+  | .finite .negative _ _ _ => true
+  | .zero .negative => true
+  | .infinity .negative => true
+  | _ => false
+
+/-- The sign bit of a `Float`, read through Lean's logical `Float.Model`. -/
+def floatSignbit (x : Float) : Bool := unpackedSignbit x.toModel.unpack
+
+/-- The sign bit of a `Float32`. -/
+def float32Signbit (x : Float32) : Bool := unpackedSignbit x.toModel.unpack
+
 /-- Fortran `int(x)` for a `Float`: truncation toward zero, through
-`Float.toUInt64`, which (unlike `Float.toInt64`) has a logical model, so
-proofs can reason about it. Exact for `|x| < 2^64`; Fortran leaves larger
-values undefined. -/
+`Float.toUInt64` and the sign bit, which (unlike `Float.toInt64`) have a
+logical model, so proofs can reason about them. Exact for `|x| < 2^64`;
+Fortran leaves larger values undefined. -/
 def floatTrunc (x : Float) : Int :=
-  if x < 0 then -((-x).toUInt64.toNat : Int) else (x.toUInt64.toNat : Int)
+  if floatSignbit x then -((-x).toUInt64.toNat : Int) else (x.toUInt64.toNat : Int)
 
 /-- The same for `Float32`. -/
 def float32Trunc (x : Float32) : Int :=
-  if x < 0 then -((-x).toUInt64.toNat : Int) else (x.toUInt64.toNat : Int)
+  if float32Signbit x then -((-x).toUInt64.toNat : Int) else (x.toUInt64.toNat : Int)
 
 /-- `2^e` as a `Float`; exact for `-1022 ≤ e ≤ 1023`, the range the
 generator emits. -/
@@ -98,7 +111,7 @@ instance : FReal Float where
   div := (· / ·)
   neg := (- ·)
   abs := Float.abs
-  signbit x := x.toBits >>> 63 == 1
+  signbit := floatSignbit
   beq := fun a b => a == b
   lt := fun a b => decide (a < b)
   le := fun a b => decide (a ≤ b)
@@ -114,7 +127,7 @@ instance : FReal Float32 where
   div := (· / ·)
   neg := (- ·)
   abs := Float32.abs
-  signbit x := x.toBits >>> 31 == 1
+  signbit := float32Signbit
   beq := fun a b => a == b
   lt := fun a b => decide (a < b)
   le := fun a b => decide (a ≤ b)
