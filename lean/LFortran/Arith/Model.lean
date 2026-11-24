@@ -1,12 +1,14 @@
 import LFortran.Arith
 import LFortran.Prelude
+import LFortran.NoGuard
 
 /-!
 # Proof instances
 
 `ℤ` is exact. `FReal.ofModel fp` makes every real operation the corresponding
 `FPModel` field, so the shared `legendre_poly` reduces to the function the
-existing proof already checks.
+existing proof already checks. `FReal.ofNoGuard m` does the same for a
+`NoGuardModel`; at `fp.toNoGuard` it is `FReal.ofModel fp`.
 -/
 
 namespace LFortran
@@ -45,6 +47,38 @@ noncomputable def FReal.ofModel (fp : FPModel) : FReal ℝ where
 
 @[simp] theorem ofModel_div (fp : FPModel) (a b : ℝ) :
     FReal.div (self := FReal.ofModel fp) a b = fp.div a b := rfl
+
+/-- The same for a `NoGuardModel`; integer conversion is `round` of the integer. -/
+@[instance_reducible]
+noncomputable def FReal.ofNoGuard (m : NoGuardModel) : FReal ℝ where
+  zero := 0
+  ofInt i := m.round (i : ℝ)
+  add := m.add
+  sub := m.sub
+  mul := m.mul
+  div := m.div
+
+@[simp] theorem ofNoGuard_zero (m : NoGuardModel) :
+    FReal.zero (self := FReal.ofNoGuard m) = 0 := rfl
+
+@[simp] theorem ofNoGuard_ofInt (m : NoGuardModel) (n : ℤ) :
+    FReal.ofInt (self := FReal.ofNoGuard m) n = m.round (n : ℝ) := rfl
+
+@[simp] theorem ofNoGuard_add (m : NoGuardModel) (a b : ℝ) :
+    FReal.add (self := FReal.ofNoGuard m) a b = m.add a b := rfl
+
+@[simp] theorem ofNoGuard_sub (m : NoGuardModel) (a b : ℝ) :
+    FReal.sub (self := FReal.ofNoGuard m) a b = m.sub a b := rfl
+
+@[simp] theorem ofNoGuard_mul (m : NoGuardModel) (a b : ℝ) :
+    FReal.mul (self := FReal.ofNoGuard m) a b = m.mul a b := rfl
+
+@[simp] theorem ofNoGuard_div (m : NoGuardModel) (a b : ℝ) :
+    FReal.div (self := FReal.ofNoGuard m) a b = m.div a b := rfl
+
+/-- At `fp.toNoGuard` the two proof instances are the same. -/
+theorem ofModel_eq_ofNoGuard (fp : FPModel) :
+    FReal.ofModel fp = FReal.ofNoGuard fp.toNoGuard := rfl
 
 @[simp] theorem ofInt_int (n : Int) : (FInt.ofInt n : Int) = n := rfl
 @[simp] theorem toInt_int (n : Int) : FInt.toInt n = n := rfl
