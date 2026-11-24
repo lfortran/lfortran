@@ -56,6 +56,18 @@ options, and after editing a generator input (`src/libasr/ASR.asdl`,
 `src/libasr/wasm_instructions.txt`, the generator scripts or
 `src/server/generator/`); `rebuild` would compile stale generated sources.
 
+For the configuration a release package uses, run the release recipe:
+
+```bash
+pixi run -e llvm11 build-release > build.log 2>&1
+```
+
+It builds in Release mode with the language server and runtime stacktraces
+into `build/release`, next to the Debug build, and installs to
+`build/release/inst`. `build_release.sh` is the same recipe as a standalone
+script, for packagers who build outside this Pixi project. Arguments after
+`build-release` are passed to CMake and override the recipe's defaults.
+
 Select another environment explicitly to keep multiple configurations:
 
 ```bash
