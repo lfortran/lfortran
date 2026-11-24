@@ -1372,6 +1372,7 @@ RUN(NAME array_constructor_18 LABELS gfortran llvm) # real(16) arrays from defau
 RUN(NAME array_constructor_20 LABELS gfortran llvm) # implied-do over derived-type function result nested in a function argument
 RUN(NAME array_constructor_char_len_01 LABELS gfortran llvm) # a character type-spec cuts or pads every element
 RUN(NAME array_constant_char_assumed_len_01 LABELS gfortran llvm) # constant array assigned to an explicit-shape character(len=*) dummy
+RUN(NAME array_constructor_19 LABELS gfortran llvm) # implied-do values converted to the array constructor type-spec
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
