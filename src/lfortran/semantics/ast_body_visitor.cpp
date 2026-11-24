@@ -9185,7 +9185,12 @@ public:
             }
         }
         if (auto* v = ASRUtils::extract_ExternalSymbol_Variable(target)) {
-            if (v->m_is_protected) {
+            // Within its module and that module's descendants a PROTECTED
+            // variable may be defined (F2018 8.5.15); a submodule is a
+            // descendant.
+            ASR::Module_t *owner = ASRUtils::get_sym_module0(&v->base);
+            if (v->m_is_protected && !(owner != nullptr
+                    && is_scope_in_module(current_scope, owner->m_name))) {
                 diag.add(Diagnostic(
                     "Variable " + std::string(v->m_name) + " is PROTECTED and cannot appear in LHS of assignment",
                     Level::Error, Stage::Semantic, {
