@@ -132,7 +132,18 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86")
                 OR (LFORTRAN_BACKEND STREQUAL "c") OR (LFORTRAN_BACKEND STREQUAL "fortran"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            if (LFORTRAN_BACKEND STREQUAL "c")
+                # EXTRAFILES can hold C sources, which only the Fortran
+                # compiler understands these options of.
+                foreach(arg IN LISTS extra_args)
+                    target_compile_options(${name} PUBLIC
+                        "$<$<COMPILE_LANGUAGE:Fortran>:${arg}>")
+                endforeach()
+                target_compile_options(${name} PUBLIC
+                    "$<$<COMPILE_LANGUAGE:Fortran>:--backend=c>")
+            else()
+                target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            endif()
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "wasm")
@@ -3531,6 +3542,15 @@ RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod
 RUN(NAME derived_types_261 LABELS gfortran llvm) # allocate a character(len=3), pointer :: tags(:) component (#16909)
 RUN(NAME derived_types_262 LABELS gfortran llvm) # copy and SELECT CASE on a character component of a SEQUENCE type (#17335)
 RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
+RUN(NAME c_pointer_dummy_abi_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_host_reference_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_allocatable_derived_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_associated_empty_01 LABELS gfortran c) # LLVM zero-sized TARGET bug: #14340
+RUN(NAME c_associated_fixed_component_01 LABELS gfortran llvm c)
+RUN(NAME c_scalar_allocatable_dummy_01 LABELS gfortran llvm c)
 RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
