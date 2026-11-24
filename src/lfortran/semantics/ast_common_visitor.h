@@ -4420,6 +4420,11 @@ public:
                 to_lower(std::string(var->m_name))) != current_procedure_args.end()) {
             return false;
         }
+        // So is a dummy argument of an ENTRY statement of the subprogram.
+        if (std::find(current_entry_args.begin(), current_entry_args.end(),
+                to_lower(std::string(var->m_name))) != current_entry_args.end()) {
+            return false;
+        }
         // A variable in a common block is a permitted primary.
         if (current_common_block_objects.find(to_lower(std::string(var->m_name)))
                 != current_common_block_objects.end()) {
