@@ -15,6 +15,9 @@ print *, "__LFORTRAN_MINOR__ present"
 #ifdef __LFORTRAN_PATCHLEVEL__
 print *, "__LFORTRAN_PATCHLEVEL__ present"
 #endif
+#ifdef __LFORTRAN_PRIF_REV__
+print *, "__LFORTRAN_PRIF_REV__ present"
+#endif
 print *, __FILE__
 print *, __LINE__
 print *, __LINE__
