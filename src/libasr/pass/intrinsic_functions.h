@@ -1698,7 +1698,12 @@ namespace Abs {
             double val = std::abs(rv);
             return ASRUtils::make_RealConstant_util(al, loc, val, t);
         } else if (ASRUtils::is_integer(*expr_type(arg))) {
-            int64_t rv = ASR::down_cast<ASR::IntegerConstant_t>(arg)->m_n;
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(arg);
+            if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, int128_abs(ASRUtils::integer_constant_to_i128(ic)), t));
+            }
+            int64_t rv = ic->m_n;
             int64_t val = std::abs(rv);
             return make_ConstantWithType(make_IntegerConstant_t, val, t, loc);
         } else if (ASRUtils::is_complex(*expr_type(arg))) {
@@ -1915,7 +1920,11 @@ namespace StorageSize {
 namespace Scale {
     static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::integer_constant_is_wide(ic)) {
+            return nullptr;
+        }
+        int64_t value_I = ic->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
         if (kind == 16) {
             if (value_I < -32766 || value_I > 32766) {
@@ -2092,6 +2101,8 @@ namespace Range {
                     range_val = 9; break;
                 } case 8: {
                     range_val = 18; break;
+                } case 16: {
+                    range_val = 38; break;
                 } default: {
                     break;
                 }
@@ -2191,13 +2202,26 @@ namespace OutOfRange
                 break;
         }
         if (is_integer(*arg_type_1)) {
-            int64_t value = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type_1) == 16) {
+                Int128 v = ASRUtils::integer_constant_to_i128(ic);
+                if (is_integer(*arg_type_2)) {
+                    if (kind_2 == 16) return b.bool_t(0, return_type);
+                    return b.bool_t(int128_cmp(v, Int128::from_i64(max_val_int)) > 0
+                        || int128_cmp(v, Int128::from_i64(min_val_int)) < 0, return_type);
+                } else if (is_real(*arg_type_2)) {
+                    double dv = int128_to_double(v);
+                    if (kind_2 == 16) return b.bool_t(0, return_type);
+                    return b.bool_t(dv > max_val_float || dv < min_val_float, return_type);
+                }
+            }
+            int64_t value = ic->m_n;
             if (is_integer(*arg_type_2)) {
-                if (value > max_val_int || value < min_val_int) {
+                if (kind_2 != 16 && (value > max_val_int || value < min_val_int)) {
                     return b.bool_t(1, return_type);
                 }
             } else if (is_real(*arg_type_2)) {
-                if ((double) value > max_val_float || (double) value < min_val_float) {
+                if (kind_2 != 16 && ((double) value > max_val_float || (double) value < min_val_float)) {
                     return b.bool_t(1, return_type);
                 }
             }
@@ -2710,6 +2734,14 @@ namespace Sign {
             rv1 = copysign(rv1, rv2);
             return ASRUtils::make_RealConstant_util(al, loc, rv1, t1);
         } else {
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 iv1 = int128_abs(ASRUtils::integer_constant_to_i128(
+                    ASR::down_cast<ASR::IntegerConstant_t>(args[0])));
+                Int128 iv2 = ASRUtils::integer_constant_to_i128(
+                    ASR::down_cast<ASR::IntegerConstant_t>(args[1]));
+                if (int128_is_negative(iv2)) iv1 = int128_neg(iv1);
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, iv1, t1));
+            }
             int64_t iv1 = std::abs(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
             int64_t iv2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             if (iv2 < 0) iv1 = -iv1;
@@ -2757,20 +2789,36 @@ namespace Shiftr {
 
     static ASR::expr_t *eval_Shiftr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        int k_val = kind * 8;
+        if (ASRUtils::integer_constant_is_wide(ic1)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic1);
+            if (int128_is_negative(s)) {
+                append_error(diag, "The shift argument of 'shiftr' intrinsic must be non-negative integer", args[1]->base.loc);
+            } else {
+                append_error(diag, "The shift argument of 'shiftr' intrinsic must be less than or equal to the bit size of the integer", args[1]->base.loc);
+            }
+            return nullptr;
+        }
+        int64_t val2 = ic1->m_n;
         if(val2 < 0) {
             append_error(diag, "The shift argument of 'shiftr' intrinsic must be non-negative integer", args[1]->base.loc);
             return nullptr;
         }
-        int k_val = kind * 8;
         if (val2 > k_val) {
             diag.add(diag::Diagnostic("The shift argument of 'shiftr' intrinsic must be less than or equal to the bit size of the integer", diag::Level::Error,
             diag::Stage::Semantic, {diag::Label("Shift value is " + std::to_string(val2) +
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
+        if (kind == 16) {
+            Int128 val1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 res = int128_lshr(val1, static_cast<unsigned>(val2));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
         int64_t val;
         if (val2 == k_val) {
             val = 0;
@@ -2826,9 +2874,19 @@ namespace Rshift {
                 !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
             return nullptr;
         }
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        if (ASRUtils::integer_constant_is_wide(ic1)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic1);
+            if (int128_is_negative(s)) {
+                append_error(diag, "The shift argument of 'rshift' intrinsic must be non-negative integer", args[1]->base.loc);
+            } else {
+                append_error(diag, "The shift argument of 'rshift' intrinsic must be less than or equal to the bit size of the integer", args[1]->base.loc);
+            }
+            return nullptr;
+        }
+        int64_t val2 = ic1->m_n;
         if(val2 < 0) {
             append_error(diag, "The shift argument of 'rshift' intrinsic must be non-negative integer", args[1]->base.loc);
             return nullptr;
@@ -2840,6 +2898,14 @@ namespace Rshift {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
+        if (kind == 16) {
+            Int128 val1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 res = (val2 >= 128)
+                ? Int128::from_i64(int128_is_negative(val1) ? -1 : 0)
+                : int128_shr(val1, Int128::from_i64(val2));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
         // val1 is sign-extended to 64 bits, so shifting by 63 gives all
         // sign bits for every kind
         int64_t val = val1 >> std::min<int64_t>(val2, 63);
@@ -2878,9 +2944,18 @@ namespace Shiftl {
 
     static ASR::expr_t *eval_Shiftl(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        if (ASRUtils::integer_constant_is_wide(ic1)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic1);
+            append_error(diag, int128_is_negative(s)
+                ? "The shift argument of 'shiftl' intrinsic must be non-negative integer"
+                : "The shift argument of 'shiftl' intrinsic must be less than or equal to the bit size of the integer",
+                args[1]->base.loc);
+            return nullptr;
+        }
+        int64_t val2 = ic1->m_n;
         if(val2 < 0) {
             append_error(diag, "The shift argument of 'shiftl' intrinsic must be non-negative integer", args[1]->base.loc);
             return nullptr;
@@ -2892,6 +2967,12 @@ namespace Shiftl {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
+        if (kind == 16) {
+            Int128 val1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 res = int128_lshl(val1, static_cast<unsigned>(val2));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
         int64_t val = val2 == k_val ? 0 : (int64_t)((uint64_t) val1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -2932,10 +3013,19 @@ namespace Dshiftl {
 
     static ASR::expr_t *eval_Dshiftl(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        ASR::IntegerConstant_t* ic2 = ASR::down_cast<ASR::IntegerConstant_t>(args[2]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        if (ASRUtils::integer_constant_is_wide(ic2)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic2);
+            append_error(diag, int128_is_negative(s)
+                ? "The shift argument of 'dshiftl' intrinsic must be non-negative integer"
+                : "The shift argument of 'dshiftl' intrinsic must be less than or equal to the bit size of the integer",
+                args[2]->base.loc);
+            return nullptr;
+        }
+        int64_t shift = ic2->m_n;
         if(shift < 0){
             append_error(diag, "The shift argument of 'dshiftl' intrinsic must be non-negative integer", args[2]->base.loc);
             return nullptr;
@@ -2945,6 +3035,15 @@ namespace Dshiftl {
             append_error(diag, "The shift argument of 'dshiftl' intrinsic must be less than or equal to the bit size of the integer", args[2]->base.loc);
             return nullptr;
         }
+        if (kind == 16) {
+            Int128 v1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 v2 = ASRUtils::integer_constant_to_i128(ic1);
+            Int128 res = int128_or(int128_lshl(v1, static_cast<unsigned>(shift)),
+                int128_lshr(v2, static_cast<unsigned>(128 - shift)));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t val2 = ic1->m_n;
         int64_t val = (val1 << shift) | (val2 >> (k_val - shift));
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -2958,17 +3057,33 @@ namespace Dshiftl {
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = Dshiftl(x, y, shift)
-        * r = x << shift | y >> (32 - shift) ! kind = 4
-        * r = x << shift | y >> (64 - shift) ! kind = 8
-        */
-        body.push_back(al, b.Assignment(result, b.BitLshift(args[0], b.i2i_t(args[2], return_type), return_type)));
-        body.push_back(al, b.If(b.Eq(b.i32(extract_kind_from_ttype_t(arg_types[0])), b.i32(4)), {
-            b.Assignment(result, b.Or(result, b.BitRshift(args[1], b.Sub(b.i_t(32, return_type), args[2]), return_type)))
-        }, {
-            b.Assignment(result, b.Or(result, b.BitRshift(args[1], b.Sub(b.i_t(64, return_type), args[2]), return_type)))
-        }));
+        int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
+        if (kind == 16) {
+            ASR::expr_t* s = b.i2i_t(args[2], return_type);
+            body.push_back(al, b.If(b.Eq(s, b.i_t(0, return_type)), {
+                b.Assignment(result, args[0])
+            }, {
+                b.If(b.Eq(s, b.i_t(128, return_type)), {
+                    b.Assignment(result, args[1])
+                }, {
+                    b.Assignment(result, b.Or(
+                        b.BitLshift(args[0], s, return_type),
+                        b.LBitRshift(args[1], b.Sub(b.i_t(128, return_type), s), return_type)))
+                })
+            }));
+        } else {
+            /*
+            * r = Dshiftl(x, y, shift)
+            * r = x << shift | y >> (32 - shift) ! kind = 4
+            * r = x << shift | y >> (64 - shift) ! kind = 8
+            */
+            body.push_back(al, b.Assignment(result, b.BitLshift(args[0], b.i2i_t(args[2], return_type), return_type)));
+            body.push_back(al, b.If(b.Eq(b.i32(kind), b.i32(4)), {
+                b.Assignment(result, b.Or(result, b.BitRshift(args[1], b.Sub(b.i_t(32, return_type), args[2]), return_type)))
+            }, {
+                b.Assignment(result, b.Or(result, b.BitRshift(args[1], b.Sub(b.i_t(64, return_type), args[2]), return_type)))
+            }));
+        }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2983,15 +3098,24 @@ namespace Dshiftr {
 
     static ASR::expr_t *eval_Dshiftr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        int kind1 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int kind2 = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_type);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        ASR::IntegerConstant_t* ic2 = ASR::down_cast<ASR::IntegerConstant_t>(args[2]);
+        int kind1 = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        int kind2 = ASRUtils::extract_kind_from_ttype_t(ic1->m_type);
         if(kind1 != kind2) {
             append_error(diag, "The kind of first argument of 'dshiftr' intrinsic must be the same as second argument", loc);
             return nullptr;
         }
+        if (ASRUtils::integer_constant_is_wide(ic2)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic2);
+            append_error(diag, int128_is_negative(s)
+                ? "The shift argument of 'dshiftr' intrinsic must be non-negative integer"
+                : "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer",
+                args[2]->base.loc);
+            return nullptr;
+        }
+        int64_t shift = ic2->m_n;
         if(shift < 0){
             append_error(diag, "The shift argument of 'dshiftr' intrinsic must be non-negative integer", args[2]->base.loc);
             return nullptr;
@@ -3001,6 +3125,15 @@ namespace Dshiftr {
             append_error(diag, "The shift argument of 'dshiftr' intrinsic must be less than or equal to the bit size of the integer", args[2]->base.loc);
             return nullptr;
         }
+        if (kind1 == 16) {
+            Int128 v1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 v2 = ASRUtils::integer_constant_to_i128(ic1);
+            Int128 res = int128_or(int128_lshl(v1, static_cast<unsigned>(128 - shift)),
+                int128_lshr(v2, static_cast<unsigned>(shift)));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t val2 = ic1->m_n;
         int64_t rightmostI = val1 & ((1LL << shift) - 1);
         int64_t result = rightmostI << (k_val - shift);
         int64_t leftmostJ;
@@ -3021,6 +3154,25 @@ namespace Dshiftr {
         fill_func_arg("i", arg_types[0]);
         fill_func_arg("j", arg_types[1]);
         fill_func_arg("shift", arg_types[2]);
+        if (extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            auto result = declare(fn_name, return_type, ReturnVar);
+            ASR::expr_t* s = b.i2i_t(args[2], return_type);
+            body.push_back(al, b.If(b.Eq(s, b.i_t(0, return_type)), {
+                b.Assignment(result, args[1])
+            }, {
+                b.If(b.Eq(s, b.i_t(128, return_type)), {
+                    b.Assignment(result, args[0])
+                }, {
+                    b.Assignment(result, b.Or(
+                        b.BitLshift(args[0], b.Sub(b.i_t(128, return_type), s), return_type),
+                        b.LBitRshift(args[1], s, return_type)))
+                })
+            }));
+            ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, f_sym);
+            return b.Call(f_sym, new_args, return_type, nullptr);
+        }
         auto final_result = declare("x", int64, Local);
         auto result = declare(fn_name , return_type, ReturnVar);
 
@@ -3088,14 +3240,32 @@ namespace Ishft {
 
     static ASR::expr_t *eval_Ishft(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t bit_size = 8 * (int64_t)kind;
+        if (ASRUtils::integer_constant_is_wide(ic1)) {
+            append_error(diag, "The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')", loc);
+            return nullptr;
+        }
+        int64_t val2 = ic1->m_n;
         if (val2 > bit_size || val2 < -bit_size) {
             append_error(diag, "The absolute value of SHIFT argument must be less than or equal to BIT_SIZE('I')", loc);
             return nullptr;
         }
+        if (kind == 16) {
+            Int128 val1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 res;
+            if (val2 == bit_size || val2 == -bit_size) {
+                res = Int128::from_i64(0);
+            } else if (val2 <= 0) {
+                res = int128_lshr(val1, static_cast<unsigned>(-val2));
+            } else {
+                res = int128_lshl(val1, static_cast<unsigned>(val2));
+            }
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
         int64_t val;
         if (val2 == bit_size || val2 == -bit_size) {
             val = 0;
@@ -3170,9 +3340,11 @@ namespace Bgt {
 
     static ASR::expr_t *eval_Bgt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = static_cast<uint64_t>(val1) > static_cast<uint64_t>(val2);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        bool result = (ASRUtils::extract_kind_from_ttype_t(ic0->m_type) == 16 || ASRUtils::extract_kind_from_ttype_t(ic1->m_type) == 16)
+            ? int128_ucmp(ASRUtils::integer_constant_to_i128(ic0), ASRUtils::integer_constant_to_i128(ic1)) > 0
+            : static_cast<uint64_t>(ic0->m_n) > static_cast<uint64_t>(ic1->m_n);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -3208,9 +3380,11 @@ namespace Blt {
 
     static ASR::expr_t *eval_Blt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = static_cast<uint64_t>(val1) < static_cast<uint64_t>(val2);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        bool result = (ASRUtils::extract_kind_from_ttype_t(ic0->m_type) == 16 || ASRUtils::extract_kind_from_ttype_t(ic1->m_type) == 16)
+            ? int128_ucmp(ASRUtils::integer_constant_to_i128(ic0), ASRUtils::integer_constant_to_i128(ic1)) < 0
+            : static_cast<uint64_t>(ic0->m_n) < static_cast<uint64_t>(ic1->m_n);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -3246,9 +3420,11 @@ namespace Bge {
 
     static ASR::expr_t *eval_Bge(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = static_cast<uint64_t>(val1) >= static_cast<uint64_t>(val2);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        bool result = (ASRUtils::extract_kind_from_ttype_t(ic0->m_type) == 16 || ASRUtils::extract_kind_from_ttype_t(ic1->m_type) == 16)
+            ? int128_ucmp(ASRUtils::integer_constant_to_i128(ic0), ASRUtils::integer_constant_to_i128(ic1)) >= 0
+            : static_cast<uint64_t>(ic0->m_n) >= static_cast<uint64_t>(ic1->m_n);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -3357,9 +3533,11 @@ namespace Ble {
 
     static ASR::expr_t *eval_Ble(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result = static_cast<uint64_t>(val1) <= static_cast<uint64_t>(val2);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        bool result = (ASRUtils::extract_kind_from_ttype_t(ic0->m_type) == 16 || ASRUtils::extract_kind_from_ttype_t(ic1->m_type) == 16)
+            ? int128_ucmp(ASRUtils::integer_constant_to_i128(ic0), ASRUtils::integer_constant_to_i128(ic1)) <= 0
+            : static_cast<uint64_t>(ic0->m_n) <= static_cast<uint64_t>(ic1->m_n);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -3514,13 +3692,40 @@ namespace Int {
     static ASR::expr_t *eval_Int(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t i = -1;
+        int dest_kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
-            i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(
+                ASRUtils::expr_value(args[0]));
+            Int128 w = ASRUtils::integer_constant_to_i128(ic);
+            if (dest_kind == 16) {
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, w, t1));
+            }
+            if (ASRUtils::integer_constant_is_wide(ic)) {
+                if (dest_kind == 1) i = static_cast<int8_t>(w.lo);
+                else if (dest_kind == 2) i = static_cast<int16_t>(w.lo);
+                else if (dest_kind == 4) i = static_cast<int32_t>(w.lo);
+                else i = static_cast<int64_t>(w.lo);
+            } else {
+                i = ic->m_n;
+            }
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::RealConstant_t>(*args[0])) {
             ASR::RealConstant_t* real_constant = ASR::down_cast<ASR::RealConstant_t>(
                 ASRUtils::expr_value(args[0]));
             int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+            if (dest_kind == 16) {
+                if (arg_kind == 16) {
+                    return nullptr;
+                }
+                long double ld = arg_kind == 10
+                    ? ASRUtils::real_constant_get_r10(real_constant)
+                    : static_cast<long double>(ASRUtils::real_constant_get_double(real_constant));
+                if (ld >= -9223372036854775808.0L && ld < 9223372036854775808.0L) {
+                    return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                        al, loc, Int128::from_i64(static_cast<int64_t>(ld)), t1));
+                }
+                return nullptr;
+            }
             if (arg_kind == 10 || arg_kind == 16) {
                 // Truncated in the precision of the argument, not through
                 // double
@@ -3544,7 +3749,15 @@ namespace Int {
             }
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
-            i = static_cast<int64_t>(ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]))));
+            double re = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0])));
+            if (dest_kind == 16) {
+                if (re >= -9223372036854775808.0 && re < 9223372036854775808.0) {
+                    return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                        al, loc, Int128::from_i64(static_cast<int64_t>(re)), t1));
+                }
+                return nullptr;
+            }
+            i = static_cast<int64_t>(re);
             return make_ConstantWithType(make_IntegerConstant_t, i, t1, loc);
         } else {
             append_error(diag, "Invalid argument to `int` intrinsic", loc);
@@ -3580,7 +3793,12 @@ namespace Not {
 
     static ASR::expr_t *eval_Not(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                al, loc, int128_not(ASRUtils::integer_constant_to_i128(ic)), t1));
+        }
+        int64_t val = ic->m_n;
         int64_t result = ~val;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -3613,8 +3831,15 @@ namespace Iand {
 
     static ASR::expr_t *eval_Iand(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            Int128 res = int128_and(ASRUtils::integer_constant_to_i128(ic0),
+                ASRUtils::integer_constant_to_i128(ic1));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t val2 = ic1->m_n;
         int64_t result;
         result = val1 & val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3650,8 +3875,15 @@ namespace And {
     static ASR::expr_t *eval_And(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
-            int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-            int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 res = int128_and(ASRUtils::integer_constant_to_i128(ic0),
+                    ASRUtils::integer_constant_to_i128(ic1));
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+            }
+            int64_t val1 = ic0->m_n;
+            int64_t val2 = ic1->m_n;
             int64_t result;
             result = val1 & val2;
             return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3689,8 +3921,15 @@ namespace Ior {
 
     static ASR::expr_t *eval_Ior(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            Int128 res = int128_or(ASRUtils::integer_constant_to_i128(ic0),
+                ASRUtils::integer_constant_to_i128(ic1));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t val2 = ic1->m_n;
         int64_t result;
         result = val1 | val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3726,8 +3965,15 @@ namespace Or {
     static ASR::expr_t *eval_Or(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
-            int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-            int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 res = int128_or(ASRUtils::integer_constant_to_i128(ic0),
+                    ASRUtils::integer_constant_to_i128(ic1));
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+            }
+            int64_t val1 = ic0->m_n;
+            int64_t val2 = ic1->m_n;
             int64_t result;
             result = val1 | val2;
             return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3765,8 +4011,15 @@ namespace Ieor {
 
     static ASR::expr_t *eval_Ieor(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            Int128 res = int128_xor(ASRUtils::integer_constant_to_i128(ic0),
+                ASRUtils::integer_constant_to_i128(ic1));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t val2 = ic1->m_n;
         int64_t result;
         result = val1 ^ val2;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3798,8 +4051,15 @@ namespace Xor {
     static ASR::expr_t *eval_Xor(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if(ASR::is_a<ASR::IntegerConstant_t>(*args[0])){
-            int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-            int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 res = int128_xor(ASRUtils::integer_constant_to_i128(ic0),
+                    ASRUtils::integer_constant_to_i128(ic1));
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+            }
+            int64_t val1 = ic0->m_n;
+            int64_t val2 = ic1->m_n;
             int64_t result;
             result = val1 ^ val2;
             return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -3837,17 +4097,34 @@ namespace Ibits {
 
     static ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t val3 = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        if ( val2 < 0 ) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        ASR::IntegerConstant_t* ic2 = ASR::down_cast<ASR::IntegerConstant_t>(args[2]);
+        if (ASRUtils::integer_constant_is_wide(ic1) || ic1->m_n < 0) {
             diag.semantic_error_label("`pos` argument of `ibits` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
         }
-        if ( val3 < 0 ) {
+        if (ASRUtils::integer_constant_is_wide(ic2) || ic2->m_n < 0) {
             diag.semantic_error_label("`len` argument of `ibits` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
         }
-        int64_t result;
-        result = (val1 >> val2) & ((1 << val3) - 1);
+        int64_t val2 = ic1->m_n;
+        int64_t val3 = ic2->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        if (kind == 16) {
+            Int128 val1 = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 shifted = (val2 >= 128) ? Int128::from_i64(0)
+                : int128_lshr(val1, static_cast<unsigned>(val2));
+            Int128 mask = (val3 >= 128)
+                ? Int128{~uint64_t{0}, ~uint64_t{0}}
+                : int128_sub(int128_lshl(Int128::from_i64(1), static_cast<unsigned>(val3)), Int128::from_i64(1));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                al, loc, int128_and(shifted, mask), t1));
+        }
+        uint64_t val1 = static_cast<uint64_t>(ic0->m_n);
+        uint64_t shifted = (val2 >= 64) ? 0ULL : (val1 >> val2);
+        uint64_t mask = (val3 >= 64) ? ~0ULL : ((uint64_t{1} << val3) - 1ULL);
+        int64_t result = static_cast<int64_t>(shifted & mask);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
@@ -4011,6 +4288,12 @@ namespace Nint {
                 near_integer > static_cast<double>(std::numeric_limits<int64_t>::max())) {
                 diag.semantic_error_label("Result of `nint` overflows its kind(" + std::to_string(kind) + ")", {loc}, "");
             }
+        } else if (kind == 16) {
+            if (near_integer >= -9223372036854775808.0 && near_integer < 9223372036854775808.0) {
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, Int128::from_i64(static_cast<int64_t>(near_integer)), arg_type));
+            }
+            return nullptr;
         } else {
             diag.semantic_error_label("Unsupported integer kind", {loc}, "");
         }
@@ -4124,10 +4407,19 @@ namespace Floor {
             }
             return make_ConstantWithType(make_IntegerConstant_t, floored, t1, loc);
         }
-        float val = static_cast<float>(ASRUtils::real_constant_get_double(
-            ASR::down_cast<ASR::RealConstant_t>(args[0])));
-        int64_t result = int64_t(val);
-        if(val<=0.0 && val!=result) {
+        double val = ASRUtils::real_constant_get_double(
+            ASR::down_cast<ASR::RealConstant_t>(args[0]));
+        if (kind == 16) {
+            double floored = std::floor(val);
+            if (floored >= -9223372036854775808.0 && floored < 9223372036854775808.0) {
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, Int128::from_i64(static_cast<int64_t>(floored)), t1));
+            }
+            return nullptr;
+        }
+        float val_f = static_cast<float>(val);
+        int64_t result = int64_t(val_f);
+        if(val_f<=0.0 && val_f!=result) {
             result = result-1;
         }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
@@ -4190,6 +4482,14 @@ namespace Ceiling {
         }
         double val = ASRUtils::real_constant_get_double(
             ASR::down_cast<ASR::RealConstant_t>(args[0]));
+        if (kind == 16) {
+            double ceiled = std::ceil(val);
+            if (ceiled >= -9223372036854775808.0 && ceiled < 9223372036854775808.0) {
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, Int128::from_i64(static_cast<int64_t>(ceiled)), t1));
+            }
+            return nullptr;
+        }
         double difference = val - double(int(val));
         int64_t result;
         if (difference == 0.0) {
@@ -4275,8 +4575,16 @@ namespace Dim {
             return ASRUtils::make_RealConstant_util(al, loc, result, t1);
         }
         LCOMPILERS_ASSERT(is_integer(*t1));
-        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            Int128 a = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 b = ASRUtils::integer_constant_to_i128(ic1);
+            Int128 res = int128_cmp(a, b) > 0 ? int128_sub(a, b) : Int128::from_i64(0);
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t a = ic0->m_n;
+        int64_t b = ic1->m_n;
         int64_t result;
         if (a > b) {
             result = a - b;
@@ -4861,8 +5169,16 @@ namespace SignFromValue {
             a = (b < 0 ? -a : a);
             return ASRUtils::make_RealConstant_util(al, loc, a, t1);
         }
-        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            Int128 a = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 b = ASRUtils::integer_constant_to_i128(ic1);
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                al, loc, int128_is_negative(b) ? int128_neg(a) : a, t1));
+        }
+        int64_t a = ic0->m_n;
+        int64_t b = ic1->m_n;
         a = (b < 0 ? -a : a);
         return make_ConstantWithType(make_IntegerConstant_t, a, t1, loc);
 
@@ -4907,13 +5223,15 @@ namespace FlipSign {
 
     static ASR::expr_t *eval_FlipSign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        uint64_t low = ASRUtils::integer_constant_is_wide(ic)
+            ? ASRUtils::integer_constant_to_i128(ic).lo : static_cast<uint64_t>(ic->m_n);
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
             lf_float128 b16 = ASRUtils::real_expr_get_r16(args[1]);
-            return ASRUtils::make_RealConstant_r16(al, loc, a % 2 == 1 ? lf_f128_neg(b16) : b16, t1);
+            return ASRUtils::make_RealConstant_r16(al, loc, (low & 1u) ? lf_f128_neg(b16) : b16, t1);
         }
         double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-        if (a % 2 == 1) b = -b;
+        if (low & 1u) b = -b;
         return ASRUtils::make_RealConstant_util(al, loc, b, t1);
     }
 
@@ -4966,8 +5284,20 @@ namespace FloorDiv {
 
 
         if (is_int1 && is_int2) {
-            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 a = ASRUtils::integer_constant_to_i128(ic0);
+                Int128 b = ASRUtils::integer_constant_to_i128(ic1);
+                if (int128_is_zero(b)) {
+                    append_error(diag, "Division by `0` is not allowed", loc);
+                    return nullptr;
+                }
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, int128_div(a, b), t1));
+            }
+            int64_t a = ic0->m_n;
+            int64_t b = ic1->m_n;
             if (b == 0) {
                 append_error(diag, "Division by `0` is not allowed", loc);
                 return nullptr;
@@ -5062,8 +5392,17 @@ namespace Mod {
         bool is_int2 = is_integer(*ASRUtils::expr_type(args[1]));
 
         if (is_int1 && is_int2) {
-            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 a = ASRUtils::integer_constant_to_i128(ic0);
+                Int128 b = ASRUtils::integer_constant_to_i128(ic1);
+                if (int128_is_zero(b)) return nullptr;
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, int128_mod(a, b), t1));
+            }
+            int64_t a = ic0->m_n;
+            int64_t b = ic1->m_n;
             return make_ConstantWithType(make_IntegerConstant_t, a % b, t1, loc);
         } else if (is_real1 && is_real2) {
             int kind = ASRUtils::extract_kind_from_ttype_t(t1);
@@ -5162,13 +5501,24 @@ namespace Ibclr {
 
     static ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t result;
-        if ( val2 < 0 ) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+        if (ASRUtils::integer_constant_is_wide(ic1) || ic1->m_n < 0) {
             diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
         }
-        result = val1 & ~(1 << val2);
+        int64_t val2 = ic1->m_n;
+        if (val2 >= 8 * kind) {
+            diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be less than bit_size(i)", {loc}, "");
+            return nullptr;
+        }
+        if (kind == 16) {
+            Int128 res = int128_ibclr(ASRUtils::integer_constant_to_i128(ic0), static_cast<unsigned>(val2));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t result = val1 & ~static_cast<int64_t>(uint64_t{1} << val2);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
@@ -5212,18 +5562,24 @@ namespace Ibset {
 
     static ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
-        if ( val2 < 0 ) {
+        if (ASRUtils::integer_constant_is_wide(ic1) || ic1->m_n < 0) {
             diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
             return nullptr;
         }
+        int64_t val2 = ic1->m_n;
         if ( val2 >= 8 * kind ) {
             diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be less than bit_size(i)", {loc}, "");
             return nullptr;
         }
-        int64_t result = val1 | (int64_t{1} << val2);
+        if (kind == 16) {
+            Int128 res = int128_ibset(ASRUtils::integer_constant_to_i128(ic0), static_cast<unsigned>(val2));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
+        int64_t val1 = ic0->m_n;
+        int64_t result = val1 | static_cast<int64_t>(uint64_t{1} << val2);
         // Sign-extend the bit pattern from the result's declared integer kind.
         if (kind == 1) {
             result = checked_bit_pattern_cast<int8_t>(result);
@@ -5275,14 +5631,20 @@ namespace Btest {
 
     static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result;
-        if ( val2 < 0 ) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        if (ASRUtils::integer_constant_is_wide(ic1) || ic1->m_n < 0) {
             diag.semantic_error_label("`pos` argument of `btest` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
         }
-        if ((val1 & (int64_t{1} << val2)) == 0) result = false;
-        else result = true;
+        int64_t val2 = ic1->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        if (kind == 16) {
+            bool result = int128_btest(ASRUtils::integer_constant_to_i128(ic0), static_cast<unsigned>(val2));
+            return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+        }
+        int64_t val1 = ic0->m_n;
+        bool result = (val2 < 64) && ((static_cast<uint64_t>(val1) & (uint64_t{1} << val2)) != 0);
         return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
     }
 
@@ -5339,8 +5701,13 @@ namespace Popcnt {
 
     static ASR::expr_t *eval_Popcnt(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        int64_t val = static_cast<int64_t>(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        if (kind == 16) {
+            int count = int128_popcnt(ASRUtils::integer_constant_to_i128(ic0));
+            return make_ConstantWithType(make_IntegerConstant_t, count, t1, loc);
+        }
+        int64_t val = static_cast<int64_t>(ic0->m_n);
         int64_t mask1 = 1;
         int32_t mask2 = 1;
         int count = 0;
@@ -5417,14 +5784,29 @@ namespace Maskl {
     static ASR::expr_t* eval_Maskl(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
-        int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if ((kind == 4 && i > 32) || (kind == 8 && i > 64)) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        if (ASRUtils::integer_constant_is_wide(ic0)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic0);
+            if (int128_is_negative(s)) {
+                diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
+            } else {
+                diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
+                + std::to_string(kind) + ")", {loc}, "");
+            }
+            return nullptr;
+        }
+        int64_t i = ic0->m_n;
+        if ((kind == 4 && i > 32) || (kind == 8 && i > 64) || (kind == 16 && i > 128)) {
             diag.semantic_error_label(" first argument of `maskl` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
             diag.semantic_error_label("first argument of `maskl` must be nonnegative", {loc}, "");
             return nullptr;
+        } else if (kind == 16) {
+            Int128 ones{~uint64_t{0}, ~uint64_t{0}};
+            Int128 res = (i == 0) ? Int128::from_i64(0) : int128_lshl(ones, static_cast<unsigned>(128 - i));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
         } else {
             int64_t bit_size = (i <= 32 && kind == 4) ? 32 : 64;
             int64_t result;
@@ -5443,24 +5825,20 @@ namespace Maskl {
         declare_basic_variables("_lcompilers_maskl_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = Maskl(x)
-        * r = (x == 64) ? -1 : ((1 << x) - 1) << (64 - x)
-        */
-        // For return_type is 8 result is always 64 bit
-        /*if (x == 32 .or. x == 64) then
-        *    res = -1
-        * else
-        *    if (x <= 32) then             ! 32 bit result
-        *        res = ishft(1, x) - 1 
-        *        res = ishft(res, 32 - x)
-        *    else                            ! 64 bit result     
-        *        res = ishft(1, x) - 1 
-        *        res = ishft(res, 64 - x)
-        *    end if
-        *end if
-        */
-       if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
+       if (ASRUtils::extract_kind_from_ttype_t(return_type) == 16) {
+            ASR::expr_t* s = b.i2i_t(args[0], return_type);
+            body.push_back(al, b.If(b.Eq(s, b.i_t(0, return_type)), {
+                b.Assignment(result, b.i_t(0, return_type))
+            }, {
+                b.If(b.Eq(s, b.i_t(128, return_type)), {
+                    b.Assignment(result, b.i_t(-1, return_type))
+                }, {
+                    b.Assignment(result, b.BitLshift(
+                        b.Sub(b.BitLshift(b.i_t(1, return_type), s, return_type), b.i_t(1, return_type)),
+                        b.Sub(b.i_t(128, return_type), s), return_type))
+                })
+            }));
+       } else if (ASRUtils::extract_kind_from_ttype_t(return_type) == 8) {
             body.push_back(al, b.If(b.Or((b.Eq(b.i2i_t(args[0], return_type), b.i_t(32, return_type))),(b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type)))), {
                 b.Assignment(result, b.i_t(-1, return_type))
             }, {
@@ -5490,14 +5868,30 @@ namespace Maskr {
     static ASR::expr_t* eval_Maskr(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         int32_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
-        int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        if (((kind == 4) && i > 32) || (kind == 8 && i > 64)) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        if (ASRUtils::integer_constant_is_wide(ic0)) {
+            Int128 s = ASRUtils::integer_constant_to_i128(ic0);
+            if (int128_is_negative(s)) {
+                diag.semantic_error_label("first argument of `maskr` must be nonnegative", {loc}, "");
+            } else {
+                diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
+                + std::to_string(kind) + ")", {loc}, "");
+            }
+            return nullptr;
+        }
+        int64_t i = ic0->m_n;
+        if (((kind == 4) && i > 32) || (kind == 8 && i > 64) || (kind == 16 && i > 128)) {
             diag.semantic_error_label("first argument of `maskr` must be less than or equal to the BIT_SIZE of INTEGER(KIND="
             + std::to_string(kind) + ")", {loc}, "");
             return nullptr;
         } else if (i < 0) {
             diag.semantic_error_label("first argument of `maskr` must be nonnegative", {loc}, "");
             return nullptr;
+        }
+        if (kind == 16) {
+            Int128 res = (i == 128) ? Int128{~uint64_t{0}, ~uint64_t{0}}
+                : int128_sub(int128_lshl(Int128::from_i64(1), static_cast<unsigned>(i)), Int128::from_i64(1));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
         }
         if(i == 64){
             return make_ConstantWithType(make_IntegerConstant_t, -1, t1, loc);
@@ -5517,7 +5911,8 @@ namespace Maskr {
         * r = Maskr(x)
         * r = (1 << x) - 1
         */
-        body.push_back(al, b.If((b.Eq(b.i2i_t(args[0], return_type), b.i_t(64, return_type))), {
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(return_type);
+        body.push_back(al, b.If((b.Eq(b.i2i_t(args[0], return_type), b.i_t(bit_size, return_type))), {
             b.Assignment(result, b.i_t(-1, return_type))
         }, {
             b.Assignment(result, b.Sub(b.BitLshift(b.i_t(1, return_type), b.i2i_t(args[0], return_type), return_type), b.i_t(1, return_type)))
@@ -5639,9 +6034,11 @@ namespace Trailz {
 
     static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
-        int64_t trailing_zeros = ASRUtils::compute_trailing_zeros(a, kind);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        int64_t trailing_zeros = (kind == 16)
+            ? int128_trailz(ASRUtils::integer_constant_to_i128(ic0))
+            : ASRUtils::compute_trailing_zeros(ic0->m_n, kind);
         set_kind_to_ttype_t(t1, 4);
         return make_ConstantWithType(make_IntegerConstant_t, trailing_zeros, t1, loc);
     }
@@ -5932,8 +6329,20 @@ namespace Modulo {
     static ASR::expr_t *eval_Modulo(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (is_integer(*ASRUtils::expr_type(args[0])) && is_integer(*ASRUtils::expr_type(args[1]))) {
-            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+            ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+            ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+                Int128 a = ASRUtils::integer_constant_to_i128(ic0);
+                Int128 b = ASRUtils::integer_constant_to_i128(ic1);
+                if (int128_is_zero(b)) {
+                    append_error(diag, "Second argument of modulo cannot be 0", loc);
+                    return nullptr;
+                }
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                    al, loc, int128_modulo(a, b), t1));
+            }
+            int64_t a = ic0->m_n;
+            int64_t b = ic1->m_n;
             if (b == 0) {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
                 return nullptr;
@@ -6214,8 +6623,19 @@ namespace Real {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         std::complex<long double> c10;
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
-            int64_t i = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]))->m_n;
-            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[0]));
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            if (ASRUtils::integer_constant_is_wide(ic)) {
+                Int128 w = ASRUtils::integer_constant_to_i128(ic);
+                if (dest_kind == 16) {
+                    return ASRUtils::make_RealConstant_r16(al, loc, ASRUtils::int128_to_f128(w), t1);
+                } else if (dest_kind == 10) {
+                    return ASRUtils::make_RealConstant_r10(al, loc, int128_to_long_double(w), t1);
+                }
+                return ASRUtils::make_RealConstant_util(al, loc, int128_to_double(w), t1);
+            }
+            int64_t i = ic->m_n;
+            if (dest_kind == 16) {
                 return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_from_int64(i), t1);
             }
             return ASRUtils::make_RealConstant_util(al, loc, (double)i, t1);
@@ -6289,7 +6709,10 @@ namespace Cmplx {
     static inline bool cmplx_part_r16(ASR::expr_t* arg, lf_float128 &v) {
         ASR::expr_t* value = ASRUtils::expr_value(arg);
         if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
-            v = lf_f128_from_int64(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            v = ASRUtils::integer_constant_is_wide(ic)
+                ? ASRUtils::int128_to_f128(ASRUtils::integer_constant_to_i128(ic))
+                : lf_f128_from_int64(ic->m_n);
         } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)) {
             v = lf_f128_from_double(static_cast<double>(
                 ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value)->m_n));
@@ -6312,7 +6735,10 @@ namespace Cmplx {
     static inline bool cmplx_part_double(ASR::expr_t* arg, int kind, double &v) {
         ASR::expr_t* value = ASRUtils::expr_value(arg);
         if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
-            v = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(value);
+            v = ASRUtils::integer_constant_is_wide(ic)
+                ? int128_to_double(ASRUtils::integer_constant_to_i128(ic))
+                : static_cast<double>(ic->m_n);
         } else if (ASR::is_a<ASR::UnsignedIntegerConstant_t>(*value)) {
             v = static_cast<double>(ASR::down_cast<ASR::UnsignedIntegerConstant_t>(value)->m_n);
         } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
@@ -6543,11 +6969,21 @@ namespace Mergebits {
 
     static ASR::expr_t *eval_Mergebits(Allocator &al, const Location &loc,
         ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        ASR::IntegerConstant_t* ic2 = ASR::down_cast<ASR::IntegerConstant_t>(args[2]);
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            Int128 a = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 b = ASRUtils::integer_constant_to_i128(ic1);
+            Int128 mask = ASRUtils::integer_constant_to_i128(ic2);
+            Int128 res = int128_or(int128_and(a, mask), int128_and(b, int128_not(mask)));
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
+        }
         // The constants are sign-extended from their kind, so merging all 64
         // bits yields the sign-extended result of that kind.
-        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t mask = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
+        int64_t a = ic0->m_n;
+        int64_t b = ic1->m_n;
+        int64_t mask = ic2->m_n;
         int64_t result = (a & mask) | (b & ~mask);
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
@@ -6592,9 +7028,11 @@ namespace Leadz {
 
     static ASR::expr_t *eval_Leadz(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t kind = ASRUtils::extract_kind_from_ttype_t(t1);
-        int64_t leading_zeros = ASRUtils::compute_leading_zeros(a, kind);
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        int64_t leading_zeros = (kind == 16)
+            ? int128_leadz(ASRUtils::integer_constant_to_i128(ic0))
+            : ASRUtils::compute_leading_zeros(ic0->m_n, kind);
         set_kind_to_ttype_t(t1, 4);
         return make_ConstantWithType(make_IntegerConstant_t, leading_zeros, t1, loc);
     }
@@ -6659,39 +7097,57 @@ namespace Ishftc {
 
     static ASR::expr_t *eval_Ishftc(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        uint64_t val = (uint64_t)ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t shift_signed = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
-        uint32_t bits_size = (uint32_t)ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-        uint32_t max_bits_size = 64;
-        if (bits_size > (uint32_t)(8 * kind)) {
+        ASR::IntegerConstant_t* ic0 = ASR::down_cast<ASR::IntegerConstant_t>(args[0]);
+        ASR::IntegerConstant_t* ic1 = ASR::down_cast<ASR::IntegerConstant_t>(args[1]);
+        ASR::IntegerConstant_t* ic2 = ASR::down_cast<ASR::IntegerConstant_t>(args[2]);
+        int kind = ASRUtils::extract_kind_from_ttype_t(ic0->m_type);
+        if (ASRUtils::integer_constant_is_wide(ic1) || ASRUtils::integer_constant_is_wide(ic2)) {
+            append_error(diag, "The SHIFT/SIZE argument is out of range for `ishftc`", loc);
+            return nullptr;
+        }
+        int64_t shift_signed = ic1->m_n;
+        int64_t size_signed = ic2->m_n;
+        if (size_signed <= 0 || size_signed > (int64_t)(8 * kind)) {
             append_error(diag, "The SIZE argument must be greater than zero and less than or equal to BIT_SIZE('I')", loc);
             return nullptr;
         }
-        if(std::abs(shift_signed) > bits_size){
+        uint32_t bits_size = static_cast<uint32_t>(size_signed);
+        if (shift_signed < -(int64_t)bits_size || shift_signed > (int64_t)bits_size) {
             append_error(diag, "The SHIFT argument must be less than or equal to the of SIZE argument", loc);
             return nullptr;
         }
         bool negative_shift = (shift_signed < 0);
-        // Bounded by `bits_size` above.
         uint32_t shift = static_cast<uint32_t>(std::abs(shift_signed));
-
-        if (shift > max_bits_size) {
-            append_error(diag, "The absolute value of SHIFT argument must be less than SIZE", loc);
-            return nullptr;
+        if (kind == 16) {
+            Int128 val = ASRUtils::integer_constant_to_i128(ic0);
+            Int128 mask = (bits_size == 128)
+                ? Int128{~uint64_t{0}, ~uint64_t{0}}
+                : int128_sub(int128_lshl(Int128::from_i64(1), bits_size), Int128::from_i64(1));
+            Int128 high = int128_and(val, int128_not(mask));
+            Int128 low = int128_and(val, mask);
+            Int128 res;
+            if (shift == 0 || shift == bits_size) {
+                res = val;
+            } else if (negative_shift) {
+                res = int128_or(high, int128_or(
+                    int128_lshr(low, shift),
+                    int128_and(int128_lshl(low, bits_size - shift), mask)));
+            } else {
+                res = int128_or(high, int128_or(
+                    int128_and(int128_lshl(low, shift), mask),
+                    int128_lshr(low, bits_size - shift)));
+            }
+            return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, res, t1));
         }
-
-        // Rotate only the low `bits_size` bits of val; leave the higher bits
-        // unchanged. The high bits are captured before the rotation and OR'd
-        // back into the result, so they survive even when bits_size < bit_width.
-        // 64-bit literals (0ULL/1ULL) keep the mask correct on LLP64 targets (MSVC).
+        uint64_t val = (uint64_t)ic0->m_n;
+        uint32_t max_bits_size = 64;
         uint64_t mask = (bits_size == max_bits_size)
             ? ~0ULL
             : ((1ULL << bits_size) - 1ULL);
         uint64_t high = val & ~mask;
         uint64_t low = val & mask;
         uint64_t result;
-        if (shift == 0) {
+        if (shift == 0 || shift == bits_size) {
             // No rotation: the low bits stay where they are.
             result = val;
         } else if (negative_shift) {
@@ -6705,13 +7161,54 @@ namespace Ishftc {
             result = static_cast<int16_t>(result);
         } else if (kind == 4) {
             result = static_cast<int32_t>(result);
-        } 
+        }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Ishftc(Allocator & al, const Location & loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 16) {
+            declare_basic_variables("_lcompilers_ishftc_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value));
+            fill_func_arg("n", arg_types[0]);
+            fill_func_arg("shift", arg_types[1]);
+            fill_func_arg("size", arg_types[2]);
+            auto result = declare(fn_name, return_type, ReturnVar);
+            ASR::expr_t *x = args[0];
+            ASR::expr_t *s = b.i2i_t(args[1], return_type);
+            ASR::expr_t *sz = b.i2i_t(args[2], return_type);
+            auto mask = declare("mask", return_type, Local);
+            auto abs_s = declare("abs_s", return_type, Local);
+            auto low = declare("low", return_type, Local);
+            body.push_back(al, b.If(b.Eq(sz, b.i_t(128, return_type)), {
+                b.Assignment(mask, b.i_t(-1, return_type))
+            }, {
+                b.Assignment(mask, b.Sub(b.BitLshift(b.i_t(1, return_type), sz, return_type), b.i_t(1, return_type)))
+            }));
+            body.push_back(al, b.If(b.Lt(s, b.i_t(0, return_type)), {
+                b.Assignment(abs_s, b.i_neg(s, return_type))
+            }, {
+                b.Assignment(abs_s, s)
+            }));
+            body.push_back(al, b.If(b.Or(b.Eq(abs_s, b.i_t(0, return_type)), b.Eq(abs_s, sz)), {
+                b.Assignment(result, x)
+            }, {
+                b.Assignment(low, b.And(x, mask)),
+                b.If(b.Lt(s, b.i_t(0, return_type)), {
+                    b.Assignment(result, b.Or(b.And(x, b.Not(mask)),
+                        b.Or(b.LBitRshift(low, abs_s, return_type),
+                             b.And(b.BitLshift(low, b.Sub(sz, abs_s), return_type), mask))))
+                }, {
+                    b.Assignment(result, b.Or(b.And(x, b.Not(mask)),
+                        b.Or(b.And(b.BitLshift(low, abs_s, return_type), mask),
+                             b.LBitRshift(low, b.Sub(sz, abs_s), return_type))))
+                })
+            }));
+            ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+                body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+            scope->add_symbol(fn_name, new_symbol);
+            return b.Call(new_symbol, new_args, return_type, nullptr);
+        }
         std::string c_func_name;
         Vec<ASR::ttype_t*> arg_types2; arg_types2.reserve(al, 1);   // keeping x and size always int64 to maintain uniformity
         arg_types2.push_back(al, arg_types[0]);
@@ -6948,6 +7445,8 @@ namespace SelectedIntKind {
             result = 4;
         } else if (val <= 18) {
             result = 8;
+        } else if (val <= 38) {
+            result = 16;
         } else {
             result = -1;
         }
@@ -6974,7 +7473,11 @@ namespace SelectedIntKind {
                     b.If(b.LtE(number, b.i_t(18, arg_types[0])), {
                         b.Assignment(result, b.i32(8))
                     }, {
-                        b.Assignment(result, b.i32(-1))
+                        b.If(b.LtE(number, b.i_t(38, arg_types[0])), {
+                            b.Assignment(result, b.i32(16))
+                        }, {
+                            b.Assignment(result, b.i32(-1))
+                        })
                     })
                 })
             })
@@ -8106,6 +8609,8 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
+            } else if (kind == 16) {
+                return make_ConstantWithType(make_IntegerConstant_t, 127, int32, loc);
             } else {
                 append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Integer", loc);
             }
@@ -9469,6 +9974,16 @@ namespace Max {
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, max_val, arg_type));
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 16) {
+                Int128 max_val = ASRUtils::integer_constant_to_i128(
+                    ASR::down_cast<ASR::IntegerConstant_t>(args[0]));
+                for (size_t i = 1; i < args.size(); i++) {
+                    Int128 val = ASRUtils::integer_constant_to_i128(
+                        ASR::down_cast<ASR::IntegerConstant_t>(args[i]));
+                    if (int128_cmp(val, max_val) > 0) max_val = val;
+                }
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, max_val, arg_type));
+            }
             int64_t max_val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             for (size_t i = 1; i < args.size(); i++) {
                 int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n;
@@ -9750,6 +10265,16 @@ namespace Min {
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, min_val, arg_type));
         } else if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 16) {
+                Int128 min_val = ASRUtils::integer_constant_to_i128(
+                    ASR::down_cast<ASR::IntegerConstant_t>(args[0]));
+                for (size_t i = 1; i < args.size(); i++) {
+                    Int128 val = ASRUtils::integer_constant_to_i128(
+                        ASR::down_cast<ASR::IntegerConstant_t>(args[i]));
+                    if (int128_cmp(val, min_val) < 0) min_val = val;
+                }
+                return ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(al, loc, min_val, arg_type));
+            }
             int64_t min_val = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
             for (size_t i = 1; i < args.size(); i++) {
                 int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(args[i])->m_n;
@@ -10169,6 +10694,13 @@ namespace Huge {
         ASRUtils::ASRBuilder b(al, loc);
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            if (kind == 16) {
+                // 2**127-1 does not fit in IntegerConstant's int64 payload, so
+                // the value is the i128 expression (1 << 127) - 1.
+                ASR::expr_t *one = b.i_t(1, arg_type);
+                ASR::expr_t *shifted = b.BitLshift(one, b.i_t(127, arg_type), arg_type);
+                return b.Sub(shifted, b.i_t(1, arg_type));
+            }
             int64_t huge_value = -1;
             switch ( kind ) {
                 case 1: {

@@ -4803,12 +4803,24 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             // kind=10 m_r is a pointer to the long double bytes, which
             // real_constant_get_r10 reads.
             int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
             if (src_kind != 16) {
-                int64_t v = src_kind == 10
-                    ? static_cast<int64_t>(ASRUtils::real_constant_get_r10(rc))
-                    : static_cast<int64_t>(rc->m_r);
-                value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
+                if (dest_kind == 16) {
+                    long double ld = src_kind == 10
+                        ? ASRUtils::real_constant_get_r10(rc)
+                        : static_cast<long double>(rc->m_r);
+                    if (ld >= -9223372036854775808.0L && ld < 9223372036854775808.0L) {
+                        value = ASR::down_cast<ASR::expr_t>(
+                            ASRUtils::make_IntegerConstant_i128(al, a_loc,
+                                Int128::from_i64(static_cast<int64_t>(ld)), a_type));
+                    }
+                } else {
+                    int64_t v = src_kind == 10
+                        ? static_cast<int64_t>(ASRUtils::real_constant_get_r10(rc))
+                        : static_cast<int64_t>(rc->m_r);
+                    value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
+                }
             }
         } else if (a_kind == ASR::cast_kindType::RealToReal) {
             ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(
@@ -4868,52 +4880,99 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             }
         } else if (a_kind == ASR::cast_kindType::IntegerToReal) {
             // TODO: Clashes with the pow functions
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_arg))->m_n;
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(
+                ASRUtils::expr_value(a_arg));
             int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
-            if (dest_kind == 10) {
-                value = ASRUtils::make_RealConstant_r10(al, a_loc,
-                    (long double)int_value, a_type);
-            } else if (dest_kind != 16) {
-                value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
+            if (ASRUtils::integer_constant_is_wide(ic)) {
+                Int128 w = ASRUtils::integer_constant_to_i128(ic);
+                if (dest_kind == 10) {
+                    value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                        int128_to_long_double(w), a_type);
+                } else if (dest_kind == 16) {
+                    value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                        int128_to_f128(w), a_type);
+                } else {
+                    value = ASR::down_cast<ASR::expr_t>(
+                        ASR::make_RealConstant_t(al, a_loc, int128_to_double(w), a_type));
+                }
             } else {
-                // int -> real(16) is always exact for int64; build the binary128
-                // bytes directly on the arena and pack them into m_r.
-                uint8_t* bytes = (uint8_t*)al.alloc(16);
-                lf_float128 v = lf_f128_from_int64(int_value);
-                std::memcpy(bytes, v.bytes, 16);
-                double m_r = ASRUtils::real_constant_pack_r16(bytes);
-                value = ASR::down_cast<ASR::expr_t>(
-                    ASR::make_RealConstant_t(al, a_loc, m_r, a_type));
+                int64_t int_value = ic->m_n;
+                if (dest_kind == 10) {
+                    value = ASRUtils::make_RealConstant_r10(al, a_loc,
+                        (long double)int_value, a_type);
+                } else if (dest_kind != 16) {
+                    value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, a_loc, (double)int_value, a_type));
+                } else {
+                    value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                        lf_f128_from_int64(int_value), a_type);
+                }
             }
         } else if (a_kind == ASR::cast_kindType::IntegerToComplex) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
-            if (ASRUtils::extract_kind_from_ttype_t(a_type) == 10) {
-                value = make_wide_complex_from_integer(al, a_loc, int_value, a_type);
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg));
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+            if (ASRUtils::integer_constant_is_wide(ic)) {
+                Int128 w = ASRUtils::integer_constant_to_i128(ic);
+                if (dest_kind == 10) {
+                    value = ASRUtils::make_ComplexConstant_r10(al, a_loc,
+                        std::complex<long double>(int128_to_long_double(w), 0.0L), a_type);
+                } else if (dest_kind == 16) {
+                    value = ASRUtils::make_ComplexConstant_r16(al, a_loc,
+                        int128_to_f128(w), lf_f128_from_double(0.0), a_type);
+                } else {
+                    value = ASR::down_cast<ASR::expr_t>(ASRUtils::make_ComplexConstant_util(
+                        al, a_loc, int128_to_double(w), 0, a_type));
+                }
             } else {
-                value = ASR::down_cast<ASR::expr_t>(ASRUtils::make_ComplexConstant_util(al, a_loc,
-                            (double)int_value, 0, a_type));
+                int64_t int_value = ic->m_n;
+                if (dest_kind == 10) {
+                    value = make_wide_complex_from_integer(al, a_loc, int_value, a_type);
+                } else {
+                    value = ASR::down_cast<ASR::expr_t>(ASRUtils::make_ComplexConstant_util(al, a_loc,
+                                (double)int_value, 0, a_type));
+                }
             }
         } else if (a_kind == ASR::cast_kindType::IntegerToInteger) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg));
+            Int128 w = ASRUtils::integer_constant_to_i128(ic);
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(a_type);
+            if (dest_kind == 16) {
+                value = ASR::down_cast<ASR::expr_t>(
+                    ASRUtils::make_IntegerConstant_i128(al, a_loc, w, a_type));
+            } else if (ASRUtils::integer_constant_is_wide(ic)) {
+                int64_t int_value = static_cast<int64_t>(w.lo);
+                if (dest_kind == 1) int_value = static_cast<int8_t>(int_value);
+                else if (dest_kind == 2) int_value = static_cast<int16_t>(int_value);
+                else if (dest_kind == 4) int_value = static_cast<int32_t>(int_value);
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+            } else {
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, ic->m_n, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::IntegerToUnsignedInteger) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg));
+            int64_t int_value = static_cast<int64_t>(ASRUtils::integer_constant_to_i128(ic).lo);
             value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
         } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToInteger) {
             int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
                                 ASRUtils::expr_value(a_arg))->m_n;
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+            if (ASRUtils::extract_kind_from_ttype_t(a_type) == 16) {
+                Int128 w{static_cast<uint64_t>(int_value), 0};
+                value = ASR::down_cast<ASR::expr_t>(
+                    ASRUtils::make_IntegerConstant_i128(al, a_loc, w, a_type));
+            } else {
+                value = ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, a_loc, int_value, a_type));
+            }
         } else if (a_kind == ASR::cast_kindType::UnsignedIntegerToUnsignedInteger) {
             int64_t int_value = ASR::down_cast<ASR::UnsignedIntegerConstant_t>(
                                 ASRUtils::expr_value(a_arg))->m_n;
             value = ASR::down_cast<ASR::expr_t>(ASR::make_UnsignedIntegerConstant_t(al, a_loc, int_value, a_type));
         } else if (a_kind == ASR::cast_kindType::IntegerToLogical) {
-            int64_t int_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                ASRUtils::expr_value(a_arg))->m_n;
-            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(al, a_loc, int_value, a_type));
+            ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(
+                                ASRUtils::expr_value(a_arg));
+            bool logical_value = !int128_is_zero(ASRUtils::integer_constant_to_i128(ic));
+            value = ASR::down_cast<ASR::expr_t>(ASR::make_LogicalConstant_t(al, a_loc, logical_value, a_type));
         } else if (a_kind == ASR::cast_kindType::LogicalToLogical &&
                 ASR::is_a<ASR::LogicalConstant_t>(*ASRUtils::expr_value(a_arg))) {
             bool logical_value = ASR::down_cast<ASR::LogicalConstant_t>(
@@ -5118,8 +5177,34 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
                 result, dest_type));
     } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-        int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
-        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        ASR::IntegerConstant_t *lc = ASR::down_cast<ASR::IntegerConstant_t>(left);
+        ASR::IntegerConstant_t *rc = ASR::down_cast<ASR::IntegerConstant_t>(right);
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+            Int128 lv = integer_constant_to_i128(lc);
+            Int128 rv = integer_constant_to_i128(rc);
+            if ((op == ASR::Div || op == ASR::Pow) && int128_is_zero(rv) && op == ASR::Div) {
+                division_by_zero = true;
+                return nullptr;
+            }
+            Int128 result;
+            switch (op) {
+                case ASR::Add: result = int128_add(lv, rv); break;
+                case ASR::Sub: result = int128_sub(lv, rv); break;
+                case ASR::Mul: result = int128_mul(lv, rv); break;
+                case ASR::Div: result = int128_div(lv, rv); break;
+                case ASR::Pow: result = int128_pow(lv, rv); break;
+                case ASR::BitAnd: result = int128_and(lv, rv); break;
+                case ASR::BitOr: result = int128_or(lv, rv); break;
+                case ASR::BitXor: result = int128_xor(lv, rv); break;
+                case ASR::BitLShift: result = int128_shl(lv, rv); break;
+                case ASR::BitRShift: result = int128_shr(lv, rv); break;
+                default: return nullptr;
+            }
+            return ASRUtils::EXPR(make_IntegerConstant_i128(al, left->base.loc,
+                result, dest_type));
+        }
+        int64_t left_value = lc->m_n;
+        int64_t right_value = rc->m_n;
 
         if (op == ASR::Div && right_value == 0) {
             division_by_zero = true;
@@ -5249,8 +5334,15 @@ ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
     bool result;
     if (ASR::is_a<ASR::IntegerConstant_t>(*left)
             && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-        result = perform_compare(ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n,
-            ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n, op);
+        ASR::IntegerConstant_t *lc = ASR::down_cast<ASR::IntegerConstant_t>(left);
+        ASR::IntegerConstant_t *rc = ASR::down_cast<ASR::IntegerConstant_t>(right);
+        if (extract_kind_from_ttype_t(lc->m_type) == 16
+                || extract_kind_from_ttype_t(rc->m_type) == 16) {
+            result = perform_compare(int128_cmp(integer_constant_to_i128(lc),
+                integer_constant_to_i128(rc)), 0, op);
+        } else {
+            result = perform_compare(lc->m_n, rc->m_n, op);
+        }
     } else if (ASR::is_a<ASR::RealConstant_t>(*left)
             && ASR::is_a<ASR::RealConstant_t>(*right)) {
         ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
@@ -5638,10 +5730,8 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 
 int64_t compute_trailing_zeros(int64_t number, int64_t kind) {
     int64_t trailing_zeros = 0;
-    if (number == 0 && kind == 4) {
-        return 32;
-    } else if (number == 0 && kind == 8) {
-        return 64;
+    if (number == 0) {
+        return kind * 8;
     }
     while (number % 2 == 0) {
         number = number / 2;
@@ -5652,8 +5742,8 @@ int64_t compute_trailing_zeros(int64_t number, int64_t kind) {
 
 int64_t compute_leading_zeros(int64_t number, int64_t kind) {
     int64_t leading_zeros = 0;
-    int64_t total_bits = 32;
-    if (kind == 8) total_bits = 64;
+    int64_t total_bits = kind * 8;
+    if (total_bits <= 0) total_bits = 32;
     if (number < 0) return 0;
     while (total_bits > 0) {
         if (number%2 == 0) {
@@ -9380,6 +9470,11 @@ bool is_value_equal(ASR::expr_t* test_expr, ASR::expr_t* desired_expr) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* test_int = ASR::down_cast<ASR::IntegerConstant_t>(test_value);
             ASR::IntegerConstant_t* desired_int = ASR::down_cast<ASR::IntegerConstant_t>(desired_value);
+            if (integer_constant_is_wide(test_int) || integer_constant_is_wide(desired_int)) {
+                Int128 a = integer_constant_to_i128(test_int);
+                Int128 b = integer_constant_to_i128(desired_int);
+                return a.lo == b.lo && a.hi == b.hi;
+            }
             return test_int->m_n == desired_int->m_n;
         }
         case ASR::exprType::StringConstant: {
@@ -9753,6 +9848,7 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
                 case 2: { res = "i16"; break; }
                 case 4: { res = "i32"; break; }
                 case 8: { res = "i64"; break; }
+                case 16: { res = "i128"; break; }
                 default: { throw LCompilersException("Integer kind not supported"); }
             }
             return res;
@@ -10008,6 +10104,13 @@ ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
     switch (asr_type->type) {
         case ASR::ttypeType::Integer: {
+            if (kind == 16) {
+                // -2**127 does not fit in an int64 IntegerConstant.
+                ASRBuilder b(al, asr_type->base.loc);
+                ASR::expr_t *one = b.i_t(1, asr_type);
+                ASR::expr_t *shifted = b.BitLshift(one, b.i_t(127, asr_type), asr_type);
+                return b.i_neg(shifted, asr_type);
+            }
             int64_t val;
             switch (kind) {
                 case 1: val = std::numeric_limits<int8_t>::min(); break;
@@ -10015,7 +10118,6 @@ ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
                 case 4: val = std::numeric_limits<int32_t>::min(); break;
                 case 8: val = std::numeric_limits<int64_t>::min(); break;
                 default:
-                    // integer kinds are restricted to 1, 2, 4 and 8 in semantics
                     LCOMPILERS_ASSERT(false);
                     val = 0;
             }
@@ -10057,6 +10159,13 @@ ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
     switch (asr_type->type) {
         case ASR::ttypeType::Integer: {
+            if (kind == 16) {
+                // 2**127-1 does not fit in an int64 IntegerConstant.
+                ASRBuilder b(al, asr_type->base.loc);
+                ASR::expr_t *one = b.i_t(1, asr_type);
+                ASR::expr_t *shifted = b.BitLshift(one, b.i_t(127, asr_type), asr_type);
+                return b.Sub(shifted, b.i_t(1, asr_type));
+            }
             int64_t val;
             switch (kind) {
                 case 1: val = std::numeric_limits<int8_t>::max(); break;
@@ -10064,7 +10173,6 @@ ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
                 case 4: val = std::numeric_limits<int32_t>::max(); break;
                 case 8: val = std::numeric_limits<int64_t>::max(); break;
                 default:
-                    // integer kinds are restricted to 1, 2, 4 and 8 in semantics
                     LCOMPILERS_ASSERT(false);
                     val = 0;
             }
@@ -11619,6 +11727,11 @@ bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
             ASR::IntegerConstant_t* intconst_y = ASR::down_cast<ASR::IntegerConstant_t>(y);
+            if (integer_constant_is_wide(intconst_x) || integer_constant_is_wide(intconst_y)) {
+                Int128 vx = integer_constant_to_i128(intconst_x);
+                Int128 vy = integer_constant_to_i128(intconst_y);
+                return vx.lo == vy.lo && vx.hi == vy.hi;
+            }
             return intconst_x->m_n == intconst_y->m_n;
         }
         case ASR::exprType::RealConstant: {
@@ -13386,6 +13499,7 @@ void set_ArrayConstant_value(ASR::ArrayConstant_t* x, ASR::expr_t* value, int64_
                 case 2: ((int16_t*)x->m_data)[i] = checked_bit_pattern_cast<int16_t>(value_int->m_n); break;
                 case 4: ((int32_t*)x->m_data)[i] = checked_bit_pattern_cast<int32_t>(value_int->m_n); break;
                 case 8: ((int64_t*)x->m_data)[i] = value_int->m_n; break;
+                case 16: ((Int128*)x->m_data)[i] = ASRUtils::integer_constant_to_i128(value_int); break;
                 default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
             }
@@ -13477,6 +13591,7 @@ std::string fetch_ArrayConstant_value(void *data, ASR::ttype_t* type, int64_t i)
                 case 2: return std::to_string(((int16_t*)data)[i]);
                 case 4: return std::to_string(((int32_t*)data)[i]);
                 case 8: return std::to_string(((int64_t*)data)[i]);
+                case 16: return int128_to_decimal(((Int128*)data)[i]);
                 default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
             }
@@ -13570,6 +13685,8 @@ ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc
                                     ((int32_t*)data)[i], type)); break;
                 case 8: value = EXPR(ASR::make_IntegerConstant_t(al, loc,
                                     ((int64_t*)data)[i], type)); break;
+                case 16: value = EXPR(make_IntegerConstant_i128(al, loc,
+                                    ((Int128*)data)[i], type)); break;
                 default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
             }
@@ -13768,6 +13885,14 @@ void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* 
                 case 2: return set_data_int(new int16_t[n_args], a_args, n_args);
                 case 4: return set_data_int(new int32_t[n_args], a_args, n_args);
                 case 8: return set_data_int(new int64_t[n_args], a_args, n_args);
+                case 16: {
+                    Int128* data = new Int128[n_args];
+                    for (size_t i = 0; i < n_args; i++) {
+                        data[i] = integer_constant_to_i128(
+                            ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(a_args[i])));
+                    }
+                    return (void*) data;
+                }
                 default:
                     throw LCompilersException("Unsupported kind for integer array constant.");
             }

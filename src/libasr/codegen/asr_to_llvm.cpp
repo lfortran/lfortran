@@ -19940,6 +19940,64 @@ public:
                     llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
                     llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
                     tmp = builder->CreateMul(x4, x4, "simplified_pow_operation");
+                } else if (left_val->getType()->isIntegerTy()
+                        && left_val->getType()->getIntegerBitWidth() > 64) {
+                    // integer(16) ** n, including a runtime exponent. The i64
+                    // helper would wrap 2**70. A negative exponent is 0 unless
+                    // the base is ±1, matching gfortran.
+                    llvm::Type* ty = left_val->getType();
+                    if (right_val->getType() != ty) {
+                        right_val = builder->CreateSExtOrTrunc(right_val, ty);
+                    }
+                    auto iconst = [&](int64_t v) {
+                        return llvm::ConstantInt::get(ty, v, true);
+                    };
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock* neg_bb = llvm::BasicBlock::Create(context, "pow128.neg", fn);
+                    llvm::BasicBlock* pos_bb = llvm::BasicBlock::Create(context, "pow128.pos", fn);
+                    llvm::BasicBlock* loop_bb = llvm::BasicBlock::Create(context, "pow128.loop", fn);
+                    llvm::BasicBlock* body_bb = llvm::BasicBlock::Create(context, "pow128.body", fn);
+                    llvm::BasicBlock* exit_bb = llvm::BasicBlock::Create(context, "pow128.exit", fn);
+                    builder->CreateCondBr(builder->CreateICmpSLT(right_val, iconst(0)), neg_bb, pos_bb);
+
+                    builder->SetInsertPoint(neg_bb);
+                    llvm::Value* is_one = builder->CreateICmpEQ(left_val, iconst(1));
+                    llvm::Value* is_m1 = builder->CreateICmpEQ(left_val, iconst(-1));
+                    llvm::Value* odd = builder->CreateICmpEQ(
+                        builder->CreateAnd(right_val, iconst(1)), iconst(1));
+                    llvm::Value* neg_res = builder->CreateSelect(is_m1,
+                        builder->CreateSelect(odd, iconst(-1), iconst(1)), iconst(0));
+                    neg_res = builder->CreateSelect(is_one, iconst(1), neg_res);
+                    builder->CreateBr(exit_bb);
+
+                    builder->SetInsertPoint(pos_bb);
+                    builder->CreateBr(loop_bb);
+                    builder->SetInsertPoint(loop_bb);
+                    llvm::PHINode* res_phi = builder->CreatePHI(ty, 2);
+                    llvm::PHINode* base_phi = builder->CreatePHI(ty, 2);
+                    llvm::PHINode* exp_phi = builder->CreatePHI(ty, 2);
+                    res_phi->addIncoming(iconst(1), pos_bb);
+                    base_phi->addIncoming(left_val, pos_bb);
+                    exp_phi->addIncoming(right_val, pos_bb);
+                    builder->CreateCondBr(builder->CreateICmpEQ(exp_phi, iconst(0)), exit_bb, body_bb);
+
+                    builder->SetInsertPoint(body_bb);
+                    llvm::Value* take = builder->CreateICmpNE(
+                        builder->CreateAnd(exp_phi, iconst(1)), iconst(0));
+                    llvm::Value* res_next = builder->CreateSelect(take,
+                        builder->CreateMul(res_phi, base_phi), res_phi);
+                    llvm::Value* exp_next = builder->CreateLShr(exp_phi, iconst(1));
+                    llvm::Value* base_next = builder->CreateMul(base_phi, base_phi);
+                    res_phi->addIncoming(res_next, body_bb);
+                    base_phi->addIncoming(base_next, body_bb);
+                    exp_phi->addIncoming(exp_next, body_bb);
+                    builder->CreateBr(loop_bb);
+
+                    builder->SetInsertPoint(exit_bb);
+                    llvm::PHINode* out = builder->CreatePHI(ty, 2);
+                    out->addIncoming(neg_res, neg_bb);
+                    out->addIncoming(res_phi, loop_bb);
+                    tmp = out;
                 } else { // Use `pow` function for large or negative exponents
                     llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
                     llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
@@ -20359,6 +20417,18 @@ public:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(64, val, true));
                 break;
             }
+            case 16 : {
+                // A value that does not fit in int64 is a pointer to the
+                // 16-byte payload. Any other kind-16 constant is the int64.
+                Int128 wide = Int128::from_i64(val);
+                if (BigInt::is_int_ptr(val)) {
+                    wide = *(Int128*) BigInt::int_to_ptr(val);
+                }
+                uint64_t words[2] = { wide.lo, wide.hi };
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(128,
+                    llvm::ArrayRef<uint64_t>(words, 2)));
+                break;
+            }
             default : {
                 throw CodeGenError("Constant integers of " + std::to_string(a_kind)
                                     + " bytes aren't supported yet.");
@@ -20557,8 +20627,15 @@ public:
         if (ASRUtils::is_integer(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                values.push_back(llvm::ConstantInt::get(el_type,
-                    down_cast<ASR::IntegerConstant_t>(el)->m_n, true));
+                ASR::IntegerConstant_t *ic = down_cast<ASR::IntegerConstant_t>(el);
+                if (el_type->getIntegerBitWidth() == 128) {
+                    Int128 wide = ASRUtils::integer_constant_to_i128(ic);
+                    uint64_t words[2] = { wide.lo, wide.hi };
+                    values.push_back(llvm::ConstantInt::get(context, llvm::APInt(128,
+                        llvm::ArrayRef<uint64_t>(words, 2))));
+                } else {
+                    values.push_back(llvm::ConstantInt::get(el_type, ic->m_n, true));
+                }
             }
         } else if (ASRUtils::is_real(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
@@ -21580,6 +21657,10 @@ public:
                     case 8:
                         tmp = builder->CreateICmpNE(tmp, builder->getInt64(0));
                         break;
+                    case 16:
+                        tmp = builder->CreateICmpNE(tmp,
+                            llvm::ConstantInt::get(llvm::Type::getInt128Ty(context), 0));
+                        break;
                 }
                 break;
             }
@@ -22411,6 +22492,7 @@ public:
                 else if (kind == 2) type_code = 1; // LFORTRAN_NML_INT2
                 else if (kind == 4) type_code = 2; // LFORTRAN_NML_INT4
                 else if (kind == 8) type_code = 3; // LFORTRAN_NML_INT8
+                else if (kind == 16) type_code = 13; // LFORTRAN_NML_INT16
             } else if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                 if (kind == 4) type_code = 4; // LFORTRAN_NML_REAL4
@@ -22653,6 +22735,9 @@ public:
                 } else if (a_kind == 8) {
                     runtime_func_name = "_lfortran_read_int64";
                     type_arg = llvm::Type::getInt64Ty(context);
+                } else if (a_kind == 16) {
+                    runtime_func_name = "_lfortran_read_int128";
+                    type_arg = llvm::Type::getInt128Ty(context);
                 } else {
                     throw CodeGenError("Read Integer function not implemented "
                         "for integer kind: " + std::to_string(a_kind));
@@ -22759,8 +22844,11 @@ public:
                     } else if (a_kind == 8) {
                         runtime_func_name = "_lfortran_read_array_int64";
                         type_arg = llvm::Type::getInt64Ty(context);
+                    } else if (a_kind == 16) {
+                        runtime_func_name = "_lfortran_read_array_int128";
+                        type_arg = llvm::Type::getInt128Ty(context);
                     } else {
-                        throw CodeGenError("Integer arrays of kind 1 or 4 only supported for now. Found kind: "
+                        throw CodeGenError("Integer arrays of kind 1, 2, 4, 8 or 16 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
                 } else if (ASR::is_a<ASR::Real_t>(*type)) {
@@ -26842,6 +26930,7 @@ public:
         int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
         if (ASRUtils::is_integer(*t)) {
+            bool formatted_as_string = false;
             switch( a_kind ) {
                 case 1 : {
                     fmt.push_back("%hhi");
@@ -26859,13 +26948,39 @@ public:
                     fmt.push_back("%lld");
                     break;
                 }
+                case 16 : {
+                    // printf has no i128 conversion. Format the 16 bytes
+                    // into a decimal string and print that.
+                    llvm::Value *buf = llvm_utils->CreateAlloca(
+                        llvm::ArrayType::get(llvm::Type::getInt8Ty(context), 48));
+                    llvm::Value *slot = llvm_utils->CreateAlloca(
+                        llvm::Type::getInt128Ty(context));
+                    builder->CreateStore(tmp, slot);
+                    llvm::Function *i128_fmt = LLVM::get_or_declare_function(
+                        *module, "_lfortran_i128_format",
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt8Ty(context)->getPointerTo()
+                        });
+                    llvm::Value *buf8 = builder->CreateBitCast(buf,
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+                    llvm::Value *slot8 = builder->CreateBitCast(slot,
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+                    builder->CreateCall(i128_fmt, {buf8, slot8});
+                    fmt.push_back("%s");
+                    args.push_back(buf8);
+                    formatted_as_string = true;
+                    break;
+                }
                 default: {
                     throw CodeGenError(R"""(Printing support is available only
-                                        for 8, 16, 32, and 64 bit integer kinds.)""",
+                                        for 8, 16, 32, 64, and 128 bit integer kinds.)""",
                                         loc);
                 }
             }
-            args.push_back(tmp);
+            if (!formatted_as_string) {
+                args.push_back(tmp);
+            }
         } else if (ASRUtils::is_unsigned_integer(*t)) {
             switch( a_kind ) {
                 case 1 : {

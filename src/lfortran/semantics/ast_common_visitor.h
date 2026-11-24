@@ -1332,6 +1332,10 @@ static ASR::expr_t* negate_extended_array_const(Allocator& al, const Location& l
             values.push_back(al, ASRUtils::extract_kind_from_ttype_t(elem_type) == 10
                 ? negate_extended_real<long double>(al, loc, e, elem_type)
                 : negate_extended_real<lf_float128>(al, loc, e, elem_type));
+        } else if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            values.push_back(al, ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                al, loc, int128_neg(ASRUtils::integer_constant_to_i128(
+                    ASR::down_cast<ASR::IntegerConstant_t>(e))), elem_type)));
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
             ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(e);
             values.push_back(al, ASRUtils::make_ComplexConstant_r16(al, loc,
@@ -1452,10 +1456,18 @@ static ASR::expr_t* negate_extended_array_const(Allocator& al, const Location& l
         if (ASRUtils::is_integer(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
-                    int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                            ASRUtils::expr_value(operand))->m_n;
-                    value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, result_type));
+                    ASR::IntegerConstant_t *op_const = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(operand));
+                    if (ASRUtils::extract_kind_from_ttype_t(result_type) == 16) {
+                        value = ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                            al, x.base.base.loc,
+                            int128_neg(ASRUtils::integer_constant_to_i128(op_const)),
+                            result_type));
+                    } else {
+                        int64_t op_value = op_const->m_n;
+                        value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, result_type));
+                    }
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
                     int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
@@ -1463,6 +1475,8 @@ static ASR::expr_t* negate_extended_array_const(Allocator& al, const Location& l
                         value = eval_unary_array_const<int32_t>(al, x.base.base.loc, arr_const, result_type, USubOp<int32_t>());
                     } else if (kind == 8) {
                         value = eval_unary_array_const<int64_t>(al, x.base.base.loc, arr_const, result_type, USubOp<int64_t>());
+                    } else if (kind == 16) {
+                        value = negate_extended_array_const(al, x.base.base.loc, arr_const, result_type);
                     }
                 }
             }
@@ -1559,10 +1573,18 @@ static ASR::expr_t* negate_extended_array_const(Allocator& al, const Location& l
         if (ASRUtils::is_integer(*operand_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
-                    int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                            ASRUtils::expr_value(operand))->m_n;
-                    value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, ~op_value, operand_type));
+                    ASR::IntegerConstant_t* op_const = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(operand));
+                    if (ASRUtils::extract_kind_from_ttype_t(operand_type) == 16) {
+                        value = ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                            al, x.base.base.loc,
+                            int128_not(ASRUtils::integer_constant_to_i128(op_const)),
+                            operand_type));
+                    } else {
+                        int64_t op_value = op_const->m_n;
+                        value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_IntegerConstant_t(al, x.base.base.loc, ~op_value, operand_type));
+                    }
                 }
             }
             asr = ASR::make_IntegerBitNot_t(al, x.base.base.loc, operand, operand_type, value);
@@ -14983,7 +15005,10 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+            // Kind 16 is a 128-bit integer (LLVM i128). A literal wider
+            // than int64 is stored as a 16-byte payload.
+            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4
+                    && a_kind != 8 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Integer",
                     Level::Error, Stage::Semantic, {
@@ -23003,22 +23028,30 @@ public:
         if (source_value && mold_value) {
             std::vector<uint8_t> source_bits;
             if (ASR::is_a<ASR::IntegerConstant_t>(*source_value)) {
-                int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(source_value)->m_n;
+                ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(source_value);
                 int source_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(source));
-                if (source_kind == 1) {
-                    int8_t val_i8 = static_cast<int8_t>(val);
+                if (source_kind == 16) {
+                    Int128 w = ASRUtils::integer_constant_to_i128(ic);
+                    source_bits.insert(source_bits.end(),
+                        reinterpret_cast<uint8_t*>(&w.lo),
+                        reinterpret_cast<uint8_t*>(&w.lo) + 8);
+                    source_bits.insert(source_bits.end(),
+                        reinterpret_cast<uint8_t*>(&w.hi),
+                        reinterpret_cast<uint8_t*>(&w.hi) + 8);
+                } else if (source_kind == 1) {
+                    int8_t val_i8 = static_cast<int8_t>(ic->m_n);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val_i8),
                                     reinterpret_cast<uint8_t*>(&val_i8) + sizeof(val_i8));
                 } else if (source_kind == 2) {
-                    int16_t val_i16 = static_cast<int16_t>(val);
+                    int16_t val_i16 = static_cast<int16_t>(ic->m_n);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val_i16),
                                     reinterpret_cast<uint8_t*>(&val_i16) + sizeof(val_i16));
                 } else if (source_kind == 4) {
-                    int32_t val_i32 = static_cast<int32_t>(val);
+                    int32_t val_i32 = static_cast<int32_t>(ic->m_n);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val_i32),
                                     reinterpret_cast<uint8_t*>(&val_i32) + sizeof(val_i32));
                 } else {
-                    int64_t val_i64 = static_cast<int64_t>(val);
+                    int64_t val_i64 = static_cast<int64_t>(ic->m_n);
                     source_bits.assign(reinterpret_cast<uint8_t*>(&val_i64),
                                     reinterpret_cast<uint8_t*>(&val_i64) + sizeof(val_i64));
                 }
@@ -23085,6 +23118,18 @@ public:
                             source_bits.insert(source_bits.end(),
                                 reinterpret_cast<uint8_t*>(&val),
                                 reinterpret_cast<uint8_t*>(&val) + sizeof(val));
+                        }
+                    } else if (kind == 16) {
+                        for (size_t i=0; i < n_elements; i++) {
+                            Int128 w = ASRUtils::integer_constant_to_i128(
+                                ASR::down_cast<ASR::IntegerConstant_t>(
+                                    ASRUtils::fetch_ArrayConstant_value(al, const_source, i)));
+                            source_bits.insert(source_bits.end(),
+                                reinterpret_cast<uint8_t*>(&w.lo),
+                                reinterpret_cast<uint8_t*>(&w.lo) + 8);
+                            source_bits.insert(source_bits.end(),
+                                reinterpret_cast<uint8_t*>(&w.hi),
+                                reinterpret_cast<uint8_t*>(&w.hi) + 8);
                         }
                     } else {
                         return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
@@ -23205,6 +23250,13 @@ public:
                         int64_t* data = al.allocate<int64_t>(result_n_elems);
                         std::memcpy(data, result_bits.data(), target_nbytes);
                         result_data = data;
+                    } else if (kind == 16) {
+                        Int128* data = al.allocate<Int128>(result_n_elems);
+                        for (size_t i = 0; i < result_n_elems; i++) {
+                            std::memcpy(&data[i].lo, result_bits.data() + 16 * i, 8);
+                            std::memcpy(&data[i].hi, result_bits.data() + 16 * i + 8, 8);
+                        }
+                        result_data = data;
                     }
                 } else if (ASR::is_a<ASR::Real_t>(*result_elem_type)) {
                     int kind = ASRUtils::extract_kind_from_ttype_t(result_elem_type);
@@ -23232,28 +23284,39 @@ public:
                     ASR::arraystorageType::ColMajor));
             } else if (ASR::is_a<ASR::Integer_t>(*result_elem_type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(result_elem_type);
-                int64_t new_value = 0;
-                if (kind == 1) {
-                    int8_t val = 0;
-                    std::memcpy(&val, result_bits.data(), sizeof(val));
-                    new_value = val;
-                } else if (kind == 2) {
-                    int16_t val = 0;
-                    std::memcpy(&val, result_bits.data(), sizeof(val));
-                    new_value = val;
-                } else if (kind == 4) {
-                    int32_t val = 0;
-                    std::memcpy(&val, result_bits.data(), sizeof(val));
-                    new_value = val;
-                } else if (kind == 8) {
-                    int64_t val = 0;
-                    std::memcpy(&val, result_bits.data(), sizeof(val));
-                    new_value = val;
+                if (kind == 16) {
+                    if (result_bits.size() < 16) {
+                        return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+                    }
+                    Int128 w{};
+                    std::memcpy(&w.lo, result_bits.data(), 8);
+                    std::memcpy(&w.hi, result_bits.data() + 8, 8);
+                    transfer_value = ASRUtils::EXPR(
+                        ASRUtils::make_IntegerConstant_i128(al, x.base.base.loc, w, type));
                 } else {
-                    return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+                    int64_t new_value = 0;
+                    if (kind == 1) {
+                        int8_t val = 0;
+                        std::memcpy(&val, result_bits.data(), sizeof(val));
+                        new_value = val;
+                    } else if (kind == 2) {
+                        int16_t val = 0;
+                        std::memcpy(&val, result_bits.data(), sizeof(val));
+                        new_value = val;
+                    } else if (kind == 4) {
+                        int32_t val = 0;
+                        std::memcpy(&val, result_bits.data(), sizeof(val));
+                        new_value = val;
+                    } else if (kind == 8) {
+                        int64_t val = 0;
+                        std::memcpy(&val, result_bits.data(), sizeof(val));
+                        new_value = val;
+                    } else {
+                        return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
+                    }
+                    transfer_value = ASRUtils::EXPR(
+                        ASR::make_IntegerConstant_t(al, x.base.base.loc, new_value, type));
                 }
-                transfer_value = ASRUtils::EXPR(
-                    ASR::make_IntegerConstant_t(al, x.base.base.loc, new_value, type));
             } else if (ASR::is_a<ASR::Real_t>(*result_elem_type)) {
                 int result_kind = ASRUtils::extract_kind_from_ttype_t(result_elem_type);
                 if (result_kind == 16) {
@@ -29815,14 +29878,23 @@ public:
                 x.base.base.loc, ikind));
         if (BigInt::is_int_ptr(x.m_n)) {
             std::string str_repr = BigInt::largeint_to_string(x.m_n);
-            if( !BigInt::is_int64(str_repr) ) {
+            if (ikind == 16) {
+                Int128 wide;
+                if (!int128_from_decimal(str_repr, wide)) {
+                    diag.add(Diagnostic("Integer constant too big for integer(16)",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+                tmp = ASRUtils::make_IntegerConstant_i128(al, x.base.base.loc, wide, type);
+            } else if( !BigInt::is_int64(str_repr) ) {
                 diag.add(Diagnostic("Integer constants larger than 2^64-1 are not implemented yet",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
+            } else {
+                int64_t m_n = std::stoll(str_repr);
+                tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                    m_n, type);
             }
-            int64_t m_n = std::stoll(str_repr);
-            tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                                m_n, type);
         } else {
             tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_n, type);
         }
