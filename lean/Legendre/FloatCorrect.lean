@@ -286,3 +286,11 @@ theorem legendre_float_correct (n : ℕ) (hn : n ≤ 100) (xf : Float) {x : ℝ}
   simpa using this
 
 #print axioms legendre_float_correct
+
+/-- The generated `legendre_poly`, run at `Int32` and `Float`, meets
+`LegendreFloatSpec`. -/
+theorem legendre_float_spec :
+    LegendreFloatSpec (legendre_mod.legendre_poly (K := machine)) :=
+  fun n xf _ hn hxv hx1 => legendre_float_correct n hn xf hxv hx1
+
+#print axioms legendre_float_spec

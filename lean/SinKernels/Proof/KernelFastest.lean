@@ -24,6 +24,8 @@ literal for `π`), reduces `r = x0 - N π_d`, negates `r` for odd `N`, and retur
   are exact and negation is exact, for floating-point `|x0| ≤ X`:
   `|computed - sin x0| ≤ 5.75·10^-3 + X (19 U + 14 H + 1.3·10^-16)`.
   The last term is `|N| |π_d - π|`, the error of the literal `π_d`.
+* `kfGen_correct`: the same for any choice of the sign of `x0 = 0` (the
+  `Float` run reads the IEEE sign bit, which is set for `-0.0`).
 * `kernel_fastest_exact_correct`: in exact arithmetic (`U = H = 0`),
   `|kernel_fastest x0 - sin x0| ≤ 5.75·10^-3 + 1.3·10^-16 X`.
 
@@ -112,16 +114,26 @@ noncomputable def kernel_fastest_ng (m : NoGuardModel) (x0 : ℝ) : ℝ :=
 noncomputable def kernel_fastest_exact (x0 : ℝ) : ℝ :=
   @sin_kernels.kernel_fastest proofKinds (FKinds.ofModel FPModel.exact FPModel.exact) x0
 
-/-- What the generated code computes, step by step. -/
+/-- What the generated code computes, step by step, with the sign of `x0`
+taken from `b`. The proof instance takes `b = (x0 < 0)`; the `Float` run
+takes the IEEE sign bit, which differs only for `-0.0`. -/
+noncomputable def kfGen (m : NoGuardModel) (b : Bool) (x0 : ℝ) : ℝ :=
+  let PI := m.round πd
+  let N := realTrunc (m.add (m.div x0 PI)
+    (m.mul (m.round 2⁻¹) (if b then -|m.round 1| else |m.round 1|)))
+  let r := m.sub x0 (m.mul (m.round N) PI)
+  let y := if (realTrunc (m.round N)).fmod 2 = 1 then -r else r
+  m.mul y (m.add (m.round S1) (m.mul (m.mul y y) (m.round S2)))
+
+/-- The sign choice `b` agrees with the sign of `x0` unless `x0 = 0`. -/
+def SignOk (b : Bool) (x0 : ℝ) : Prop := (b = true → x0 ≤ 0) ∧ (b = false → 0 ≤ x0)
+
+theorem signOk_decide (x0 : ℝ) : SignOk (decide (x0 < 0)) x0 := by
+  constructor <;> intro h <;> simp at h <;> linarith
+
 theorem kernel_fastest_ng_eq (m : NoGuardModel) (x0 : ℝ) :
-    kernel_fastest_ng m x0 =
-      let PI := m.round πd
-      let N := realTrunc (m.add (m.div x0 PI)
-        (m.mul (m.round 2⁻¹) (if x0 < 0 then -|m.round 1| else |m.round 1|)))
-      let r := m.sub x0 (m.mul (m.round N) PI)
-      let y := if (realTrunc (m.round N)).fmod 2 = 1 then -r else r
-      m.mul y (m.add (m.round S1) (m.mul (m.mul y y) (m.round S2))) := by
-  simp only [kernel_fastest_ng, sin_kernels.kernel_fastest]
+    kernel_fastest_ng m x0 = kfGen m (decide (x0 < 0)) x0 := by
+  simp only [kernel_fastest_ng, sin_kernels.kernel_fastest, kfGen]
   simp [πd, S1, S2]
   split_ifs <;> rfl
 
@@ -146,12 +158,12 @@ set_option maxHeartbeats 2000000 in
 that the arithmetic represents exactly, and the computed reduced argument `r`
 is within `X (11 U + 3 H + 1.3·10^-16)` of `x0 - N π`, with `|r| ≤ 1.6`. -/
 theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x0 : ℝ}
-    (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) :
+    (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) {b : Bool} (hb : SignOk b x0) :
     let PI := m.round πd
     let N := realTrunc (m.add (m.div x0 PI)
-      (m.mul (m.round 2⁻¹) (if x0 < 0 then -|m.round 1| else |m.round 1|)))
+      (m.mul (m.round 2⁻¹) (if b then -|m.round 1| else |m.round 1|)))
     let r := m.sub x0 (m.mul (m.round N) PI)
-    m.round N = N ∧ r ∈ m.F ∧ |r| ≤ 8 / 5 ∧
+    |(N : ℝ)| ≤ X ∧ m.round N = N ∧ r ∈ m.F ∧ |r| ≤ 8 / 5 ∧
       |r - (x0 - N * π)| ≤ X * (11 * U + 3 * H + 13 / 10 ^ 17) := by
   intro PI N r
   obtain ⟨hS, hX1, hXU, hXH, hM, hint, hneg⟩ := A
@@ -198,8 +210,8 @@ theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x
   have hAe : |(|m.round 1| - 1)| ≤ U + H := by
     have := abs_abs_sub_abs_le_abs_sub (m.round 1) 1
     rw [abs_one] at this; linarith
-  set s := if x0 < 0 then -|m.round 1| else |m.round 1| with hs_def
-  set σ : ℝ := if x0 < 0 then -1 else 1 with hσ_def
+  set s := if b then -|m.round 1| else |m.round 1| with hs_def
+  set σ : ℝ := if b then -1 else 1 with hσ_def
   have hsF : s ∈ m.F := by
     rw [hs_def]; split_ifs
     exacts [hneg _ hAF, hAF]
@@ -300,19 +312,21 @@ theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x
   have hEt' : 7 * X * U + 7 * X * H ≤ 2 / 10 ^ 5 := by rw [hε] at hEt; linarith
   have hN : |x0 / πd - N| ≤ 1 / 2 + (7 * X * U + 7 * X * H) := by
     have hte' := abs_le.1 hte
-    by_cases h0 : x0 < 0
-    · have hσ' : σ = -1 := by rw [hσ_def, if_pos h0]
+    cases b with
+    | true =>
+      have hσ' : σ = -1 := by rw [hσ_def]; rfl
       rw [hσ'] at hte'
-      have hx0' : x0 / πd < 0 := div_neg_of_neg_of_pos h0 hπd0
+      have hx0' : x0 / πd ≤ 0 := div_nonpos_of_nonpos_of_nonneg (hb.1 rfl) hπd0.le
       have htneg : t < 0 := by linarith
       have hNt : (N : ℝ) = ⌈t⌉ := by
         show ((realTrunc t : ℤ) : ℝ) = _; rw [realTrunc_of_neg htneg]
       have c1 := Int.le_ceil t
       have c2 := Int.ceil_lt_add_one t
       rw [hNt, abs_le]; constructor <;> linarith
-    · have hσ' : σ = 1 := by rw [hσ_def, if_neg h0]
+    | false =>
+      have hσ' : σ = 1 := by rw [hσ_def]; rfl
       rw [hσ'] at hte'
-      have hx0' : 0 ≤ x0 / πd := div_nonneg (not_lt.1 h0) hπd0.le
+      have hx0' : 0 ≤ x0 / πd := div_nonneg (hb.2 rfl) hπd0.le
       have htpos : 0 ≤ t := by linarith
       have hNt : (N : ℝ) = ⌊t⌋ := by
         show ((realTrunc t : ℤ) : ℝ) = _; rw [realTrunc_of_nonneg htpos]
@@ -328,7 +342,7 @@ theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x
     rw [abs_sub_comm (N : ℝ)] at this
     linarith
   have hnd : m.round N = N := hint N hNX
-  refine ⟨hnd, ?_⟩
+  refine ⟨hNX, hnd, ?_⟩
   -- p = N * PI
   have hNF : (N : ℝ) ∈ m.F := hnd ▸ m.round_mem _ (hNX.trans (by linarith))
   have hpM : |(N : ℝ) * PI| ≤ 3142 / 1000 * X := by
@@ -385,13 +399,13 @@ theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x
 
 #print axioms reduction
 
-/-- **Accuracy of `kernel_fastest`** in floating point, against `Real.sin`. -/
-theorem kernel_fastest_correct (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X)
-    {x0 : ℝ} (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) :
-    |kernel_fastest_ng m x0 - sin x0| ≤ 575 / 10 ^ 5 + X * (19 * U + 14 * H + 13 / 10 ^ 17) := by
-  have hred := reduction m A hxF hx
+/-- Accuracy for every sign choice `b` that agrees with the sign of `x0`. -/
+theorem kfGen_correct (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X)
+    {x0 : ℝ} (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) {b : Bool} (hb : SignOk b x0) :
+    |kfGen m b x0 - sin x0| ≤ 575 / 10 ^ 5 + X * (19 * U + 14 * H + 13 / 10 ^ 17) := by
+  have hred := reduction m A hxF hx hb
   simp only at hred
-  obtain ⟨hnd, hrF, hr, her⟩ := hred
+  obtain ⟨-, hnd, hrF, hr, her⟩ := hred
   have hS := A.small
   have hneg := A.neg_mem
   have hU0 := hS.U0
@@ -399,10 +413,9 @@ theorem kernel_fastest_correct (m : NoGuardModel) {U H X : ℝ} (A : FastestArit
   have hU : U ≤ X * U := le_mul_of_one_le_left hU0 A.X1
   have hH : H ≤ X * H := le_mul_of_one_le_left hH0 A.X1
   have hM : 4 ≤ m.M := by linarith [A.M, A.X1]
-  rw [kernel_fastest_ng_eq]
-  simp only
+  simp only [kfGen]
   set N := realTrunc (m.add (m.div x0 (m.round πd))
-    (m.mul (m.round 2⁻¹) (if x0 < 0 then -|m.round 1| else |m.round 1|)))
+    (m.mul (m.round 2⁻¹) (if b then -|m.round 1| else |m.round 1|)))
   set r := m.sub x0 (m.mul (m.round N) (m.round πd))
   rw [hnd, realTrunc_intCast]
   set y := if N.fmod 2 = 1 then -r else r with hy_def
@@ -438,6 +451,13 @@ theorem kernel_fastest_correct (m : NoGuardModel) {U H X : ℝ} (A : FastestArit
     have := mul_le_mul_of_nonneg_right hg hU0
     linarith
   linarith
+
+/-- **Accuracy of `kernel_fastest`** in floating point, against `Real.sin`. -/
+theorem kernel_fastest_correct (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X)
+    {x0 : ℝ} (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) :
+    |kernel_fastest_ng m x0 - sin x0| ≤ 575 / 10 ^ 5 + X * (19 * U + 14 * H + 13 / 10 ^ 17) := by
+  rw [kernel_fastest_ng_eq]
+  exact kfGen_correct m A hxF hx (signOk_decide x0)
 
 #print axioms kernel_fastest_correct
 
