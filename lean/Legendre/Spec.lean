@@ -1,4 +1,5 @@
 import LFortran.Prelude
+import LFortran.NoGuard
 
 /-!
 # Specification of `legendre_poly` (hand-written, human-reviewed)
@@ -27,5 +28,16 @@ def LegendreSpec (f : FPModel → ℤ → ℝ → ℝ) : Prop :=
   ∀ (fp : FPModel), fp.u ≤ 1 / 2 ^ 53 → fp.η ≤ 1 / 2 ^ 1000 → 2 ^ 10 ≤ fp.M →
   ∀ (n : ℤ) (x : ℝ), x ∈ fp.F → 0 ≤ n → n ≤ 100 → |x| ≤ 1 →
     |f fp n x - P n.toNat x| ≤ 1 / 10 ^ 11
+
+/-- The same accuracy statement for every arithmetic without a guard digit
+(`NoGuardModel`, which includes every `FPModel`), with the unit roundoff
+ceiling `U` as a parameter: the absolute error is at most `89201 U` for
+`0 ≤ n ≤ 100` and floating-point `|x| ≤ 1`, whenever `fp.u ≤ U ≤ 2^-40`,
+`fp.η ≤ U / 10^6` and `fp.M ≥ 2^10`. For `U = 2^-53` this is `LegendreSpec`'s
+`10^-11`; for a Cray-like `U = 2^-46` it is about `1.3 · 10^-9`. -/
+def LegendreSpecNoGuard (f : NoGuardModel → ℤ → ℝ → ℝ) : Prop :=
+  ∀ (fp : NoGuardModel) (U : ℝ), 0 ≤ U → U ≤ 1 / 2 ^ 40 → fp.u ≤ U → fp.η ≤ U / 10 ^ 6 →
+  2 ^ 10 ≤ fp.M → ∀ (n : ℤ) (x : ℝ), x ∈ fp.F → 0 ≤ n → n ≤ 100 → |x| ≤ 1 →
+    |f fp n x - P n.toNat x| ≤ 89201 * U
 
 end Legendre
