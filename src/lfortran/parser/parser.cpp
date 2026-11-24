@@ -527,6 +527,10 @@ LineType determine_line_type(const unsigned char *pos)
         } else if (*p == '\n' || (*p == '\r' && *(p+1) == '\n')) {
             // Blank line (tab followed only by whitespace) => comment
             return LineType::Comment;
+        } else if (*p == '!') {
+            // A tab in columns 1-6 skips to column 7, so this '!' is not
+            // in column 6. The line is a comment.
+            return LineType::Comment;
         } else if (is_digit(*pos)) {
             // A continuation line after a tab
             return LineType::ContinuationTab;
