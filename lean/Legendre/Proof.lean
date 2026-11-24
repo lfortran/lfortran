@@ -18,7 +18,7 @@ stays in `fp.F`, and each iteration commits a local rounding error of at most
 `(m + 1) ε0 + m (m + 1) / 2 · R`, which is at most `89201 U` for `m ≤ 99`.
 
 Every `FPModel` is a `NoGuardModel` (`FPModel.toNoGuard`), and the generated
-`legendre_mod.legendre_poly fp` is the shared definition at `fp.toNoGuard`
+template at an `FPModel` is the same function as at `fp.toNoGuard`
 (`legendre_fortran_eq`), so `legendre_correct` (`U = 2^-53`, `10^-11`) is a
 corollary.
 -/
@@ -179,15 +179,13 @@ theorem legendre_ng_correct : LegendreSpecNoGuard legendre_ng := by
 
 #print axioms legendre_ng_correct
 
-noncomputable abbrev legendre_fortran := legendre_mod.legendre_poly
+/-- The generated template `legendre_poly` at `ℤ` and an `FPModel`. -/
+noncomputable def legendre_fortran (fp : FPModel) (n : ℤ) (x : ℝ) : ℝ :=
+  @legendre_mod.legendre_poly ℤ ℝ _ (FReal.ofModel fp) n x
 
-/-- The generated `legendre_poly` is the shared one at `fp.toNoGuard`. -/
+/-- At an `FPModel` it is the same function as at `fp.toNoGuard`. -/
 theorem legendre_fortran_eq (fp : FPModel) (n : ℤ) (x : ℝ) :
-    legendre_fortran fp n x = legendre_ng fp.toNoGuard n x := by
-  rw [legendre_ng, ← ofModel_eq_ofNoGuard]
-  simp only [legendre_fortran, legendre_shared.legendre_poly, legendre_mod.legendre_poly,
-    range_eq_intRange, ofModel_zero, ofModel_ofInt, ofModel_sub, ofModel_mul,
-    ofModel_div, ofInt_int, toInt_int, mul_int, sub_int, FPModel.ofInt, Int.cast_one]
+    legendre_fortran fp n x = legendre_ng fp.toNoGuard n x := rfl
 
 theorem legendre_correct :
     LegendreSpec legendre_fortran := by
