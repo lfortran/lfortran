@@ -235,6 +235,9 @@ public:
         } else {
             bool is_fixed_size = true;
             std::string v_m_name = v.m_name;
+            if (c_scalar_allocatable(v.m_type)) {
+                type_name += "*";
+            }
             if( declare_as_constant ) {
                 type_name = "const " + type_name;
                 v_m_name = const_name;
@@ -245,8 +248,8 @@ public:
     }
 
     // The C type of a Var of the variable that the frame member `member`
-    // refers to: the descriptor pointer of an array, the pointer to a derived
-    // type object, and otherwise the type of its value.
+    // refers to: the descriptor pointer of an array, the owner pointer of a
+    // scalar allocatable, the pointer to a derived type, or the value type.
     std::string designator_type(const ASR::Variable_t &member) {
         ASR::ttype_t* t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
         ASR::ttype_t* elem = ASRUtils::type_get_past_array(
@@ -274,6 +277,9 @@ public:
                 array_types_decls);
         }
         if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            return elem_type + "*";
+        }
+        if (c_scalar_allocatable(t)) {
             return elem_type + "*";
         }
         return elem_type;
@@ -323,7 +329,9 @@ public:
         }
         std::string sub;
         bool use_ref = (v.m_intent == ASRUtils::intent_out ||
-                        v.m_intent == ASRUtils::intent_inout);
+                        v.m_intent == ASRUtils::intent_inout ||
+                        (c_scalar_allocatable(v.m_type) &&
+                         v.m_intent == ASRUtils::intent_unspecified));
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
         ASR::dimension_t* m_dims = nullptr;
@@ -558,7 +566,9 @@ public:
                                         v.m_intent != ASRUtils::intent_out &&
                                         v.m_intent != ASRUtils::intent_unspecified,
                                         is_fixed_size, false, ASR::abiType::Source, false);
-                } else if( v.m_intent == ASRUtils::intent_local && pre_initialise_derived_type) {
+                } else if( v.m_intent == ASRUtils::intent_local &&
+                        pre_initialise_derived_type &&
+                        !ASRUtils::is_allocatable(v.m_type)) {
                     bool is_fixed_size = true;
                     dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
                     std::string value_var_name = v.m_parent_symtab->get_unique_name(std::string(v.m_name) + "_value");
@@ -568,6 +578,8 @@ public:
                         this->visit_expr(*v.m_symbolic_value);
                         std::string init = src;
                         sub += "=" + init;
+                    } else {
+                        sub += " = {0}";
                     }
                     sub += ";\n";
                     std::string ptr_char = "*";
@@ -592,11 +604,13 @@ public:
                     if( v.m_intent == ASRUtils::intent_in ||
                         v.m_intent == ASRUtils::intent_inout ||
                         v.m_intent == ASRUtils::intent_out ) {
-                        use_ref = false;
+                        use_ref = c_scalar_allocatable(v.m_type) &&
+                            v.m_intent != ASRUtils::intent_in;
                         dims = "";
                     }
                     std::string ptr_char = "*";
-                    if( !use_ptr_for_derived_type ) {
+                    if( !use_ptr_for_derived_type &&
+                            !ASRUtils::is_allocatable(v.m_type)) {
                         ptr_char.clear();
                     }
                     sub = format_type_c(dims, "struct " + der_type_name + ptr_char,
@@ -699,6 +713,14 @@ public:
                         sub += " = " + init;
                     }
                 }
+            }
+            if (dims.empty() && ASRUtils::is_allocatable(v.m_type) &&
+                    !is_array && v.m_intent == ASRUtils::intent_local &&
+                    !v.m_symbolic_value && !do_not_initialize &&
+                    !ASR::is_a<ASR::Struct_t>(
+                        *ASR::down_cast<ASR::symbol_t>(
+                            v.m_parent_symtab->asr_owner))) {
+                sub += " = NULL";
             }
         }
         return sub;

@@ -3531,6 +3531,7 @@ RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod
 RUN(NAME derived_types_261 LABELS gfortran llvm) # allocate a character(len=3), pointer :: tags(:) component (#16909)
 RUN(NAME derived_types_262 LABELS gfortran llvm) # copy and SELECT CASE on a character component of a SEQUENCE type (#17335)
 RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
+RUN(NAME c_scalar_allocatable_dummy_01 LABELS gfortran llvm c)
 RUN(NAME derived_types_same_name_01 LABELS gfortran llvm EXTRAFILES derived_types_same_name_01_base.f90 derived_types_same_name_01_small.f90 derived_types_same_name_01_big.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays) # two modules with a private derived type of the same name, vtable and type info must not be shared
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
