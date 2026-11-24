@@ -54,6 +54,11 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
     void mark_element_sequence_args(ASR::call_arg_t* args, size_t n_args) {
         for (size_t i = 0; i < n_args; i++) {
             ASR::expr_t* arg = args[i].m_value;
+            // An element associated with an explicit-shape or assumed-size
+            // dummy is passed as the address of the element.
+            if (arg && ASR::is_a<ASR::GetPointer_t>(*arg)) {
+                arg = ASR::down_cast<ASR::GetPointer_t>(arg)->m_arg;
+            }
             if (arg && is_array_element_designator(arg)) {
                 element_sequence_args.insert(arg);
             }

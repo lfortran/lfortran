@@ -8257,6 +8257,12 @@ RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 # lfortran_display is an LFortran runtime module that GFortran does not have.
 # Its procedures do not link with --separate-compilation yet (#15852).
 RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
+RUN(NAME sequence_element_01 LABELS gfortran llvm)
+# F2018 15.5.2.11 permits this named-constant element sequence, but
+# GFortran rejects the explicit-interface case.
+RUN(NAME sequence_element_02 LABELS llvm)
+RUN(NAME sequence_element_02_legacy FILE sequence_element_02 LABELS llvm
+    EXTRA_ARGS --legacy-array-sections)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
