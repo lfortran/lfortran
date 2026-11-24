@@ -86,7 +86,9 @@ lake build --wfail
 | `SinKernels/Proof/*.lean`, `SinKernels/Binary64.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
 | `Legendre/Run.lean` | run `legendre_poly` at `machine` | human |
 | `LFortran/FloatAdd*.lean`, `LFortran/FloatOps.lean`, `LFortran/FloatModel.lean` | Lean's `Float` `+ − × ÷` meet the `FPModel` bounds; `floatModel` (not trusted) | proofs (AI), checked by Lean |
-| `Legendre/FloatCorrect.lean` | the `Float` run of the generated code has the proved accuracy | proofs (AI), checked by Lean |
+| `Legendre/FloatCorrect.lean`, `SinKernels/FloatRun.lean`, `LFortran/FloatSim.lean` | the `Float` runs of the generated code meet the `Float` specifications | proofs (AI), checked by Lean |
+| `SinKernels/Spec.lean` | what the sin kernels' `Float` runs must satisfy | human, reviewed |
+| `check_float_runs.py`, `float_runs_check.f90` | bit-for-bit and bound tests of the `Float` runs | human |
 
 ## 1. The idea
 
@@ -353,8 +355,8 @@ Each is proved in the same two parts, for every `NoGuardModel` (so every
 
 | | exact arithmetic vs `Real.sin` | rounding | combined | binary64 (`floatModel`) |
 |---|---|---|---|---|
-| `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_binary64`) |
-| `kernel_fastest`, `\|x0\| ≤ X` | `≤ 5.75·10^-3 + 1.3·10^-16 X` (`kernel_fastest_exact_correct`) | reduced argument within `X(11U + 3H + 1.3·10^-16)` of `x0 - Nπ` (`reduction`) | `≤ 5.75·10^-3 + X(19U + 14H + 1.3·10^-16)` (`kernel_fastest_correct`) | `≤ 5.75·10^-3 + 2.25·10^-15 X`, `X ≤ 2^30` (`kernel_fastest_binary64`) |
+| `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_binary64`; the `Float` run: `kernel_sin_spec`) |
+| `kernel_fastest`, `\|x0\| ≤ X` | `≤ 5.75·10^-3 + 1.3·10^-16 X` (`kernel_fastest_exact_correct`) | reduced argument within `X(11U + 3H + 1.3·10^-16)` of `x0 - Nπ` (`reduction`) | `≤ 5.75·10^-3 + X(19U + 14H + 1.3·10^-16)` (`kernel_fastest_correct`) | `≤ 5.75·10^-3 + 2.25·10^-15 X`, `X ≤ 2^30` (`kernel_fastest_binary64`; the `Float` run: `kernel_fastest_spec`) |
 
 The ingredients:
 
@@ -534,28 +536,42 @@ conformance can rely on that proof, and then only has to check that the
 definitions `binary64` and `IsRoundToNearest` in
 `LFortran/Models/Binary64.lean` match the standard.
 
-**The `Float` run.** `Legendre/Run.lean` executes the generated template at
-`LFortran.machine` (`Int32`, Lean's `Float`), exactly as the one-line `main`
-emitted by `--backend=lean` does. `legendre_float_correct` proves that for
-`n ≤ 100` and a finite `Float` `x` with `|x| ≤ 1` this run returns a finite
-value within `10^-11` of `legendreP n x`, with only the standard axioms. The
-steps: `floatModel` is an `FPModel` whose operations are `Float`'s
-(`float_add_value` … `float_div_value`, proved from Lean's bit-level
-`Float.Model`; `Float.ofInt` is exact below `2^53`), and
-`legendre_float_sim` shows that the `Float` run computes exactly
-`legendre_fortran floatModel n x` (no step overflows, and the `Int32` indices
-do not wrap). This simulation is a separate proof for each program: knowing
-that `Float`'s operations satisfy the `FPModel` bounds does not by itself say
-that a program run on `Float` equals the same program run on `floatModel`.
-For the sin kernels it is not done yet: it needs the exactness of the
-literals `FReal.lit m e` (`Float.ofInt m * 2^e`) and the values of
-`Float.toUInt64`, `Float.neg`, `Float.abs` and `<` (all have logical
-models; `int(x)` uses `Float.toUInt64` rather than the opaque
-`Float.toInt64` for this reason). The sin theorems hold for `floatModel`,
-binary64 round-to-nearest (`SinKernels/Binary64.lean`). What remains trusted
-is Lean's: that the compiled `Float` operations (C `double`) implement
-`Float.Model`. This covers the Lean run, not the LFortran-compiled
-executable, which is covered by the arithmetic assumption above.
+**The `Float` run.** The final theorems are about the functions that
+`--backend=lean` executes: the generated templates at `LFortran.machine`
+(`Int32`, Lean's `Float`). Their statements are in the human-reviewed spec
+files, so what is guaranteed can be read off the theorem's type:
+
+| Theorem | Statement (spec file) | Guarantee for every finite `Float` input |
+|---|---|---|
+| `legendre_float_spec` | `LegendreFloatSpec` (`Legendre/Spec.lean`) | `n ≤ 100`, `\|x\| ≤ 1`: finite, within `10^-11` of `legendreP n x` |
+| `kernel_sin_spec` | `KernelSinFloatSpec` (`SinKernels/Spec.lean`) | `\|x\| ≤ π/2`: finite, within `1.15·10^-15 \|x\| + 2^-1075` of `sin x` |
+| `kernel_fastest_spec` | `KernelFastestFloatSpec` (`SinKernels/Spec.lean`) | `\|x0\| ≤ X ≤ 2^30`: finite, within `5.75·10^-3 + 2.25·10^-15 X` of `sin x0` |
+
+`floatValue` (the real number a `Float` denotes, from Lean's `Float.Model`)
+is part of these statements. Each proof shows that the `Float` run computes
+exactly the same template in `floatModel` (`legendre_float_sim`,
+`kernel_sin_float_sim`, `kernel_fastest_float_sim`), using
+`LFortran/FloatSim.lean`: every `Float` operation the templates use
+(`+ − × ÷`, negation, `abs`, the sign bit, `int` truncation, `Float.ofInt`,
+`Int32` parity) has the value of the corresponding `floatModel` operation, and
+the literals are exact (the kernel evaluates them). `floatModel` is binary64
+round-to-nearest, an `FPModel` whose operations are `Float`'s
+(`float_add_value` … `float_div_value`). The sign bit and `int` are read
+through `Float.Model` because `Float.toInt64` has no logical model. The
+`Float` sign of `-0.0` differs from `ℝ`, so `kernel_fastest` is proved for
+either sign choice at `x0 = 0` (`kfGen_correct`). All use only the standard
+axioms.
+
+What remains trusted is Lean's: that the compiled `Float` operations (C
+`double`) implement `Float.Model`. The proofs cover the Lean run, not an
+LFortran- or GFortran-compiled executable, which performs the same IEEE
+operations only if the compiler preserves them. `check_float_runs.py` tests
+both links on 20,000 inputs (random, `±0`, subnormals, `±π/2`, half-integer
+multiples of `π_d`, powers of two, up to `2^30`): the Lean run, an LFortran
+build and a GFortran build agree bit for bit, and every result in a
+specification's domain is within its proved bound against exact rational
+(Legendre) or 90-digit (`sin`) references. It runs in the Linux LLVM 11
+Quick job.
 
 The theorem says nothing about inputs outside the specified domain (for
 example `n > 100`, NaN or infinite `x`), or about performance.
