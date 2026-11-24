@@ -5792,6 +5792,7 @@ RUN(NAME entry_30 LABELS gfortran llvm)
 RUN(NAME entry_31 LABELS llvm flang) # not gfortran: GFortran 16.2 miscompiles the overlap of the result variables of a function and its entries (#16215)
 RUN(NAME entry_32 LABELS gfortran llvm) # an ENTRY called through an interface body (#18154)
 RUN(NAME entry_33 LABELS gfortran llvm) # an ENTRY as pointer target and actual argument (#18387)
+RUN(NAME entry_35 LABELS gfortran llvm) # an ENTRY dummy argument in a specification expression (#15228)
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
