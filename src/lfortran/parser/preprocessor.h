@@ -22,6 +22,14 @@ struct CPPMacro {
 
 typedef std::map<std::string, CPPMacro> cpp_symtab;
 
+enum class CPPTokenMode {
+    Fortran,
+    LineControl
+};
+
+// Offsets and lengths of generated C string tokens in expanded macro text.
+using CPPStringTokens = std::map<size_t, size_t>;
+
 class CPreprocessor
 {
 public:
@@ -33,7 +41,9 @@ public:
     // argument rather than source lines (no fixed-form comment lines there)
     Result<std::string> run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
-        bool macro_expansion=false) const;
+        bool macro_expansion=false,
+        const std::string *logical_filename=nullptr,
+        CPPTokenMode token_mode=CPPTokenMode::Fortran) const;
 
     // Return the current token's location
     void token_loc(Location &loc, unsigned char *tok, unsigned char* cur,
@@ -47,17 +57,26 @@ private:
     // Preprocess `input` in which backslash-newline sequences have already
     // been spliced (called by `run`). `newlines` are the positions in `input`
     // that end the original lines (if nullptr, the newlines of `input`).
+    // In a macro-expansion context, explicit `newlines` describe a source
+    // fragment starting at `current_line`, rather than a replacement body.
+    // `string_tokens`, when supplied, maps input spans and is replaced with
+    // output spans, keeping generated C strings opaque to Fortran rescanning.
     Result<std::string> run_spliced(const std::string &input,
         LocationManager &lm, cpp_symtab &macro_definitions,
         diag::Diagnostics &diagnostics, bool macro_expansion,
-        const std::vector<uint32_t> *newlines) const;
+        const std::vector<uint32_t> *newlines,
+        const std::string &filename, CPPTokenMode token_mode,
+        CPPStringTokens *string_tokens=nullptr) const;
 };
 
 std::string function_like_macro_expansion(
             std::vector<std::string> &def_args,
             std::string &expansion,
             std::vector<std::string> &call_args,
-            std::vector<std::string> &expanded_args);
+            std::vector<std::string> &expanded_args,
+            CPPTokenMode token_mode=CPPTokenMode::Fortran,
+            const std::vector<CPPStringTokens> *argument_tokens=nullptr,
+            CPPStringTokens *string_tokens=nullptr);
 
 } // namespace LCompilers::LFortran
 

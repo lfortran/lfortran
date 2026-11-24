@@ -265,6 +265,27 @@ compilation options, output options, link options and so on.
 * `--cpp`, Enable C preprocessing
 * `-E`, Preprocess only; do not compile, assemble or link
 
+With `--cpp`, `#line <number> ["filename"]` and numeric line markers
+(`# <number> ["filename"]`) set the logical location used by `__LINE__` and
+`__FILE__`. Numeric markers can also have flags after the filename. The number
+applies to the following source line; omitting the filename keeps the current
+logical name. Filename operands are C string literals: escapes such as `\056`
+and `\x2E` are decoded before updating the logical name. A decoded NUL terminates
+the logical filename. Whitespace between
+the line number and the opening filename quote is optional. C block comments
+separate directive tokens, but remain literal inside quoted filenames.
+Standard `#line` operands support macro expansion using C string-literal
+quoting, including escaped quotes; numeric-marker operands are not expanded.
+Builtins in continued directives retain their operand locations, including
+lines crossed by block comments.
+Newlines in logical filenames are re-escaped when emitting `__FILE__`.
+Generated filename strings remain single tokens during macro rescanning;
+macro-like text inside them is not expanded.
+These locations also apply inside macro expansions. An included file has its
+own logical location, and returning from it restores the including file's
+location. Logical filenames do not change include search paths. This controls
+builtin macro values, not parser diagnostic remapping.
+
 ### Other inputs
 
 * `-D <macro>=<value>` Define a macro (or 1 if <value> omitted)
