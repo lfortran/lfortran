@@ -5,7 +5,7 @@ import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.LinearCombination
-import Legendre.Spec
+import Legendre.Proof.Bonnet
 import Legendre.Generated
 import LFortran.Arith.Model
 
@@ -58,7 +58,7 @@ lemma fold_eq (fp : NoGuardModel) (x : ℝ) (m : ℕ) :
 
 /-- The generated `legendre_poly` in a `NoGuardModel`. -/
 noncomputable def legendre_ng (fp : NoGuardModel) (n : ℤ) (x : ℝ) : ℝ :=
-  @legendre_mod.legendre_poly ℤ ℝ _ (FReal.ofNoGuard fp) n x
+  @legendre_mod.legendre_poly proofKinds (FKinds.ofNoGuard fp fp) n x
 
 lemma legendre_zero (fp : NoGuardModel) (x : ℝ) : legendre_ng fp 0 x = fp.round 1 := by
   simp [legendre_ng, legendre_mod.legendre_poly]

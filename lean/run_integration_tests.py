@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run integration tests by translating them to Lean and executing them.
 
-`lfortran --backend=lean` writes a computable Lean 4 program. This script
+`lfortran --backend=lean` writes the program as Lean templates over
+`K : Kinds` with a `main` that instantiates them at `LFortran.machine`. This script
 compiles the small runtime once, then for every selected test translates the
 Fortran and runs `lean --run`. A test passes when the program's exit code
 agrees with the RUN() entry: zero, unless the entry is marked FAIL.
@@ -151,15 +152,23 @@ def run_one(task):
     return name, "run", f"exit {run.returncode}", task["fail"]
 
 
+RUNTIME = ["Arith", "Arr", "Runtime"]
+
+
 def prepare_runtime(toolchain):
+    """Compile the mathlib-free runtime (`LFortran.Runtime` and what it
+    imports) once, in dependency order."""
     cache = Path(tempfile.mkdtemp(prefix="lfortran-lean-"))
     dest = cache / "LFortran"
     dest.mkdir()
-    shutil.copy(ROOT / "lean" / "LFortran" / "Exec.lean", dest / "Exec.lean")
-    olean = dest / "Exec.olean"
-    subprocess.run(
-        ["elan", "run", toolchain, "lean", "-o", str(olean), "LFortran/Exec.lean"],
-        cwd=cache, check=True)
+    env = os.environ.copy()
+    env["LEAN_PATH"] = str(cache)
+    for mod in RUNTIME:
+        shutil.copy(ROOT / "lean" / "LFortran" / (mod + ".lean"), dest / (mod + ".lean"))
+        subprocess.run(
+            ["elan", "run", toolchain, "lean", "-o", str(dest / (mod + ".olean")),
+             "LFortran/" + mod + ".lean"],
+            cwd=cache, check=True, env=env)
     return cache
 
 

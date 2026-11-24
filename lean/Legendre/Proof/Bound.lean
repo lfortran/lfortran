@@ -5,7 +5,7 @@ import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.LinearCombination
-import Legendre.Spec
+import Legendre.Proof.Bonnet
 
 /-!
 # `|P n x| ≤ 1` for `|x| ≤ 1`
