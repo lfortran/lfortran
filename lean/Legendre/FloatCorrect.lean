@@ -1,5 +1,3 @@
-import Legendre.Shared
-import Legendre.SharedProof
 import Legendre.Proof
 import LFortran.FloatModel
 
@@ -8,14 +6,15 @@ set_option exponentiation.threshold 2048
 /-!
 # The `Float` run of the same `legendre_poly`
 
-`Legendre/Run.lean` executes `legendre_shared.legendre_poly` at `Int32` and
-Lean's `Float`. This file proves, without axioms beyond Lean's standard ones,
-that this run has the accuracy proved for every `FPModel`:
+`Legendre/Run.lean` executes the generated `legendre_poly_float`, the
+template `legendre_mod.legendre_poly` at `Int32` and Lean's `Float`. This file
+proves, without axioms beyond Lean's standard ones, that this run has the
+accuracy proved for every `FPModel`:
 
 * `floatModel` (`LFortran/FloatModel.lean`) is an `FPModel` whose operations
   are `Float`'s own `+ - * /` (`u = 2^-53`, `η = 2^-1075`, `M = 2^1022`);
 * `legendre_float_sim`: the `Float` run has a finite value, and that value is
-  exactly the shared polynomial in `floatModel`, `legendre_at floatModel`.
+  exactly the generated template in `floatModel`, `legendre_fortran floatModel`.
   Each step is a `Float` operation whose exact result is far below `2^1022`
   (the computed values stay below `1 + 10^-6` by the accuracy invariant),
   so no step overflows; the `Int32` loop indices and conversions are exact
@@ -78,22 +77,26 @@ lemma fold_eqF (x : Float) (m : ℕ) :
     have : yF x (m + 2) = stepF x (Int32.ofInt ((m : ℤ) + 2)) (yF x m) (yF x (m + 1)) := rfl
     rw [this, add_assoc, one_add_one_eq_two]
 
+lemma beq32 (a b : Int32) : FInt.beq a b = (a == b) := rfl
+
 lemma legendre_float_zero (x : Float) :
-    legendre_shared.legendre_poly (Int32.ofInt 0) x = FReal.ofInt 1 := by
-  simp [legendre_shared.legendre_poly]
+    legendre_mod.legendre_poly (Int32.ofInt 0) x = FReal.ofInt 1 := by
+  simp [legendre_mod.legendre_poly, beq32]
   rfl
 
 lemma legendre_float_succ (x : Float) (m : ℕ) (hm : m ≤ 99) :
-    legendre_shared.legendre_poly (Int32.ofInt ((m : ℤ) + 1)) x = yF x (m + 1) := by
-  have hne : Int32.ofInt ((m : ℤ) + 1) ≠ FInt.ofInt 0 := by
+    legendre_mod.legendre_poly (Int32.ofInt ((m : ℤ) + 1)) x = yF x (m + 1) := by
+  have hne' : Int32.ofInt ((m : ℤ) + 1) ≠ FInt.ofInt 0 := by
     intro h
     have := congrArg Int32.toInt h
     rw [Int32.toInt_ofInt_of_le (by omega) (by omega)] at this
     have h0 : (FInt.ofInt 0 : Int32).toInt = 0 := by decide
     omega
+  have hne : FInt.beq (Int32.ofInt ((m : ℤ) + 1)) (FInt.ofInt 0) = false := by
+    rw [beq32]; exact beq_eq_false_iff_ne.2 hne'
   obtain ⟨c, hc⟩ := fold_eqF x m
   simp only [stepF] at hc
-  simp [legendre_shared.legendre_poly, hne, range32 m hm, hc, -Int32.ofInt_add]
+  simp [legendre_mod.legendre_poly, hne, range32 m hm, hc, -Int32.ofInt_add]
 
 /-! ## One step of `Float` is one step of `floatModel` -/
 
@@ -250,18 +253,19 @@ finite `Float` `x` with `|x| ≤ 1`, the value `Run.lean` computes is finite and
 equals the shared polynomial evaluated in `floatModel`. -/
 theorem legendre_float_sim (n : ℕ) (hn : n ≤ 100) (xf : Float) {x : ℝ}
     (hxv : floatValue xf = some x) (hx1 : |x| ≤ 1) :
-    floatValue (legendre_shared.legendre_poly (Int32.ofInt (n : ℤ)) xf) =
-      some (legendre_at floatModel n x) := by
+    floatValue (legendre_mod.legendre_poly_float (Int32.ofInt (n : ℤ)) xf) =
+      some (legendre_fortran floatModel n x) := by
+  show floatValue (legendre_mod.legendre_poly (Int32.ofInt (n : ℤ)) xf) = _
   cases n with
   | zero =>
     rw [Nat.cast_zero, legendre_float_zero]
-    have h : legendre_at floatModel 0 x = legendre_ng fm 0 x := rfl
+    have h : legendre_fortran floatModel 0 x = legendre_ng fm 0 x := rfl
     have hr : fm.round 1 = 1 := y_zero x
     rw [h, legendre_zero, hr]
     exact yF_zero xf
   | succ m =>
     rw [Nat.cast_succ, legendre_float_succ xf m (by omega)]
-    have h : legendre_at floatModel ((m : ℤ) + 1) x = legendre_ng fm ((m : ℤ) + 1) x := rfl
+    have h : legendre_fortran floatModel ((m : ℤ) + 1) x = legendre_ng fm ((m : ℤ) + 1) x := rfl
     rw [h, legendre_succ]
     exact (yF_sim xf hxv hx1 m (by omega)).2
 
@@ -269,13 +273,13 @@ theorem legendre_float_sim (n : ℕ) (hn : n ≤ 100) (xf : Float) {x : ℝ}
 `legendre_poly` at `Int32` and `Float` is within `10^-11` of `P n x`. -/
 theorem legendre_float_correct (n : ℕ) (hn : n ≤ 100) (xf : Float) {x : ℝ}
     (hxv : floatValue xf = some x) (hx1 : |x| ≤ 1) :
-    ∃ v, floatValue (legendre_shared.legendre_poly (Int32.ofInt (n : ℤ)) xf) = some v ∧
+    ∃ v, floatValue (legendre_mod.legendre_poly_float (Int32.ofInt (n : ℤ)) xf) = some v ∧
       |v - P n x| ≤ 1 / 10 ^ 11 := by
   refine ⟨_, legendre_float_sim n hn xf hxv hx1, ?_⟩
   have hη : floatModel.η ≤ 1 / 2 ^ 1000 :=
     one_div_le_one_div_of_le (by positivity) (pow_le_pow_right₀ (by norm_num) (by norm_num))
   have hM : (2 : ℝ) ^ 10 ≤ floatModel.M := pow_le_pow_right₀ (by norm_num) (by norm_num)
-  have := legendre_shared_correct floatModel le_rfl hη hM n x (float_mem hxv) (by omega)
+  have := legendre_correct floatModel le_rfl hη hM n x (float_mem hxv) (by omega)
     (by exact_mod_cast hn) hx1
   simpa using this
 

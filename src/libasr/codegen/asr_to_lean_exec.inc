@@ -1,6 +1,9 @@
-// Executable Lean 4 backend. Included from asr_to_lean.cpp inside namespace
-// LCompilers. The proof translator above is unchanged: it emits noncomputable
-// code over FPModel. This one emits code `lean --run` can execute.
+// Lean 4 backend. Included from asr_to_lean.cpp inside namespace LCompilers.
+// `--backend=lean` (proof = false) emits code over `Int32`/`Float`/... that
+// `lean --run` executes. `--show-lean` (proof = true) emits each procedure
+// once as a template over `[FInt ι] [FReal α]` (`lean/LFortran/Arith.lean`),
+// plus a `_float` wrapper at the procedure's kinds (`Int32`, `Float`, ...).
+// The template runs at those types and is proved at `ℤ` and an `FPModel`.
 
 namespace {
 
@@ -177,6 +180,8 @@ public:
     // (`--backend=lean`) stays on `LFortran.Exec`.
     bool proof = false;
     std::set<ASR::Variable_t*> proof_loop_vars;
+    // `--show-lean`: `_float` wrappers of the current group, emitted after it.
+    std::string wrappers;
     int indent_level = 0;
     SymbolTable *scope = nullptr;
     std::vector<SymbolTable*> scope_stack;
@@ -277,7 +282,11 @@ public:
     }
 
     std::string int_ty(int k, const Location &loc) {
-        if (proof) return "ℤ";
+        if (proof) return "ι";
+        return concrete_int_ty(k, loc);
+    }
+
+    std::string concrete_int_ty(int k, const Location &loc) {
         switch (k) {
             case 1: return "Int8";
             case 2: return "Int16";
@@ -288,7 +297,11 @@ public:
     }
 
     std::string real_ty(int k, const Location &loc) {
-        if (proof) return "ℝ";
+        if (proof) return "α";
+        return concrete_real_ty(k, loc);
+    }
+
+    std::string concrete_real_ty(int k, const Location &loc) {
         switch (k) {
             case 4: return "Float32";
             case 8: return "Float";
@@ -383,19 +396,24 @@ public:
 
     std::string of_int(ASR::ttype_t *t, int64_t n, const Location &loc) {
         if (proof) {
-            return n < 0 ? "(" + std::to_string(n) + ")" : std::to_string(n);
+            return "FInt.ofInt " + (n < 0 ? "(" + std::to_string(n) + ")"
+                : std::to_string(n));
         }
         std::string ty = int_ty(kind_of(elem_type(t), loc), loc);
         std::string lit = n < 0 ? "(" + std::to_string(n) + ")" : std::to_string(n);
         return ty + ".ofInt " + lit;
     }
 
-    // Exact value of a double, as a Lean real: an integer, or `(m / 2^e : ℝ)`.
-    std::string proof_real_lit(double v, const Location &loc) {
+    static std::string int_lit(int64_t i) {
+        return i < 0 ? "(" + std::to_string(i) + ")" : std::to_string(i);
+    }
+
+    // A real constant in a template: `FReal.ofInt n` for an integer below
+    // `2^53`, else `FReal.lit m e` with the exact value `m · 2^e`, `m` odd.
+    std::string template_real_lit(double v, int kind, const Location &loc) {
         if (!std::isfinite(v)) unsupported("non-finite real constant", loc);
-        if (v == std::trunc(v) && std::fabs(v) < 0x1p62) {
-            int64_t i = (int64_t) v;
-            return i < 0 ? "(" + std::to_string(i) + ")" : std::to_string(i);
+        if (v == std::trunc(v) && std::fabs(v) < 0x1p53) {
+            return "FReal.ofInt " + int_lit((int64_t) v);
         }
         int e;
         double f = std::frexp(v, &e);
@@ -405,13 +423,16 @@ public:
             m /= 2;
             e++;
         }
-        std::string ms = std::to_string(m);
-        if (e < 0) return "(" + ms + " / 2^" + std::to_string(-e) + " : ℝ)";
-        return "(" + ms + " * 2^" + std::to_string(e) + " : ℝ)";
+        int lo = kind == 4 ? -126 : -1022;
+        int hi = kind == 4 ? 127 : 1023;
+        if (e < lo || e > hi) {
+            unsupported("this real constant in --show-lean is", loc);
+        }
+        return "FReal.lit " + int_lit(m) + " " + int_lit(e);
     }
 
     std::string real_zero(ASR::ttype_t *t, const Location &loc) {
-        if (proof) return "0";
+        if (proof) return "FReal.zero";
         int k = kind_of(elem_type(t), loc);
         if (k == 8) {
             return "Float.ofBits (0 : UInt64)";
@@ -832,23 +853,31 @@ public:
             ASR::ttype_t *type, const Location &loc) {
         bool arr = is_arr(type) || is_arr(ASRUtils::expr_type(left))
             || is_arr(ASRUtils::expr_type(right));
-        if (op == ASR::binopType::Pow) {
-            return pow_op(left, right, type, loc, arr);
-        }
-        if (proof && !arr && type && ASR::is_a<ASR::Real_t>(*past_wrappers(
-                elem_type(type)))) {
+        if (proof) {
+            ASR::ttype_t *et = type ? past_wrappers(elem_type(type)) : nullptr;
+            bool real = et && ASR::is_a<ASR::Real_t>(*et);
+            bool integer = et && ASR::is_a<ASR::Integer_t>(*et);
+            if (arr || !(real || integer)) {
+                unsupported("this operator in --show-lean is", loc);
+            }
             const char *fn = nullptr;
             switch (op) {
-                case ASR::binopType::Add: fn = "fp.add"; break;
-                case ASR::binopType::Sub: fn = "fp.sub"; break;
-                case ASR::binopType::Mul: fn = "fp.mul"; break;
-                case ASR::binopType::Div: fn = "fp.div"; break;
-                default: unsupported("this real operator is", loc);
+                case ASR::binopType::Add: fn = real ? "FReal.add" : "FInt.add"; break;
+                case ASR::binopType::Sub: fn = real ? "FReal.sub" : "FInt.sub"; break;
+                case ASR::binopType::Mul: fn = real ? "FReal.mul" : "FInt.mul"; break;
+                case ASR::binopType::Div:
+                    if (!real) unsupported("integer division in --show-lean is", loc);
+                    fn = "FReal.div";
+                    break;
+                default: unsupported("this operator in --show-lean is", loc);
             }
             Val l = lower(left);
             Val r = lower(right);
             return {std::string(fn) + " " + exec_atom(l) + " " + exec_atom(r),
                 epApp};
+        }
+        if (op == ASR::binopType::Pow) {
+            return pow_op(left, right, type, loc, arr);
         }
         std::string sop;
         int p = epAdd;
@@ -953,17 +982,28 @@ public:
         }
         bool arr = is_arr(ASRUtils::expr_type(left))
             || is_arr(ASRUtils::expr_type(right));
-        if (proof && !arr) {
-            std::string sop;
+        if (proof) {
+            ASR::ttype_t *lt = past_wrappers(ASRUtils::expr_type(left));
+            std::string ns;
+            if (!arr && lt && ASR::is_a<ASR::Integer_t>(*lt)) ns = "FInt";
+            else if (!arr && lt && ASR::is_a<ASR::Real_t>(*lt)) ns = "FReal";
+            else unsupported("this comparison in --show-lean is", left->base.loc);
+            std::string l = exec_atom(lower(left));
+            std::string r = exec_atom(lower(right));
             switch (op) {
-                case ASR::cmpopType::Eq: sop = "="; break;
-                case ASR::cmpopType::NotEq: sop = "≠"; break;
-                case ASR::cmpopType::Lt: sop = "<"; break;
-                case ASR::cmpopType::LtE: sop = "≤"; break;
-                case ASR::cmpopType::Gt: sop = ">"; break;
-                case ASR::cmpopType::GtE: sop = "≥"; break;
+                case ASR::cmpopType::Eq:
+                    return {ns + ".beq " + l + " " + r, epApp};
+                case ASR::cmpopType::NotEq:
+                    return {"(!" + ns + ".beq " + l + " " + r + ")", epAtom};
+                case ASR::cmpopType::Lt:
+                    return {ns + ".lt " + l + " " + r, epApp};
+                case ASR::cmpopType::LtE:
+                    return {ns + ".le " + l + " " + r, epApp};
+                case ASR::cmpopType::Gt:
+                    return {ns + ".lt " + r + " " + l, epApp};
+                case ASR::cmpopType::GtE:
+                    return {ns + ".le " + r + " " + l, epApp};
             }
-            return infix(lower(left), sop, lower(right), epCmp);
         }
         // `<` `>` `<=` `>=` are `Prop` in Lean. An array of those cannot be
         // stored or negated; `decide` makes the comparison a `Bool`.
@@ -1002,11 +1042,16 @@ public:
 
     std::string cast_scalar(const std::string &arg, ASR::ttype_t *from,
             ASR::cast_kindType kind, ASR::ttype_t *to, const Location &loc) {
+        if (proof) {
+            if (kind != ASR::cast_kindType::IntegerToReal) {
+                unsupported("this conversion in --show-lean is", loc);
+            }
+            return "FReal.ofInt (FInt.toInt " + arg + ")";
+        }
         switch (kind) {
             case ASR::cast_kindType::IntegerToInteger:
                 return int_ty(kind_of(to, loc), loc) + ".ofInt (" + arg + ").toInt";
             case ASR::cast_kindType::IntegerToReal:
-                if (proof) return "fp.ofInt " + arg;
                 return real_ty(kind_of(to, loc), loc) + ".ofInt (" + arg + ").toInt";
             case ASR::cast_kindType::RealToInteger:
                 return int_ty(kind_of(to, loc), loc) + ".ofInt ("
@@ -1668,7 +1713,6 @@ public:
             }
         }
         std::string call = call_name(sym);
-        if (proof) call += " fp";
         for (const std::string &s : passed) call += " " + s;
         size_t arity = 1;
         if (p.ret_type == "Unit" || p.ret_expr.empty()) {
@@ -1753,7 +1797,8 @@ public:
             case ASR::exprType::RealConstant: {
                 auto &x = *ASR::down_cast<ASR::RealConstant_t>(e);
                 if (proof) {
-                    return {"fp.round " + proof_real_lit(x.m_r, loc), epApp};
+                    return {template_real_lit(x.m_r, kind_of(x.m_type, loc), loc),
+                        epApp};
                 }
                 int k = kind_of(x.m_type, loc);
                 double r = x.m_r;
@@ -1795,6 +1840,15 @@ public:
                     ? ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg
                     : ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg;
                 Val a = lower(arg);
+                if (proof) {
+                    if (is_arr(ASRUtils::expr_type(arg))) {
+                        unsupported("an array in --show-lean is", loc);
+                    }
+                    if (e->type == ASR::exprType::IntegerUnaryMinus) {
+                        return {"FInt.sub (FInt.ofInt 0) " + exec_atom(a), epApp};
+                    }
+                    return {"FReal.neg " + exec_atom(a), epApp};
+                }
                 if (is_arr(ASRUtils::expr_type(arg))) {
                     return {"LFortran.Exec.Arr.map (fun lfX => -lfX) "
                         + exec_atom(a), epApp};
@@ -1897,6 +1951,13 @@ public:
                         elem_type(x.m_type), loc);
                     return {"LFortran.Exec.Arr.map (fun lfX => " + body + ") "
                         + exec_atom(a), epApp};
+                }
+                // A template procedure may have no integer type `ι`, so an
+                // integer constant converted to real is `FReal.ofInt n`.
+                if (proof && x.m_kind == ASR::cast_kindType::IntegerToReal
+                        && ASR::is_a<ASR::IntegerConstant_t>(*x.m_arg)) {
+                    return {"FReal.ofInt " + int_lit(ASR::down_cast<
+                        ASR::IntegerConstant_t>(x.m_arg)->m_n), epApp};
                 }
                 Val a = lower(x.m_arg);
                 return {cast_scalar(exec_atom(a), ASRUtils::expr_type(x.m_arg),
@@ -2399,8 +2460,8 @@ public:
             if (!unit) unsupported("this do loop is", loc);
             Val lo = lower(h.m_start);
             Val hi = lower(h.m_end);
-            out += indent() + "for " + vn + " in intRange " + lo.src + " "
-                + hi.src + " do\n";
+            out += indent() + "for " + vn + " in FInt.range " + exec_atom(lo)
+                + " " + exec_atom(hi) + " do\n";
             indent_level++;
             body();
             indent_level--;
@@ -3203,6 +3264,35 @@ public:
         }
     }
 
+    // The integer and real kinds a template procedure uses (0 if none). One
+    // kind of each: the template has one `ι` and one `α`.
+    void template_kinds(ASR::Function_t *fn, int &ik, int &rk) {
+        for (auto &kv : fn->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*kv.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(kv.second);
+            const Location &vloc = v->base.base.loc;
+            ASR::ttype_t *t = past_wrappers(v->m_type);
+            if (!t || is_arr(t)) unsupported("an array in --show-lean is", vloc);
+            int *slot = nullptr;
+            int k = 0;
+            if (ASR::is_a<ASR::Integer_t>(*t)) {
+                slot = &ik;
+                k = ASR::down_cast<ASR::Integer_t>(t)->m_kind;
+            } else if (ASR::is_a<ASR::Real_t>(*t)) {
+                slot = &rk;
+                k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
+            } else if (ASR::is_a<ASR::Logical_t>(*t)) {
+                continue;
+            } else {
+                unsupported("this type in --show-lean is", vloc);
+            }
+            if (*slot && *slot != k) {
+                unsupported("mixing kinds in one procedure in --show-lean is", vloc);
+            }
+            *slot = k;
+        }
+    }
+
     void emit_fn(ProcInfo &p) {
         proc = &p;
         scope = p.fn->m_symtab;
@@ -3210,14 +3300,42 @@ public:
         proof_loop_vars.clear();
         if (proof) collect_proof_loops(p.fn->m_body, p.fn->n_body);
         const Location &loc = p.fn->base.base.loc;
-        out += proof ? "noncomputable def " : "def ";
-        out += lean_name(p.fn->m_name, loc);
-        if (proof) out += " (fp : FPModel)";
+        std::string fname = lean_name(p.fn->m_name, loc);
+        out += "def " + fname;
+        std::string sig, call_args;
+        int ik = 0, rk = 0;
+        if (proof) {
+            if (p.io) unsupported("a procedure with side effects in --show-lean is", loc);
+            template_kinds(p.fn, ik, rk);
+            if (ik && rk) out += " {ι α : Type} [FInt ι] [FReal α]";
+            else if (ik) out += " {ι : Type} [FInt ι]";
+            else if (rk) out += " {α : Type} [FReal α]";
+        }
         for (const ArgPlan &a : p.args) {
             if (!a.pass_in) continue;
-            out += " (" + lean_name(a.var->m_name, a.var->base.base.loc) + " : "
-                + lean_type(a.var->m_type, a.var->base.base.loc,
-                    a.var->m_type_declaration) + ")";
+            std::string an = lean_name(a.var->m_name, a.var->base.base.loc);
+            sig += " (" + an + " : " + lean_type(a.var->m_type,
+                a.var->base.base.loc, a.var->m_type_declaration) + ")";
+            call_args += " " + an;
+        }
+        out += sig;
+        if (proof) {
+            std::string ci = ik ? concrete_int_ty(ik, loc) : "";
+            std::string cr = rk ? concrete_real_ty(rk, loc) : "";
+            auto subst = [](std::string t, const std::string &from,
+                    const std::string &to) {
+                size_t i = t.find(from);
+                while (i != std::string::npos) {
+                    t.replace(i, from.size(), to);
+                    i = t.find(from, i + to.size());
+                }
+                return t;
+            };
+            auto concrete = [&](const std::string &t) {
+                return subst(subst(t, "ι", ci), "α", cr);
+            };
+            wrappers += "def " + fname + "_float" + concrete(sig) + " : "
+                + concrete(p.ret_type) + " :=\n  " + fname + call_args + "\n\n";
         }
         // An effectful procedure is an `IO` action. `Id.run` cannot perform
         // `cellGet` or `IO.println`, and a bare `do` needs a monad type.
@@ -3262,8 +3380,11 @@ public:
         current_ns = ns;
         if (!ns.empty()) out += "namespace " + ns + "\n\n";
         if (ps.size() > 1) out += "mutual\n";
+        wrappers.clear();
         for (ProcInfo *p : ps) emit_fn(*p);
         if (ps.size() > 1) out += "end\n\n";
+        out += wrappers;
+        wrappers.clear();
         if (!ns.empty()) out += "end " + ns + "\n\n";
         current_ns.clear();
     }
@@ -3368,6 +3489,10 @@ public:
         if (!prog && !proof) {
             unsupported("a file with no program is", tu.base.base.loc);
         }
+        if (prog && proof) {
+            unsupported("a program in --show-lean (use --backend=lean) is",
+                prog->base.base.loc);
+        }
         for (ASR::Module_t *m : mods) {
             for (ASR::symbol_t *s : exec_symbols_in_order(m->m_symtab)) {
                 if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
@@ -3410,7 +3535,7 @@ public:
         }
         if (proof) {
             out = "-- Generated by LFortran (`lfortran --show-lean " + filename
-                + "`). Do not edit.\nimport LFortran.Prelude\n\nopen LFortran\n\n";
+                + "`). Do not edit.\nimport LFortran.Arith\n\nopen LFortran\n\n";
         } else {
             out = "-- Generated by LFortran (`lfortran --backend=lean " + filename
                 + "`). Do not edit.\nimport LFortran.Exec\n\n";

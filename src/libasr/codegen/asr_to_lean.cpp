@@ -21,8 +21,8 @@
 namespace LCompilers {
 
 // One Lean backend. `--backend=lean` emits computable code against
-// `LFortran.Exec`. `--show-lean` uses the same translator in proof mode,
-// against `LFortran.Prelude` (`FPModel`, integers as `ℤ`, reals as `ℝ`).
+// `LFortran.Exec`. `--show-lean` uses the same translator in template mode,
+// against `LFortran.Arith` (`[FInt ι] [FReal α]`, plus `_float` wrappers).
 #include "asr_to_lean_exec.inc"
 
 Result<std::string> asr_to_lean(ASR::TranslationUnit_t &asr,

@@ -1,8 +1,9 @@
 import LFortran.Arith
-import Legendre.Shared
+import Legendre.Generated
 
 /-!
-Run the shared `legendre_poly` at `Int32` and `Float`.
+Run the generated `legendre_poly` through its `Int32`/`Float` wrapper
+`legendre_poly_float`.
 
 `P_n(1) = 1` and `P_2(1/2) = -1/8`. Exit 1 if the `Float` value disagrees.
 -/
@@ -10,7 +11,7 @@ Run the shared `legendre_poly` at `Int32` and `Float`.
 open LFortran
 
 def step (n : Int32) (x : Float) : Float :=
-  legendre_shared.legendre_poly n x
+  legendre_mod.legendre_poly_float n x
 
 def close (got expected : Float) : Bool :=
   let d := got - expected

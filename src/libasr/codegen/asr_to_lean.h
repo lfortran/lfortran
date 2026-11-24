@@ -6,9 +6,11 @@
 
 namespace LCompilers {
 
-    // Proof mode of the Lean backend: the same translator as
-    // `asr_to_lean_exec`, emitting noncomputable code over `FPModel`
-    // (`LFortran.Prelude`). `filename` is only used in the header comment.
+    // Template mode of the Lean backend (`--show-lean`): the same translator
+    // as `asr_to_lean_exec`, emitting each procedure once over
+    // `[FInt ι] [FReal α]` (`LFortran.Arith`) plus a `_float` wrapper at its
+    // kinds. Proofs instantiate the template at `ℤ` and an `FPModel`;
+    // `lean --run` uses the wrapper. `filename` is only used in the header.
     Result<std::string> asr_to_lean(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, const std::string &filename);
 
