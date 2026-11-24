@@ -70,6 +70,8 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
     macro_definitions["__LFORTRAN_MINOR__"] = md;
     md.expansion = std::to_string(LFORTRAN_PATCHLEVEL);
     macro_definitions["__LFORTRAN_PATCHLEVEL__"] = md;
+    md.expansion = "8";  // PRIF revision 0.8: https://doi.org/10.25344/S4Z88F
+    macro_definitions["__LFORTRAN_PRIF_REV__"] = md;
     if (compiler_options.platform == Platform::Windows) {
         md.expansion = "1";
         macro_definitions["_WIN32"] = md;

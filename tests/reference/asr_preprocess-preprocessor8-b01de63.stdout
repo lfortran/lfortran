@@ -50,6 +50,12 @@
                     )
                     (Print
                         (StringConstant
+                            "__LFORTRAN_PRIF_REV__ present"
+                            (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )
+                    (Print
+                        (StringConstant
                             "tests/preprocessor8.f90"
                             (String 1 (IntegerConstant 23 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
@@ -57,7 +63,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(IntegerConstant 19 (Integer 4) Decimal)]
+                            [(IntegerConstant 22 (Integer 4) Decimal)]
                             FormatFortran
                             []
                             ()
@@ -70,7 +76,7 @@
                     (Print
                         (StringFormat
                             ()
-                            [(IntegerConstant 20 (Integer 4) Decimal)]
+                            [(IntegerConstant 23 (Integer 4) Decimal)]
                             FormatFortran
                             []
                             ()
