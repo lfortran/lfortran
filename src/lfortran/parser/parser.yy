@@ -15,7 +15,7 @@ see the documentation in that script for details and motivation.
 %locations
 %glr-parser
 %expect    189 // shift/reduce conflicts
-%expect-rr 192 // reduce/reduce conflicts
+%expect-rr 190 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -606,6 +606,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> procedure_decl
 %type <vec_ast> access_spec_list
 %type <ast> access_spec
+%type <ast> access_modifier
+%type <ast> entity_var_modifier
+%type <vec_var_sym> access_id_list
+%type <var_sym> access_id
 %type <ast> proc_modifier
 %type <vec_ast> procedure_list
 %type <vec_ast> derived_type_contains_opt
@@ -959,6 +963,27 @@ procedure_decl
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
+    ;
+
+access_modifier
+    : KW_PRIVATE { $$ = SIMPLE_ATTR(Private, @$); }
+    | KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
+    ;
+
+access_id_list
+    : access_id_list "," access_id { $$=$1; PLIST_ADD($$, $3); }
+    | access_id { LIST_NEW($$); PLIST_ADD($$, $1); }
+    ;
+
+access_id
+    : id { $$ = VAR_SYM_NAME($1, None, @$); }
+    | decl_spec { $$ = VAR_SYM_SPEC($1, None, @$); }
+    | KW_WRITE "(" id ")" {
+            $$ = VAR_SYM_SPEC(make_AttrWrite_t(p.m_a, @$, name2char($3)),
+                None, @$); }
+    | KW_READ "(" id ")" {
+            $$ = VAR_SYM_SPEC(make_AttrRead_t(p.m_a, @$, name2char($3)),
+                None, @$); }
     ;
 
 access_spec_list
@@ -1438,9 +1463,13 @@ var_decl
         LLOC(@$, @2); $$ = VAR_DECL1c($1, $2, TRIVIA_AFTER($3, @$), @$); }
     | var_modifier sep {
         LLOC(@$, @1); $$ = VAR_DECL2($1, TRIVIA_AFTER($2, @$), @$); }
-    | var_modifier var_sym_decl_list sep {
+    | entity_var_modifier var_sym_decl_list sep {
         LLOC(@$, @2); $$ = VAR_DECL3($1, $2, TRIVIA_AFTER($3, @$), @$); }
-    | var_modifier "::" var_sym_decl_list sep {
+    | entity_var_modifier "::" var_sym_decl_list sep {
+        LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
+    | access_modifier access_id_list sep {
+        LLOC(@$, @2); $$ = VAR_DECL3($1, $2, TRIVIA_AFTER($3, @$), @$); }
+    | access_modifier "::" access_id_list sep {
         LLOC(@$, @3); $$ = VAR_DECL3($1, $3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PARAMETER "(" named_constant_def_list ")" sep {
         LLOC(@$, @4); $$ = VAR_DECL_PARAMETER($3, TRIVIA_AFTER($5, @$), @$); }
@@ -1610,6 +1639,11 @@ var_modifier_list
     ;
 
 var_modifier
+    : access_modifier { $$ = $1; }
+    | entity_var_modifier { $$ = $1; }
+    ;
+
+entity_var_modifier
     : KW_PARAMETER { $$ = SIMPLE_ATTR(Parameter, @$); }
     | KW_DIMENSION "(" array_comp_decl_list ")" { $$ = DIMENSION($3, @$); }
     | KW_DIMENSION { $$ = DIMENSION0(@$); }
@@ -1626,8 +1660,6 @@ var_modifier
     | KW_PASS { $$ = PASS(nullptr, @$); }
     | KW_PASS "(" id ")" { $$ = PASS($3, @$); }
     | KW_NOPASS { $$ = SIMPLE_ATTR(NoPass, @$); }
-    | KW_PRIVATE { $$ = SIMPLE_ATTR(Private, @$); }
-    | KW_PUBLIC { $$ = SIMPLE_ATTR(Public, @$); }
     | KW_ABSTRACT { $$ = SIMPLE_ATTR(Abstract, @$); }
     | KW_ENUMERATOR { $$ = SIMPLE_ATTR(Enumerator, @$); }
     | KW_EXTERNAL { $$ = SIMPLE_ATTR(External, @$); }

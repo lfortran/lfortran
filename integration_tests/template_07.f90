@@ -1,7 +1,7 @@
 module lt_m_template_07
     implicit none
     private
-    public :: my_type, lt_my_type
+    public :: my_type, lt_my_type, operator(<)
 
     type my_type
         real :: d

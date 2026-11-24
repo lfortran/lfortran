@@ -1221,6 +1221,27 @@ public:
         current_module_sym = nullptr;
         add_generic_procedures();
         add_overloaded_procedures();
+        // Generic interfaces and operators are created above with Public
+        // access, after the private/public statements were processed.
+        for (auto &item : current_scope->get_scope()) {
+            ASR::accessType *acc = nullptr;
+            if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+                acc = &ASR::down_cast<ASR::GenericProcedure_t>(item.second)->m_access;
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                acc = &ASR::down_cast<ASR::CustomOperator_t>(item.second)->m_access;
+            } else {
+                continue;
+            }
+            if (assgnd_access.count(item.first)) {
+                *acc = assgnd_access[item.first];
+            } else if (item.first.size() > 1 && item.first[0] == '~'
+                       && item.first[1] != '~'
+                       && assgnd_access.count(item.first.substr(1))) {
+                *acc = assgnd_access[item.first.substr(1)];
+            } else if (*acc != ASR::accessType::Private) {
+                *acc = dflt_access;
+            }
+        }
         add_class_procedures();
         add_later_module_procedure_bindings();
         add_generic_class_procedures();
@@ -4484,26 +4505,14 @@ public:
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
             fill_interface_proc_names_with_loc(x, assgn_proc_names_locations);
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
-            std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id);
-            if (op_name != "formatted" && op_name != "unformatted") {
-                diag.add(diag::Diagnostic(
-                    "Can only be `formatted` or `unformatted`",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_header->base.loc})}));
-                throw SemanticAbort();
-            }
-            op_name = "~write_" + op_name;
+            std::string op_name = defined_io_generic_name(true,
+                AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id,
+                x.m_header->base.loc);
             defined_op_procs[op_name] = interface_specifics(x);
         }  else if (AST::is_a<AST::InterfaceHeaderRead_t>(*x.m_header)) {
-            std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id);
-            if (op_name != "formatted" && op_name != "unformatted") {
-                diag.add(diag::Diagnostic(
-                    "Can only be `formatted` or `unformatted`",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {x.m_header->base.loc})}));
-                throw SemanticAbort();
-            }
-            op_name = "~read_" + op_name;
+            std::string op_name = defined_io_generic_name(false,
+                AST::down_cast<AST::InterfaceHeaderRead_t>(x.m_header)->m_id,
+                x.m_header->base.loc);
             defined_op_procs[op_name] = interface_specifics(x);
         }  else {
             diag.add(diag::Diagnostic(

@@ -290,6 +290,10 @@ decl_attribute
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
+-- R1509: the defined-input/output generic-spec `WRITE(FORMATTED)` and the like
+-- as an access-id of an access-stmt, i.e. `public :: write(formatted)`.
+    | AttrWrite(identifier id)
+    | AttrRead(identifier id)
 -- R1630: an instantiation argument prefixed by an argument keyword, i.e.
 -- `keyword = instantiation-arg`. Only appears in an instantiation-argument
 -- list (INSTANTIATE, REQUIRE and inline instantiation), where `value` is the
