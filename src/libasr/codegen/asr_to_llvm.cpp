@@ -25100,7 +25100,7 @@ public:
         if (x.m_exist) {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
-            this->visit_expr_wrapper(x.m_exist, true);
+            this->visit_expr_wrapper(x.m_exist, false);
             exist_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
