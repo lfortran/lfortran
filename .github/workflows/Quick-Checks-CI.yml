@@ -180,6 +180,10 @@ jobs:
             # Two Lean processes fit in the hosted runner's memory. Four of them
             # made the runner lose contact before the step finished.
             pixi run -e llvm11 python lean/run_integration_tests.py --timeout 120 --jobs 2
+            # The proved Float runs of legendre_poly and the sin kernels, by
+            # testing: Lean, LFortran and GFortran agree bit for bit, and every
+            # result is within its proved bound.
+            pixi run -e llvm11 python lean/check_float_runs.py --count 20000
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
         shell: bash -e {0}
