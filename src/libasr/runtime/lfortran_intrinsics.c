@@ -16261,7 +16261,7 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         *consumed_newline = true;
     }
 
-    if (chunk && !record_ended) *chunk = (int32_t)(*field_len);
+    if (chunk && !record_ended) *chunk += (int32_t)(*field_len);
     if (advance_no && *consumed_newline && *field_len != read_width) {
         if (iostat) *iostat = -2;
     }
@@ -17027,7 +17027,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
 }
 
 static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
-        int32_t *iostat, bool *consumed_newline)
+        int32_t *iostat, int32_t *chunk, bool *consumed_newline)
 {
     if (*consumed_newline) return;
     int skip = (width > 0) ? width : 1;
@@ -17045,6 +17045,7 @@ static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
             }
             break;
         }
+        if (chunk) (*chunk)++;
     }
 }
 
@@ -17611,7 +17612,7 @@ static void process_fmt_items_read(InputSource *inputSource,
             case 'T':
                 if (is_tab_descriptor) {
                     if (tab_type == 'R') {
-                        handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
+                        handle_read_X(inputSource, width, advance_no, iostat, chunk, consumed_newline);
                     } else if (tab_type == 'L') {
                         handle_read_TL(inputSource, width, consumed_newline);
                     }
@@ -17652,7 +17653,7 @@ static void process_fmt_items_read(InputSource *inputSource,
                 }
                 break;
             case 'X':
-                handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
+                handle_read_X(inputSource, width, advance_no, iostat, chunk, consumed_newline);
                 break;
             case '/':
                 handle_read_slash(inputSource, iostat, consumed_newline);
