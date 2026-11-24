@@ -11102,10 +11102,14 @@ public:
                     for (size_t j = 0; j < x.n_syms; j++) {
                         AST::var_sym_t* s = &x.m_syms[j];
                         std::string sym = to_lower(s->m_name);
-                        // Check if intent is used on a non-argument variable
+                        // Check if intent is used on a non-argument variable;
+                        // a dummy argument of an ENTRY statement is an argument
                         bool is_argument = std::find(current_procedure_args.begin(),
                                 current_procedure_args.end(), sym) !=
-                                current_procedure_args.end();
+                                current_procedure_args.end()
+                            || std::find(current_entry_args.begin(),
+                                current_entry_args.end(), sym) !=
+                                current_entry_args.end();
                         if (!is_argument) {
                             diag.add(Diagnostic(
                                 "Intent attribute can only be applied to procedure arguments",
@@ -11423,8 +11427,11 @@ public:
                         if (AST::is_a<AST::AttrIntent_t>(*a)) {
                             AST::AttrIntent_t *ai =
                                 AST::down_cast<AST::AttrIntent_t>(a);
-                            // Check if intent is used on a non-argument variable
-                            if (!is_argument) {
+                            // Check if intent is used on a non-argument variable;
+                            // a dummy argument of an ENTRY statement is an argument
+                            if (!is_argument && std::find(current_entry_args.begin(),
+                                    current_entry_args.end(), to_lower(s.m_name))
+                                    == current_entry_args.end()) {
                                 diag.add(Diagnostic(
                                     "Intent attribute can only be applied to procedure arguments",
                                     Level::Error, Stage::Semantic, {
