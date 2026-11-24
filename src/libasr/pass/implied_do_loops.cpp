@@ -2207,60 +2207,81 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
         }
 
-        // The variables that expressions use, and whether they call a
-        // procedure that is not intrinsic, which may use any variable.
-        class UsedVariables : public ASR::BaseWalkVisitor<UsedVariables> {
-        public:
-            std::set<ASR::symbol_t*> vars;
-            bool calls_procedure = false;
-            void visit_Var(const ASR::Var_t &x) {
-                vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
-            }
-            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-                ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
-                calls_procedure = calls_procedure || !is_a<ASR::Function_t>(*fn) ||
-                    !ASRUtils::is_intrinsic_function2(down_cast<ASR::Function_t>(fn));
-                ASR::BaseWalkVisitor<UsedVariables>::visit_FunctionCall(x);
-            }
+        // One variable, and the components selected from it. An empty
+        // `members` is the whole variable. `pointer_component` is set when a
+        // selected component has the POINTER attribute: that component's
+        // target may be any object, or any component of this one.
+        struct StorageRef {
+            ASR::symbol_t *root = nullptr;
+            std::vector<ASR::symbol_t*> members;
+            bool pointer_component = false;
         };
 
-        template <typename T>
-        static ASR::expr_t *subscripted_designator(T *x, std::vector<ASR::expr_t*> &uses) {
-            if (ASRUtils::is_array_indexed_with_array_indices(x)) return nullptr;
-            for (size_t i = 0; i < x->n_args; i++) {
-                uses.insert(uses.end(), {x->m_args[i].m_left, x->m_args[i].m_right,
-                    x->m_args[i].m_step});
+        // A whole variable overlaps every component of itself. Otherwise the
+        // paths overlap when one is a prefix of the other. Distinct
+        // components of one object, such as `b%n` and `b%iz`, do not.
+        static bool component_paths_overlap(const std::vector<ASR::symbol_t*> &a,
+                const std::vector<ASR::symbol_t*> &b) {
+            size_t n = std::min(a.size(), b.size());
+            for (size_t i = 0; i < n; i++) {
+                if (a[i] != b[i]) return false;
             }
-            return x->m_v;
+            return true;
         }
 
-        // Collects the variable that the input item `e` (a variable, or an
-        // element, section, component or substring of one) defines, and its
-        // components there, into `defined`, and the expressions its address
-        // uses into `uses`. Returns false if `e` is not such a designator or
-        // has a vector subscript.
-        static bool collect_read_item(ASR::expr_t *e, std::vector<ASR::symbol_t*> &defined,
-                std::vector<ASR::expr_t*> &uses) {
+        static void append_array_indices(std::vector<ASR::expr_t*> &dst,
+                ASR::array_index_t *args, size_t n_args) {
+            for (size_t i = 0; i < n_args; i++) {
+                if (args[i].m_left) dst.push_back(args[i].m_left);
+                if (args[i].m_right) dst.push_back(args[i].m_right);
+                if (args[i].m_step) dst.push_back(args[i].m_step);
+            }
+        }
+
+        // The variable and component path that the data designator `e`
+        // names, and the expressions used to address it (subscripts and
+        // substring bounds). Returns false if `e` is not a variable,
+        // element, section, component or substring, or has a vector subscript.
+        static bool decode_data_designator(ASR::expr_t *e, StorageRef &ref,
+                std::vector<ASR::expr_t*> &indices) {
+            std::vector<ASR::symbol_t*> members;
+            bool pointer_component = false;
             while (e) {
                 if (is_a<ASR::Var_t>(*e)) {
-                    defined.push_back(ASRUtils::symbol_get_past_external(
-                        down_cast<ASR::Var_t>(e)->m_v));
+                    ref.root = ASRUtils::symbol_get_past_external(
+                        down_cast<ASR::Var_t>(e)->m_v);
+                    std::reverse(members.begin(), members.end());
+                    ref.members = members;
+                    ref.pointer_component = pointer_component;
                     return true;
                 } else if (is_a<ASR::ArrayItem_t>(*e)) {
-                    e = subscripted_designator(down_cast<ASR::ArrayItem_t>(e), uses);
+                    ASR::ArrayItem_t *a = down_cast<ASR::ArrayItem_t>(e);
+                    if (ASRUtils::is_array_indexed_with_array_indices(a)) return false;
+                    append_array_indices(indices, a->m_args, a->n_args);
+                    e = a->m_v;
                 } else if (is_a<ASR::ArraySection_t>(*e)) {
-                    e = subscripted_designator(down_cast<ASR::ArraySection_t>(e), uses);
+                    ASR::ArraySection_t *a = down_cast<ASR::ArraySection_t>(e);
+                    if (ASRUtils::is_array_indexed_with_array_indices(a)) return false;
+                    append_array_indices(indices, a->m_args, a->n_args);
+                    e = a->m_v;
                 } else if (is_a<ASR::StructInstanceMember_t>(*e)) {
                     ASR::StructInstanceMember_t *m = down_cast<ASR::StructInstanceMember_t>(e);
-                    defined.push_back(ASRUtils::symbol_get_past_external(m->m_m));
+                    ASR::symbol_t *mem = ASRUtils::symbol_get_past_external(m->m_m);
+                    members.push_back(mem);
+                    if (is_a<ASR::Variable_t>(*mem) && is_a<ASR::Pointer_t>(
+                            *down_cast<ASR::Variable_t>(mem)->m_type)) {
+                        pointer_component = true;
+                    }
                     e = m->m_v;
                 } else if (is_a<ASR::StringItem_t>(*e)) {
                     ASR::StringItem_t *si = down_cast<ASR::StringItem_t>(e);
-                    uses.push_back(si->m_idx);
+                    if (si->m_idx) indices.push_back(si->m_idx);
                     e = si->m_arg;
                 } else if (is_a<ASR::StringSection_t>(*e)) {
                     ASR::StringSection_t *ss = down_cast<ASR::StringSection_t>(e);
-                    uses.insert(uses.end(), {ss->m_start, ss->m_end, ss->m_step});
+                    if (ss->m_start) indices.push_back(ss->m_start);
+                    if (ss->m_end) indices.push_back(ss->m_end);
+                    if (ss->m_step) indices.push_back(ss->m_step);
                     e = ss->m_arg;
                 } else {
                     return false;
@@ -2293,6 +2314,25 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 (uc != vc || !is_member(uc, a) || !is_member(vc, b));
         }
 
+        // Whether defining `item` can change a value `use` reads. The same
+        // variable overlaps when one component path is a prefix of the other.
+        // A pointer component may target any component of its parent, and any
+        // other variable. A different variable overlaps when the variables
+        // themselves may share storage, or when a component of the item may
+        // (a pointer or target component, compared with that variable).
+        static bool storage_refs_conflict(const StorageRef &item, const StorageRef &use) {
+            if (item.pointer_component) return true;
+            if (item.root == use.root) {
+                if (use.pointer_component) return true;
+                return component_paths_overlap(item.members, use.members);
+            }
+            if (may_share_storage(item.root, use.root)) return true;
+            for (ASR::symbol_t *m : item.members) {
+                if (may_share_storage(m, use.root)) return true;
+            }
+            return false;
+        }
+
         // Collects the variables that the input items `values` define, and
         // what is evaluated before any value is read: the bounds of their
         // implied DO loops and the subscripts of the items. Returns false
@@ -2304,7 +2344,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         // allocatable scalar that is not a character, which a formatted
         // READ does not store (#15698).
         static bool collect_read_items(ASR::expr_t **values, size_t n_values,
-                bool in_loop, std::vector<ASR::symbol_t*> &items,
+                bool in_loop, std::vector<StorageRef> &items,
                 std::vector<ASR::expr_t*> &uses) {
             for (size_t i = 0; i < n_values; i++) {
                 if (is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
@@ -2331,10 +2371,82 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             !is_a<ASR::String_t>(*t))) {
                     return false;
                 }
-                if (!collect_read_item(values[i], items, uses)) return false;
+                StorageRef item;
+                std::vector<ASR::expr_t*> indices;
+                if (!decode_data_designator(values[i], item, indices)) return false;
+                items.push_back(item);
+                uses.insert(uses.end(), indices.begin(), indices.end());
             }
             return true;
         }
+
+        // The variables that expressions use, and whether they call a
+        // procedure that is not intrinsic, which may use any variable.
+        // A component reference is that component, not the whole variable.
+        class StorageUseCollector : public ASR::BaseWalkVisitor<StorageUseCollector> {
+        public:
+            std::vector<StorageRef> refs;
+            bool calls_procedure = false;
+
+            StorageUseCollector() { visit_compile_time_value = false; }
+
+            void record(const ASR::expr_t *e) {
+                ASR::expr_t *expr = const_cast<ASR::expr_t*>(e);
+                StorageRef ref;
+                std::vector<ASR::expr_t*> indices;
+                if (ArrayConstantVisitor::decode_data_designator(expr, ref, indices)) {
+                    refs.push_back(ref);
+                    for (ASR::expr_t *index : indices) {
+                        visit_expr(*index);
+                    }
+                    return;
+                }
+                visit_expr_fallback(expr);
+            }
+
+            void visit_expr_fallback(ASR::expr_t *e) {
+                switch (e->type) {
+                    case ASR::exprType::ArrayItem:
+                        ASR::BaseWalkVisitor<StorageUseCollector>::visit_ArrayItem(
+                            *down_cast<ASR::ArrayItem_t>(e));
+                        break;
+                    case ASR::exprType::ArraySection:
+                        ASR::BaseWalkVisitor<StorageUseCollector>::visit_ArraySection(
+                            *down_cast<ASR::ArraySection_t>(e));
+                        break;
+                    case ASR::exprType::StructInstanceMember:
+                        ASR::BaseWalkVisitor<StorageUseCollector>::visit_StructInstanceMember(
+                            *down_cast<ASR::StructInstanceMember_t>(e));
+                        break;
+                    case ASR::exprType::StringItem:
+                        ASR::BaseWalkVisitor<StorageUseCollector>::visit_StringItem(
+                            *down_cast<ASR::StringItem_t>(e));
+                        break;
+                    case ASR::exprType::StringSection:
+                        ASR::BaseWalkVisitor<StorageUseCollector>::visit_StringSection(
+                            *down_cast<ASR::StringSection_t>(e));
+                        break;
+                    default:
+                        visit_expr(*e);
+                        break;
+                }
+            }
+
+            void visit_Var(const ASR::Var_t &x) { record(&x.base); }
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) { record(&x.base); }
+            void visit_ArraySection(const ASR::ArraySection_t &x) { record(&x.base); }
+            void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+                record(&x.base);
+            }
+            void visit_StringItem(const ASR::StringItem_t &x) { record(&x.base); }
+            void visit_StringSection(const ASR::StringSection_t &x) { record(&x.base); }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *fn = ASRUtils::symbol_get_past_external(x.m_name);
+                calls_procedure = calls_procedure || !is_a<ASR::Function_t>(*fn) ||
+                    !ASRUtils::is_intrinsic_function2(down_cast<ASR::Function_t>(fn));
+                ASR::BaseWalkVisitor<StorageUseCollector>::visit_FunctionCall(x);
+            }
+        };
 
         // The backend does a formatted READ with a nested implied DO loop
         // as one data transfer: it runs each implied DO loop of the input
@@ -2352,17 +2464,17 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 n_values = sf->n_args;
             }
             if (!ASRUtils::has_nested_implied_do_loop(values, n_values)) return;
-            std::vector<ASR::symbol_t*> items;
+            std::vector<StorageRef> items;
             std::vector<ASR::expr_t*> uses;
             bool supported = collect_read_items(values, n_values, false, items, uses);
-            UsedVariables used;
+            StorageUseCollector used;
             for (ASR::expr_t *e : uses) {
                 if (e) used.visit_expr(*e);
             }
             supported = supported && !used.calls_procedure;
-            for (ASR::symbol_t *item : items) {
-                for (ASR::symbol_t *var : used.vars) {
-                    supported = supported && !may_share_storage(item, var);
+            for (const StorageRef &item : items) {
+                for (const StorageRef &var : used.refs) {
+                    supported = supported && !storage_refs_conflict(item, var);
                 }
             }
             if (supported) return;
