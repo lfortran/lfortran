@@ -106,8 +106,13 @@ lake build --wfail
 | `Legendre/Spec.lean` | what the code must satisfy | human, reviewed |
 | `LFortran/Exec.lean` | runtime for `--backend=lean` (`Arr`, complex, cells) | human, reviewed |
 | `LFortran/Prelude.lean` | the arithmetic model `FPModel` | human, reviewed |
-| `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s (not trusted) | proofs (AI), checked by Lean |
+| `LFortran/NoGuard.lean` | the weaker model `NoGuardModel` (no guard digit), implied by `FPModel` | human, reviewed |
+| `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s, and the Cray model (not trusted) | proofs (AI), checked by Lean |
 | `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the proofs | proofs (AI), checked by Lean |
+| `Legendre/Shared.lean` | one `legendre_poly` for both `lean --run` and the proof (prototype of future backend output) | hand-written prototype |
+| `Legendre/Run.lean`, `Legendre/SharedProof.lean` | run it at `Int32`/`Float`; prove it at `FPModel` | proofs (AI), checked by Lean |
+| `LFortran/FloatAdd*.lean`, `LFortran/FloatOps.lean`, `LFortran/FloatModel.lean` | Lean's `Float` `+ − × ÷` meet the `FPModel` bounds; `floatModel` (not trusted) | proofs (AI), checked by Lean |
+| `Legendre/FloatCorrect.lean` | the `Float` run of `Shared.lean` has the proved accuracy | proofs (AI), checked by Lean |
 
 ## 1. The idea
 
@@ -294,9 +299,13 @@ open.
 
 ### 2.5 How the proof works
 
-The proof (`Legendre/Proof.lean`, `Legendre/Proof/*.lean`) uses the fixed
-ceilings `U = 2^-53` and `E = 2^-1000`, not the individual model's `fp.u`
-and `fp.η`. It has four steps:
+The proof (`Legendre/Proof.lean`, `Legendre/Proof/*.lean`) is done once, for
+every arithmetic without a guard digit (`NoGuardModel`, Section 4), with a
+ceiling `U ≤ 2^-40` on the unit roundoff and `E = U/10^6` on the underflow
+term (`LegendreSpecNoGuard`, `legendre_ng_correct`: error at most
+`89201 U`). `legendre_correct` (`U = 2^-53`, `10^-11`) is the corollary for
+`FPModel`s, through `FPModel.toNoGuard`. The bounds use `U` and `E`, not the
+individual model's `fp.u` and `fp.η`. It has four steps:
 
 1. **Loop to recursion.** The `for` loop of the generated code is rewritten as
    a recursive sequence `y_m` of computed values.
@@ -304,8 +313,9 @@ and `fp.η`. It has four steps:
    rounded operations (five arithmetic operations, three conversions), the
    computed `y_k` differs from the exact recurrence applied to the computed
    `y_{k-1}`, `y_{k-2}` by at most `|r_k| ≤ 18U`, as long as the computed
-   values stay within `1 + 10^-10` in magnitude, which the induction
-   maintains. This bound includes the allowed absolute underflow error;
+   values stay within `1 + 10^-6` in magnitude, which the induction
+   maintains. The subtraction is bounded through `|a| + |b|`, so the step
+   holds without a guard digit. This bound includes the allowed absolute underflow error;
    it is not a bound of `18·fp.u` when `fp.u` is smaller than `U`.
 3. **Propagation.** The errors `e_k = y_k - P_k(x)` satisfy
    `e_k = ((2k-1) x e_{k-1} - (k-1) e_{k-2})/k + r_k`. Bounding this term by
@@ -321,7 +331,8 @@ and `fp.η`. It has four steps:
    The same form also proves `|P_n(x)| <= 1`, which keeps the intermediate
    values (and the per-step errors) bounded.
 4. **The numbers.** The largest bound for `0 <= n <= 100` is
-   `100(U+E) + 4950·18U`, about `9.9e-12`, below `10^-11`.
+   `100(U+E) + 4950·18U ≤ 89201 U`, about `9.9e-12` for `U = 2^-53`, below
+   `10^-11`.
 
 The bound is roughly 50 times larger than the measured error. The generic
 proof permits worst-case operation errors, allows rounding errors in `1.0`
@@ -367,6 +378,7 @@ for every concrete arithmetic that is an instance.
 | IEEE 754 binary64, round to nearest | IEEE 754-2019 §4.3.1, §5 | nearest element of binary64 | gradual (subnormals) | beyond `2^1024(1 − 2^-54)` | `binary64Model` | `u = 2^-53`, `η = 2^-1075`, `M = 2^1022` |
 | binary64 with flush-to-zero (FTZ, also DAZ) | `-ffast-math`, MXCSR FTZ/DAZ, ARM FZ | as binary64, tiny results become 0 | results below `2^-1022` flushed | as binary64 | `binary64FTZModel` | `F` = binary64 without subnormals, `u = 2^-53`, `η = 2^-1021`, `M = 2^1022` |
 | `FPModel` | this prototype | `\|computed − exact\| ≤ u·\|exact\| + η` | absolute term `η` | excluded (`M`) | `FPModel` | — |
+| No guard digit (Cray 1, 2, X-MP, Y-MP, C90) | Higham §2.4 (2.6); CRAY-1 Hardware Reference 2240004 C | `fl(x ± y) = x(1+α) ± y(1+β)`, i.e. `\|error\| ≤ u(\|x\| + \|y\|) + η`; `×`, `÷` as `FPModel` | Cray: flushed to 0 | Cray: exponent `≥ 2^13` | `NoGuardModel`, `crayF` | not an `FPModel` (`noGuard_not_fpModel`) |
 
 Proved implications (each arrow is a Lean definition that builds the target
 from the source and proves its axioms):
@@ -385,10 +397,14 @@ Trefethen & Bau ──► Higham ──► FPModel ◄── binary64 with flush
 | binary64 → Higham | `binary64Higham` (including `δη = 0` and exact `±` on underflow) |
 | binary64 → `FPModel` | `binary64Model`, equal to going through Higham (`binary64Higham_toFPModel`) |
 | binary64 FTZ → `FPModel` | `binary64FTZModel` |
+| `FPModel` → no guard digit | `FPModel.toNoGuard` (the converse fails: `noGuard_not_fpModel`) |
+| Lean's `Float` → `FPModel` | `floatModel` (`LFortran/FloatModel.lean`): its `+ − × ÷` are `Float`'s, proved from `Float.Model` |
 
 `Legendre/Corollaries.lean` applies `legendre_correct` to each of them
 (`legendre_correct_binary64`, `legendre_correct_binary64FTZ`,
-`legendre_correct_higham`, `legendre_correct_trefethenBau`). The proof gives
+`legendre_correct_higham`, `legendre_correct_trefethenBau`), and
+`legendre_correct_noGuard` gives `1.3e-9` without a guard digit at a Cray's
+`u ≤ 2^-46`. The proof gives
 an error bound of about `9.9e-12` using the fixed ceiling `U = 2^-53`; the
 measured error is `1.78e-13`.
 
@@ -415,6 +431,16 @@ Differences in detail:
   `η` (for example `2^-1074 · 2^1000`). It is covered by excluding subnormals
   from `F`: then no operand is ever subnormal and DAZ never applies, but a
   program's inputs must be non-subnormal (the hypothesis `x ∈ fp.F`).
+* **No guard digit** (`LFortran/Models/Cray.lean`) bounds the error of `x ± y`
+  by `u(|x| + |y|)`, not by `u|x ± y|`: under cancellation the relative error
+  can be 1 (the CRAY X-MP returns twice the exact `1 − 0.111…1₂`). So
+  theorems about every `FPModel` do not apply to a Cray. Without cancellation
+  (`xy ≥ 0` for `+`) the bounds agree (`NoGuardModel.add_err_same_sign`).
+  The Legendre proof only bounds `|x − y|` through `|x| + |y|`, so it is
+  proved for every `NoGuardModel` (`legendre_ng_correct`, error `≤ 89201 U`);
+  the `FPModel` theorem is its corollary. An emulation of the CRAY-1 add,
+  multiply and reciprocal divide measures `1.5e-11` against the proved
+  `6.3e-10` for `u = 2^-47`.
 * **Not automatically covered:** directed rounding needs the larger relative
   bound `u = 2^-52`, outside the Legendre specification's `u ≤ 2^-53`.
   Transformations such as reassociation, contraction into fused multiply-add,
@@ -456,6 +482,20 @@ assumptions. Someone who justifies the assumption by the hardware's IEEE
 conformance can rely on that proof, and then only has to check that the
 definitions `binary64` and `IsRoundToNearest` in
 `LFortran/Models/Binary64.lean` match the standard.
+
+**The `Float` run.** `Legendre/Run.lean` executes the shared
+`legendre_poly` (`Legendre/Shared.lean`) at `Int32` and Lean's `Float`.
+`legendre_float_correct` proves that for `n ≤ 100` and a finite `Float` `x`
+with `|x| ≤ 1` this run returns a finite value within `10^-11` of `P_n(x)`,
+with only the standard axioms. The steps: `floatModel` is an `FPModel` whose
+operations are `Float`'s (`float_add_value` … `float_div_value`, proved from
+Lean's bit-level `Float.Model`; `Float.ofInt` is exact below `2^53`), and
+`legendre_float_sim` shows that the `Float` run computes exactly
+`legendre_at floatModel n x` (no step overflows, and the `Int32` indices do
+not wrap). What remains trusted is Lean's: that the compiled `Float`
+operations (C `double`) implement `Float.Model`. This covers the Lean run,
+not the LFortran-compiled executable, which is covered by the arithmetic
+assumption above.
 
 The theorem says nothing about inputs outside the specified domain (for
 example `n > 100`, NaN or infinite `x`), or about performance.
