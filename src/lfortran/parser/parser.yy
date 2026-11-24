@@ -604,6 +604,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> implicit_none_spec
 %type <vec_ast> implicit_none_spec_star
 %type <ast> procedure_decl
+%type <vec_ast> final_procedure_stmt
 %type <vec_ast> access_spec_list
 %type <ast> access_spec
 %type <ast> proc_modifier
@@ -935,7 +936,14 @@ derived_type_contains_opt
 
 procedure_list
     : procedure_list procedure_decl { $$ = $1; LIST_ADD($$, $2); }
+    | procedure_list final_procedure_stmt { $$ = LIST_EXTEND(p.m_a, $1, $2); }
     | procedure_decl { LIST_NEW($$); LIST_ADD($$, $1); }
+    | final_procedure_stmt { $$ = $1; }
+    ;
+
+final_procedure_stmt
+    : KW_FINAL "::" id_list sep {
+        $$ = final_subroutine_names(p.m_a, $3, TRIVIA_AFTER($4, @$), @$); }
     ;
 
 procedure_decl
@@ -957,7 +965,6 @@ procedure_decl
             $$ = GENERIC_WRITE($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
     | KW_GENERIC access_spec_list KW_READ "(" id ")" "=>" id_list sep {
             $$ = GENERIC_READ($2, $5, $8, TRIVIA_AFTER($9, @$), @$); }
-    | KW_FINAL "::" id sep { $$ = FINAL_NAME($3, TRIVIA_AFTER($4, @$), @$); }
     | KW_PRIVATE sep { $$ = PRIVATE(Private, TRIVIA_AFTER($2, @$), @$); }
     ;
 
