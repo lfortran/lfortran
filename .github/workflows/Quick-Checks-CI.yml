@@ -275,6 +275,11 @@ jobs:
         shell: bash -e {0}
         run: cd lean && lake build --wfail
 
+      # The same generated template, run through its `_float` wrapper.
+      - name: Run the generated code at Float
+        shell: bash -e {0}
+        run: cd lean && lake env lean --run Legendre/Run.lean
+
   compatibility:
     name: Compiler compatibility
     uses: ./.github/workflows/Compiler-Compatibility-CI.yml

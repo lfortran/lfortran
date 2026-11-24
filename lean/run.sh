@@ -10,3 +10,6 @@ bash check_translation.sh
 # 3-4. Check the spec, the generated code and the proof of legendre_correct
 bash fetch_deps.sh
 lake build --wfail
+
+# 5. Run the same generated template at Int32/Float
+lake env lean --run Legendre/Run.lean
