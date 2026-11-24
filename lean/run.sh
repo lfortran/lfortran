@@ -13,3 +13,7 @@ lake build --wfail
 
 # 5. Run the same generated template at Int32/Float
 lake env lean --run Legendre/Run.lean
+
+# 6. Test the proved Float runs: Lean, LFortran and GFortran agree bit for
+#    bit, and every result is within its proved bound
+python check_float_runs.py
