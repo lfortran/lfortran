@@ -6569,6 +6569,12 @@ semantic error: 'target' argument of 'associated' intrinsic must be a pointer or
 5328 |     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
      |         ^^^^^^^^^^^^^^^^^ 
 
+semantic error: allocating unlimited polymorphic 'u' requires a type-spec, SOURCE=, or MOLD=
+    --> tests/errors/continue_compilation_1.f90:5336:14
+     |
+5336 |     allocate(u(2))  ! {Error} allocating unlimited polymorphic 'u' requires a type-spec, SOURCE=, or MOLD=
+     |              ^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
