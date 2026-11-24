@@ -367,6 +367,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--show-asm", opts.show_asm, "Show assembly for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-wat", opts.show_wat, "Show WAT (WebAssembly Text Format) and exit")->group(group_output_debugging_options);
         app.add_flag("--show-julia", opts.show_julia, "Show Julia translation source for the given file and exit")->group(group_output_debugging_options);
+        app.add_flag("--show-lean", opts.show_lean, "Show Lean 4 translation source for the given file and exit (prototype)")->group(group_output_debugging_options);
         app.add_flag("--show-gpu-kernel-source", opts.show_gpu_kernel_source, "Show the GPU kernel source for the backend selected by --gpu and exit")->group(group_output_debugging_options);
         app.add_flag("--show-fortran", opts.show_fortran, "Show Fortran translation source for the given file and exit")->group(group_output_debugging_options);
         app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors")->group(group_output_debugging_options);
@@ -390,7 +391,7 @@ namespace LCompilers::CommandLineInterface {
             ->capture_default_str()->group(group_pass_transformation_options);
 
         // Backend and code generation-related flags
-        app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir, lean)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
         app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
