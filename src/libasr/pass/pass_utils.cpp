@@ -1254,6 +1254,13 @@ namespace LCompilers {
                 }
                 return  zero;
             }
+            // A section is not a whole array, so its lower bound is 1
+            // (Fortran 2018 16.9.109). ArrayBound of the section would read
+            // a descriptor; a section of a fixed-size array is not one.
+            if( bound == "lbound" && ASR::is_a<ASR::ArraySection_t>(*arr_expr) ) {
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, arr_expr->base.loc, 1, int_type));
+            }
             ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc, dim, int_type));
             ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
             if( bound == "ubound" ) {

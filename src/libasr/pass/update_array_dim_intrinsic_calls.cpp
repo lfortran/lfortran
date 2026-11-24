@@ -152,6 +152,22 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
                 x->base.base.loc);
             return ;
         }
+        // size(a(v)) is the size of the vector subscript, including a nested
+        // one such as k(t(:,1)). get_expr_size_expr does not return an
+        // ArrayItem, so the section case above never sees it, and codegen
+        // cannot lower ArraySize of that ArrayItem.
+        ASR::expr_t* inquired = x->m_v;
+        while( inquired && ASR::is_a<ASR::ArrayPhysicalCast_t>(*inquired) ) {
+            inquired = ASR::down_cast<ASR::ArrayPhysicalCast_t>(inquired)->m_arg;
+        }
+        if( x->m_value == nullptr && inquired &&
+                ASR::is_a<ASR::ArrayItem_t>(*inquired) &&
+                ASRUtils::is_array_indexed_with_array_indices(
+                    ASR::down_cast<ASR::ArrayItem_t>(inquired)) ) {
+            *current_expr = section_size(inquired, x->m_dim, x->m_type,
+                x->base.base.loc);
+            return ;
+        }
         ASR::expr_t* x_m_v = x->m_v;
         if ( ASR::is_a<ASR::Cast_t>(*x_m_v) ) {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(x_m_v);
