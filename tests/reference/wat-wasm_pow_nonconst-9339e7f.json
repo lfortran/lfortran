@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_pow_nonconst-9339e7f",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/errors/wasm_pow_nonconst.f90",
+    "infile_hash": "dcd99e6fede91656b62d3234e614326e20c08e343304ef8e0a520d46",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "wat-wasm_pow_nonconst-9339e7f.stderr",
+    "stderr_hash": "96ae6b5caa118ead419de4d81830b464514f7e1c26c0511592199a86",
+    "returncode": 1
+}

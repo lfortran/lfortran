@@ -1,0 +1,5 @@
+code generation error: powers other than x**2 are not supported for integer(8) in the wasm backend
+ --> tests/errors/wasm_pow_const_int8.f90:4:14
+  |
+4 |     print *, i**3
+  |              ^^^^ 
