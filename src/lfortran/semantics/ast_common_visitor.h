@@ -11406,6 +11406,11 @@ public:
                 } else {
                     s_intent = ASRUtils::intent_local;
                 }
+                // A dummy argument of an ENTRY statement only: its array type
+                // is that of a dummy argument (an assumed-size `x(*)` is not
+                // turned into a descriptor of an assumed-shape array).
+                bool is_entry_argument = !is_argument && std::find(current_entry_args.begin(),
+                    current_entry_args.end(), to_lower(s.m_name)) != current_entry_args.end();
                 ASR::abiType s_abi = (is_argument || is_procedure_result(s.m_name))
                     ? current_procedure_abi_type : ASR::abiType::Source;
                 Vec<ASR::dimension_t> dims;
@@ -11888,7 +11893,7 @@ public:
                         current_scope, is_derived_type, hidden_derived_type_components);
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
-                        (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                        (s_intent != ASRUtils::intent_local) || is_argument || is_entry_argument, is_dimension_star, is_assumed_rank);
                 }
                 if (corank > 0
                         && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
