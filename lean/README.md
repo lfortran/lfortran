@@ -14,87 +14,54 @@ repository root:
 pixi run -e llvm11 bash lean/run.sh
 ```
 
-There is one Lean backend. `--show-lean` runs it in template mode: each
-procedure is emitted once, generic over `[FInt ι] [FReal α]`
-(`LFortran/Arith.lean`), followed by a `_float` wrapper at its kinds (`Int32`,
-`Float`, ...). The same definition runs with `lean --run` (through the
-wrapper) and is proved at `ℤ` and an abstract `FPModel`
-(`LFortran/Arith/Model.lean`). `--backend=lean` runs the same translator in
-executable mode: computable code over `LFortran.Exec` for all supported
-Fortran, with a `def main` that `lean --run` executes. Both see the ASR before
-any ASR pass.
-`stop` and `error stop` leave the process. Integration tests labeled `lean`
-are run that way, locally and in the Linux LLVM 11 Quick job:
+There is one Lean backend, and it emits only **templates**. Every Fortran
+procedure becomes one Lean definition generic over `K : Kinds`, a bundle of
+one Lean type per Fortran kind (`K.I4` for `integer(4)`, `K.R8` for
+`real(8)`, ...) with the arithmetic as type classes (`LFortran/Arith.lean`).
+The same definition is used in two ways:
+
+* **run**: at `LFortran.machine` (`Int8`…`Int64`, `Float32`, `Float`;
+  `LFortran/Runtime.lean`). A program's `main` is a single line,
+  `def main : IO UInt32 := LFortran.run (prog (K := LFortran.machine))`.
+* **prove**: at `proofKinds` (`ℤ` and `ℝ`) with an arithmetic model,
+  `FKinds.ofModel fp fp` for an `FPModel` or `FKinds.ofNoGuard m m` for a
+  `NoGuardModel` (`LFortran/Arith/Model.lean`). `FPModel.exact` is exact real
+  arithmetic, which gives the value the code computes with infinitely
+  precise operations.
+
+`lfortran --show-lean file.f90` and `lfortran --backend=lean file.f90` emit
+the same text (only the header comment differs); for a program it ends with
+the one-line `main`, which `lean --run` executes. Integration tests labeled
+`lean` are run that way, locally and in the Linux LLVM 11 Quick job:
 
 ```bash
 pixi run -e llvm11 python lean/run_integration_tests.py
-pixi run -e llvm11 python lean/run_integration_tests.py --all
 ```
 
-`--all` tries every integration test and reports what the backend still
-rejects. `--apply` adds the `lean` label to tests that pass and removes it
-from tests that no longer do. A test is labeled only when its exit code
-agrees with the `RUN()` entry (zero, unless the entry is `FAIL`). The latest
-sweep passes 1695 integration tests and labels 1691 of them; the other four
-have no `LABELS` list to attach the word to. The runtime is
-`lean/LFortran/Exec.lean` (no Mathlib). The toolchain is `lean/lean-toolchain`.
+The runner checks the exit code, like every integration test; the test
+program checks its own results. `lean_sin_kernels_01` and `lean_names_01`
+are the only tests labeled `lean` while the template backend grows; `--all`
+tries every integration test and `--apply` updates the labels.
 
-### Executable backend decisions
+The backend accepts the subset the two examples need: module functions with
+scalar `integer`/`real` arguments (`intent(in)`), locals, assignments, `if`,
+unit-step `do` loops, calls (callees are emitted first; self-recursion is
+`partial`), `+ - * /`, comparisons, integer/real conversions, `int`, `abs`,
+`sign`, `mod`, `modulo`, the math intrinsics (`sin`, `sqrt`, ...; these need
+`FKindsMath` and are not modelled in proofs), and in a program also `print`,
+`stop` and `error stop`. Anything else is rejected with an error rather than
+translated approximately. Fortran names that are Lean keywords are emitted
+as `«name»`. Real literals are emitted exactly (`-0.0` keeps its sign,
+which `sign(a, b)` observes through `FReal.signbit`), as `m · 2^e`
+(`FReal.lit m e`), or `FReal.ofInt n` for integers. `print` uses Lean's
+`toString`, which is shorter than Fortran list-directed output.
 
-These are deliberate limits of `--backend=lean`. A test that depends on a
-behavior below and gets a different result is not labeled.
+`Examples/Design.lean` and `Examples/DesignProof.lean` are a hand-written
+spike of the features the backend will need next (module state, derived
+types, arrays, complex, `intent(out)`), each run at `machine` and
+instantiated at `proofKinds`.
 
-- Integers are `Int8`/`Int16`/`Int32`/`Int64` and wrap. Division truncates
-  toward zero. `real(4)` is `Float32` and `real(8)` is `Float`, built with
-  `Float.ofBits` so the bits match IEEE. `real(16)` is rejected. `complex`
-  is a pair struct with the usual arithmetic. `logical` is `Bool`.
-  `character` is `String`, blank-padded and truncated to its declared length.
-- Arrays are column-major values (`LFortran.Exec.Arr`) with a lower bound
-  per dimension. A scalar assigned to an array fills every element.
-- An allocatable or a pointer is the value itself, not an alias. `allocate`
-  replaces an array (`Arr.make`); a deferred shape starts empty. Scalar
-  `allocate` does nothing. Pointer assignment copies. A later write through
-  one name is not visible through the other. `allocated()` is not tracked.
-- An assumed-shape or deferred-shape `intent(out)` dummy is still passed in,
-  because the caller owns the shape. A scalar broadcast onto an array whose
-  shape is not known stays a scalar: an operation maps it across the other
-  operand, and assigning it fills the array that is already there.
-- A module variable, or a local used by a contained procedure, lives in a
-  process-wide table in `Exec` keyed by `owner.name`. Each `lean --run` is
-  its own process. The first read returns the type's zero unless `main` has
-  stored the initializer. A procedure that touches one of these, prints,
-  stops, or calls such a procedure is an `IO` action. Block and associate
-  locals do not escape. A derived-type value is not put in those tables, so
-  a module variable or a host-associated variable of derived type is rejected.
-- List-directed `write` to `*`, unit 6, or unit 0 is one line on stdout, with
-  the same spacing as `print *`. Any other unit, namelist, unformatted I/O,
-  an internal file, or a format string is rejected. `iostat`, when present,
-  is set to 0.
-- An array section with exactly one subscript range is a rank-1 copy whose
-  lower bound is 1. Assigning to that section writes the elements back.
-  Several ranges, and implied-do constructors, are rejected.
-- `reshape` without `pad` or `order` reuses the source elements and takes
-  the extents from the shape array. Lower bounds are 1. A size mismatch is
-  not checked.
-- `transfer` / bit cast uses the folded value when ASR has one, and is the
-  identity when the two Lean types are the same. Anything else is rejected.
-- `do concurrent` with no reduction clause runs as a sequential counted loop.
-  Reductions and an empty head are rejected. Named `cycle` of an outer loop
-  is rejected.
-- `where` evaluates the mask once. Each assignment in the body is computed
-  for the whole array and then stored only at elements where the mask is
-  true. The `elsewhere` arm stores where it is false. A nested `where`, or a
-  statement that is not an assignment, is rejected. `<`, `>`, `<=`, and `>=`
-  are emitted with `decide`, because those Lean operators are propositions
-  and a mask has to be a `Bool` array.
-- A derived type is a Lean `structure`. Components inherited with `extends`
-  are fields of the child, in parent-then-child order. There is no dynamic
-  type. A component, including a pointer or allocatable component, is a
-  value, so two names never alias. A type that contains itself (a linked
-  list node, for example) is rejected. `class(*)` is rejected. Enums and
-  unions are rejected. Type-bound calls are rejected.
-
-or only the Lean part (no LFortran build needed):
+Run the Lean part alone (no LFortran build needed):
 
 ```bash
 cd lean
@@ -104,17 +71,20 @@ lake build --wfail
 
 | File | Role | Written by |
 |---|---|---|
-| `legendre.f90` | the implementation | programmer (or AI) |
-| `legendre_accuracy.f90` | measured accuracy | programmer |
-| `Legendre/Generated.lean` | the implementation in Lean: template and `_float` wrapper | `lfortran --show-lean` |
-| `LFortran/Arith.lean`, `LFortran/Arith/Model.lean` | `FInt`/`FReal` and their `Int32`/`Float` (run) and `ℤ`/`FPModel` (proof) instances | human, reviewed |
-| `Legendre/Spec.lean` | what the code must satisfy | human, reviewed |
-| `LFortran/Exec.lean` | runtime for `--backend=lean` (`Arr`, complex, cells) | human, reviewed |
-| `LFortran/Prelude.lean` | the arithmetic model `FPModel` | human, reviewed |
+| `legendre.f90`, `sin_kernels.f90` | the implementations | programmer (or AI) |
+| `legendre_accuracy.f90` | measured accuracy of `legendre_poly` | programmer |
+| `Legendre/Generated.lean`, `SinKernels/Generated.lean` | the implementations in Lean (templates) | `lfortran --show-lean` |
+| `LFortran/Arith.lean` | `FInt`, `FReal`, `Kinds`, `FKinds` | human, reviewed |
+| `LFortran/Runtime.lean` | the executable instance `machine` | human, reviewed |
+| `LFortran/Arith/Model.lean` | the proof instances `proofKinds`, `FKinds.ofModel`, `FKinds.ofNoGuard` | human, reviewed |
+| `Legendre/Spec.lean` | what `legendre_poly` must satisfy, against Mathlib's Legendre polynomial | human, reviewed |
+| `LFortran/Prelude.lean` | the arithmetic model `FPModel`, and `FPModel.exact` | human, reviewed |
 | `LFortran/NoGuard.lean` | the weaker model `NoGuardModel` (no guard digit), implied by `FPModel` | human, reviewed |
 | `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s, and the Cray model (not trusted) | proofs (AI), checked by Lean |
-| `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the proofs | proofs (AI), checked by Lean |
-| `Legendre/Run.lean` | run `legendre_poly_float` | human |
+| `LFortran/PolyBound.lean`, `LFortran/SinTaylor.lean`, `LFortran/ErrorProp.lean` | kernel-checked polynomial bounds, Taylor bounds for `sin`, forward error propagation | proofs (AI), checked by Lean |
+| `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the Legendre proofs | proofs (AI), checked by Lean |
+| `SinKernels/Proof/*.lean`, `SinKernels/Binary64.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
+| `Legendre/Run.lean` | run `legendre_poly` at `machine` | human |
 | `LFortran/FloatAdd*.lean`, `LFortran/FloatOps.lean`, `LFortran/FloatModel.lean` | Lean's `Float` `+ − × ÷` meet the `FPModel` bounds; `floatModel` (not trusted) | proofs (AI), checked by Lean |
 | `Legendre/FloatCorrect.lean` | the `Float` run of the generated code has the proved accuracy | proofs (AI), checked by Lean |
 
@@ -178,52 +148,47 @@ GFortran and LFortran give identical results.
 `lfortran --show-lean legendre.f90` produces `Legendre/Generated.lean`:
 
 ```lean
-def legendre_poly {ι α : Type} [FInt ι] [FReal α] (n : ι) (x : α) : α := Id.run do
-  let mut p : α := FReal.zero
-  let mut a : α := FReal.zero
-  let mut b : α := FReal.zero
-  let mut c : α := FReal.zero
+def legendre_poly {K : Kinds} [FKinds K] (n : K.I4) (x : K.R8) : K.R8 := Id.run do
+  let mut p : K.R8 := FReal.zero
+  let mut a : K.R8 := FReal.zero
+  let mut b : K.R8 := FReal.zero
+  let mut c : K.R8 := FReal.zero
   a := FReal.ofInt 1
   b := x
   if FInt.beq n (FInt.ofInt 0) then
     p := a
     return p
-  for k in FInt.range (FInt.ofInt 2) n do
+  for k in FInt.range (FInt.ofInt 2 : K.I4) n do
     c := FReal.div (FReal.sub (FReal.mul (FReal.mul (FReal.ofInt (FInt.toInt (FInt.sub (FInt.mul (FInt.ofInt 2) k) (FInt.ofInt 1)))) x) b) (FReal.mul (FReal.ofInt (FInt.toInt (FInt.sub k (FInt.ofInt 1)))) a)) (FReal.ofInt (FInt.toInt k))
     a := b
     b := c
   p := b
   return p
-
-def legendre_poly_float (n : Int32) (x : Float) : Float :=
-  legendre_poly n x
 ```
 
-The template is one definition with two uses. `legendre_poly_float` picks
-the `Int32` and `Float` instances, which run with `lean --run`
-(`Legendre/Run.lean`). The proof uses `ℤ` and `FReal.ofModel fp`, where every
-real operation is the corresponding `FPModel` field (`legendre_fortran` in
-`Legendre/Proof.lean`).
+The template is one definition with three uses. `Legendre/Run.lean` runs
+`legendre_poly (K := LFortran.machine)` (`Int32`, `Float`). The proof uses
+`legendre_fortran fp = @legendre_poly proofKinds (FKinds.ofModel fp fp)`, in
+which every real operation is the corresponding `FPModel` field, and
+`legendre_exact = legendre_fortran FPModel.exact`, the same code in exact
+arithmetic (`Legendre/Proof.lean`).
 
 The translation preserves the operation tree chosen by LFortran's ASR rather
 than replacing floating-point expressions by exact real arithmetic:
 
-* `real(8)` values are of type `α`, and **every operation is rounded**: in a
+* `real(8)` values are of type `K.R8`, and **every operation is rounded**: in a
   proof `FReal.mul` is `fp.mul`. The ASR groups `(2*k-1)*x*b` as
   `((2*k-1)*x)*b`, with the integer `2*k-1` converted to real
   (`FReal.ofInt`, in a proof `fp.round`) and each product rounded. Literals
   such as `1.0_dp` are rounded too (`FReal.ofInt 1`, or `FReal.lit m e` for
   the exact value `m · 2^e` of a non-integer constant).
-* `integer` is `ι`: exact `ℤ` in the proof (overflow is out of scope there),
+* `integer` is `K.I4`: exact `ℤ` in the proof (overflow is out of scope there),
   `Int32` when run. Comparisons return `Bool` (`FInt.beq`, `FReal.lt`, ...).
 * The arithmetic `fp : FPModel` is a parameter (Section 3), so one proof covers
   every arithmetic satisfying the model, including IEEE binary64.
 * The backend runs on LFortran's internal representation (ASR) before any
-  lowering or optimization, and accepts only the small Fortran subset this
-  example needs (module functions on `integer` and `real` scalars of one kind
-  each, assignments, `if`, `return`, unit-step `do` loops, `+ - * /`,
-  comparisons, integer-to-real conversion). Anything else is rejected with an
-  error rather than translated approximately; use `--backend=lean` to run it.
+  lowering or optimization, and rejects what it does not support rather
+  than translating it approximately.
 
 Fortran permits mathematically equivalent rearrangements subject to its rules
 on parentheses, even when floating-point results differ; it does not require
@@ -239,24 +204,22 @@ be disabled.
 `Legendre/Spec.lean` is the part a human reads:
 
 ```lean
-noncomputable def P : ℕ → ℝ → ℝ
-  | 0, _ => 1
-  | 1, x => x
-  | n + 2, x => ((2 * n + 3) * x * P (n + 1) x - (n + 1) * P n x) / (n + 2)
+noncomputable def legendreP (n : ℕ) (x : ℝ) : ℝ :=
+  Polynomial.aeval ((1 - x) / 2) (Polynomial.shiftedLegendre n)
 
 def LegendreSpec (f : FPModel → ℤ → ℝ → ℝ) : Prop :=
   ∀ (fp : FPModel), fp.u ≤ 1 / 2 ^ 53 → fp.η ≤ 1 / 2 ^ 1000 → 2 ^ 10 ≤ fp.M →
   ∀ (n : ℤ) (x : ℝ), x ∈ fp.F → 0 ≤ n → n ≤ 100 → |x| ≤ 1 →
-    |f fp n x - P n.toNat x| ≤ 1 / 10 ^ 11
+    |f fp n x - legendreP n.toNat x| ≤ 1 / 10 ^ 11
 ```
 
 It contains four decisions to review:
 
-* **The mathematical function.** `P` is the exact Legendre polynomial over
-  `ℝ`, defined here by the recurrence. Mathlib defines the shifted Legendre
-  polynomials (`Polynomial.shiftedLegendre`) by an explicit formula; using
-  them would make the specification independent of the algorithm, at the
-  cost of proving the recurrence for them.
+* **The mathematical function.** `legendreP` is Mathlib's Legendre
+  polynomial: the shifted Legendre polynomial `shiftedLegendre n`, defined by
+  its explicit coefficients `(-1)^k C(n,k) C(n+k,n)`, evaluated at
+  `(1 - x)/2`. It is independent of the algorithm: the proof establishes
+  Bonnet's recurrence for it.
 * **The inputs.** `0 <= n <= 100`, and `x` is a floating-point number
   (`x ∈ fp.F`, for binary64 "a finite double") with `|x| <= 1`. Nothing is
   claimed outside this domain.
@@ -315,13 +278,27 @@ open.
 
 ### 2.5 How the proof works
 
-The proof (`Legendre/Proof.lean`, `Legendre/Proof/*.lean`) is done once, for
-every arithmetic without a guard digit (`NoGuardModel`, Section 4), with a
-ceiling `U ≤ 2^-40` on the unit roundoff and `E = U/10^6` on the underflow
-term (`LegendreSpecNoGuard`, `legendre_ng_correct`: error at most
-`89201 U`). `legendre_correct` (`U = 2^-53`, `10^-11`) is the corollary for
-`FPModel`s, through `FPModel.toNoGuard`. The bounds use `U` and `E`, not the
-individual model's `fp.u` and `fp.η`. It has four steps:
+The proof has two parts, following the
+[Discourse discussion](https://fortran-lang.discourse.group/t/verifying-fortran-code-with-lean/11327/15):
+the code in exact arithmetic is the mathematical function, and rounding
+changes the result by a bounded amount.
+
+**Exact arithmetic** (`legendre_exact_eq`): `legendre_exact n x =
+legendreP n x` for every `n ≥ 0` and every real `x`.
+`Legendre/Proof/Bonnet.lean` proves the coefficient identity
+`(n+2) b_{n+2,k} + (n+1) b_{n,k} = (2n+3)(b_{n+1,k} + 2 b_{n+1,k-1})` for
+`b_{m,k} = C(m,k) C(m+k,m)` (through factorials), lifts it to Bonnet's
+recurrence for `shiftedLegendre`, and concludes that the recurrence `P` the
+loop evaluates equals `legendreP` (`P_eq_legendreP`).
+
+**Rounding** (`legendre_rounding`): `|legendre_ng fp n x - legendre_exact n x|
+≤ 89201 U`. It is done once, for every arithmetic without a guard digit
+(`NoGuardModel`, Section 4), with a ceiling `U ≤ 2^-40` on the unit roundoff
+and `E = U/10^6` on the underflow term. Combined with the exact part this is
+`legendre_ng_correct : LegendreSpecNoGuard legendre_ng`; `legendre_correct`
+(`U = 2^-53`, `10^-11`) is the corollary for `FPModel`s, through
+`FPModel.toNoGuard`. The bounds use `U` and `E`, not the individual model's
+`fp.u` and `fp.η`. The rounding part has four steps:
 
 1. **Loop to recursion.** The `for` loop of the generated code is rewritten as
    a recursive sequence `y_m` of computed values.
@@ -333,7 +310,8 @@ individual model's `fp.u` and `fp.η`. It has four steps:
    maintains. The subtraction is bounded through `|a| + |b|`, so the step
    holds without a guard digit. This bound includes the allowed absolute underflow error;
    it is not a bound of `18·fp.u` when `fp.u` is smaller than `U`.
-3. **Propagation.** The errors `e_k = y_k - P_k(x)` satisfy
+3. **Propagation.** The errors `e_k = y_k - P_k(x)` (`P_k(x)` is the exact
+   value) satisfy
    `e_k = ((2k-1) x e_{k-1} - (k-1) e_{k-2})/k + r_k`. Bounding this term by
    term, `|e_k| <= (2k-1)/k |e_{k-1}| + (k-1)/k |e_{k-2}| + |r_k|`, is too
    weak: that recurrence grows like `(1 + √2)^k`, about `10^38` at `k = 100`.
@@ -357,6 +335,63 @@ conservative propagation inequalities. Rounding errors can be correlated;
 the measurements alone do not establish cancellation as the explanation for
 the gap. A sharper IEEE-specific proof could exploit exactness and additional
 structure.
+
+### 2.6 Second example: fast `sin` kernels
+
+`sin_kernels.f90` has two scalar kernels:
+
+* `kernel_sin(x) = x·S(x²)`, a degree-7 polynomial in `x²` with binary64
+  coefficients, for `|x| ≤ π/2`;
+* `kernel_fastest(x0)`: range reduction `N = int(x0/π_d + sign(1, x0)/2)`,
+  `r = x0 - N π_d` (`π_d` the double nearest `π`), `r → -r` for odd `N`
+  (`modulo(int(N), 2) == 1`), then `r (S1 + r² S2)` with two single-precision
+  coefficients.
+
+Each is proved in the same two parts, for every `NoGuardModel` (so every
+`FPModel`), with unit roundoff `≤ U`, underflow error `≤ H`
+(`U, H ≤ 2^-20`):
+
+| | exact arithmetic vs `Real.sin` | rounding | combined | binary64 (`floatModel`) |
+|---|---|---|---|---|
+| `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_binary64`) |
+| `kernel_fastest`, `\|x0\| ≤ X` | `≤ 5.75·10^-3 + 1.3·10^-16 X` (`kernel_fastest_exact_correct`) | reduced argument within `X(11U + 3H + 1.3·10^-16)` of `x0 - Nπ` (`reduction`) | `≤ 5.75·10^-3 + X(19U + 14H + 1.3·10^-16)` (`kernel_fastest_correct`) | `≤ 5.75·10^-3 + 2.25·10^-15 X`, `X ≤ 2^30` (`kernel_fastest_binary64`) |
+
+The ingredients:
+
+* **Taylor bound** (`LFortran/SinTaylor.lean`): `|sin r - r T_n(r²)| ≤
+  |r|^(2n+1)/(2n+1)!` for `|r| ≤ 2`, from Mathlib's power series of `sin`
+  and the alternating series bound.
+* **Polynomial bound** (`LFortran/PolyBound.lean`): the difference between
+  the kernel's polynomial and the Taylor polynomial has rational
+  coefficients; `check` bounds it on an interval by bisection and Taylor
+  shifts in exact rational arithmetic, and `check_sound` proves the checker
+  correct. The kernel evaluates the check (`decide +kernel`; no
+  `native_decide`, no floating point): `|S(z) - T_11(z)| ≤ 4.5·10^-16` on
+  `0 ≤ z ≤ 2.4674014` (measured maximum `4.22·10^-16`) and
+  `|c(r) - T(r)| ≤ 5.7498·10^-3` on `|r| ≤ 1.6` (measured `5.7453·10^-3`).
+* **Error propagation** (`LFortran/ErrorProp.lean`): `Close m U H v t α κ T`
+  (computed `v ∈ F` within `α U + κ H` of `t`, `|t| ≤ T`) through each
+  rounded operation. Keeping `H` separate from `U` matters: the literal
+  `S8 ≈ 7·10^-13` has an absolute underflow error that the Horner scheme
+  multiplies by `z^7`.
+* **Range reduction** (`reduction`): `int` truncates, the shift by
+  `±1/2` makes `|x0/π_d - N| ≤ 1/2 + ε`, so `|r| ≤ 1.6`; `sin x0 =
+  (-1)^N sin(x0 - Nπ)` (`reduce_core`), and negating `r` for odd `N`
+  multiplies the odd polynomial by `(-1)^N` (`parity`).
+
+`kernel_fastest` needs two facts every binary format has, as hypotheses:
+integers up to `X` are exact (`round n = n`), and negation is exact. Its
+rounding result is stated against `sin x0`, not against the exact-arithmetic
+value: when `x0/π_d` is within rounding error of a half-integer, the computed
+and the exact run can choose different `N`. Both results are then accurate,
+since the polynomial is odd and `sin` is `π`-antiperiodic. The exact-arithmetic
+theorem is the same theorem at `FPModel.exact` (`U = H = 0`).
+
+The bounds are worst-case and model-generic. `kernel_sin`'s `6.14 U` is
+about 2.7 times the measured `2.3 u`. `kernel_fastest`'s `X(19U + 14H)` comes
+from the subtraction `x0 - Nπ_d` without a guard digit, whose error is
+relative to `|x0| + |Nπ_d|`; with a guard digit, and with `Nπ_d` exact
+as it is in IEEE arithmetic for small `N`, it would be far smaller.
 
 ## 3. The floating-point model
 
@@ -499,19 +534,28 @@ conformance can rely on that proof, and then only has to check that the
 definitions `binary64` and `IsRoundToNearest` in
 `LFortran/Models/Binary64.lean` match the standard.
 
-**The `Float` run.** `Legendre/Run.lean` executes the generated
-`legendre_poly_float`, the template at `Int32` and Lean's `Float`.
-`legendre_float_correct` proves that for `n ≤ 100` and a finite `Float` `x`
-with `|x| ≤ 1` this run returns a finite value within `10^-11` of `P_n(x)`,
-with only the standard axioms. The steps: `floatModel` is an `FPModel` whose
-operations are `Float`'s (`float_add_value` … `float_div_value`, proved from
-Lean's bit-level `Float.Model`; `Float.ofInt` is exact below `2^53`), and
+**The `Float` run.** `Legendre/Run.lean` executes the generated template at
+`LFortran.machine` (`Int32`, Lean's `Float`), exactly as the one-line `main`
+emitted by `--backend=lean` does. `legendre_float_correct` proves that for
+`n ≤ 100` and a finite `Float` `x` with `|x| ≤ 1` this run returns a finite
+value within `10^-11` of `legendreP n x`, with only the standard axioms. The
+steps: `floatModel` is an `FPModel` whose operations are `Float`'s
+(`float_add_value` … `float_div_value`, proved from Lean's bit-level
+`Float.Model`; `Float.ofInt` is exact below `2^53`), and
 `legendre_float_sim` shows that the `Float` run computes exactly
-`legendre_fortran floatModel n x` (no step overflows, and the `Int32` indices do
-not wrap). What remains trusted is Lean's: that the compiled `Float`
-operations (C `double`) implement `Float.Model`. This covers the Lean run,
-not the LFortran-compiled executable, which is covered by the arithmetic
-assumption above.
+`legendre_fortran floatModel n x` (no step overflows, and the `Int32` indices
+do not wrap). This simulation is a separate proof for each program: knowing
+that `Float`'s operations satisfy the `FPModel` bounds does not by itself say
+that a program run on `Float` equals the same program run on `floatModel`.
+For the sin kernels it is not done yet: it needs the exactness of the
+literals `FReal.lit m e` (`Float.ofInt m * 2^e`) and the values of
+`Float.toUInt64`, `Float.neg`, `Float.abs` and `<` (all have logical
+models; `int(x)` uses `Float.toUInt64` rather than the opaque
+`Float.toInt64` for this reason). The sin theorems hold for `floatModel`,
+binary64 round-to-nearest (`SinKernels/Binary64.lean`). What remains trusted
+is Lean's: that the compiled `Float` operations (C `double`) implement
+`Float.Model`. This covers the Lean run, not the LFortran-compiled
+executable, which is covered by the arithmetic assumption above.
 
 The theorem says nothing about inputs outside the specified domain (for
 example `n > 100`, NaN or infinite `x`), or about performance.
@@ -589,7 +633,7 @@ bounds and aliasing. How far this scales to large array codes is an open
 question.
 
 **Mathematical function libraries** (`sin`, `cos`, `erf`, ...) are a natural
-target: they are small, heavily optimized, and their accuracy is usually only
+target (Section 2.6 proves two `sin` kernels): they are small, heavily optimized, and their accuracy is usually only
 tested on samples, while a proof covers every double. Such proofs combine the
 error of the approximation (range reduction, polynomial or rational
 approximation) with rounding errors, and need `sqrt` and fused multiply-add
