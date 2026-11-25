@@ -1,7 +1,7 @@
 # Verified example programs: their Fortran sources, the generated templates,
 # specifications and proofs.
 name = "lfortran_examples"
-defaultTargets = ["Legendre", "SinKernels", "Demo"]
+defaultTargets = ["Legendre", "SinKernels", "Horner", "Demo"]
 
 [leanOptions]
 autoImplicit = false
@@ -17,6 +17,10 @@ globs = ["Legendre.+"]
 [[lean_lib]]
 name = "SinKernels"
 globs = ["SinKernels.+"]
+
+[[lean_lib]]
+name = "Horner"
+globs = ["Horner.+"]
 
 [[lean_lib]]
 name = "Demo"

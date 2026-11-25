@@ -1,5 +1,6 @@
 import LFortranProof.FloatExact
 import LFortranProof.VModel
+import LFortranProof.ErrorProp
 
 /-!
 # Lean's `Float` is a `VModel`
@@ -118,6 +119,10 @@ noncomputable def floatV : VModel Float where
 
 @[simp] theorem floatV_val (f : Float) (x : ℝ) : floatV.val f x ↔ floatValue f = some x :=
   Iff.rfl
+
+/-- `Float`'s unit roundoff and underflow error, for `LFortranProof/ErrorProp.lean`. -/
+theorem floatV_small : Small floatV (1 / 2 ^ 53) (1 / 2 ^ 1075) :=
+  ⟨by positivity, by positivity, by norm_num [εU], by norm_num [εU], le_rfl, le_rfl⟩
 
 theorem floatV_signed : floatV.Signed where
   neg _ _ h := float_neg_value h
