@@ -31965,6 +31965,10 @@ public:
             msym = "lfortran_intrinsic_" + msym;
         }
         if (x.n_symbols == 0) {
+            if (x.m_only_present) {
+                // `use mod, only:` with an empty ONLY list imports nothing (F2018 19.5.2)
+                return;
+            }
             modules_imported_all.insert({current_scope, msym});
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {
