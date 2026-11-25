@@ -1,5 +1,5 @@
 import LFortran.FloatOps
-import LFortran.FloatSim
+import LFortran.FloatVal
 
 /-!
 # Exact `Float` operations
@@ -241,13 +241,13 @@ theorem model_mul_exact {a b : Float.Model} {x y : ℝ}
   exact mul_exact ha hb (canon_model ha) (canon_model hb) hX
 
 /-- `Float` subtraction is exact when the exact difference is a binary64 number. -/
-theorem float_sub_exact {f g : Float} {x y : ℝ} (hf : Sim f x) (hg : Sim g y)
-    (hX : x - y ∈ binary64) (hM : |x - y| ≤ 2 ^ 1022) : Sim (f - g) (x - y) :=
+theorem float_sub_exact {f g : Float} {x y : ℝ} (hf : FVal f x) (hg : FVal g y)
+    (hX : x - y ∈ binary64) (hM : |x - y| ≤ 2 ^ 1022) : FVal (f - g) (x - y) :=
   model_sub_exact hf hg hX hM
 
 /-- `Float` multiplication is exact when the exact product is a binary64 number. -/
-theorem float_mul_exact {f g : Float} {x y : ℝ} (hf : Sim f x) (hg : Sim g y)
-    (hX : x * y ∈ binary64) (hM : |x * y| ≤ 2 ^ 1022) : Sim (f * g) (x * y) :=
+theorem float_mul_exact {f g : Float} {x y : ℝ} (hf : FVal f x) (hg : FVal g y)
+    (hX : x * y ∈ binary64) (hM : |x * y| ≤ 2 ^ 1022) : FVal (f * g) (x * y) :=
   model_mul_exact hf hg hX hM
 
 /-! ## Representable results -/
@@ -300,17 +300,5 @@ integers stays below `2^53`. -/
 theorem int_mul_mem {N m e : ℤ} (h : |N * m| < 2 ^ 53) (he1 : -1074 ≤ e) (he2 : e ≤ 971) :
     (N : ℝ) * ((m : ℝ) * (2 : ℝ) ^ e) ∈ binary64 :=
   ⟨N * m, e, h, he1, he2, by push_cast; ring⟩
-
-/-- `floatModel` subtraction is exact when the exact difference is binary64. -/
-theorem fm_sub_exact {x y : ℝ} (hx : x ∈ binary64) (hy : y ∈ binary64)
-    (hX : x - y ∈ binary64) (hM : |x - y| ≤ 2 ^ 1022) : floatModel.sub x y = x - y :=
-  floatModel_sub_eq (toFloat_spec hx) (toFloat_spec hy)
-    (float_sub_exact (toFloat_spec hx) (toFloat_spec hy) hX hM)
-
-/-- `floatModel` multiplication is exact when the exact product is binary64. -/
-theorem fm_mul_exact {x y : ℝ} (hx : x ∈ binary64) (hy : y ∈ binary64)
-    (hX : x * y ∈ binary64) (hM : |x * y| ≤ 2 ^ 1022) : floatModel.mul x y = x * y :=
-  floatModel_mul_eq (toFloat_spec hx) (toFloat_spec hy)
-    (float_mul_exact (toFloat_spec hx) (toFloat_spec hy) hX hM)
 
 end LFortran
