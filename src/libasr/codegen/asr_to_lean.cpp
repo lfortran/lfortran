@@ -244,7 +244,7 @@ private:
             return {int_lit(ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n), pAtom};
         }
         if (!is_int(e)) unsupported("this index is", e->base.loc);
-        return app("FInt.toInt", {lower(e)});
+        return app("FInt.toInt", {operand(e)});
     }
 
     // An extent as a Lean `Nat`.
@@ -302,6 +302,7 @@ private:
     // A real constant: `FReal.ofInt n` for an integer below `2^53`, else
     // `FReal.lit m e` with the exact value `m · 2^e`, `m` odd.
     std::string real_lit(double v, int kind, const Location &loc) {
+        if (kind == 4) v = static_cast<double>(static_cast<float>(v));
         if (!std::isfinite(v)) unsupported("a non-finite real constant is", loc);
         // `-0.0` keeps its sign bit, which `sign(a, b)` observes.
         if (v == 0 && std::signbit(v)) return "FReal.neg (FReal.ofInt 0)";
@@ -350,9 +351,16 @@ private:
                 return determined(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
             case ASR::exprType::RealUnaryMinus:
                 return determined(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
-            case ASR::exprType::Cast:
-                return ASR::down_cast<ASR::Cast_t>(e)->m_kind
-                    != ASR::cast_kindType::IntegerToReal;
+            case ASR::exprType::Cast: {
+                auto &c = *ASR::down_cast<ASR::Cast_t>(e);
+                if (c.m_kind == ASR::cast_kindType::IntegerToReal) return false;
+                if (c.m_kind == ASR::cast_kindType::RealToReal
+                        && ASR::down_cast<ASR::Real_t>(c.m_type)->m_kind
+                            == ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                    return determined(c.m_arg);
+                }
+                return true;
+            }
             case ASR::exprType::IntrinsicElementalFunction: {
                 auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
                 std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
@@ -449,8 +457,8 @@ private:
             if (is_real(x.m_args[0])) return app("FReal.abs", {operand(x.m_args[0])});
             if (is_int(x.m_args[0])) {
                 Val a = operand(x.m_args[0]);
-                return {"FInt.ofInt " + atom({"Int.natAbs " + atom(
-                    app("FInt.toInt", {a})), pApp}), pApp};
+                return {"(FInt.ofInt " + atom({"Int.natAbs " + atom(
+                    app("FInt.toInt", {a})), pApp}) + " : " + type(x.m_type, loc) + ")", pAtom};
             }
         }
         // `int(x)`: truncation toward zero, in the result's integer kind.
@@ -557,8 +565,9 @@ private:
                     ASR::down_cast<ASR::Var_t>(e)->m_v);
                 if (!ASR::is_a<ASR::Variable_t>(*s)) unsupported("this name is", loc);
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-                if (v->m_storage == ASR::storage_typeType::Parameter && v->m_value) {
-                    return lower(v->m_value);
+                if (v->m_storage == ASR::storage_typeType::Parameter) {
+                    if (v->m_value) return lower(v->m_value);
+                    unsupported("this parameter is", loc);
                 }
                 if (v->m_parent_symtab != cur_scope()) {
                     unsupported("a variable from another scope is", loc);

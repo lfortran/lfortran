@@ -75,10 +75,12 @@ def size {α : Type} (a : Arr α) : Int :=
   Int.ofNat (a.exts.foldl (fun n e => n * e) 1)
 
 def lbound {α : Type} (a : Arr α) (dim : Int) : Int :=
-  a.lbs[dim.toNat - 1]!
+  let i := dim.toNat - 1
+  if a.exts[i]! == 0 then 1 else a.lbs[i]!
 
 def ubound {α : Type} (a : Arr α) (dim : Int) : Int :=
-  a.lbs[dim.toNat - 1]! + Int.ofNat (a.exts[dim.toNat - 1]!) - 1
+  let i := dim.toNat - 1
+  if a.exts[i]! == 0 then 0 else a.lbs[i]! + Int.ofNat (a.exts[i]!) - 1
 
 end Arr
 
