@@ -1,5 +1,5 @@
 // Lean 4 backend. Every Fortran procedure becomes one Lean template over
-// `K : Kinds` (`lean/LFortran/Arith.lean`): `integer(k)` is `K.Ik`,
+// `K : Kinds` (`lean/runtime/LFortran/Arith.lean`): `integer(k)` is `K.Ik`,
 // `real(k)` is `K.Rk`. A procedure requires the weakest class it needs:
 // `FKinds` (arithmetic; what a proof instantiates), `FKindsMath` (math
 // intrinsics) or `FKindsIO` (`print`). A program's `main` is one line that

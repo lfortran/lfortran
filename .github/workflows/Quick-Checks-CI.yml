@@ -157,12 +157,12 @@ jobs:
             exit $EXIT_CODE
 
       # The `Lean proof` job checks the proof against the checked-in
-      # lean/Legendre/Generated.lean; this checks that LFortran generates it.
+      # lean/examples/*/Generated.lean; this checks that LFortran generates them.
       - name: Test Lean backend translation
         shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-            pixi run -e llvm11 bash lean/check_translation.sh
+            pixi run -e llvm11 bash lean/examples/check_translation.sh
 
       # Programs labeled `lean` are translated with --backend=lean and executed
       # by `lean --run`. Separate from the proof job: this checks behavior,
@@ -183,7 +183,7 @@ jobs:
             # The proved Float runs of legendre_poly and the sin kernels, by
             # testing: Lean, LFortran and GFortran agree bit for bit, and every
             # result is within its proved bound.
-            pixi run -e llvm11 python lean/check_float_runs.py --count 20000
+            pixi run -e llvm11 python lean/examples/check_float_runs.py --count 20000
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
         shell: bash -e {0}
@@ -252,8 +252,8 @@ jobs:
         run: |
           python3 check_ai_commit_authorship.py
 
-  # Checks the Lean proof that the Lean translation of lean/legendre.f90 meets
-  # its specification. Independent of the compiler build, so it runs in
+  # Checks the Lean proofs of the verified examples in lean/examples against
+  # their specifications. Independent of the compiler build, so it runs in
   # parallel; it fetches only the needed prebuilt Mathlib files, without caches.
   lean_proof:
     name: Lean proof
@@ -273,16 +273,16 @@ jobs:
 
       - name: Fetch Lean dependencies
         shell: bash -e {0}
-        run: bash lean/fetch_deps.sh
+        run: bash lean/examples/fetch_deps.sh
 
       - name: Check the proof
         shell: bash -e {0}
-        run: cd lean && lake build --wfail
+        run: cd lean/examples && lake build --wfail
 
       # The same generated template, run through its `_float` wrapper.
       - name: Run the generated code at Float
         shell: bash -e {0}
-        run: cd lean && lake env lean --run Legendre/Run.lean
+        run: cd lean/examples && lake env lean --run Legendre/Run.lean
 
   compatibility:
     name: Compiler compatibility
