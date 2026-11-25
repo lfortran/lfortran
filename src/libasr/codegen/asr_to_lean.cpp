@@ -111,6 +111,35 @@ const char *level_class(int level) {
     }
 }
 
+// The `do` variables that are used outside the loops they index (before or
+// after a loop, or as an ordinary variable). Fortran gives them a value
+// after the loop; the others are emitted as the bound name of `for`.
+class LoopVarUses : public ASR::BaseWalkVisitor<LoopVarUses> {
+public:
+    std::vector<ASR::Variable_t*> index;
+    std::set<ASR::Variable_t*> outside;
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) return;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+        if (std::find(index.begin(), index.end(), v) == index.end()) outside.insert(v);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        // The bounds are evaluated before the loop.
+        if (x.m_head.m_start) visit_expr(*x.m_head.m_start);
+        if (x.m_head.m_end) visit_expr(*x.m_head.m_end);
+        if (x.m_head.m_increment) visit_expr(*x.m_head.m_increment);
+        ASR::Variable_t *v = x.m_head.m_v && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)
+            ? ASRUtils::EXPR2VAR(x.m_head.m_v) : nullptr;
+        if (v) index.push_back(v);
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+        if (v) index.pop_back();
+    }
+};
+
 struct Proc {
     ASR::Function_t *fn = nullptr;
     std::string sig;        // arguments and result type
@@ -136,6 +165,7 @@ private:
     int ind = 0;
     ASR::Variable_t *result = nullptr;
     std::set<ASR::Variable_t*> loop_vars;
+    int loop_id = 0;
     std::string ns;
     std::string *buf = nullptr;
 
@@ -289,12 +319,58 @@ private:
         return "FReal.lit " + int_lit(m) + " " + int_lit(e);
     }
 
+    // Whether the emitted expression determines its Lean type: it contains a
+    // variable, an array element, a call, or a conversion with a stated kind.
+    // `FReal.ofInt 1` or `FReal.ofInt (FInt.toInt i)` alone does not.
+    bool determined(ASR::expr_t *e) {
+        if (ASRUtils::expr_value(e)) return false;
+        switch (e->type) {
+            case ASR::exprType::Var:
+            case ASR::exprType::ArrayItem:
+            case ASR::exprType::ArraySize:
+            case ASR::exprType::ArrayBound:
+            case ASR::exprType::FunctionCall:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::LogicalNot:
+                return true;
+            case ASR::exprType::IntegerBinOp: {
+                auto &x = *ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                return determined(x.m_left) || determined(x.m_right);
+            }
+            case ASR::exprType::RealBinOp: {
+                auto &x = *ASR::down_cast<ASR::RealBinOp_t>(e);
+                return determined(x.m_left) || determined(x.m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus:
+                return determined(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
+            case ASR::exprType::RealUnaryMinus:
+                return determined(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
+            case ASR::exprType::Cast:
+                return ASR::down_cast<ASR::Cast_t>(e)->m_kind
+                    != ASR::cast_kindType::IntegerToReal;
+            case ASR::exprType::IntrinsicElementalFunction: {
+                auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
+                std::transform(f.begin(), f.end(), f.begin(), ::tolower);
+                if (f == "int") return true;
+                for (size_t i = 0; i < x.n_args; i++) {
+                    if (determined(x.m_args[i])) return true;
+                }
+                return false;
+            }
+            default:
+                return false;
+        }
+    }
+
     // An operand whose type the context does not fix (`FReal.signbit`,
-    // comparisons, conversions, ...): a constant is ascribed its kind, since
-    // `FReal.ofInt 1` alone does not determine the type.
+    // comparisons, conversions, ...) is ascribed its kind unless it
+    // determines it.
     Val operand(ASR::expr_t *e) {
         Val v = lower(e);
-        if (ASRUtils::expr_value(e)) {
+        if (!determined(e)) {
             return {"(" + v.src + " : "
                 + type(ASRUtils::expr_type(e), e->base.loc) + ")", pAtom};
         }
@@ -381,7 +457,7 @@ private:
         // `sign(a, b)`: `|a|` with the sign bit of `b`, so `b = -0` gives
         // `-|a|`, as on every processor with signed zeros.
         if (x.n_args == 2 && f == "sign" && is_real(x.m_args[0])) {
-            Val a = app("FReal.abs", {lower(x.m_args[0])});
+            Val a = app("FReal.abs", {operand(x.m_args[0])});
             Val b = operand(x.m_args[1]);
             return {"(if " + app("FReal.signbit", {b}).src
                 + " then " + app("FReal.neg", {a}).src + " else " + a.src + ")", pAtom};
@@ -575,15 +651,13 @@ private:
                 ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n));
         }
         ASR::ttype_t *t = scalar(ASRUtils::expr_type(e), loc);
+        // The kind is stated: a value such as `FInt.ofInt 10` does not fix it.
+        std::string v = "(" + lower(e).src + " : " + type(t, loc) + ")";
         if (ASR::is_a<ASR::Integer_t>(*t)) {
-            return "toString " + atom(app("FInt.toInt", {lower(e)}));
+            return "toString (FInt.toInt " + v + ")";
         }
         if (ASR::is_a<ASR::Real_t>(*t)) {
             int k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
-            std::string v = atom(lower(e));
-            if (ASR::is_a<ASR::RealConstant_t>(*e)) {
-                v = "(" + v + " : " + type(t, loc) + ")";
-            }
             return "FKindsIO.fmtR" + std::to_string(k) + " " + v;
         }
         if (ASR::is_a<ASR::Logical_t>(*t)) {
@@ -718,12 +792,31 @@ private:
                         && lo.compare(lo.size() - asc.size(), asc.size(), asc) == 0)) {
                     lo = "(" + lo + asc;
                 }
-                line("for " + lower(h.m_v).src + " in FInt.range " + lo + " "
-                    + atom(lower(h.m_end)) + " do");
+                std::string v = lower(h.m_v).src;
+                if (loop_vars.count(ASRUtils::EXPR2VAR(h.m_v))) {
+                    line("for " + v + " in FInt.range " + lo + " "
+                        + atom(lower(h.m_end)) + " do");
+                    ind++;
+                    if (x.n_body == 0) line("pure ()");
+                    stmts(x.m_body, x.n_body);
+                    ind--;
+                    break;
+                }
+                // The `do` variable is an ordinary variable: it takes each
+                // index, and after the loop the first one not executed,
+                // `lo + max(0, hi - lo + 1)`. The bounds are evaluated once.
+                // Temporaries contain `'`, which cannot occur in Fortran names.
+                std::string id = std::to_string(++loop_id);
+                std::string lv = "lo'" + id, hv = "hi'" + id, iv = "i'" + id;
+                line("let " + lv + " : " + ty + " := " + lower(h.m_start).src);
+                line("let " + hv + " : " + ty + " := " + lower(h.m_end).src);
+                line("for " + iv + " in FInt.range " + lv + " " + hv + " do");
                 ind++;
-                if (x.n_body == 0) line("pure ()");
+                line(v + " := " + iv);
                 stmts(x.m_body, x.n_body);
                 ind--;
+                line(v + " := FInt.ofInt (FInt.toInt " + lv + " + max 0 (FInt.toInt " + hv
+                    + " + 1 - FInt.toInt " + lv + "))");
                 break;
             }
             case ASR::stmtType::Return:
@@ -755,6 +848,15 @@ private:
             default:
                 unsupported("this statement is", loc);
         }
+    }
+
+    // The `do` variables emitted as the bound name of `for`: those used only
+    // inside the loops they index.
+    void collect_simple_loop_vars(ASR::stmt_t **body, size_t n) {
+        collect_loop_vars(body, n);
+        LoopVarUses u;
+        for (size_t i = 0; i < n; i++) u.visit_stmt(*body[i]);
+        for (ASR::Variable_t *v : u.outside) loop_vars.erase(v);
     }
 
     void collect_loop_vars(ASR::stmt_t **body, size_t n) {
@@ -881,7 +983,7 @@ private:
             p.ret = outs.size() == 1 ? ret : "(" + ret + ")";
             p.sig += " : " + ty;
         }
-        collect_loop_vars(fn->m_body, fn->n_body);
+        collect_simple_loop_vars(fn->m_body, fn->n_body);
         buf = &p.body;
         ind = 1;
         for (const std::string &l : entry) line(l);
@@ -994,11 +1096,12 @@ public:
             in_program = true;
             result = nullptr;
             check_symbols(prog->m_symtab);
-            collect_loop_vars(prog->m_body, prog->n_body);
+            collect_simple_loop_vars(prog->m_body, prog->n_body);
             buf = &prog_body;
             ind = 1;
             locals(prog->m_symtab, {});
             stmts(prog->m_body, prog->n_body);
+            if (prog_body.empty()) line("pure ()");
             cur = nullptr;
         }
         propagate_levels();
