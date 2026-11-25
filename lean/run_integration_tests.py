@@ -25,7 +25,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 CMAKE = ROOT / "integration_tests" / "CMakeLists.txt"
 TESTS = ROOT / "integration_tests"
-TOOLCHAIN = (ROOT / "lean" / "lean-toolchain").read_text().strip()
+RUNTIME_DIR = ROOT / "lean" / "runtime"
+TOOLCHAIN = (RUNTIME_DIR / "lean-toolchain").read_text().strip()
 
 KEYWORDS = {
     "NAME", "FILE", "LABELS", "EXTRA_ARGS", "EXTRAFILES", "GFORTRAN_ARGS",
@@ -164,7 +165,7 @@ def prepare_runtime(toolchain):
     env = os.environ.copy()
     env["LEAN_PATH"] = str(cache)
     for mod in RUNTIME:
-        shutil.copy(ROOT / "lean" / "LFortran" / (mod + ".lean"), dest / (mod + ".lean"))
+        shutil.copy(RUNTIME_DIR / "LFortran" / (mod + ".lean"), dest / (mod + ".lean"))
         subprocess.run(
             ["elan", "run", toolchain, "lean", "-o", str(dest / (mod + ".olean")),
              "LFortran/" + mod + ".lean"],

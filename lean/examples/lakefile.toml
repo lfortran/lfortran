@@ -1,0 +1,23 @@
+# Verified example programs: their Fortran sources, the generated templates,
+# specifications and proofs.
+name = "lfortran_examples"
+defaultTargets = ["Legendre", "SinKernels", "Demo"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "lfortran_proof"
+path = "../proof"
+
+[[lean_lib]]
+name = "Legendre"
+globs = ["Legendre.+"]
+
+[[lean_lib]]
+name = "SinKernels"
+globs = ["SinKernels.+"]
+
+[[lean_lib]]
+name = "Demo"
+globs = ["Demo.+"]
