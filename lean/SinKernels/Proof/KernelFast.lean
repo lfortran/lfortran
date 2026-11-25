@@ -1,4 +1,4 @@
-import SinKernels.Proof.KernelFastest
+import SinKernels.Proof.Reduction
 import SinKernels.Proof.KernelSin
 import LFortran.PiBounds
 import LFortran.FloatExact
@@ -9,7 +9,7 @@ set_option exponentiation.threshold 2048
 /-!
 # `kernel_fast`: Cody–Waite reduction, then `kernel_sin`
 
-`kernel_fast(x0)` picks `N = int(x0/π_d + sign(x0)/2)` like `kernel_fastest`,
+`kernel_fast(x0)` picks `N = int(x0/π_d + sign(x0)/2)` (`chooseN`),
 reduces `r = ((x0 - N p1) - N p2) - N p3` with the three-part representation
 `p1 + p2 + p3` of `π` (`p1`, `p2` have 21-bit significands, and
 `p1 + p2 + p3 - π ≈ -1.7·10^-31`), negates `r` for odd `N`, and returns
@@ -47,7 +47,7 @@ noncomputable def kernel_fast_exact (x0 : ℝ) : ℝ :=
   @sin_kernels.kernel_fast proofKinds (FKinds.ofModel FPModel.exact FPModel.exact) x0
 
 /-- What the generated code computes, step by step, with the sign of `x0`
-taken from `b` (as in `kfGen`). -/
+taken from `b` (`SignOk`). -/
 noncomputable def kfastGen (m : NoGuardModel) (b : Bool) (x0 : ℝ) : ℝ :=
   let PI := m.round πd
   let N := realTrunc (m.add (m.div x0 PI)
@@ -110,7 +110,7 @@ theorem kernel_sin_exact_ng (y : ℝ) :
 `kernel_fast` is within `7.3·10^-16` of `sin x0` for `|x0| ≤ 10^12`. -/
 theorem kernel_fast_exact_correct {X x0 : ℝ} (hX : 1 ≤ X) (hX12 : X ≤ 10 ^ 12)
     (hx : |x0| ≤ X) : |kernel_fast_exact x0 - sin x0| ≤ 73 / 10 ^ 17 := by
-  have A : FastestArith (FPModel.exact (5 * X)).toNoGuard 0 0 X :=
+  have A : ReduceArith (FPModel.exact (5 * X)).toNoGuard 0 0 X :=
     { small := ⟨le_rfl, le_rfl, by norm_num [εU], by norm_num [εU],
         by simp [FPModel.toNoGuard, FPModel.exact], by simp [FPModel.toNoGuard, FPModel.exact]⟩
       X1 := hX
@@ -233,7 +233,7 @@ theorem kfastGen_binary64 {X x0 : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 6 * 10 ^ 9) (
   have hXl1 : 1 ≤ Xl := le_max_left _ _
   have hxl : |x0| ≤ Xl := le_max_right _ _
   have hXlX : Xl ≤ X := max_le hX1 hx
-  have A := SinKernelsBinary64.fastestArith_binary64 hXl1 (hXlX.trans (hX.trans (by norm_num)))
+  have A := SinKernelsBinary64.reduceArith_binary64 hXl1 (hXlX.trans (hX.trans (by norm_num)))
   have hc : |x0 / πd - N| ≤ 1 / 2 + (7 * Xl * (1 / 2 ^ 53) + 7 * Xl * (1 / 2 ^ 1075)) ∧
       |(N : ℝ)| ≤ Xl ∧ floatModel.round N = N :=
     chooseN _ A hxF hxl hb

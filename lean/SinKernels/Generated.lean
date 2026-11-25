@@ -12,20 +12,6 @@ def kernel_sin {K : Kinds} [FKinds K] (x : K.R8) : K.R8 := Id.run do
   res := FReal.mul x (FReal.add (FReal.ofInt 1) (FReal.mul z (FReal.add (FReal.lit (-3002399751580165) (-54)) (FReal.mul z (FReal.add (FReal.lit 2401919801243361 (-58)) (FReal.mul z (FReal.add (FReal.lit (-7320136529120817) (-65)) (FReal.mul z (FReal.add (FReal.lit 50834275503869 (-64)) (FReal.mul z (FReal.add (FReal.lit (-7571455092797619) (-78)) (FReal.mul z (FReal.add (FReal.lit 3103945121149347 (-84)) (FReal.mul z (FReal.lit (-1822480071209569) (-91))))))))))))))))
   return res
 
-def kernel_fastest {K : Kinds} [FKinds K] (x0 : K.R8) : K.R8 := Id.run do
-  let mut res : K.R8 := FReal.zero
-  let mut x : K.R8 := FReal.zero
-  let mut z : K.R8 := FReal.zero
-  let mut nd : K.R8 := FReal.zero
-  x := x0
-  nd := FReal.ofInt (FInt.toInt (FInt.ofInt (FReal.toInt (FReal.add (FReal.div x (FReal.lit 884279719003555 (-48))) (FReal.mul (FReal.lit 1 (-1)) (if FReal.signbit x then FReal.neg (FReal.abs (FReal.ofInt 1)) else FReal.abs (FReal.ofInt 1))))) : K.I4))
-  x := FReal.sub x (FReal.mul nd (FReal.lit 884279719003555 (-48)))
-  if FInt.beq (FInt.modulo (FInt.ofInt (FReal.toInt nd) : K.I4) (FInt.ofInt 2)) (FInt.ofInt 1) then
-    x := FReal.neg x
-  z := FReal.mul x x
-  res := FReal.mul x (FReal.add (FReal.lit 8240939 (-23)) (FReal.mul z (FReal.lit (-1175563) (-23))))
-  return res
-
 def kernel_fast {K : Kinds} [FKinds K] (x0 : K.R8) : K.R8 := Id.run do
   let mut res : K.R8 := FReal.zero
   let mut x : K.R8 := FReal.zero

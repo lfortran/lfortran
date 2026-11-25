@@ -21,13 +21,6 @@ def KernelSinFloatSpec (f : Float → Float) : Prop :=
   ∀ (xf : Float) (x : ℝ), floatValue xf = some x → |x| ≤ π / 2 →
     ∃ v, floatValue (f xf) = some v ∧ |v - sin x| ≤ 115 / 10 ^ 17 * |x| + 1 / 2 ^ 1075
 
-/-- `kernel_fastest`: for every finite `Float` `x0` with `|x0| ≤ X`,
-`1 ≤ X ≤ 2^30`, the result is a finite `Float` within
-`5.75·10^-3 + 2.25·10^-15 X` of `sin x0`. -/
-def KernelFastestFloatSpec (f : Float → Float) : Prop :=
-  ∀ (xf : Float) (x0 X : ℝ), floatValue xf = some x0 → 1 ≤ X → X ≤ 2 ^ 30 → |x0| ≤ X →
-    ∃ v, floatValue (f xf) = some v ∧ |v - sin x0| ≤ 575 / 10 ^ 5 + X * (225 / 10 ^ 17)
-
 /-- `kernel_fast`: for every finite `Float` `x0` with `|x0| ≤ 6·10^9`, the
 result is a finite `Float` within `2.2·10^-15` of `sin x0`. -/
 def KernelFastFloatSpec (f : Float → Float) : Prop :=
