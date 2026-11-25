@@ -39,15 +39,20 @@ pixi run -e llvm11 python lean/run_integration_tests.py
 ```
 
 The runner checks the exit code, like every integration test; the test
-program checks its own results. `lean_sin_kernels_01`, `lean_names_01` and
-`lean_arrays_01` are the only tests labeled `lean` while the template backend
-grows; `--all`
-tries every integration test and `--apply` updates the labels.
+program checks its own results. Every integration test that the backend
+translates and that then runs correctly is labeled `lean` (190 tests);
+`--all` tries every test the host LLVM backend runs (label `llvm`) and prints
+why the others are rejected, and `--apply` updates the labels. A construct
+the backend does not support is rejected at translation, never translated
+approximately; `--all` reports no test that translates but computes a wrong
+result.
 
 The backend accepts the subset the examples need: module functions and
 subroutines with `integer`/`real`/`logical` scalar and array arguments,
 locals (including arrays), assignments (to variables, array elements and
-whole arrays), `if`, unit-step `do` loops, `return`, calls (callees are
+whole arrays), `if`, unit-step `do` loops (a `do` variable used outside its
+loops is an ordinary variable that ends at `lo + max(0, hi - lo + 1)`, as in
+Fortran), `return`, calls (callees are
 emitted first; self-recursion is `partial`), `+ - * /`, comparisons, integer/real conversions, `int`, `abs`,
 `sign`, `mod`, `modulo`, the math intrinsics (`sin`, `sqrt`, ...; these need
 `FKindsMath` and are not modelled in proofs), and in a program also `print`,
@@ -128,7 +133,7 @@ lake build --wfail   # builds runtime/, proof/ and the examples
 | `examples/SinKernels/Spec.lean` | what the sin kernels' `Float` runs must satisfy | human, reviewed |
 | `examples/Horner/Spec.lean` | what `horner`'s `Float` run must satisfy | human, reviewed |
 | `examples/Horner/Proof*.lean`, `examples/Horner/FloatRun.lean` | the Horner proofs and its `Float` run | proofs (AI), checked by Lean |
-| `examples/check_float_runs.py`, `examples/float_runs_check.f90` | bit-for-bit and bound tests of the `Float` runs | human |
+| `examples/check_float_runs.py`, `examples/float_runs_check.f90` | bit-for-bit and bound tests of the `Float` runs (all four functions) | human |
 
 ## 1. The idea
 
@@ -691,8 +696,11 @@ both links on 20,000 inputs (random, `±0`, subnormals, `±π/2`, half-integer
 multiples of `π_d`, powers of two, up to `6·10^9`): the Lean run, an LFortran
 build and a GFortran build agree bit for bit, and every result in a
 specification's domain is within its proved bound against exact rational
-(Legendre) or 90-digit (`sin`) references. It runs in the Linux LLVM 11
-Quick job.
+(Legendre) or 90-digit (`sin`) references. `horner` is tested the same way on
+5,000 polynomials of degree up to 29 (random, wide-exponent, sparse and
+subnormal coefficients, and the binomial coefficients of `(x - 1)^n` near
+`x = 1`, whose cancellation brings the error to 0.63 of the bound), against
+exact rational references. It runs in the Linux LLVM 11 Quick job.
 
 The theorem says nothing about inputs outside the specified domain (for
 example `n > 100`, NaN or infinite `x`), or about performance.
