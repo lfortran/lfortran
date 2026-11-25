@@ -7,7 +7,7 @@
 namespace LCompilers {
 
     // `--show-lean`: every procedure becomes one Lean template over
-    // `K : Kinds` (`lean/LFortran/Arith.lean`). Proofs instantiate it at
+    // `K : Kinds` (`lean/runtime/LFortran/Arith.lean`). Proofs instantiate it at
     // `ℤ`/`ℝ` with an arithmetic model; a program's `main` instantiates it at
     // `LFortran.machine`. `filename` is only used in the header comment.
     Result<std::string> asr_to_lean(ASR::TranslationUnit_t &asr,

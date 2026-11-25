@@ -93,6 +93,28 @@ contains
     end do
     end function
 
+    ! A do-loop variable that is also the function result or an intent(out)/
+    ! intent(inout) dummy must keep its post-loop value.
+    integer function loop_result(n) result(i)
+    integer, intent(in) :: n
+    do i = 1, n
+    end do
+    end function
+
+    subroutine loop_out(n, i)
+    integer, intent(in) :: n
+    integer, intent(out) :: i
+    do i = 1, n
+    end do
+    end subroutine
+
+    subroutine loop_inout(n, i)
+    integer, intent(in) :: n
+    integer, intent(inout) :: i
+    do i = 1, n
+    end do
+    end subroutine
+
 end module
 
 program lean_arrays_01
@@ -135,5 +157,15 @@ w(1) = 3
 w(2) = 1
 call double_and_sort2(w)
 if (w(1) /= 2 .or. w(2) /= 6) error stop
+if (loop_result(5) /= 6) error stop
+if (loop_result(0) /= 1) error stop
+call loop_out(5, k)
+if (k /= 6) error stop
+k = 99
+call loop_inout(5, k)
+if (k /= 6) error stop
+k = 99
+call loop_inout(0, k)
+if (k /= 1) error stop
 print *, p, v(2), a, total(m), y(3, 1), k
 end program
