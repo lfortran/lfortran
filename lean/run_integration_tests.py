@@ -8,7 +8,8 @@ Fortran and runs `lean --run`. A test passes when the program's exit code
 agrees with the RUN() entry: zero, unless the entry is marked FAIL.
 
 By default only tests labeled `lean` are run. `--all` tries every integration
-test and prints why the others are rejected. `--apply` adds the `lean` label
+test labeled `llvm` (the programs the host LLVM backend runs) and prints why
+the others are rejected. `--apply` adds the `lean` label
 to tests that pass.
 """
 
@@ -223,6 +224,10 @@ def main():
         runs = [r for r in runs if r["name"] in wanted]
     elif not args.all and not args.apply:
         runs = [r for r in runs if "lean" in r["labels"]]
+    else:
+        # The programs the host LLVM backend runs: tests for other targets
+        # (wasm32 ABI) or that need extra options (-fopenmp) are not tried.
+        runs = [r for r in runs if "llvm" in r["labels"]]
     if args.limit:
         runs = runs[:args.limit]
     if not runs:
