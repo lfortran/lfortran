@@ -14,7 +14,8 @@ import Mathlib.Analysis.Real.Pi.Bounds
 * `kernel_sin_approx`: for `|x| ≤ π/2`, `|x S(x²) - sin x| ≤ 4.6·10^-16 |x|`.
   The Taylor polynomial `T_11` of `sin x / x` has a remainder below
   `10^-18` (`sin_taylor_poly`), and `|S(z) - T_11(z)| ≤ 4.5·10^-16` on
-  `0 ≤ z ≤ 2.4674014` is checked by the kernel (`PolyBound.check`).
+  `0 ≤ z ≤ 1.571²` is checked by the kernel (`PolyBound.check`); the bound
+  also holds slightly beyond `π/2` (`kernel_sin_approx_wide`).
 * `kernel_sin_rounding`: in every `NoGuardModel` (so every `FPModel`) with
   unit roundoff `≤ U` and underflow error `≤ H` (`U, H ≤ 2^-20`), for
   floating-point `|x| ≤ 1.6`, the computed value differs from the exact one by
@@ -35,7 +36,7 @@ def Sq : List ℚ := [1, -3002399751580165 / 2 ^ 54, 2401919801243361 / 2 ^ 58,
 /-- `S(z) - T_11(z)`. -/
 def Qq : List ℚ := addL Sq (scaleL (-1) (sinT 11))
 
-theorem Qq_bound : check Qq 0 (24674014 / 10 ^ 7) (45 / 10 ^ 17) 12 = true := by
+theorem Qq_bound : check Qq 0 (2468041 / 10 ^ 6) (45 / 10 ^ 17) 12 = true := by
   decide +kernel
 
 /-- The generated `kernel_sin` in a `NoGuardModel`. -/
@@ -53,24 +54,24 @@ theorem kernel_sin_exact_eq (x : ℝ) : kernel_sin_exact x = x * evalR Sq (x ^ 2
   left
   ring
 
-/-- **Approximation error.** -/
-theorem kernel_sin_approx {x : ℝ} (hx : |x| ≤ π / 2) :
+/-- **Approximation error**, on `|x| ≤ 1.571`, slightly beyond `π/2` (range
+reduction in floating point can land there). -/
+theorem kernel_sin_approx_wide {x : ℝ} (hx : |x| ≤ 1571 / 1000) :
     |kernel_sin_exact x - sin x| ≤ 46 / 10 ^ 17 * |x| := by
-  have hpi : π / 2 < 15707964 / 10 ^ 7 := by linarith [pi_lt_d20]
   have hx2 : |x| ≤ 2 := by linarith
   have hz0 : (0 : ℝ) ≤ x ^ 2 := sq_nonneg x
-  have hz1 : x ^ 2 ≤ ((24674014 / 10 ^ 7 : ℚ) : ℝ) := by
-    have : x ^ 2 ≤ (15707964 / 10 ^ 7) ^ 2 := by
-      rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg x) (by linarith) 2
+  have hz1 : x ^ 2 ≤ ((2468041 / 10 ^ 6 : ℚ) : ℝ) := by
+    have : x ^ 2 ≤ (1571 / 1000) ^ 2 := by
+      rw [← sq_abs]; exact pow_le_pow_left₀ (abs_nonneg x) hx 2
     push_cast; linarith
   have hQ := check_sound Qq _ 12 0 _ Qq_bound (x ^ 2) (by simpa using hz0) hz1
   rw [Qq, evalR_addL, evalR_scaleL] at hQ
   have hT := sin_taylor_poly 11 hx2
   have hrem : |x| ^ (2 * 11 + 1) / ((2 * 11 + 1).factorial : ℝ) ≤ 1 / 10 ^ 18 * |x| := by
-    have h1 : |x| ^ 22 ≤ (15707964 / 10 ^ 7 : ℝ) ^ 22 :=
-      pow_le_pow_left₀ (abs_nonneg x) (by linarith) 22
+    have h1 : |x| ^ 22 ≤ (1571 / 1000 : ℝ) ^ 22 :=
+      pow_le_pow_left₀ (abs_nonneg x) hx 22
     rw [show 2 * 11 + 1 = 23 by rfl, pow_succ, div_le_iff₀ (by positivity)]
-    have h2 : (15707964 / 10 ^ 7 : ℝ) ^ 22 ≤ 1 / 10 ^ 18 * (Nat.factorial 23 : ℝ) := by
+    have h2 : (1571 / 1000 : ℝ) ^ 22 ≤ 1 / 10 ^ 18 * (Nat.factorial 23 : ℝ) := by
       rw [Nat.factorial]; norm_num [Nat.factorial]
     have := mul_le_mul_of_nonneg_right (h1.trans h2) (abs_nonneg x)
     linarith
@@ -87,6 +88,11 @@ theorem kernel_sin_approx {x : ℝ} (hx : |x| ≤ π / 2) :
         · have := hQ; push_cast at this; exact this
         · exact hT.trans hrem
     _ ≤ 46 / 10 ^ 17 * |x| := by nlinarith [abs_nonneg x]
+
+/-- **Approximation error** on `|x| ≤ π/2`. -/
+theorem kernel_sin_approx {x : ℝ} (hx : |x| ≤ π / 2) :
+    |kernel_sin_exact x - sin x| ≤ 46 / 10 ^ 17 * |x| :=
+  kernel_sin_approx_wide (by linarith [pi_lt_d20])
 
 /-- Relative form: `kernel_sin` is accurate to `10^-15` relative to `sin x`. -/
 theorem kernel_sin_approx_rel {x : ℝ} (hx : |x| ≤ π / 2) :
@@ -191,5 +197,14 @@ theorem kernel_sin_correct (m : NoGuardModel) {U H : ℝ} (hS : Small m U H)
   nlinarith [abs_nonneg x]
 
 #print axioms kernel_sin_correct
+
+/-- `kernel_sin_correct` on `|x| ≤ 1.571`. -/
+theorem kernel_sin_correct_wide (m : NoGuardModel) {U H : ℝ} (hS : Small m U H)
+    (hM : 4 ≤ m.M) {x : ℝ} (hxF : x ∈ m.F) (hx : |x| ≤ 1571 / 1000) :
+    |kernel_sin_ng m x - sin x| ≤ |x| * (46 / 10 ^ 17 + 614 / 100 * U + 2107 * H) + H := by
+  have h1 := kernel_sin_rounding m hS hM hxF (by linarith)
+  have h2 := kernel_sin_approx_wide hx
+  have := abs_sub_le (kernel_sin_ng m x) (kernel_sin_exact x) (sin x)
+  nlinarith [abs_nonneg x]
 
 end SinKernelsProof

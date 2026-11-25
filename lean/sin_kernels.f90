@@ -38,4 +38,22 @@ z = x*x
 res = x*(S1+z*S2)
 end function
 
+! Accurate to about 1e-15 for |x0| < pi*2^31: three-part (Cody-Waite)
+! reduction by pi, then kernel_sin
+elemental real(dp) function kernel_fast(x0) result(res)
+real(dp), intent(in) :: x0
+real(dp), parameter :: p1 = 3.14159202575683594e+00_dp
+real(dp), parameter :: p2 = 6.27832832833519205e-07_dp
+real(dp), parameter :: p3 = 1.24467443437932268e-13_dp
+real(dp) :: x, Nd
+x = x0
+Nd = int(x/pi + 0.5_dp*sign(1._dp, x))
+x = ((x - Nd*p1) - Nd*p2) - Nd*p3
+! -pi/2 < x < pi/2
+! For even Nd, we have sin(x0) = sin(x)
+! For odd Nd,  we have sin(x0) = sin(x+pi) = -sin(x) = sin(-x)
+if (modulo(int(Nd), 2) == 1) x = -x
+res = kernel_sin(x)
+end function
+
 end module

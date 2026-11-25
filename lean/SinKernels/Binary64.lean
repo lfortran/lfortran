@@ -38,8 +38,8 @@ theorem kernel_sin_binary64 {x : ℝ} (hxF : x ∈ binary64) (hx : |x| ≤ π / 
 
 #print axioms kernel_sin_binary64
 
-/-- binary64 satisfies the assumptions of `kernel_fastest` for `1 ≤ X ≤ 2^30`. -/
-theorem fastestArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 30) :
+/-- binary64 satisfies the assumptions of `kernel_fastest` for `1 ≤ X ≤ 2^33`. -/
+theorem fastestArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 33) :
     FastestArith floatModel.toNoGuard (1 / 2 ^ 53) (1 / 2 ^ 1075) X :=
   { small := small
     X1 := hX1
@@ -51,10 +51,10 @@ theorem fastestArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 30) :
       exact this.trans (by norm_num [εU])
     M := by
       show 5 * X ≤ 2 ^ 1022
-      have : (5 : ℝ) * 2 ^ 30 ≤ 2 ^ 1022 := by norm_num
+      have : (5 : ℝ) * 2 ^ 33 ≤ 2 ^ 1022 := by norm_num
       linarith
     int_exact := fun n hn => by
-      have h30 : (2 : ℝ) ^ 30 < 2 ^ 53 := by norm_num
+      have h30 : (2 : ℝ) ^ 33 < 2 ^ 53 := by norm_num
       have hn' : |(n : ℝ)| < 2 ^ 53 := by linarith
       have hmem : (n : ℝ) ∈ binary64 := int_mem_binary64 (by exact_mod_cast hn')
       have h53 : (2 : ℝ) ^ 53 ≤ 2 ^ 1022 := pow_le_pow_right₀ (by norm_num) (by norm_num)
@@ -65,7 +65,7 @@ theorem fastestArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 30) :
 theorem kfGen_binary64 {X x0 : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 30)
     (hxF : x0 ∈ binary64) (hx : |x0| ≤ X) {b : Bool} (hb : SignOk b x0) :
     |kfGen floatModel.toNoGuard b x0 - sin x0| ≤ 575 / 10 ^ 5 + X * (225 / 10 ^ 17) := by
-  have h := kfGen_correct _ (fastestArith_binary64 hX1 hX) hxF hx hb
+  have h := kfGen_correct _ (fastestArith_binary64 hX1 (hX.trans (by norm_num))) hxF hx hb
   have hc : (19 * (1 / 2 ^ 53) + 14 * (1 / 2 ^ 1075) + 13 / 10 ^ 17 : ℝ) ≤ 225 / 10 ^ 17 := by
     norm_num
   have := mul_le_mul_of_nonneg_left hc (by linarith : (0 : ℝ) ≤ X)

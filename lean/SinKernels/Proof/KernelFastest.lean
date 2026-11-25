@@ -154,18 +154,16 @@ structure FastestArith (m : NoGuardModel) (U H X : ℝ) : Prop where
   neg_mem : ∀ v ∈ m.F, -v ∈ m.F
 
 set_option maxHeartbeats 2000000 in
-/-- **Range reduction in floating point.** The computed `N` is an integer
-that the arithmetic represents exactly, and the computed reduced argument `r`
-is within `X (11 U + 3 H + 1.3·10^-16)` of `x0 - N π`, with `|r| ≤ 1.6`. -/
-theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x0 : ℝ}
+/-- **Choice of `N` in floating point.** The computed `N` is within
+`1/2 + 7X(U + H)` of `x0/π_d`, at most `X` in magnitude, and represented
+exactly. -/
+theorem chooseN (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x0 : ℝ}
     (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) {b : Bool} (hb : SignOk b x0) :
     let PI := m.round πd
     let N := realTrunc (m.add (m.div x0 PI)
       (m.mul (m.round 2⁻¹) (if b then -|m.round 1| else |m.round 1|)))
-    let r := m.sub x0 (m.mul (m.round N) PI)
-    |(N : ℝ)| ≤ X ∧ m.round N = N ∧ r ∈ m.F ∧ |r| ≤ 8 / 5 ∧
-      |r - (x0 - N * π)| ≤ X * (11 * U + 3 * H + 13 / 10 ^ 17) := by
-  intro PI N r
+    |x0 / πd - N| ≤ 1 / 2 + (7 * X * U + 7 * X * H) ∧ |(N : ℝ)| ≤ X ∧ m.round N = N := by
+  intro PI N
   obtain ⟨hS, hX1, hXU, hXH, hM, hint, hneg⟩ := A
   have hU0 := hS.U0
   have hH0 := hS.H0
@@ -341,7 +339,56 @@ theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x
     have := abs_sub_abs_le_abs_sub (N : ℝ) (x0 / πd)
     rw [abs_sub_comm (N : ℝ)] at this
     linarith
-  have hnd : m.round N = N := hint N hNX
+  exact ⟨hN, hNX, hint N hNX⟩
+
+set_option maxHeartbeats 2000000 in
+/-- **Range reduction in floating point.** The computed `N` is an integer
+that the arithmetic represents exactly, and the computed reduced argument `r`
+is within `X (11 U + 3 H + 1.3·10^-16)` of `x0 - N π`, with `|r| ≤ 1.6`. -/
+theorem reduction (m : NoGuardModel) {U H X : ℝ} (A : FastestArith m U H X) {x0 : ℝ}
+    (hxF : x0 ∈ m.F) (hx : |x0| ≤ X) {b : Bool} (hb : SignOk b x0) :
+    let PI := m.round πd
+    let N := realTrunc (m.add (m.div x0 PI)
+      (m.mul (m.round 2⁻¹) (if b then -|m.round 1| else |m.round 1|)))
+    let r := m.sub x0 (m.mul (m.round N) PI)
+    |(N : ℝ)| ≤ X ∧ m.round N = N ∧ r ∈ m.F ∧ |r| ≤ 8 / 5 ∧
+      |r - (x0 - N * π)| ≤ X * (11 * U + 3 * H + 13 / 10 ^ 17) := by
+  intro PI N r
+  have hc : |x0 / πd - N| ≤ 1 / 2 + (7 * X * U + 7 * X * H) ∧ |(N : ℝ)| ≤ X ∧ m.round N = N :=
+    chooseN m A hxF hx hb
+  obtain ⟨hN, hNX, hnd⟩ := hc
+  obtain ⟨hS, hX1, hXU, hXH, hM, hint, hneg⟩ := A
+  have hU0 := hS.U0
+  have hH0 := hS.H0
+  have hη := hS.η
+  have hε : εU = 1 / 2 ^ 20 := rfl
+  have hU : U ≤ X * U := le_mul_of_one_le_left hU0 hX1
+  have hH : H ≤ X * H := le_mul_of_one_le_left hH0 hX1
+  have hX0 : 0 ≤ X := by linarith
+  have hx0 : 0 ≤ |x0| := abs_nonneg x0
+  have hπd1 : (31415 / 10000 : ℝ) ≤ πd := by norm_num [πd]
+  have hπd2 : πd ≤ 31416 / 10000 := by norm_num [πd]
+  have hπd0 : 0 < πd := by linarith
+  have hπ : |πd - π| ≤ 13 / 10 ^ 17 := by
+    have h1 := pi_gt_d20
+    have h2 := pi_lt_d20
+    have e : πd = 884279719003555 / 2 ^ 48 := by norm_num [πd]
+    rw [e, abs_le]
+    norm_num at h1 h2 ⊢
+    constructor <;> linarith
+  have hPIm : |πd| ≤ m.M := by rw [abs_of_pos (by linarith)]; linarith
+  have hPIF : PI ∈ m.F := m.round_mem _ hPIm
+  have hPIe : |PI - πd| ≤ 31416 / 10000 * U + H := by
+    have h1 := m.round_err _ hPIm
+    have h2 := Close.u_mul_le hS (y := πd) (Y := 31416 / 10000)
+      (by rw [abs_of_pos (by linarith)]; exact hπd2)
+    linarith
+  have hPI2 : PI ≤ 3142 / 1000 := by
+    have := (abs_le.1 hPIe).2; linarith
+  have hPI0 : 0 < PI := by
+    have := (abs_le.1 hPIe).1; linarith
+  have hEt : 7 * X * U + 7 * X * H ≤ 14 * εU := by linarith
+  have hEt' : 7 * X * U + 7 * X * H ≤ 2 / 10 ^ 5 := by rw [hε] at hEt; linarith
   refine ⟨hNX, hnd, ?_⟩
   -- p = N * PI
   have hNF : (N : ℝ) ∈ m.F := hnd ▸ m.round_mem _ (hNX.trans (by linarith))
