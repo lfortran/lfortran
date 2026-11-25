@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check the Float runs that the Lean proofs are about, by testing.
 
-The theorems `legendre_float_spec`, `kernel_sin_spec` and
-`kernel_fastest_spec` are about the generated Lean templates run at
+The theorems `legendre_float_spec`, `kernel_sin_spec`, `kernel_fastest_spec`
+and `kernel_fast_spec` are about the generated Lean templates run at
 `LFortran.machine` (Int32, Float). Lean checks those proofs; this script
 checks the two links that the proofs take on trust:
 
@@ -62,7 +62,8 @@ partial def loop (h : IO.FS.Stream) : IO Unit := do
     let p := legendre_mod.legendre_poly (K := LFortran.machine) n x
     let s := sin_kernels.kernel_sin (K := LFortran.machine) x
     let f := sin_kernels.kernel_fastest (K := LFortran.machine) x
-    IO.println s!"{bitsInt p} {bitsInt s} {bitsInt f}"
+    let c := sin_kernels.kernel_fast (K := LFortran.machine) x
+    IO.println s!"{bitsInt p} {bitsInt s} {bitsInt f} {bitsInt c}"
   | none => pure ()
   loop h
 
@@ -90,8 +91,9 @@ def inputs(count, seed):
     pi_d = math.pi
     xs = [0.0, -0.0, 5e-324, -5e-324, 2.0 ** -1022, -(2.0 ** -1022), 1e-310,
           1.0, -1.0, 0.5, -0.5, pi_d / 2, -pi_d / 2, pi_d, -pi_d,
-          2.0 ** 30, -(2.0 ** 30), 1.5707963267948966, -1.5707963267948966]
-    for k in range(-40, 41):
+          2.0 ** 30, -(2.0 ** 30), 1.5707963267948966, -1.5707963267948966,
+          6e9, -6e9]
+    for k in list(range(-40, 41)) + [10 ** 6, -10 ** 6, 123456789, 1909859317, -1909859317]:
         x = (k + 0.5) * pi_d
         xs += [x, math.nextafter(x, math.inf), math.nextafter(x, -math.inf)]
     for e in range(-60, 31):
@@ -102,10 +104,12 @@ def inputs(count, seed):
             x = rng.uniform(-1, 1)
         elif r < 0.6:
             x = rng.uniform(-pi_d / 2, pi_d / 2)
-        elif r < 0.9:
+        elif r < 0.85:
             x = rng.choice([-1, 1]) * 2.0 ** rng.uniform(-30, 30)
-        else:
+        elif r < 0.95:
             x = rng.choice([-1, 1]) * rng.uniform(0, 2.0 ** 30)
+        else:
+            x = rng.choice([-1, 1]) * rng.uniform(0, 6e9)
         xs.append(x)
     return [(rng.randint(0, 100), to_bits(x)) for x in xs]
 
@@ -229,8 +233,10 @@ def main():
     # 1. bit-identical runs (NaNs compare equal regardless of payload)
     mismatches = 0
     for i, (n, b) in enumerate(data_in):
-        for col, what in enumerate(["legendre_poly", "kernel_sin", "kernel_fastest"]):
-            if what == "kernel_fastest" and abs(from_bits(b)) > 2.0 ** 30:
+        for col, what in enumerate(["legendre_poly", "kernel_sin", "kernel_fastest",
+                                    "kernel_fast"]):
+            # int() of |x/pi| >= 2^31 overflows (undefined in Fortran)
+            if what in ("kernel_fastest", "kernel_fast") and abs(from_bits(b)) > 6e9:
                 continue
             vals = {k: rows[i][col] for k, rows in results.items()}
             if len({("nan" if is_nan_bits(v) else v) for v in vals.values()}) != 1:
@@ -238,16 +244,17 @@ def main():
                 if mismatches <= 10:
                     print(f"mismatch {what}(n={n}, x={from_bits(b)!r}): "
                           + ", ".join(f"{k}={from_bits(v)!r}" for k, v in vals.items()))
-    print(f"bit-identical: {3 * n_in - mismatches} of {3 * n_in} results "
+    compared = sum(4 - 2 * (abs(from_bits(b)) > 6e9) for _, b in data_in)
+    print(f"bit-identical: {compared - mismatches} of {compared} results "
           "(lean, lfortran, gfortran)")
 
     # 2. proved bounds against high-precision references
-    worst = {"legendre_poly": 0.0, "kernel_sin": 0.0, "kernel_fastest": 0.0}
+    worst = {"legendre_poly": 0.0, "kernel_sin": 0.0, "kernel_fastest": 0.0, "kernel_fast": 0.0}
     checked = {k: 0 for k in worst}
     violations = 0
     for i, (n, b) in enumerate(data_in):
         x = from_bits(b)
-        p, s, f = (from_bits(v) for v in results["lean"][i])
+        p, s, f, c = (from_bits(v) for v in results["lean"][i])
         checks = []
         if abs(x) <= 1:
             exact = legendre_exact(n, Fraction(x))
@@ -263,6 +270,9 @@ def main():
             err = abs(Decimal(f) - dec_sin(xd)) if math.isfinite(f) else None
             checks.append(("kernel_fastest", err,
                            Decimal(575) / Decimal(10) ** 5 + big_x * Decimal(225) / Decimal(10) ** 17))
+        if abs(x) <= 6e9:
+            err = abs(Decimal(c) - dec_sin(xd)) if math.isfinite(c) else None
+            checks.append(("kernel_fast", err, Decimal(22) / Decimal(10) ** 16))
         for name, err, bound in checks:
             checked[name] += 1
             if err is None or err > bound:
