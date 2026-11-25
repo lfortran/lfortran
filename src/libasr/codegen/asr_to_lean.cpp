@@ -68,8 +68,11 @@ std::string int_lit(int64_t i) {
 std::string string_lit(const std::string &s) {
     std::string o = "\"";
     for (char c : s) {
-        if (c == '\\' || c == '"') o += '\\';
-        o += c;
+        if (c == '\\' || c == '"') { o += '\\'; o += c; }
+        else if (c == '\n') o += "\\n";
+        else if (c == '\r') o += "\\r";
+        else if (c == '\t') o += "\\t";
+        else o += c;
     }
     return o + "\"";
 }
@@ -430,6 +433,9 @@ private:
             ASR::Variable_t *d = dummy(fn, i);
             if (d->m_intent == ASR::intentType::Out && !is_array(d->m_type)) continue;
             ASR::expr_t *a = args[i].m_value;
+            if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
+                unsupported("this argument is", a->base.loc);
+            }
             if (is_array(ASRUtils::expr_type(a))) a = array_var(a);
             src += " " + atom(lower(a));
         }
@@ -440,10 +446,12 @@ private:
         std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
         std::transform(f.begin(), f.end(), f.begin(), ::tolower);
         if (x.n_args == 1 && f == "abs") {
-            Val a = operand(x.m_args[0]);
-            if (is_real(x.m_args[0])) return app("FReal.abs", {a});
-            return {"FInt.ofInt " + atom({"Int.natAbs " + atom(
-                app("FInt.toInt", {a})), pApp}), pApp};
+            if (is_real(x.m_args[0])) return app("FReal.abs", {operand(x.m_args[0])});
+            if (is_int(x.m_args[0])) {
+                Val a = operand(x.m_args[0]);
+                return {"FInt.ofInt " + atom({"Int.natAbs " + atom(
+                    app("FInt.toInt", {a})), pApp}), pApp};
+            }
         }
         // `int(x)`: truncation toward zero, in the result's integer kind.
         if (x.n_args >= 1 && f == "int" && is_real(x.m_args[0])) {
@@ -490,8 +498,12 @@ private:
                 return {"(FInt.ofInt " + atom(app("FReal.toInt", {operand(x.m_arg)}))
                     + " : " + type(x.m_type, loc) + ")", pAtom};
             case ASR::cast_kindType::RealToReal: {
-                int k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
-                return app(k == 8 ? "FKinds.r4to8" : "FKinds.r8to4",
+                type(x.m_type, loc);
+                type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
+                int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
+                int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                if (src_k == dst_k) return lower(x.m_arg);
+                return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4",
                     {operand(x.m_arg)});
             }
             default:
@@ -553,11 +565,14 @@ private:
                 }
                 return {name(v->m_name, v->base.base.loc), pAtom};
             }
-            case ASR::exprType::IntegerConstant:
-                return {"FInt.ofInt " + int_lit(
-                    ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n), pApp};
+            case ASR::exprType::IntegerConstant: {
+                auto &x = *ASR::down_cast<ASR::IntegerConstant_t>(e);
+                type(x.m_type, loc);
+                return {"FInt.ofInt " + int_lit(x.m_n), pApp};
+            }
             case ASR::exprType::RealConstant: {
                 auto &x = *ASR::down_cast<ASR::RealConstant_t>(e);
+                type(x.m_type, loc);
                 return {real_lit(x.m_r, ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind,
                     loc), pApp};
             }
@@ -631,7 +646,9 @@ private:
                 return intrinsic(*ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e),
                     loc);
             default:
-                if (ASR::expr_t *v = ASRUtils::expr_value(e)) return lower(v);
+                if (ASR::expr_t *v = ASRUtils::expr_value(e); v && v != e) {
+                    return lower(v);
+                }
                 unsupported("this expression is", loc);
         }
     }
@@ -780,8 +797,8 @@ private:
                     || (ASR::is_a<ASR::IntegerConstant_t>(*h.m_increment)
                         && ASR::down_cast<ASR::IntegerConstant_t>(
                             h.m_increment)->m_n == 1);
-                if (!h.m_v || !ASR::is_a<ASR::Var_t>(*h.m_v) || !unit
-                        || x.m_name) {
+                if (!h.m_v || !ASR::is_a<ASR::Var_t>(*h.m_v) || !h.m_start
+                        || !h.m_end || !unit || x.m_name) {
                     unsupported("this do loop is", loc);
                 }
                 // The index is not declared, so its kind is fixed on `lo`.
@@ -984,6 +1001,8 @@ private:
             p.sig += " : " + ty;
         }
         collect_simple_loop_vars(fn->m_body, fn->n_body);
+        for (ASR::Variable_t *d : dummies) loop_vars.erase(d);
+        if (result) loop_vars.erase(result);
         buf = &p.body;
         ind = 1;
         for (const std::string &l : entry) line(l);
@@ -1118,7 +1137,12 @@ public:
         }
         if (prog) {
             for (ASR::Function_t *c : prog_proc.callees) {
-                prog_level = std::max(prog_level, procs[c].level);
+                auto it = procs.find(c);
+                if (it == procs.end()) {
+                    unsupported("a call to a procedure outside this file is",
+                        c->base.base.loc);
+                }
+                prog_level = std::max(prog_level, it->second.level);
             }
             std::string pn = name(prog->m_name, prog->base.base.loc) + "_main";
             out += "def " + pn + " {K : Kinds} [" + level_class(prog_level)
