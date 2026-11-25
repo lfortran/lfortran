@@ -3313,6 +3313,14 @@ int main_app(int argc, char *argv[]) {
         return emit_lean(opts.arg_file, compiler_options);
     }
     if (backend == Backend::lean) {
+        if (opts.arg_files.size() > 1) {
+            std::cerr << "error: --backend=lean accepts a single input file\n";
+            return 1;
+        }
+        if (opts.arg_c || opts.arg_S) {
+            std::cerr << "error: --backend=lean cannot be combined with -c or -S\n";
+            return 1;
+        }
         bool to_file = !compiler_options.arg_o.empty();
         return emit_lean_exec(opts.arg_file, outfile, to_file, compiler_options);
     }

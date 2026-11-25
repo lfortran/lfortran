@@ -121,7 +121,7 @@ program lean_arrays_01
 use lean_arrays_01_mod
 implicit none
 real(8) :: c(3), p, v(0:2), m(2, 3), w(2)
-integer :: i, j, a, b, x(2, 3), y(3, 2), k
+integer :: i, j, a, b, x(2, 3), y(3, 2), k, z(5:3)
 logical :: found
 c(1) = 1
 c(2) = 2
@@ -167,5 +167,8 @@ if (k /= 6) error stop
 k = 99
 call loop_inout(0, k)
 if (k /= 1) error stop
+k = -5
+if (abs(k) /= 5) error stop
+if (lbound(z, 1) /= 1 .or. ubound(z, 1) /= 0 .or. size(z) /= 0) error stop
 print *, p, v(2), a, total(m), y(3, 1), k
 end program
