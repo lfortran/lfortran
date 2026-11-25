@@ -26,14 +26,11 @@ open LFortran Real SinKernelsProof
 
 namespace SinKernelsFloat
 
-theorem small : Small floatV (1 / 2 ^ 53) (1 / 2 ^ 1075) :=
-  ⟨by positivity, by positivity, by norm_num [εU], by norm_num [εU], le_rfl, le_rfl⟩
-
 /-- The `Float` run of `kernel_sin` meets `KernelSinFloatSpec`. -/
 theorem kernel_sin_spec :
     SinKernels.KernelSinFloatSpec (sin_kernels.kernel_sin (K := LFortran.machine)) := by
   intro xf x hx hx1
-  obtain ⟨w, hw, h⟩ := kernel_sin_correct (K := LFortran.machine) floatV small
+  obtain ⟨w, hw, h⟩ := kernel_sin_correct (K := LFortran.machine) floatV floatV_small
     (by show (4 : ℝ) ≤ 2 ^ 1022; exact le_trans (by norm_num) (pow_le_pow_right₀
       (by norm_num : (1 : ℝ) ≤ 2) (by norm_num : 2 ≤ 1022))) hx hx1
   refine ⟨w, hw, h.trans ?_⟩
