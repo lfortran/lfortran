@@ -6,6 +6,12 @@
 // instantiates its template at `LFortran.machine`. `--show-lean` and
 // `--backend=lean` emit the same code; `--backend=lean` requires a program.
 //
+// Arrays are `Arr` values and procedures are pure functions with value
+// semantics: a subroutine returns its `intent(out)` and `intent(inout)`
+// arguments, and `call s(a, b)` assigns them back (copy-in/copy-out, which
+// is faithful because Fortran forbids aliasing a modified dummy argument).
+// An `intent(out)` scalar is not passed in.
+//
 // Constructs not translated yet are rejected with an error rather than
 // translated approximately.
 
@@ -186,6 +192,70 @@ private:
         unsupported("this type is", loc);
     }
 
+    bool is_array(ASR::ttype_t *t) {
+        return t && ASR::is_a<ASR::Array_t>(*t);
+    }
+
+    // The type of a variable: a scalar type, or `Arr` of one.
+    std::string vtype(ASR::ttype_t *t, const Location &loc) {
+        if (is_array(t)) {
+            return "Arr " + type(ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
+        }
+        return type(t, loc);
+    }
+
+    // An integer expression as a Lean `Int`.
+    Val int_expr(ASR::expr_t *e) {
+        if (ASR::expr_t *v = ASRUtils::expr_value(e)) e = v;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+            return {int_lit(ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n), pAtom};
+        }
+        if (!is_int(e)) unsupported("this index is", e->base.loc);
+        return app("FInt.toInt", {lower(e)});
+    }
+
+    // An extent as a Lean `Nat`.
+    std::string extent(ASR::expr_t *e) {
+        ASR::expr_t *v = ASRUtils::expr_value(e);
+        if (v && ASR::is_a<ASR::IntegerConstant_t>(*v)) {
+            int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n;
+            return std::to_string(n < 0 ? 0 : n);
+        }
+        return atom(int_expr(e)) + ".toNat";
+    }
+
+    std::string int_array(const std::vector<std::string> &xs) {
+        std::string s = "#[";
+        for (size_t i = 0; i < xs.size(); i++) s += (i ? ", " : "") + xs[i];
+        return s + "]";
+    }
+
+    // The declared lower bounds and, for an explicit shape, extents.
+    void dims(ASR::ttype_t *t, std::vector<std::string> &lbs,
+            std::vector<std::string> &exts, bool &assumed, const Location &loc) {
+        ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+        size_t n_len = 0;
+        for (size_t i = 0; i < a->n_dims; i++) {
+            ASR::dimension_t &d = a->m_dims[i];
+            lbs.push_back(d.m_start ? int_expr(d.m_start).src : "1");
+            if (d.m_length) {
+                n_len++;
+                exts.push_back(extent(d.m_length));
+            }
+        }
+        if (n_len != 0 && n_len != a->n_dims) unsupported("this array shape is", loc);
+        assumed = n_len == 0;
+    }
+
+    // An array argument or operand: a whole array variable.
+    ASR::expr_t *array_var(ASR::expr_t *e) {
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*e)) unsupported("this array expression is", e->base.loc);
+        return e;
+    }
+
     bool is_int(ASR::expr_t *e) {
         return ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(e));
     }
@@ -267,14 +337,25 @@ private:
         return ASR::down_cast<ASR::Function_t>(s);
     }
 
+    static ASR::Variable_t *dummy(ASR::Function_t *fn, size_t i) {
+        return ASRUtils::EXPR2VAR(fn->m_args[i]);
+    }
+
+    // The application of a procedure to the arguments it takes: every
+    // argument except an `intent(out)` scalar.
     Val call(ASR::symbol_t *sym, ASR::call_arg_t *args, size_t n,
             const Location &loc) {
         ASR::Function_t *fn = callee(sym, loc);
         cur->callees.insert(fn);
+        if (n != fn->n_args) unsupported("this call is", loc);
         std::string src = call_name((ASR::symbol_t*) fn) + " (K := K)";
         for (size_t i = 0; i < n; i++) {
             if (!args[i].m_value) unsupported("an omitted argument is", loc);
-            src += " " + atom(lower(args[i].m_value));
+            ASR::Variable_t *d = dummy(fn, i);
+            if (d->m_intent == ASR::intentType::Out && !is_array(d->m_type)) continue;
+            ASR::expr_t *a = args[i].m_value;
+            if (is_array(ASRUtils::expr_type(a))) a = array_var(a);
+            src += " " + atom(lower(a));
         }
         return {src, pApp};
     }
@@ -342,9 +423,47 @@ private:
         }
     }
 
+    // The subscripts of an array element, as `#[i₁, …]`.
+    std::string index(const ASR::ArrayItem_t &x) {
+        std::vector<std::string> idx;
+        for (size_t i = 0; i < x.n_args; i++) {
+            const ASR::array_index_t &a = x.m_args[i];
+            if (a.m_left || a.m_step || !a.m_right) {
+                unsupported("an array section is", x.base.base.loc);
+            }
+            idx.push_back(int_expr(a.m_right).src);
+        }
+        return int_array(idx);
+    }
+
     Val lower(ASR::expr_t *e) {
         const Location &loc = e->base.loc;
+        if (is_array(ASRUtils::expr_type(e)) && !ASR::is_a<ASR::Var_t>(*e)
+                && !ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            unsupported("this array expression is", loc);
+        }
         switch (e->type) {
+            case ASR::exprType::ArrayPhysicalCast:
+                return lower(array_var(e));
+            case ASR::exprType::ArrayItem: {
+                auto &x = *ASR::down_cast<ASR::ArrayItem_t>(e);
+                return app("Arr.get", {lower(array_var(x.m_v)), {index(x), pAtom}});
+            }
+            case ASR::exprType::ArraySize: {
+                auto &x = *ASR::down_cast<ASR::ArraySize_t>(e);
+                std::string a = atom(lower(array_var(x.m_v)));
+                std::string sz = x.m_dim ? "Arr.sizeDim " + a + " " + atom(int_expr(x.m_dim))
+                    : "Arr.size " + a;
+                return {"(FInt.ofInt (" + sz + ") : " + type(x.m_type, loc) + ")", pAtom};
+            }
+            case ASR::exprType::ArrayBound: {
+                auto &x = *ASR::down_cast<ASR::ArrayBound_t>(e);
+                if (!x.m_dim) unsupported("this array bound is", loc);
+                std::string f = x.m_bound == ASR::arrayboundType::LBound
+                    ? "Arr.lbound " : "Arr.ubound ";
+                return {"(FInt.ofInt (" + f + atom(lower(array_var(x.m_v))) + " "
+                    + atom(int_expr(x.m_dim)) + ") : " + type(x.m_type, loc) + ")", pAtom};
+            }
             case ASR::exprType::Var: {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(e)->m_v);
@@ -496,10 +615,73 @@ private:
         switch (s->type) {
             case ASR::stmtType::Assignment: {
                 auto &x = *ASR::down_cast<ASR::Assignment_t>(s);
+                if (x.m_overloaded) unsupported("this assignment is", loc);
+                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                    auto &t = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                    std::string a = lower(array_var(t.m_v)).src;
+                    line(a + " := " + app("Arr.set", {{a, pAtom}, {index(t), pAtom},
+                        lower(x.m_value)}).src);
+                    break;
+                }
                 if (!ASR::is_a<ASR::Var_t>(*x.m_target)) {
                     unsupported("this assignment is", loc);
                 }
-                line(lower(x.m_target).src + " := " + lower(x.m_value).src);
+                std::string a = lower(x.m_target).src;
+                if (is_array(ASRUtils::expr_type(x.m_target))) {
+                    // `a = b` keeps the bounds of `a`; `a = v` sets every element.
+                    ASR::expr_t *v = x.m_value;
+                    if (ASR::is_a<ASR::ArrayBroadcast_t>(*v)) {
+                        v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
+                    }
+                    if (is_array(ASRUtils::expr_type(v))) {
+                        line(a + " := Arr.copyBack " + a + " " + atom(lower(array_var(v))));
+                    } else {
+                        line(a + " := Arr.map (fun _ => " + lower(v).src + ") " + a);
+                    }
+                    break;
+                }
+                line(a + " := " + lower(x.m_value).src);
+                break;
+            }
+            case ASR::stmtType::SubroutineCall: {
+                auto &x = *ASR::down_cast<ASR::SubroutineCall_t>(s);
+                if (x.m_dt) unsupported("a type-bound call is", loc);
+                ASR::Function_t *fn = callee(x.m_name, loc);
+                if (fn->m_return_var) unsupported("this call is", loc);
+                Val c = call(x.m_name, x.m_args, x.n_args, loc);
+                // The `intent(out)`/`intent(inout)` actual arguments, in order.
+                std::vector<ASR::expr_t*> outs;
+                for (size_t i = 0; i < x.n_args; i++) {
+                    if (dummy(fn, i)->m_intent == ASR::intentType::In) continue;
+                    ASR::expr_t *a = x.m_args[i].m_value;
+                    if (is_array(ASRUtils::expr_type(a))) a = array_var(a);
+                    if (!ASR::is_a<ASR::Var_t>(*a)) {
+                        unsupported("this intent(out) or intent(inout) argument is",
+                            a->base.loc);
+                    }
+                    outs.push_back(a);
+                }
+                auto assign = [&](ASR::expr_t *a, const std::string &v) {
+                    std::string n = lower(a).src;
+                    if (is_array(ASRUtils::expr_type(a))) {
+                        line(n + " := Arr.copyBack " + n + " " + v);
+                    } else {
+                        line(n + " := " + v);
+                    }
+                };
+                if (outs.size() == 1) {
+                    assign(outs[0], atom(c));
+                } else {
+                    // Temporaries named `r'i`: `'` cannot occur in Fortran names.
+                    std::string pat;
+                    for (size_t i = 0; i < outs.size(); i++) {
+                        pat += (i ? ", " : "") + std::string("r'") + std::to_string(i + 1);
+                    }
+                    line("let (" + pat + ") := " + c.src);
+                    for (size_t i = 0; i < outs.size(); i++) {
+                        assign(outs[i], "r'" + std::to_string(i + 1));
+                    }
+                }
                 break;
             }
             case ASR::stmtType::If: {
@@ -529,9 +711,14 @@ private:
                     unsupported("this do loop is", loc);
                 }
                 // The index is not declared, so its kind is fixed on `lo`.
-                line("for " + lower(h.m_v).src + " in FInt.range ("
-                    + lower(h.m_start).src + " : "
-                    + type(ASRUtils::expr_type(h.m_v), loc) + ") "
+                std::string ty = type(ASRUtils::expr_type(h.m_v), loc);
+                std::string lo = lower(h.m_start).src;
+                std::string asc = " : " + ty + ")";
+                if (!(lo.size() > asc.size() && lo[0] == '('
+                        && lo.compare(lo.size() - asc.size(), asc.size(), asc) == 0)) {
+                    lo = "(" + lo + asc;
+                }
+                line("for " + lower(h.m_v).src + " in FInt.range " + lo + " "
                     + atom(lower(h.m_end)) + " do");
                 ind++;
                 if (x.n_body == 0) line("pure ()");
@@ -599,6 +786,17 @@ private:
             if (v->m_symbolic_value || v->m_value) {
                 unsupported("an initialized local variable is", vloc);
             }
+            if (is_array(v->m_type)) {
+                std::vector<std::string> lbs, exts;
+                bool assumed;
+                dims(v->m_type, lbs, exts, assumed, vloc);
+                if (assumed) unsupported("this local array is", vloc);
+                line("let mut " + name(v->m_name, vloc) + " : " + vtype(v->m_type, vloc)
+                    + " := Arr.make " + int_array(lbs) + " " + int_array(exts) + " "
+                    + atom({zero(ASR::down_cast<ASR::Array_t>(v->m_type)->m_type, vloc),
+                        pApp}));
+                continue;
+            }
             line("let mut " + name(v->m_name, vloc) + " : " + type(v->m_type, vloc)
                 + " := " + zero(v->m_type, vloc));
         }
@@ -623,23 +821,70 @@ private:
         scope = fn->m_symtab;
         in_program = false;
         check_symbols(fn->m_symtab);
-        if (!fn->m_return_var) unsupported("a subroutine is", loc);
-        result = ASRUtils::EXPR2VAR(fn->m_return_var);
-        p.ret = name(result->m_name, result->base.base.loc);
+        // An interface body declares a procedure implemented elsewhere (a
+        // separate module procedure, an external procedure).
+        if (ASRUtils::get_FunctionType(fn)->m_deftype != ASR::deftypeType::Implementation) {
+            unsupported("a procedure without its implementation in this module is", loc);
+        }
+        result = fn->m_return_var ? ASRUtils::EXPR2VAR(fn->m_return_var) : nullptr;
         std::set<ASR::Variable_t*> dummies;
+        std::vector<std::string> entry, outs, out_types;
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::Variable_t *a = ASRUtils::EXPR2VAR(fn->m_args[i]);
             const Location &aloc = a->base.base.loc;
-            if (a->m_intent != ASR::intentType::In) {
-                unsupported("an argument that is not intent(in) is", aloc);
+            std::string an = name(a->m_name, aloc);
+            ASR::intentType in = a->m_intent;
+            if (in != ASR::intentType::In && in != ASR::intentType::Out
+                    && in != ASR::intentType::InOut) {
+                unsupported("an argument without intent(in), intent(out) or "
+                    "intent(inout) is", aloc);
+            }
+            if (result && in != ASR::intentType::In) {
+                unsupported("a function argument that is not intent(in) is", aloc);
             }
             dummies.insert(a);
-            p.sig += " (" + name(a->m_name, aloc) + " : " + type(a->m_type, aloc) + ")";
+            std::string let = in == ASR::intentType::In ? "let " : "let mut ";
+            if (is_array(a->m_type)) {
+                // The dummy takes its declared bounds.
+                std::vector<std::string> lbs, exts;
+                bool assumed;
+                dims(a->m_type, lbs, exts, assumed, aloc);
+                p.sig += " (" + an + " : " + vtype(a->m_type, aloc) + ")";
+                entry.push_back(let + an + " := " + (assumed
+                    ? "Arr.rebase " + an + " " + int_array(lbs)
+                    : "Arr.reshape " + an + " " + int_array(lbs) + " " + int_array(exts)));
+            } else if (in == ASR::intentType::Out) {
+                entry.push_back("let mut " + an + " : " + type(a->m_type, aloc) + " := "
+                    + zero(a->m_type, aloc));
+            } else {
+                p.sig += " (" + an + " : " + type(a->m_type, aloc) + ")";
+                if (in == ASR::intentType::InOut) entry.push_back("let mut " + an + " := " + an);
+            }
+            if (in != ASR::intentType::In) {
+                outs.push_back(an);
+                out_types.push_back(vtype(a->m_type, aloc));
+            }
         }
-        p.sig += " : " + type(result->m_type, result->base.base.loc);
+        if (result) {
+            p.ret = name(result->m_name, result->base.base.loc);
+            p.sig += " : " + type(result->m_type, result->base.base.loc);
+        } else {
+            if (outs.empty()) {
+                unsupported("a subroutine without intent(out) or intent(inout) "
+                    "arguments is", loc);
+            }
+            std::string ret, ty;
+            for (size_t i = 0; i < outs.size(); i++) {
+                ret += (i ? ", " : "") + outs[i];
+                ty += (i ? " × " : "") + out_types[i];
+            }
+            p.ret = outs.size() == 1 ? ret : "(" + ret + ")";
+            p.sig += " : " + ty;
+        }
         collect_loop_vars(fn->m_body, fn->n_body);
         buf = &p.body;
         ind = 1;
+        for (const std::string &l : entry) line(l);
         locals(fn->m_symtab, dummies);
         stmts(fn->m_body, fn->n_body);
         bool returned = fn->n_body

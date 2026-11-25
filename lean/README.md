@@ -39,14 +39,16 @@ pixi run -e llvm11 python lean/run_integration_tests.py
 ```
 
 The runner checks the exit code, like every integration test; the test
-program checks its own results. `lean_sin_kernels_01` and `lean_names_01`
-are the only tests labeled `lean` while the template backend grows; `--all`
+program checks its own results. `lean_sin_kernels_01`, `lean_names_01` and
+`lean_arrays_01` are the only tests labeled `lean` while the template backend
+grows; `--all`
 tries every integration test and `--apply` updates the labels.
 
-The backend accepts the subset the two examples need: module functions with
-scalar `integer`/`real` arguments (`intent(in)`), locals, assignments, `if`,
-unit-step `do` loops, calls (callees are emitted first; self-recursion is
-`partial`), `+ - * /`, comparisons, integer/real conversions, `int`, `abs`,
+The backend accepts the subset the examples need: module functions and
+subroutines with `integer`/`real`/`logical` scalar and array arguments,
+locals (including arrays), assignments (to variables, array elements and
+whole arrays), `if`, unit-step `do` loops, `return`, calls (callees are
+emitted first; self-recursion is `partial`), `+ - * /`, comparisons, integer/real conversions, `int`, `abs`,
 `sign`, `mod`, `modulo`, the math intrinsics (`sin`, `sqrt`, ...; these need
 `FKindsMath` and are not modelled in proofs), and in a program also `print`,
 `stop` and `error stop`. Anything else is rejected with an error rather than
@@ -56,10 +58,34 @@ which `sign(a, b)` observes through `FReal.signbit`), as `m · 2^e`
 (`FReal.lit m e`), or `FReal.ofInt n` for integers. `print` uses Lean's
 `toString`, which is shorter than Fortran list-directed output.
 
+**Procedures, arguments and arrays** use value semantics, so every template
+is a pure function and proofs stay about functions:
+
+* A Fortran array is an `Arr α` value (`runtime/LFortran/Arr.lean`):
+  column-major data with the bounds of each dimension. Element access and
+  update are `Arr.get a #[i, j]` and `a := Arr.set a #[i, j] v`; Lean updates
+  an unshared array in place. `size`, `lbound` and `ubound` read the stored
+  bounds, and `a = b` and `a = v` assign whole arrays.
+* A subroutine returns its `intent(out)` and `intent(inout)` arguments, in
+  order (a tuple if there are several), and `call s(a, b)` assigns them back
+  to the actual arguments (copy-in/copy-out). This is faithful for conforming
+  programs because Fortran forbids aliasing between a modified dummy argument
+  and anything else the procedure accesses. An `intent(out)` scalar is not
+  passed in; it starts as a fresh local.
+* A dummy array takes its declared bounds on entry (`Arr.reshape` for an
+  explicit-shape `a(n)`, which reinterprets the data as sequence association
+  does; `Arr.rebase` for an assumed-shape `a(:)`); after the call, the actual
+  argument keeps its own bounds and takes the data back (`Arr.copyBack`).
+* Not yet translated: module variables (planned as an explicit state record
+  passed in and returned), derived types, `complex`, functions with
+  `intent(out)`/`intent(inout)` arguments, array sections and array
+  expressions, `allocatable`/`pointer`, and `print`/`stop` inside
+  procedures (planned through a monad class only where needed).
+
 `examples/Demo/Design.lean` and `examples/Demo/DesignProof.lean` are a hand-written
-spike of the features the backend will need next (module state, derived
-types, arrays, complex, `intent(out)`), each run at `machine` and
-instantiated at `proofKinds`.
+spike of these and further features (module state, derived types, arrays,
+complex, `intent(out)`), each run at `machine` and instantiated at
+`proofKinds`.
 
 The directory has three Lake packages:
 
@@ -79,7 +105,7 @@ lake build --wfail   # builds runtime/, proof/ and the examples
 
 | File | Role | Written by |
 |---|---|---|
-| `examples/legendre.f90`, `examples/sin_kernels.f90` | the implementations | programmer (or AI) |
+| `examples/legendre.f90`, `examples/sin_kernels.f90`, `examples/horner.f90` | the implementations | programmer (or AI) |
 | `examples/legendre_accuracy.f90` | measured accuracy of `legendre_poly` | programmer |
 | `examples/Legendre/Generated.lean`, `examples/SinKernels/Generated.lean` | the implementations in Lean (templates) | `lfortran --show-lean` |
 | `runtime/LFortran/Arith.lean` | `FInt`, `FReal`, `Kinds`, `FKinds` | human, reviewed |
@@ -92,7 +118,7 @@ lake build --wfail   # builds runtime/, proof/ and the examples
 | `proof/LFortranProof/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s, and the Cray model (not trusted) | proofs (AI), checked by Lean |
 | `proof/LFortranProof/FloatExact.lean`, `proof/LFortranProof/PiBounds.lean`, `proof/pi_witness.py` | exact `Float` `-`/`*`, Sterbenz's lemma; `π` to 32 decimals | proofs (AI), checked by Lean |
 | `proof/LFortranProof/PolyBound.lean`, `proof/LFortranProof/SinTaylor.lean`, `proof/LFortranProof/ErrorProp.lean` | kernel-checked polynomial bounds, Taylor bounds for `sin`, forward error propagation in a `VModel` | proofs (AI), checked by Lean |
-| `proof/LFortranProof/Loop.lean` | loop invariants for generated `do` loops (`range_foldl_inv`) | proofs (AI), checked by Lean |
+| `proof/LFortranProof/Loop.lean`, `proof/LFortranProof/Arr.lean` | loop invariants for generated `do` loops (`range_foldl_inv`); array element access | proofs (AI), checked by Lean |
 | `examples/Legendre/Proof*.lean`, `examples/Legendre/Corollaries.lean` | the Legendre proofs | proofs (AI), checked by Lean |
 | `examples/SinKernels/Proof/*.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
 | `examples/Legendre/Run.lean` | run `legendre_poly` at `machine` | human |
@@ -100,6 +126,8 @@ lake build --wfail   # builds runtime/, proof/ and the examples
 | `proof/LFortranProof/FloatVal.lean`, `proof/LFortranProof/FloatVModel.lean` | Lean's `Float` (and `Int32`) is a `VModel`: every operation the templates use, literals included | proofs (AI), checked by Lean |
 | `examples/Legendre/FloatCorrect.lean`, `examples/SinKernels/FloatRun.lean` | the `Float` runs meet the `Float` specifications: the general theorems at `Float` | proofs (AI), checked by Lean |
 | `examples/SinKernels/Spec.lean` | what the sin kernels' `Float` runs must satisfy | human, reviewed |
+| `examples/Horner/Spec.lean` | what `horner`'s `Float` run must satisfy | human, reviewed |
+| `examples/Horner/Proof*.lean`, `examples/Horner/FloatRun.lean` | the Horner proofs and its `Float` run | proofs (AI), checked by Lean |
 | `examples/check_float_runs.py`, `examples/float_runs_check.f90` | bit-for-bit and bound tests of the `Float` runs | human |
 
 ## 1. The idea
@@ -431,6 +459,38 @@ The bounds are worst-case. `kernel_sin`'s `6.14 U` is about 2.7 times the
 measured `2.3 u`, and `kernel_fast`'s `2.2·10^-15` about 3 times its measured
 `7.5·10^-16`.
 
+### 2.7 Third example: Horner's rule, with an array and `intent(out)`
+
+`examples/horner.f90` evaluates `p = c(1) + c(2) x + … + c(n) x^(n-1)` in a
+subroutine with an explicit-shape array argument `c(n)` and an
+`intent(out)` result `p`. The generated template takes `c` as an `Arr K.R8`
+and returns `p`:
+
+```lean
+def horner {K : Kinds} [FKinds K] (n : K.I4) (c : Arr K.R8) (x : K.R8) : K.R8 := Id.run do
+  let c := Arr.reshape c #[1] #[(FInt.toInt n).toNat]
+  let mut p : K.R8 := FReal.zero
+  p := Arr.get c #[FInt.toInt n]
+  for i in FInt.range (FInt.ofInt 1 : K.I4) (FInt.sub n (FInt.ofInt 1)) do
+    p := FReal.add (FReal.mul p x) (Arr.get c #[FInt.toInt (FInt.sub n i)])
+  return p
+```
+
+* `horner_inv` (`examples/Horner/Proof/Loop.lean`) states the loop once, on
+  any carrier: with exact `integer(4)`, the result satisfies every invariant
+  that holds for `c(n)` and is preserved by `p ↦ p x + c(n-1-t)`. It uses the
+  generic `range_foldl_inv` and `Arr.get_reshape_one`.
+* `horner_exact`: in exact arithmetic the template computes `Σ_{k<n} c_k x^k`
+  for every `n ≥ 1`.
+* `horner_rounding`, in every `VModel` (no guard digit needed): the error is
+  at most `3(n-1) U Σ |c_k| |x|^k + 3(n-1) H Σ_{k<n-1} |x|^k` for
+  `n U, n H ≤ 1/100`, the textbook `γ_{2n}`-type bound with an underflow
+  term. The invariant after `t` iterations is an error of at most
+  `3t U a_t + 3t H b_t` (`step_err`).
+* `horner_spec` (`examples/Horner/FloatRun.lean`): the `Float` run meets
+  `HornerFloatSpec` (`examples/Horner/Spec.lean`), for `1 ≤ n < 2^31` and
+  coefficients and `x` for which no intermediate value can overflow.
+
 ## 3. The floating-point model
 
 Generated code evaluates every `real(8)` operation with an abstract arithmetic
@@ -607,6 +667,7 @@ files, so what is guaranteed can be read off the theorem's type:
 | `legendre_float_spec` | `LegendreFloatSpec` (`examples/Legendre/Spec.lean`) | `n ≤ 100`, `\|x\| ≤ 1`: finite, within `10^-11` of `legendreP n x` |
 | `kernel_sin_spec` | `KernelSinFloatSpec` (`examples/SinKernels/Spec.lean`) | `\|x\| ≤ π/2`: finite, within `1.15·10^-15 \|x\| + 2^-1075` of `sin x` |
 | `kernel_fast_spec` | `KernelFastFloatSpec` (`examples/SinKernels/Spec.lean`) | `\|x0\| ≤ 6·10^9`: finite, within `2.2·10^-15` of `sin x0` (measured `7.5·10^-16`) |
+| `horner_spec` | `HornerFloatSpec` (`examples/Horner/Spec.lean`) | `1 ≤ n < 2^31`, finite `c(1..n)`, no overflow: finite, within `3(n-1) 2^-53 Σ \|c_k\| \|x\|^k + 3(n-1) 2^-1075 Σ_{k<n-1} \|x\|^k` of `Σ c_k x^k` |
 
 `floatValue` (the real number a `Float` denotes, from Lean's `Float.Model`)
 is part of these statements. Each proof is the general rounding theorem
