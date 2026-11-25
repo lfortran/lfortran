@@ -28,4 +28,10 @@ def KernelFastestFloatSpec (f : Float → Float) : Prop :=
   ∀ (xf : Float) (x0 X : ℝ), floatValue xf = some x0 → 1 ≤ X → X ≤ 2 ^ 30 → |x0| ≤ X →
     ∃ v, floatValue (f xf) = some v ∧ |v - sin x0| ≤ 575 / 10 ^ 5 + X * (225 / 10 ^ 17)
 
+/-- `kernel_fast`: for every finite `Float` `x0` with `|x0| ≤ 6·10^9`, the
+result is a finite `Float` within `2.2·10^-15` of `sin x0`. -/
+def KernelFastFloatSpec (f : Float → Float) : Prop :=
+  ∀ (xf : Float) (x0 : ℝ), floatValue xf = some x0 → |x0| ≤ 6 * 10 ^ 9 →
+    ∃ v, floatValue (f xf) = some v ∧ |v - sin x0| ≤ 22 / 10 ^ 16
+
 end SinKernels

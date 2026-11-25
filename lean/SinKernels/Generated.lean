@@ -26,4 +26,16 @@ def kernel_fastest {K : Kinds} [FKinds K] (x0 : K.R8) : K.R8 := Id.run do
   res := FReal.mul x (FReal.add (FReal.lit 8240939 (-23)) (FReal.mul z (FReal.lit (-1175563) (-23))))
   return res
 
+def kernel_fast {K : Kinds} [FKinds K] (x0 : K.R8) : K.R8 := Id.run do
+  let mut res : K.R8 := FReal.zero
+  let mut x : K.R8 := FReal.zero
+  let mut nd : K.R8 := FReal.zero
+  x := x0
+  nd := FReal.ofInt (FInt.toInt (FInt.ofInt (FReal.toInt (FReal.add (FReal.div x (FReal.lit 884279719003555 (-48))) (FReal.mul (FReal.lit 1 (-1)) (if FReal.signbit x then FReal.neg (FReal.abs (FReal.ofInt 1)) else FReal.abs (FReal.ofInt 1))))) : K.I4))
+  x := FReal.sub (FReal.sub (FReal.sub x (FReal.mul nd (FReal.lit 1647099 (-19)))) (FReal.mul nd (FReal.lit 1380619 (-41)))) (FReal.mul nd (FReal.lit 4930663418217751 (-95)))
+  if FInt.beq (FInt.modulo (FInt.ofInt (FReal.toInt nd) : K.I4) (FInt.ofInt 2)) (FInt.ofInt 1) then
+    x := FReal.neg x
+  res := sin_kernels.kernel_sin (K := K) x
+  return res
+
 end sin_kernels
