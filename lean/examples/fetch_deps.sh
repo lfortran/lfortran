@@ -26,5 +26,5 @@ PY
     git -C "$dir" checkout -q FETCH_HEAD
 done
 
-lake exe cache get $(grep -rh '^import Mathlib' ../proof/LFortranProof Legendre SinKernels Demo \
-    | sed 's/^import //' | sort -u)
+lake exe cache get $(find ../proof/LFortranProof . -path './.lake' -prune -o -name '*.lean' -print \
+    | xargs grep -h '^import Mathlib' | sed 's/^import //' | sort -u)
