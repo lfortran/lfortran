@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check the Float runs that the Lean proofs are about, by testing.
 
-The theorems `legendre_float_spec`, `kernel_sin_spec` and `kernel_fast_spec`
-are about the generated Lean templates run at
+The theorems `legendre_float_spec`, `kernel_sin_spec`, `kernel_fast_spec` and
+`horner_spec` are about the generated Lean templates run at
 `LFortran.machine` (Int32, Float). Lean checks those proofs; this script
 checks the two links that the proofs take on trust:
 
@@ -14,7 +14,7 @@ checks the two links that the proofs take on trust:
    inputs and requires bit-identical results.
 2. The proved bounds themselves: every result in the specification's domain
    is compared with a high-precision reference (exact rational arithmetic for
-   Legendre, 90-digit `decimal` for `sin`). A violation would mean a wrong
+   Legendre and Horner, 90-digit `decimal` for `sin`). A violation would mean a wrong
    specification or a broken trusted link, since Lean has checked the proof.
 
 Run from the repository root with lfortran on PATH:
@@ -54,22 +54,30 @@ def bitsInt (x : Float) : Int :=
   let b := x.toBits.toNat
   if b ≥ 2 ^ 63 then (b : Int) - 2 ^ 64 else b
 
-partial def loop (h : IO.FS.Stream) : IO Unit := do
-  let line ← h.getLine
-  if line.isEmpty then return
-  match parseLine line with
-  | some (n, x) =>
-    let p := legendre_mod.legendre_poly (K := LFortran.machine) n x
-    let s := sin_kernels.kernel_sin (K := LFortran.machine) x
-    let c := sin_kernels.kernel_fast (K := LFortran.machine) x
-    IO.println s!"{bitsInt p} {bitsInt s} {bitsInt c}"
-  | none => pure ()
-  loop h
+def fromBits (b : Int) : Float := Float.ofBits (UInt64.ofInt b)
 
 def main : IO Unit := do
   let h ← IO.getStdin
-  let _ ← h.getLine
-  loop h
+  let count := (← h.getLine).trimAscii.copy.toNat!
+  for _ in [0:count] do
+    match parseLine (← h.getLine) with
+    | some (n, x) =>
+      let p := legendre_mod.legendre_poly (K := LFortran.machine) n x
+      let s := sin_kernels.kernel_sin (K := LFortran.machine) x
+      let c := sin_kernels.kernel_fast (K := LFortran.machine) x
+      IO.println s!"{bitsInt p} {bitsInt s} {bitsInt c}"
+    | none => pure ()
+  let hcount := (← h.getLine).trimAscii.copy.toNat!
+  for _ in [0:hcount] do
+    let n := (← h.getLine).trimAscii.copy.toInt!
+    let ws := (((← h.getLine).trimAscii.copy).splitOn " ").filter (· ≠ "") |>.map String.toInt!
+    match ws with
+    | xb :: cs =>
+      let c : LFortran.Arr Float :=
+        { lbs := #[1], exts := #[n.toNat], data := (cs.map fromBits).toArray }
+      let p := horner_mod.horner (K := LFortran.machine) (Int32.ofInt n) c (fromBits xb)
+      IO.println s!"{bitsInt p}"
+    | _ => pure ()
 """
 
 
@@ -113,13 +121,50 @@ def inputs(count, seed):
     return [(rng.randint(0, 100), to_bits(x)) for x in xs]
 
 
+def horner_inputs(count, seed):
+    """`(n, xbits, [cbits])`: random, wide-exponent, sparse and subnormal
+    coefficients, and the binomial coefficients of (x - 1)^n near x = 1,
+    where cancellation is extreme."""
+    rng = random.Random(seed + 1)
+    cases = []
+    while len(cases) < count:
+        n = rng.randint(1, 30)
+        r = rng.random()
+        if r < 0.25:
+            c = [rng.uniform(-1, 1) for _ in range(n)]
+        elif r < 0.45:
+            c = [rng.choice([-1, 1]) * 2.0 ** rng.uniform(-40, 40) for _ in range(n)]
+        elif r < 0.55:
+            c = [rng.choice([0.0, 0.0, rng.uniform(-1, 1), 5e-324, -1e-310]) for _ in range(n)]
+        elif r < 0.75:
+            c = [float(math.comb(n - 1, k) * (-1) ** (n - 1 - k)) for k in range(n)]
+        else:
+            c = [rng.uniform(-1, 1) * 10 ** rng.randint(-5, 5) for _ in range(n)]
+        r = rng.random()
+        if r < 0.3:
+            x = rng.uniform(-1, 1)
+        elif r < 0.55:
+            x = 1 + rng.uniform(-1e-3, 1e-3)
+        elif r < 0.75:
+            x = rng.choice([-1, 1]) * 2.0 ** rng.uniform(-30, 3)
+        elif r < 0.85:
+            x = rng.choice([0.0, -0.0, 1.0, -1.0, 2.0, 0.5, 5e-324])
+        else:
+            x = rng.uniform(-10, 10)
+        cases.append((n, to_bits(x), [to_bits(v) for v in c]))
+    return cases
+
+
 def build_lean_driver(work, lfortran):
     gen = subprocess.run([lfortran, "--show-lean", str(LEAN / "legendre.f90")],
                          capture_output=True, text=True, check=True).stdout
     gen_sin = subprocess.run([lfortran, "--show-lean", str(LEAN / "sin_kernels.f90")],
                              capture_output=True, text=True, check=True).stdout
+    gen_horner = subprocess.run([lfortran, "--show-lean", str(LEAN / "horner.f90")],
+                                capture_output=True, text=True, check=True).stdout
     body = gen_sin.split("open LFortran\n", 1)[1]
-    src = gen + "\n" + body + "\n" + DRIVER
+    body_horner = gen_horner.split("open LFortran\n", 1)[1]
+    src = gen + "\n" + body + "\n" + body_horner + "\n" + DRIVER
     path = work / "FloatRunsCheck.lean"
     path.write_text(src)
     return path
@@ -138,7 +183,7 @@ def run_lean(path, runtime, data):
 def build_fortran(work, compiler, name):
     exe = work / name
     srcs = [str(LEAN / "legendre.f90"), str(LEAN / "sin_kernels.f90"),
-            str(LEAN / "float_runs_check.f90")]
+            str(LEAN / "horner.f90"), str(LEAN / "float_runs_check.f90")]
     if compiler == "gfortran":
         cmd = ["gfortran", "-O0", "-ffp-contract=off", "-J", str(work)] + srcs + ["-o", str(exe)]
     else:
@@ -204,12 +249,16 @@ def legendre_exact(n, x):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--count", type=int, default=20000)
+    ap.add_argument("--horner-count", type=int, default=5000)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--lfortran", default="lfortran")
     args = ap.parse_args()
 
     data_in = inputs(args.count, args.seed)
-    data = f"{len(data_in)}\n" + "".join(f"{n} {b}\n" for n, b in data_in)
+    h_in = horner_inputs(args.horner_count, args.seed)
+    data = (f"{len(data_in)}\n" + "".join(f"{n} {b}\n" for n, b in data_in)
+            + f"{len(h_in)}\n"
+            + "".join(f"{n}\n{xb} " + " ".join(map(str, cb)) + "\n" for n, xb, cb in h_in))
     work = Path(tempfile.mkdtemp(prefix="lfortran-floatruns-"))
     runtime = prepare_runtime(TOOLCHAIN)
     lean_out = parse(run_lean(build_lean_driver(work, args.lfortran), runtime, data))
@@ -222,10 +271,12 @@ def main():
 
     failures = 0
     n_in = len(data_in)
+    hresults = {}
     for key, rows in results.items():
-        if len(rows) != n_in:
-            print(f"{key}: {len(rows)} results for {n_in} inputs")
+        if len(rows) != n_in + len(h_in):
+            print(f"{key}: {len(rows)} results for {n_in + len(h_in)} inputs")
             failures += 1
+        results[key], hresults[key] = rows[:n_in], [r[0] for r in rows[n_in:]]
     if failures:
         return 1
 
@@ -242,12 +293,19 @@ def main():
                 if mismatches <= 10:
                     print(f"mismatch {what}(n={n}, x={from_bits(b)!r}): "
                           + ", ".join(f"{k}={from_bits(v)!r}" for k, v in vals.items()))
-    compared = sum(3 - (abs(from_bits(b)) > 6e9) for _, b in data_in)
+    for i, (n, xb, cb) in enumerate(h_in):
+        vals = {k: rows[i] for k, rows in hresults.items()}
+        if len({("nan" if is_nan_bits(v) else v) for v in vals.values()}) != 1:
+            mismatches += 1
+            if mismatches <= 10:
+                print(f"mismatch horner(n={n}, x={from_bits(xb)!r}): "
+                      + ", ".join(f"{k}={from_bits(v)!r}" for k, v in vals.items()))
+    compared = sum(3 - (abs(from_bits(b)) > 6e9) for _, b in data_in) + len(h_in)
     print(f"bit-identical: {compared - mismatches} of {compared} results "
           "(lean, lfortran, gfortran)")
 
     # 2. proved bounds against high-precision references
-    worst = {"legendre_poly": 0.0, "kernel_sin": 0.0, "kernel_fast": 0.0}
+    worst = {"legendre_poly": 0.0, "kernel_sin": 0.0, "kernel_fast": 0.0, "horner": 0.0}
     checked = {k: 0 for k in worst}
     violations = 0
     for i, (n, b) in enumerate(data_in):
@@ -273,6 +331,26 @@ def main():
                 print(f"bound violated: {name}(n={n}, x={x!r}): error {err}, bound {bound}")
                 continue
             worst[name] = max(worst[name], float(err / bound) if bound else 0.0)
+    # horner_spec: within 3(n-1) 2^-53 sum |c_k||x|^k + 3(n-1) 2^-1075 sum_{k<n-1} |x|^k
+    # of sum c_k x^k, when 4 n (C + 1) max(1, |x|)^n <= 2^1022
+    for i, (n, xb, cb) in enumerate(h_in):
+        x = Fraction(from_bits(xb))
+        c = [Fraction(from_bits(b)) for b in cb]
+        big = max(1, abs(x))
+        if 4 * n * (max(abs(v) for v in c) + 1) * big ** n > Fraction(2) ** 1022:
+            continue
+        p = from_bits(hresults["lean"][i])
+        exact = sum(ck * x ** k for k, ck in enumerate(c))
+        bound = (3 * (n - 1) * Fraction(1, 2 ** 53) * sum(abs(ck) * abs(x) ** k for k, ck in enumerate(c))
+                 + 3 * (n - 1) * Fraction(1, 2 ** 1075) * sum(abs(x) ** k for k in range(n - 1)))
+        checked["horner"] += 1
+        err = abs(Fraction(p) - exact) if math.isfinite(p) else None
+        if err is None or err > bound:
+            violations += 1
+            print(f"bound violated: horner(n={n}, x={float(x)!r}): error {err}, bound {bound}")
+            continue
+        if bound:
+            worst["horner"] = max(worst["horner"], float(err / bound))
     for name in worst:
         print(f"{name}: {checked[name]} results within the proved bound, "
               f"largest error / bound = {worst[name]:.3g}")
