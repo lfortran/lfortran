@@ -81,16 +81,16 @@ std::string string_lit(const std::string &s) {
 // which is the identifier `name`, so they cannot collide with another name.
 const std::set<std::string> reserved = {
     "abbrev", "at", "attribute", "axiom", "break", "builtin_initialize", "by",
-    "calc", "catch", "class", "coinductive", "continue", "decreasing_by",
-    "declare_syntax_cat", "def", "deriving", "do", "elab", "elab_rules",
-    "else", "end", "example", "exists", "export", "extends", "false",
-    "finally", "for", "forall", "from", "fun", "have", "if", "import", "in",
-    "include", "inductive", "infix", "infixl", "infixr", "initialize",
-    "instance", "lemma", "let", "local", "macro", "macro_rules", "match",
-    "meta", "mut", "mutual", "namespace", "noncomputable", "nofun",
-    "nomatch", "nonrec", "notation", "omit", "opaque", "open", "partial",
-    "postfix", "prefix", "private", "protected", "public", "rec", "return",
-    "scoped", "section", "set_option", "show", "sorry", "structure",
+    "calc", "catch", "class", "coinductive", "continue", "dbg_trace",
+    "decreasing_by", "declare_syntax_cat", "def", "deriving", "do", "elab",
+    "elab_rules", "else", "end", "example", "exists", "export", "extends",
+    "false", "finally", "for", "forall", "from", "fun", "have", "hiding",
+    "if", "import", "in", "include", "inductive", "infix", "infixl",
+    "infixr", "initialize", "instance", "lemma", "let", "let_fun", "local",
+    "macro", "macro_rules", "match", "meta", "mut", "mutual", "namespace",
+    "noncomputable", "nofun", "nomatch", "nonrec", "notation", "omit",
+    "opaque", "open", "partial", "postfix", "prefix", "private", "protected",
+    "public", "rec", "renaming", "repeat", "return", "scoped", "section", "set_option", "show", "sorry", "structure",
     "suffices", "syntax", "termination_by", "then", "theorem", "true", "try",
     "unless", "universe", "unsafe", "using", "variable", "where", "while",
     "with"};
@@ -267,6 +267,10 @@ private:
     void dims(ASR::ttype_t *t, std::vector<std::string> &lbs,
             std::vector<std::string> &exts, bool &assumed, const Location &loc) {
         ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+        if (a->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray
+                || a->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
+            unsupported("this array shape is", loc);
+        }
         size_t n_len = 0;
         for (size_t i = 0; i < a->n_dims; i++) {
             ASR::dimension_t &d = a->m_dims[i];
@@ -413,7 +417,11 @@ private:
         sym = ASRUtils::symbol_get_past_external(sym);
         std::string n = name(ASRUtils::symbol_name(sym), sym->base.loc);
         if (ASR::Module_t *m = ASRUtils::get_sym_module(sym)) {
-            return name(m->m_name, m->base.base.loc) + "." + n;
+            std::string mn = name(m->m_name, m->base.base.loc);
+            if (cur_scope() && cur_scope()->get_symbol(m->m_name)) {
+                return "_root_." + mn + "." + n;
+            }
+            return mn + "." + n;
         }
         return n;
     }
@@ -911,6 +919,9 @@ private:
             if (dummies.count(v) || loop_vars.count(v)) continue;
             if (v->m_storage == ASR::storage_typeType::Parameter) continue;
             const Location &vloc = v->base.base.loc;
+            if (!in_program && v->m_storage == ASR::storage_typeType::Save) {
+                unsupported("a saved local variable is", vloc);
+            }
             if (v->m_symbolic_value || v->m_value) {
                 unsupported("an initialized local variable is", vloc);
             }
@@ -1153,7 +1164,7 @@ public:
                 }
                 prog_level = std::max(prog_level, it->second.level);
             }
-            std::string pn = name(prog->m_name, prog->base.base.loc) + "_main";
+            std::string pn = name(std::string(prog->m_name) + "_main", prog->base.base.loc);
             out += "def " + pn + " {K : Kinds} [" + level_class(prog_level)
                 + " K] : IO Unit := do\n" + prog_body + "\n";
             out += "def main : IO UInt32 := LFortran.run (" + pn
