@@ -14,9 +14,6 @@ the generated templates at `LFortran.machine`, applied to a `Float`.
 * `kernel_sin_float`: for a finite `Float` `xf` with value `x`, `|x| ≤ π/2`,
   `kernel_sin xf` is finite and within `1.15·10^-15 |x| + 2^-1075` of
   `Real.sin x`.
-* `kernel_fastest_float`: for a finite `Float` `xf` with value `x0`,
-  `|x0| ≤ X`, `1 ≤ X ≤ 2^30`, `kernel_fastest xf` is finite and within
-  `5.75·10^-3 + 2.25·10^-15 X` of `Real.sin x0`.
 * `kernel_fast_float`: for a finite `Float` `xf` with value `x0`,
   `|x0| ≤ 6·10^9`, `kernel_fast xf` is finite and within `2.2·10^-15` of
   `Real.sin x0`.
@@ -93,20 +90,6 @@ theorem litHalf : Sim (FReal.lit (1) (-1) : Float) (((1 : ℤ) : ℝ) * (2 : ℝ
   unfold Sim floatValue modelValue
   rw [show (FReal.lit (1) (-1) : Float).toModel.unpack =
     .finite .positive 4503599627370496 (-53) (by decide) from rfl]
-  simp only [uvalue, bitValue_eq, sgn]
-  norm_num
-
-theorem litS1 : Sim (FReal.lit (8240939) (-23) : Float) (((8240939 : ℤ) : ℝ) * (2 : ℝ) ^ (-23 : ℤ)) := by
-  unfold Sim floatValue modelValue
-  rw [show (FReal.lit (8240939) (-23) : Float).toModel.unpack =
-    .finite .positive 8848640873332736 (-53) (by decide) from rfl]
-  simp only [uvalue, bitValue_eq, sgn]
-  norm_num
-
-theorem litS2 : Sim (FReal.lit (-1175563) (-23) : Float) (((-1175563 : ℤ) : ℝ) * (2 : ℝ) ^ (-23 : ℤ)) := by
-  unfold Sim floatValue modelValue
-  rw [show (FReal.lit (-1175563) (-23) : Float).toModel.unpack =
-    .finite .negative 5049004639387648 (-55) (by decide) from rfl]
   simp only [uvalue, bitValue_eq, sgn]
   norm_num
 
@@ -214,49 +197,10 @@ theorem kernel_sin_float {xf : Float} {x : ℝ} (hx : Sim xf x) (hx1 : |x| ≤ �
 
 #print axioms kernel_sin_float
 
-/-! ## `kernel_fastest` -/
-
-/-- The polynomial of `kernel_fastest` in `Float`. -/
-def polyF (y : Float) : Float :=
-  y * (FReal.lit 8240939 (-23) + y * y * FReal.lit (-1175563) (-23))
-
-/-- The generated `kernel_fastest` at `machine`, step by step. -/
-theorem kernel_fastest_machine_eq (xf : Float) :
-    sin_kernels.kernel_fastest (K := LFortran.machine) xf =
-      let PI : Float := FReal.lit 884279719003555 (-48)
-      let s : Float :=
-        if floatSignbit xf then -(Float.abs (Float.ofInt 1)) else Float.abs (Float.ofInt 1)
-      let N : Int := floatTrunc (xf / PI + FReal.lit 1 (-1) * s)
-      let nd : Float := Float.ofInt (Int32.ofInt N).toInt
-      let r : Float := xf - nd * PI
-      if FInt.beq (FInt.modulo (Int32.ofInt (floatTrunc nd)) (FInt.ofInt 2)) (FInt.ofInt 1)
-      then polyF (-r) else polyF r :=
-  rfl
+/-! ## Shared by `kernel_fast` -/
 
 theorem πd_eq : ((884279719003555 : ℤ) : ℝ) * (2 : ℝ) ^ (-48 : ℤ) = πd := by norm_num [πd]
-theorem S1_eq : ((8240939 : ℤ) : ℝ) * (2 : ℝ) ^ (-23 : ℤ) = S1 := by norm_num [S1]
-theorem S2_eq : ((-1175563 : ℤ) : ℝ) * (2 : ℝ) ^ (-23 : ℤ) = S2 := by norm_num [S2]
 theorem half_eq : ((1 : ℤ) : ℝ) * (2 : ℝ) ^ (-1 : ℤ) = 2⁻¹ := by norm_num
-
-theorem polyF_sim {yf : Float} {y : ℝ} (hy : Sim yf y) (hy1 : |y| ≤ 8 / 5) :
-    Sim (polyF yf) (floatModel.toNoGuard.mul y (floatModel.toNoGuard.add
-      (floatModel.toNoGuard.round S1)
-      (floatModel.toNoGuard.mul (floatModel.toNoGuard.mul y y) (floatModel.toNoGuard.round S2)))) := by
-  have l1 : Sim (FReal.lit 8240939 (-23) : Float) S1 := by rw [← S1_eq]; exact litS1
-  have l2 : Sim (FReal.lit (-1175563) (-23) : Float) S2 := by rw [← S2_eq]; exact litS2
-  have c1 : |S1| ≤ 2 ^ 1022 := by norm_num [S1, abs_of_pos]
-  have c2 : |S2| ≤ 2 ^ 1022 := by norm_num [S2, abs_of_neg]
-  have r1 := sim_round l1 c1
-  have r2 := sim_round l2 c2
-  have b1 : |floatModel.round S1| ≤ 1 := by
-    rw [fm_round_of_sim l1 c1]; norm_num [S1, abs_of_pos]
-  have b2 : |floatModel.round S2| ≤ 1 := by
-    rw [fm_round_of_sim l2 c2]; norm_num [S2, abs_of_neg]
-  obtain ⟨hz, bz⟩ := smul hy hy hy1 hy1 (by norm_num)
-  obtain ⟨hp, bp⟩ := smul hz r2 bz b2 (by norm_num)
-  obtain ⟨ha, ba⟩ := sadd r1 hp b1 bp (by norm_num)
-  obtain ⟨hr, -⟩ := smul hy ha hy1 ba (by norm_num)
-  exact hr
 
 /-- The sign bit of a `Float` is a valid sign choice for its value. -/
 theorem signOk_float {xf : Float} {x0 : ℝ} (hx : Sim xf x0) : SignOk (floatSignbit xf) x0 := by
@@ -264,142 +208,12 @@ theorem signOk_float {xf : Float} {x0 : ℝ} (hx : Sim xf x0) : SignOk (floatSig
   · subst h0; exact ⟨fun _ => le_rfl, fun _ => le_rfl⟩
   · rw [floatSignbit_eq hx h0]; exact signOk_decide x0
 
-/-- The `Float` run after `N` is computed. -/
-def kfTailF (xf : Float) (N : Int) : Float :=
-  let PI : Float := FReal.lit 884279719003555 (-48)
-  let nd : Float := Float.ofInt (Int32.ofInt N).toInt
-  let r : Float := xf - nd * PI
-  if FInt.beq (FInt.modulo (Int32.ofInt (floatTrunc nd)) (FInt.ofInt 2)) (FInt.ofInt 1)
-  then polyF (-r) else polyF r
-
-/-- The `floatModel` run after `N` is computed. -/
-noncomputable def kfTailR (x0 : ℝ) (N : ℤ) : ℝ :=
-  let r := floatModel.sub x0 (floatModel.mul (floatModel.round N) (floatModel.round πd))
-  let y := if (realTrunc (floatModel.round N)).fmod 2 = 1 then -r else r
-  floatModel.mul y (floatModel.add (floatModel.round S1)
-    (floatModel.mul (floatModel.mul y y) (floatModel.round S2)))
-
-theorem kf_machine_tail (xf : Float) :
-    sin_kernels.kernel_fastest (K := LFortran.machine) xf =
-      kfTailF xf (floatTrunc (xf / (FReal.lit 884279719003555 (-48) : Float)
-        + (FReal.lit 1 (-1) : Float) * (if floatSignbit xf then -(Float.abs (Float.ofInt 1))
-          else Float.abs (Float.ofInt 1)))) :=
-  rfl
-
-theorem kfGen_tail (b : Bool) (x0 : ℝ) :
-    kfGen floatModel.toNoGuard b x0 =
-      kfTailR x0 (realTrunc (floatModel.add (floatModel.div x0 (floatModel.round πd))
-        (floatModel.mul (floatModel.round 2⁻¹)
-          (if b then -|floatModel.round 1| else |floatModel.round 1|)))) :=
-  rfl
-
-/-- The tails agree for every `N` that the arithmetic represents exactly and
-that reduces `x0` to `|r| ≤ 1.6`. -/
-theorem tail_sim {xf : Float} {x0 X : ℝ} (hx : Sim xf x0) (hX : X ≤ 2 ^ 30) (hx1 : |x0| ≤ X)
-    (N : ℤ) (hNX : |(N : ℝ)| ≤ X) (hnd : floatModel.round N = N)
-    (hr : |floatModel.sub x0 (floatModel.mul (floatModel.round N) (floatModel.round πd))| ≤ 8 / 5) :
-    Sim (kfTailF xf N) (kfTailR x0 N) := by
-  have lPI : Sim (FReal.lit 884279719003555 (-48) : Float) πd := by rw [← πd_eq]; exact litPi
-  have cPI : |πd| ≤ 2 ^ 1022 := by norm_num [πd, abs_of_pos]
-  have ePI : floatModel.round πd = πd := fm_round_of_sim lPI cPI
-  have hPI := sim_round lPI cPI
-  have πd2 : πd ≤ 4 := by norm_num [πd]
-  have πd1 : (3 : ℝ) ≤ πd := by norm_num [πd]
-  have hN31 : -2 ^ 31 ≤ N ∧ N < 2 ^ 31 := by
-    have := abs_le.1 hNX
-    constructor
-    · have : (-(2 : ℝ) ^ 31) ≤ N := by linarith
-      exact_mod_cast this
-    · have : (N : ℝ) < 2 ^ 31 := by linarith
-      exact_mod_cast this
-  have hnd' : Sim (Float.ofInt N) (floatModel.round N) := by
-    rw [hnd]
-    exact float_ofInt_value N (by
-      have : |(N : ℝ)| < 2 ^ 53 := by linarith
-      exact_mod_cast this)
-  have hndT := floatTrunc_eq hnd' (by rw [hnd]; linarith)
-  have hRT : realTrunc (floatModel.round N) = N := by rw [hnd, realTrunc_intCast]
-  have hpar := int32_parity (realTrunc (floatModel.round N)) (by rw [hRT]; exact hN31.1)
-    (by rw [hRT]; exact hN31.2)
-  have bN : |floatModel.round N| ≤ X := by rw [hnd]; exact hNX
-  have bPI : |floatModel.round πd| ≤ 4 := by rw [ePI, abs_of_pos (by linarith)]; exact πd2
-  obtain ⟨hp, bp⟩ := smul hnd' hPI bN bPI (by linarith)
-  obtain ⟨hrr, -⟩ := ssub hx hp hx1 bp (by linarith)
-  unfold kfTailF kfTailR
-  simp only [Int32.toInt_ofInt_of_le hN31.1 hN31.2, hndT, hpar]
-  by_cases hP : (realTrunc (floatModel.round N)).fmod 2 = 1
-  · simp only [hP, decide_true, if_true]
-    exact polyF_sim (float_neg_value hrr) (by rw [abs_neg]; exact hr)
-  · simp only [hP, decide_false, if_false, Bool.false_eq_true]
-    exact polyF_sim hrr hr
-
-set_option maxHeartbeats 1000000 in
-/-- **The `Float` run of `kernel_fastest` is the `floatModel` run** (with the sign
-of `x0` read from the sign bit, as the `Float` run does). -/
-theorem kernel_fastest_float_sim {xf : Float} {x0 X : ℝ} (hx : Sim xf x0) (hX1 : 1 ≤ X)
-    (hX : X ≤ 2 ^ 30) (hx1 : |x0| ≤ X) :
-    Sim (sin_kernels.kernel_fastest (K := LFortran.machine) xf)
-      (kfGen floatModel.toNoGuard (floatSignbit xf) x0) := by
-  have hb := signOk_float hx
-  have hred := reduction _ (fastestArith_binary64 hX1 (hX.trans (by norm_num))) (float_mem hx) hx1 hb
-  simp only [tng_round, tng_add, tng_sub, tng_mul, tng_div] at hred
-  obtain ⟨hNX, hnd, -, hr, -⟩ := hred
-  have h1022 : X ≤ 2 ^ 1022 := hX.trans (by norm_num)
-  have lPI : Sim (FReal.lit 884279719003555 (-48) : Float) πd := by rw [← πd_eq]; exact litPi
-  have cPI : |πd| ≤ 2 ^ 1022 := by norm_num [πd, abs_of_pos]
-  have ePI : floatModel.round πd = πd := fm_round_of_sim lPI cPI
-  have hPI := sim_round lPI cPI
-  have πd1 : (3 : ℝ) ≤ πd := by norm_num [πd]
-  have lH : Sim (FReal.lit 1 (-1) : Float) 2⁻¹ := by rw [← half_eq]; exact litHalf
-  have hH := sim_round lH (by norm_num)
-  have bH : |floatModel.round 2⁻¹| ≤ 1 := by rw [fm_round_of_sim lH (by norm_num)]; norm_num
-  have l1 : Sim (Float.ofInt 1) 1 := by simpa using float_ofInt_value 1 (by norm_num)
-  have e1 : floatModel.round 1 = 1 := fm_round_of_sim l1 (by norm_num)
-  have hA := float_abs_value (sim_round l1 (by norm_num))
-  have hs : Sim (if floatSignbit xf then -(Float.abs (Float.ofInt 1)) else Float.abs (Float.ofInt 1))
-      (if floatSignbit xf then -|floatModel.round 1| else |floatModel.round 1|) := by
-    split_ifs
-    · exact float_neg_value hA
-    · exact hA
-  have bs : |(if floatSignbit xf then -|floatModel.round 1|
-      else |floatModel.round 1|)| ≤ 1 := by
-    split_ifs <;> simp [e1]
-  have hq0 : |x0 / floatModel.round πd| ≤ X := by
-    rw [ePI, abs_div, abs_of_pos (show (0 : ℝ) < πd by linarith),
-      div_le_iff₀ (show (0 : ℝ) < πd by linarith)]
-    nlinarith [abs_nonneg x0]
-  obtain ⟨hq, bq⟩ := sim_div hx hPI (by rw [ePI]; linarith) (hq0.trans h1022)
-  obtain ⟨hhs, bhs⟩ := smul hH hs bH bs (by norm_num)
-  obtain ⟨ht, bt⟩ := sadd hq hhs
-    (bq.trans (by linarith : 2 * |x0 / floatModel.round πd| + 1 ≤ 2 * X + 1)) bhs (by linarith)
-  have hN := floatTrunc_eq ht (by rw [abs_lt]; constructor <;> nlinarith [abs_le.1 bt])
-  rw [kf_machine_tail, kfGen_tail, hN]
-  exact tail_sim hx hX hx1 _ hNX hnd hr
-#print axioms kernel_fastest_float_sim
-
-/-- **The `Float` run of `kernel_fastest`** is within `5.75·10^-3 + 2.25·10^-15 X`
-of `Real.sin x0` for every finite `Float` `x0` with `|x0| ≤ X`, `1 ≤ X ≤ 2^30`. -/
-theorem kernel_fastest_float {xf : Float} {x0 X : ℝ} (hx : Sim xf x0) (hX1 : 1 ≤ X)
-    (hX : X ≤ 2 ^ 30) (hx1 : |x0| ≤ X) :
-    ∃ v, Sim (sin_kernels.kernel_fastest (K := LFortran.machine) xf) v ∧
-      |v - Real.sin x0| ≤ 575 / 10 ^ 5 + X * (225 / 10 ^ 17) :=
-  ⟨_, kernel_fastest_float_sim hx hX1 hX hx1,
-    kfGen_binary64 hX1 hX (float_mem hx) hx1 (signOk_float hx)⟩
-
-#print axioms kernel_fastest_float
-
 /-- The generated `kernel_sin`, run at `Float`, meets `KernelSinFloatSpec`. -/
 theorem kernel_sin_spec :
     SinKernels.KernelSinFloatSpec (sin_kernels.kernel_sin (K := LFortran.machine)) :=
   fun _ _ hx hx1 => kernel_sin_float hx hx1
 
-/-- The generated `kernel_fastest`, run at `Float`, meets `KernelFastestFloatSpec`. -/
-theorem kernel_fastest_spec :
-    SinKernels.KernelFastestFloatSpec (sin_kernels.kernel_fastest (K := LFortran.machine)) :=
-  fun _ _ _ hx hX1 hX hx1 => kernel_fastest_float hx hX1 hX hx1
-
 #print axioms kernel_sin_spec
-#print axioms kernel_fastest_spec
 
 /-! ## `kernel_fast` -/
 

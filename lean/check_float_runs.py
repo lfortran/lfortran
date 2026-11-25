@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check the Float runs that the Lean proofs are about, by testing.
 
-The theorems `legendre_float_spec`, `kernel_sin_spec`, `kernel_fastest_spec`
-and `kernel_fast_spec` are about the generated Lean templates run at
+The theorems `legendre_float_spec`, `kernel_sin_spec` and `kernel_fast_spec`
+are about the generated Lean templates run at
 `LFortran.machine` (Int32, Float). Lean checks those proofs; this script
 checks the two links that the proofs take on trust:
 
@@ -61,9 +61,8 @@ partial def loop (h : IO.FS.Stream) : IO Unit := do
   | some (n, x) =>
     let p := legendre_mod.legendre_poly (K := LFortran.machine) n x
     let s := sin_kernels.kernel_sin (K := LFortran.machine) x
-    let f := sin_kernels.kernel_fastest (K := LFortran.machine) x
     let c := sin_kernels.kernel_fast (K := LFortran.machine) x
-    IO.println s!"{bitsInt p} {bitsInt s} {bitsInt f} {bitsInt c}"
+    IO.println s!"{bitsInt p} {bitsInt s} {bitsInt c}"
   | none => pure ()
   loop h
 
@@ -233,10 +232,9 @@ def main():
     # 1. bit-identical runs (NaNs compare equal regardless of payload)
     mismatches = 0
     for i, (n, b) in enumerate(data_in):
-        for col, what in enumerate(["legendre_poly", "kernel_sin", "kernel_fastest",
-                                    "kernel_fast"]):
+        for col, what in enumerate(["legendre_poly", "kernel_sin", "kernel_fast"]):
             # int() of |x/pi| >= 2^31 overflows (undefined in Fortran)
-            if what in ("kernel_fastest", "kernel_fast") and abs(from_bits(b)) > 6e9:
+            if what == "kernel_fast" and abs(from_bits(b)) > 6e9:
                 continue
             vals = {k: rows[i][col] for k, rows in results.items()}
             if len({("nan" if is_nan_bits(v) else v) for v in vals.values()}) != 1:
@@ -244,17 +242,17 @@ def main():
                 if mismatches <= 10:
                     print(f"mismatch {what}(n={n}, x={from_bits(b)!r}): "
                           + ", ".join(f"{k}={from_bits(v)!r}" for k, v in vals.items()))
-    compared = sum(4 - 2 * (abs(from_bits(b)) > 6e9) for _, b in data_in)
+    compared = sum(3 - (abs(from_bits(b)) > 6e9) for _, b in data_in)
     print(f"bit-identical: {compared - mismatches} of {compared} results "
           "(lean, lfortran, gfortran)")
 
     # 2. proved bounds against high-precision references
-    worst = {"legendre_poly": 0.0, "kernel_sin": 0.0, "kernel_fastest": 0.0, "kernel_fast": 0.0}
+    worst = {"legendre_poly": 0.0, "kernel_sin": 0.0, "kernel_fast": 0.0}
     checked = {k: 0 for k in worst}
     violations = 0
     for i, (n, b) in enumerate(data_in):
         x = from_bits(b)
-        p, s, f, c = (from_bits(v) for v in results["lean"][i])
+        p, s, c = (from_bits(v) for v in results["lean"][i])
         checks = []
         if abs(x) <= 1:
             exact = legendre_exact(n, Fraction(x))
@@ -265,11 +263,6 @@ def main():
             err = abs(Decimal(s) - dec_sin(xd)) if math.isfinite(s) else None
             checks.append(("kernel_sin", err,
                            Decimal(115) / Decimal(10) ** 17 * abs(xd) + Decimal(2) ** -1075))
-        if abs(x) <= 2.0 ** 30:
-            big_x = max(Decimal(1), abs(xd))
-            err = abs(Decimal(f) - dec_sin(xd)) if math.isfinite(f) else None
-            checks.append(("kernel_fastest", err,
-                           Decimal(575) / Decimal(10) ** 5 + big_x * Decimal(225) / Decimal(10) ** 17))
         if abs(x) <= 6e9:
             err = abs(Decimal(c) - dec_sin(xd)) if math.isfinite(c) else None
             checks.append(("kernel_fast", err, Decimal(22) / Decimal(10) ** 16))

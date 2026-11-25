@@ -341,27 +341,25 @@ structure.
 
 ### 2.6 Second example: fast `sin` kernels
 
-`sin_kernels.f90` has three scalar kernels:
+`sin_kernels.f90` has two scalar kernels:
 
 * `kernel_sin(x) = x·S(x²)`, a degree-7 polynomial in `x²` with binary64
   coefficients, for `|x| ≤ π/2`;
-* `kernel_fastest(x0)`: range reduction `N = int(x0/π_d + sign(1, x0)/2)`,
-  `r = x0 - N π_d` (`π_d` the double nearest `π`), `r → -r` for odd `N`
-  (`modulo(int(N), 2) == 1`), then `r (S1 + r² S2)` with two single-precision
-  coefficients (accurate to only `5.7·10^-3`);
-* `kernel_fast(x0)`: the same `N`, then Cody–Waite reduction
+* `kernel_fast(x0)`: range reduction `N = int(x0/π_d + sign(1, x0)/2)`
+  (`π_d` the double nearest `π`), Cody–Waite reduction
   `r = ((x0 - N p1) - N p2) - N p3` with a three-part `π` (`p1`, `p2` have
-  21-bit significands), the same sign flip, and `kernel_sin(r)`.
+  21-bit significands), `r → -r` for odd `N` (`modulo(int(N), 2) == 1`),
+  then `kernel_sin(r)`.
 
-Each is proved in the same two parts, for every `NoGuardModel` (so every
-`FPModel`), with unit roundoff `≤ U`, underflow error `≤ H`
-(`U, H ≤ 2^-20`):
+Each is proved in two parts, exact arithmetic against `Real.sin` and
+rounding. `kernel_sin`'s rounding is proved for every `NoGuardModel` (so
+every `FPModel`) with unit roundoff `≤ U` and underflow error `≤ H`
+(`U, H ≤ 2^-20`); `kernel_fast`'s for binary64:
 
 | | exact arithmetic vs `Real.sin` | rounding | combined | binary64 (`floatModel`) |
 |---|---|---|---|---|
 | `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_binary64`; the `Float` run: `kernel_sin_spec`) |
 | `kernel_fast`, `\|x0\| ≤ 6·10^9` | `≤ 7.3·10^-16` (`kernel_fast_exact_correct`, `\|x0\| ≤ 10^12`) | binary64-specific, see below | | `≤ 2.2·10^-15` (`kfastGen_binary64`; the `Float` run: `kernel_fast_spec`) |
-| `kernel_fastest`, `\|x0\| ≤ X` | `≤ 5.75·10^-3 + 1.3·10^-16 X` (`kernel_fastest_exact_correct`) | reduced argument within `X(11U + 3H + 1.3·10^-16)` of `x0 - Nπ` (`reduction`) | `≤ 5.75·10^-3 + X(19U + 14H + 1.3·10^-16)` (`kernel_fastest_correct`) | `≤ 5.75·10^-3 + 2.25·10^-15 X`, `X ≤ 2^30` (`kernel_fastest_binary64`; the `Float` run: `kernel_fastest_spec`) |
 
 The ingredients:
 
@@ -374,17 +372,19 @@ The ingredients:
   shifts in exact rational arithmetic, and `check_sound` proves the checker
   correct. The kernel evaluates the check (`decide +kernel`; no
   `native_decide`, no floating point): `|S(z) - T_11(z)| ≤ 4.5·10^-16` on
-  `0 ≤ z ≤ 2.4674014` (measured maximum `4.22·10^-16`) and
-  `|c(r) - T(r)| ≤ 5.7498·10^-3` on `|r| ≤ 1.6` (measured `5.7453·10^-3`).
+  `0 ≤ z ≤ 1.571²` (measured maximum `4.22·10^-16`), slightly beyond
+  `(π/2)²` because the computed reduced argument can exceed `π/2` by
+  rounding.
 * **Error propagation** (`LFortran/ErrorProp.lean`): `Close m U H v t α κ T`
   (computed `v ∈ F` within `α U + κ H` of `t`, `|t| ≤ T`) through each
   rounded operation. Keeping `H` separate from `U` matters: the literal
   `S8 ≈ 7·10^-13` has an absolute underflow error that the Horner scheme
   multiplies by `z^7`.
-* **Range reduction** (`reduction`): `int` truncates, the shift by
-  `±1/2` makes `|x0/π_d - N| ≤ 1/2 + ε`, so `|r| ≤ 1.6`; `sin x0 =
-  (-1)^N sin(x0 - Nπ)` (`reduce_core`), and negating `r` for odd `N`
-  multiplies the odd polynomial by `(-1)^N` (`parity`).
+* **Choice of `N`** (`chooseN`, `SinKernels/Proof/Reduction.lean`): `int`
+  truncates, and the shift by `±1/2` makes `|x0/π_d - N| ≤ 1/2 + ε` in every
+  `NoGuardModel` in which integers up to `X` and negation are exact, so
+  `|r| ≤ 1.571`. Then `sin x0 = (-1)^N sin(x0 - Nπ)`, and negating `r` for
+  odd `N` multiplies `sin r` by `(-1)^N` (`fast_core`, `parity_sin`).
 
 `kernel_fast` is proved for binary64 only, because Cody–Waite relies on
 binary64 exactness that the generic models do not provide. `N p1` and `N p2`
@@ -396,19 +396,14 @@ exact by Sterbenz's lemma (`sterbenz`). The two remaining subtractions and
 by Mathlib's `pi_lower_bound`/`pi_upper_bound`, witnesses from
 `pi_witness.py`). The bound holds while `int(N)` fits in 32 bits.
 
-`kernel_fastest` needs two facts every binary format has, as hypotheses:
-integers up to `X` are exact (`round n = n`), and negation is exact. Its
-rounding result is stated against `sin x0`, not against the exact-arithmetic
-value: when `x0/π_d` is within rounding error of a half-integer, the computed
-and the exact run can choose different `N`. Both results are then accurate,
-since the polynomial is odd and `sin` is `π`-antiperiodic. The exact-arithmetic
-theorem is the same theorem at `FPModel.exact` (`U = H = 0`).
+The computed and the exact run can choose different `N` when `x0/π_d` is
+within rounding error of a half-integer, so `kernel_fast` is stated against
+`sin x0` directly; both results are then accurate, since `sin` is
+`π`-antiperiodic.
 
-The bounds are worst-case and model-generic. `kernel_sin`'s `6.14 U` is
-about 2.7 times the measured `2.3 u`. `kernel_fastest`'s `X(19U + 14H)` comes
-from the subtraction `x0 - Nπ_d` without a guard digit, whose error is
-relative to `|x0| + |Nπ_d|`; with a guard digit, and with `Nπ_d` exact
-as it is in IEEE arithmetic for small `N`, it would be far smaller.
+The bounds are worst-case. `kernel_sin`'s `6.14 U` is about 2.7 times the
+measured `2.3 u`, and `kernel_fast`'s `2.2·10^-15` about 3 times its measured
+`7.5·10^-16`.
 
 ## 3. The floating-point model
 
@@ -560,13 +555,12 @@ files, so what is guaranteed can be read off the theorem's type:
 |---|---|---|
 | `legendre_float_spec` | `LegendreFloatSpec` (`Legendre/Spec.lean`) | `n ≤ 100`, `\|x\| ≤ 1`: finite, within `10^-11` of `legendreP n x` |
 | `kernel_sin_spec` | `KernelSinFloatSpec` (`SinKernels/Spec.lean`) | `\|x\| ≤ π/2`: finite, within `1.15·10^-15 \|x\| + 2^-1075` of `sin x` |
-| `kernel_fastest_spec` | `KernelFastestFloatSpec` (`SinKernels/Spec.lean`) | `\|x0\| ≤ X ≤ 2^30`: finite, within `5.75·10^-3 + 2.25·10^-15 X` of `sin x0` |
 | `kernel_fast_spec` | `KernelFastFloatSpec` (`SinKernels/Spec.lean`) | `\|x0\| ≤ 6·10^9`: finite, within `2.2·10^-15` of `sin x0` (measured `7.5·10^-16`) |
 
 `floatValue` (the real number a `Float` denotes, from Lean's `Float.Model`)
 is part of these statements. Each proof shows that the `Float` run computes
 exactly the same template in `floatModel` (`legendre_float_sim`,
-`kernel_sin_float_sim`, `kernel_fastest_float_sim`), using
+`kernel_sin_float_sim`, `kernel_fast_float_sim`), using
 `LFortran/FloatSim.lean`: every `Float` operation the templates use
 (`+ − × ÷`, negation, `abs`, the sign bit, `int` truncation, `Float.ofInt`,
 `Int32` parity) has the value of the corresponding `floatModel` operation, and
@@ -574,8 +568,8 @@ the literals are exact (the kernel evaluates them). `floatModel` is binary64
 round-to-nearest, an `FPModel` whose operations are `Float`'s
 (`float_add_value` … `float_div_value`). The sign bit and `int` are read
 through `Float.Model` because `Float.toInt64` has no logical model. The
-`Float` sign of `-0.0` differs from `ℝ`, so `kernel_fastest` is proved for
-either sign choice at `x0 = 0` (`kfGen_correct`). All use only the standard
+`Float` sign of `-0.0` differs from `ℝ`, so the choice of `N` is proved for
+either sign choice at `x0 = 0` (`SignOk`, `chooseN`). All use only the standard
 axioms.
 
 What remains trusted is Lean's: that the compiled `Float` operations (C

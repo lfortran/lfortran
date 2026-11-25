@@ -21,23 +21,6 @@ z = x*x
 res = x * (S1+z*(S2+z*(S3+z*(S4+z*(S5+z*(S6+z*(S7+z*S8)))))))
 end function
 
-! Accurate to about 6e-3 in absolute accuracy, for any x
-elemental real(dp) function kernel_fastest(x0) result(res)
-real(dp), intent(in) :: x0
-real(dp), parameter :: S1 =  0.982396485658623
-real(dp), parameter :: S2 = -0.14013802346642243
-real(dp) :: x, z, Nd
-x = x0
-Nd = int(x/pi + 0.5_dp*sign(1._dp, x))
-x = x - Nd*pi
-! -pi/2 < x < pi/2
-! For even Nd, we have sin(x0) = sin(x)
-! For odd Nd,  we have sin(x0) = sin(x+pi) = -sin(x) = sin(-x)
-if (modulo(int(Nd), 2) == 1) x = -x
-z = x*x
-res = x*(S1+z*S2)
-end function
-
 ! Accurate to about 1e-15 for |x0| < pi*2^31: three-part (Cody-Waite)
 ! reduction by pi, then kernel_sin
 elemental real(dp) function kernel_fast(x0) result(res)

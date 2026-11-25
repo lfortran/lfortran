@@ -1,5 +1,5 @@
 import SinKernels.Proof.KernelSin
-import SinKernels.Proof.KernelFastest
+import SinKernels.Proof.Reduction
 import LFortran.FloatModel
 
 set_option exponentiation.threshold 2048
@@ -14,8 +14,8 @@ operations. Instantiating the general theorems:
 * `kernel_sin_binary64`: `|kernel_sin x - sin x| ≤ 1.15·10^-15 |x| + 2^-1075`
   for binary64 `|x| ≤ π/2`; for normal `x` (where `2^-1075` is negligible
   against `|x|`) this is a relative error below `1.9·10^-15`;
-* `kernel_fastest_binary64`: `|kernel_fastest x0 - sin x0| ≤ 5.75·10^-3 +
-  2.25·10^-15 X` for binary64 `|x0| ≤ X`, `1 ≤ X ≤ 2^30`.
+* `reduceArith_binary64`: binary64 satisfies the assumptions of `chooseN`,
+  used by `kernel_fast` (`SinKernels/Proof/KernelFast.lean`).
 -/
 
 open LFortran Real SinKernelsProof
@@ -38,9 +38,9 @@ theorem kernel_sin_binary64 {x : ℝ} (hxF : x ∈ binary64) (hx : |x| ≤ π / 
 
 #print axioms kernel_sin_binary64
 
-/-- binary64 satisfies the assumptions of `kernel_fastest` for `1 ≤ X ≤ 2^33`. -/
-theorem fastestArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 33) :
-    FastestArith floatModel.toNoGuard (1 / 2 ^ 53) (1 / 2 ^ 1075) X :=
+/-- binary64 satisfies the assumptions of `chooseN` for `1 ≤ X ≤ 2^33`. -/
+theorem reduceArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 33) :
+    ReduceArith floatModel.toNoGuard (1 / 2 ^ 53) (1 / 2 ^ 1075) X :=
   { small := small
     X1 := hX1
     XU := by
@@ -61,22 +61,5 @@ theorem fastestArith_binary64 {X : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 33) :
       exact round_fixes floatRound_spec (by linarith) hmem
     neg_mem := fun _ hv => neg_mem_binary64 hv }
 
-/-- The binary64 bound for any sign choice that agrees with the sign of `x0`. -/
-theorem kfGen_binary64 {X x0 : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 30)
-    (hxF : x0 ∈ binary64) (hx : |x0| ≤ X) {b : Bool} (hb : SignOk b x0) :
-    |kfGen floatModel.toNoGuard b x0 - sin x0| ≤ 575 / 10 ^ 5 + X * (225 / 10 ^ 17) := by
-  have h := kfGen_correct _ (fastestArith_binary64 hX1 (hX.trans (by norm_num))) hxF hx hb
-  have hc : (19 * (1 / 2 ^ 53) + 14 * (1 / 2 ^ 1075) + 13 / 10 ^ 17 : ℝ) ≤ 225 / 10 ^ 17 := by
-    norm_num
-  have := mul_le_mul_of_nonneg_left hc (by linarith : (0 : ℝ) ≤ X)
-  linarith
-
-theorem kernel_fastest_binary64 {X x0 : ℝ} (hX1 : 1 ≤ X) (hX : X ≤ 2 ^ 30)
-    (hxF : x0 ∈ binary64) (hx : |x0| ≤ X) :
-    |kernel_fastest_ng floatModel.toNoGuard x0 - sin x0| ≤ 575 / 10 ^ 5 + X * (225 / 10 ^ 17) := by
-  rw [kernel_fastest_ng_eq]
-  exact kfGen_binary64 hX1 hX hxF hx (signOk_decide x0)
-
-#print axioms kernel_fastest_binary64
 
 end SinKernelsBinary64
