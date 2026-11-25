@@ -92,6 +92,7 @@ lake build --wfail   # builds runtime/, proof/ and the examples
 | `proof/LFortranProof/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s, and the Cray model (not trusted) | proofs (AI), checked by Lean |
 | `proof/LFortranProof/FloatExact.lean`, `proof/LFortranProof/PiBounds.lean`, `proof/pi_witness.py` | exact `Float` `-`/`*`, Sterbenz's lemma; `π` to 32 decimals | proofs (AI), checked by Lean |
 | `proof/LFortranProof/PolyBound.lean`, `proof/LFortranProof/SinTaylor.lean`, `proof/LFortranProof/ErrorProp.lean` | kernel-checked polynomial bounds, Taylor bounds for `sin`, forward error propagation in a `VModel` | proofs (AI), checked by Lean |
+| `proof/LFortranProof/Loop.lean` | loop invariants for generated `do` loops (`range_foldl_inv`) | proofs (AI), checked by Lean |
 | `examples/Legendre/Proof*.lean`, `examples/Legendre/Corollaries.lean` | the Legendre proofs | proofs (AI), checked by Lean |
 | `examples/SinKernels/Proof/*.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
 | `examples/Legendre/Run.lean` | run `legendre_poly` at `machine` | human |
@@ -318,6 +319,12 @@ Section 5). The bounds use `U` and `E`, not the individual model's `u` and
 1. **Loop to recursion.** The `for` loop of the generated code is rewritten as
    a recursive sequence `y_m` of computed values, on any carrier whose
    `integer(4)` is exact in range (`IntExact`: `ℤ`, or `Int32` for `n ≤ 100`).
+   This uses the generic loop invariant `range_foldl_inv`
+   (`proof/LFortranProof/Loop.lean`): after `simp` unfolds the template, a
+   `do k = lo, hi` loop is a `List.foldl` over `FInt.range lo hi`, and a
+   property `P i s` of the state after `i` iterations that holds initially and
+   is preserved by iteration `i` (index `lo + i`) holds at the end. Only `lo`
+   and `hi` must be in range.
 2. **One step of the loop.** Using only the error bound of each of its eight
    rounded operations (five arithmetic operations, three conversions), the
    computed `y_k` differs from the exact recurrence applied to the computed
