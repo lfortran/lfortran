@@ -9,6 +9,7 @@ import Legendre.Proof.Bonnet
 import Legendre.Generated
 import LFortranProof.Arith.Model
 import LFortranProof.VModel
+import LFortranProof.Loop
 
 /-!
 # The loop of `legendre_poly` as a recursion
@@ -46,43 +47,6 @@ def yK (x : K.R8) : ℕ → K.R8
   | 1 => x
   | m + 2 => stepK x (FInt.ofInt ((m : ℤ) + 2)) (yK x m) (yK x (m + 1))
 
-lemma intRange_succ (lo hi : ℤ) (h : lo ≤ hi + 1) :
-    intRange lo (hi + 1) = intRange lo hi ++ [hi + 1] := by
-  unfold intRange
-  rw [show (hi + 1 + 1 - lo).toNat = (hi + 1 - lo).toNat + 1 by omega]
-  simp [List.range_succ]
-  omega
-
-/-- The loop `do k = 2, n` runs over `2, …, n` without overflow while
-`n + 2 ≤ B`. -/
-lemma range_ofInt {B : ℤ} (I : IntExact K.I4 B) (m : ℕ) (hm : (m : ℤ) + 3 ≤ B) :
-    FInt.range (FInt.ofInt 2 : K.I4) (FInt.ofInt ((m : ℤ) + 1)) =
-      (intRange 2 ((m : ℤ) + 1)).map FInt.ofInt := by
-  have h2 : FInt.toInt (FInt.ofInt 2 : K.I4) = 2 := I.toInt_ofInt 2 ⟨by omega, by omega⟩
-  have hn : FInt.toInt (FInt.ofInt ((m : ℤ) + 1) : K.I4) = (m : ℤ) + 1 :=
-    I.toInt_ofInt _ ⟨by omega, by omega⟩
-  simp only [FInt.range, intRange, h2, hn, List.map_map]
-  apply List.map_congr_left
-  intro i hi
-  simp only [List.mem_range] at hi
-  show FInt.add (FInt.ofInt 2 : K.I4) (FInt.ofInt (i : ℤ)) = FInt.ofInt (2 + (i : ℤ))
-  exact I.add 2 i ⟨by omega, by omega⟩ ⟨by omega, by omega⟩ ⟨by omega, by omega⟩
-
-lemma fold_eq (x : K.R8) (m : ℕ) :
-    ∃ c, List.foldl (fun (s : K.R8 × K.R8 × K.R8) (k : K.I4) =>
-        (s.2.1, stepK x k s.1 s.2.1, stepK x k s.1 s.2.1)) (FReal.ofInt 1, x, FReal.zero)
-        ((intRange 2 ((m : ℤ) + 1)).map FInt.ofInt) = (yK x m, yK x (m + 1), c) := by
-  induction m with
-  | zero => exact ⟨FReal.zero, rfl⟩
-  | succ m ih =>
-    obtain ⟨c, hc⟩ := ih
-    refine ⟨yK x (m + 2), ?_⟩
-    rw [show ((m + 1 : ℕ) : ℤ) + 1 = ((m : ℤ) + 1) + 1 by push_cast; ring,
-      intRange_succ _ _ (by omega), List.map_append, List.foldl_append, hc]
-    simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
-    have : yK x (m + 2) = stepK x (FInt.ofInt ((m : ℤ) + 2)) (yK x m) (yK x (m + 1)) := rfl
-    rw [this, add_assoc, one_add_one_eq_two]
-
 lemma legendre_zero {B : ℤ} (I : IntExact K.I4 B) (hB : 0 < B) (x : K.R8) :
     legendre_mod.legendre_poly (K := K) (FInt.ofInt 0) x = FReal.ofInt 1 := by
   have h : FInt.beq (FInt.ofInt 0 : K.I4) (FInt.ofInt 0) = true :=
@@ -96,9 +60,19 @@ lemma legendre_succ {B : ℤ} (I : IntExact K.I4 B) (x : K.R8) (m : ℕ) (hm : (
     intro h
     have := (I.beq _ _ ⟨by omega, by omega⟩ ⟨by omega, by omega⟩).1 h
     omega
-  obtain ⟨c, hc⟩ := fold_eq x m
-  simp only [stepK] at hc
-  simp [legendre_mod.legendre_poly, hne, range_ofInt I m hm, hc]
+  simp only [legendre_mod.legendre_poly, hne]
+  simp
+  -- invariant: after `i` iterations, `(a, b) = (y i, y (i + 1))`
+  rw [show m + 1 = ((m : ℤ) + 1 + 1 - 2).toNat + 1 by omega]
+  refine (range_foldl_inv I (lo := 2) (hi := (m : ℤ) + 1) ⟨by omega, by omega⟩
+    ⟨by omega, by omega⟩ _ _ (σ := K.R8 × K.R8 × K.R8)
+    (P := fun i s => s.1 = yK x i ∧ s.2.1 = yK x (i + 1)) ?_ ?_).2
+  · exact ⟨rfl, rfl⟩
+  · intro i s _ hs
+    refine ⟨hs.2, ?_⟩
+    show stepK x (FInt.ofInt (2 + (i : ℤ))) s.1 s.2.1 = yK x (i + 2)
+    rw [hs.1, hs.2, add_comm (2 : ℤ)]
+    rfl
 
 /-- The generated `legendre_poly` in a `NoGuardModel`. -/
 noncomputable def legendre_ng (fp : NoGuardModel) (n : ℤ) (x : ℝ) : ℝ :=

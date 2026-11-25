@@ -149,10 +149,6 @@ theorem ofModel_eq_ofNoGuard (fp : FPModel) :
 @[simp] theorem lt_int (a b : Int) : FInt.lt a b = decide (a < b) := rfl
 @[simp] theorem le_int (a b : Int) : FInt.le a b = decide (a ≤ b) := rfl
 
-/-- `FInt.range` on `ℤ` is the `intRange` the Legendre loop proof unfolds. -/
-theorem range_eq_intRange (lo hi : Int) : FInt.range lo hi = intRange lo hi := by
-  simp [FInt.range, intRange, FInt.toInt, FInt.ofInt, FInt.add]
-
 /-- The kinds of a proof: exact integers, real numbers. -/
 abbrev proofKinds : Kinds where
   I1 := ℤ

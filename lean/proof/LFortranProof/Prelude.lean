@@ -93,8 +93,4 @@ noncomputable def FPModel.exact (M : ℝ := 0) : FPModel where
 @[simp] theorem FPModel.exact_mul (M a b : ℝ) : (FPModel.exact M).mul a b = a * b := rfl
 @[simp] theorem FPModel.exact_div (M a b : ℝ) : (FPModel.exact M).div a b = a / b := rfl
 
-/-- The iteration space of the Fortran loop `do k = lo, hi`. -/
-def intRange (lo hi : ℤ) : List ℤ :=
-  (List.range (hi + 1 - lo).toNat).map (fun i : ℕ => lo + (i : ℤ))
-
 end LFortran

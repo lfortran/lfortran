@@ -126,10 +126,11 @@ namespace FInt
 
 variable {ι : Type} [FInt ι]
 
-/-- `do k = lo, hi`, as a list. Step is 1. -/
+/-- `do k = lo, hi`, as a list. Step is 1. The `i`-th index is computed as
+`ofInt (lo + i)`, so it is exact whenever `lo + i` fits the kind. -/
 def range (lo hi : ι) : List ι :=
   (List.range (toInt hi + 1 - toInt lo).toNat).map fun (i : Nat) =>
-    add lo (ofInt (i : Int))
+    ofInt (toInt lo + (i : Int))
 
 end FInt
 
