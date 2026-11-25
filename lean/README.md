@@ -81,6 +81,7 @@ lake build --wfail
 | `LFortran/Prelude.lean` | the arithmetic model `FPModel`, and `FPModel.exact` | human, reviewed |
 | `LFortran/NoGuard.lean` | the weaker model `NoGuardModel` (no guard digit), implied by `FPModel` | human, reviewed |
 | `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s, and the Cray model (not trusted) | proofs (AI), checked by Lean |
+| `LFortran/FloatExact.lean`, `LFortran/PiBounds.lean`, `pi_witness.py` | exact `Float` `-`/`*`, Sterbenz's lemma; `π` to 32 decimals | proofs (AI), checked by Lean |
 | `LFortran/PolyBound.lean`, `LFortran/SinTaylor.lean`, `LFortran/ErrorProp.lean` | kernel-checked polynomial bounds, Taylor bounds for `sin`, forward error propagation | proofs (AI), checked by Lean |
 | `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the Legendre proofs | proofs (AI), checked by Lean |
 | `SinKernels/Proof/*.lean`, `SinKernels/Binary64.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
@@ -340,14 +341,17 @@ structure.
 
 ### 2.6 Second example: fast `sin` kernels
 
-`sin_kernels.f90` has two scalar kernels:
+`sin_kernels.f90` has three scalar kernels:
 
 * `kernel_sin(x) = x·S(x²)`, a degree-7 polynomial in `x²` with binary64
   coefficients, for `|x| ≤ π/2`;
 * `kernel_fastest(x0)`: range reduction `N = int(x0/π_d + sign(1, x0)/2)`,
   `r = x0 - N π_d` (`π_d` the double nearest `π`), `r → -r` for odd `N`
   (`modulo(int(N), 2) == 1`), then `r (S1 + r² S2)` with two single-precision
-  coefficients.
+  coefficients (accurate to only `5.7·10^-3`);
+* `kernel_fast(x0)`: the same `N`, then Cody–Waite reduction
+  `r = ((x0 - N p1) - N p2) - N p3` with a three-part `π` (`p1`, `p2` have
+  21-bit significands), the same sign flip, and `kernel_sin(r)`.
 
 Each is proved in the same two parts, for every `NoGuardModel` (so every
 `FPModel`), with unit roundoff `≤ U`, underflow error `≤ H`
@@ -356,6 +360,7 @@ Each is proved in the same two parts, for every `NoGuardModel` (so every
 | | exact arithmetic vs `Real.sin` | rounding | combined | binary64 (`floatModel`) |
 |---|---|---|---|---|
 | `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_binary64`; the `Float` run: `kernel_sin_spec`) |
+| `kernel_fast`, `\|x0\| ≤ 6·10^9` | `≤ 7.3·10^-16` (`kernel_fast_exact_correct`, `\|x0\| ≤ 10^12`) | binary64-specific, see below | | `≤ 2.2·10^-15` (`kfastGen_binary64`; the `Float` run: `kernel_fast_spec`) |
 | `kernel_fastest`, `\|x0\| ≤ X` | `≤ 5.75·10^-3 + 1.3·10^-16 X` (`kernel_fastest_exact_correct`) | reduced argument within `X(11U + 3H + 1.3·10^-16)` of `x0 - Nπ` (`reduction`) | `≤ 5.75·10^-3 + X(19U + 14H + 1.3·10^-16)` (`kernel_fastest_correct`) | `≤ 5.75·10^-3 + 2.25·10^-15 X`, `X ≤ 2^30` (`kernel_fastest_binary64`; the `Float` run: `kernel_fastest_spec`) |
 
 The ingredients:
@@ -380,6 +385,16 @@ The ingredients:
   `±1/2` makes `|x0/π_d - N| ≤ 1/2 + ε`, so `|r| ≤ 1.6`; `sin x0 =
   (-1)^N sin(x0 - Nπ)` (`reduce_core`), and negating `r` for odd `N`
   multiplies the odd polynomial by `(-1)^N` (`parity`).
+
+`kernel_fast` is proved for binary64 only, because Cody–Waite relies on
+binary64 exactness that the generic models do not provide. `N p1` and `N p2`
+are exact (`fm_mul_exact`: Lean's `Float` `*` and `-` are exact when the exact
+result is a binary64 number, `LFortran/FloatExact.lean`), and `x0 - N p1` is
+exact by Sterbenz's lemma (`sterbenz`). The two remaining subtractions and
+`N p3` add at most `3.6·10^-16`, and `p1 + p2 + p3` differs from `π` by
+`1.7·10^-31`, which needs `π` to 32 decimals (`LFortran/PiBounds.lean`, checked
+by Mathlib's `pi_lower_bound`/`pi_upper_bound`, witnesses from
+`pi_witness.py`). The bound holds while `int(N)` fits in 32 bits.
 
 `kernel_fastest` needs two facts every binary format has, as hypotheses:
 integers up to `X` are exact (`round n = n`), and negation is exact. Its
@@ -546,6 +561,7 @@ files, so what is guaranteed can be read off the theorem's type:
 | `legendre_float_spec` | `LegendreFloatSpec` (`Legendre/Spec.lean`) | `n ≤ 100`, `\|x\| ≤ 1`: finite, within `10^-11` of `legendreP n x` |
 | `kernel_sin_spec` | `KernelSinFloatSpec` (`SinKernels/Spec.lean`) | `\|x\| ≤ π/2`: finite, within `1.15·10^-15 \|x\| + 2^-1075` of `sin x` |
 | `kernel_fastest_spec` | `KernelFastestFloatSpec` (`SinKernels/Spec.lean`) | `\|x0\| ≤ X ≤ 2^30`: finite, within `5.75·10^-3 + 2.25·10^-15 X` of `sin x0` |
+| `kernel_fast_spec` | `KernelFastFloatSpec` (`SinKernels/Spec.lean`) | `\|x0\| ≤ 6·10^9`: finite, within `2.2·10^-15` of `sin x0` (measured `7.5·10^-16`) |
 
 `floatValue` (the real number a `Float` denotes, from Lean's `Float.Model`)
 is part of these statements. Each proof shows that the `Float` run computes
@@ -567,7 +583,7 @@ What remains trusted is Lean's: that the compiled `Float` operations (C
 LFortran- or GFortran-compiled executable, which performs the same IEEE
 operations only if the compiler preserves them. `check_float_runs.py` tests
 both links on 20,000 inputs (random, `±0`, subnormals, `±π/2`, half-integer
-multiples of `π_d`, powers of two, up to `2^30`): the Lean run, an LFortran
+multiples of `π_d`, powers of two, up to `6·10^9`): the Lean run, an LFortran
 build and a GFortran build agree bit for bit, and every result in a
 specification's domain is within its proved bound against exact rational
 (Legendre) or 90-digit (`sin`) references. It runs in the Linux LLVM 11
@@ -610,7 +626,11 @@ computed values:
 These are not unconditional value-preserving transformations: they can break
 programs whose accuracy depends on the exact order of operations, such as
 compensated summation and the error-free transformations in the double-double
-reference in `legendre_accuracy.f90`. This does not preclude reusable proofs
+reference in `legendre_accuracy.f90`. `kernel_fast` is another example: its
+Cody–Waite reduction relies on `x - N p1` and `N p1` being exact. Compiled
+with `lfortran --fast`, its error grows from `4·10^-16` to `1.9·10^-8` at
+`x0 = 1.7·10^9`; with `--fast --no-fast-math` it keeps the proved accuracy,
+so `lean_sin_kernels_01` is registered `NO_FAST_MATH`. This does not preclude reusable proofs
 under sufficient side conditions. A transformation can be proved to preserve
 values, or a specified accuracy contract, whenever those conditions hold.
 
