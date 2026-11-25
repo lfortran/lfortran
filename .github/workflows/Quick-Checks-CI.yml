@@ -258,7 +258,7 @@ jobs:
   lean_proof:
     name: Lean proof
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
