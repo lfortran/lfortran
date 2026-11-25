@@ -80,14 +80,16 @@ lake build --wfail
 | `Legendre/Spec.lean` | what `legendre_poly` must satisfy, against Mathlib's Legendre polynomial | human, reviewed |
 | `LFortran/Prelude.lean` | the arithmetic model `FPModel`, and `FPModel.exact` | human, reviewed |
 | `LFortran/NoGuard.lean` | the weaker model `NoGuardModel` (no guard digit), implied by `FPModel` | human, reviewed |
+| `LFortran/VModel.lean` | `VModel`: the same error bounds on any carrier (`ℝ` in a proof, `Float` in the run), read through values | human, reviewed |
 | `LFortran/Models/*.lean` | proofs that IEEE binary64 and textbook models are `FPModel`s, and the Cray model (not trusted) | proofs (AI), checked by Lean |
 | `LFortran/FloatExact.lean`, `LFortran/PiBounds.lean`, `pi_witness.py` | exact `Float` `-`/`*`, Sterbenz's lemma; `π` to 32 decimals | proofs (AI), checked by Lean |
-| `LFortran/PolyBound.lean`, `LFortran/SinTaylor.lean`, `LFortran/ErrorProp.lean` | kernel-checked polynomial bounds, Taylor bounds for `sin`, forward error propagation | proofs (AI), checked by Lean |
+| `LFortran/PolyBound.lean`, `LFortran/SinTaylor.lean`, `LFortran/ErrorProp.lean` | kernel-checked polynomial bounds, Taylor bounds for `sin`, forward error propagation in a `VModel` | proofs (AI), checked by Lean |
 | `Legendre/Proof*.lean`, `Legendre/Corollaries.lean` | the Legendre proofs | proofs (AI), checked by Lean |
-| `SinKernels/Proof/*.lean`, `SinKernels/Binary64.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
+| `SinKernels/Proof/*.lean` | the sin kernel proofs | proofs (AI), checked by Lean |
 | `Legendre/Run.lean` | run `legendre_poly` at `machine` | human |
 | `LFortran/FloatAdd*.lean`, `LFortran/FloatOps.lean`, `LFortran/FloatModel.lean` | Lean's `Float` `+ − × ÷` meet the `FPModel` bounds; `floatModel` (not trusted) | proofs (AI), checked by Lean |
-| `Legendre/FloatCorrect.lean`, `SinKernels/FloatRun.lean`, `LFortran/FloatSim.lean` | the `Float` runs of the generated code meet the `Float` specifications | proofs (AI), checked by Lean |
+| `LFortran/FloatVal.lean`, `LFortran/FloatVModel.lean` | Lean's `Float` (and `Int32`) is a `VModel`: every operation the templates use, literals included | proofs (AI), checked by Lean |
+| `Legendre/FloatCorrect.lean`, `SinKernels/FloatRun.lean` | the `Float` runs meet the `Float` specifications: the general theorems at `Float` | proofs (AI), checked by Lean |
 | `SinKernels/Spec.lean` | what the sin kernels' `Float` runs must satisfy | human, reviewed |
 | `check_float_runs.py`, `float_runs_check.f90` | bit-for-bit and bound tests of the `Float` runs | human |
 
@@ -294,17 +296,20 @@ legendreP n x` for every `n ≥ 0` and every real `x`.
 recurrence for `shiftedLegendre`, and concludes that the recurrence `P` the
 loop evaluates equals `legendreP` (`P_eq_legendreP`).
 
-**Rounding** (`legendre_rounding`): `|legendre_ng fp n x - legendre_exact n x|
-≤ 89201 U`. It is done once, for every arithmetic without a guard digit
-(`NoGuardModel`, Section 4), with a ceiling `U ≤ 2^-40` on the unit roundoff
-and `E = U/10^6` on the underflow term. Combined with the exact part this is
-`legendre_ng_correct : LegendreSpecNoGuard legendre_ng`; `legendre_correct`
-(`U = 2^-53`, `10^-11`) is the corollary for `FPModel`s, through
-`FPModel.toNoGuard`. The bounds use `U` and `E`, not the individual model's
-`fp.u` and `fp.η`. The rounding part has four steps:
+**Rounding** (`legendre_rounding`): the computed value is within `89201 U`
+of `P_n(x)`, the exact-arithmetic value. It is done once, for every `VModel`
+(Section 3: the template on any carrier, `ℝ` with an arithmetic model or
+Lean's `Float`) without a guard digit, with a ceiling `U ≤ 2^-40` on the unit
+roundoff and `E = U/10^6` on the underflow term. Its corollaries are
+`legendre_ng_correct : LegendreSpecNoGuard legendre_ng` (every
+`NoGuardModel`), `legendre_correct` (every `FPModel`, `U = 2^-53`, `10^-11`,
+through `FPModel.toNoGuard`), and `legendre_float_spec` (the `Float` run,
+Section 5). The bounds use `U` and `E`, not the individual model's `u` and
+`η`. The rounding part has four steps:
 
 1. **Loop to recursion.** The `for` loop of the generated code is rewritten as
-   a recursive sequence `y_m` of computed values.
+   a recursive sequence `y_m` of computed values, on any carrier whose
+   `integer(4)` is exact in range (`IntExact`: `ℤ`, or `Int32` for `n ≤ 100`).
 2. **One step of the loop.** Using only the error bound of each of its eight
    rounded operations (five arithmetic operations, three conversions), the
    computed `y_k` differs from the exact recurrence applied to the computed
@@ -312,7 +317,7 @@ and `E = U/10^6` on the underflow term. Combined with the exact part this is
    values stay within `1 + 10^-6` in magnitude, which the induction
    maintains. The subtraction is bounded through `|a| + |b|`, so the step
    holds without a guard digit. This bound includes the allowed absolute underflow error;
-   it is not a bound of `18·fp.u` when `fp.u` is smaller than `U`.
+   it is not a bound of `18·u` when `u` is smaller than `U`.
 3. **Propagation.** The errors `e_k = y_k - P_k(x)` (`P_k(x)` is the exact
    value) satisfy
    `e_k = ((2k-1) x e_{k-1} - (k-1) e_{k-2})/k + r_k`. Bounding this term by
@@ -352,14 +357,17 @@ structure.
   then `kernel_sin(r)`.
 
 Each is proved in two parts, exact arithmetic against `Real.sin` and
-rounding. `kernel_sin`'s rounding is proved for every `NoGuardModel` (so
-every `FPModel`) with unit roundoff `≤ U` and underflow error `≤ H`
-(`U, H ≤ 2^-20`); `kernel_fast`'s for binary64:
+rounding. Both rounding proofs are written once, for every `VModel`
+(Section 3). `kernel_sin`'s holds with unit roundoff `≤ U` and underflow
+error `≤ H` (`U, H ≤ 2^-20`), without a guard digit, so for every
+`NoGuardModel` (`kernel_sin_correct_ng`) and for `Float`;
+`kernel_fast`'s for every correctly rounded binary64 `VModel` with a guard
+digit:
 
-| | exact arithmetic vs `Real.sin` | rounding | combined | binary64 (`floatModel`) |
+| | exact arithmetic vs `Real.sin` | rounding | combined | the `Float` run |
 |---|---|---|---|---|
-| `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_binary64`; the `Float` run: `kernel_sin_spec`) |
-| `kernel_fast`, `\|x0\| ≤ 6·10^9` | `≤ 7.3·10^-16` (`kernel_fast_exact_correct`, `\|x0\| ≤ 10^12`) | binary64-specific, see below | | `≤ 2.2·10^-15` (`kfastGen_binary64`; the `Float` run: `kernel_fast_spec`) |
+| `kernel_sin`, `\|x\| ≤ π/2` | `\|x S(x²) - sin x\| ≤ 4.6·10^-16 \|x\|`, relative `≤ 10^-15` (`kernel_sin_approx`, `_rel`) | `≤ \|x\|(6.14 U + 2107 H) + H` (`kernel_sin_rounding`) | `kernel_sin_correct` | `≤ 1.15·10^-15 \|x\| + 2^-1075` (`kernel_sin_spec`) |
+| `kernel_fast`, `\|x0\| ≤ 6·10^9` | `≤ 7.3·10^-16` (`kernel_fast_exact_correct`, `\|x0\| ≤ 10^12`) | binary64-specific, see below | `kernel_fast_binary64` | `≤ 2.2·10^-15` (`kernel_fast_spec`) |
 
 The ingredients:
 
@@ -375,22 +383,25 @@ The ingredients:
   `0 ≤ z ≤ 1.571²` (measured maximum `4.22·10^-16`), slightly beyond
   `(π/2)²` because the computed reduced argument can exceed `π/2` by
   rounding.
-* **Error propagation** (`LFortran/ErrorProp.lean`): `Close m U H v t α κ T`
-  (computed `v ∈ F` within `α U + κ H` of `t`, `|t| ≤ T`) through each
-  rounded operation. Keeping `H` separate from `U` matters: the literal
+* **Error propagation** (`LFortran/ErrorProp.lean`): `Close V U H v t α κ T`
+  (the computed `v`, on any carrier, has a value within `α U + κ H` of `t`,
+  `|t| ≤ T`) through each rounded operation. Keeping `H` separate from `U` matters: the literal
   `S8 ≈ 7·10^-13` has an absolute underflow error that the Horner scheme
   multiplies by `z^7`.
 * **Choice of `N`** (`chooseN`, `SinKernels/Proof/Reduction.lean`): `int`
   truncates, and the shift by `±1/2` makes `|x0/π_d - N| ≤ 1/2 + ε` in every
-  `NoGuardModel` in which integers up to `X` and negation are exact, so
-  `|r| ≤ 1.571`. Then `sin x0 = (-1)^N sin(x0 - Nπ)`, and negating `r` for
+  `VModel` in which integers up to `X` convert exactly and negation, `abs`,
+  the sign bit and `int` act on values (`VModel.Signed`), so `|r| ≤ 1.571`. Then `sin x0 = (-1)^N sin(x0 - Nπ)`, and negating `r` for
   odd `N` multiplies `sin r` by `(-1)^N` (`fast_core`, `parity_sin`).
 
 `kernel_fast` is proved for binary64 only, because Cody–Waite relies on
-binary64 exactness that the generic models do not provide. `N p1` and `N p2`
-are exact (`fm_mul_exact`: Lean's `Float` `*` and `-` are exact when the exact
-result is a binary64 number, `LFortran/FloatExact.lean`), and `x0 - N p1` is
-exact by Sterbenz's lemma (`sterbenz`). The two remaining subtractions and
+binary64 exactness that the generic models do not provide
+(`VModel.Binary64`: values are binary64 numbers and an operation whose exact
+result is one returns it; Lean's `Float` satisfies it by
+`LFortran/FloatExact.lean`). `N p1` and `N p2` are exact, and `x0 - N p1` is
+exact by Sterbenz's lemma (`sterbenz`). The last two subtractions need the
+guard-digit bound `u|x - y|` (`VModel.Guard`); the no-guard bound
+`u(|x| + |y|)` would charge the rounding of `N p2 ≈ 10^3` and give `10^-13`. The two remaining subtractions and
 `N p3` add at most `3.6·10^-16`, and `p1 + p2 + p3` differs from `π` by
 `1.7·10^-31`, which needs `π` to 32 decimals (`LFortran/PiBounds.lean`, checked
 by Mathlib's `pi_lower_bound`/`pi_upper_bound`, witnesses from
@@ -432,6 +443,29 @@ and no particular rounding rule, radix or tie-breaking is assumed. A theorem
 proved for every `FPModel` (with `u`, `η`, `M` in some range) therefore holds
 for every concrete arithmetic that is an instance.
 
+**One proof for the model and the run** (`LFortran/VModel.lean`). The
+template is instantiated at `ℝ` for a proof but at `Float` for the run, so a
+theorem about `ℝ` with an `FPModel` is not yet a theorem about the run. The
+rounding proofs are therefore written against `VModel α`: the `FReal α`
+operations the generated code calls, on any carrier `α`, read through a
+relation `val a x` ("`a` is finite with value `x`") with the error bounds of
+`NoGuardModel`:
+
+```
+val a x → val b y → |x ∘ y| ≤ M → ∃ v, val (a ∘ b) v ∧ |v − x ∘ y| ≤ u·(…) + η
+```
+
+and the same for literals and integer conversions. Its instances are
+`VModel.ofNoGuard m` (the carrier `ℝ`, `val a x := a = x ∧ x ∈ m.F`, for every
+`NoGuardModel`, hence every `FPModel`) and `floatV` (Lean's `Float`,
+`val f x := floatValue f = some x`, `LFortran/FloatVModel.lean`). A rounding
+theorem then reads "the run has a value `w`, and `|w − f(x)| ≤ …`", and is a
+theorem about the `Float` run by instantiation. Programs that need more state
+it as hypotheses: `VModel.Signed` (negation, `abs`, the sign bit and `int` act
+on values), `VModel.Guard` (`+`, `-` have the `FPModel` bound),
+`VModel.Binary64` (correctly rounded binary64), and `IntExact` for the
+integer kind (`ℤ`; `Int32` on `[-2^31, 2^31)`).
+
 ## 4. Arithmetic systems and how they relate
 
 | System | Source | Error form | Underflow | Overflow | In Lean | As an `FPModel` |
@@ -462,6 +496,8 @@ Trefethen & Bau ──► Higham ──► FPModel ◄── binary64 with flush
 | binary64 FTZ → `FPModel` | `binary64FTZModel` |
 | `FPModel` → no guard digit | `FPModel.toNoGuard` (the converse fails: `noGuard_not_fpModel`) |
 | Lean's `Float` → `FPModel` | `floatModel` (`LFortran/FloatModel.lean`): its `+ − × ÷` are `Float`'s, proved from `Float.Model` |
+| Lean's `Float` → `VModel` | `floatV` (`LFortran/FloatVModel.lean`), with `Signed`, `Guard`, `Binary64` |
+| `NoGuardModel` → `VModel` | `VModel.ofNoGuard` |
 
 `Legendre/Corollaries.lean` applies `legendre_correct` to each of them
 (`legendre_correct_binary64`, `legendre_correct_binary64FTZ`,
@@ -558,19 +594,18 @@ files, so what is guaranteed can be read off the theorem's type:
 | `kernel_fast_spec` | `KernelFastFloatSpec` (`SinKernels/Spec.lean`) | `\|x0\| ≤ 6·10^9`: finite, within `2.2·10^-15` of `sin x0` (measured `7.5·10^-16`) |
 
 `floatValue` (the real number a `Float` denotes, from Lean's `Float.Model`)
-is part of these statements. Each proof shows that the `Float` run computes
-exactly the same template in `floatModel` (`legendre_float_sim`,
-`kernel_sin_float_sim`, `kernel_fast_float_sim`), using
-`LFortran/FloatSim.lean`: every `Float` operation the templates use
-(`+ − × ÷`, negation, `abs`, the sign bit, `int` truncation, `Float.ofInt`,
-`Int32` parity) has the value of the corresponding `floatModel` operation, and
-the literals are exact (the kernel evaluates them). `floatModel` is binary64
-round-to-nearest, an `FPModel` whose operations are `Float`'s
-(`float_add_value` … `float_div_value`). The sign bit and `int` are read
-through `Float.Model` because `Float.toInt64` has no logical model. The
-`Float` sign of `-0.0` differs from `ℝ`, so the choice of `N` is proved for
-either sign choice at `x0 = 0` (`SignOk`, `chooseN`). All use only the standard
-axioms.
+is part of these statements. Each proof is the general rounding theorem
+(proved once for every `VModel`, Section 3) instantiated at `floatV` and
+`Int32`; there is no separate argument relating the run to a real-valued
+model. That `Float` is a `VModel` is proved once, for all programs
+(`LFortran/FloatVModel.lean`): every operation the templates use (`+ − × ÷`,
+negation, `abs`, the sign bit, `int` truncation, `Float.ofInt`, and literals
+`Float.ofInt m * floatPow2 e`, exact by the bit pattern of `floatPow2`) meets
+the bounds, and `Int32` is exact on `[-2^31, 2^31)` (including Fortran
+`modulo`). The sign bit and `int` are read through `Float.Model` because
+`Float.toInt64` has no logical model. The `Float` sign of `-0.0` differs from
+`ℝ`, so the choice of `N` is proved for either sign choice at `x0 = 0`
+(`SignOk`, `chooseN`). All use only the standard axioms.
 
 What remains trusted is Lean's: that the compiled `Float` operations (C
 `double`) implement `Float.Model`. The proofs cover the Lean run, not an

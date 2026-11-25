@@ -3,21 +3,15 @@ import LFortran.Runtime
 import LFortran.Arith.Model
 
 /-!
-# `Float` operations as `floatModel` operations
+# `Float` operations on values
 
-The runtime instance `LFortran.machine` computes with Lean's `Float`. This
-file relates each `Float` operation that generated code uses to the
-corresponding operation of `floatModel` (binary64 round-to-nearest) on the
-real values of the operands, so that a proof about a template at `floatModel`
-transfers to the run at `machine`:
-
-* `+ - * /`: `sim_add` … `sim_div` (the value of the `Float` result is the
-  `floatModel` result, when the exact result is below `2^1022`);
-* negation, `abs`, the sign bit, `Float.ofInt`, and truncation (`floatTrunc`,
-  Fortran `int`): `float_neg_value`, `float_abs_value`, `floatSignbit_eq`,
-  `float_ofInt_value`, `floatTrunc_eq`.
-
-Everything is proved from Lean's logical `Float.Model`.
+`floatValue f` is the real number a `Float` denotes (`none` for infinities
+and NaN), read from Lean's logical `Float.Model`; `FVal f x` says `f` is
+finite with value `x`. This file relates the `Float` operations that
+generated code uses, other than `+ - * /` (`LFortran/FloatOps.lean`), to
+values: negation, `abs`, the sign bit (`floatSignbit_eq`), `Float.ofInt`
+(`float_ofInt_value`) and truncation, Fortran `int` (`floatTrunc_eq`).
+They make `Float` a `VModel` (`LFortran/FloatVModel.lean`).
 -/
 
 open Float.Model Float.Model.UnpackedFloat
@@ -27,7 +21,7 @@ set_option exponentiation.threshold 2048
 namespace LFortran
 
 /-- `f` is a finite `Float` with real value `x`. -/
-abbrev Sim (f : Float) (x : ℝ) : Prop := floatValue f = some x
+abbrev FVal (f : Float) (x : ℝ) : Prop := floatValue f = some x
 
 /-! ## Sign operations -/
 
@@ -37,12 +31,12 @@ theorem canon_neg {u : UnpackedFloat} (h : Canon u) : Canon u.neg := by
 theorem canon_abs {u : UnpackedFloat} (h : Canon u) : Canon u.abs := by
   cases u <;> simp_all [Canon, UnpackedFloat.abs]
 
-theorem float_neg_value {f : Float} {x : ℝ} (h : Sim f x) : Sim (-f) (-x) := by
+theorem float_neg_value {f : Float} {x : ℝ} (h : FVal f x) : FVal (-f) (-x) := by
   have hc := canon_model h
   show modelValue (Float.Model.pack f.toModel.unpack.neg) = some (-x)
   unfold modelValue
   rw [model_unpack_pack _ (canon_neg hc)]
-  unfold Sim floatValue modelValue at h
+  unfold FVal floatValue modelValue at h
   revert h
   cases f.toModel.unpack with
   | finite s m e hm =>
@@ -53,12 +47,12 @@ theorem float_neg_value {f : Float} {x : ℝ} (h : Sim f x) : Sim (-f) (-x) := b
   | infinity s => intro h; simp [uvalue] at h
   | notANumber => intro h; simp [uvalue] at h
 
-theorem float_abs_value {f : Float} {x : ℝ} (h : Sim f x) : Sim (Float.abs f) |x| := by
+theorem float_abs_value {f : Float} {x : ℝ} (h : FVal f x) : FVal (Float.abs f) |x| := by
   have hc := canon_model h
   show modelValue (Float.Model.pack f.toModel.unpack.abs) = some |x|
   unfold modelValue
   rw [model_unpack_pack _ (canon_abs hc)]
-  unfold Sim floatValue modelValue at h
+  unfold FVal floatValue modelValue at h
   revert h
   cases f.toModel.unpack with
   | finite s m e hm =>
@@ -80,10 +74,10 @@ theorem bitValue_neg_lt (m : Nat) (e : Int) (hm : 0 < m) : bitValue .negative m 
   rw [bitValue_eq]; simp only [sgn]; linarith
 
 /-- For a nonzero finite `Float`, the sign bit says whether the value is negative. -/
-theorem floatSignbit_eq {f : Float} {x : ℝ} (h : Sim f x) (hx : x ≠ 0) :
+theorem floatSignbit_eq {f : Float} {x : ℝ} (h : FVal f x) (hx : x ≠ 0) :
     floatSignbit f = decide (x < 0) := by
   unfold floatSignbit
-  unfold Sim floatValue modelValue at h
+  unfold FVal floatValue modelValue at h
   revert h
   cases f.toModel.unpack with
   | finite s m e hm =>
@@ -101,14 +95,12 @@ theorem floatSignbit_eq {f : Float} {x : ℝ} (h : Sim f x) (hx : x ≠ 0) :
   | notANumber => intro h; simp [uvalue] at h
 
 /-- A `Float` with the sign bit set has a value `≤ 0`. -/
-theorem floatSignbit_nonpos {f : Float} {x : ℝ} (h : Sim f x) (hs : floatSignbit f = true) :
+theorem floatSignbit_nonpos {f : Float} {x : ℝ} (h : FVal f x) (hs : floatSignbit f = true) :
     x ≤ 0 := by
   by_contra hx
   have := floatSignbit_eq h (ne_of_gt (lt_of_not_ge hx))
   rw [hs] at this
   simp at this; linarith
-
-/-! ## Truncation -/
 
 /-! ## Truncation -/
 
@@ -132,10 +124,10 @@ theorem roundToInt_positive (m : Nat) (e : Int) :
     rw [Int.floor_div_natCast, show ((m : ℝ)) = ((m : ℤ) : ℝ) by push_cast; rfl, Int.floor_intCast]
     push_cast; rfl
 
-theorem float_toUInt64 {f : Float} {x : ℝ} (h : Sim f x) (h0 : 0 ≤ x) (h63 : x < 2 ^ 63) :
+theorem float_toUInt64 {f : Float} {x : ℝ} (h : FVal f x) (h0 : 0 ≤ x) (h63 : x < 2 ^ 63) :
     ((f.toUInt64.toNat : ℕ) : ℤ) = ⌊x⌋ := by
   have key : (f.toModel.unpack.toInt 0 (UInt64.size - 1) : ℤ) = ⌊x⌋ := by
-    unfold Sim floatValue modelValue at h
+    unfold FVal floatValue modelValue at h
     revert h
     cases f.toModel.unpack with
     | finite s m e hm =>
@@ -163,7 +155,7 @@ theorem float_toUInt64 {f : Float} {x : ℝ} (h : Sim f x) (h0 : 0 ≤ x) (h63 :
   omega
 
 /-- `floatTrunc` (Fortran `int`) is truncation of the real value. -/
-theorem floatTrunc_eq {f : Float} {x : ℝ} (h : Sim f x) (h63 : |x| < 2 ^ 63) :
+theorem floatTrunc_eq {f : Float} {x : ℝ} (h : FVal f x) (h63 : |x| < 2 ^ 63) :
     floatTrunc f = realTrunc x := by
   have hx := abs_lt.1 h63
   unfold floatTrunc
@@ -183,13 +175,13 @@ theorem floatTrunc_eq {f : Float} {x : ℝ} (h : Sim f x) (h63 : |x| < 2 ^ 63) :
 
 /-! ## Integer conversion -/
 
-theorem float_ofInt_zero : Sim (Float.ofInt 0) 0 := by
-  unfold Sim floatValue modelValue
+theorem float_ofInt_zero : FVal (Float.ofInt 0) 0 := by
+  unfold FVal floatValue modelValue
   rw [show (Float.ofInt 0).toModel.unpack = .zero .positive from rfl]
   rfl
 
 /-- `Float.ofInt` is exact below `2^53`. -/
-theorem float_ofInt_value (n : ℤ) (hn : |n| < 2 ^ 53) : Sim (Float.ofInt n) n := by
+theorem float_ofInt_value (n : ℤ) (hn : |n| < 2 ^ 53) : FVal (Float.ofInt n) n := by
   rcases n with k | k
   · rcases k with _ | k
     · simpa using float_ofInt_zero
@@ -201,78 +193,8 @@ theorem float_ofInt_value (n : ℤ) (hn : |n| < 2 ^ 53) : Sim (Float.ofInt n) n 
       simp only [Int.negSucc_eq, abs_lt] at hn; omega
     have hk := floatValue_ofInt (k + 1) (by omega) (by omega)
     have := float_neg_value hk
-    show Sim (-Float.ofNat (k + 1)) _
+    show FVal (-Float.ofNat (k + 1)) _
     rw [Int.cast_negSucc]
     exact this
-
-/-! ## Arithmetic -/
-
-/-- `floatModel` results are within `|exact| + 1` of zero more than the exact result. -/
-theorem fm_abs_le {v t : ℝ} (h : |v - t| ≤ 1 / 2 ^ 53 * |t| + 1 / 2 ^ 1075) :
-    |v| ≤ 2 * |t| + 1 := by
-  have h1 : (1 : ℝ) / 2 ^ 53 * |t| ≤ |t| := by
-    have := abs_nonneg t
-    have : (1 : ℝ) / 2 ^ 53 ≤ 1 := by norm_num
-    nlinarith
-  have h2 : (1 : ℝ) / 2 ^ 1075 ≤ 1 := by norm_num
-  have := abs_sub_abs_le_abs_sub v t
-  linarith
-
-theorem sim_add {f g : Float} {x y : ℝ} (hf : Sim f x) (hg : Sim g y) (hM : |x + y| ≤ 2 ^ 1022) :
-    Sim (f + g) (floatModel.add x y) ∧ |floatModel.add x y| ≤ 2 * |x + y| + 1 := by
-  obtain ⟨v, hv, -, he⟩ := float_add_value hf hg hM
-  rw [floatModel_add_eq hf hg hv]
-  exact ⟨hv, fm_abs_le he⟩
-
-theorem sim_sub {f g : Float} {x y : ℝ} (hf : Sim f x) (hg : Sim g y) (hM : |x - y| ≤ 2 ^ 1022) :
-    Sim (f - g) (floatModel.sub x y) ∧ |floatModel.sub x y| ≤ 2 * |x - y| + 1 := by
-  obtain ⟨v, hv, -, he⟩ := float_sub_value hf hg hM
-  rw [floatModel_sub_eq hf hg hv]
-  exact ⟨hv, fm_abs_le he⟩
-
-theorem sim_mul {f g : Float} {x y : ℝ} (hf : Sim f x) (hg : Sim g y) (hM : |x * y| ≤ 2 ^ 1022) :
-    Sim (f * g) (floatModel.mul x y) ∧ |floatModel.mul x y| ≤ 2 * |x * y| + 1 := by
-  obtain ⟨v, hv, -, he⟩ := float_mul_value hf hg hM
-  rw [floatModel_mul_eq hf hg hv]
-  exact ⟨hv, fm_abs_le he⟩
-
-theorem sim_div {f g : Float} {x y : ℝ} (hf : Sim f x) (hg : Sim g y) (hy : y ≠ 0)
-    (hM : |x / y| ≤ 2 ^ 1022) :
-    Sim (f / g) (floatModel.div x y) ∧ |floatModel.div x y| ≤ 2 * |x / y| + 1 := by
-  obtain ⟨v, hv, -, he⟩ := float_div_value hf hg hy hM
-  rw [floatModel_div_eq hy hf hg hv]
-  exact ⟨hv, fm_abs_le he⟩
-
-/-- `floatModel` rounds a value that a `Float` represents to itself. -/
-theorem fm_round_of_sim {f : Float} {c : ℝ} (h : Sim f c) (hc : |c| ≤ 2 ^ 1022) :
-    floatModel.round c = c :=
-  round_fixes floatRound_spec hc (float_mem h)
-
-/-! ## `Int32` parity, for `modulo(int(x), 2) == 1` -/
-
-theorem int32_parity (N : ℤ) (h0 : -2 ^ 31 ≤ N) (h1 : N < 2 ^ 31) :
-    FInt.beq (FInt.modulo (Int32.ofInt N) (FInt.ofInt 2)) (FInt.ofInt 1) =
-      decide (N.fmod 2 = 1) := by
-  have ha : (Int32.ofInt N).toInt = N := Int32.toInt_ofInt_of_le h0 h1
-  have h2 : (Int32.ofInt 2).toInt = 2 := by decide
-  have hr : (Int32.ofInt N % Int32.ofInt 2).toInt = N.tmod 2 := by
-    rw [Int32.toInt_mod, ha, h2]
-  rw [Int.fmod_eq_emod_of_nonneg _ (by norm_num)]
-  have ht := @Int.tmod_eq_emod N 2
-  rcases Int.emod_two_eq_zero_or_one N with he | he
-  · have h' : N.tmod 2 = 0 := by rw [ht]; split_ifs <;> omega
-    have hr0 : Int32.ofInt N % Int32.ofInt 2 = 0 := Int32.toInt_inj.1 (by rw [hr, h']; rfl)
-    simp only [FInt.modulo, FInt.beq, FInt.ofInt, hr0, he]
-    decide
-  · rcases le_or_gt 0 N with hN | hN
-    · have h' : N.tmod 2 = 1 := by rw [ht]; split_ifs <;> omega
-      have hr0 : Int32.ofInt N % Int32.ofInt 2 = 1 := Int32.toInt_inj.1 (by rw [hr, h']; rfl)
-      simp only [FInt.modulo, FInt.beq, FInt.ofInt, hr0, he]
-      decide
-    · have h' : N.tmod 2 = -1 := by rw [ht]; split_ifs <;> omega
-      have hr0 : Int32.ofInt N % Int32.ofInt 2 = -1 :=
-        Int32.toInt_inj.1 (by rw [hr, h']; rfl)
-      simp only [FInt.modulo, FInt.beq, FInt.ofInt, hr0, he]
-      decide
 
 end LFortran

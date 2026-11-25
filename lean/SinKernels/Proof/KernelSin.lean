@@ -16,12 +16,14 @@ import Mathlib.Analysis.Real.Pi.Bounds
   `10^-18` (`sin_taylor_poly`), and `|S(z) - T_11(z)| ≤ 4.5·10^-16` on
   `0 ≤ z ≤ 1.571²` is checked by the kernel (`PolyBound.check`); the bound
   also holds slightly beyond `π/2` (`kernel_sin_approx_wide`).
-* `kernel_sin_rounding`: in every `NoGuardModel` (so every `FPModel`) with
-  unit roundoff `≤ U` and underflow error `≤ H` (`U, H ≤ 2^-20`), for
-  floating-point `|x| ≤ 1.6`, the computed value differs from the exact one by
-  at most `|x| (6.14 U + 2107 H) + H`.
+* `kernel_sin_rounding`: in every `VModel` (the template on any carrier:
+  `ℝ` with a `NoGuardModel`, so every `FPModel`, or Lean's `Float`) with unit
+  roundoff `≤ U` and underflow error `≤ H` (`U, H ≤ 2^-20`), for an input
+  with value `|x| ≤ 1.6`, the computed value differs from the exact one by at
+  most `|x| (6.14 U + 2107 H) + H`.
 * `kernel_sin_correct`: hence `|computed - sin x| ≤ |x| (4.6·10^-16 + 6.14 U +
-  2107 H) + H` for `|x| ≤ π/2`.
+  2107 H) + H` for `|x| ≤ π/2`; `kernel_sin_correct_ng` states it for every
+  `NoGuardModel`, `SinKernels/FloatRun.lean` for `Float`.
 -/
 
 open LFortran PolyBound Real
@@ -119,61 +121,66 @@ theorem kernel_sin_approx_rel {x : ℝ} (hx : |x| ≤ π / 2) :
 
 /-! ### Rounding error -/
 
-/-- **Rounding error.** -/
-theorem kernel_sin_rounding (m : NoGuardModel) {U H : ℝ} (hS : Small m U H)
-    (hM : 4 ≤ m.M) {x : ℝ} (hxF : x ∈ m.F) (hx : |x| ≤ 8 / 5) :
-    |kernel_sin_ng m x - kernel_sin_exact x| ≤ |x| * (614 / 100 * U + 2107 * H) + H := by
-  have hx : Close m U H x x 0 0 (8 / 5) := Close.input hxF hx
+/-- **Rounding error**, in every `VModel`: the template run on any carrier
+(`ℝ` with a `NoGuardModel`, Lean's `Float`, ...) with unit roundoff `≤ U`
+and underflow error `≤ H` has a value within `|x| (6.14 U + 2107 H) + H` of
+the exact-arithmetic value. -/
+theorem kernel_sin_rounding {K : Kinds} [FKinds K] (V : VModel K.R8) {U H : ℝ}
+    (hS : Small V U H) (hM : 4 ≤ V.M) {xv : K.R8} {x : ℝ} (hxv : V.val xv x)
+    (hx : |x| ≤ 8 / 5) :
+    ∃ w, V.val (sin_kernels.kernel_sin (K := K) xv) w ∧
+      |w - kernel_sin_exact x| ≤ |x| * (614 / 100 * U + 2107 * H) + H := by
+  have hx : Close V U H xv x 0 0 (8 / 5) := Close.input hxv hx
   have hz := (Close.mul hS le_rfl le_rfl le_rfl le_rfl hx hx (by norm_num [εU]; linarith)).mono hS (α' := (64 / 25 : ℝ)) (κ' := (1 : ℝ)) (T' := (64 / 25 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have h8 := (Close.round hS (c := ((-1822480071209569 : ℤ) : ℝ) * (2 : ℝ) ^ (-91 : ℤ)) (C := (368047 / 500000000000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (7361 / 10000000000000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (7361 / 10000000000000000 : ℝ))
+  have h8 := (Close.lit hS (m := -1822480071209569) (e := -91) (by norm_num [LitOk]) (C := (368047 / 500000000000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (7361 / 10000000000000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (7361 / 10000000000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p7 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h8 (by norm_num [εU]; linarith)).mono hS (α' := (4883 / 1000000000 : ℝ)) (κ' := (3561 / 1000 : ℝ)) (T' := (377 / 200000000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l7 := (Close.round hS (c := ((3103945121149347 : ℤ) : ℝ) * (2 : ℝ) ^ (-84 : ℤ)) (C := (160471 / 1000000000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (321 / 2000000000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (321 / 2000000000000 : ℝ))
+  have l7 := (Close.lit hS (m := 3103945121149347) (e := -84) (by norm_num [LitOk]) (C := (160471 / 1000000000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (321 / 2000000000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (321 / 2000000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h7 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l7 p7 (by norm_num [εU]; linarith)).mono hS (α' := (4617 / 500000000 : ℝ)) (κ' := (5561 / 1000 : ℝ)) (T' := (203 / 1250000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p6 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h7 (by norm_num [εU]; linarith)).mono hS (α' := (127 / 2500000 : ℝ)) (κ' := (381 / 25 : ℝ)) (T' := (2079 / 5000000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l6 := (Close.round hS (c := ((-7571455092797619 : ℤ) : ℝ) * (2 : ℝ) ^ (-78 : ℤ)) (C := (250519 / 10000000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (1253 / 50000000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (1253 / 50000000000 : ℝ))
+  have l6 := (Close.lit hS (m := -7571455092797619) (e := -78) (by norm_num [LitOk]) (C := (250519 / 10000000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (1253 / 50000000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (1253 / 50000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h6 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l6 p6 (by norm_num [εU]; linarith)).mono hS (α' := (3317 / 50000000 : ℝ)) (κ' := (431 / 25 : ℝ)) (T' := (637 / 25000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p5 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h6 (by norm_num [εU]; linarith)).mono hS (α' := (1271 / 5000000 : ℝ)) (κ' := (2257 / 50 : ℝ)) (T' := (6523 / 100000000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l5 := (Close.round hS (c := ((50834275503869 : ℤ) : ℝ) * (2 : ℝ) ^ (-64 : ℤ)) (C := (137787 / 50000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (689 / 250000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (689 / 250000000 : ℝ))
+  have l5 := (Close.lit hS (m := 50834275503869) (e := -64) (by norm_num [LitOk]) (C := (137787 / 50000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (689 / 250000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (689 / 250000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h5 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l5 p5 (by norm_num [εU]; linarith)).mono hS (α' := (1519 / 5000000 : ℝ)) (κ' := (2357 / 50 : ℝ)) (T' := (1411 / 500000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p4 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h5 (by norm_num [εU]; linarith)).mono hS (α' := (1023 / 1000000 : ℝ)) (κ' := (1217 / 10 : ℝ)) (T' := (289 / 40000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l4 := (Close.round hS (c := ((-7320136529120817 : ℤ) : ℝ) * (2 : ℝ) ^ (-65 : ℤ)) (C := (198413 / 1000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (397 / 2000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (397 / 2000000 : ℝ))
+  have l4 := (Close.lit hS (m := -7320136529120817) (e := -65) (by norm_num [LitOk]) (C := (198413 / 1000000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (397 / 2000000 : ℝ)) (κ' := (1 : ℝ)) (T' := (397 / 2000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h4 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l4 p4 (by norm_num [εU]; linarith)).mono hS (α' := (309 / 200000 : ℝ)) (κ' := (1237 / 10 : ℝ)) (T' := (1029 / 5000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p3 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h4 (by norm_num [εU]; linarith)).mono hS (α' := (5613 / 1000000 : ℝ)) (κ' := (3177 / 10 : ℝ)) (T' := (5269 / 10000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l3 := (Close.round hS (c := ((2401919801243361 : ℤ) : ℝ) * (2 : ℝ) ^ (-58 : ℤ)) (C := (416667 / 50000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (4167 / 500000 : ℝ)) (κ' := (1 : ℝ)) (T' := (4167 / 500000 : ℝ))
+  have l3 := (Close.lit hS (m := 2401919801243361) (e := -58) (by norm_num [LitOk]) (C := (416667 / 50000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (4167 / 500000 : ℝ)) (κ' := (1 : ℝ)) (T' := (4167 / 500000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h3 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l3 p3 (by norm_num [εU]; linarith)).mono hS (α' := (289 / 12500 : ℝ)) (κ' := (3197 / 10 : ℝ)) (T' := (8861 / 1000000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p2 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h3 (by norm_num [εU]; linarith)).mono hS (α' := (531 / 5000 : ℝ)) (κ' := (1639 / 2 : ℝ)) (T' := (2269 / 100000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l2 := (Close.round hS (c := ((-3002399751580165 : ℤ) : ℝ) * (2 : ℝ) ^ (-54 : ℤ)) (C := (166667 / 1000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (1667 / 10000 : ℝ)) (κ' := (1 : ℝ)) (T' := (1667 / 10000 : ℝ))
+  have l2 := (Close.lit hS (m := -3002399751580165) (e := -54) (by norm_num [LitOk]) (C := (166667 / 1000000 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (1667 / 10000 : ℝ)) (κ' := (1 : ℝ)) (T' := (1667 / 10000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h2 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l2 p2 (by norm_num [εU]; linarith)).mono hS (α' := (4631 / 10000 : ℝ)) (κ' := (1643 / 2 : ℝ)) (T' := (947 / 5000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have p1 := (Close.mul hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) hz h2 (by norm_num [εU]; linarith)).mono hS (α' := (54 / 25 : ℝ)) (κ' := (2105 : ℝ)) (T' := (4849 / 10000 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
-  have l1 := (Close.round hS (c := ((1 : ℤ) : ℝ)) (C := (1 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (1 : ℝ)) (κ' := (1 : ℝ)) (T' := (1 : ℝ))
+  have l1 := (Close.ofInt hS (n := 1) (by norm_num) (C := (1 : ℝ)) (by norm_num [abs_of_neg, abs_of_pos]) (by linarith)).mono hS (α' := (1 : ℝ)) (κ' := (1 : ℝ)) (T' := (1 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
   have h1 := (Close.add hS (by norm_num) (by norm_num) (by norm_num) (by norm_num) l1 p1 (by norm_num [εU]; linarith)).mono hS (α' := (4647 / 1000 : ℝ)) (κ' := (2107 : ℝ)) (T' := (297 / 200 : ℝ))
     (by norm_num [εU]) (by norm_num [εU]) (by norm_num [εU])
 
-  have hfin := Close.mul_input hS (by norm_num) (by norm_num) hxF h1
+  obtain ⟨w, hw, hfin⟩ := Close.mul_input hS (by norm_num) (by norm_num) hxv h1
     (by rw [show εU = 1 / 2 ^ 20 from rfl]; nlinarith [abs_nonneg x])
-  refine hfin.2.trans ?_
+  refine ⟨w, hw, hfin.trans ?_⟩
   have hU := hS.U0
   have hH := hS.H0
   have : ((4647 / 1000 : ℝ) + 297 / 200 + (4647 / 1000 + 2107) * εU) ≤ 614 / 100 := by
@@ -186,25 +193,42 @@ theorem kernel_sin_rounding (m : NoGuardModel) {U H : ℝ} (hS : Small m U H)
 
 /-! ### Combined -/
 
-/-- **Accuracy of `kernel_sin`** against Mathlib's `Real.sin`. -/
-theorem kernel_sin_correct (m : NoGuardModel) {U H : ℝ} (hS : Small m U H)
-    (hM : 4 ≤ m.M) {x : ℝ} (hxF : x ∈ m.F) (hx : |x| ≤ π / 2) :
-    |kernel_sin_ng m x - sin x| ≤ |x| * (46 / 10 ^ 17 + 614 / 100 * U + 2107 * H) + H := by
-  have hx' : |x| ≤ 8 / 5 := by linarith [pi_lt_d2]
-  have h1 := kernel_sin_rounding m hS hM hxF hx'
-  have h2 := kernel_sin_approx hx
-  have := abs_sub_le (kernel_sin_ng m x) (kernel_sin_exact x) (sin x)
+/-- **Accuracy of `kernel_sin`** against Mathlib's `Real.sin`, in every
+`VModel`, on `|x| ≤ 1.571` (slightly beyond `π/2`). -/
+theorem kernel_sin_correct_wide {K : Kinds} [FKinds K] (V : VModel K.R8) {U H : ℝ}
+    (hS : Small V U H) (hM : 4 ≤ V.M) {xv : K.R8} {x : ℝ} (hxv : V.val xv x)
+    (hx : |x| ≤ 1571 / 1000) :
+    ∃ w, V.val (sin_kernels.kernel_sin (K := K) xv) w ∧
+      |w - sin x| ≤ |x| * (46 / 10 ^ 17 + 614 / 100 * U + 2107 * H) + H := by
+  obtain ⟨w, hw, h1⟩ := kernel_sin_rounding V hS hM hxv (by linarith)
+  refine ⟨w, hw, ?_⟩
+  have h2 := kernel_sin_approx_wide hx
+  have := abs_sub_le w (kernel_sin_exact x) (sin x)
   nlinarith [abs_nonneg x]
+
+/-- **Accuracy of `kernel_sin`** against Mathlib's `Real.sin`, in every
+`VModel`, on `|x| ≤ π/2`. -/
+theorem kernel_sin_correct {K : Kinds} [FKinds K] (V : VModel K.R8) {U H : ℝ}
+    (hS : Small V U H) (hM : 4 ≤ V.M) {xv : K.R8} {x : ℝ} (hxv : V.val xv x)
+    (hx : |x| ≤ π / 2) :
+    ∃ w, V.val (sin_kernels.kernel_sin (K := K) xv) w ∧
+      |w - sin x| ≤ |x| * (46 / 10 ^ 17 + 614 / 100 * U + 2107 * H) + H :=
+  kernel_sin_correct_wide V hS hM hxv (by linarith [pi_lt_d20])
 
 #print axioms kernel_sin_correct
 
-/-- `kernel_sin_correct` on `|x| ≤ 1.571`. -/
-theorem kernel_sin_correct_wide (m : NoGuardModel) {U H : ℝ} (hS : Small m U H)
-    (hM : 4 ≤ m.M) {x : ℝ} (hxF : x ∈ m.F) (hx : |x| ≤ 1571 / 1000) :
+/-- `kernel_sin_correct` for the proof instance, in every `NoGuardModel` (so
+every `FPModel`, and Cray-like arithmetic without a guard digit). -/
+theorem kernel_sin_correct_ng (m : NoGuardModel) {U H : ℝ} (hU0 : 0 ≤ U) (hH0 : 0 ≤ H)
+    (hU : U ≤ εU) (hH : H ≤ εU) (hu : m.u ≤ U) (hη : m.η ≤ H) (hM : 4 ≤ m.M) {x : ℝ}
+    (hxF : x ∈ m.F) (hx : |x| ≤ π / 2) :
     |kernel_sin_ng m x - sin x| ≤ |x| * (46 / 10 ^ 17 + 614 / 100 * U + 2107 * H) + H := by
-  have h1 := kernel_sin_rounding m hS hM hxF (by linarith)
-  have h2 := kernel_sin_approx_wide hx
-  have := abs_sub_le (kernel_sin_ng m x) (kernel_sin_exact x) (sin x)
-  nlinarith [abs_nonneg x]
+  obtain ⟨w, ⟨hw, -⟩, h⟩ := @kernel_sin_correct proofKinds (FKinds.ofNoGuard m m)
+    (VModel.ofNoGuard m) U H (@LFortran.Small.mk ℝ (FReal.ofNoGuard m) _ U H hU0 hH0 hU hH hu hη) hM x x
+    ⟨rfl, hxF⟩ hx
+  rw [kernel_sin_ng, hw]
+  exact h
+
+#print axioms kernel_sin_correct_ng
 
 end SinKernelsProof

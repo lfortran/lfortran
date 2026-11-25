@@ -2,7 +2,7 @@ import Legendre.Generated
 
 /-!
 Run the generated template `legendre_poly` at `LFortran.machine`
-(`Int32`, `Float`), the instantiation `legendre_float_correct` is about.
+(`Int32`, `Float`), the instantiation `legendre_float_spec` is about.
 
 `P_n(1) = 1` and `P_2(1/2) = -1/8`. Exit 1 if the `Float` value disagrees.
 -/
