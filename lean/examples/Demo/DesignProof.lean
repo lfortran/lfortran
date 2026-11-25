@@ -4,7 +4,7 @@ import Demo.Design
 /-!
 # Design check: the same templates in a proof
 
-`Examples/Design.lean` runs these templates at `LFortran.machine`. Here they
+`Demo/Design.lean` runs these templates at `LFortran.machine`. Here they
 are instantiated at `proofKinds` (`ℤ`, `ℝ`) with an `FPModel` per real kind,
 and reduce to the model's operations, so a proof about them is a proof
 about the code that runs.

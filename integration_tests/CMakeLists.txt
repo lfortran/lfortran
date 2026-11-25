@@ -1826,6 +1826,7 @@ RUN(NAME int_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # large i
 
 RUN(NAME lean_sin_kernels_01 LABELS gfortran llvm lean NO_FAST_MATH) # Lean templates; Cody-Waite needs exact IEEE operations
 RUN(NAME lean_names_01 LABELS gfortran llvm lean) # Lean keywords as names, sign with -0.0
+RUN(NAME lean_arrays_01 LABELS gfortran llvm lean) # Lean arrays as values, subroutines return intent(out/inout)
 RUN(NAME intrinsics_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sqrt, abs, log
 RUN(NAME intrinsics_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # sin
 RUN(NAME intrinsics_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cos

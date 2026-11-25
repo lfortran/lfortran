@@ -3,7 +3,16 @@
 
 A Fortran array is a column-major `Arr α` with the lower bound of each
 dimension stored beside the data. `α` is the element type, for example
-`K.R8` in a template. Arrays are values: assignment copies.
+`K.R8` in a template. Arrays are values: assignment copies, and Lean updates
+an unshared array in place.
+
+Procedures receive arrays by value and return the `intent(out)` and
+`intent(inout)` ones (copy-in/copy-out, which is faithful because Fortran
+forbids aliasing a modified dummy argument). A dummy array takes the bounds
+of its declaration on entry: `reshape` for an explicit-shape dummy `a(n)`
+(the data is reinterpreted, as Fortran's sequence association does),
+`rebase` for an assumed-shape dummy `a(:)`. After the call the caller keeps
+its own bounds and takes the data back (`copyBack`).
 -/
 
 namespace LFortran
@@ -45,6 +54,22 @@ def get {α : Type} [Inhabited α] (a : Arr α) (idxs : Array Int) : α :=
 
 def set {α : Type} (a : Arr α) (idxs : Array Int) (v : α) : Arr α :=
   { a with data := a.data.set! (offset a.lbs a.exts idxs) v }
+
+/-- The same data with the bounds of an explicit-shape dummy argument. -/
+def reshape {α : Type} (a : Arr α) (lbs : Array Int) (exts : Array Nat) : Arr α :=
+  { lbs, exts, data := a.data }
+
+/-- The same array with the lower bounds of an assumed-shape dummy argument. -/
+def rebase {α : Type} (a : Arr α) (lbs : Array Int) : Arr α :=
+  { a with lbs }
+
+/-- The actual argument `a` after a call that returned `r` for it. -/
+def copyBack {α : Type} (a r : Arr α) : Arr α :=
+  { a with data := r.data }
+
+/-- `size(a, dim)`. -/
+def sizeDim {α : Type} (a : Arr α) (dim : Int) : Int :=
+  Int.ofNat a.exts[dim.toNat - 1]!
 
 def size {α : Type} (a : Arr α) : Int :=
   Int.ofNat (a.exts.foldl (fun n e => n * e) 1)

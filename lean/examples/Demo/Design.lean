@@ -6,7 +6,7 @@ import LFortran.Runtime
 Hand-written: what `lfortran --backend=lean` is to emit for the Fortran in
 the comments. Every procedure is a template over `K : Kinds` and asks only
 for the class it needs. `main` is the single instantiation at
-`LFortran.machine`. `Examples/DesignProof.lean` instantiates the same
+`LFortran.machine`. `Demo/DesignProof.lean` instantiates the same
 templates at `ℤ`/`ℝ` with an `FPModel`.
 
 Each feature below is a pattern the generator repeats:
