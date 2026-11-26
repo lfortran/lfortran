@@ -6438,7 +6438,11 @@ public:
         while (s && s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
             if (ASR::is_a<ASR::Program_t>(*sym)) return true;
-            if (!ASR::is_a<ASR::Block_t>(*sym)) return false;
+            // BLOCK and ASSOCIATE are the statement-local constructs with
+            // their own symbol table; any other owner is a procedure or a
+            // declaration scope, so the statement is not in a main program.
+            if (!ASR::is_a<ASR::Block_t>(*sym)
+                    && !ASR::is_a<ASR::AssociateBlock_t>(*sym)) return false;
             s = s->parent;
         }
         return false;

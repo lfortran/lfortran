@@ -2177,6 +2177,64 @@ semantic error: a conditional expression is not allowed in a constant expression
 5311 |     parameter (cc1_cepp_k = ( .true. ? 1 : 0 ))  ! {Error} a conditional expression is not allowed in a constant expression
      |                             ~~~~~~~~~~~~~~~~~~ help: Fortran 2023 10.1.12 does not list a conditional expression among the permitted primaries; use `merge`, which is permitted here
 
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5354:17
+     |
+5354 |                 stop  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                 ^^^^ 
+
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5362:17
+     |
+5362 |                 v = 1  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                 ^^^^^ 
+
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5370:17
+     |
+5370 |                 entry e3()  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                 ^^^^^^^^^^ 
+
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5378:17
+     |
+5378 |                 print *, 'x'  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                 ^^^^^^^^^^^^ 
+
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5386:17 - 5387:22
+     |
+5386 |                    if (.true.) then  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+5387 |                    end if
+     | ...^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5395:17
+     |
+5395 |                 call foo()  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                 ^^^^^^^^^^ 
+
+semantic error: Executable statements are not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5403:17
+     |
+5403 |                 read(10, *) x  ! {Error} Executable statements are not allowed in an INTERFACE body
+     |                 ^^^^^^^^^^^^^ 
+
+semantic error: CONTAINS is not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5411:17
+     |
+5411 |                 contains  ! {Error} CONTAINS is not allowed in an INTERFACE body
+     |                 ^^^^^^^^ 
+
+semantic error: CONTAINS is not allowed in an INTERFACE body
+    --> tests/errors/continue_compilation_1.f90:5419:17
+     |
+5419 |                 contains  ! {Error} CONTAINS is not allowed in an INTERFACE body
+     |                 ^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -6568,6 +6626,36 @@ semantic error: 'target' argument of 'associated' intrinsic must be a pointer or
      |
 5328 |     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
      |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: INQUIRE cannot contain both UNIT= and FILE= specifiers
+    --> tests/errors/continue_compilation_1.f90:5335:5
+     |
+5335 |     inquire(unit=10, file="a")  ! {Error} INQUIRE cannot contain both UNIT= and FILE= specifiers
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Unknown specifier `foo` in READ statement
+    --> tests/errors/continue_compilation_1.f90:5341:5
+     |
+5341 |     read(10, *, foo=1) y  ! {Error} Unknown specifier `foo` in READ statement
+     |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Unknown specifier `foo` in WRITE statement
+    --> tests/errors/continue_compilation_1.f90:5342:5
+     |
+5342 |     write(10, *, foo=1) y  ! {Error} Unknown specifier `foo` in WRITE statement
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments
+    --> tests/errors/continue_compilation_1.f90:5343:5
+     |
+5343 |     read(10, *, unit=10) y  ! {Error} Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments
+     |     ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Unknown specifier `file` in READ statement
+    --> tests/errors/continue_compilation_1.f90:5344:5
+     |
+5344 |     read(10, *, file="a") y  ! {Error} Unknown specifier `file` in READ statement
+     |     ^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
