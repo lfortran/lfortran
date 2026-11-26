@@ -8054,6 +8054,16 @@ public:
                 && !is_earlier_cell_global(x)) {
             external = false;
         }
+        // With separate compilation the unit that compiles the module
+        // defines its variables, and a unit that only loads the module
+        // references them. Without it the module file emits an empty
+        // object, so the unit that has the program defines them.
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(&x.base);
+        if (compiler_options.separate_compilation && owner
+                && ASR::is_a<ASR::Module_t>(*owner)
+                && ASR::down_cast<ASR::Module_t>(owner)->m_loaded_from_mod) {
+            external = true;
+        }
         llvm::Constant* init_value = get_static_pointer_association(x);
         llvm::Constant* alias_target = nullptr;
         bool pointer_null_array_init = has_pointer_null_array_initializer(&x);
@@ -8215,8 +8225,11 @@ public:
                     ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr,
                         llvm_var_name + "__desc", llvm_var_name,
-                        needs_common_linkage_for_global(x) ? llvm::GlobalValue::CommonLinkage
+                        needs_common_linkage_for_global(x) && !external ? llvm::GlobalValue::CommonLinkage
                             : llvm::GlobalValue::ExternalLinkage));
+                    if (external) {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(nullptr);
+                    }
                 } else if (external) {
                     ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 } else {
@@ -8306,6 +8319,15 @@ public:
             ASR::String_t* str = ASRUtils::get_string_type(x.m_type);
             llvm::Value *ptr{};
                 bool is_const = (x.m_storage == ASR::storage_typeType::Parameter);
+                // For bind(C) char variables, the C-visible name must be
+                // the data storage (not the descriptor). Use an internal
+                // name for the descriptor and the C name for the data.
+                std::string desc_name = llvm_var_name;
+                std::string data_name = llvm_var_name + "_data";
+                if (x.m_abi == ASR::abiType::BindC) {
+                    desc_name = llvm_var_name + "__desc";
+                    data_name = llvm_var_name;
+                }
                 if (!external) {
                     std::string initial_string_value;
                     if (x.m_symbolic_value) {
@@ -8320,15 +8342,6 @@ public:
                         string_linkage = llvm::GlobalValue::ExternalLinkage;
                     } else {
                         string_linkage = llvm::GlobalValue::PrivateLinkage;
-                    }
-                    // For bind(C) char variables, the C-visible name must be
-                    // the data storage (not the descriptor). Use an internal
-                    // name for the descriptor and the C name for the data.
-                    std::string desc_name = llvm_var_name;
-                    std::string data_name = llvm_var_name + "_data";
-                    if (x.m_abi == ASR::abiType::BindC) {
-                        desc_name = llvm_var_name + "__desc";
-                        data_name = llvm_var_name;
                     }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
                         is_const, desc_name, string_linkage, data_name);
@@ -8347,7 +8360,7 @@ public:
                         set_global_variable_linkage_as_common(data, x);
                     }
                 } else {
-                    ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
+                    ptr = module->getOrInsertGlobal(desc_name, llvm_utils->get_StringType(x.m_type));
                 }
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::CPtr ) {

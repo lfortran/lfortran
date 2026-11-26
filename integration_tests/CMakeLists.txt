@@ -2642,6 +2642,9 @@ RUN(NAME bindc_75 LABELS gfortran llvm EXTRAFILES bindc_75.c)
 RUN(NAME bindc_76 LABELS gfortran llvm EXTRAFILES bindc_76.c)
 RUN(NAME bindc_77 LABELS gfortran llvm EXTRAFILES bindc_77.c)
 RUN(NAME bindc_module_init_01 LABELS gfortran llvm c)
+RUN(NAME bindc_module_variable_01 LABELS gfortran llvm
+    EXTRAFILES bindc_module_variable_01_m.f90
+    EXTRA_ARGS --separate-compilation)
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
