@@ -145,6 +145,86 @@ public:
     }
 };
 
+// Pre-pass collecting direct IO usage, callees, and modified variables of a
+// procedure so `io_procs` and effective `Unspecified` intents are known before
+// any body is lowered.
+class ProcEffects : public ASR::BaseWalkVisitor<ProcEffects> {
+public:
+    bool has_io = false;
+    std::set<ASR::Function_t*> callees;
+    std::set<ASR::Variable_t*> modified;
+    struct SubArg {
+        ASR::Function_t *callee;
+        size_t idx;
+        ASR::Variable_t *var;
+    };
+    std::vector<SubArg> sub_args;
+
+    static ASR::Variable_t *root_var(ASR::expr_t *e) {
+        while (e) {
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::Var_t>(*e)) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                return ASR::is_a<ASR::Variable_t>(*s) ? ASR::down_cast<ASR::Variable_t>(s) : nullptr;
+            } else {
+                return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
+    void visit_Print(const ASR::Print_t &x) {
+        has_io = true;
+        ASR::BaseWalkVisitor<ProcEffects>::visit_Print(x);
+    }
+
+    void visit_Stop(const ASR::Stop_t &x) {
+        has_io = true;
+        ASR::BaseWalkVisitor<ProcEffects>::visit_Stop(x);
+    }
+
+    void visit_ErrorStop(const ASR::ErrorStop_t &x) {
+        has_io = true;
+        ASR::BaseWalkVisitor<ProcEffects>::visit_ErrorStop(x);
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (ASR::Variable_t *v = root_var(x.m_target)) modified.insert(v);
+        ASR::BaseWalkVisitor<ProcEffects>::visit_Assignment(x);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        if (ASR::Variable_t *v = root_var(x.m_head.m_v)) modified.insert(v);
+        ASR::BaseWalkVisitor<ProcEffects>::visit_DoLoop(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*s)) callees.insert(ASR::down_cast<ASR::Function_t>(s));
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (ASR::is_a<ASR::Function_t>(*s)) {
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+            callees.insert(fn);
+            for (size_t i = 0; i < x.n_args && i < fn->n_args; i++) {
+                if (ASR::Variable_t *v = root_var(x.m_args[i].m_value)) {
+                    sub_args.push_back({fn, i, v});
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_SubroutineCall(x);
+    }
+};
+
 struct Proc {
     ASR::Function_t *fn = nullptr;
     std::string sig;        // arguments and result type
@@ -165,6 +245,8 @@ public:
 private:
     std::map<ASR::Function_t*, Proc> procs;
     std::map<ASR::Function_t*, std::string> proc_ns;
+    std::set<ASR::Function_t*> io_procs;
+    std::map<ASR::Function_t*, std::vector<ASR::intentType>> eff_intents;
     std::vector<ASR::Function_t*> order;
     Proc *cur = nullptr;
     bool in_program = false;
@@ -394,13 +476,15 @@ private:
             ASR::expr_t *ls = ASR::down_cast<ASR::ArrayBroadcast_t>(l)->m_array;
             if (is_array(ASRUtils::expr_type(ls))) unsupported("this array expression is", l->base.loc);
             std::string sv = atom(operand(ls));
-            return app("Arr.map", {{"(fun y' => " + fn(sv, "y'") + ")", pAtom}, lower(r)});
+            return app("Arr.map", {{"((fun s' y' => " + fn("s'", "y'") + ") " + sv + ")", pAtom},
+                lower(r)});
         }
         if (rb && !lb) {
             ASR::expr_t *rs = ASR::down_cast<ASR::ArrayBroadcast_t>(r)->m_array;
             if (is_array(ASRUtils::expr_type(rs))) unsupported("this array expression is", r->base.loc);
             std::string sv = atom(operand(rs));
-            return app("Arr.map", {{"(fun x' => " + fn("x'", sv) + ")", pAtom}, lower(l)});
+            return app("Arr.map", {{"((fun s' x' => " + fn("x'", "s'") + ") " + sv + ")", pAtom},
+                lower(l)});
         }
         if (is_array(ASRUtils::expr_type(l)) && is_array(ASRUtils::expr_type(r)) && !lb && !rb) {
             return app("Arr.zipWith", {{"(fun x' y' => " + fn("x'", "y'") + ")", pAtom},
@@ -562,6 +646,12 @@ private:
         return ASRUtils::EXPR2VAR(fn->m_args[i]);
     }
 
+    ASR::intentType arg_intent(ASR::Function_t *fn, size_t i) const {
+        auto it = eff_intents.find(fn);
+        if (it != eff_intents.end() && i < it->second.size()) return it->second[i];
+        return dummy(fn, i)->m_intent;
+    }
+
     // The application of a procedure to the arguments it takes: every
     // argument except an `intent(out)` scalar.
     Val call(ASR::symbol_t *sym, ASR::call_arg_t *args, size_t n,
@@ -573,12 +663,13 @@ private:
         for (size_t i = 0; i < n; i++) {
             if (!args[i].m_value) unsupported("an omitted argument is", loc);
             ASR::Variable_t *d = dummy(fn, i);
-            if (d->m_intent == ASR::intentType::Out && !is_array(d->m_type)) continue;
+            ASR::intentType in = arg_intent(fn, i);
+            if (in == ASR::intentType::Out && !is_array(d->m_type)) continue;
             ASR::expr_t *a = args[i].m_value;
             if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
                 unsupported("this argument is", a->base.loc);
             }
-            if (is_array(ASRUtils::expr_type(a)) && d->m_intent != ASR::intentType::In) {
+            if (is_array(ASRUtils::expr_type(a)) && in != ASR::intentType::In) {
                 a = array_var(a);
             }
             src += " " + atom(lower(a));
@@ -654,6 +745,10 @@ private:
         if (x.n_args == 2 && f == "sign" && is_real(x.m_args[0])) {
             Val a = app("FReal.abs", {operand(x.m_args[0])});
             Val b = operand(x.m_args[1]);
+            if (a.src.find("←") != std::string::npos || b.src.find("←") != std::string::npos) {
+                return {"((fun a' b' => if FReal.signbit b' then FReal.neg a' else a') "
+                    + atom(a) + " " + atom(b) + ")", pAtom};
+            }
             return {"(if " + app("FReal.signbit", {b}).src
                 + " then " + app("FReal.neg", {a}).src + " else " + a.src + ")", pAtom};
         }
@@ -1065,7 +1160,10 @@ private:
             case ASR::exprType::FunctionCall: {
                 auto &x = *ASR::down_cast<ASR::FunctionCall_t>(e);
                 if (x.m_dt) unsupported("a type-bound call is", loc);
-                return call(x.m_name, x.m_args, x.n_args, loc);
+                ASR::Function_t *fn = callee(x.m_name, loc);
+                Val c = call(x.m_name, x.m_args, x.n_args, loc);
+                if (io_procs.count(fn)) return {"(← " + c.src + ")", pAtom};
+                return c;
             }
             case ASR::exprType::IntrinsicElementalFunction:
                 return intrinsic(*ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e),
@@ -1109,7 +1207,9 @@ private:
     }
 
     void halt(ASR::expr_t *code, bool error, const Location &loc) {
-        if (!in_program) unsupported("stop in a procedure is", loc);
+        if (!in_program && !(cur && io_procs.count(cur->fn))) {
+            unsupported("stop in a procedure is", loc);
+        }
         if (!code) {
             line(std::string("LFortran.halt ") + (error ? "1" : "0"));
             return;
@@ -1199,7 +1299,7 @@ private:
                 // The `intent(out)`/`intent(inout)` actual arguments, in order.
                 std::vector<ASR::expr_t*> outs;
                 for (size_t i = 0; i < x.n_args; i++) {
-                    if (dummy(fn, i)->m_intent == ASR::intentType::In) continue;
+                    if (arg_intent(fn, i) == ASR::intentType::In) continue;
                     ASR::expr_t *a = x.m_args[i].m_value;
                     if (is_array(ASRUtils::expr_type(a))) a = array_var(a);
                     if (!ASR::is_a<ASR::Var_t>(*a)) {
@@ -1216,15 +1316,23 @@ private:
                         line(n + " := " + v);
                     }
                 };
-                if (outs.size() == 1) {
-                    assign(outs[0], atom(c));
+                bool cal_io = io_procs.count(fn) > 0;
+                if (outs.empty()) {
+                    line(cal_io ? c.src : "let _ := " + c.src);
+                } else if (outs.size() == 1) {
+                    if (cal_io) {
+                        line("let r'1 ← " + c.src);
+                        assign(outs[0], "r'1");
+                    } else {
+                        assign(outs[0], atom(c));
+                    }
                 } else {
                     // Temporaries named `r'i`: `'` cannot occur in Fortran names.
                     std::string pat;
                     for (size_t i = 0; i < outs.size(); i++) {
                         pat += (i ? ", " : "") + std::string("r'") + std::to_string(i + 1);
                     }
-                    line("let (" + pat + ") := " + c.src);
+                    line("let (" + pat + ") " + (cal_io ? "← " : ":= ") + c.src);
                     for (size_t i = 0; i < outs.size(); i++) {
                         assign(outs[i], "r'" + std::to_string(i + 1));
                     }
@@ -1417,7 +1525,9 @@ private:
                 break;
             case ASR::stmtType::Print: {
                 auto &x = *ASR::down_cast<ASR::Print_t>(s);
-                if (!in_program) unsupported("print in a procedure is", loc);
+                if (!in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("print in a procedure is", loc);
+                }
                 level = std::max(level, 2);
                 if (!ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
                     unsupported("this print is", loc);
@@ -1547,7 +1657,8 @@ private:
         Proc &p = procs[fn];
         p.fn = fn;
         cur = &p;
-        level = 0;
+        bool is_io = io_procs.count(fn) > 0;
+        level = is_io ? 2 : 0;
         loop_vars.clear();
         scope = fn->m_symtab;
         in_program = false;
@@ -1565,7 +1676,7 @@ private:
             ASR::Variable_t *a = ASRUtils::EXPR2VAR(fn->m_args[i]);
             const Location &aloc = a->base.base.loc;
             std::string an = name(a->m_name, aloc);
-            ASR::intentType in = a->m_intent;
+            ASR::intentType in = arg_intent(fn, i);
             if (in != ASR::intentType::In && in != ASR::intentType::Out
                     && in != ASR::intentType::InOut) {
                 unsupported("an argument without intent(in), intent(out) or "
@@ -1601,19 +1712,19 @@ private:
             [](const auto &a, const auto &b) { return a.first < b.first; });
         if (result) {
             p.ret = name(result->m_name, result->base.base.loc);
-            p.sig += " : " + type(result->m_type, result->base.base.loc);
+            std::string rty = type(result->m_type, result->base.base.loc);
+            p.sig += is_io ? " : IO " + rty : " : " + rty;
+        } else if (outs.empty()) {
+            p.ret = "()";
+            p.sig += is_io ? " : IO Unit" : " : Unit";
         } else {
-            if (outs.empty()) {
-                unsupported("a subroutine without intent(out) or intent(inout) "
-                    "arguments is", loc);
-            }
             std::string ret, ty;
             for (size_t i = 0; i < outs.size(); i++) {
                 ret += (i ? ", " : "") + outs[i];
                 ty += (i ? " × " : "") + out_types[i];
             }
             p.ret = outs.size() == 1 ? ret : "(" + ret + ")";
-            p.sig += " : " + ty;
+            p.sig += is_io ? " : IO (" + ty + ")" : " : " + ty;
         }
         collect_simple_loop_vars(fn->m_body, fn->n_body);
         for (ASR::Variable_t *d : dummies) loop_vars.erase(d);
@@ -1677,8 +1788,66 @@ private:
 
     std::string def(const Proc &p, const std::string &short_name) {
         std::string kw = (p.callees.count(p.fn) || p.uses_while) ? "partial def " : "def ";
+        std::string rhs = io_procs.count(p.fn) ? " := do\n" : " := Id.run do\n";
         return kw + short_name + " {K : Kinds} [" + level_class(p.level) + " K]"
-            + p.sig + " := Id.run do\n" + p.body + "\n";
+            + p.sig + rhs + p.body + "\n";
+    }
+
+    void analyze_procs(const std::vector<ASR::Function_t*> &all_fns) {
+        std::map<ASR::Function_t*, ProcEffects> effs;
+        for (ASR::Function_t *fn : all_fns) {
+            ProcEffects &pe = effs[fn];
+            for (ASR::symbol_t *s : symbols_in_order(fn->m_symtab)) {
+                if (ASR::is_a<ASR::Variable_t>(*s)) {
+                    pe.visit_ttype(*ASR::down_cast<ASR::Variable_t>(s)->m_type);
+                }
+            }
+            for (size_t i = 0; i < fn->n_body; i++) pe.visit_stmt(*fn->m_body[i]);
+            if (pe.has_io) io_procs.insert(fn);
+            std::vector<ASR::intentType> &ins = eff_intents[fn];
+            ins.resize(fn->n_args);
+            for (size_t i = 0; i < fn->n_args; i++) {
+                ASR::Variable_t *d = dummy(fn, i);
+                if (d->m_intent == ASR::intentType::Unspecified) {
+                    ins[i] = pe.modified.count(d)
+                        ? ASR::intentType::InOut : ASR::intentType::In;
+                } else {
+                    ins[i] = d->m_intent;
+                }
+            }
+        }
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (ASR::Function_t *fn : all_fns) {
+                ProcEffects &pe = effs[fn];
+                if (!io_procs.count(fn)) {
+                    for (ASR::Function_t *c : pe.callees) {
+                        if (io_procs.count(c)) {
+                            io_procs.insert(fn);
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+                std::vector<ASR::intentType> &ins = eff_intents[fn];
+                for (const auto &sa : pe.sub_args) {
+                    auto it = eff_intents.find(sa.callee);
+                    ASR::intentType cin = (it != eff_intents.end() && sa.idx < it->second.size())
+                        ? it->second[sa.idx]
+                        : dummy(sa.callee, sa.idx)->m_intent;
+                    if (cin == ASR::intentType::In) continue;
+                    for (size_t i = 0; i < fn->n_args; i++) {
+                        ASR::Variable_t *d = dummy(fn, i);
+                        if (d == sa.var && d->m_intent == ASR::intentType::Unspecified
+                                && ins[i] == ASR::intentType::In) {
+                            ins[i] = ASR::intentType::InOut;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 
 public:
@@ -1741,6 +1910,7 @@ public:
                 }
             }
         }
+        analyze_procs(all_fns);
         for (ASR::Function_t *fn : all_fns) function(fn);
         std::string prog_body;
         int prog_level = 2;
