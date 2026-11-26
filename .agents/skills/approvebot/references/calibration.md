@@ -13,11 +13,16 @@ it in `.approvebot/feedback.jsonl`:
 | Human action | Default outcome |
 | --- | --- |
 | `auto-merge` applied to a `bot-approved` PR, or the PR merged | agree |
-| `auto-merge` applied to a `needs-review` PR | disagree: the bot was too cautious |
+| `auto-merge` applied to a `needs-review` PR | agree: the maintainer reviewed it, as the label asked |
 | `bot-approved` replaced by `needs-review`, or removed | disagree: a wrong approval |
-| `needs-review` replaced by `bot-approved` | disagree: the bot was too cautious |
+| `needs-review` replaced by `bot-approved`, with or without `auto-merge` | disagree: the bot was too cautious |
 | A `bot-approved` PR closed without merging | disagree |
 | A `needs-review` PR merged or closed | agree, unless the maintainer said otherwise |
+
+A merge of a `needs-review` PR says only that the maintainer approved it
+after reading it, not that the bot should have approved it. To say that the
+bot was too cautious, the maintainer replaces `needs-review` with
+`bot-approved`, before or together with `auto-merge`.
 
 The maintainer may explain a disagreement in a PR comment. That comment is
 the reason. If there is none, record `no reason given`. Do not guess the

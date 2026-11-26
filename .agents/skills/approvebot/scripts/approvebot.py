@@ -155,7 +155,9 @@ def human_action(entry, labels, state):
     """
     verdict, other = entry["label"], (REVIEW if entry["label"] == APPROVED else APPROVED)
     if AUTO_MERGE in labels:
-        return "auto-merge"  # also when mergebot has merged it since
+        # Also when mergebot has merged it since. Swapping the verdict label
+        # first is how the maintainer says that the bot was wrong.
+        return f"relabeled to {other}, then auto-merge" if other in labels else "auto-merge"
     if state == "MERGED":
         return "merged"
     if state == "CLOSED":
@@ -171,7 +173,9 @@ def outcome(entry, action):
     """Default agreement reading of a human action; the agent may refine it."""
     approved = entry["label"] == APPROVED
     if action == "auto-merge":
-        return "agree" if approved else "disagree"
+        # On a needs-review PR, the maintainer reviewed it and approved it,
+        # which is what the label asked for.
+        return "agree"
     if action == "merged":
         return "agree"  # merged by hand after the review the label asked for
     if action == "closed":

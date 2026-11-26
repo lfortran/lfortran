@@ -2892,7 +2892,10 @@ class ApprovebotTests(unittest.TestCase):
         action = bot.human_action(approved, [bot.APPROVED, bot.AUTO_MERGE], "OPEN")
         self.assertEqual((action, bot.outcome(approved, action)), ("auto-merge", "agree"))
         action = bot.human_action(review, [bot.REVIEW, bot.AUTO_MERGE], "OPEN")
-        self.assertEqual(bot.outcome(review, action), "disagree")
+        self.assertEqual(bot.outcome(review, action), "agree")
+        action = bot.human_action(review, [bot.APPROVED, bot.AUTO_MERGE], "OPEN")
+        self.assertEqual((action, bot.outcome(review, action)),
+                         ("relabeled to bot-approved, then auto-merge", "disagree"))
         action = bot.human_action(approved, [bot.REVIEW], "OPEN")
         self.assertEqual((action, bot.outcome(approved, action)),
                          ("relabeled to needs-review", "disagree"))
@@ -2908,7 +2911,7 @@ class ApprovebotTests(unittest.TestCase):
                          "agree")
         # Merged by mergebot after the maintainer applied auto-merge.
         action = bot.human_action(review, [bot.REVIEW, bot.AUTO_MERGE], "MERGED")
-        self.assertEqual((action, bot.outcome(review, action)), ("auto-merge", "disagree"))
+        self.assertEqual((action, bot.outcome(review, action)), ("auto-merge", "agree"))
 
 
 if __name__ == "__main__":
