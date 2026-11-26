@@ -255,4 +255,85 @@ def abs [FRealMath α] (a : FCplx α) : α :=
 
 end FCplx
 
+/- Fortran `character` (ASCII/kind 1) operations, preserving Fortran's
+blank-padded fixed-length and comparison semantics. -/
+namespace FStr
+
+def fix (n : Nat) (s : String) : String :=
+  let cs := s.toList
+  if cs.length ≥ n then String.ofList (cs.take n)
+  else String.ofList (cs ++ List.replicate (n - cs.length) ' ')
+
+def trim (s : String) : String :=
+  String.ofList (s.toList.reverse.dropWhile (· == ' ') |>.reverse)
+
+def len (s : String) : Int := Int.ofNat s.length
+
+def lenTrim (s : String) : Int := Int.ofNat (trim s).length
+
+private def cmpList : List Char → List Char → Ordering
+  | [], [] => .eq
+  | c :: cs, [] =>
+    match compare c ' ' with
+    | .eq => cmpList cs []
+    | o => o
+  | [], d :: ds =>
+    match compare ' ' d with
+    | .eq => cmpList [] ds
+    | o => o
+  | c :: cs, d :: ds =>
+    match compare c d with
+    | .eq => cmpList cs ds
+    | o => o
+
+def cmp (a b : String) : Ordering := cmpList a.toList b.toList
+def beq (a b : String) : Bool := cmp a b == .eq
+def lt (a b : String) : Bool := cmp a b == .lt
+def le (a b : String) : Bool := cmp a b != .gt
+
+def item (s : String) (idx : Int) : String :=
+  match s.toList[(idx - 1).toNat]? with
+  | some c => String.singleton c
+  | none => " "
+
+def slice (s : String) (lo hi : Int) : String :=
+  if hi < lo then ""
+  else String.ofList ((s.toList.drop (lo - 1).toNat).take (hi - lo + 1).toNat)
+
+def rep (s : String) (n : Int) : String := Id.run do
+  let mut out := ""
+  for _ in [:n.toNat] do
+    out := out ++ s
+  return out
+
+def ord (s : String) : Int :=
+  match s.toList.head? with
+  | some c => Int.ofNat c.toNat
+  | none => 0
+
+def chr (i : Int) : String :=
+  String.singleton (Char.ofNat i.toNat)
+
+def adjustl (s : String) : String :=
+  let cs := s.toList
+  let rest := cs.dropWhile (· == ' ')
+  String.ofList (rest ++ List.replicate (cs.length - rest.length) ' ')
+
+def adjustr (s : String) : String :=
+  let cs := s.toList
+  let rest := cs.reverse.dropWhile (· == ' ') |>.reverse
+  String.ofList (List.replicate (cs.length - rest.length) ' ' ++ rest)
+
+def index (s sub : String) : Int := Id.run do
+  let cs := s.toList
+  let subl := sub.toList
+  if subl.isEmpty then return 1
+  if subl.length > cs.length then return 0
+  for i in [:cs.length - subl.length + 1] do
+    if (cs.drop i).take subl.length == subl then
+      return Int.ofNat (i + 1)
+  return 0
+
+end FStr
+
 end LFortran

@@ -306,6 +306,11 @@ private:
             unsupported("complex kind " + std::to_string(k) + " is", loc);
         }
         if (ASR::is_a<ASR::Logical_t>(*t)) return "Bool";
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            int k = ASR::down_cast<ASR::String_t>(t)->m_kind;
+            if (k == 1) return "String";
+            unsupported("character kind " + std::to_string(k) + " is", loc);
+        }
         unsupported("this type is", loc);
     }
 
@@ -315,6 +320,11 @@ private:
         if (ASR::is_a<ASR::Real_t>(*t)) return "FReal.zero";
         if (ASR::is_a<ASR::Complex_t>(*t)) return "FCplx.zero";
         if (ASR::is_a<ASR::Logical_t>(*t)) return "false";
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            auto &s = *ASR::down_cast<ASR::String_t>(t);
+            if (s.m_len) return "FStr.fix " + extent(s.m_len) + " \"\"";
+            return "\"\"";
+        }
         unsupported("this type is", loc);
     }
 
@@ -458,7 +468,7 @@ private:
                 unsupported("this array expression is", loc);
             }
             if (i) elems += ", ";
-            elems += lower(x.m_args[i]).src;
+            elems += fix_string(at->m_type, "", lower(x.m_args[i]), loc);
         }
         elems += "]";
         return {"({ lbs := #[1], exts := #[" + std::to_string(x.n_args)
@@ -479,6 +489,28 @@ private:
 
     bool is_logical(ASR::expr_t *e) {
         return ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(e));
+    }
+
+    bool is_string(ASR::expr_t *e) {
+        return ASR::is_a<ASR::String_t>(
+            *ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(e)));
+    }
+
+    bool is_assumed_len_string(ASR::ttype_t *t) {
+        return t && ASR::is_a<ASR::String_t>(*t)
+            && !ASR::down_cast<ASR::String_t>(t)->m_len;
+    }
+
+    std::string fix_string(ASR::ttype_t *t, const std::string &var_name, const Val &rhs,
+            const Location &loc) {
+        if (!ASR::is_a<ASR::String_t>(*t)) return rhs.src;
+        auto &st = *ASR::down_cast<ASR::String_t>(t);
+        if (st.m_len) return "FStr.fix " + extent(st.m_len) + " " + atom(rhs);
+        if (st.m_len_kind == ASR::string_length_kindType::AssumedLength) {
+            if (!var_name.empty()) return "FStr.fix " + var_name + ".length " + atom(rhs);
+            unsupported("an assumed-length character array element assignment is", loc);
+        }
+        return rhs.src;
     }
 
     ASR::ttype_t *elem_type(ASR::ttype_t *t) {
@@ -553,6 +585,16 @@ private:
             case ASR::exprType::IntegerCompare:
             case ASR::exprType::RealCompare:
             case ASR::exprType::ComplexCompare:
+            case ASR::exprType::StringCompare:
+            case ASR::exprType::StringConstant:
+            case ASR::exprType::StringConcat:
+            case ASR::exprType::StringRepeat:
+            case ASR::exprType::StringLen:
+            case ASR::exprType::StringItem:
+            case ASR::exprType::StringSection:
+            case ASR::exprType::StringOrd:
+            case ASR::exprType::StringChr:
+            case ASR::exprType::StringPhysicalCast:
             case ASR::exprType::LogicalBinOp:
             case ASR::exprType::LogicalNot:
                 return true;
@@ -620,7 +662,10 @@ private:
                 auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
                 std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
                 std::transform(f.begin(), f.end(), f.begin(), ::tolower);
-                if (f == "int" || f == "real" || f == "floor" || f == "ceiling" || f == "nint") {
+                if (f == "int" || f == "real" || f == "floor" || f == "ceiling" || f == "nint"
+                        || f == "stringlentrim" || f == "substrindex" || f == "stringtrim"
+                        || f == "stringconcat" || f == "repeat" || f == "adjustl"
+                        || f == "adjustr" || f == "lge" || f == "lgt" || f == "lle" || f == "llt") {
                     return true;
                 }
                 if (f == "merge") {
@@ -730,7 +775,8 @@ private:
             ASR::Variable_t *d = dummy(fn, i);
             if (!d) unsupported("a procedure argument is", args[i].m_value->base.loc);
             ASR::intentType in = arg_intent(fn, i);
-            if (in == ASR::intentType::Out && !is_array(d->m_type)) continue;
+            if (in == ASR::intentType::Out && !is_array(d->m_type)
+                    && !is_assumed_len_string(d->m_type)) continue;
             ASR::expr_t *a = args[i].m_value;
             if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
                 unsupported("this argument is", a->base.loc);
@@ -860,6 +906,35 @@ private:
             level = std::max(level, 1);
             return app("FRealMath." + f, {operand(x.m_args[0])});
         }
+        if (x.n_args == 1 && f == "stringtrim" && is_string(x.m_args[0])) {
+            return app("FStr.trim", {lower(x.m_args[0])});
+        }
+        if (x.n_args == 1 && f == "stringlentrim" && is_string(x.m_args[0])) {
+            return {"(FInt.ofInt " + atom(app("FStr.lenTrim", {lower(x.m_args[0])}))
+                + " : " + type(x.m_type, loc) + ")", pAtom};
+        }
+        if (x.n_args == 1 && (f == "adjustl" || f == "adjustr") && is_string(x.m_args[0])) {
+            return app("FStr." + f, {lower(x.m_args[0])});
+        }
+        if (x.n_args == 2 && f == "substrindex" && is_string(x.m_args[0]) && is_string(x.m_args[1])) {
+            return {"(FInt.ofInt " + atom(app("FStr.index",
+                {lower(x.m_args[0]), lower(x.m_args[1])}))
+                + " : " + type(x.m_type, loc) + ")", pAtom};
+        }
+        if (x.n_args == 2 && f == "stringconcat" && is_string(x.m_args[0]) && is_string(x.m_args[1])) {
+            return {"(" + atom(lower(x.m_args[0])) + " ++ " + atom(lower(x.m_args[1])) + ")", pAtom};
+        }
+        if (x.n_args == 2 && f == "repeat" && is_string(x.m_args[0]) && is_int(x.m_args[1])) {
+            return app("FStr.rep", {lower(x.m_args[0]), int_expr(x.m_args[1])});
+        }
+        if (x.n_args == 2 && (f == "lge" || f == "lgt" || f == "lle" || f == "llt")
+                && is_string(x.m_args[0]) && is_string(x.m_args[1])) {
+            Val a = lower(x.m_args[0]), b = lower(x.m_args[1]);
+            if (f == "llt") return app("FStr.lt", {a, b});
+            if (f == "lle") return app("FStr.le", {a, b});
+            if (f == "lgt") return app("FStr.lt", {b, a});
+            return app("FStr.le", {b, a});
+        }
         if (x.n_args == 2 && f == "atan2" && is_real(x.m_args[0]) && is_real(x.m_args[1])) {
             level = std::max(level, 1);
             return app("FRealMath.atan2", {operand(x.m_args[0]), lower(x.m_args[1])});
@@ -984,6 +1059,8 @@ private:
                 return {"((fun z' => FCplx.mk (" + fn + " z'.re) (" + fn + " z'.im)) "
                     + atom(operand(x.m_arg)) + ")", pAtom};
             }
+            case ASR::cast_kindType::StringToString:
+                return lower(x.m_arg);
             default:
                 unsupported("this conversion is", loc);
         }
@@ -1285,6 +1362,78 @@ private:
             case ASR::exprType::LogicalConstant:
                 return {ASR::down_cast<ASR::LogicalConstant_t>(e)->m_value
                     ? "true" : "false", pAtom};
+            case ASR::exprType::StringConstant: {
+                auto &x = *ASR::down_cast<ASR::StringConstant_t>(e);
+                type(x.m_type, loc);
+                return {string_lit(x.m_s), pAtom};
+            }
+            case ASR::exprType::StringPhysicalCast:
+                return lower(ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg);
+            case ASR::exprType::StringConcat: {
+                auto &x = *ASR::down_cast<ASR::StringConcat_t>(e);
+                if (is_array(x.m_type)) unsupported("this array expression is", loc);
+                return {"(" + atom(lower(x.m_left)) + " ++ " + atom(lower(x.m_right)) + ")", pAtom};
+            }
+            case ASR::exprType::StringRepeat: {
+                auto &x = *ASR::down_cast<ASR::StringRepeat_t>(e);
+                return app("FStr.rep", {lower(x.m_left), int_expr(x.m_right)});
+            }
+            case ASR::exprType::StringLen: {
+                auto &x = *ASR::down_cast<ASR::StringLen_t>(e);
+                ASR::ttype_t *at = ASRUtils::expr_type(x.m_arg);
+                if (is_array(at)) {
+                    ASR::ttype_t *et = elem_type(at);
+                    if (!ASR::is_a<ASR::String_t>(*et)) unsupported("this string length is", loc);
+                    ASR::String_t *st = ASR::down_cast<ASR::String_t>(et);
+                    if (st->m_len) {
+                        return {"(FInt.ofInt (Int.ofNat " + extent(st->m_len) + ") : "
+                            + type(x.m_type, loc) + ")", pAtom};
+                    }
+                    unsupported("assumed-length character array len is", loc);
+                }
+                return {"(FInt.ofInt " + atom(app("FStr.len", {lower(x.m_arg)}))
+                    + " : " + type(x.m_type, loc) + ")", pAtom};
+            }
+            case ASR::exprType::StringItem: {
+                auto &x = *ASR::down_cast<ASR::StringItem_t>(e);
+                return app("FStr.item", {lower(x.m_arg), int_expr(x.m_idx)});
+            }
+            case ASR::exprType::StringSection: {
+                auto &x = *ASR::down_cast<ASR::StringSection_t>(e);
+                bool unit_step = !x.m_step
+                    || (ASR::is_a<ASR::IntegerConstant_t>(*x.m_step)
+                        && ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1);
+                if (!unit_step) unsupported("a string section step is", loc);
+                std::string s = atom(lower(x.m_arg));
+                std::string lo = x.m_start ? atom(int_expr(x.m_start)) : "1";
+                if (!x.m_end) {
+                    return {"((fun s' lo' => FStr.slice s' lo' (FStr.len s')) " + s + " " + lo + ")", pAtom};
+                }
+                return app("FStr.slice", {{s, pAtom}, {lo, pAtom}, {atom(int_expr(x.m_end)), pAtom}});
+            }
+            case ASR::exprType::StringCompare: {
+                auto &x = *ASR::down_cast<ASR::StringCompare_t>(e);
+                if (is_array(x.m_type)) unsupported("this array expression is", loc);
+                Val a = lower(x.m_left), b = lower(x.m_right);
+                switch (x.m_op) {
+                    case ASR::cmpopType::Eq: return app("FStr.beq", {a, b});
+                    case ASR::cmpopType::NotEq: return {"!" + atom(app("FStr.beq", {a, b})), pApp};
+                    case ASR::cmpopType::Lt: return app("FStr.lt", {a, b});
+                    case ASR::cmpopType::LtE: return app("FStr.le", {a, b});
+                    case ASR::cmpopType::Gt: return app("FStr.lt", {b, a});
+                    case ASR::cmpopType::GtE: return app("FStr.le", {b, a});
+                }
+                return app("FStr.beq", {a, b});
+            }
+            case ASR::exprType::StringOrd: {
+                auto &x = *ASR::down_cast<ASR::StringOrd_t>(e);
+                return {"(FInt.ofInt " + atom(app("FStr.ord", {lower(x.m_arg)}))
+                    + " : " + type(x.m_type, loc) + ")", pAtom};
+            }
+            case ASR::exprType::StringChr: {
+                auto &x = *ASR::down_cast<ASR::StringChr_t>(e);
+                return app("FStr.chr", {int_expr(x.m_arg)});
+            }
             case ASR::exprType::IntegerBinOp: {
                 auto &x = *ASR::down_cast<ASR::IntegerBinOp_t>(e);
                 const char *f = nullptr;
@@ -1479,9 +1628,13 @@ private:
                 std::string fn = "FKindsIO.fmtR" + std::to_string(ASR::down_cast<ASR::Complex_t>(et)->m_kind);
                 fmt = "\"(\" ++ " + fn + " (x' : " + ety + ").re ++ \",\" ++ " + fn + " x'.im ++ \")\"";
             } else if (ASR::is_a<ASR::Logical_t>(*et)) fmt = "(if x' then \"T\" else \"F\")";
+            else if (ASR::is_a<ASR::String_t>(*et)) fmt = "x'";
             else unsupported("printing this value is", loc);
             return "(String.intercalate \" \" (" + atom(lower(e))
                 + ".data.toList.map (fun x' => " + fmt + ")))";
+        }
+        if (is_string(e)) {
+            return lower(e).src;
         }
         ASR::ttype_t *t = scalar(ASRUtils::expr_type(e), loc);
         // The kind is stated: a value such as `FInt.ofInt 10` does not fix it.
@@ -1501,6 +1654,9 @@ private:
         }
         if (ASR::is_a<ASR::Logical_t>(*t)) {
             return "(if " + lower(e).src + " then \"T\" else \"F\")";
+        }
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            return lower(e).src;
         }
         unsupported("printing this value is", loc);
     }
@@ -1565,8 +1721,10 @@ private:
                 if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
                     auto &t = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                     std::string a = lower(array_var(t.m_v)).src;
+                    std::string rhs = fix_string(ASRUtils::expr_type(x.m_target), "",
+                        lower(x.m_value), loc);
                     line(a + " := " + app("Arr.set", {{a, pAtom}, {index(t), pAtom},
-                        lower(x.m_value)}).src);
+                        {rhs, pApp}}).src);
                     break;
                 }
                 if (!ASR::is_a<ASR::Var_t>(*x.m_target)) {
@@ -1575,18 +1733,26 @@ private:
                 std::string a = lower(x.m_target).src;
                 if (is_array(ASRUtils::expr_type(x.m_target))) {
                     // `a = b` keeps the bounds of `a`; `a = v` sets every element.
+                    ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_target));
                     ASR::expr_t *v = x.m_value;
                     if (ASR::is_a<ASR::ArrayBroadcast_t>(*v)) {
                         v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
                     }
                     if (is_array(ASRUtils::expr_type(v))) {
-                        line(a + " := Arr.copyBack " + a + " " + atom(lower(v)));
+                        std::string src = atom(lower(v));
+                        if (ASR::is_a<ASR::String_t>(*et)) {
+                            auto &st = *ASR::down_cast<ASR::String_t>(et);
+                            if (!st.m_len) unsupported("an assumed-length character array assignment is", loc);
+                            src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                        }
+                        line(a + " := Arr.copyBack " + a + " " + src);
                     } else {
-                        line(a + " := Arr.fill " + a + " " + atom(lower(v)));
+                        std::string rhs = fix_string(et, "", lower(v), loc);
+                        line(a + " := Arr.fill " + a + " " + atom({rhs, pApp}));
                     }
                     break;
                 }
-                line(a + " := " + lower(x.m_value).src);
+                line(a + " := " + fix_string(ASRUtils::expr_type(x.m_target), a, lower(x.m_value), loc));
                 break;
             }
             case ASR::stmtType::SubroutineCall: {
@@ -1612,7 +1778,7 @@ private:
                     if (is_array(ASRUtils::expr_type(a))) {
                         line(n + " := Arr.copyBack " + n + " " + v);
                     } else {
-                        line(n + " := " + v);
+                        line(n + " := " + fix_string(ASRUtils::expr_type(a), n, {v, pAtom}, loc));
                     }
                 };
                 bool cal_io = io_procs.count(fn) > 0;
@@ -1837,18 +2003,22 @@ private:
                         ASR::down_cast<ASR::StringConstant_t>(x.m_text)->m_s));
                     break;
                 }
-                if (!ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
-                    unsupported("this print is", loc);
+                if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
+                    auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+                    if (f.m_fmt) unsupported("formatted output is", loc);
+                    std::string items;
+                    for (size_t i = 0; i < f.n_args; i++) {
+                        if (i) items += ", ";
+                        items += shown(f.m_args[i]);
+                    }
+                    line("IO.println (String.intercalate \" \" [" + items + "])");
+                    break;
                 }
-                auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_text);
-                if (f.m_fmt) unsupported("formatted output is", loc);
-                std::string items;
-                for (size_t i = 0; i < f.n_args; i++) {
-                    if (i) items += ", ";
-                    items += shown(f.m_args[i]);
+                if (is_string(x.m_text)) {
+                    line("IO.println " + atom(lower(x.m_text)));
+                    break;
                 }
-                line("IO.println (String.intercalate \" \" [" + items + "])");
-                break;
+                unsupported("this print is", loc);
             }
             case ASR::stmtType::ErrorStop:
                 halt(ASR::down_cast<ASR::ErrorStop_t>(s)->m_code, true, loc);
@@ -1925,13 +2095,20 @@ private:
                     bool assumed;
                     dims(v->m_type, lbs, exts, assumed, vloc);
                     if (assumed) unsupported("this local array is", vloc);
+                    std::string src = atom(lower(array_var(init)));
+                    ASR::ttype_t *et = elem_type(v->m_type);
+                    if (ASR::is_a<ASR::String_t>(*et)) {
+                        auto &st = *ASR::down_cast<ASR::String_t>(et);
+                        if (!st.m_len) unsupported("this local array is", vloc);
+                        src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                    }
                     line("let mut " + name(v->m_name, vloc) + " : " + vtype(v->m_type, vloc)
-                        + " := Arr.reshape " + atom(lower(array_var(init))) + " "
+                        + " := Arr.reshape " + src + " "
                         + int_array(lbs) + " " + int_array(exts));
                     continue;
                 }
                 line("let mut " + name(v->m_name, vloc) + " : " + type(v->m_type, vloc)
-                    + " := " + lower(init).src);
+                    + " := " + fix_string(v->m_type, "", lower(init), vloc));
                 continue;
             }
             if (is_array(v->m_type)) {
@@ -2006,11 +2183,21 @@ private:
                     ? "Arr.rebase " + an + " " + int_array(lbs)
                     : "Arr.reshape " + an + " " + int_array(lbs) + " " + int_array(exts))});
             } else if (in == ASR::intentType::Out) {
-                entry.push_back({aloc.first, "let mut " + an + " : " + type(a->m_type, aloc) + " := "
-                    + zero(a->m_type, aloc)});
+                if (is_assumed_len_string(a->m_type)) {
+                    p.sig += " (" + an + " : String)";
+                    entry.push_back({aloc.first, "let mut " + an + " := FStr.fix " + an + ".length \"\""});
+                } else {
+                    entry.push_back({aloc.first, "let mut " + an + " : " + type(a->m_type, aloc) + " := "
+                        + zero(a->m_type, aloc)});
+                }
             } else {
                 p.sig += " (" + an + " : " + type(a->m_type, aloc) + ")";
-                if (in == ASR::intentType::InOut) entry.push_back({aloc.first, "let mut " + an + " := " + an});
+                if (ASR::is_a<ASR::String_t>(*a->m_type) && ASR::down_cast<ASR::String_t>(a->m_type)->m_len) {
+                    entry.push_back({aloc.first, let + an + " := FStr.fix "
+                        + extent(ASR::down_cast<ASR::String_t>(a->m_type)->m_len) + " " + an});
+                } else if (in == ASR::intentType::InOut) {
+                    entry.push_back({aloc.first, "let mut " + an + " := " + an});
+                }
             }
             if (in != ASR::intentType::In) {
                 outs.push_back(an);
