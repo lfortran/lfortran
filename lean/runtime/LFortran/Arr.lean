@@ -29,10 +29,13 @@ instance {α : Type} : Inhabited (Arr α) where
 namespace Arr
 
 def map {α β : Type} (f : α → β) (a : Arr α) : Arr β :=
-  { lbs := a.lbs, exts := a.exts, data := a.data.map f }
+  { lbs := Array.replicate a.exts.size 1, exts := a.exts, data := a.data.map f }
 
 def zipWith {α β γ : Type} (f : α → β → γ) (a : Arr α) (b : Arr β) : Arr γ :=
-  { lbs := a.lbs, exts := a.exts, data := Array.zipWith f a.data b.data }
+  { lbs := Array.replicate a.exts.size 1, exts := a.exts, data := Array.zipWith f a.data b.data }
+
+def fill {α : Type} (a : Arr α) (v : α) : Arr α :=
+  { a with data := Array.replicate a.data.size v }
 
 def offset (lbs : Array Int) (exts : Array Nat) (idxs : Array Int) : Nat := Id.run do
   let mut off : Nat := 0
@@ -81,6 +84,45 @@ def lbound {α : Type} (a : Arr α) (dim : Int) : Int :=
 def ubound {α : Type} (a : Arr α) (dim : Int) : Int :=
   let i := dim.toNat - 1
   if a.exts[i]! == 0 then 0 else a.lbs[i]! + Int.ofNat (a.exts[i]!) - 1
+
+/-- Slice an array along each dimension.
+`specs[d]` is `Sum.inl idx` for a fixed scalar index (rank-reducing) or
+`Sum.inr (start, stop, step)` for a triplet slice `start:stop:step`.
+Resulting dimensions have lower bound 1, as in Fortran. -/
+def slice {α : Type} [Inhabited α] (a : Arr α)
+    (specs : Array (Int ⊕ (Int × Int × Int))) : Arr α := Id.run do
+  let mut newExts : Array Nat := #[]
+  let mut strides : Array Nat := #[]
+  let mut stride : Nat := 1
+  for d in [:a.exts.size] do
+    strides := strides.push stride
+    stride := stride * a.exts[d]!
+  let mut baseOff : Int := 0
+  let mut sliceStrides : Array Int := #[]
+  for d in [:specs.size] do
+    let lb := a.lbs[d]!
+    let st : Int := Int.ofNat strides[d]!
+    match specs.getD d (Sum.inl 0) with
+    | Sum.inl idx =>
+      baseOff := baseOff + (idx - lb) * st
+    | Sum.inr (lo, hi, step) =>
+      let count : Nat := if step == 0 then 0 else ((hi - lo + step).tdiv step).toNat
+      newExts := newExts.push count
+      baseOff := baseOff + (lo - lb) * st
+      sliceStrides := sliceStrides.push (step * st)
+  let mut total : Nat := 1
+  for e in newExts do total := total * e
+  let mut out : Array α := Array.mkEmpty total
+  for flat in [:total] do
+    let mut rem := flat
+    let mut off := baseOff
+    for k in [:newExts.size] do
+      let e := newExts[k]!
+      let idx := rem % e
+      rem := rem / e
+      off := off + Int.ofNat idx * sliceStrides[k]!
+    out := out.push a.data[off.toNat]!
+  return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
 
 end Arr
 

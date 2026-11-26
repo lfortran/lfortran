@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -27,6 +28,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/asr_to_lean.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 namespace LCompilers {
@@ -374,6 +376,39 @@ private:
         return ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(e));
     }
 
+    bool is_logical(ASR::expr_t *e) {
+        return ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(e));
+    }
+
+    ASR::ttype_t *elem_type(ASR::ttype_t *t) {
+        return is_array(t) ? ASR::down_cast<ASR::Array_t>(t)->m_type : t;
+    }
+
+    // Lift a binary operation on scalar expressions to arrays (handling
+    // ArrayBroadcast on either side via Arr.map, or two arrays via Arr.zipWith).
+    Val lift_binop(ASR::expr_t *l, ASR::expr_t *r,
+            const std::function<std::string(const std::string&, const std::string&)> &fn) {
+        bool lb = ASR::is_a<ASR::ArrayBroadcast_t>(*l);
+        bool rb = ASR::is_a<ASR::ArrayBroadcast_t>(*r);
+        if (lb && !rb) {
+            ASR::expr_t *ls = ASR::down_cast<ASR::ArrayBroadcast_t>(l)->m_array;
+            if (is_array(ASRUtils::expr_type(ls))) unsupported("this array expression is", l->base.loc);
+            std::string sv = atom(operand(ls));
+            return app("Arr.map", {{"(fun y' => " + fn(sv, "y'") + ")", pAtom}, lower(r)});
+        }
+        if (rb && !lb) {
+            ASR::expr_t *rs = ASR::down_cast<ASR::ArrayBroadcast_t>(r)->m_array;
+            if (is_array(ASRUtils::expr_type(rs))) unsupported("this array expression is", r->base.loc);
+            std::string sv = atom(operand(rs));
+            return app("Arr.map", {{"(fun x' => " + fn("x'", sv) + ")", pAtom}, lower(l)});
+        }
+        if (is_array(ASRUtils::expr_type(l)) && is_array(ASRUtils::expr_type(r)) && !lb && !rb) {
+            return app("Arr.zipWith", {{"(fun x' y' => " + fn("x'", "y'") + ")", pAtom},
+                lower(l), lower(r)});
+        }
+        unsupported("this array expression is", l->base.loc);
+    }
+
     // Expressions ----------------------------------------------------------
 
     // A real constant: `FReal.ofInt n` for an integer below `2^53`, else
@@ -410,6 +445,7 @@ private:
             case ASR::exprType::ArrayItem:
             case ASR::exprType::ArraySize:
             case ASR::exprType::ArrayBound:
+            case ASR::exprType::IntrinsicArrayFunction:
             case ASR::exprType::FunctionCall:
             case ASR::exprType::IntegerCompare:
             case ASR::exprType::RealCompare:
@@ -542,7 +578,9 @@ private:
             if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
                 unsupported("this argument is", a->base.loc);
             }
-            if (is_array(ASRUtils::expr_type(a))) a = array_var(a);
+            if (is_array(ASRUtils::expr_type(a)) && d->m_intent != ASR::intentType::In) {
+                a = array_var(a);
+            }
             src += " " + atom(lower(a));
         }
         return {src, pApp};
@@ -630,7 +668,35 @@ private:
     }
 
     Val cast(const ASR::Cast_t &x, const Location &loc) {
-        if (x.m_value) return lower(x.m_value);
+        if (x.m_value && x.m_value != (ASR::expr_t*) &x) return lower(x.m_value);
+        if (is_array(ASRUtils::expr_type(x.m_arg))) {
+            ASR::ttype_t *dst_et = elem_type(x.m_type);
+            ASR::ttype_t *src_et = elem_type(ASRUtils::expr_type(x.m_arg));
+            std::string dty = type(dst_et, loc);
+            type(src_et, x.m_arg->base.loc);
+            std::string body;
+            switch (x.m_kind) {
+                case ASR::cast_kindType::IntegerToReal:
+                    body = "(FReal.ofInt (FInt.toInt x') : " + dty + ")";
+                    break;
+                case ASR::cast_kindType::IntegerToInteger:
+                    body = "(FInt.ofInt (FInt.toInt x') : " + dty + ")";
+                    break;
+                case ASR::cast_kindType::RealToInteger:
+                    body = "(FInt.ofInt (FReal.toInt x') : " + dty + ")";
+                    break;
+                case ASR::cast_kindType::RealToReal: {
+                    int dk = ASR::down_cast<ASR::Real_t>(dst_et)->m_kind;
+                    int sk = ASR::down_cast<ASR::Real_t>(src_et)->m_kind;
+                    if (sk == dk) return lower(x.m_arg);
+                    body = dk == 8 ? "FKinds.r4to8 x'" : "FKinds.r8to4 x'";
+                    break;
+                }
+                default:
+                    unsupported("this conversion is", loc);
+            }
+            return app("Arr.map", {{"(fun x' => " + body + ")", pAtom}, lower(x.m_arg)});
+        }
         switch (x.m_kind) {
             case ASR::cast_kindType::IntegerToReal:
                 // A procedure may have no integer kind in scope, so an
@@ -673,28 +739,141 @@ private:
         return int_array(idx);
     }
 
+    Val intrinsic_array(const ASR::IntrinsicArrayFunction_t &x, const Location &loc) {
+        if (x.m_value && x.m_value != (ASR::expr_t*) &x) return lower(x.m_value);
+        using F = ASRUtils::IntrinsicArrayFunctions;
+        F id = static_cast<F>(x.m_arr_intrinsic_id);
+        if (id == F::Sum && x.n_args == 1 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            std::string a = atom(lower(x.m_args[0]));
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                return {"(" + a + ".data.foldl FInt.add (FInt.ofInt 0) : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
+            if (ASR::is_a<ASR::Real_t>(*et)) {
+                return {"(" + a + ".data.foldl FReal.add (FReal.ofInt 0) : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
+        }
+        if (id == F::Product && x.n_args == 1 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            std::string a = atom(lower(x.m_args[0]));
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                return {"(" + a + ".data.foldl FInt.mul (FInt.ofInt 1) : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
+            if (ASR::is_a<ASR::Real_t>(*et)) {
+                return {"(" + a + ".data.foldl FReal.mul (FReal.ofInt 1) : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
+        }
+        if ((id == F::Any || id == F::All) && x.n_args == 1
+                && is_array(ASRUtils::expr_type(x.m_args[0]))
+                && ASR::is_a<ASR::Logical_t>(*elem_type(ASRUtils::expr_type(x.m_args[0])))) {
+            std::string a = atom(lower(x.m_args[0]));
+            return {a + ".data." + (id == F::Any ? "any" : "all") + " (fun b' => b')", pApp};
+        }
+        if (id == F::Count && x.n_args == 1
+                && is_array(ASRUtils::expr_type(x.m_args[0]))
+                && ASR::is_a<ASR::Logical_t>(*elem_type(ASRUtils::expr_type(x.m_args[0])))) {
+            std::string a = atom(lower(x.m_args[0]));
+            return {"(FInt.ofInt (Int.ofNat (" + a
+                + ".data.foldl (fun n' b' => if b' then n' + 1 else n') 0)) : "
+                + type(x.m_type, loc) + ")", pAtom};
+        }
+        if (id == F::DotProduct && x.n_args == 2
+                && is_array(ASRUtils::expr_type(x.m_args[0]))
+                && is_array(ASRUtils::expr_type(x.m_args[1]))) {
+            ASR::ttype_t *et0 = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            ASR::ttype_t *et1 = elem_type(ASRUtils::expr_type(x.m_args[1]));
+            std::string a = atom(lower(x.m_args[0]));
+            std::string b = atom(lower(x.m_args[1]));
+            if (ASR::is_a<ASR::Integer_t>(*et0) && ASR::is_a<ASR::Integer_t>(*et1)
+                    && ASR::down_cast<ASR::Integer_t>(et0)->m_kind
+                        == ASR::down_cast<ASR::Integer_t>(et1)->m_kind) {
+                return {"((Array.zipWith FInt.mul " + a + ".data " + b
+                    + ".data).foldl FInt.add (FInt.ofInt 0) : " + type(x.m_type, loc) + ")", pAtom};
+            }
+            if (ASR::is_a<ASR::Real_t>(*et0) && ASR::is_a<ASR::Real_t>(*et1)
+                    && ASR::down_cast<ASR::Real_t>(et0)->m_kind
+                        == ASR::down_cast<ASR::Real_t>(et1)->m_kind) {
+                return {"((Array.zipWith FReal.mul " + a + ".data " + b
+                    + ".data).foldl FReal.add (FReal.ofInt 0) : " + type(x.m_type, loc) + ")", pAtom};
+            }
+            if (ASR::is_a<ASR::Logical_t>(*et0) && ASR::is_a<ASR::Logical_t>(*et1)) {
+                return {"((Array.zipWith (fun x' y' => x' && y') " + a + ".data " + b
+                    + ".data).any (fun b' => b'))", pAtom};
+            }
+        }
+        if ((id == F::MaxVal || id == F::MinVal) && x.n_args == 1
+                && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            std::string a = atom(lower(x.m_args[0]));
+            std::string ty = type(x.m_type, loc);
+            std::string empty_val;
+            std::string fn;
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                int k = ASR::down_cast<ASR::Integer_t>(et)->m_kind;
+                int64_t hi = k == 1 ? INT8_MAX : k == 2 ? INT16_MAX : k == 4 ? INT32_MAX : INT64_MAX;
+                int64_t lo = k == 1 ? INT8_MIN : k == 2 ? INT16_MIN : k == 4 ? INT32_MIN : INT64_MIN;
+                empty_val = "FInt.ofInt " + int_lit(id == F::MaxVal ? lo : hi);
+                fn = id == F::MaxVal ? "FInt.fmax" : "FInt.fmin";
+            } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                int k = ASR::down_cast<ASR::Real_t>(et)->m_kind;
+                double h = k == 4 ? static_cast<double>(std::numeric_limits<float>::max())
+                    : std::numeric_limits<double>::max();
+                std::string hv = real_lit(h, k, loc);
+                empty_val = id == F::MaxVal ? "FReal.neg (" + hv + ")" : hv;
+                fn = id == F::MaxVal ? "FReal.fmax" : "FReal.fmin";
+            }
+            if (!fn.empty()) {
+                return {"((let d' := " + a + ".data; if d'.isEmpty then " + empty_val
+                    + " else d'.foldl " + fn + " d'[0]!) : " + ty + ")", pAtom};
+            }
+        }
+        unsupported("this array intrinsic is", loc);
+    }
+
+    Val array_section(const ASR::ArraySection_t &x, const Location &loc) {
+        std::string a = atom(lower(x.m_v));
+        std::vector<std::string> specs;
+        for (size_t i = 0; i < x.n_args; i++) {
+            const ASR::array_index_t &idx = x.m_args[i];
+            std::string dim = std::to_string(i + 1);
+            if (!idx.m_left && !idx.m_step && idx.m_right) {
+                specs.push_back("Sum.inl " + atom(int_expr(idx.m_right)));
+            } else {
+                std::string lo = idx.m_left ? int_expr(idx.m_left).src
+                    : "Arr.lbound " + a + " " + dim;
+                std::string hi = idx.m_right ? int_expr(idx.m_right).src
+                    : "Arr.ubound " + a + " " + dim;
+                std::string st = idx.m_step ? int_expr(idx.m_step).src : "1";
+                specs.push_back("Sum.inr (" + lo + ", " + hi + ", " + st + ")");
+            }
+        }
+        return app("Arr.slice", {{a, pAtom}, {int_array(specs), pAtom}});
+    }
+
     Val lower(ASR::expr_t *e) {
         const Location &loc = e->base.loc;
-        if (is_array(ASRUtils::expr_type(e)) && !ASR::is_a<ASR::Var_t>(*e)
-                && !ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)
-                && !ASR::is_a<ASR::ArrayConstant_t>(*e)
-                && !ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
-            unsupported("this array expression is", loc);
-        }
         switch (e->type) {
             case ASR::exprType::ArrayPhysicalCast:
-                return lower(array_var(e));
+                return lower(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
             case ASR::exprType::ArrayConstant:
                 return array_constant(*ASR::down_cast<ASR::ArrayConstant_t>(e), loc);
             case ASR::exprType::ArrayConstructor:
                 return array_constructor(*ASR::down_cast<ASR::ArrayConstructor_t>(e), loc);
+            case ASR::exprType::ArraySection:
+                return array_section(*ASR::down_cast<ASR::ArraySection_t>(e), loc);
+            case ASR::exprType::IntrinsicArrayFunction:
+                return intrinsic_array(*ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e), loc);
             case ASR::exprType::ArrayItem: {
                 auto &x = *ASR::down_cast<ASR::ArrayItem_t>(e);
-                return app("Arr.get", {lower(array_var(x.m_v)), {index(x), pAtom}});
+                return app("Arr.get", {lower(x.m_v), {index(x), pAtom}});
             }
             case ASR::exprType::ArraySize: {
                 auto &x = *ASR::down_cast<ASR::ArraySize_t>(e);
-                std::string a = atom(lower(array_var(x.m_v)));
+                std::string a = atom(lower(x.m_v));
                 std::string sz = x.m_dim ? "Arr.sizeDim " + a + " " + atom(int_expr(x.m_dim))
                     : "Arr.size " + a;
                 return {"(FInt.ofInt (" + sz + ") : " + type(x.m_type, loc) + ")", pAtom};
@@ -704,7 +883,7 @@ private:
                 if (!x.m_dim) unsupported("this array bound is", loc);
                 std::string f = x.m_bound == ASR::arrayboundType::LBound
                     ? "Arr.lbound " : "Arr.ubound ";
-                return {"(FInt.ofInt (" + f + atom(lower(array_var(x.m_v))) + " "
+                return {"(FInt.ofInt (" + f + atom(lower(x.m_v)) + " "
                     + atom(int_expr(x.m_dim)) + ") : " + type(x.m_type, loc) + ")", pAtom};
             }
             case ASR::exprType::Var: {
@@ -756,6 +935,12 @@ private:
                     case ASR::binopType::Pow: f = "FInt.pow"; break;
                     default: unsupported("this integer operator is", loc);
                 }
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            return std::string(f) + " " + a + " " + b;
+                        });
+                }
                 return app(f, {lower(x.m_left), lower(x.m_right)});
             }
             case ASR::exprType::RealBinOp: {
@@ -767,6 +952,19 @@ private:
                     case ASR::binopType::Mul: f = "FReal.mul"; break;
                     case ASR::binopType::Div: f = "FReal.div"; break;
                     case ASR::binopType::Pow:
+                        if (is_array(x.m_type)) {
+                            if (ASR::is_a<ASR::Integer_t>(*elem_type(ASRUtils::expr_type(x.m_right)))) {
+                                return lift_binop(x.m_left, x.m_right,
+                                    [](const std::string &a, const std::string &b) {
+                                        return "FReal.powInt " + a + " (FInt.toInt " + b + ")";
+                                    });
+                            }
+                            level = std::max(level, 1);
+                            return lift_binop(x.m_left, x.m_right,
+                                [](const std::string &a, const std::string &b) {
+                                    return "FRealMath.pow " + a + " " + b;
+                                });
+                        }
                         if (is_int(x.m_right)) {
                             return app("FReal.powInt", {lower(x.m_left), int_expr(x.m_right)});
                         }
@@ -775,22 +973,65 @@ private:
                         break;
                     default: unsupported("this real operator is", loc);
                 }
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            return std::string(f) + " " + a + " " + b;
+                        });
+                }
                 return app(f, {lower(x.m_left), lower(x.m_right)});
             }
-            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::IntegerUnaryMinus: {
+                auto &x = *ASR::down_cast<ASR::IntegerUnaryMinus_t>(e);
+                if (is_array(x.m_type)) {
+                    return app("Arr.map", {{"(fun x' => FInt.sub (FInt.ofInt 0) x')", pAtom},
+                        lower(x.m_arg)});
+                }
                 if (ASR::expr_t *v = ASRUtils::expr_value(e)) return lower(v);
-                return app("FInt.sub", {{"FInt.ofInt 0", pApp},
-                    lower(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg)});
-            case ASR::exprType::RealUnaryMinus:
+                return app("FInt.sub", {{"FInt.ofInt 0", pApp}, lower(x.m_arg)});
+            }
+            case ASR::exprType::RealUnaryMinus: {
+                auto &x = *ASR::down_cast<ASR::RealUnaryMinus_t>(e);
+                if (is_array(x.m_type)) {
+                    return app("Arr.map", {{"FReal.neg", pAtom}, lower(x.m_arg)});
+                }
                 if (ASR::expr_t *v = ASRUtils::expr_value(e)) return lower(v);
-                return app("FReal.neg",
-                    {lower(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg)});
+                return app("FReal.neg", {lower(x.m_arg)});
+            }
             case ASR::exprType::IntegerCompare: {
                 auto &x = *ASR::down_cast<ASR::IntegerCompare_t>(e);
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            switch (x.m_op) {
+                                case ASR::cmpopType::Eq: return "FInt.beq " + a + " " + b;
+                                case ASR::cmpopType::NotEq: return "!(FInt.beq " + a + " " + b + ")";
+                                case ASR::cmpopType::Lt: return "FInt.lt " + a + " " + b;
+                                case ASR::cmpopType::LtE: return "FInt.le " + a + " " + b;
+                                case ASR::cmpopType::Gt: return "FInt.lt " + b + " " + a;
+                                case ASR::cmpopType::GtE: return "FInt.le " + b + " " + a;
+                            }
+                            return "FInt.beq " + a + " " + b;
+                        });
+                }
                 return compare(x.m_left, x.m_op, x.m_right);
             }
             case ASR::exprType::RealCompare: {
                 auto &x = *ASR::down_cast<ASR::RealCompare_t>(e);
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            switch (x.m_op) {
+                                case ASR::cmpopType::Eq: return "FReal.beq " + a + " " + b;
+                                case ASR::cmpopType::NotEq: return "!(FReal.beq " + a + " " + b + ")";
+                                case ASR::cmpopType::Lt: return "FReal.lt " + a + " " + b;
+                                case ASR::cmpopType::LtE: return "FReal.le " + a + " " + b;
+                                case ASR::cmpopType::Gt: return "FReal.lt " + b + " " + a;
+                                case ASR::cmpopType::GtE: return "FReal.le " + b + " " + a;
+                            }
+                            return "FReal.beq " + a + " " + b;
+                        });
+                }
                 return compare(x.m_left, x.m_op, x.m_right);
             }
             case ASR::exprType::LogicalBinOp: {
@@ -803,12 +1044,22 @@ private:
                     case ASR::logicalbinopType::Eqv: op = "=="; p = pCmp; break;
                     default: op = "!="; p = pCmp; break;
                 }
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            return "(" + a + " " + op + " " + b + ")";
+                        });
+                }
                 return {atom(lower(x.m_left)) + " " + op + " "
                     + atom(lower(x.m_right)), p};
             }
-            case ASR::exprType::LogicalNot:
-                return {"!" + atom(lower(ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg)),
-                    pApp};
+            case ASR::exprType::LogicalNot: {
+                auto &x = *ASR::down_cast<ASR::LogicalNot_t>(e);
+                if (is_array(x.m_type)) {
+                    return app("Arr.map", {{"(fun b' => !b')", pAtom}, lower(x.m_arg)});
+                }
+                return {"!" + atom(lower(x.m_arg)), pApp};
+            }
             case ASR::exprType::Cast:
                 return cast(*ASR::down_cast<ASR::Cast_t>(e), loc);
             case ASR::exprType::FunctionCall: {
@@ -930,9 +1181,9 @@ private:
                         v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
                     }
                     if (is_array(ASRUtils::expr_type(v))) {
-                        line(a + " := Arr.copyBack " + a + " " + atom(lower(array_var(v))));
+                        line(a + " := Arr.copyBack " + a + " " + atom(lower(v)));
                     } else {
-                        line(a + " := Arr.map (fun _ => " + lower(v).src + ") " + a);
+                        line(a + " := Arr.fill " + a + " " + atom(lower(v)));
                     }
                     break;
                 }
