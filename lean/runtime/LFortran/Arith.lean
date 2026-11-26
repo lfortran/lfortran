@@ -206,4 +206,53 @@ def nintInt (x : α) : Int :=
 
 end FReal
 
+/-- Fortran `complex(4)` / `complex(8)`: a pair of reals. -/
+structure FCplx (α : Type) where
+  re : α
+  im : α
+
+instance {α : Type} [FReal α] : Inhabited (FCplx α) := ⟨⟨FReal.zero, FReal.zero⟩⟩
+
+namespace FCplx
+
+variable {α : Type} [FReal α]
+
+def zero : FCplx α := ⟨FReal.zero, FReal.zero⟩
+def ofReal (x : α) : FCplx α := ⟨x, FReal.zero⟩
+def neg (a : FCplx α) : FCplx α := ⟨FReal.neg a.re, FReal.neg a.im⟩
+def conj (a : FCplx α) : FCplx α := ⟨a.re, FReal.neg a.im⟩
+def add (a b : FCplx α) : FCplx α := ⟨FReal.add a.re b.re, FReal.add a.im b.im⟩
+def sub (a b : FCplx α) : FCplx α := ⟨FReal.sub a.re b.re, FReal.sub a.im b.im⟩
+def mul (a b : FCplx α) : FCplx α :=
+  ⟨FReal.sub (FReal.mul a.re b.re) (FReal.mul a.im b.im),
+   FReal.add (FReal.mul a.re b.im) (FReal.mul a.im b.re)⟩
+def div (a b : FCplx α) : FCplx α :=
+  let d := FReal.add (FReal.mul b.re b.re) (FReal.mul b.im b.im)
+  ⟨FReal.div (FReal.add (FReal.mul a.re b.re) (FReal.mul a.im b.im)) d,
+   FReal.div (FReal.sub (FReal.mul a.im b.re) (FReal.mul a.re b.im)) d⟩
+def beq (a b : FCplx α) : Bool :=
+  FReal.beq a.re b.re && FReal.beq a.im b.im
+
+def powNat (z : FCplx α) : Nat → FCplx α
+  | 0 => ⟨FReal.ofInt 1, FReal.zero⟩
+  | n + 1 =>
+    let half := powNat z ((n + 1) / 2)
+    let sq := mul half half
+    if (n + 1) % 2 == 0 then sq else mul sq z
+
+def powInt (z : FCplx α) (n : Int) : FCplx α :=
+  if n < 0 then div ⟨FReal.ofInt 1, FReal.zero⟩ (powNat z (-n).toNat)
+  else powNat z n.toNat
+
+def abs [FRealMath α] (a : FCplx α) : α :=
+  let x := FReal.abs a.re
+  let y := FReal.abs a.im
+  let m := FReal.fmax x y
+  if FReal.beq m FReal.zero then FReal.zero
+  else
+    let r := FReal.div (FReal.fmin x y) m
+    FReal.mul m (FRealMath.sqrt (FReal.add (FReal.ofInt 1) (FReal.mul r r)))
+
+end FCplx
+
 end LFortran
