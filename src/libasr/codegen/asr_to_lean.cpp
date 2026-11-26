@@ -1371,15 +1371,18 @@ private:
                 return lower(ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg);
             case ASR::exprType::StringConcat: {
                 auto &x = *ASR::down_cast<ASR::StringConcat_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 if (is_array(x.m_type)) unsupported("this array expression is", loc);
                 return {"(" + atom(lower(x.m_left)) + " ++ " + atom(lower(x.m_right)) + ")", pAtom};
             }
             case ASR::exprType::StringRepeat: {
                 auto &x = *ASR::down_cast<ASR::StringRepeat_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 return app("FStr.rep", {lower(x.m_left), int_expr(x.m_right)});
             }
             case ASR::exprType::StringLen: {
                 auto &x = *ASR::down_cast<ASR::StringLen_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 ASR::ttype_t *at = ASRUtils::expr_type(x.m_arg);
                 if (is_array(at)) {
                     ASR::ttype_t *et = elem_type(at);
@@ -1396,10 +1399,12 @@ private:
             }
             case ASR::exprType::StringItem: {
                 auto &x = *ASR::down_cast<ASR::StringItem_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 return app("FStr.item", {lower(x.m_arg), int_expr(x.m_idx)});
             }
             case ASR::exprType::StringSection: {
                 auto &x = *ASR::down_cast<ASR::StringSection_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 bool unit_step = !x.m_step
                     || (ASR::is_a<ASR::IntegerConstant_t>(*x.m_step)
                         && ASR::down_cast<ASR::IntegerConstant_t>(x.m_step)->m_n == 1);
@@ -1413,6 +1418,7 @@ private:
             }
             case ASR::exprType::StringCompare: {
                 auto &x = *ASR::down_cast<ASR::StringCompare_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 if (is_array(x.m_type)) unsupported("this array expression is", loc);
                 Val a = lower(x.m_left), b = lower(x.m_right);
                 switch (x.m_op) {
@@ -1427,11 +1433,13 @@ private:
             }
             case ASR::exprType::StringOrd: {
                 auto &x = *ASR::down_cast<ASR::StringOrd_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 return {"(FInt.ofInt " + atom(app("FStr.ord", {lower(x.m_arg)}))
                     + " : " + type(x.m_type, loc) + ")", pAtom};
             }
             case ASR::exprType::StringChr: {
                 auto &x = *ASR::down_cast<ASR::StringChr_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
                 return app("FStr.chr", {int_expr(x.m_arg)});
             }
             case ASR::exprType::IntegerBinOp: {
