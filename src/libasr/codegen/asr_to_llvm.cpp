@@ -13873,7 +13873,9 @@ public:
         ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
 
         // Get the base pointer variable from the target section
-        ASR::Variable_t* ptr_var = ASRUtils::EXPR2VAR(target_section->m_v);
+        // A component (`x%p(1:n) => ...`) is neither a local nor a dummy.
+        ASR::Variable_t* ptr_var = ASR::is_a<ASR::Var_t>(*target_section->m_v)
+            ? ASRUtils::EXPR2VAR(target_section->m_v) : nullptr;
         ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
 
         // Get the llvm values
@@ -13992,8 +13994,8 @@ public:
         // For other non-local pointers, heap-allocate so the descriptor
         // survives after the function returns.
         llvm::Value* new_desc;
-        bool target_is_local = (ptr_var->m_intent == ASR::intentType::Local);
-        bool target_is_dummy = ASRUtils::is_arg_dummy(ptr_var->m_intent);
+        bool target_is_local = ptr_var && ptr_var->m_intent == ASR::intentType::Local;
+        bool target_is_dummy = ptr_var && ASRUtils::is_arg_dummy(ptr_var->m_intent);
         if (target_is_local || target_is_dummy) {
             llvm::Value* current_desc_ptr = llvm_utils->CreateLoad2(
                 target_type_llvm->getPointerTo(), target_desc);
