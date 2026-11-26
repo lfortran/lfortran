@@ -161,6 +161,7 @@ public:
 
 private:
     std::map<ASR::Function_t*, Proc> procs;
+    std::map<ASR::Function_t*, std::string> proc_ns;
     std::vector<ASR::Function_t*> order;
     Proc *cur = nullptr;
     bool in_program = false;
@@ -349,6 +350,9 @@ private:
             }
             case ASR::exprType::RealBinOp: {
                 auto &x = *ASR::down_cast<ASR::RealBinOp_t>(e);
+                if (x.m_op == ASR::binopType::Pow && is_int(x.m_right)) {
+                    return determined(x.m_left);
+                }
                 return determined(x.m_left) || determined(x.m_right);
             }
             case ASR::exprType::IntegerUnaryMinus:
@@ -369,7 +373,7 @@ private:
                 auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
                 std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
                 std::transform(f.begin(), f.end(), f.begin(), ::tolower);
-                if (f == "int") return true;
+                if (f == "int" || f == "real") return true;
                 for (size_t i = 0; i < x.n_args; i++) {
                     if (determined(x.m_args[i])) return true;
                 }
@@ -416,12 +420,26 @@ private:
     std::string call_name(ASR::symbol_t *sym) {
         sym = ASRUtils::symbol_get_past_external(sym);
         std::string n = name(ASRUtils::symbol_name(sym), sym->base.loc);
+        if (ASR::is_a<ASR::Function_t>(*sym)) {
+            auto it = proc_ns.find(ASR::down_cast<ASR::Function_t>(sym));
+            if (it != proc_ns.end() && !it->second.empty()) {
+                std::string mn = it->second.find('\'') != std::string::npos
+                    ? it->second : name(it->second, sym->base.loc);
+                if (cur_scope() && cur_scope()->get_symbol(it->second)) {
+                    return "_root_." + mn + "." + n;
+                }
+                return mn + "." + n;
+            }
+        }
         if (ASR::Module_t *m = ASRUtils::get_sym_module(sym)) {
             std::string mn = name(m->m_name, m->base.base.loc);
             if (cur_scope() && cur_scope()->get_symbol(m->m_name)) {
                 return "_root_." + mn + "." + n;
             }
             return mn + "." + n;
+        }
+        if (cur_scope() && cur_scope()->get_symbol(ASRUtils::symbol_name(sym))) {
+            return "_root_." + n;
         }
         return n;
     }
@@ -473,6 +491,40 @@ private:
         if (x.n_args >= 1 && f == "int" && is_real(x.m_args[0])) {
             return {"(FInt.ofInt " + atom(app("FReal.toInt", {operand(x.m_args[0])}))
                 + " : " + type(x.m_type, loc) + ")", pAtom};
+        }
+        if (x.n_args >= 1 && f == "real") {
+            std::string dst_ty = type(x.m_type, loc);
+            if (is_int(x.m_args[0])) {
+                if (ASR::is_a<ASR::IntegerConstant_t>(*x.m_args[0])) {
+                    return {"(FReal.ofInt " + int_lit(ASR::down_cast<
+                        ASR::IntegerConstant_t>(x.m_args[0])->m_n) + " : " + dst_ty + ")", pAtom};
+                }
+                return {"(" + app("FReal.ofInt", {app("FInt.toInt", {operand(x.m_args[0])})}).src
+                    + " : " + dst_ty + ")", pAtom};
+            }
+            if (is_real(x.m_args[0])) {
+                type(ASRUtils::expr_type(x.m_args[0]), x.m_args[0]->base.loc);
+                int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
+                int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_args[0]))->m_kind;
+                if (src_k == dst_k) return {"(" + lower(x.m_args[0]).src + " : " + dst_ty + ")", pAtom};
+                return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(x.m_args[0])});
+            }
+        }
+        if (x.n_args >= 2 && (f == "max" || f == "min")) {
+            bool all_int = is_int(x.m_args[0]);
+            bool all_real = is_real(x.m_args[0]);
+            for (size_t i = 1; i < x.n_args; i++) {
+                all_int = all_int && is_int(x.m_args[i]);
+                all_real = all_real && is_real(x.m_args[i]);
+            }
+            if (all_int || all_real) {
+                std::string fn = (all_int ? "FInt." : "FReal.") + std::string(f == "max" ? "fmax" : "fmin");
+                Val acc = lower(x.m_args[0]);
+                for (size_t i = 1; i < x.n_args; i++) {
+                    acc = app(fn, {acc, lower(x.m_args[i])});
+                }
+                return acc;
+            }
         }
         if (x.n_args == 2 && (f == "modulo" || f == "mod") && is_int(x.m_args[0])) {
             return app(f == "modulo" ? "FInt.modulo" : "FInt.mod",
@@ -604,6 +656,7 @@ private:
                     case ASR::binopType::Sub: f = "FInt.sub"; break;
                     case ASR::binopType::Mul: f = "FInt.mul"; break;
                     case ASR::binopType::Div: f = "FInt.div"; break;
+                    case ASR::binopType::Pow: f = "FInt.pow"; break;
                     default: unsupported("this integer operator is", loc);
                 }
                 return app(f, {lower(x.m_left), lower(x.m_right)});
@@ -616,6 +669,13 @@ private:
                     case ASR::binopType::Sub: f = "FReal.sub"; break;
                     case ASR::binopType::Mul: f = "FReal.mul"; break;
                     case ASR::binopType::Div: f = "FReal.div"; break;
+                    case ASR::binopType::Pow:
+                        if (is_int(x.m_right)) {
+                            return app("FReal.powInt", {lower(x.m_left), int_expr(x.m_right)});
+                        }
+                        level = std::max(level, 1);
+                        f = "FRealMath.pow";
+                        break;
                     default: unsupported("this real operator is", loc);
                 }
                 return app(f, {lower(x.m_left), lower(x.m_right)});
@@ -709,6 +769,10 @@ private:
         if (ASR::is_a<ASR::IntegerConstant_t>(*code)) {
             line("LFortran.halt (LFortran.stopCode " + int_lit(
                 ASR::down_cast<ASR::IntegerConstant_t>(code)->m_n) + ")");
+            return;
+        }
+        if (is_int(code)) {
+            line("LFortran.halt (LFortran.stopCode " + atom(app("FInt.toInt", {operand(code)})) + ")");
             return;
         }
         unsupported("this stop code is", loc);
@@ -923,7 +987,13 @@ private:
                 unsupported("a saved local variable is", vloc);
             }
             if (v->m_symbolic_value || v->m_value) {
-                unsupported("an initialized local variable is", vloc);
+                if (!in_program || is_array(v->m_type)) {
+                    unsupported("an initialized local variable is", vloc);
+                }
+                ASR::expr_t *init = v->m_symbolic_value ? v->m_symbolic_value : v->m_value;
+                line("let mut " + name(v->m_name, vloc) + " : " + type(v->m_type, vloc)
+                    + " := " + lower(init).src);
+                continue;
             }
             if (is_array(v->m_type)) {
                 std::vector<std::string> lbs, exts;
@@ -941,9 +1011,10 @@ private:
         }
     }
 
-    void check_symbols(SymbolTable *st) {
+    void check_symbols(SymbolTable *st, bool allow_functions = false) {
         for (ASR::symbol_t *s : symbols_in_order(st)) {
-            if (ASR::is_a<ASR::Variable_t>(*s) || ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+            if (ASR::is_a<ASR::Variable_t>(*s) || ASR::is_a<ASR::ExternalSymbol_t>(*s)
+                    || (allow_functions && ASR::is_a<ASR::Function_t>(*s))) {
                 continue;
             }
             unsupported("this declaration is", s->base.loc);
@@ -1092,12 +1163,15 @@ private:
 public:
     void translate(ASR::TranslationUnit_t &tu) {
         std::vector<ASR::Module_t*> mods;
+        std::vector<ASR::Function_t*> top_fns;
         ASR::Program_t *prog = nullptr;
         for (ASR::symbol_t *s : symbols_in_order(tu.m_symtab)) {
             if (ASR::is_a<ASR::Module_t>(*s)) {
                 ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(s);
                 if (m->m_intrinsic) continue;
                 mods.push_back(m);
+            } else if (ASR::is_a<ASR::Function_t>(*s)) {
+                top_fns.push_back(ASR::down_cast<ASR::Function_t>(s));
             } else if (ASR::is_a<ASR::Program_t>(*s)) {
                 prog = ASR::down_cast<ASR::Program_t>(s);
             } else {
@@ -1107,15 +1181,14 @@ public:
         if (require_program && !prog) {
             unsupported("a file with no program is", tu.base.base.loc);
         }
-        std::vector<std::pair<std::string, std::vector<ASR::Function_t*>>> groups;
+        std::vector<ASR::Function_t*> all_fns;
         for (ASR::Module_t *m : mods) {
-            std::string mn = name(m->m_name, m->base.base.loc);
-            std::vector<ASR::Function_t*> fns;
+            name(m->m_name, m->base.base.loc);
             for (ASR::symbol_t *s : symbols_in_order(m->m_symtab)) {
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-                    function(fn);
-                    fns.push_back(fn);
+                    proc_ns[fn] = m->m_name;
+                    all_fns.push_back(fn);
                 } else if (ASR::is_a<ASR::Variable_t>(*s)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                     if (v->m_storage != ASR::storage_typeType::Parameter) {
@@ -1125,8 +1198,29 @@ public:
                     unsupported("this module entity is", s->base.loc);
                 }
             }
-            groups.push_back({mn, fns});
         }
+        std::set<std::string> top_names;
+        for (ASR::Function_t *fn : top_fns) {
+            if (prog && std::string(fn->m_name) == "main") {
+                unsupported("a top-level procedure named 'main' is", fn->base.base.loc);
+            }
+            proc_ns[fn] = "";
+            top_names.insert(fn->m_name);
+            all_fns.push_back(fn);
+        }
+        if (prog) {
+            check_symbols(prog->m_symtab, /*allow_functions=*/true);
+            name(prog->m_name, prog->base.base.loc);
+            std::string prog_ns = std::string(prog->m_name) + "'procs";
+            for (ASR::symbol_t *s : symbols_in_order(prog->m_symtab)) {
+                if (ASR::is_a<ASR::Function_t>(*s)) {
+                    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+                    proc_ns[fn] = prog_ns;
+                    all_fns.push_back(fn);
+                }
+            }
+        }
+        for (ASR::Function_t *fn : all_fns) function(fn);
         std::string prog_body;
         int prog_level = 2;
         Proc prog_proc;
@@ -1137,7 +1231,6 @@ public:
             scope = prog->m_symtab;
             in_program = true;
             result = nullptr;
-            check_symbols(prog->m_symtab);
             collect_simple_loop_vars(prog->m_body, prog->n_body);
             buf = &prog_body;
             ind = 1;
@@ -1150,14 +1243,20 @@ public:
         out = "-- Generated by LFortran (`lfortran "
             + std::string(executable ? "--backend=lean " : "--show-lean ") + filename
             + "`). Do not edit.\nimport LFortran.Runtime\n\nopen LFortran\n\n";
-        for (auto &g : groups) {
-            if (g.second.empty()) continue;
-            out += "namespace " + g.first + "\n\n";
-            for (ASR::Function_t *fn : callees_first(g.second)) {
-                out += def(procs[fn], name(fn->m_name, fn->base.base.loc));
+        std::string cur_ns;
+        for (ASR::Function_t *fn : callees_first(all_fns)) {
+            std::string raw_ns = proc_ns[fn];
+            std::string fns = raw_ns.empty() ? ""
+                : (raw_ns.find('\'') != std::string::npos ? raw_ns
+                    : name(raw_ns, fn->base.base.loc));
+            if (fns != cur_ns) {
+                if (!cur_ns.empty()) out += "end " + cur_ns + "\n\n";
+                if (!fns.empty()) out += "namespace " + fns + "\n\n";
+                cur_ns = fns;
             }
-            out += "end " + g.first + "\n\n";
+            out += def(procs[fn], name(fn->m_name, fn->base.base.loc));
         }
+        if (!cur_ns.empty()) out += "end " + cur_ns + "\n\n";
         if (prog) {
             for (ASR::Function_t *c : prog_proc.callees) {
                 auto it = procs.find(c);
@@ -1167,7 +1266,10 @@ public:
                 }
                 prog_level = std::max(prog_level, it->second.level);
             }
-            std::string pn = name(std::string(prog->m_name) + "_main", prog->base.base.loc);
+            std::string raw_pn = std::string(prog->m_name) + "_main";
+            std::string pn = top_names.count(raw_pn)
+                ? std::string(prog->m_name) + "'main"
+                : name(raw_pn, prog->base.base.loc);
             out += "def " + pn + " {K : Kinds} [" + level_class(prog_level)
                 + " K] : IO Unit := do\n" + prog_body + "\n";
             out += "def main : IO UInt32 := LFortran.run (" + pn
