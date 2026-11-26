@@ -870,6 +870,7 @@ run = true
 
 [[test]]
 filename = "../integration_tests/error_stop_04.f90"
+llvm = true
 run = true
 
 [[test]]

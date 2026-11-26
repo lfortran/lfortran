@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-error_stop_04-4522c71",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/error_stop_04.f90",
+    "infile_hash": "43fa904db7997988ab0d436e206706e0938feb0bf82ce0cbfec1fd67",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-error_stop_04-4522c71.stdout",
+    "stdout_hash": "9f82987cb7e36d94d44840aa1e3631dde602f0b6f93c0af7390faa0f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
