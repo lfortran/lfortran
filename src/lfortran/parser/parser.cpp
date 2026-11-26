@@ -909,9 +909,11 @@ bool process_include(std::string& out, const std::string& s,
     }
 
     if (!file_found) {
+        lm.files.back().out_start.push_back(source_offset(out.size()));
+        lm.files.back().in_start.push_back(source_offset(pos));
         Location loc;
-        loc.first = source_offset(pos);
-        loc.last = source_offset(pos);
+        loc.first = source_offset(out.size());
+        loc.last = source_offset(out.size());
         diagnostics.add(diag::Diagnostic(
             "Include file '" + include_filename
             + "' not found. If an include path "
