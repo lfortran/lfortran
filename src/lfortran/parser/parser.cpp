@@ -3,7 +3,9 @@
 #include <cctype>
 
 #include <lfortran/ast_kind.h>
+#include <fstream>
 #include <lfortran/parser/parser.h>
+#include <lfortran/parser/ll_parser.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/diagnostics.h>
 #include <libasr/string_utils.h>
@@ -286,6 +288,19 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co,
         uint32_t loc_offset)
 {
+    // Experimental: with the environment variable LFORTRAN_LL_PARSER set,
+    // free-form code is parsed by the prototype LL parser. It reports no
+    // syntax errors, so anything it cannot parse is parsed again by the Bison
+    // parser. If that succeeds (the LL parser is then missing something),
+    // the event is appended to the file named by LFORTRAN_LL_PARSER_LOG.
+    bool ll_failed = false;
+    if (!co.fixed_form && !co.interactive && !co.infer_mode
+            && !co.continue_compilation && getenv("LFORTRAN_LL_PARSER")) {
+        AST::TranslationUnit_t *ast = ll_parse_or_null(al, s, diagnostics,
+            co.openmp, loc_offset);
+        if (ast) return ast;
+        ll_failed = true;
+    }
     Parser p(al, diagnostics, co.fixed_form, co.continue_compilation, co.openmp);
     p.m_tokenizer.loc_offset = loc_offset;
     try {
@@ -316,6 +331,17 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
             if (!co.continue_compilation) {
                 return error;
             }
+        }
+    }
+    if (ll_failed && !diagnostics.has_error()) {
+        const char *log = getenv("LFORTRAN_LL_PARSER_LOG");
+        if (log) {
+            std::ofstream f(log, std::ios::app);
+            std::string head = s.substr(0, 300);
+            for (char &c : head) {
+                if (c == '\n') c = '|';
+            }
+            f << "LL parser fell back on valid code: " << head << "\n";
         }
     }
     return ast;
