@@ -796,7 +796,7 @@ private:
                 auto &x = *ASR::down_cast<ASR::If_t>(s);
                 line("if " + lower(x.m_test).src + " then");
                 ind++;
-                if (x.n_body == 0) line("pure ()");
+                if (x.n_body == 0) line("Pure.pure ()");
                 stmts(x.m_body, x.n_body);
                 ind--;
                 if (x.n_orelse) {
@@ -831,7 +831,7 @@ private:
                     line("for " + v + " in FInt.range " + lo + " "
                         + atom(lower(h.m_end)) + " do");
                     ind++;
-                    if (x.n_body == 0) line("pure ()");
+                    if (x.n_body == 0) line("Pure.pure ()");
                     stmts(x.m_body, x.n_body);
                     ind--;
                     break;
@@ -849,7 +849,7 @@ private:
                 line(v + " := " + iv);
                 stmts(x.m_body, x.n_body);
                 ind--;
-                line(v + " := FInt.ofInt (FInt.toInt " + lv + " + max 0 (FInt.toInt " + hv
+                line(v + " := FInt.ofInt (FInt.toInt " + lv + " + Max.max 0 (FInt.toInt " + hv
                     + " + 1 - FInt.toInt " + lv + "))");
                 break;
             }
@@ -967,7 +967,8 @@ private:
         }
         result = fn->m_return_var ? ASRUtils::EXPR2VAR(fn->m_return_var) : nullptr;
         std::set<ASR::Variable_t*> dummies;
-        std::vector<std::string> entry, outs, out_types;
+        std::vector<std::pair<uint32_t, std::string>> entry;
+        std::vector<std::string> outs, out_types;
         for (size_t i = 0; i < fn->n_args; i++) {
             ASR::Variable_t *a = ASRUtils::EXPR2VAR(fn->m_args[i]);
             const Location &aloc = a->base.base.loc;
@@ -989,21 +990,23 @@ private:
                 bool assumed;
                 dims(a->m_type, lbs, exts, assumed, aloc);
                 p.sig += " (" + an + " : " + vtype(a->m_type, aloc) + ")";
-                entry.push_back(let + an + " := " + (assumed
+                entry.push_back({aloc.first, let + an + " := " + (assumed
                     ? "Arr.rebase " + an + " " + int_array(lbs)
-                    : "Arr.reshape " + an + " " + int_array(lbs) + " " + int_array(exts)));
+                    : "Arr.reshape " + an + " " + int_array(lbs) + " " + int_array(exts))});
             } else if (in == ASR::intentType::Out) {
-                entry.push_back("let mut " + an + " : " + type(a->m_type, aloc) + " := "
-                    + zero(a->m_type, aloc));
+                entry.push_back({aloc.first, "let mut " + an + " : " + type(a->m_type, aloc) + " := "
+                    + zero(a->m_type, aloc)});
             } else {
                 p.sig += " (" + an + " : " + type(a->m_type, aloc) + ")";
-                if (in == ASR::intentType::InOut) entry.push_back("let mut " + an + " := " + an);
+                if (in == ASR::intentType::InOut) entry.push_back({aloc.first, "let mut " + an + " := " + an});
             }
             if (in != ASR::intentType::In) {
                 outs.push_back(an);
                 out_types.push_back(vtype(a->m_type, aloc));
             }
         }
+        std::stable_sort(entry.begin(), entry.end(),
+            [](const auto &a, const auto &b) { return a.first < b.first; });
         if (result) {
             p.ret = name(result->m_name, result->base.base.loc);
             p.sig += " : " + type(result->m_type, result->base.base.loc);
@@ -1025,7 +1028,7 @@ private:
         if (result) loop_vars.erase(result);
         buf = &p.body;
         ind = 1;
-        for (const std::string &l : entry) line(l);
+        for (const auto &l : entry) line(l.second);
         locals(fn->m_symtab, dummies);
         stmts(fn->m_body, fn->n_body);
         bool returned = fn->n_body
@@ -1140,7 +1143,7 @@ public:
             ind = 1;
             locals(prog->m_symtab, {});
             stmts(prog->m_body, prog->n_body);
-            if (prog_body.empty()) line("pure ()");
+            if (prog_body.empty()) line("Pure.pure ()");
             cur = nullptr;
         }
         propagate_levels();

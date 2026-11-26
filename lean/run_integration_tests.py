@@ -99,7 +99,8 @@ def parse_runs(text):
 def lean_compile_error(text):
     for line in text.splitlines():
         s = line.strip()
-        if s.startswith("error:") or s.startswith("error(") or "PANIC" in s:
+        if (s.startswith("error:") or s.startswith("error(")
+                or ": error:" in s or ": error(" in s or "PANIC" in s):
             return True
         if "unknown identifier" in s or "failed to compile" in s:
             return True

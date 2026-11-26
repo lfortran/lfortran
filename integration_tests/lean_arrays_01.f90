@@ -115,12 +115,22 @@ contains
     end do
     end subroutine
 
+    ! Explicit-shape dummy `a` appears before `b` in the parameter list, but
+    ! its bounds depend on `b`'s rebased lower bound.
+    subroutine dep_bounds(a, b, lb)
+    integer, intent(in) :: lb
+    real(8), intent(in) :: b(lb:)
+    real(8), intent(inout) :: a(lbound(b, 1):ubound(b, 1))
+    a(lb) = b(lb) + 1.0d0
+    a(lb + 1) = b(lb + 1) + 2.0d0
+    end subroutine
+
 end module
 
 program lean_arrays_01
 use lean_arrays_01_mod
 implicit none
-real(8) :: c(3), p, v(0:2), m(2, 3), w(2)
+real(8) :: c(3), p, v(0:2), m(2, 3), w(2), db_a(10:12), db_b(10:12)
 integer :: i, j, a, b, x(2, 3), y(3, 2), k, z(5:3)
 logical :: found
 c(1) = 1
@@ -170,5 +180,9 @@ if (k /= 1) error stop
 k = -5
 if (abs(k) /= 5) error stop
 if (lbound(z, 1) /= 1 .or. ubound(z, 1) /= 0 .or. size(z) /= 0) error stop
+db_b = 2.0d0
+db_a = 0.0d0
+call dep_bounds(db_a, db_b, 20)
+if (db_a(10) /= 3.0d0 .or. db_a(11) /= 4.0d0) error stop
 print *, p, v(2), a, total(m), y(3, 1), k
 end program

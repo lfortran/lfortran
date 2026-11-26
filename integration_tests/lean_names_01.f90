@@ -16,14 +16,18 @@ program lean_names_01
 use, intrinsic :: iso_fortran_env, only: dp => real64
 use m_shadow
 implicit none
-integer :: include, prefix, end, end_, i, repeat, hiding
+integer :: include, prefix, end, end_, i, repeat, hiding, max, pure
 real(dp) :: using, z
 include = 1; prefix = 2; end = 3; end_ = 4; repeat = 5; hiding = 6
+max = 10; pure = 1
 do i = 1, 3
     end = end + i
+    max = max + i
 end do
+if (pure == 1) then
+end if
 if (include /= 1 .or. prefix /= 2 .or. end /= 9 .or. end_ /= 4) error stop 1
-if (repeat /= 5 .or. hiding /= 6) error stop 5
+if (repeat /= 5 .or. hiding /= 6 .or. max /= 16 .or. i /= 4) error stop 5
 if (call_with_shadow(10) /= 11) error stop 6
 z = -0.0_dp
 using = sign(1.0_dp, z)
