@@ -2077,6 +2077,20 @@ static inline bool block_data_present(const ASR::TranslationUnit_t &unit)
     return false;
 }
 
+// A submodule's procedures are not in the parent module, so the object
+// file of the submodule has to contain them. An ordinary module file
+// does not: its procedures are compiled with the program that uses it.
+static inline bool submodule_present(const ASR::TranslationUnit_t &unit)
+{
+    for (auto &a : unit.m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Module_t>(*a.second)) {
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(a.second);
+            if (m->m_parent_module != nullptr) return true;
+        }
+    }
+    return false;
+}
+
 // Accepts dependencies in the form A -> [B, D, ...], B -> [C, D]
 // Returns a list of dependencies in the order that they should be built:
 // [D, C, B, A]

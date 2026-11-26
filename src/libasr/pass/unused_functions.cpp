@@ -429,7 +429,8 @@ public:
 void pass_unused_functions(Allocator &al, ASR::TranslationUnit_t &unit,
                            const LCompilers::PassOptions& pass_options) {
     bool always_run = pass_options.always_run;
-    if (is_program_present(unit) || always_run) {
+    if (is_program_present(unit) || ASRUtils::submodule_present(unit)
+            || always_run) {
         for (int i=0; i < 4; i++)
         {
             std::map<uint64_t, std::string> fn_unused;
