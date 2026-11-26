@@ -132,6 +132,41 @@ def range (lo hi : ι) : List ι :=
   (List.range (toInt hi + 1 - toInt lo).toNat).map fun (i : Nat) =>
     ofInt (toInt lo + (i : Int))
 
+/-- `a ** b` in Fortran integer arithmetic. -/
+def pow (a b : ι) : ι :=
+  let e := toInt b
+  if e < 0 then
+    let x := toInt a
+    if x == 1 then ofInt 1
+    else if x == -1 then ofInt (if e % 2 == 0 then 1 else -1)
+    else ofInt 0
+  else
+    ofInt ((toInt a) ^ e.toNat)
+
+def fmax (a b : ι) : ι := if lt a b then b else a
+def fmin (a b : ι) : ι := if lt b a then b else a
+
 end FInt
+
+namespace FReal
+
+variable {α : Type} [FReal α]
+
+def fmax (a b : α) : α := if lt a b then b else a
+def fmin (a b : α) : α := if lt b a then b else a
+
+/-- `x ** n` for an integer exponent `n`, by binary exponentiation. -/
+def powNat (x : α) : Nat → α
+  | 0 => ofInt 1
+  | n + 1 =>
+    let half := powNat x ((n + 1) / 2)
+    let sq := mul half half
+    if (n + 1) % 2 == 0 then sq else mul sq x
+
+def powInt (x : α) (n : Int) : α :=
+  if n < 0 then div (ofInt 1) (powNat x (-n).toNat)
+  else powNat x n.toNat
+
+end FReal
 
 end LFortran
