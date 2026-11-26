@@ -650,9 +650,12 @@ def cmd_push(args):
         transition["status"] = "pushed"
         state["rebase"] = transition.copy()
         save_pr_state(args.number, state)
-    comment(args.number, f"{reason}\n\nPushed `{new[:12]}`; "
-            + ("human re-review is required." if args.needs_review else
-               "rebase validation is still pending."))
+    if args.needs_review:
+        # The rejection comment already gave the reason.
+        comment(args.number, f"Pushed `{new[:12]}`; human re-review is required.")
+    else:
+        comment(args.number, f"{reason}\n\nPushed `{new[:12]}`; "
+                "rebase validation is still pending.")
     print(new)
 
 
