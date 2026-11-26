@@ -2375,6 +2375,25 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
     return ErrorMessage("Module '" + msym + "' modfile was not found");
 }
 
+// Whether `submod_name` is a submodule in `symtab` that descends from
+// `ancestor_name`, its parent or any further ancestor. A nested submodule
+// records only its parent, while its .smod may be named after any ancestor
+// (GFortran uses the ancestor module).
+static bool is_submodule_of(SymbolTable &symtab, const std::string &submod_name,
+                            const std::string &ancestor_name) {
+    std::set<std::string> visited;
+    std::string name = submod_name;
+    while (visited.insert(name).second) {
+        ASR::symbol_t *sym = symtab.get_symbol(name);
+        if (!sym || !ASR::is_a<ASR::Module_t>(*sym)) return false;
+        char *parent = ASR::down_cast<ASR::Module_t>(sym)->m_parent_module;
+        if (!parent) return false;
+        if (ancestor_name == parent) return true;
+        name = parent;
+    }
+    return false;
+}
+
 Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodules(Allocator &al, const std::string &parent_module_name,
                                                             SymbolTable &symtab,
                                                             LCompilers::PassOptions &pass_options,
@@ -2390,12 +2409,20 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
                           pass_options.include_dirs.end());
 
     std::string smod_prefix = parent_module_name + "@";
+    const std::string smod_ext = ".smod";
     for (auto &path : mod_files_dirs) {
         if (path.empty()) path = ".";
         if (!std::filesystem::is_directory(path)) continue;
         for (auto &file : std::filesystem::directory_iterator(path)) {
             std::string submod_filename = file.path().filename().string();
-            if (startswith(submod_filename, smod_prefix) && endswith(submod_filename, ".smod")) {
+            if (startswith(submod_filename, smod_prefix) && endswith(submod_filename, smod_ext)) {
+                // A submodule compiled in this translation unit is used as
+                // is; its .smod on disk may be stale or from another compiler.
+                std::string submod_name = submod_filename.substr(smod_prefix.size(),
+                    submod_filename.size() - smod_prefix.size() - smod_ext.size());
+                if (is_submodule_of(symtab, submod_name, parent_module_name)) {
+                    continue;
+                }
                 std::string submodfile;
                 if (read_file(file.path().string(), submodfile) && !submodfile.empty()) {
                     Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false, symtab, lm);
