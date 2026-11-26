@@ -3890,7 +3890,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
-        print_msg("STOP");
+        if (x.m_code) {
+            print_msg("STOP");
+        }
         if (x.m_code &&
             ASRUtils::expr_type(x.m_code)->type == ASR::ttypeType::Integer) {
             this->visit_expr(*x.m_code);
