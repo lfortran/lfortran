@@ -234,6 +234,9 @@ if (WITH_BENCHMARKS)
     add_executable(parse2 parse2.cpp)
     target_link_libraries(parse2 lfortran_lib)
 
+    add_executable(parse_ll_bench parse_ll_bench.cpp)
+    target_link_libraries(parse_ll_bench lfortran_lib)
+
     if (WITH_FMT)
         add_executable(parse3 parse3.cpp)
         target_link_libraries(parse3 lfortran_lib fmt::fmt)

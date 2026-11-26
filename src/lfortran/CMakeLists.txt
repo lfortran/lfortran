@@ -4,6 +4,7 @@ set(PARSER_SRC
     parser/parser.tab.cc
     parser/parser.cpp
     parser/fixedform_tokenizer.cpp
+    parser/ll_parser.cpp
 
     pickle.cpp
 )
