@@ -6690,6 +6690,8 @@ RUN(NAME separate_compilation_68 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_69 LABELS gfortran llvm EXTRAFILES separate_compilation_69a.f90)
 RUN(NAME separate_compilation_70 LABELS gfortran llvm EXTRAFILES separate_compilation_70a.f90)
 RUN(NAME separate_compilation_71 LABELS gfortran llvm EXTRAFILES separate_compilation_71a.f90 separate_compilation_71b.f90 EXTRA_ARGS --separate-compilation --all-mangling --mangle-underscore) # intrinsic module procedures compiled into two object files link (#16082)
+RUN(NAME separate_compilation_77 LABELS gfortran llvm EXTRAFILES separate_compilation_77a.f90 separate_compilation_77b.f90 EXTRA_ARGS --separate-compilation --all-mangling) # global names do not depend on the unit compiled with --all-mangling (#17306)
+RUN(NAME separate_compilation_78 LABELS gfortran llvm EXTRAFILES separate_compilation_78a.f90 EXTRA_ARGS --separate-compilation --module-mangling) # module names do not depend on the unit compiled with --module-mangling (#17306)
 RUN(NAME separate_compilation_72 LABELS gfortran llvm
     EXTRA_ARGS --separate-compilation --implicit-interface
     EXTRAFILES separate_compilation_72a.f90 separate_compilation_72b.f90)
