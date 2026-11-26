@@ -9,6 +9,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pickle.h>
+#include <libasr/pass/intrinsic_function_registry_util.h>
 
 namespace LCompilers {
 
@@ -79,7 +80,7 @@ private :
                     });
                 }
             } 
-            ASR::BaseVisitor<getExternalSymbol>::visit_expr(x);
+            ASR::BaseWalkVisitor<getExternalSymbol>::visit_expr(x);
         }
     };
 

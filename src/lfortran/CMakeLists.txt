@@ -11,6 +11,7 @@ set(PARSER_SRC
 set(SRC
     semantics/ast_symboltable_visitor.cpp
     semantics/ast_body_visitor.cpp
+    semantics/ast_common_visitor.cpp
     semantics/ast_to_asr.cpp
     semantics/elemental_checks.cpp
     semantics/pure_checks.cpp
@@ -136,5 +137,9 @@ endif()
 #    ARCHIVE DESTINATION lib
 #    LIBRARY DESTINATION lib
 #)
+
+if (WITH_PCH)
+    target_precompile_headers(lfortran_lib REUSE_FROM asr)
+endif()
 
 add_subdirectory(tests)

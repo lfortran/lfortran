@@ -19,8 +19,13 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <libasr/asr_builder.h>
+#include <libasr/pass/intrinsic_array_functions.h>
 
 namespace LCompilers {
+
+#if !defined(LCOMPILERS_VIRTUAL_VISITORS)
+template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+#endif
 
     namespace ASRUtils  {
 

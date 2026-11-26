@@ -74,25 +74,27 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
         }
     }
 
-    template <typename ExprType>
-    void replace_ExprMethod(ExprType* x,
-            void (ASR::BaseExprReplacer<CompileTimeValueReplacer>::*replacer_function)(ExprType*) ) {
+    // Calls `replace`, a method of the base class, inside a prohibited
+    // expression. A callable rather than a pointer to the method: the call
+    // through a pointer to a virtual method would come back here.
+    template <typename Replace>
+    void replace_ExprMethod(Replace replace) {
         bool inside_prohibited_expression_copy = inside_prohibited_expression;
         inside_prohibited_expression = true;
-        (this->*replacer_function)(x);
+        replace();
         inside_prohibited_expression = inside_prohibited_expression_copy;
     }
 
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
-        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayItem);
+        replace_ExprMethod([&]() { ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_ArrayItem(x); });
     }
 
     void replace_StringSection(ASR::StringSection_t* x) {
-        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringSection);
+        replace_ExprMethod([&]() { ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringSection(x); });
     }
 
     void replace_StringItem(ASR::StringItem_t* x) {
-        replace_ExprMethod(x, &ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringItem);
+        replace_ExprMethod([&]() { ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_StringItem(x); });
     }
 
     void replace_expr(ASR::expr_t* x) {
@@ -151,25 +153,25 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
         replacer.replaceable = &replaceable;
     }
 
-    template <typename ExprType>
-    void visit_ExprMethod(const ExprType& x,
-            void (ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::*visitor_function)(const ExprType&) ) {
+    // See CompileTimeValueReplacer::replace_ExprMethod
+    template <typename Visit>
+    void visit_ExprMethod(Visit visit) {
         bool inside_prohibited_expression_copy = replacer.inside_prohibited_expression;
         replacer.inside_prohibited_expression = true;
-        (this->*visitor_function)(x);
+        visit();
         replacer.inside_prohibited_expression = inside_prohibited_expression_copy;
     }
 
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
-        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_ArrayItem);
+        visit_ExprMethod([&]() { ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_ArrayItem(x); });
     }
 
     void visit_StringSection(const ASR::StringSection_t& x) {
-        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringSection);
+        visit_ExprMethod([&]() { ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringSection(x); });
     }
 
     void visit_StringItem(const ASR::StringItem_t& x) {
-        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringItem);
+        visit_ExprMethod([&]() { ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringItem(x); });
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {

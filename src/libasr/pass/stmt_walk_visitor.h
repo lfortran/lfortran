@@ -1,3 +1,6 @@
+#ifndef LIBASR_PASS_STMT_WALK_VISITOR_H
+#define LIBASR_PASS_STMT_WALK_VISITOR_H
+
 #include <libasr/pass/pass_utils.h>
 
 namespace LCompilers {
@@ -29,3 +32,5 @@ namespace ASR {
 } // namespace ASR
 
 } // namespace LCompilers
+
+#endif // LIBASR_PASS_STMT_WALK_VISITOR_H

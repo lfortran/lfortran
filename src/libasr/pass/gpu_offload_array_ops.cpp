@@ -14,6 +14,7 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
+#include <libasr/asr_builder.h>
 
 namespace LCompilers {
 
