@@ -46,6 +46,23 @@ std::string get_unique_ID() {
     return res;
 }
 
+std::string get_content_ID(const std::string &data) {
+    // 64-bit FNV-1a
+    uint64_t hash = 14695981039346656037ULL;
+    for (unsigned char c : data) {
+        hash ^= c;
+        hash *= 1099511628211ULL;
+    }
+    const std::string v =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    std::string res;
+    for (int i = 0; i < 11; i++) {
+        res += v[hash % v.size()];
+        hash /= v.size();
+    }
+    return res;
+}
+
 bool present(Vec<char*> &v, const char* name) {
     for (auto &a : v) {
         if (std::string(a) == std::string(name)) {

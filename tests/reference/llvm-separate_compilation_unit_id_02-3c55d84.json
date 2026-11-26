@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-separate_compilation_unit_id_02-3c55d84",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/separate_compilation_unit_id_02.f90",
+    "infile_hash": "94791f5a1b50958e78f112d486452ceec83eb4be55dab38daea09bf3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-separate_compilation_unit_id_02-3c55d84.stdout",
+    "stdout_hash": "9a35cac0280fd429953860063a68a8e64939d6d41286ee4534c15311",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
