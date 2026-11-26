@@ -565,7 +565,13 @@ private:
                 auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
                 std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
                 std::transform(f.begin(), f.end(), f.begin(), ::tolower);
-                if (f == "int" || f == "real") return true;
+                if (f == "int" || f == "real" || f == "floor" || f == "ceiling" || f == "nint") {
+                    return true;
+                }
+                if (f == "merge") {
+                    return (x.n_args > 0 && determined(x.m_args[0]))
+                        || (x.n_args > 1 && determined(x.m_args[1]));
+                }
                 for (size_t i = 0; i < x.n_args; i++) {
                     if (determined(x.m_args[i])) return true;
                 }
@@ -643,13 +649,17 @@ private:
     }
 
     static ASR::Variable_t *dummy(ASR::Function_t *fn, size_t i) {
-        return ASRUtils::EXPR2VAR(fn->m_args[i]);
+        if (!fn->m_args[i] || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) return nullptr;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        return ASR::is_a<ASR::Variable_t>(*s) ? ASR::down_cast<ASR::Variable_t>(s) : nullptr;
     }
 
     ASR::intentType arg_intent(ASR::Function_t *fn, size_t i) const {
         auto it = eff_intents.find(fn);
         if (it != eff_intents.end() && i < it->second.size()) return it->second[i];
-        return dummy(fn, i)->m_intent;
+        ASR::Variable_t *d = dummy(fn, i);
+        return d ? d->m_intent : ASR::intentType::Unspecified;
     }
 
     // The application of a procedure to the arguments it takes: every
@@ -663,6 +673,7 @@ private:
         for (size_t i = 0; i < n; i++) {
             if (!args[i].m_value) unsupported("an omitted argument is", loc);
             ASR::Variable_t *d = dummy(fn, i);
+            if (!d) unsupported("a procedure argument is", args[i].m_value->base.loc);
             ASR::intentType in = arg_intent(fn, i);
             if (in == ASR::intentType::Out && !is_array(d->m_type)) continue;
             ASR::expr_t *a = args[i].m_value;
@@ -752,13 +763,56 @@ private:
             return {"(if " + app("FReal.signbit", {b}).src
                 + " then " + app("FReal.neg", {a}).src + " else " + a.src + ")", pAtom};
         }
+        if (x.n_args >= 1 && (f == "floor" || f == "ceiling" || f == "nint")
+                && is_real(x.m_args[0])) {
+            std::string h = f == "floor" ? "FReal.floorInt"
+                : f == "ceiling" ? "FReal.ceilInt" : "FReal.nintInt";
+            return {"(FInt.ofInt " + atom(app(h, {operand(x.m_args[0])}))
+                + " : " + type(x.m_type, loc) + ")", pAtom};
+        }
+        if (x.n_args == 3 && f == "merge" && is_logical(x.m_args[2])
+                && !is_array(x.m_type)) {
+            Val t = lower(x.m_args[0]), fv = lower(x.m_args[1]), m = lower(x.m_args[2]);
+            if (t.src.find("←") != std::string::npos || fv.src.find("←") != std::string::npos
+                    || m.src.find("←") != std::string::npos) {
+                return {"((fun t' f' m' => if m' then t' else f') "
+                    + atom(t) + " " + atom(fv) + " " + atom(m) + ")", pAtom};
+            }
+            return {"(if " + m.src + " then " + t.src + " else " + fv.src + ")", pAtom};
+        }
         static const std::set<std::string> math = {
-            "sqrt", "exp", "log", "sin", "cos", "tan", "atan"};
+            "sqrt", "exp", "log", "log10", "sin", "cos", "tan",
+            "asin", "acos", "atan", "sinh", "cosh", "tanh"};
         if (x.n_args == 1 && math.count(f) && is_real(x.m_args[0])) {
             level = std::max(level, 1);
             return app("FRealMath." + f, {operand(x.m_args[0])});
         }
-        if (x.m_value) return lower(x.m_value);
+        if (x.n_args == 2 && f == "atan2" && is_real(x.m_args[0]) && is_real(x.m_args[1])) {
+            level = std::max(level, 1);
+            return app("FRealMath.atan2", {operand(x.m_args[0]), lower(x.m_args[1])});
+        }
+        if (x.n_args == 1 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            std::string body;
+            if (f == "abs") {
+                if (ASR::is_a<ASR::Real_t>(*et)) body = "FReal.abs x'";
+                else if (ASR::is_a<ASR::Integer_t>(*et)) {
+                    body = "(FInt.ofInt (Int.natAbs (FInt.toInt x')) : " + type(et, loc) + ")";
+                }
+            } else if (math.count(f) && ASR::is_a<ASR::Real_t>(*et)) {
+                level = std::max(level, 1);
+                body = "FRealMath." + f + " x'";
+            } else if ((f == "int" || f == "floor" || f == "ceiling" || f == "nint")
+                    && ASR::is_a<ASR::Real_t>(*et)) {
+                std::string h = f == "int" ? "FReal.toInt" : f == "floor" ? "FReal.floorInt"
+                    : f == "ceiling" ? "FReal.ceilInt" : "FReal.nintInt";
+                body = "(FInt.ofInt (" + h + " x') : " + type(elem_type(x.m_type), loc) + ")";
+            }
+            if (!body.empty()) {
+                return app("Arr.map", {{"(fun x' => " + body + ")", pAtom}, lower(x.m_args[0])});
+            }
+        }
+        if (x.m_value && x.m_value != (ASR::expr_t*) &x) return lower(x.m_value);
         unsupported("the intrinsic '" + f + "' is", loc);
     }
 
@@ -1186,9 +1240,33 @@ private:
         if (ASR::is_a<ASR::StringConstant_t>(*e)) {
             return string_lit(ASR::down_cast<ASR::StringConstant_t>(e)->m_s);
         }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*s)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                if (v->m_storage == ASR::storage_typeType::Parameter && v->m_value
+                        && ASR::is_a<ASR::StringConstant_t>(*v->m_value)) {
+                    return string_lit(ASR::down_cast<ASR::StringConstant_t>(v->m_value)->m_s);
+                }
+            }
+        }
         if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
             return string_lit(std::to_string(
                 ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n));
+        }
+        if (is_array(ASRUtils::expr_type(e))) {
+            ASR::ttype_t *et = scalar(elem_type(ASRUtils::expr_type(e)), loc);
+            std::string ety = type(et, loc);
+            std::string fmt;
+            if (ASR::is_a<ASR::Integer_t>(*et)) fmt = "toString (FInt.toInt (x' : " + ety + "))";
+            else if (ASR::is_a<ASR::Real_t>(*et)) {
+                fmt = "FKindsIO.fmtR" + std::to_string(ASR::down_cast<ASR::Real_t>(et)->m_kind)
+                    + " (x' : " + ety + ")";
+            } else if (ASR::is_a<ASR::Logical_t>(*et)) fmt = "(if x' then \"T\" else \"F\")";
+            else unsupported("printing this value is", loc);
+            return "(String.intercalate \" \" (" + atom(lower(e))
+                + ".data.toList.map (fun x' => " + fmt + ")))";
         }
         ASR::ttype_t *t = scalar(ASRUtils::expr_type(e), loc);
         // The kind is stated: a value such as `FInt.ofInt 10` does not fix it.
@@ -1529,6 +1607,15 @@ private:
                     unsupported("print in a procedure is", loc);
                 }
                 level = std::max(level, 2);
+                if (!x.m_text) {
+                    line("IO.println \"\"");
+                    break;
+                }
+                if (ASR::is_a<ASR::StringConstant_t>(*x.m_text)) {
+                    line("IO.println " + string_lit(
+                        ASR::down_cast<ASR::StringConstant_t>(x.m_text)->m_s));
+                    break;
+                }
                 if (!ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
                     unsupported("this print is", loc);
                 }
@@ -1673,7 +1760,8 @@ private:
         std::vector<std::pair<uint32_t, std::string>> entry;
         std::vector<std::string> outs, out_types;
         for (size_t i = 0; i < fn->n_args; i++) {
-            ASR::Variable_t *a = ASRUtils::EXPR2VAR(fn->m_args[i]);
+            ASR::Variable_t *a = dummy(fn, i);
+            if (!a) unsupported("a procedure argument is", fn->m_args[i]->base.loc);
             const Location &aloc = a->base.base.loc;
             std::string an = name(a->m_name, aloc);
             ASR::intentType in = arg_intent(fn, i);
@@ -1712,8 +1800,8 @@ private:
             [](const auto &a, const auto &b) { return a.first < b.first; });
         if (result) {
             p.ret = name(result->m_name, result->base.base.loc);
-            std::string rty = type(result->m_type, result->base.base.loc);
-            p.sig += is_io ? " : IO " + rty : " : " + rty;
+            std::string rty = vtype(result->m_type, result->base.base.loc);
+            p.sig += is_io ? " : IO (" + rty + ")" : " : " + rty;
         } else if (outs.empty()) {
             p.ret = "()";
             p.sig += is_io ? " : IO Unit" : " : Unit";
@@ -1808,7 +1896,9 @@ private:
             ins.resize(fn->n_args);
             for (size_t i = 0; i < fn->n_args; i++) {
                 ASR::Variable_t *d = dummy(fn, i);
-                if (d->m_intent == ASR::intentType::Unspecified) {
+                if (!d) {
+                    ins[i] = ASR::intentType::Unspecified;
+                } else if (d->m_intent == ASR::intentType::Unspecified) {
                     ins[i] = pe.modified.count(d)
                         ? ASR::intentType::InOut : ASR::intentType::In;
                 } else {
@@ -1833,13 +1923,14 @@ private:
                 std::vector<ASR::intentType> &ins = eff_intents[fn];
                 for (const auto &sa : pe.sub_args) {
                     auto it = eff_intents.find(sa.callee);
+                    ASR::Variable_t *cd = dummy(sa.callee, sa.idx);
                     ASR::intentType cin = (it != eff_intents.end() && sa.idx < it->second.size())
                         ? it->second[sa.idx]
-                        : dummy(sa.callee, sa.idx)->m_intent;
+                        : (cd ? cd->m_intent : ASR::intentType::Unspecified);
                     if (cin == ASR::intentType::In) continue;
                     for (size_t i = 0; i < fn->n_args; i++) {
                         ASR::Variable_t *d = dummy(fn, i);
-                        if (d == sa.var && d->m_intent == ASR::intentType::Unspecified
+                        if (d && d == sa.var && d->m_intent == ASR::intentType::Unspecified
                                 && ins[i] == ASR::intentType::In) {
                             ins[i] = ASR::intentType::InOut;
                             changed = true;
