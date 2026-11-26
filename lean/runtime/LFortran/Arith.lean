@@ -132,6 +132,15 @@ def range (lo hi : ι) : List ι :=
   (List.range (toInt hi + 1 - toInt lo).toNat).map fun (i : Nat) =>
     ofInt (toInt lo + (i : Int))
 
+/-- `do k = lo, hi, step`, as a list. Matches Fortran's iteration count
+`max(0, (hi - lo + step) / step)` (truncating toward zero). -/
+def rangeStep (lo hi step : ι) : List ι :=
+  let s := toInt step
+  if s == 0 then []
+  else
+    let n := ((toInt hi - toInt lo + s).tdiv s).toNat
+    (List.range n).map fun (i : Nat) => ofInt (toInt lo + (i : Int) * s)
+
 /-- `a ** b` in Fortran integer arithmetic. -/
 def pow (a b : ι) : ι :=
   let e := toInt b

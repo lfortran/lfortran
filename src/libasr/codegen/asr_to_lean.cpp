@@ -149,6 +149,7 @@ struct Proc {
     std::string body;
     std::string ret;        // the value returned at the end
     int level = 0;
+    bool uses_while = false;
     std::set<ASR::Function_t*> callees;
 };
 
@@ -169,6 +170,7 @@ private:
     int ind = 0;
     ASR::Variable_t *result = nullptr;
     std::set<ASR::Variable_t*> loop_vars;
+    std::vector<std::string> exit_flags;
     int loop_id = 0;
     std::string ns;
     std::string *buf = nullptr;
@@ -285,13 +287,83 @@ private:
         assumed = n_len == 0;
     }
 
-    // An array argument or operand: a whole array variable.
+    // An array argument or operand: a whole array variable or array literal.
     ASR::expr_t *array_var(ASR::expr_t *e) {
         while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
             e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
         }
-        if (!ASR::is_a<ASR::Var_t>(*e)) unsupported("this array expression is", e->base.loc);
+        if (!ASR::is_a<ASR::Var_t>(*e) && !ASR::is_a<ASR::ArrayConstant_t>(*e)
+                && !ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+            unsupported("this array expression is", e->base.loc);
+        }
         return e;
+    }
+
+    Val array_constant(const ASR::ArrayConstant_t &x, const Location &loc) {
+        if (x.m_storage_format != ASR::arraystorageType::ColMajor) {
+            unsupported("this array expression is", loc);
+        }
+        if (!is_array(x.m_type)) unsupported("this array expression is", loc);
+        ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(x.m_type);
+        ASR::ttype_t *et = scalar(at->m_type, loc);
+        type(et, loc);
+        std::vector<std::string> lbs, exts;
+        bool assumed;
+        dims(x.m_type, lbs, exts, assumed, loc);
+        if (assumed) unsupported("this array expression is", loc);
+        int64_t n = ASRUtils::get_fixed_size_of_array(x.m_type);
+        if (n < 0 || n > 4096 || (n > 0 && !x.m_data)) {
+            unsupported("this array expression is", loc);
+        }
+        std::string elems = "#[";
+        for (int64_t i = 0; i < n; i++) {
+            if (i) elems += ", ";
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                int k = ASR::down_cast<ASR::Integer_t>(et)->m_kind;
+                int64_t v = 0;
+                if (k == 1) v = static_cast<int8_t*>(x.m_data)[i];
+                else if (k == 2) v = static_cast<int16_t*>(x.m_data)[i];
+                else if (k == 4) v = static_cast<int32_t*>(x.m_data)[i];
+                else v = static_cast<int64_t*>(x.m_data)[i];
+                elems += "FInt.ofInt " + int_lit(v);
+            } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                int k = ASR::down_cast<ASR::Real_t>(et)->m_kind;
+                double v = k == 4 ? static_cast<double>(static_cast<float*>(x.m_data)[i])
+                    : static_cast<double*>(x.m_data)[i];
+                elems += real_lit(v, k, loc);
+            } else if (ASR::is_a<ASR::Logical_t>(*et)) {
+                bool v = static_cast<const bool*>(x.m_data)[i];
+                elems += v ? "true" : "false";
+            } else {
+                unsupported("this array expression is", loc);
+            }
+        }
+        elems += "]";
+        return {"({ lbs := " + int_array(lbs) + ", exts := " + int_array(exts)
+            + ", data := " + elems + " } : " + vtype(x.m_type, loc) + ")", pAtom};
+    }
+
+    Val array_constructor(const ASR::ArrayConstructor_t &x, const Location &loc) {
+        if (x.m_value && ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
+            return array_constant(*ASR::down_cast<ASR::ArrayConstant_t>(x.m_value), loc);
+        }
+        if (x.m_storage_format != ASR::arraystorageType::ColMajor || !is_array(x.m_type)) {
+            unsupported("this array expression is", loc);
+        }
+        ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(x.m_type);
+        if (at->n_dims != 1) unsupported("this array expression is", loc);
+        std::string elems = "#[";
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (is_array(ASRUtils::expr_type(x.m_args[i]))
+                    || ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_args[i])) {
+                unsupported("this array expression is", loc);
+            }
+            if (i) elems += ", ";
+            elems += lower(x.m_args[i]).src;
+        }
+        elems += "]";
+        return {"({ lbs := #[1], exts := #[" + std::to_string(x.n_args)
+            + "], data := " + elems + " } : " + vtype(x.m_type, loc) + ")", pAtom};
     }
 
     bool is_int(ASR::expr_t *e) {
@@ -526,9 +598,18 @@ private:
                 return acc;
             }
         }
-        if (x.n_args == 2 && (f == "modulo" || f == "mod") && is_int(x.m_args[0])) {
+        if (x.n_args == 2 && (f == "modulo" || f == "mod") && is_int(x.m_args[0])
+                && is_int(x.m_args[1])) {
+            int rk = ASR::down_cast<ASR::Integer_t>(x.m_type)->m_kind;
+            std::string rty = type(x.m_type, loc);
+            auto arg_as = [&](ASR::expr_t *e) -> Val {
+                int ak = ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(e))->m_kind;
+                if (ak == rk) return lower(e);
+                return {"(FInt.ofInt " + atom(app("FInt.toInt", {operand(e)}))
+                    + " : " + rty + ")", pAtom};
+            };
             return app(f == "modulo" ? "FInt.modulo" : "FInt.mod",
-                {lower(x.m_args[0]), lower(x.m_args[1])});
+                {arg_as(x.m_args[0]), arg_as(x.m_args[1])});
         }
         // `sign(a, b)`: `|a|` with the sign bit of `b`, so `b = -0` gives
         // `-|a|`, as on every processor with signed zeros.
@@ -595,12 +676,18 @@ private:
     Val lower(ASR::expr_t *e) {
         const Location &loc = e->base.loc;
         if (is_array(ASRUtils::expr_type(e)) && !ASR::is_a<ASR::Var_t>(*e)
-                && !ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                && !ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)
+                && !ASR::is_a<ASR::ArrayConstant_t>(*e)
+                && !ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
             unsupported("this array expression is", loc);
         }
         switch (e->type) {
             case ASR::exprType::ArrayPhysicalCast:
                 return lower(array_var(e));
+            case ASR::exprType::ArrayConstant:
+                return array_constant(*ASR::down_cast<ASR::ArrayConstant_t>(e), loc);
+            case ASR::exprType::ArrayConstructor:
+                return array_constructor(*ASR::down_cast<ASR::ArrayConstructor_t>(e), loc);
             case ASR::exprType::ArrayItem: {
                 auto &x = *ASR::down_cast<ASR::ArrayItem_t>(e);
                 return app("Arr.get", {lower(array_var(x.m_v)), {index(x), pAtom}});
@@ -626,8 +713,18 @@ private:
                 if (!ASR::is_a<ASR::Variable_t>(*s)) unsupported("this name is", loc);
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 if (v->m_storage == ASR::storage_typeType::Parameter) {
-                    if (v->m_value) return lower(v->m_value);
-                    unsupported("this parameter is", loc);
+                    if (!v->m_value) unsupported("this parameter is", loc);
+                    if (is_array(v->m_type)) {
+                        std::vector<std::string> lbs, exts;
+                        bool assumed;
+                        dims(v->m_type, lbs, exts, assumed, loc);
+                        if (assumed) {
+                            return app("Arr.rebase", {lower(v->m_value), {int_array(lbs), pAtom}});
+                        }
+                        return app("Arr.reshape", {lower(v->m_value), {int_array(lbs), pAtom},
+                            {int_array(exts), pAtom}});
+                    }
+                    return lower(v->m_value);
                 }
                 if (v->m_parent_symtab != cur_scope()) {
                     unsupported("a variable from another scope is", loc);
@@ -778,6 +875,33 @@ private:
         unsupported("this stop code is", loc);
     }
 
+    static bool body_has_exit(ASR::stmt_t **body, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::Exit_t>(*s)) return true;
+            if (ASR::is_a<ASR::If_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::If_t>(s);
+                if (body_has_exit(d.m_body, d.n_body) || body_has_exit(d.m_orelse, d.n_orelse)) {
+                    return true;
+                }
+            } else if (ASR::is_a<ASR::Select_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::Select_t>(s);
+                for (size_t j = 0; j < d.n_body; j++) {
+                    ASR::case_stmt_t *c = d.m_body[j];
+                    if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
+                        auto &cs = *ASR::down_cast<ASR::CaseStmt_t>(c);
+                        if (body_has_exit(cs.m_body, cs.n_body)) return true;
+                    } else if (ASR::is_a<ASR::CaseStmt_Range_t>(*c)) {
+                        auto &cs = *ASR::down_cast<ASR::CaseStmt_Range_t>(c);
+                        if (body_has_exit(cs.m_body, cs.n_body)) return true;
+                    }
+                }
+                if (body_has_exit(d.m_default, d.n_default)) return true;
+            }
+        }
+        return false;
+    }
+
     void stmts(ASR::stmt_t **body, size_t n) {
         for (size_t i = 0; i < n; i++) stmt(body[i]);
     }
@@ -879,7 +1003,7 @@ private:
                         && ASR::down_cast<ASR::IntegerConstant_t>(
                             h.m_increment)->m_n == 1);
                 if (!h.m_v || !ASR::is_a<ASR::Var_t>(*h.m_v) || !h.m_start
-                        || !h.m_end || !unit || x.m_name) {
+                        || !h.m_end || x.m_name) {
                     unsupported("this do loop is", loc);
                 }
                 // The index is not declared, so its kind is fixed on `lo`.
@@ -892,29 +1016,149 @@ private:
                 }
                 std::string v = lower(h.m_v).src;
                 if (loop_vars.count(ASRUtils::EXPR2VAR(h.m_v))) {
-                    line("for " + v + " in FInt.range " + lo + " "
-                        + atom(lower(h.m_end)) + " do");
+                    if (unit) {
+                        line("for " + v + " in FInt.range " + lo + " "
+                            + atom(lower(h.m_end)) + " do");
+                    } else {
+                        line("for " + v + " in FInt.rangeStep " + lo + " "
+                            + atom(lower(h.m_end)) + " " + atom(lower(h.m_increment)) + " do");
+                    }
                     ind++;
+                    exit_flags.push_back("");
                     if (x.n_body == 0) line("Pure.pure ()");
                     stmts(x.m_body, x.n_body);
+                    exit_flags.pop_back();
                     ind--;
                     break;
                 }
                 // The `do` variable is an ordinary variable: it takes each
                 // index, and after the loop the first one not executed,
-                // `lo + max(0, hi - lo + 1)`. The bounds are evaluated once.
-                // Temporaries contain `'`, which cannot occur in Fortran names.
+                // `lo + max(0, (hi - lo + step) / step) * step` unless `exit`
+                // left the loop early. The bounds are evaluated once.
                 std::string id = std::to_string(++loop_id);
                 std::string lv = "lo'" + id, hv = "hi'" + id, iv = "i'" + id;
+                bool has_ex = body_has_exit(x.m_body, x.n_body);
+                std::string brk = has_ex ? "brk'" + id : "";
                 line("let " + lv + " : " + ty + " := " + lower(h.m_start).src);
                 line("let " + hv + " : " + ty + " := " + lower(h.m_end).src);
-                line("for " + iv + " in FInt.range " + lv + " " + hv + " do");
+                std::string sv;
+                if (!unit) {
+                    sv = "step'" + id;
+                    line("let " + sv + " : " + ty + " := " + lower(h.m_increment).src);
+                }
+                if (has_ex) line("let mut " + brk + " : Bool := false");
+                if (unit) {
+                    line("for " + iv + " in FInt.range " + lv + " " + hv + " do");
+                } else {
+                    line("for " + iv + " in FInt.rangeStep " + lv + " " + hv + " " + sv + " do");
+                }
                 ind++;
+                exit_flags.push_back(brk);
                 line(v + " := " + iv);
                 stmts(x.m_body, x.n_body);
+                exit_flags.pop_back();
                 ind--;
-                line(v + " := FInt.ofInt (FInt.toInt " + lv + " + Max.max 0 (FInt.toInt " + hv
-                    + " + 1 - FInt.toInt " + lv + "))");
+                std::string post = unit
+                    ? v + " := FInt.ofInt (FInt.toInt " + lv + " + Max.max 0 (FInt.toInt " + hv
+                        + " + 1 - FInt.toInt " + lv + "))"
+                    : v + " := FInt.ofInt (FInt.toInt " + lv + " + (if FInt.toInt " + sv
+                        + " == 0 then 0 else Max.max 0 ((FInt.toInt " + hv + " - FInt.toInt "
+                        + lv + " + FInt.toInt " + sv + ").tdiv (FInt.toInt " + sv
+                        + ")) * FInt.toInt " + sv + "))";
+                if (has_ex) {
+                    line("if !" + brk + " then");
+                    ind++;
+                    line(post);
+                    ind--;
+                } else {
+                    line(post);
+                }
+                break;
+            }
+            case ASR::stmtType::WhileLoop: {
+                auto &x = *ASR::down_cast<ASR::WhileLoop_t>(s);
+                if (x.m_name || x.n_orelse > 0) unsupported("this while loop is", loc);
+                if (cur) cur->uses_while = true;
+                line("while " + lower(x.m_test).src + " do");
+                ind++;
+                exit_flags.push_back("");
+                if (x.n_body == 0) line("Pure.pure ()");
+                stmts(x.m_body, x.n_body);
+                exit_flags.pop_back();
+                ind--;
+                break;
+            }
+            case ASR::stmtType::Exit: {
+                auto &x = *ASR::down_cast<ASR::Exit_t>(s);
+                if (x.m_stmt_name || exit_flags.empty()) unsupported("this exit is", loc);
+                if (!exit_flags.back().empty()) line(exit_flags.back() + " := true");
+                line("break");
+                break;
+            }
+            case ASR::stmtType::Cycle: {
+                auto &x = *ASR::down_cast<ASR::Cycle_t>(s);
+                if (x.m_stmt_name || exit_flags.empty()) unsupported("this cycle is", loc);
+                line("continue");
+                break;
+            }
+            case ASR::stmtType::Select: {
+                auto &x = *ASR::down_cast<ASR::Select_t>(s);
+                if (x.m_name || x.m_enable_fall_through || !is_int(x.m_test)) {
+                    unsupported("this select case is", loc);
+                }
+                std::string id = std::to_string(++loop_id);
+                std::string sv = "sel'" + id;
+                line("let " + sv + " : Int := " + int_expr(x.m_test).src);
+                bool first = true;
+                for (size_t i = 0; i < x.n_body; i++) {
+                    ASR::case_stmt_t *c = x.m_body[i];
+                    std::string cond;
+                    ASR::stmt_t **cbody = nullptr;
+                    size_t n_cbody = 0;
+                    if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
+                        auto &cs = *ASR::down_cast<ASR::CaseStmt_t>(c);
+                        if (cs.m_fall_through || cs.n_test == 0) {
+                            unsupported("this select case is", loc);
+                        }
+                        for (size_t j = 0; j < cs.n_test; j++) {
+                            if (j) cond += " || ";
+                            cond += "(" + sv + " == " + atom(int_expr(cs.m_test[j])) + ")";
+                        }
+                        cbody = cs.m_body;
+                        n_cbody = cs.n_body;
+                    } else if (ASR::is_a<ASR::CaseStmt_Range_t>(*c)) {
+                        auto &cs = *ASR::down_cast<ASR::CaseStmt_Range_t>(c);
+                        if (!cs.m_start && !cs.m_end) unsupported("this select case is", loc);
+                        if (cs.m_start && cs.m_end) {
+                            cond = "decide (" + atom(int_expr(cs.m_start)) + " ≤ " + sv
+                                + ") && decide (" + sv + " ≤ " + atom(int_expr(cs.m_end)) + ")";
+                        } else if (cs.m_start) {
+                            cond = "decide (" + atom(int_expr(cs.m_start)) + " ≤ " + sv + ")";
+                        } else {
+                            cond = "decide (" + sv + " ≤ " + atom(int_expr(cs.m_end)) + ")";
+                        }
+                        cbody = cs.m_body;
+                        n_cbody = cs.n_body;
+                    } else {
+                        unsupported("this select case is", loc);
+                    }
+                    line((first ? "if " : "else if ") + cond + " then");
+                    first = false;
+                    ind++;
+                    if (n_cbody == 0) line("Pure.pure ()");
+                    stmts(cbody, n_cbody);
+                    ind--;
+                }
+                if (x.n_default > 0) {
+                    if (first) {
+                        stmts(x.m_default, x.n_default);
+                    } else {
+                        line("else");
+                        ind++;
+                        stmts(x.m_default, x.n_default);
+                        ind--;
+                    }
+                }
                 break;
             }
             case ASR::stmtType::Return:
@@ -970,6 +1214,22 @@ private:
                 auto &d = *ASR::down_cast<ASR::If_t>(s);
                 collect_loop_vars(d.m_body, d.n_body);
                 collect_loop_vars(d.m_orelse, d.n_orelse);
+            } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::WhileLoop_t>(s);
+                collect_loop_vars(d.m_body, d.n_body);
+            } else if (ASR::is_a<ASR::Select_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::Select_t>(s);
+                for (size_t j = 0; j < d.n_body; j++) {
+                    ASR::case_stmt_t *c = d.m_body[j];
+                    if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
+                        auto &cs = *ASR::down_cast<ASR::CaseStmt_t>(c);
+                        collect_loop_vars(cs.m_body, cs.n_body);
+                    } else if (ASR::is_a<ASR::CaseStmt_Range_t>(*c)) {
+                        auto &cs = *ASR::down_cast<ASR::CaseStmt_Range_t>(c);
+                        collect_loop_vars(cs.m_body, cs.n_body);
+                    }
+                }
+                collect_loop_vars(d.m_default, d.n_default);
             }
         }
     }
@@ -987,10 +1247,20 @@ private:
                 unsupported("a saved local variable is", vloc);
             }
             if (v->m_symbolic_value || v->m_value) {
-                if (!in_program || is_array(v->m_type)) {
+                if (!in_program) {
                     unsupported("an initialized local variable is", vloc);
                 }
                 ASR::expr_t *init = v->m_symbolic_value ? v->m_symbolic_value : v->m_value;
+                if (is_array(v->m_type)) {
+                    std::vector<std::string> lbs, exts;
+                    bool assumed;
+                    dims(v->m_type, lbs, exts, assumed, vloc);
+                    if (assumed) unsupported("this local array is", vloc);
+                    line("let mut " + name(v->m_name, vloc) + " : " + vtype(v->m_type, vloc)
+                        + " := Arr.reshape " + atom(lower(array_var(init))) + " "
+                        + int_array(lbs) + " " + int_array(exts));
+                    continue;
+                }
                 line("let mut " + name(v->m_name, vloc) + " : " + type(v->m_type, vloc)
                     + " := " + lower(init).src);
                 continue;
@@ -1155,7 +1425,7 @@ private:
     }
 
     std::string def(const Proc &p, const std::string &short_name) {
-        std::string kw = p.callees.count(p.fn) ? "partial def " : "def ";
+        std::string kw = (p.callees.count(p.fn) || p.uses_while) ? "partial def " : "def ";
         return kw + short_name + " {K : Kinds} [" + level_class(p.level) + " K]"
             + p.sig + " := Id.run do\n" + p.body + "\n";
     }
