@@ -1371,6 +1371,7 @@ RUN(NAME array_constructor_17 FILE array_constructor_15 LABELS gfortran llvm EXT
 RUN(NAME array_constructor_18 LABELS gfortran llvm) # real(16) arrays from default-real, real(8) and integer constants
 RUN(NAME array_constructor_20 LABELS gfortran llvm) # implied-do over derived-type function result nested in a function argument
 RUN(NAME array_constructor_char_len_01 LABELS gfortran llvm) # a character type-spec cuts or pads every element
+RUN(NAME array_constructor_char_len_02 LABELS llvm) # constant elements take a runtime type-spec length; GFortran rejects it ("size of variable is too large"), flang and ifx accept it
 RUN(NAME array_constant_char_assumed_len_01 LABELS gfortran llvm) # constant array assigned to an explicit-shape character(len=*) dummy
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
