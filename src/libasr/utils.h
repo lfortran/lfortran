@@ -221,6 +221,10 @@ struct CompilerOptions {
         It is overridden by `generate_object_code` option.
     */
     bool generate_code_for_global_procedures = false;
+    // The driver retained the definitions of a source module while compiling
+    // global procedures or BLOCK DATA from the same file. A program that
+    // uses that module emits the selected definitions.
+    bool retained_module_variables_are_weak = false;
     bool show_warnings = true;
     bool show_style_suggestions = true;
     bool logical_casting = false;
