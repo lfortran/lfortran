@@ -1,0 +1,1150 @@
+#include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_function_registry_util.h>
+#include <libasr/pass/intrinsic_impure_functions.h>
+
+#include <cmath>
+#include <map>
+#include <string>
+#include <tuple>
+
+namespace LCompilers {
+
+namespace ASRUtils {
+
+#define INTRINSIC_NAME_CASE(X)                                                  \
+    case (static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::X)) : {   \
+        return #X;                                                              \
+    }
+
+std::string get_intrinsic_name(int64_t x) {
+    switch (x) {
+        INTRINSIC_NAME_CASE(ObjectType)
+        INTRINSIC_NAME_CASE(Kind)
+        INTRINSIC_NAME_CASE(Sin)
+        INTRINSIC_NAME_CASE(Cos)
+        INTRINSIC_NAME_CASE(Tan)
+        INTRINSIC_NAME_CASE(Asin)
+        INTRINSIC_NAME_CASE(Asind)
+        INTRINSIC_NAME_CASE(Acosd)
+        INTRINSIC_NAME_CASE(Atand)
+        INTRINSIC_NAME_CASE(Sind)
+        INTRINSIC_NAME_CASE(Cosd)
+        INTRINSIC_NAME_CASE(Tand)
+        INTRINSIC_NAME_CASE(Acos)
+        INTRINSIC_NAME_CASE(Atan)
+        INTRINSIC_NAME_CASE(Sinh)
+        INTRINSIC_NAME_CASE(Cosh)
+        INTRINSIC_NAME_CASE(Tanh)
+        INTRINSIC_NAME_CASE(Atan2)
+        INTRINSIC_NAME_CASE(Atan2d)
+        INTRINSIC_NAME_CASE(Asinh)
+        INTRINSIC_NAME_CASE(Acosh)
+        INTRINSIC_NAME_CASE(Atanh)
+        INTRINSIC_NAME_CASE(Sinpi)
+        INTRINSIC_NAME_CASE(Cospi)
+        INTRINSIC_NAME_CASE(Tanpi)
+        INTRINSIC_NAME_CASE(Asinpi)
+        INTRINSIC_NAME_CASE(Acospi)
+        INTRINSIC_NAME_CASE(Atanpi)
+        INTRINSIC_NAME_CASE(Atan2pi)
+        INTRINSIC_NAME_CASE(Erf)
+        INTRINSIC_NAME_CASE(Erfc)
+        INTRINSIC_NAME_CASE(ErfcScaled)
+        INTRINSIC_NAME_CASE(Gamma)
+        INTRINSIC_NAME_CASE(Log)
+        INTRINSIC_NAME_CASE(Log10)
+        INTRINSIC_NAME_CASE(Logical)
+        INTRINSIC_NAME_CASE(LogGamma)
+        INTRINSIC_NAME_CASE(Trunc)
+        INTRINSIC_NAME_CASE(Fix)
+        INTRINSIC_NAME_CASE(Abs)
+        INTRINSIC_NAME_CASE(Aimag)
+        INTRINSIC_NAME_CASE(Dreal)
+        INTRINSIC_NAME_CASE(Exp)
+        INTRINSIC_NAME_CASE(Exp2)
+        INTRINSIC_NAME_CASE(Expm1)
+        INTRINSIC_NAME_CASE(FMA)
+        INTRINSIC_NAME_CASE(FlipSign)
+        INTRINSIC_NAME_CASE(FloorDiv)
+        INTRINSIC_NAME_CASE(Mod)
+        INTRINSIC_NAME_CASE(Trailz)
+        INTRINSIC_NAME_CASE(Isnan)
+        INTRINSIC_NAME_CASE(Nearest)
+        INTRINSIC_NAME_CASE(CompilerVersion)
+        INTRINSIC_NAME_CASE(CommandArgumentCount)
+        INTRINSIC_NAME_CASE(Rand)
+        INTRINSIC_NAME_CASE(ThisImage)
+        INTRINSIC_NAME_CASE(NumImages)
+        INTRINSIC_NAME_CASE(Spacing)
+        INTRINSIC_NAME_CASE(Modulo)
+        INTRINSIC_NAME_CASE(OutOfRange)
+        INTRINSIC_NAME_CASE(BesselJ0)
+        INTRINSIC_NAME_CASE(BesselJ1)
+        INTRINSIC_NAME_CASE(BesselJN)
+        INTRINSIC_NAME_CASE(BesselY0)
+        INTRINSIC_NAME_CASE(BesselY1)
+        INTRINSIC_NAME_CASE(BesselYN)
+        INTRINSIC_NAME_CASE(SameTypeAs)
+        INTRINSIC_NAME_CASE(ExtendsTypeOf)
+        INTRINSIC_NAME_CASE(Merge)
+        INTRINSIC_NAME_CASE(Mergebits)
+        INTRINSIC_NAME_CASE(Shiftr)
+        INTRINSIC_NAME_CASE(Rshift)
+        INTRINSIC_NAME_CASE(Shiftl)
+        INTRINSIC_NAME_CASE(Dshiftl)
+        INTRINSIC_NAME_CASE(Dshiftr)
+        INTRINSIC_NAME_CASE(Ishft)
+        INTRINSIC_NAME_CASE(Bgt)
+        INTRINSIC_NAME_CASE(Blt)
+        INTRINSIC_NAME_CASE(Bge)
+        INTRINSIC_NAME_CASE(Ble)
+        INTRINSIC_NAME_CASE(Lgt)
+        INTRINSIC_NAME_CASE(Llt)
+        INTRINSIC_NAME_CASE(Lge)
+        INTRINSIC_NAME_CASE(Lle)
+        INTRINSIC_NAME_CASE(Exponent)
+        INTRINSIC_NAME_CASE(Fraction)
+        INTRINSIC_NAME_CASE(SetExponent)
+        INTRINSIC_NAME_CASE(Not)
+        INTRINSIC_NAME_CASE(Iand)
+        INTRINSIC_NAME_CASE(And)
+        INTRINSIC_NAME_CASE(Ior)
+        INTRINSIC_NAME_CASE(Or)
+        INTRINSIC_NAME_CASE(Ieor)
+        INTRINSIC_NAME_CASE(Xor)
+        INTRINSIC_NAME_CASE(Ibclr)
+        INTRINSIC_NAME_CASE(Ibset)
+        INTRINSIC_NAME_CASE(Btest)
+        INTRINSIC_NAME_CASE(Ibits)
+        INTRINSIC_NAME_CASE(Leadz)
+        INTRINSIC_NAME_CASE(ToLowerCase)
+        INTRINSIC_NAME_CASE(Digits)
+        INTRINSIC_NAME_CASE(Rrspacing)
+        INTRINSIC_NAME_CASE(Repeat)
+        INTRINSIC_NAME_CASE(StringContainsSet)
+        INTRINSIC_NAME_CASE(StringFindSet)
+        INTRINSIC_NAME_CASE(SubstrIndex)
+        INTRINSIC_NAME_CASE(Range)
+        INTRINSIC_NAME_CASE(Radix)
+        INTRINSIC_NAME_CASE(StorageSize)
+        INTRINSIC_NAME_CASE(Hypot)
+        INTRINSIC_NAME_CASE(SelectedIntKind)
+        INTRINSIC_NAME_CASE(SelectedRealKind)
+        INTRINSIC_NAME_CASE(SelectedCharKind)
+        INTRINSIC_NAME_CASE(SelectedLogicalKind)
+        INTRINSIC_NAME_CASE(Present)
+        INTRINSIC_NAME_CASE(Adjustl)
+        INTRINSIC_NAME_CASE(Adjustr)
+        INTRINSIC_NAME_CASE(StringConcat)
+        INTRINSIC_NAME_CASE(StringLenTrim)
+        INTRINSIC_NAME_CASE(StringTrim)
+        INTRINSIC_NAME_CASE(Ichar)
+        INTRINSIC_NAME_CASE(Char)
+        INTRINSIC_NAME_CASE(Achar)
+        INTRINSIC_NAME_CASE(Iachar)
+        INTRINSIC_NAME_CASE(MinExponent)
+        INTRINSIC_NAME_CASE(MaxExponent)
+        INTRINSIC_NAME_CASE(Ishftc)
+        INTRINSIC_NAME_CASE(ListIndex)
+        INTRINSIC_NAME_CASE(Partition)
+        INTRINSIC_NAME_CASE(ListReverse)
+        INTRINSIC_NAME_CASE(ListPop)
+        INTRINSIC_NAME_CASE(ListReserve)
+        INTRINSIC_NAME_CASE(DictKeys)
+        INTRINSIC_NAME_CASE(DictValues)
+        INTRINSIC_NAME_CASE(SetAdd)
+        INTRINSIC_NAME_CASE(SetRemove)
+        INTRINSIC_NAME_CASE(Max)
+        INTRINSIC_NAME_CASE(Min)
+        INTRINSIC_NAME_CASE(Sign)
+        INTRINSIC_NAME_CASE(LCoBound)
+        INTRINSIC_NAME_CASE(UCoBound)
+        INTRINSIC_NAME_CASE(SignFromValue)
+        INTRINSIC_NAME_CASE(Nint)
+        INTRINSIC_NAME_CASE(Idnint)
+        INTRINSIC_NAME_CASE(Aint)
+        INTRINSIC_NAME_CASE(Popcnt)
+        INTRINSIC_NAME_CASE(Poppar)
+        INTRINSIC_NAME_CASE(Real)
+        INTRINSIC_NAME_CASE(Cmplx)
+        INTRINSIC_NAME_CASE(Dim)
+        INTRINSIC_NAME_CASE(Anint)
+        INTRINSIC_NAME_CASE(Sqrt)
+        INTRINSIC_NAME_CASE(Scale)
+        INTRINSIC_NAME_CASE(Sngl)
+        INTRINSIC_NAME_CASE(Ifix)
+        INTRINSIC_NAME_CASE(Idint)
+        INTRINSIC_NAME_CASE(Floor)
+        INTRINSIC_NAME_CASE(Ceiling)
+        INTRINSIC_NAME_CASE(Maskr)
+        INTRINSIC_NAME_CASE(Maskl)
+        INTRINSIC_NAME_CASE(Epsilon)
+        INTRINSIC_NAME_CASE(Precision)
+        INTRINSIC_NAME_CASE(Tiny)
+        INTRINSIC_NAME_CASE(BitSize)
+        INTRINSIC_NAME_CASE(NewLine)
+        INTRINSIC_NAME_CASE(Conjg)
+        INTRINSIC_NAME_CASE(Huge)
+        INTRINSIC_NAME_CASE(Loc)
+        INTRINSIC_NAME_CASE(Dprod)
+        INTRINSIC_NAME_CASE(SymbolicSymbol)
+        INTRINSIC_NAME_CASE(SymbolicAdd)
+        INTRINSIC_NAME_CASE(SymbolicSub)
+        INTRINSIC_NAME_CASE(SymbolicMul)
+        INTRINSIC_NAME_CASE(SymbolicDiv)
+        INTRINSIC_NAME_CASE(SymbolicPow)
+        INTRINSIC_NAME_CASE(SymbolicPi)
+        INTRINSIC_NAME_CASE(SymbolicE)
+        INTRINSIC_NAME_CASE(SymbolicInteger)
+        INTRINSIC_NAME_CASE(SymbolicDiff)
+        INTRINSIC_NAME_CASE(SymbolicExpand)
+        INTRINSIC_NAME_CASE(SymbolicSin)
+        INTRINSIC_NAME_CASE(SymbolicCos)
+        INTRINSIC_NAME_CASE(SymbolicLog)
+        INTRINSIC_NAME_CASE(SymbolicExp)
+        INTRINSIC_NAME_CASE(SymbolicAbs)
+        INTRINSIC_NAME_CASE(SymbolicHasSymbolQ)
+        INTRINSIC_NAME_CASE(SymbolicAddQ)
+        INTRINSIC_NAME_CASE(SymbolicMulQ)
+        INTRINSIC_NAME_CASE(SymbolicPowQ)
+        INTRINSIC_NAME_CASE(SymbolicLogQ)
+        INTRINSIC_NAME_CASE(SymbolicSinQ)
+        INTRINSIC_NAME_CASE(SymbolicGetArgument)
+        INTRINSIC_NAME_CASE(Int)
+        default : {
+            throw LCompilersException("pickle: intrinsic_id not implemented");
+        }
+    }
+}
+
+namespace IntrinsicElementalFunctionRegistry {
+
+    static const std::map<int64_t,
+        std::tuple<impl_function,
+                   verify_function,
+                   create_intrinsic_function>>& get_intrinsic_function_by_id_db() {
+        static const std::map<int64_t,
+            std::tuple<impl_function,
+                       verify_function,
+                       create_intrinsic_function>> intrinsic_function_by_id_db = {
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ObjectType),
+            {nullptr, &ObjectType::verify_args, &ObjectType::create_ObjectType}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Gamma),
+            {&Gamma::instantiate_Gamma, &Gamma::verify_args, &Gamma::create_Gamma}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Log10),
+            {&Log10::instantiate_Log10, &Log10::verify_args, &Log10::create_Log10}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::LogGamma),
+            {&LogGamma::instantiate_LogGamma, &LogGamma::verify_args, &LogGamma::create_LogGamma}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Erf),
+            {&Erf::instantiate_Erf, &Erf::verify_args, &Erf::create_Erf}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Erfc),
+            {&Erfc::instantiate_Erfc, &Erfc::verify_args, &Erfc::create_Erfc}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ErfcScaled),
+            {&ErfcScaled::instantiate_ErfcScaled, &ErfcScaled::verify_args, &ErfcScaled::create_ErfcScaled}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Trunc),
+            {&Trunc::instantiate_Trunc, &Trunc::verify_args, &Trunc::create_Trunc}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Fix),
+            {&Fix::instantiate_Fix, &Fix::verify_args, &Fix::create_Fix}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sin),
+            {&Sin::instantiate_Sin, &Sin::verify_args, &Sin::create_Sin}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::OutOfRange),
+            {&OutOfRange::instantiate_OutOfRange, &OutOfRange::verify_args, &OutOfRange::create_OutOfRange}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
+            {&BesselJ0::instantiate_BesselJ0, &BesselJ0::verify_args, &BesselJ0::create_BesselJ0}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
+            {&BesselJ1::instantiate_BesselJ1, &BesselJ1::verify_args, &BesselJ1::create_BesselJ1}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY0),
+            {&BesselY0::instantiate_BesselY0, &BesselY0::verify_args, &BesselY0::create_BesselY0}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselY1),
+            {&BesselY1::instantiate_BesselY1, &BesselY1::verify_args, &BesselY1::create_BesselY1}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asind),
+            {&Asind::instantiate_Asind, &Asind::verify_args, &Asind::create_Asind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Acosd),
+            {&Acosd::instantiate_Acosd, &Acosd::verify_args, &Acosd::create_Acosd}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atand),
+            {&Atand::instantiate_Atand, &Atand::verify_args, &Atand::create_Atand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sind),
+            {&Sind::instantiate_Sind, &Sind::verify_args, &Sind::create_Sind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cosd),
+            {&Cosd::instantiate_Cosd, &Cosd::verify_args, &Cosd::create_Cosd}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tand),
+            {&Tand::instantiate_Tand, &Tand::verify_args, &Tand::create_Tand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cos),
+            {&Cos::instantiate_Cos, &Cos::verify_args, &Cos::create_Cos}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tan),
+            {&Tan::instantiate_Tan, &Tan::verify_args, &Tan::create_Tan}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asin),
+            {&Asin::instantiate_Asin, &Asin::verify_args, &Asin::create_Asin}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Acos),
+            {&Acos::instantiate_Acos, &Acos::verify_args, &Acos::create_Acos}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan),
+            {&Atan::instantiate_Atan, &Atan::verify_args, &Atan::create_Atan}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sinh),
+            {&Sinh::instantiate_Sinh, &Sinh::verify_args, &Sinh::create_Sinh}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cosh),
+            {&Cosh::instantiate_Cosh, &Cosh::verify_args, &Cosh::create_Cosh}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tanh),
+            {&Tanh::instantiate_Tanh, &Tanh::verify_args, &Tanh::create_Tanh}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2),
+            {&Atan2::instantiate_Atan2, &Atan2::verify_args, &Atan2::create_Atan2}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2d),
+            {&Atan2d::instantiate_Atan2d, &Atan2d::verify_args, &Atan2d::create_Atan2d}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asinh),
+            {&Asinh::instantiate_Asinh, &Asinh::verify_args, &Asinh::create_Asinh}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Acosh),
+            {&Acosh::instantiate_Acosh, &Acosh::verify_args, &Acosh::create_Acosh}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atanh),
+            {&Atanh::instantiate_Atanh, &Atanh::verify_args, &Atanh::create_Atanh}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sinpi),
+            {&Sinpi::instantiate_Sinpi, &Sinpi::verify_args, &Sinpi::create_Sinpi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cospi),
+            {&Cospi::instantiate_Cospi, &Cospi::verify_args, &Cospi::create_Cospi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tanpi),
+            {&Tanpi::instantiate_Tanpi, &Tanpi::verify_args, &Tanpi::create_Tanpi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Asinpi),
+            {&Asinpi::instantiate_Asinpi, &Asinpi::verify_args, &Asinpi::create_Asinpi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Acospi),
+            {&Acospi::instantiate_Acospi, &Acospi::verify_args, &Acospi::create_Acospi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atanpi),
+            {&Atanpi::instantiate_Atanpi, &Atanpi::verify_args, &Atanpi::create_Atanpi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Atan2pi),
+            {&Atan2pi::instantiate_Atan2pi, &Atan2pi::verify_args, &Atan2pi::create_Atan2pi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Log),
+            {&Log::instantiate_Log, &Log::verify_args, &Log::create_Log}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Logical),
+            {&Logical::instantiate_Logical, &Logical::verify_args, &Logical::create_Logical}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Exp),
+            {&Exp::instantiate_Exp, &Exp::verify_args, &Exp::create_Exp}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Exp2),
+            {nullptr, &Exp2::verify_args, &Exp2::create_Exp2}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Expm1),
+            {nullptr, &Expm1::verify_args, &Expm1::create_Expm1}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::FMA),
+            {&FMA::instantiate_FMA, &FMA::verify_args, &FMA::create_FMA}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::FlipSign),
+            {&FlipSign::instantiate_FlipSign, &FlipSign::verify_args, &FlipSign::create_FlipSign}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::FloorDiv),
+            {&FloorDiv::instantiate_FloorDiv, &FloorDiv::verify_args, &FloorDiv::create_FloorDiv}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Mod),
+            {&Mod::instantiate_Mod, &Mod::verify_args, &Mod::create_Mod}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Trailz),
+            {&Trailz::instantiate_Trailz, &Trailz::verify_args, &Trailz::create_Trailz}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Isnan),
+            {&Isnan::instantiate_Isnan, &Isnan::verify_args, &Isnan::create_Isnan}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Nearest),
+            {&Nearest::instantiate_Nearest, &Nearest::verify_args, &Nearest::create_Nearest}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
+            {nullptr, &CompilerVersion::verify_args, &CompilerVersion::create_CompilerVersion}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
+            {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args, &CommandArgumentCount::create_CommandArgumentCount}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
+            {&Rand::instantiate_Rand, &Rand::verify_args, &Rand::create_Rand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+            {nullptr, &ThisImage::verify_args, &ThisImage::create_ThisImage}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+            {nullptr, &NumImages::verify_args, &NumImages::create_NumImages}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
+            {&Spacing::instantiate_Spacing, &Spacing::verify_args, &Spacing::create_Spacing}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
+            {&Modulo::instantiate_Modulo, &Modulo::verify_args, &Modulo::create_Modulo}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJN),
+            {&BesselJN::instantiate_BesselJN, &BesselJN::verify_args, &BesselJN::create_BesselJN}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
+            {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args, &BesselYN::create_BesselYN}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
+            {nullptr, &SameTypeAs::verify_args, &SameTypeAs::create_SameTypeAs}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ExtendsTypeOf),
+            {nullptr, &ExtendsTypeOf::verify_args, &ExtendsTypeOf::create_ExtendsTypeOf}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
+            {&Merge::instantiate_Merge, &Merge::verify_args, &Merge::create_Merge}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
+            {&Mergebits::instantiate_Mergebits, &Mergebits::verify_args, &Mergebits::create_Mergebits}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
+            {&Shiftr::instantiate_Shiftr, &Shiftr::verify_args, &Shiftr::create_Shiftr}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustl),
+            {&Adjustl::instantiate_Adjustl, &Adjustl::verify_args, &Adjustl::create_Adjustl}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
+            {&Adjustr::instantiate_Adjustr, &Adjustr::verify_args, &Adjustr::create_Adjustr}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringConcat),
+            {&StringConcat::instantiate_StringConcat, &StringConcat::verify_args, &StringConcat::create_StringConcat}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
+            {&StringLenTrim::instantiate_StringLenTrim, &StringLenTrim::verify_args, &StringLenTrim::create_StringLenTrim}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
+            {&StringTrim::instantiate_StringTrim, &StringTrim::verify_args, &StringTrim::create_StringTrim}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
+            {&Ichar::instantiate_Ichar, &Ichar::verify_args, &Ichar::create_Ichar}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
+            {&Char::instantiate_Char, &Char::verify_args, &Char::create_Char}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Achar),
+            {&Achar::instantiate_Achar, &Achar::verify_args, &Achar::create_Achar}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Iachar),
+            {&Iachar::instantiate_Iachar, &Iachar::verify_args, &Iachar::create_Iachar}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rshift),
+            {&Rshift::instantiate_Rshift, &Rshift::verify_args, &Rshift::create_Rshift}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftl),
+            {&Shiftl::instantiate_Shiftl, &Shiftl::verify_args, &Shiftl::create_Shiftl}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftl),
+           {&Dshiftl::instantiate_Dshiftl, &Dshiftl::verify_args, &Dshiftl::create_Dshiftl}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dshiftr),
+            {&Dshiftr::instantiate_Dshiftr, &Dshiftr::verify_args, &Dshiftr::create_Dshiftr}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ishft),
+            {&Ishft::instantiate_Ishft, &Ishft::verify_args, &Ishft::create_Ishft}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Bgt),
+            {&Bgt::instantiate_Bgt, &Bgt::verify_args, &Bgt::create_Bgt}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Blt),
+            {&Blt::instantiate_Blt, &Blt::verify_args, &Blt::create_Blt}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Bge),
+            {&Bge::instantiate_Bge, &Bge::verify_args, &Bge::create_Bge}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Exponent),
+            {&Exponent::instantiate_Exponent, &Exponent::verify_args, &Exponent::create_Exponent}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Fraction),
+            {&Fraction::instantiate_Fraction, &Fraction::verify_args, &Fraction::create_Fraction}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SetExponent),
+            {&SetExponent::instantiate_SetExponent, &SetExponent::verify_args, &SetExponent::create_SetExponent}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ble),
+            {&Ble::instantiate_Ble, &Ble::verify_args, &Ble::create_Ble}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lgt),
+            {&Lgt::instantiate_Lgt, &Lgt::verify_args, &Lgt::create_Lgt}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Llt),
+            {&Llt::instantiate_Llt, &Llt::verify_args, &Llt::create_Llt}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lge),
+            {&Lge::instantiate_Lge, &Lge::verify_args, &Lge::create_Lge}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Lle),
+            {&Lle::instantiate_Lle, &Lle::verify_args, &Lle::create_Lle}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Not),
+            {&Not::instantiate_Not, &Not::verify_args, &Not::create_Not}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
+            {&Iand::instantiate_Iand, &Iand::verify_args, &Iand::create_Iand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            {&And::instantiate_And, &And::verify_args, &And::create_And}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
+            {&Ior::instantiate_Ior, &Ior::verify_args, &Ior::create_Ior}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            {&Or::instantiate_Or, &Or::verify_args, &Or::create_Or}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
+            {&Ieor::instantiate_Ieor, &Ieor::verify_args, &Ieor::create_Ieor}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            {&Xor::instantiate_Xor, &Xor::verify_args, &Xor::create_Xor}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
+            {&Ibclr::instantiate_Ibclr, &Ibclr::verify_args, &Ibclr::create_Ibclr}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
+            {&Btest::instantiate_Btest, &Btest::verify_args, &Btest::create_Btest}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
+            {&Ibset::instantiate_Ibset, &Ibset::verify_args, &Ibset::create_Ibset}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ibits),
+            {&Ibits::instantiate_Ibits, &Ibits::verify_args, &Ibits::create_Ibits}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Leadz),
+            {&Leadz::instantiate_Leadz, &Leadz::verify_args, &Leadz::create_Leadz}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ToLowerCase),
+            {&ToLowerCase::instantiate_ToLowerCase, &ToLowerCase::verify_args, &ToLowerCase::create_ToLowerCase}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Hypot),
+            {&Hypot::instantiate_Hypot, &Hypot::verify_args, &Hypot::create_Hypot}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Kind),
+            {nullptr, &Kind::verify_args, &Kind::create_Kind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Digits),
+            {&Digits::instantiate_Digits, &Digits::verify_args, &Digits::create_Digits}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rrspacing),
+            {&Rrspacing::instantiate_Rrspacing, &Rrspacing::verify_args, &Rrspacing::create_Rrspacing}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Repeat),
+            {&Repeat::instantiate_Repeat, &Repeat::verify_args, &Repeat::create_Repeat}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringContainsSet),
+            {&StringContainsSet::instantiate_StringContainsSet, &StringContainsSet::verify_args, &StringContainsSet::create_StringContainsSet}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringFindSet),
+            {&StringFindSet::instantiate_StringFindSet, &StringFindSet::verify_args, &StringFindSet::create_StringFindSet}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SubstrIndex),
+            {&SubstrIndex::instantiate_SubstrIndex, &SubstrIndex::verify_args, &SubstrIndex::create_SubstrIndex}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::MinExponent),
+            {nullptr, &MinExponent::verify_args, &MinExponent::create_MinExponent}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::MaxExponent),
+            {nullptr, &MaxExponent::verify_args, &MaxExponent::create_MaxExponent}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Abs),
+            {&Abs::instantiate_Abs, &Abs::verify_args, &Abs::create_Abs}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Aimag),
+            {&Aimag::instantiate_Aimag, &Aimag::verify_args, &Aimag::create_Aimag}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dreal),
+            {&Dreal::instantiate_Dreal, &Dreal::verify_args, &Dreal::create_Dreal}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Partition),
+            {&Partition::instantiate_Partition, &Partition::verify_args, nullptr}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ListIndex),
+            {nullptr, &ListIndex::verify_args, &ListIndex::create_ListIndex}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ListReverse),
+            {nullptr, &ListReverse::verify_args, &ListReverse::create_ListReverse}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::DictKeys),
+            {nullptr, &DictKeys::verify_args, &DictKeys::create_DictKeys}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::DictValues),
+            {nullptr, &DictValues::verify_args, &DictValues::create_DictValues}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ListPop),
+            {nullptr, &ListPop::verify_args, &ListPop::create_ListPop}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ListReserve),
+            {nullptr, &ListReserve::verify_args, &ListReserve::create_ListReserve}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SetAdd),
+            {nullptr, &SetAdd::verify_args, &SetAdd::create_SetAdd}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SetRemove),
+            {nullptr, &SetRemove::verify_args, &SetRemove::create_SetRemove}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+            {&Max::instantiate_Max, &Max::verify_args, &Max::create_Max}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Min),
+            {&Min::instantiate_Min, &Min::verify_args, &Min::create_Min}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sign),
+            {&Sign::instantiate_Sign, &Sign::verify_args, &Sign::create_Sign}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Radix),
+            {nullptr, &Radix::verify_args, &Radix::create_Radix}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StorageSize),
+            {&StorageSize::instantiate_StorageSize, &StorageSize::verify_args, &StorageSize::create_StorageSize}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Scale),
+            {&Scale::instantiate_Scale, &Scale::verify_args, &Scale::create_Scale}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dprod),
+            {&Dprod::instantiate_Dprod, &Dprod::verify_args, &Dprod::create_Dprod}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Range),
+            {nullptr, &Range::verify_args, &Range::create_Range}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Aint),
+            {&Aint::instantiate_Aint, &Aint::verify_args, &Aint::create_Aint}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Popcnt),
+            {&Popcnt::instantiate_Popcnt, &Popcnt::verify_args, &Popcnt::create_Popcnt}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Poppar),
+            {&Poppar::instantiate_Poppar, &Poppar::verify_args, &Poppar::create_Poppar}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Real),
+            {&Real::instantiate_Real, &Real::verify_args, &Real::create_Real}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Cmplx),
+            {&Cmplx::instantiate_Cmplx, &Cmplx::verify_args, &Cmplx::create_Cmplx}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
+            {&Nint::instantiate_Nint, &Nint::verify_args, &Nint::create_Nint}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
+            {&Idnint::instantiate_Idnint, &Idnint::verify_args, &Idnint::create_Idnint}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
+            {&Anint::instantiate_Anint, &Anint::verify_args, &Anint::create_Anint}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
+            {&Dim::instantiate_Dim, &Dim::verify_args, &Dim::create_Dim}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Floor),
+            {&Floor::instantiate_Floor, &Floor::verify_args, &Floor::create_Floor}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ceiling),
+            {&Ceiling::instantiate_Ceiling, &Ceiling::verify_args, &Ceiling::create_Ceiling}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskr),
+            {&Maskr::instantiate_Maskr, &Maskr::verify_args, &Maskr::create_Maskr}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Maskl),
+            {&Maskl::instantiate_Maskl, &Maskl::verify_args, &Maskl::create_Maskl}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sqrt),
+            {&Sqrt::instantiate_Sqrt, &Sqrt::verify_args, &Sqrt::create_Sqrt}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Sngl),
+            {&Sngl::instantiate_Sngl, &Sngl::verify_args, &Sngl::create_Sngl}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ifix),
+            {&Ifix::instantiate_Ifix, &Ifix::verify_args, &Ifix::create_Ifix}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Idint),
+            {&Idint::instantiate_Idint, &Idint::verify_args, &Idint::create_Idint}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Ishftc),
+            {&Ishftc::instantiate_Ishftc, &Ishftc::verify_args, &Ishftc::create_Ishftc}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Conjg),
+            {&Conjg::instantiate_Conjg, &Conjg::verify_args, &Conjg::create_Conjg}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SignFromValue),
+            {&SignFromValue::instantiate_SignFromValue, &SignFromValue::verify_args, &SignFromValue::create_SignFromValue}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Epsilon),
+            {nullptr, &UnaryIntrinsicFunction::verify_args, &Epsilon::create_Epsilon}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Precision),
+            {nullptr, &Precision::verify_args, &Precision::create_Precision}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Tiny),
+            {nullptr, &UnaryIntrinsicFunction::verify_args, &Tiny::create_Tiny}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::BitSize),
+            {nullptr, &UnaryIntrinsicFunction::verify_args, &BitSize::create_BitSize}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NewLine),
+            {nullptr, &UnaryIntrinsicFunction::verify_args, &NewLine::create_NewLine}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
+            {nullptr, &UnaryIntrinsicFunction::verify_args, &Huge::create_Huge}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Loc),
+            {nullptr, &UnaryIntrinsicFunction::verify_args, &Loc::create_Loc}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
+            {&SelectedIntKind::instantiate_SelectedIntKind, &SelectedIntKind::verify_args, &SelectedIntKind::create_SelectedIntKind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            {&Present::instantiate_Present, &Present::verify_args, &Present::create_Present}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
+            {&SelectedRealKind::instantiate_SelectedRealKind, &SelectedRealKind::verify_args, &SelectedRealKind::create_SelectedRealKind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
+            {&SelectedCharKind::instantiate_SelectedCharKind, &SelectedCharKind::verify_args, &SelectedCharKind::create_SelectedCharKind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedLogicalKind),
+            {&SelectedLogicalKind::instantiate_SelectedLogicalKind, &SelectedLogicalKind::verify_args, &SelectedLogicalKind::create_SelectedLogicalKind}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
+            {nullptr, &SymbolicSymbol::verify_args, &SymbolicSymbol::create_SymbolicSymbol}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
+            {nullptr, &SymbolicAdd::verify_args, &SymbolicAdd::create_SymbolicAdd}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSub),
+            {nullptr, &SymbolicSub::verify_args, &SymbolicSub::create_SymbolicSub}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicMul),
+            {nullptr, &SymbolicMul::verify_args, &SymbolicMul::create_SymbolicMul}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicDiv),
+            {nullptr, &SymbolicDiv::verify_args, &SymbolicDiv::create_SymbolicDiv}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicPow),
+            {nullptr, &SymbolicPow::verify_args, &SymbolicPow::create_SymbolicPow}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicPi),
+            {nullptr, &SymbolicPi::verify_args, &SymbolicPi::create_SymbolicPi}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicE),
+            {nullptr, &SymbolicE::verify_args, &SymbolicE::create_SymbolicE}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicInteger),
+            {nullptr, &SymbolicInteger::verify_args, &SymbolicInteger::create_SymbolicInteger}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicDiff),
+            {nullptr, &SymbolicDiff::verify_args, &SymbolicDiff::create_SymbolicDiff}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicExpand),
+            {nullptr, &SymbolicExpand::verify_args, &SymbolicExpand::create_SymbolicExpand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSin),
+            {nullptr, &SymbolicSin::verify_args, &SymbolicSin::create_SymbolicSin}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicCos),
+            {nullptr, &SymbolicCos::verify_args, &SymbolicCos::create_SymbolicCos}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicLog),
+            {nullptr, &SymbolicLog::verify_args, &SymbolicLog::create_SymbolicLog}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicExp),
+            {nullptr, &SymbolicExp::verify_args, &SymbolicExp::create_SymbolicExp}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAbs),
+            {nullptr, &SymbolicAbs::verify_args, &SymbolicAbs::create_SymbolicAbs}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicHasSymbolQ),
+            {nullptr, &SymbolicHasSymbolQ::verify_args, &SymbolicHasSymbolQ::create_SymbolicHasSymbolQ}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAddQ),
+            {nullptr, &SymbolicAddQ::verify_args, &SymbolicAddQ::create_SymbolicAddQ}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicMulQ),
+            {nullptr, &SymbolicMulQ::verify_args, &SymbolicMulQ::create_SymbolicMulQ}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicPowQ),
+            {nullptr, &SymbolicPowQ::verify_args, &SymbolicPowQ::create_SymbolicPowQ}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicLogQ),
+            {nullptr, &SymbolicLogQ::verify_args, &SymbolicLogQ::create_SymbolicLogQ}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSinQ),
+            {nullptr, &SymbolicSinQ::verify_args, &SymbolicSinQ::create_SymbolicSinQ}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicGetArgument),
+            {nullptr, &SymbolicGetArgument::verify_args, &SymbolicGetArgument::create_SymbolicGetArgument}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
+            {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args, &CommandArgumentCount::create_CommandArgumentCount}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Rand),
+            {&Rand::instantiate_Rand, &Rand::verify_args, &Rand::create_Rand}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
+            {nullptr, &ThisImage::verify_args, &ThisImage::create_ThisImage}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
+            {nullptr, &NumImages::verify_args, &NumImages::create_NumImages}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::LCoBound),
+            {nullptr, &LCoBound::verify_args, &LCoBound::create_LCoBound}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::UCoBound),
+            {nullptr, &UCoBound::verify_args, &UCoBound::create_UCoBound}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            {&Int::instantiate_Int, &Int::verify_args, &Int::create_Int}},
+        };
+        return intrinsic_function_by_id_db;
+    }
+
+
+    static const std::map<std::string,
+        std::tuple<create_intrinsic_function,
+                    eval_intrinsic_function>>& get_intrinsic_function_by_name_db() {
+        static const std::map<std::string,
+            std::tuple<create_intrinsic_function,
+                        eval_intrinsic_function>> intrinsic_function_by_name_db = {
+                {"type", {&ObjectType::create_ObjectType, &ObjectType::eval_ObjectType}},
+                {"gamma", {&Gamma::create_Gamma, &Gamma::eval_Gamma}},
+                {"log", {&Log::create_Log, &Log::eval_Log}},
+                {"log10", {&Log10::create_Log10, &Log10::eval_Log10}},
+                {"log_gamma", {&LogGamma::create_LogGamma, &LogGamma::eval_LogGamma}},
+                {"erf", {&Erf::create_Erf, &Erf::eval_Erf}},
+                {"erfc", {&Erfc::create_Erfc, &Erfc::eval_Erfc}},
+                {"erfc_scaled", {&ErfcScaled::create_ErfcScaled, &ErfcScaled::eval_ErfcScaled}},
+                {"trunc", {&Trunc::create_Trunc, &Trunc::eval_Trunc}},
+                {"fix", {&Fix::create_Fix, &Fix::eval_Fix}},
+                {"sin", {&Sin::create_Sin, &Sin::eval_Sin}},
+                {"bessel_j0", {&BesselJ0::create_BesselJ0, &BesselJ0::eval_BesselJ0}},
+                {"bessel_j1", {&BesselJ1::create_BesselJ1, &BesselJ1::eval_BesselJ1}},
+                {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
+                {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
+                {"same_type_as", {&SameTypeAs::create_SameTypeAs, &SameTypeAs::eval_SameTypeAs}},
+                {"extends_type_of", {&ExtendsTypeOf::create_ExtendsTypeOf, &ExtendsTypeOf::eval_ExtendsTypeOf}},
+                {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
+                {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
+                {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
+                {"sind", {&Sind::create_Sind, &Sind::eval_Sind}},
+                {"cosd", {&Cosd::create_Cosd, &Cosd::eval_Cosd}},
+                {"tand", {&Tand::create_Tand, &Tand::eval_Tand}},
+                {"cos", {&Cos::create_Cos, &Cos::eval_Cos}},
+                {"tan", {&Tan::create_Tan, &Tan::eval_Tan}},
+                {"asin", {&Asin::create_Asin, &Asin::eval_Asin}},
+                {"acos", {&Acos::create_Acos, &Acos::eval_Acos}},
+                {"atan", {&Atan::create_Atan, &Atan::eval_Atan}},
+                {"sinh", {&Sinh::create_Sinh, &Sinh::eval_Sinh}},
+                {"cosh", {&Cosh::create_Cosh, &Cosh::eval_Cosh}},
+                {"tanh", {&Tanh::create_Tanh, &Tanh::eval_Tanh}},
+                {"atan2", {&Atan2::create_Atan2, &Atan2::eval_Atan2}},
+                {"atan2d", {&Atan2d::create_Atan2d, &Atan2d::eval_Atan2d}},
+                {"asinh", {&Asinh::create_Asinh, &Asinh::eval_Asinh}},
+                {"acosh", {&Acosh::create_Acosh, &Acosh::eval_Acosh}},
+                {"atanh", {&Atanh::create_Atanh, &Atanh::eval_Atanh}},
+                {"sinpi", {&Sinpi::create_Sinpi, &Sinpi::eval_Sinpi}},
+                {"cospi", {&Cospi::create_Cospi, &Cospi::eval_Cospi}},
+                {"tanpi", {&Tanpi::create_Tanpi, &Tanpi::eval_Tanpi}},
+                {"asinpi", {&Asinpi::create_Asinpi, &Asinpi::eval_Asinpi}},
+                {"acospi", {&Acospi::create_Acospi, &Acospi::eval_Acospi}},
+                {"atanpi", {&Atanpi::create_Atanpi, &Atanpi::eval_Atanpi}},
+                {"atan2pi", {&Atan2pi::create_Atan2pi, &Atan2pi::eval_Atan2pi}},
+                {"abs", {&Abs::create_Abs, &Abs::eval_Abs}},
+                {"aimag", {&Aimag::create_Aimag, &Aimag::eval_Aimag}},
+                {"dreal", {&Dreal::create_Dreal, &Dreal::eval_Dreal}},
+                {"exp", {&Exp::create_Exp, &Exp::eval_Exp}},
+                {"exp2", {&Exp2::create_Exp2, &Exp2::eval_Exp2}},
+                {"expm1", {&Expm1::create_Expm1, &Expm1::eval_Expm1}},
+                {"fma", {&FMA::create_FMA, &FMA::eval_FMA}},
+                {"floordiv", {&FloorDiv::create_FloorDiv, &FloorDiv::eval_FloorDiv}},
+                {"mod", {&Mod::create_Mod, &Mod::eval_Mod}},
+                {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
+                {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
+                {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
+                {"_lfortran_compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
+                {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
+                // Legacy F77 alias for command_argument_count.
+                {"iargc", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
+                {"rand", {&Rand::create_Rand, nullptr}},
+                {"this_image", {&ThisImage::create_ThisImage, &ThisImage::eval_ThisImage}},
+                {"num_images", {&NumImages::create_NumImages, &NumImages::eval_NumImages}},
+                {"lcobound", {&LCoBound::create_LCoBound, &LCoBound::eval_LCoBound}},
+                {"ucobound", {&UCoBound::create_UCoBound, &UCoBound::eval_UCoBound}},
+                {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
+                {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
+                {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
+                {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
+                {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
+                {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
+                {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
+                {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
+                // shifta (arithmetic shift right) is the same operation as rshift.
+                {"shifta", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
+                {"shiftl", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
+                {"lshift", {&Shiftl::create_Shiftl, &Shiftl::eval_Shiftl}},
+                {"dshiftl", {&Dshiftl::create_Dshiftl, &Dshiftl::eval_Dshiftl}},
+                {"dshiftr", {&Dshiftr::create_Dshiftr, &Dshiftr::eval_Dshiftr}},
+                {"logical", {&Logical::create_Logical, &Logical::eval_Logical}},
+                {"ishft", {&Ishft::create_Ishft, &Ishft::eval_Ishft}},
+                {"bgt", {&Bgt::create_Bgt, &Bgt::eval_Bgt}},
+                {"blt", {&Blt::create_Blt, &Blt::eval_Blt}},
+                {"bge", {&Bge::create_Bge, &Bge::eval_Bge}},
+                {"ble", {&Ble::create_Ble, &Ble::eval_Ble}},
+                {"lgt", {&Lgt::create_Lgt, &Lgt::eval_Lgt}},
+                {"llt", {&Llt::create_Llt, &Llt::eval_Llt}},
+                {"lge", {&Lge::create_Lge, &Lge::eval_Lge}},
+                {"lle", {&Lle::create_Lle, &Lle::eval_Lle}},
+                {"exponent", {&Exponent::create_Exponent, &Exponent::eval_Exponent}},
+                {"fraction", {&Fraction::create_Fraction, &Fraction::eval_Fraction}},
+                {"set_exponent", {&SetExponent::create_SetExponent, &SetExponent::eval_SetExponent}},
+                {"not", {&Not::create_Not, &Not::eval_Not}},
+                {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
+                {"and", {&And::create_And, &And::eval_And}},
+                {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
+                {"or", {&Or::create_Or, &Or::eval_Or}},
+                {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
+                {"xor", {&Xor::create_Xor, &Xor::eval_Xor}},
+                {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
+                {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
+                {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},
+                {"ibits", {&Ibits::create_Ibits, &Ibits::eval_Ibits}},
+                {"leadz", {&Leadz::create_Leadz, &Leadz::eval_Leadz}},
+                {"_lfortran_tolowercase", {&ToLowerCase::create_ToLowerCase, &ToLowerCase::eval_ToLowerCase}},
+                {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
+                {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
+                {"present", {&Present::create_Present, &Present::eval_Present}},
+                {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
+                {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
+                {"selected_logical_kind", {&SelectedLogicalKind::create_SelectedLogicalKind, &SelectedLogicalKind::eval_SelectedLogicalKind}},
+                {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
+                {"digits", {&Digits::create_Digits, &Digits::eval_Digits}},
+                {"rrspacing", {&Rrspacing::create_Rrspacing, &Rrspacing::eval_Rrspacing}},
+                {"repeat", {&Repeat::create_Repeat, &Repeat::eval_Repeat}},
+                {"verify", {&StringContainsSet::create_StringContainsSet, &StringContainsSet::eval_StringContainsSet}},
+                {"scan", {&StringFindSet::create_StringFindSet, &StringFindSet::eval_StringFindSet}},
+                {"index", {&SubstrIndex::create_SubstrIndex, &SubstrIndex::eval_SubstrIndex}},
+                {"minexponent", {&MinExponent::create_MinExponent, &MinExponent::eval_MinExponent}},
+                {"maxexponent", {&MaxExponent::create_MaxExponent, &MaxExponent::eval_MaxExponent}},
+                {"list.index", {&ListIndex::create_ListIndex, &ListIndex::eval_list_index}},
+                {"list.reverse", {&ListReverse::create_ListReverse, &ListReverse::eval_ListReverse}},
+                {"list.pop", {&ListPop::create_ListPop, &ListPop::eval_list_pop}},
+                {"list.reserve", {&ListReserve::create_ListReserve, &ListReserve::eval_ListReserve}},
+                {"dict.keys", {&DictKeys::create_DictKeys, &DictKeys::eval_dict_keys}},
+                {"dict.values", {&DictValues::create_DictValues, &DictValues::eval_dict_values}},
+                {"set.add", {&SetAdd::create_SetAdd, &SetAdd::eval_set_add}},
+                {"set.remove", {&SetRemove::create_SetRemove, &SetRemove::eval_set_remove}},
+                {"max0", {&Max::create_Max, &Max::eval_Max}},
+                {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
+                {"adjustr", {&Adjustr::create_Adjustr, &Adjustr::eval_Adjustr}},
+                {"stringconcat", {&StringConcat::create_StringConcat, &StringConcat::eval_StringConcat}},
+                {"len_trim", {&StringLenTrim::create_StringLenTrim, &StringLenTrim::eval_StringLenTrim}},
+                {"trim", {&StringTrim::create_StringTrim, &StringTrim::eval_StringTrim}},
+                {"ichar", {&Ichar::create_Ichar, &Ichar::eval_Ichar}},
+                {"char", {&Char::create_Char, &Char::eval_Char}},
+                {"achar", {&Achar::create_Achar, &Achar::eval_Achar}},
+                {"iachar", {&Iachar::create_Iachar, &Iachar::eval_Iachar}},
+                {"min0", {&Min::create_Min, &Min::eval_Min}},
+                {"max", {&Max::create_Max, &Max::eval_Max}},
+                {"min", {&Min::create_Min, &Min::eval_Min}},
+                {"ishftc", {&Ishftc::create_Ishftc, &Ishftc::eval_Ishftc}},
+                {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
+                {"out_of_range", {&OutOfRange::create_OutOfRange, &OutOfRange::eval_OutOfRange}},
+                {"storage_size", {&StorageSize::create_StorageSize, &StorageSize::eval_StorageSize}},
+                {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
+                {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
+                {"range", {&Range::create_Range, &Range::eval_Range}},
+                {"sign", {&Sign::create_Sign, &Sign::eval_Sign}},
+                {"aint", {&Aint::create_Aint, &Aint::eval_Aint}},
+                {"popcnt", {&Popcnt::create_Popcnt, &Popcnt::eval_Popcnt}},
+                {"poppar", {&Poppar::create_Poppar, &Poppar::eval_Poppar}},
+                {"real", {&Real::create_Real, &Real::eval_Real}},
+                {"cmplx", {&Cmplx::create_Cmplx, &Cmplx::eval_Cmplx}},
+                {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
+                {"idnint", {&Idnint::create_Idnint, &Idnint::eval_Idnint}},
+                {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
+                {"dim", {&Dim::create_Dim, &Dim::eval_Dim}},
+                {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
+                {"ceiling", {&Ceiling::create_Ceiling, &Ceiling::eval_Ceiling}},
+                {"maskr", {&Maskr::create_Maskr, &Maskr::eval_Maskr}},
+                {"maskl", {&Maskl::create_Maskl, &Maskl::eval_Maskl}},
+                {"sqrt", {&Sqrt::create_Sqrt, &Sqrt::eval_Sqrt}},
+                {"sngl", {&Sngl::create_Sngl, &Sngl::eval_Sngl}},
+                {"ifix", {&Ifix::create_Ifix, &Ifix::eval_Ifix}},
+                {"idint", {&Idint::create_Idint, &Idint::eval_Idint}},
+                {"epsilon", {&Epsilon::create_Epsilon, &Epsilon::eval_Epsilon}},
+                {"precision", {&Precision::create_Precision, &Precision::eval_Precision}},
+                {"tiny", {&Tiny::create_Tiny, &Tiny::eval_Tiny}},
+                {"bit_size", {&BitSize::create_BitSize, &BitSize::eval_BitSize}},
+                {"new_line", {&NewLine::create_NewLine, &NewLine::eval_NewLine}},
+                {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
+                {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
+                {"loc", {&Loc::create_Loc, &Loc::eval_Loc}},
+                {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
+                {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
+                {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},
+                {"SymbolicMul", {&SymbolicMul::create_SymbolicMul, &SymbolicMul::eval_SymbolicMul}},
+                {"SymbolicDiv", {&SymbolicDiv::create_SymbolicDiv, &SymbolicDiv::eval_SymbolicDiv}},
+                {"SymbolicPow", {&SymbolicPow::create_SymbolicPow, &SymbolicPow::eval_SymbolicPow}},
+                {"pi", {&SymbolicPi::create_SymbolicPi, &SymbolicPi::eval_SymbolicPi}},
+                {"E", {&SymbolicE::create_SymbolicE, &SymbolicE::eval_SymbolicE}},
+                {"SymbolicInteger", {&SymbolicInteger::create_SymbolicInteger, &SymbolicInteger::eval_SymbolicInteger}},
+                {"diff", {&SymbolicDiff::create_SymbolicDiff, &SymbolicDiff::eval_SymbolicDiff}},
+                {"expand", {&SymbolicExpand::create_SymbolicExpand, &SymbolicExpand::eval_SymbolicExpand}},
+                {"SymbolicSin", {&SymbolicSin::create_SymbolicSin, &SymbolicSin::eval_SymbolicSin}},
+                {"SymbolicCos", {&SymbolicCos::create_SymbolicCos, &SymbolicCos::eval_SymbolicCos}},
+                {"SymbolicLog", {&SymbolicLog::create_SymbolicLog, &SymbolicLog::eval_SymbolicLog}},
+                {"SymbolicExp", {&SymbolicExp::create_SymbolicExp, &SymbolicExp::eval_SymbolicExp}},
+                {"SymbolicAbs", {&SymbolicAbs::create_SymbolicAbs, &SymbolicAbs::eval_SymbolicAbs}},
+                {"has", {&SymbolicHasSymbolQ::create_SymbolicHasSymbolQ, &SymbolicHasSymbolQ::eval_SymbolicHasSymbolQ}},
+                {"AddQ", {&SymbolicAddQ::create_SymbolicAddQ, &SymbolicAddQ::eval_SymbolicAddQ}},
+                {"MulQ", {&SymbolicMulQ::create_SymbolicMulQ, &SymbolicMulQ::eval_SymbolicMulQ}},
+                {"PowQ", {&SymbolicPowQ::create_SymbolicPowQ, &SymbolicPowQ::eval_SymbolicPowQ}},
+                {"LogQ", {&SymbolicLogQ::create_SymbolicLogQ, &SymbolicLogQ::eval_SymbolicLogQ}},
+                {"SinQ", {&SymbolicSinQ::create_SymbolicSinQ, &SymbolicSinQ::eval_SymbolicSinQ}},
+                {"GetArgument", {&SymbolicGetArgument::create_SymbolicGetArgument, &SymbolicGetArgument::eval_SymbolicGetArgument}},
+                {"int", {&Int::create_Int, &Int::eval_Int}},
+        };
+        return intrinsic_function_by_name_db;
+    }
+
+    bool is_intrinsic_function(const std::string& name) {
+        return get_intrinsic_function_by_name_db().find(name) != get_intrinsic_function_by_name_db().end();
+    }
+
+    bool is_intrinsic_function(int64_t id) {
+        return get_intrinsic_function_by_id_db().find(id) != get_intrinsic_function_by_id_db().end();
+    }
+
+    create_intrinsic_function get_create_function(const std::string& name) {
+        return std::get<0>(get_intrinsic_function_by_name_db().at(name));
+    }
+
+    create_intrinsic_function get_create_function(int64_t id) {
+        if( get_intrinsic_function_by_id_db().find(id) == get_intrinsic_function_by_id_db().end() ) {
+            return nullptr;
+        }
+        return std::get<2>(get_intrinsic_function_by_id_db().at(id));
+    }
+
+    verify_function get_verify_function(int64_t id) {
+        return std::get<1>(get_intrinsic_function_by_id_db().at(id));
+    }
+
+    impl_function get_instantiate_function(int64_t id) {
+        if( get_intrinsic_function_by_id_db().find(id) == get_intrinsic_function_by_id_db().end() ) {
+            return nullptr;
+        }
+        return std::get<0>(get_intrinsic_function_by_id_db().at(id));
+    }
+
+    // The function that computes the compile-time value of the intrinsic
+    // `id` from the values of its arguments (`m_args` of its
+    // IntrinsicElementalFunction) and its type; nullptr for the intrinsics
+    // without one.
+    eval_intrinsic_function get_eval_function(int64_t id) {
+        switch (static_cast<IntrinsicElementalFunctions>(id)) {
+            case IntrinsicElementalFunctions::ObjectType: return &ObjectType::eval_ObjectType;
+            case IntrinsicElementalFunctions::Kind: return &Kind::eval_Kind;
+            case IntrinsicElementalFunctions::Mod: return &Mod::eval_Mod;
+            case IntrinsicElementalFunctions::Sin: return &Sin::eval_Sin;
+            case IntrinsicElementalFunctions::Cos: return &Cos::eval_Cos;
+            case IntrinsicElementalFunctions::Tan: return &Tan::eval_Tan;
+            case IntrinsicElementalFunctions::Asin: return &Asin::eval_Asin;
+            case IntrinsicElementalFunctions::Acos: return &Acos::eval_Acos;
+            case IntrinsicElementalFunctions::Atan: return &Atan::eval_Atan;
+            case IntrinsicElementalFunctions::Sinh: return &Sinh::eval_Sinh;
+            case IntrinsicElementalFunctions::Cosh: return &Cosh::eval_Cosh;
+            case IntrinsicElementalFunctions::Tanh: return &Tanh::eval_Tanh;
+            case IntrinsicElementalFunctions::Atan2: return &Atan2::eval_Atan2;
+            case IntrinsicElementalFunctions::Atan2d: return &Atan2d::eval_Atan2d;
+            case IntrinsicElementalFunctions::Asinh: return &Asinh::eval_Asinh;
+            case IntrinsicElementalFunctions::Sind: return &Sind::eval_Sind;
+            case IntrinsicElementalFunctions::Cosd: return &Cosd::eval_Cosd;
+            case IntrinsicElementalFunctions::Tand: return &Tand::eval_Tand;
+            case IntrinsicElementalFunctions::Asind: return &Asind::eval_Asind;
+            case IntrinsicElementalFunctions::Acosd: return &Acosd::eval_Acosd;
+            case IntrinsicElementalFunctions::Atand: return &Atand::eval_Atand;
+            case IntrinsicElementalFunctions::Acosh: return &Acosh::eval_Acosh;
+            case IntrinsicElementalFunctions::Atanh: return &Atanh::eval_Atanh;
+            case IntrinsicElementalFunctions::Sinpi: return &Sinpi::eval_Sinpi;
+            case IntrinsicElementalFunctions::Cospi: return &Cospi::eval_Cospi;
+            case IntrinsicElementalFunctions::Tanpi: return &Tanpi::eval_Tanpi;
+            case IntrinsicElementalFunctions::Asinpi: return &Asinpi::eval_Asinpi;
+            case IntrinsicElementalFunctions::Acospi: return &Acospi::eval_Acospi;
+            case IntrinsicElementalFunctions::Atanpi: return &Atanpi::eval_Atanpi;
+            case IntrinsicElementalFunctions::Atan2pi: return &Atan2pi::eval_Atan2pi;
+            case IntrinsicElementalFunctions::Erf: return &Erf::eval_Erf;
+            case IntrinsicElementalFunctions::Erfc: return &Erfc::eval_Erfc;
+            case IntrinsicElementalFunctions::ErfcScaled: return &ErfcScaled::eval_ErfcScaled;
+            case IntrinsicElementalFunctions::Gamma: return &Gamma::eval_Gamma;
+            case IntrinsicElementalFunctions::Log: return &Log::eval_Log;
+            case IntrinsicElementalFunctions::Log10: return &Log10::eval_Log10;
+            case IntrinsicElementalFunctions::LogGamma: return &LogGamma::eval_LogGamma;
+            case IntrinsicElementalFunctions::Trunc: return &Trunc::eval_Trunc;
+            case IntrinsicElementalFunctions::Fix: return &Fix::eval_Fix;
+            case IntrinsicElementalFunctions::Abs: return &Abs::eval_Abs;
+            case IntrinsicElementalFunctions::Aimag: return &Aimag::eval_Aimag;
+            case IntrinsicElementalFunctions::Dreal: return &Dreal::eval_Dreal;
+            case IntrinsicElementalFunctions::Exp: return &Exp::eval_Exp;
+            case IntrinsicElementalFunctions::Exp2: return &Exp2::eval_Exp2;
+            case IntrinsicElementalFunctions::Expm1: return &Expm1::eval_Expm1;
+            case IntrinsicElementalFunctions::FMA: return &FMA::eval_FMA;
+            case IntrinsicElementalFunctions::FlipSign: return &FlipSign::eval_FlipSign;
+            case IntrinsicElementalFunctions::Trailz: return &Trailz::eval_Trailz;
+            case IntrinsicElementalFunctions::Isnan: return &Isnan::eval_Isnan;
+            case IntrinsicElementalFunctions::Nearest: return &Nearest::eval_Nearest;
+            case IntrinsicElementalFunctions::Spacing: return &Spacing::eval_Spacing;
+            case IntrinsicElementalFunctions::Modulo: return &Modulo::eval_Modulo;
+            case IntrinsicElementalFunctions::BesselJ0: return &BesselJ0::eval_BesselJ0;
+            case IntrinsicElementalFunctions::BesselJ1: return &BesselJ1::eval_BesselJ1;
+            case IntrinsicElementalFunctions::BesselJN: return &BesselJN::eval_BesselJN;
+            case IntrinsicElementalFunctions::BesselY0: return &BesselY0::eval_BesselY0;
+            case IntrinsicElementalFunctions::BesselY1: return &BesselY1::eval_BesselY1;
+            case IntrinsicElementalFunctions::BesselYN: return &BesselYN::eval_BesselYN;
+            case IntrinsicElementalFunctions::SameTypeAs: return &SameTypeAs::eval_SameTypeAs;
+            case IntrinsicElementalFunctions::ExtendsTypeOf: return &ExtendsTypeOf::eval_ExtendsTypeOf;
+            case IntrinsicElementalFunctions::Merge: return &Merge::eval_Merge;
+            case IntrinsicElementalFunctions::Mergebits: return &Mergebits::eval_Mergebits;
+            case IntrinsicElementalFunctions::Shiftr: return &Shiftr::eval_Shiftr;
+            case IntrinsicElementalFunctions::Rshift: return &Rshift::eval_Rshift;
+            case IntrinsicElementalFunctions::Shiftl: return &Shiftl::eval_Shiftl;
+            case IntrinsicElementalFunctions::Dshiftl: return &Dshiftl::eval_Dshiftl;
+            case IntrinsicElementalFunctions::Dshiftr: return &Dshiftr::eval_Dshiftr;
+            case IntrinsicElementalFunctions::Ishft: return &Ishft::eval_Ishft;
+            case IntrinsicElementalFunctions::OutOfRange: return &OutOfRange::eval_OutOfRange;
+            case IntrinsicElementalFunctions::Bgt: return &Bgt::eval_Bgt;
+            case IntrinsicElementalFunctions::Blt: return &Blt::eval_Blt;
+            case IntrinsicElementalFunctions::Bge: return &Bge::eval_Bge;
+            case IntrinsicElementalFunctions::Ble: return &Ble::eval_Ble;
+            case IntrinsicElementalFunctions::Lgt: return &Lgt::eval_Lgt;
+            case IntrinsicElementalFunctions::Llt: return &Llt::eval_Llt;
+            case IntrinsicElementalFunctions::Lge: return &Lge::eval_Lge;
+            case IntrinsicElementalFunctions::Lle: return &Lle::eval_Lle;
+            case IntrinsicElementalFunctions::Exponent: return &Exponent::eval_Exponent;
+            case IntrinsicElementalFunctions::Fraction: return &Fraction::eval_Fraction;
+            case IntrinsicElementalFunctions::SetExponent: return &SetExponent::eval_SetExponent;
+            case IntrinsicElementalFunctions::Not: return &Not::eval_Not;
+            case IntrinsicElementalFunctions::Iand: return &Iand::eval_Iand;
+            case IntrinsicElementalFunctions::Ior: return &Ior::eval_Ior;
+            case IntrinsicElementalFunctions::Ieor: return &Ieor::eval_Ieor;
+            case IntrinsicElementalFunctions::Ibclr: return &Ibclr::eval_Ibclr;
+            case IntrinsicElementalFunctions::Ibset: return &Ibset::eval_Ibset;
+            case IntrinsicElementalFunctions::Btest: return &Btest::eval_Btest;
+            case IntrinsicElementalFunctions::Ibits: return &Ibits::eval_Ibits;
+            case IntrinsicElementalFunctions::Leadz: return &Leadz::eval_Leadz;
+            case IntrinsicElementalFunctions::ToLowerCase: return &ToLowerCase::eval_ToLowerCase;
+            case IntrinsicElementalFunctions::Digits: return &Digits::eval_Digits;
+            case IntrinsicElementalFunctions::Rrspacing: return &Rrspacing::eval_Rrspacing;
+            case IntrinsicElementalFunctions::Repeat: return &Repeat::eval_Repeat;
+            case IntrinsicElementalFunctions::StringContainsSet: return &StringContainsSet::eval_StringContainsSet;
+            case IntrinsicElementalFunctions::StringFindSet: return &StringFindSet::eval_StringFindSet;
+            case IntrinsicElementalFunctions::SubstrIndex: return &SubstrIndex::eval_SubstrIndex;
+            case IntrinsicElementalFunctions::Hypot: return &Hypot::eval_Hypot;
+            case IntrinsicElementalFunctions::SelectedIntKind: return &SelectedIntKind::eval_SelectedIntKind;
+            case IntrinsicElementalFunctions::SelectedRealKind: return &SelectedRealKind::eval_SelectedRealKind;
+            case IntrinsicElementalFunctions::SelectedCharKind: return &SelectedCharKind::eval_SelectedCharKind;
+            case IntrinsicElementalFunctions::SelectedLogicalKind: return &SelectedLogicalKind::eval_SelectedLogicalKind;
+            case IntrinsicElementalFunctions::Adjustl: return &Adjustl::eval_Adjustl;
+            case IntrinsicElementalFunctions::Adjustr: return &Adjustr::eval_Adjustr;
+            case IntrinsicElementalFunctions::StringConcat: return &StringConcat::eval_StringConcat;
+            case IntrinsicElementalFunctions::StringLenTrim: return &StringLenTrim::eval_StringLenTrim;
+            case IntrinsicElementalFunctions::StringTrim: return &StringTrim::eval_StringTrim;
+            case IntrinsicElementalFunctions::Ichar: return &Ichar::eval_Ichar;
+            case IntrinsicElementalFunctions::Char: return &Char::eval_Char;
+            case IntrinsicElementalFunctions::Achar: return &Achar::eval_Achar;
+            case IntrinsicElementalFunctions::Iachar: return &Iachar::eval_Iachar;
+            case IntrinsicElementalFunctions::MinExponent: return &MinExponent::eval_MinExponent;
+            case IntrinsicElementalFunctions::MaxExponent: return &MaxExponent::eval_MaxExponent;
+            case IntrinsicElementalFunctions::FloorDiv: return &FloorDiv::eval_FloorDiv;
+            case IntrinsicElementalFunctions::ListReverse: return &ListReverse::eval_ListReverse;
+            case IntrinsicElementalFunctions::ListReserve: return &ListReserve::eval_ListReserve;
+            case IntrinsicElementalFunctions::Max: return &Max::eval_Max;
+            case IntrinsicElementalFunctions::Min: return &Min::eval_Min;
+            case IntrinsicElementalFunctions::Radix: return &Radix::eval_Radix;
+            case IntrinsicElementalFunctions::StorageSize: return &StorageSize::eval_StorageSize;
+            case IntrinsicElementalFunctions::Scale: return &Scale::eval_Scale;
+            case IntrinsicElementalFunctions::Dprod: return &Dprod::eval_Dprod;
+            case IntrinsicElementalFunctions::Range: return &Range::eval_Range;
+            case IntrinsicElementalFunctions::Sign: return &Sign::eval_Sign;
+            case IntrinsicElementalFunctions::CompilerVersion: return &CompilerVersion::eval_CompilerVersion;
+            case IntrinsicElementalFunctions::ThisImage: return &ThisImage::eval_ThisImage;
+            case IntrinsicElementalFunctions::NumImages: return &NumImages::eval_NumImages;
+            case IntrinsicElementalFunctions::LCoBound: return &LCoBound::eval_LCoBound;
+            case IntrinsicElementalFunctions::UCoBound: return &UCoBound::eval_UCoBound;
+            case IntrinsicElementalFunctions::SignFromValue: return &SignFromValue::eval_SignFromValue;
+            case IntrinsicElementalFunctions::Logical: return &Logical::eval_Logical;
+            case IntrinsicElementalFunctions::Nint: return &Nint::eval_Nint;
+            case IntrinsicElementalFunctions::Idnint: return &Idnint::eval_Idnint;
+            case IntrinsicElementalFunctions::Aint: return &Aint::eval_Aint;
+            case IntrinsicElementalFunctions::Anint: return &Anint::eval_Anint;
+            case IntrinsicElementalFunctions::Dim: return &Dim::eval_Dim;
+            case IntrinsicElementalFunctions::Sqrt: return &Sqrt::eval_Sqrt;
+            case IntrinsicElementalFunctions::Sngl: return &Sngl::eval_Sngl;
+            case IntrinsicElementalFunctions::Ifix: return &Ifix::eval_Ifix;
+            case IntrinsicElementalFunctions::Idint: return &Idint::eval_Idint;
+            case IntrinsicElementalFunctions::Floor: return &Floor::eval_Floor;
+            case IntrinsicElementalFunctions::Ceiling: return &Ceiling::eval_Ceiling;
+            case IntrinsicElementalFunctions::Ishftc: return &Ishftc::eval_Ishftc;
+            case IntrinsicElementalFunctions::Maskr: return &Maskr::eval_Maskr;
+            case IntrinsicElementalFunctions::Maskl: return &Maskl::eval_Maskl;
+            case IntrinsicElementalFunctions::Epsilon: return &Epsilon::eval_Epsilon;
+            case IntrinsicElementalFunctions::Precision: return &Precision::eval_Precision;
+            case IntrinsicElementalFunctions::Tiny: return &Tiny::eval_Tiny;
+            case IntrinsicElementalFunctions::BitSize: return &BitSize::eval_BitSize;
+            case IntrinsicElementalFunctions::NewLine: return &NewLine::eval_NewLine;
+            case IntrinsicElementalFunctions::Conjg: return &Conjg::eval_Conjg;
+            case IntrinsicElementalFunctions::Huge: return &Huge::eval_Huge;
+            case IntrinsicElementalFunctions::Loc: return &Loc::eval_Loc;
+            case IntrinsicElementalFunctions::Popcnt: return &Popcnt::eval_Popcnt;
+            case IntrinsicElementalFunctions::Poppar: return &Poppar::eval_Poppar;
+            case IntrinsicElementalFunctions::Real: return &Real::eval_Real;
+            case IntrinsicElementalFunctions::Cmplx: return &Cmplx::eval_Cmplx;
+            case IntrinsicElementalFunctions::SymbolicSymbol: return &SymbolicSymbol::eval_SymbolicSymbol;
+            case IntrinsicElementalFunctions::SymbolicAdd: return &SymbolicAdd::eval_SymbolicAdd;
+            case IntrinsicElementalFunctions::SymbolicSub: return &SymbolicSub::eval_SymbolicSub;
+            case IntrinsicElementalFunctions::SymbolicMul: return &SymbolicMul::eval_SymbolicMul;
+            case IntrinsicElementalFunctions::SymbolicDiv: return &SymbolicDiv::eval_SymbolicDiv;
+            case IntrinsicElementalFunctions::SymbolicPow: return &SymbolicPow::eval_SymbolicPow;
+            case IntrinsicElementalFunctions::SymbolicPi: return &SymbolicPi::eval_SymbolicPi;
+            case IntrinsicElementalFunctions::SymbolicE: return &SymbolicE::eval_SymbolicE;
+            case IntrinsicElementalFunctions::SymbolicInteger: return &SymbolicInteger::eval_SymbolicInteger;
+            case IntrinsicElementalFunctions::SymbolicDiff: return &SymbolicDiff::eval_SymbolicDiff;
+            case IntrinsicElementalFunctions::SymbolicExpand: return &SymbolicExpand::eval_SymbolicExpand;
+            case IntrinsicElementalFunctions::SymbolicSin: return &SymbolicSin::eval_SymbolicSin;
+            case IntrinsicElementalFunctions::SymbolicCos: return &SymbolicCos::eval_SymbolicCos;
+            case IntrinsicElementalFunctions::SymbolicLog: return &SymbolicLog::eval_SymbolicLog;
+            case IntrinsicElementalFunctions::SymbolicExp: return &SymbolicExp::eval_SymbolicExp;
+            case IntrinsicElementalFunctions::SymbolicAbs: return &SymbolicAbs::eval_SymbolicAbs;
+            case IntrinsicElementalFunctions::SymbolicHasSymbolQ: return &SymbolicHasSymbolQ::eval_SymbolicHasSymbolQ;
+            case IntrinsicElementalFunctions::SymbolicAddQ: return &SymbolicAddQ::eval_SymbolicAddQ;
+            case IntrinsicElementalFunctions::SymbolicMulQ: return &SymbolicMulQ::eval_SymbolicMulQ;
+            case IntrinsicElementalFunctions::SymbolicPowQ: return &SymbolicPowQ::eval_SymbolicPowQ;
+            case IntrinsicElementalFunctions::SymbolicLogQ: return &SymbolicLogQ::eval_SymbolicLogQ;
+            case IntrinsicElementalFunctions::SymbolicSinQ: return &SymbolicSinQ::eval_SymbolicSinQ;
+            case IntrinsicElementalFunctions::SymbolicGetArgument: return &SymbolicGetArgument::eval_SymbolicGetArgument;
+            case IntrinsicElementalFunctions::Int: return &Int::eval_Int;
+            case IntrinsicElementalFunctions::Present: return &Present::eval_Present;
+            case IntrinsicElementalFunctions::And: return &And::eval_And;
+            case IntrinsicElementalFunctions::Or: return &Or::eval_Or;
+            case IntrinsicElementalFunctions::Xor: return &Xor::eval_Xor;
+            case IntrinsicElementalFunctions::ListIndex:
+            case IntrinsicElementalFunctions::Partition:
+            case IntrinsicElementalFunctions::ListPop:
+            case IntrinsicElementalFunctions::DictKeys:
+            case IntrinsicElementalFunctions::DictValues:
+            case IntrinsicElementalFunctions::SetAdd:
+            case IntrinsicElementalFunctions::SetRemove:
+            case IntrinsicElementalFunctions::IsContiguous:
+            case IntrinsicElementalFunctions::CommandArgumentCount:
+            case IntrinsicElementalFunctions::Rand:
+                return nullptr;
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+    std::string get_intrinsic_function_name(int64_t id) {
+        // Use switch statement instead of lazy map for zero runtime overhead
+        return get_intrinsic_name(id);
+    }
+
+} // namespace IntrinsicElementalFunctionRegistry
+
+namespace IntrinsicImpureFunctionRegistry {
+
+    static const std::map<std::string, std::tuple<create_intrinsic_function,
+            eval_intrinsic_function>>& get_function_by_name_db() {
+        static const std::map<std::string, std::tuple<create_intrinsic_function,
+                eval_intrinsic_function>> function_by_name_db = {
+            {"is_iostat_end", {&IsIostatEnd::create_IsIostatEnd, nullptr}},
+            {"is_iostat_eor", {&IsIostatEor::create_IsIostatEor, nullptr}},
+            {"allocated", {&Allocated::create_Allocated, nullptr}},
+            {"getcwd", {&GetCwd::create_GetCwd, nullptr}},
+        };
+        return function_by_name_db;
+    }
+
+    bool is_intrinsic_function(const std::string& name) {
+        return get_function_by_name_db().find(name) != get_function_by_name_db().end();
+    }
+
+    create_intrinsic_function get_create_function(const std::string& name) {
+        return  std::get<0>(get_function_by_name_db().at(name));
+    }
+
+    // Only impure intrinsic functions with observable side effects are
+    // lowered by the intrinsic_function pass and have a verify function;
+    // the others are lowered by the backends.
+    verify_impure_function get_verify_function(int64_t id) {
+        switch (static_cast<IntrinsicImpureFunctions>(id)) {
+            case IntrinsicImpureFunctions::GetCwd: return &GetCwd::verify_args;
+            default: return nullptr;
+        }
+    }
+
+    instantiate_impure_function get_instantiate_function(int64_t id) {
+        switch (static_cast<IntrinsicImpureFunctions>(id)) {
+            case IntrinsicImpureFunctions::GetCwd: return &GetCwd::instantiate_GetCwd;
+            default: return nullptr;
+        }
+    }
+
+    // True if a reference to the intrinsic is not side-effect free, so it is
+    // not allowed inside a PURE procedure.
+    bool has_side_effects(int64_t id) {
+        switch (static_cast<IntrinsicImpureFunctions>(id)) {
+            case IntrinsicImpureFunctions::GetCwd: return true;
+            default: return false;
+        }
+    }
+
+} // namespace IntrinsicImpureFunctionRegistry
+
+#define IMPURE_INTRINSIC_NAME_CASE(X)                                           \
+    case (static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::X)) : {      \
+        return #X;                                                              \
+    }
+
+std::string get_impure_intrinsic_name(int64_t x) {
+    switch (x) {
+        IMPURE_INTRINSIC_NAME_CASE(IsIostatEnd)
+        IMPURE_INTRINSIC_NAME_CASE(IsIostatEor)
+        IMPURE_INTRINSIC_NAME_CASE(Allocated)
+        IMPURE_INTRINSIC_NAME_CASE(GetCwd)
+        default : {
+            throw LCompilersException("pickle: intrinsic_id not implemented");
+        }
+    }
+}
+
+} // namespace ASRUtils
+
+} // namespace LCompilers

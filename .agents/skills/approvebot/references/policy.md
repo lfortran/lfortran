@@ -264,8 +264,8 @@ element.
 
 - The change is in the compile-time evaluation of that intrinsic: its
   `eval_*` function and the folding helpers it calls in the intrinsic
-  registries (`intrinsic_function_registry.h`,
-  `intrinsic_array_function_registry.h`, `intrinsic_functions.h`), and the
+  implementations (`intrinsic_functions.h`,
+  `intrinsic_array_functions.h`), and the
   `create_*` code that passes the constant arguments to it. Calls whose
   arguments are not constant get the same ASR and IR as on main.
 - It may rewrite the folding routine of the intrinsics it fixes (#18006

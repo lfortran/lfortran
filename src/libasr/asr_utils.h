@@ -414,6 +414,14 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 
 };
 
+} // namespace ASRUtils
+
+// Instantiated once, in asr_utils.cpp, rather than in every file that
+// duplicates an expression or a statement.
+extern template class ASR::BaseExprStmtDuplicator<ASRUtils::ExprStmtDuplicator>;
+
+namespace ASRUtils {
+
 static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
 {
     if (f && f->type == ASR::symbolType::ExternalSymbol) {

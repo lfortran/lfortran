@@ -21,6 +21,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <libasr/pass/intrinsic_function_registry_util.h>
 
 namespace LCompilers {
 

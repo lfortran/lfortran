@@ -300,7 +300,7 @@ class ASTVisitorVisitor1(ASDLVisitor):
     def visitSum(self, sum, base):
         if not is_simple_sum(sum):
             self.emit("template <class Visitor>")
-            self.emit("static void visit_%s_t(const %s_t &x, Visitor &v) {" \
+            self.emit("inline void visit_%s_t(const %s_t &x, Visitor &v) {" \
                     % (base, base))
             self.emit(    "LCOMPILERS_ASSERT(x.base.type == %sType::%s)" \
                     % (subs["mod"], base), 1)
@@ -316,7 +316,7 @@ class ASTVisitorVisitor1b(ASDLVisitor):
 
     def visitModule(self, mod):
         self.emit("template <class Visitor>")
-        self.emit("static void visit_%(mod)s_t(const %(mod)s_t &x, Visitor &v) {" % subs)
+        self.emit("inline void visit_%(mod)s_t(const %(mod)s_t &x, Visitor &v) {" % subs)
         self.emit("    switch (x.type) {")
         for type_ in sums:
             self.emit("        case %sType::%s: { v.visit_%s((const %s_t &)x);"

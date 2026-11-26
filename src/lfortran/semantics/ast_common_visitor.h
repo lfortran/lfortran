@@ -11,6 +11,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
+#include <libasr/pass/intrinsic_array_functions.h>
+#include <libasr/pass/intrinsic_subroutines.h>
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
