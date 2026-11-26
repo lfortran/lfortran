@@ -30249,13 +30249,43 @@ public:
             // `.nil.` leaves the argument with no value, which is how an
             // absent optional argument is carried (15.5.2.3)
             bool is_nil = AST::is_a<AST::Nil_t>(*kwargs[i].m_value);
-            ASR::expr_t *expr = nullptr;
-            if (!is_nil) {
-                this->visit_expr(*kwargs[i].m_value);
-                expr = ASRUtils::EXPR(tmp);
-            }
             std::string name = to_lower(kwargs[i].m_arg);
             auto search = std::find(fn_args2.begin(), fn_args2.end(), name);
+            // A bare `NULL()` takes its meaning from the dummy argument the
+            // keyword names, exactly as for a positional actual argument.
+            ASR::Variable_t* null_dummy = nullptr;
+            if (!is_nil && search != fn_args2.end() &&
+                    is_bare_null_intrinsic(kwargs[i].m_value)) {
+                ASR::symbol_t* dummy = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(
+                        fn_args[std::distance(fn_args2.begin(), search)])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*dummy)) {
+                    null_dummy = ASR::down_cast<ASR::Variable_t>(dummy);
+                }
+            }
+            // F2018 15.5.2.13: a `NULL()` actual argument corresponding to a
+            // non-pointer non-allocatable optional dummy argument means that
+            // the dummy argument is not present.
+            bool is_absent = null_dummy != nullptr &&
+                null_dummy->m_presence == ASR::presenceType::Optional &&
+                !ASRUtils::is_pointer(null_dummy->m_type) &&
+                !ASRUtils::is_allocatable(null_dummy->m_type);
+            ASR::expr_t *expr = nullptr;
+            if (!is_nil && !is_absent) {
+                ASR::ttype_t* prev_variable_type = current_variable_type_;
+                ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
+                if (null_dummy != nullptr) {
+                    // Otherwise `NULL()` is a disassociated pointer of the
+                    // type of the dummy argument it is passed to.
+                    ASRUtils::set_null_context_from_variable(al,
+                        kwargs[i].m_value->base.loc, current_scope, null_dummy,
+                        current_variable_type_, current_struct_type_var_expr);
+                }
+                this->visit_expr(*kwargs[i].m_value);
+                current_variable_type_ = prev_variable_type;
+                current_struct_type_var_expr = prev_struct_type_var_expr;
+                expr = ASRUtils::EXPR(tmp);
+            }
             if (search == fn_args2.end()) {
                 diag.semantic_error_label(
                     "Keyword argument not found " + name,
@@ -30279,7 +30309,7 @@ public:
                     name + " keyword argument is already specified.");
                 return ;
             }
-            args.p[idx].loc = is_nil ? kwargs[i].m_value->base.loc
+            args.p[idx].loc = expr == nullptr ? kwargs[i].m_value->base.loc
                 : expr->base.loc;
             args.p[idx].m_value = expr;
             if (is_nil) {
