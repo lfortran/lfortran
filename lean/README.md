@@ -40,7 +40,7 @@ pixi run -e llvm11 python lean/run_integration_tests.py
 
 The runner checks the exit code, like every integration test; the test
 program checks its own results. Every integration test that the backend
-translates and that then runs correctly is labeled `lean` (188 tests);
+translates and that then runs correctly is labeled `lean` (299 tests);
 `--all` tries every test the host LLVM backend runs (label `llvm`) and prints
 why the others are rejected, and `--apply` updates the labels. A construct
 the backend does not support is rejected at translation, never translated
