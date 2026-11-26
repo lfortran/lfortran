@@ -71,10 +71,17 @@ class FRealMath (α : Type) where
   sqrt : α → α
   exp : α → α
   log : α → α
+  log10 : α → α
   sin : α → α
   cos : α → α
   tan : α → α
+  asin : α → α
+  acos : α → α
   atan : α → α
+  atan2 : α → α → α
+  sinh : α → α
+  cosh : α → α
+  tanh : α → α
   /-- `x ** y` for real `y`. -/
   pow : α → α → α
 
@@ -175,6 +182,27 @@ def powNat (x : α) : Nat → α
 def powInt (x : α) (n : Int) : α :=
   if n < 0 then div (ofInt 1) (powNat x (-n).toNat)
   else powNat x n.toNat
+
+/-- Fortran `floor(x)`: greatest integer `≤ x`. -/
+def floorInt (x : α) : Int :=
+  let t := toInt x
+  if lt x (ofInt t) then t - 1 else t
+
+/-- Fortran `ceiling(x)`: least integer `≥ x`. -/
+def ceilInt (x : α) : Int :=
+  let t := toInt x
+  if lt (ofInt t) x then t + 1 else t
+
+/-- Fortran `nint(x)`: nearest integer, ties away from zero.
+Truncates first and compares the exact fractional remainder against `0.5`,
+avoiding IEEE 754 rounding errors in `x ± 0.5`. -/
+def nintInt (x : α) : Int :=
+  let t := toInt x
+  let half := lit 1 (-1)
+  if signbit x then
+    if le half (sub (ofInt t) x) then t - 1 else t
+  else
+    if le half (sub x (ofInt t)) then t + 1 else t
 
 end FReal
 

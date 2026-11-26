@@ -136,20 +136,34 @@ instance : FRealMath Float where
   sqrt := Float.sqrt
   exp := Float.exp
   log := Float.log
+  log10 := Float.log10
   sin := Float.sin
   cos := Float.cos
   tan := Float.tan
+  asin := Float.asin
+  acos := Float.acos
   atan := Float.atan
+  atan2 := Float.atan2
+  sinh := Float.sinh
+  cosh := Float.cosh
+  tanh := Float.tanh
   pow := Float.pow
 
 instance : FRealMath Float32 where
   sqrt := Float32.sqrt
   exp := Float32.exp
   log := Float32.log
+  log10 := Float32.log10
   sin := Float32.sin
   cos := Float32.cos
   tan := Float32.tan
+  asin := Float32.asin
+  acos := Float32.acos
   atan := Float32.atan
+  atan2 := Float32.atan2
+  sinh := Float32.sinh
+  cosh := Float32.cosh
+  tanh := Float32.tanh
   pow := Float32.pow
 
 /-- The kinds of a compiled program. -/
