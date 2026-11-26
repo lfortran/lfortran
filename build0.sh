@@ -10,6 +10,13 @@ RE2C=${RE2C:-re2c}
 BISON=${BISON:-bison}
 PYTHON=${PYTHON:-python}
 
+# The generators below rewrite their output on every run, and CMake runs this
+# script on every (re)configure. Remember the generated sources, so that the
+# ones that come out byte-identical keep their old mtime and do not trigger a
+# rebuild of everything that includes them. (`shell` has no `mktemp`.)
+mtime_state=$("${PYTHON}" -c 'import tempfile; print(tempfile.mkstemp(prefix="lfortran-mtime.")[1])')
+"${PYTHON}" ci/keep_unchanged_mtime.py save "$mtime_state" src version
+
 # Generate the `version` file (sourced: Windows cannot run the script directly)
 source ci/version.sh
 
@@ -23,14 +30,17 @@ source ci/version.sh
 "${PYTHON}" src/libasr/intrinsic_func_registry_util_gen.py
 
 # Generate the tokenizer and parser
-(cd src/lfortran && "${RE2C}" -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
-(cd src/lfortran && "${RE2C}" -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
+(cd src/lfortran && "${RE2C}" -W -b --no-generation-date parser/tokenizer.re -o parser/tokenizer.cpp)
+(cd src/lfortran && "${RE2C}" -W -b --no-generation-date parser/preprocessor.re -o parser/preprocessor.cpp)
 # Use `-r all` in Bison for detailed report. Turned off by default to avoid a
 # Bison timeout issue with it.
 (cd src/lfortran/parser && "${BISON}" -Wall -d parser.yy)
 
 # Generate the LSP sources
 "${PYTHON}" src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
+
+"${PYTHON}" ci/keep_unchanged_mtime.py restore "$mtime_state"
+rm -f "$mtime_state"
 
 # Single quotes are not allowed in parser.yy (`shell` has no `grep`)
 "${PYTHON}" -c 'import sys; bad = [f"{i}: {l}" for i, l in enumerate(open("src/lfortran/parser/parser.yy", encoding="utf-8"), 1) if chr(39) in l]; sys.exit("".join(bad) + "Single quote not allowed" if bad else 0)'
