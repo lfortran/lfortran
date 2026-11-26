@@ -300,6 +300,11 @@ private:
             if (k == 4 || k == 8) return "K.R" + std::to_string(k);
             unsupported("real kind " + std::to_string(k) + " is", loc);
         }
+        if (ASR::is_a<ASR::Complex_t>(*t)) {
+            int k = ASR::down_cast<ASR::Complex_t>(t)->m_kind;
+            if (k == 4 || k == 8) return "FCplx K.R" + std::to_string(k);
+            unsupported("complex kind " + std::to_string(k) + " is", loc);
+        }
         if (ASR::is_a<ASR::Logical_t>(*t)) return "Bool";
         unsupported("this type is", loc);
     }
@@ -308,6 +313,7 @@ private:
         t = scalar(t, loc);
         if (ASR::is_a<ASR::Integer_t>(*t)) return "FInt.ofInt 0";
         if (ASR::is_a<ASR::Real_t>(*t)) return "FReal.zero";
+        if (ASR::is_a<ASR::Complex_t>(*t)) return "FCplx.zero";
         if (ASR::is_a<ASR::Logical_t>(*t)) return "false";
         unsupported("this type is", loc);
     }
@@ -319,7 +325,9 @@ private:
     // The type of a variable: a scalar type, or `Arr` of one.
     std::string vtype(ASR::ttype_t *t, const Location &loc) {
         if (is_array(t)) {
-            return "Arr " + type(ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
+            std::string et = type(ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
+            if (et.find(' ') != std::string::npos) et = "(" + et + ")";
+            return "Arr " + et;
         }
         return type(t, loc);
     }
@@ -415,6 +423,13 @@ private:
                 double v = k == 4 ? static_cast<double>(static_cast<float*>(x.m_data)[i])
                     : static_cast<double*>(x.m_data)[i];
                 elems += real_lit(v, k, loc);
+            } else if (ASR::is_a<ASR::Complex_t>(*et)) {
+                int k = ASR::down_cast<ASR::Complex_t>(et)->m_kind;
+                double re = k == 4 ? static_cast<double>(static_cast<float*>(x.m_data)[2 * i])
+                    : static_cast<double*>(x.m_data)[2 * i];
+                double im = k == 4 ? static_cast<double>(static_cast<float*>(x.m_data)[2 * i + 1])
+                    : static_cast<double*>(x.m_data)[2 * i + 1];
+                elems += "FCplx.mk (" + real_lit(re, k, loc) + ") (" + real_lit(im, k, loc) + ")";
             } else if (ASR::is_a<ASR::Logical_t>(*et)) {
                 bool v = static_cast<const bool*>(x.m_data)[i];
                 elems += v ? "true" : "false";
@@ -456,6 +471,10 @@ private:
 
     bool is_real(ASR::expr_t *e) {
         return ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(e));
+    }
+
+    bool is_complex(ASR::expr_t *e) {
+        return ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(e));
     }
 
     bool is_logical(ASR::expr_t *e) {
@@ -533,9 +552,27 @@ private:
             case ASR::exprType::FunctionCall:
             case ASR::exprType::IntegerCompare:
             case ASR::exprType::RealCompare:
+            case ASR::exprType::ComplexCompare:
             case ASR::exprType::LogicalBinOp:
             case ASR::exprType::LogicalNot:
                 return true;
+            case ASR::exprType::ComplexConstructor: {
+                auto &x = *ASR::down_cast<ASR::ComplexConstructor_t>(e);
+                return determined(x.m_re) || determined(x.m_im);
+            }
+            case ASR::exprType::ComplexBinOp: {
+                auto &x = *ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                if (x.m_op == ASR::binopType::Pow && is_int(x.m_right)) {
+                    return determined(x.m_left);
+                }
+                return determined(x.m_left) || determined(x.m_right);
+            }
+            case ASR::exprType::ComplexUnaryMinus:
+                return determined(ASR::down_cast<ASR::ComplexUnaryMinus_t>(e)->m_arg);
+            case ASR::exprType::ComplexRe:
+                return determined(ASR::down_cast<ASR::ComplexRe_t>(e)->m_arg);
+            case ASR::exprType::ComplexIm:
+                return determined(ASR::down_cast<ASR::ComplexIm_t>(e)->m_arg);
             case ASR::exprType::IntegerBinOp: {
                 auto &x = *ASR::down_cast<ASR::IntegerBinOp_t>(e);
                 return determined(x.m_left) || determined(x.m_right);
@@ -553,10 +590,28 @@ private:
                 return determined(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
             case ASR::exprType::Cast: {
                 auto &c = *ASR::down_cast<ASR::Cast_t>(e);
-                if (c.m_kind == ASR::cast_kindType::IntegerToReal) return false;
+                if (c.m_kind == ASR::cast_kindType::IntegerToReal
+                        || c.m_kind == ASR::cast_kindType::IntegerToComplex) {
+                    return false;
+                }
                 if (c.m_kind == ASR::cast_kindType::RealToReal
                         && ASR::down_cast<ASR::Real_t>(c.m_type)->m_kind
                             == ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                    return determined(c.m_arg);
+                }
+                if (c.m_kind == ASR::cast_kindType::RealToComplex
+                        && ASR::down_cast<ASR::Complex_t>(c.m_type)->m_kind
+                            == ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                    return determined(c.m_arg);
+                }
+                if (c.m_kind == ASR::cast_kindType::ComplexToReal
+                        && ASR::down_cast<ASR::Real_t>(c.m_type)->m_kind
+                            == ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                    return determined(c.m_arg);
+                }
+                if (c.m_kind == ASR::cast_kindType::ComplexToComplex
+                        && ASR::down_cast<ASR::Complex_t>(c.m_type)->m_kind
+                            == ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
                     return determined(c.m_arg);
                 }
                 return true;
@@ -693,11 +748,21 @@ private:
         std::transform(f.begin(), f.end(), f.begin(), ::tolower);
         if (x.n_args == 1 && f == "abs") {
             if (is_real(x.m_args[0])) return app("FReal.abs", {operand(x.m_args[0])});
+            if (is_complex(x.m_args[0])) {
+                level = std::max(level, 1);
+                return app("FCplx.abs", {operand(x.m_args[0])});
+            }
             if (is_int(x.m_args[0])) {
                 Val a = operand(x.m_args[0]);
                 return {"(FInt.ofInt " + atom({"Int.natAbs " + atom(
                     app("FInt.toInt", {a})), pApp}) + " : " + type(x.m_type, loc) + ")", pAtom};
             }
+        }
+        if (x.n_args == 1 && (f == "conjg" || f == "dconjg") && is_complex(x.m_args[0])) {
+            return app("FCplx.conj", {operand(x.m_args[0])});
+        }
+        if (x.n_args == 1 && f == "aimag" && is_complex(x.m_args[0])) {
+            return {atom(operand(x.m_args[0])) + ".im", pAtom};
         }
         // `int(x)`: truncation toward zero, in the result's integer kind.
         if (x.n_args >= 1 && f == "int" && is_real(x.m_args[0])) {
@@ -720,6 +785,14 @@ private:
                 int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_args[0]))->m_kind;
                 if (src_k == dst_k) return {"(" + lower(x.m_args[0]).src + " : " + dst_ty + ")", pAtom};
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(x.m_args[0])});
+            }
+            if (is_complex(x.m_args[0])) {
+                type(ASRUtils::expr_type(x.m_args[0]), x.m_args[0]->base.loc);
+                int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
+                int src_k = ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(x.m_args[0]))->m_kind;
+                std::string re = atom(operand(x.m_args[0])) + ".re";
+                if (src_k == dst_k) return {"(" + re + " : " + dst_ty + ")", pAtom};
+                return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {{re, pAtom}});
             }
         }
         if (x.n_args >= 2 && (f == "max" || f == "min")) {
@@ -870,6 +943,47 @@ private:
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4",
                     {operand(x.m_arg)});
             }
+            case ASR::cast_kindType::RealToComplex: {
+                type(x.m_type, loc);
+                type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
+                int dst_k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
+                int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                Val r = src_k == dst_k ? lower(x.m_arg)
+                    : app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(x.m_arg)});
+                return app("FCplx.ofReal", {r});
+            }
+            case ASR::cast_kindType::IntegerToComplex: {
+                type(x.m_type, loc);
+                Val r = ASR::is_a<ASR::IntegerConstant_t>(*x.m_arg)
+                    ? Val{"FReal.ofInt " + int_lit(
+                        ASR::down_cast<ASR::IntegerConstant_t>(x.m_arg)->m_n), pApp}
+                    : app("FReal.ofInt", {app("FInt.toInt", {operand(x.m_arg)})});
+                return app("FCplx.ofReal", {r});
+            }
+            case ASR::cast_kindType::ComplexToReal: {
+                type(x.m_type, loc);
+                type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
+                int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
+                int src_k = ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                std::string re = atom(operand(x.m_arg)) + ".re";
+                if (src_k == dst_k) return {re, pAtom};
+                return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {{re, pAtom}});
+            }
+            case ASR::cast_kindType::ComplexToInteger:
+                type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
+                return {"(FInt.ofInt " + atom(app("FReal.toInt",
+                    {{atom(operand(x.m_arg)) + ".re", pAtom}}))
+                    + " : " + type(x.m_type, loc) + ")", pAtom};
+            case ASR::cast_kindType::ComplexToComplex: {
+                type(x.m_type, loc);
+                type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
+                int dst_k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
+                int src_k = ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                if (src_k == dst_k) return lower(x.m_arg);
+                std::string fn = dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4";
+                return {"((fun z' => FCplx.mk (" + fn + " z'.re) (" + fn + " z'.im)) "
+                    + atom(operand(x.m_arg)) + ")", pAtom};
+            }
             default:
                 unsupported("this conversion is", loc);
         }
@@ -903,6 +1017,10 @@ private:
                 return {"(" + a + ".data.foldl FReal.add (FReal.ofInt 0) : "
                     + type(x.m_type, loc) + ")", pAtom};
             }
+            if (ASR::is_a<ASR::Complex_t>(*et)) {
+                return {"(" + a + ".data.foldl FCplx.add FCplx.zero : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
         }
         if (id == F::Product && x.n_args == 1 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
             ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
@@ -913,6 +1031,10 @@ private:
             }
             if (ASR::is_a<ASR::Real_t>(*et)) {
                 return {"(" + a + ".data.foldl FReal.mul (FReal.ofInt 1) : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
+            if (ASR::is_a<ASR::Complex_t>(*et)) {
+                return {"(" + a + ".data.foldl FCplx.mul (FCplx.ofReal (FReal.ofInt 1)) : "
                     + type(x.m_type, loc) + ")", pAtom};
             }
         }
@@ -1069,6 +1191,96 @@ private:
                 type(x.m_type, loc);
                 return {real_lit(x.m_r, ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind,
                     loc), pApp};
+            }
+            case ASR::exprType::ComplexConstant: {
+                auto &x = *ASR::down_cast<ASR::ComplexConstant_t>(e);
+                type(x.m_type, loc);
+                int k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
+                return app("FCplx.mk", {{real_lit(x.m_re, k, loc), pApp},
+                    {real_lit(x.m_im, k, loc), pApp}});
+            }
+            case ASR::exprType::ComplexConstructor: {
+                auto &x = *ASR::down_cast<ASR::ComplexConstructor_t>(e);
+                type(x.m_type, loc);
+                int k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
+                auto part = [&](ASR::expr_t *p) -> Val {
+                    if (is_int(p)) {
+                        if (ASR::is_a<ASR::IntegerConstant_t>(*p)) {
+                            return {"FReal.ofInt " + int_lit(
+                                ASR::down_cast<ASR::IntegerConstant_t>(p)->m_n), pApp};
+                        }
+                        return app("FReal.ofInt", {app("FInt.toInt", {operand(p)})});
+                    }
+                    if (is_real(p)) {
+                        type(ASRUtils::expr_type(p), p->base.loc);
+                        int pk = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(p))->m_kind;
+                        if (pk == k) return lower(p);
+                        return app(k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(p)});
+                    }
+                    unsupported("this complex constructor is", p->base.loc);
+                };
+                return app("FCplx.mk", {part(x.m_re), part(x.m_im)});
+            }
+            case ASR::exprType::ComplexRe: {
+                auto &x = *ASR::down_cast<ASR::ComplexRe_t>(e);
+                if (is_array(x.m_type)) {
+                    return app("Arr.map", {{"(fun z' => z'.re)", pAtom}, lower(x.m_arg)});
+                }
+                return {atom(operand(x.m_arg)) + ".re", pAtom};
+            }
+            case ASR::exprType::ComplexIm: {
+                auto &x = *ASR::down_cast<ASR::ComplexIm_t>(e);
+                if (is_array(x.m_type)) {
+                    return app("Arr.map", {{"(fun z' => z'.im)", pAtom}, lower(x.m_arg)});
+                }
+                return {atom(operand(x.m_arg)) + ".im", pAtom};
+            }
+            case ASR::exprType::ComplexUnaryMinus: {
+                auto &x = *ASR::down_cast<ASR::ComplexUnaryMinus_t>(e);
+                if (is_array(x.m_type)) {
+                    return app("Arr.map", {{"FCplx.neg", pAtom}, lower(x.m_arg)});
+                }
+                if (ASR::expr_t *v = ASRUtils::expr_value(e); v && v != e) return lower(v);
+                return app("FCplx.neg", {lower(x.m_arg)});
+            }
+            case ASR::exprType::ComplexBinOp: {
+                auto &x = *ASR::down_cast<ASR::ComplexBinOp_t>(e);
+                const char *f = nullptr;
+                switch (x.m_op) {
+                    case ASR::binopType::Add: f = "FCplx.add"; break;
+                    case ASR::binopType::Sub: f = "FCplx.sub"; break;
+                    case ASR::binopType::Mul: f = "FCplx.mul"; break;
+                    case ASR::binopType::Div: f = "FCplx.div"; break;
+                    case ASR::binopType::Pow:
+                        if (!is_array(x.m_type) && is_int(x.m_right)) {
+                            return app("FCplx.powInt", {lower(x.m_left), int_expr(x.m_right)});
+                        }
+                        unsupported("this complex operator is", loc);
+                    default: unsupported("this complex operator is", loc);
+                }
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            return std::string(f) + " " + a + " " + b;
+                        });
+                }
+                return app(f, {lower(x.m_left), lower(x.m_right)});
+            }
+            case ASR::exprType::ComplexCompare: {
+                auto &x = *ASR::down_cast<ASR::ComplexCompare_t>(e);
+                if (x.m_op != ASR::cmpopType::Eq && x.m_op != ASR::cmpopType::NotEq) {
+                    unsupported("this complex comparison is", loc);
+                }
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) {
+                            return x.m_op == ASR::cmpopType::Eq
+                                ? "FCplx.beq " + a + " " + b
+                                : "!(FCplx.beq " + a + " " + b + ")";
+                        });
+                }
+                Val eq = app("FCplx.beq", {operand(x.m_left), lower(x.m_right)});
+                return x.m_op == ASR::cmpopType::Eq ? eq : Val{"!" + atom(eq), pApp};
             }
             case ASR::exprType::LogicalConstant:
                 return {ASR::down_cast<ASR::LogicalConstant_t>(e)->m_value
@@ -1263,6 +1475,9 @@ private:
             else if (ASR::is_a<ASR::Real_t>(*et)) {
                 fmt = "FKindsIO.fmtR" + std::to_string(ASR::down_cast<ASR::Real_t>(et)->m_kind)
                     + " (x' : " + ety + ")";
+            } else if (ASR::is_a<ASR::Complex_t>(*et)) {
+                std::string fn = "FKindsIO.fmtR" + std::to_string(ASR::down_cast<ASR::Complex_t>(et)->m_kind);
+                fmt = "\"(\" ++ " + fn + " (x' : " + ety + ").re ++ \",\" ++ " + fn + " x'.im ++ \")\"";
             } else if (ASR::is_a<ASR::Logical_t>(*et)) fmt = "(if x' then \"T\" else \"F\")";
             else unsupported("printing this value is", loc);
             return "(String.intercalate \" \" (" + atom(lower(e))
@@ -1277,6 +1492,12 @@ private:
         if (ASR::is_a<ASR::Real_t>(*t)) {
             int k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
             return "FKindsIO.fmtR" + std::to_string(k) + " " + v;
+        }
+        if (ASR::is_a<ASR::Complex_t>(*t)) {
+            int k = ASR::down_cast<ASR::Complex_t>(t)->m_kind;
+            std::string fn = "FKindsIO.fmtR" + std::to_string(k);
+            return "((fun z' => \"(\" ++ " + fn + " z'.re ++ \",\" ++ " + fn
+                + " z'.im ++ \")\") " + v + ")";
         }
         if (ASR::is_a<ASR::Logical_t>(*t)) {
             return "(if " + lower(e).src + " then \"T\" else \"F\")";
