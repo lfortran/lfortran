@@ -85,12 +85,9 @@ def ubound {α : Type} (a : Arr α) (dim : Int) : Int :=
   let i := dim.toNat - 1
   if a.exts[i]! == 0 then 0 else a.lbs[i]! + Int.ofNat (a.exts[i]!) - 1
 
-/-- Slice an array along each dimension.
-`specs[d]` is `Sum.inl idx` for a fixed scalar index (rank-reducing) or
-`Sum.inr (start, stop, step)` for a triplet slice `start:stop:step`.
-Resulting dimensions have lower bound 1, as in Fortran. -/
-def slice {α : Type} [Inhabited α] (a : Arr α)
-    (specs : Array (Int ⊕ (Int × Int × Int))) : Arr α := Id.run do
+private def sliceLayout {α : Type} (a : Arr α)
+    (specs : Array (Int ⊕ (Int × Int × Int)))
+    : Array Nat × Int × Array Int × Nat := Id.run do
   let mut newExts : Array Nat := #[]
   let mut strides : Array Nat := #[]
   let mut stride : Nat := 1
@@ -112,6 +109,15 @@ def slice {α : Type} [Inhabited α] (a : Arr α)
       sliceStrides := sliceStrides.push (step * st)
   let mut total : Nat := 1
   for e in newExts do total := total * e
+  return (newExts, baseOff, sliceStrides, total)
+
+/-- Slice an array along each dimension.
+`specs[d]` is `Sum.inl idx` for a fixed scalar index (rank-reducing) or
+`Sum.inr (start, stop, step)` for a triplet slice `start:stop:step`.
+Resulting dimensions have lower bound 1, as in Fortran. -/
+def slice {α : Type} [Inhabited α] (a : Arr α)
+    (specs : Array (Int ⊕ (Int × Int × Int))) : Arr α := Id.run do
+  let (newExts, baseOff, sliceStrides, total) := sliceLayout a specs
   let mut out : Array α := Array.mkEmpty total
   for flat in [:total] do
     let mut rem := flat
@@ -123,6 +129,74 @@ def slice {α : Type} [Inhabited α] (a : Arr α)
       off := off + Int.ofNat idx * sliceStrides[k]!
     out := out.push a.data[off.toNat]!
   return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
+
+/-- Assign an array into a slice of `a`, keeping `a`'s shape and bounds. -/
+def setSlice {α : Type} [Inhabited α] (a : Arr α)
+    (specs : Array (Int ⊕ (Int × Int × Int))) (src : Arr α) : Arr α := Id.run do
+  let (newExts, baseOff, sliceStrides, total) := sliceLayout a specs
+  let mut data := a.data
+  for flat in [:total] do
+    let mut rem := flat
+    let mut off := baseOff
+    for k in [:newExts.size] do
+      let e := newExts[k]!
+      let idx := rem % e
+      rem := rem / e
+      off := off + Int.ofNat idx * sliceStrides[k]!
+    data := data.set! off.toNat src.data[flat]!
+  return { a with data := data }
+
+/-- Fill a slice of `a` with a scalar value, keeping `a`'s shape and bounds. -/
+def fillSlice {α : Type} (a : Arr α)
+    (specs : Array (Int ⊕ (Int × Int × Int))) (v : α) : Arr α := Id.run do
+  let (newExts, baseOff, sliceStrides, total) := sliceLayout a specs
+  let mut data := a.data
+  for flat in [:total] do
+    let mut rem := flat
+    let mut off := baseOff
+    for k in [:newExts.size] do
+      let e := newExts[k]!
+      let idx := rem % e
+      rem := rem / e
+      off := off + Int.ofNat idx * sliceStrides[k]!
+    data := data.set! off.toNat v
+  return { a with data := data }
+
+/-- Fortran `matmul` for 2D×2D, 2D×1D, and 1D×2D arrays. -/
+def matmul {α : Type} [Inhabited α] (z : α) (add mul : α → α → α)
+    (a b : Arr α) : Arr α := Id.run do
+  if a.exts.size == 2 && b.exts.size == 2 then
+    let m := a.exts[0]!
+    let k := a.exts[1]!
+    let n := b.exts[1]!
+    let mut out : Array α := Array.mkEmpty (m * n)
+    for j in [:n] do
+      for i in [:m] do
+        let mut s := z
+        for p in [:k] do
+          s := add s (mul a.data[i + m * p]! b.data[p + k * j]!)
+        out := out.push s
+    return { lbs := #[1, 1], exts := #[m, n], data := out }
+  else if a.exts.size == 2 && b.exts.size == 1 then
+    let m := a.exts[0]!
+    let k := a.exts[1]!
+    let mut out : Array α := Array.mkEmpty m
+    for i in [:m] do
+      let mut s := z
+      for p in [:k] do
+        s := add s (mul a.data[i + m * p]! b.data[p]!)
+      out := out.push s
+    return { lbs := #[1], exts := #[m], data := out }
+  else
+    let k := a.exts[0]!
+    let n := b.exts[1]!
+    let mut out : Array α := Array.mkEmpty n
+    for j in [:n] do
+      let mut s := z
+      for p in [:k] do
+        s := add s (mul a.data[p]! b.data[p + k * j]!)
+      out := out.push s
+    return { lbs := #[1], exts := #[n], data := out }
 
 end Arr
 
