@@ -299,6 +299,50 @@ def reduceDim1 {α : Type} [Inhabited α] (emptyVal : α) (f : α → α → α)
     a dim mask
   { res with data := res.data.map (·.getD emptyVal) }
 
+/-- 1-based index along 1-based dimension `dim` of the first element maximizing
+or minimizing according to `better cur cand` (0 when a slice has no selected
+elements). -/
+def extremaLocDim {α : Type} [Inhabited α] (better : α → α → Bool)
+    (a : Arr α) (dim : Int) (mask : Option (Arr Bool) := none) : Arr Int := Id.run do
+  let d := (dim - 1).toNat
+  let mut newExts : Array Nat := Array.mkEmpty (a.exts.size - 1)
+  for i in [:a.exts.size] do
+    if i != d then newExts := newExts.push a.exts[i]!
+  let mut total : Nat := 1
+  for e in newExts do total := total * e
+  let dExt := a.exts.getD d 0
+  let mut out : Array Int := Array.mkEmpty total
+  for flat in [:total] do
+    let mut rem := flat
+    let mut baseOff : Nat := 0
+    let mut stride : Nat := 1
+    let mut dStride : Nat := 1
+    for k in [:a.exts.size] do
+      let e := a.exts[k]!
+      if k == d then
+        dStride := stride
+      else
+        let idx := rem % e
+        rem := rem / e
+        baseOff := baseOff + idx * stride
+      stride := stride * e
+    let mut found := false
+    let mut bestPos : Int := 0
+    let mut bestVal : α := default
+    for j in [:dExt] do
+      let off := baseOff + j * dStride
+      let ok := match mask with
+        | some m => m.data.getD off false
+        | none => true
+      if ok then
+        let v := a.data[off]!
+        if !found || better bestVal v then
+          found := true
+          bestPos := Int.ofNat (j + 1)
+          bestVal := v
+    out := out.push bestPos
+  return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
+
 end Arr
 
 end LFortran
