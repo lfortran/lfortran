@@ -414,6 +414,22 @@ private:
         return ASR::down_cast<ASR::Variable_t>(ms);
     }
 
+    std::vector<ASR::Variable_t*> all_struct_members(ASR::Struct_t *st, const Location &loc) {
+        std::vector<ASR::Variable_t*> ms;
+        if (st->m_parent) {
+            ms = all_struct_members(resolve_struct(st->m_parent, loc), loc);
+        }
+        for (size_t i = 0; i < st->n_members; i++) {
+            ms.push_back(struct_member(st, i, loc));
+        }
+        return ms;
+    }
+
+    std::string struct_parent_proj(ASR::Struct_t *parent, const Location &loc) {
+        name(parent->m_name, loc);
+        return "to" + std::string(parent->m_name);
+    }
+
     std::string struct_qname(ASR::Struct_t *st, const Location &loc) {
         std::string sn = name(st->m_name, loc);
         auto it = struct_ns.find(st);
@@ -453,6 +469,9 @@ private:
                         ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
                     if (ASR::is_a<ASR::Variable_t>(*s)) {
                         return ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+                    }
+                    if (ASR::is_a<ASR::Struct_t>(*s)) {
+                        return s;
                     }
                     return nullptr;
                 }
@@ -1801,6 +1820,68 @@ private:
                     + " else d'.foldl " + fn + " d'[0]!) : " + ty + ")", pAtom};
             }
         }
+        // `dim=` reductions (`sum`, `product`, `any`, `all`, `count`, `maxval`, `minval`)
+        // returning an array of rank - 1.
+        if ((id == F::Sum || id == F::Product || id == F::Any || id == F::All
+                || id == F::Count || id == F::MaxVal || id == F::MinVal)
+                && is_array(x.m_type) && x.n_args >= 2 && x.m_args[1]
+                && is_int(x.m_args[1]) && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::expr_t *mask = (x.n_args >= 3 && x.m_args[2] && is_mask_arg(x.m_args[2]))
+                ? x.m_args[2] : nullptr;
+            if (x.n_args <= 3 && (!mask || is_array(ASRUtils::expr_type(mask)))) {
+                ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+                ASR::ttype_t *rt = elem_type(x.m_type);
+                std::string rty = type(rt, loc);
+                std::string init, op;
+                if (id == F::Sum || id == F::Product) {
+                    if (ASR::is_a<ASR::Integer_t>(*et)) {
+                        init = "(" + std::string(id == F::Sum ? "FInt.ofInt 0" : "FInt.ofInt 1") + " : " + rty + ")";
+                        op = id == F::Sum ? "FInt.add" : "FInt.mul";
+                    } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                        init = "(" + std::string(id == F::Sum ? "FReal.zero" : "FReal.ofInt 1") + " : " + rty + ")";
+                        op = id == F::Sum ? "FReal.add" : "FReal.mul";
+                    } else if (ASR::is_a<ASR::Complex_t>(*et)) {
+                        init = "(" + std::string(id == F::Sum ? "FCplx.zero" : "FCplx.ofReal (FReal.ofInt 1)") + " : " + rty + ")";
+                        op = id == F::Sum ? "FCplx.add" : "FCplx.mul";
+                    }
+                } else if (id == F::Any && ASR::is_a<ASR::Logical_t>(*et)) {
+                    init = "false";
+                    op = "(fun acc' x' => acc' || x')";
+                } else if (id == F::All && ASR::is_a<ASR::Logical_t>(*et)) {
+                    init = "true";
+                    op = "(fun acc' x' => acc' && x')";
+                } else if (id == F::Count && ASR::is_a<ASR::Logical_t>(*et)) {
+                    init = "(FInt.ofInt 0 : " + rty + ")";
+                    op = "(fun acc' b' => if b' then FInt.add acc' (FInt.ofInt 1) else acc')";
+                } else if (id == F::MaxVal || id == F::MinVal) {
+                    if (ASR::is_a<ASR::Integer_t>(*et)) {
+                        int k = ASR::down_cast<ASR::Integer_t>(et)->m_kind;
+                        int64_t hi = k == 1 ? INT8_MAX : k == 2 ? INT16_MAX : k == 4 ? INT32_MAX : INT64_MAX;
+                        int64_t lo = k == 1 ? INT8_MIN : k == 2 ? INT16_MIN : k == 4 ? INT32_MIN : INT64_MIN;
+                        init = "(FInt.ofInt " + int_lit(id == F::MaxVal ? lo : hi) + " : " + rty + ")";
+                        op = id == F::MaxVal ? "FInt.fmax" : "FInt.fmin";
+                    } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                        int k = ASR::down_cast<ASR::Real_t>(et)->m_kind;
+                        double h = k == 4 ? static_cast<double>(std::numeric_limits<float>::max())
+                            : std::numeric_limits<double>::max();
+                        std::string hv = real_lit(h, k, loc);
+                        init = "(" + (id == F::MaxVal ? "FReal.neg (" + hv + ")" : hv) + " : " + rty + ")";
+                        op = id == F::MaxVal ? "FReal.fmax" : "FReal.fmin";
+                    }
+                }
+                if (!op.empty()) {
+                    std::string fn_name = (id == F::MaxVal || id == F::MinVal)
+                        ? "Arr.reduceDim1" : "Arr.reduceDim";
+                    if (mask) {
+                        return app(fn_name, {{init, pAtom}, {op, pAtom},
+                            lower(x.m_args[0]), int_expr(x.m_args[1]),
+                            {"(some " + atom(lower(mask)) + ")", pAtom}});
+                    }
+                    return app(fn_name, {{init, pAtom}, {op, pAtom},
+                        lower(x.m_args[0]), int_expr(x.m_args[1])});
+                }
+            }
+        }
         if (id == F::MatMul && x.n_args == 2) {
             ASR::ttype_t *et = scalar(elem_type(x.m_type), loc);
             ASR::ttype_t *e0 = elem_type(ASRUtils::expr_type(x.m_args[0]));
@@ -2411,13 +2492,20 @@ private:
                 auto &x = *ASR::down_cast<ASR::StructInstanceMember_t>(e);
                 if (x.m_value && x.m_value != e) return lower(x.m_value);
                 ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(x.m_m);
-                if (!ASR::is_a<ASR::Variable_t>(*ms)) {
+                std::string fn;
+                bool member_is_arr = false, member_is_alloc = false;
+                if (ASR::is_a<ASR::Variable_t>(*ms)) {
+                    ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(ms);
+                    fn = name(mv->m_name, loc);
+                    member_is_arr = is_array(mv->m_type);
+                    member_is_alloc = is_allocatable(mv->m_type);
+                } else if (ASR::is_a<ASR::Struct_t>(*ms)) {
+                    fn = struct_parent_proj(ASR::down_cast<ASR::Struct_t>(ms), loc);
+                } else {
                     unsupported("this derived type member is", loc);
                 }
-                std::string fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
                 if (is_array(ASRUtils::expr_type(x.m_v))) {
-                    ASR::ttype_t *mt = ASR::down_cast<ASR::Variable_t>(ms)->m_type;
-                    if (is_array(mt) || is_allocatable(mt)) {
+                    if (member_is_arr || member_is_alloc) {
                         unsupported("this array of derived types member is", loc);
                     }
                     return app("Arr.map", {{"(fun s' => s'." + fn + ")", pAtom}, lower(x.m_v)});
@@ -2508,10 +2596,29 @@ private:
     Val struct_ctor(ASR::symbol_t *dt_sym, ASR::call_arg_t *args, size_t n_args,
             const Location &loc) {
         ASR::Struct_t *st = resolve_struct(dt_sym, loc);
-        if (n_args > st->n_members) unsupported("this derived type constructor is", loc);
+        // Handle `child(parent_val, own_fields...)` when first arg has parent StructType.
+        if (st->m_parent && n_args == 1 + st->n_members && args[0].m_value
+                && ASR::is_a<ASR::StructType_t>(*unalloc_type(args[0].m_value))) {
+            ASR::Struct_t *pst = resolve_struct(st->m_parent, loc);
+            ASR::symbol_t *arg0_td = expr_type_decl(args[0].m_value);
+            ASR::symbol_t *arg0_sym = arg0_td ? ASRUtils::symbol_get_past_external(arg0_td) : nullptr;
+            if (arg0_sym && ASR::is_a<ASR::Struct_t>(*arg0_sym)
+                    && ASR::down_cast<ASR::Struct_t>(arg0_sym) == pst) {
+                std::string fields = struct_parent_proj(pst, loc) + " := " + lower(args[0].m_value).src;
+                for (size_t i = 0; i < st->n_members; i++) {
+                    ASR::Variable_t *mv = struct_member(st, i, loc);
+                    ASR::expr_t *arg = args[i + 1].m_value;
+                    std::string val = arg ? struct_member_init(mv, arg, loc) : struct_member_default(mv);
+                    fields += ", " + name(mv->m_name, mv->base.base.loc) + " := " + val;
+                }
+                return {"({ " + fields + " } : " + struct_qname(st, loc) + " K)", pAtom};
+            }
+        }
+        std::vector<ASR::Variable_t*> ms = all_struct_members(st, loc);
+        if (n_args > ms.size()) unsupported("this derived type constructor is", loc);
         std::string fields;
-        for (size_t i = 0; i < st->n_members; i++) {
-            ASR::Variable_t *mv = struct_member(st, i, loc);
+        for (size_t i = 0; i < ms.size(); i++) {
+            ASR::Variable_t *mv = ms[i];
             if (i) fields += ", ";
             ASR::expr_t *arg = (i < n_args) ? args[i].m_value : nullptr;
             std::string val = arg ? struct_member_init(mv, arg, loc) : struct_member_default(mv);
@@ -2573,11 +2680,12 @@ private:
         }
         if (ASR::is_a<ASR::StructType_t>(*t)) {
             ASR::Struct_t *st = resolve_struct(type_decl, loc);
-            if (st->n_members == 0) return "((fun _ => \"\") " + atom({val_src, pApp}) + ")";
+            std::vector<ASR::Variable_t*> ms = all_struct_members(st, loc);
+            if (ms.empty()) return "((fun _ => \"\") " + atom({val_src, pApp}) + ")";
             std::string sv = "s'" + std::to_string(depth);
             std::string parts;
-            for (size_t i = 0; i < st->n_members; i++) {
-                ASR::Variable_t *mv = struct_member(st, i, loc);
+            for (size_t i = 0; i < ms.size(); i++) {
+                ASR::Variable_t *mv = ms[i];
                 if (i) parts += ", ";
                 parts += shown_val(sv + "." + name(mv->m_name, mv->base.base.loc),
                     mv->m_type, mv->m_type_declaration, loc, depth + 1);
@@ -2746,8 +2854,14 @@ private:
                 unsupported("this assignment is", loc);
             }
             ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(m.m_m);
-            if (!ASR::is_a<ASR::Variable_t>(*ms)) unsupported("this assignment is", loc);
-            std::string fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
+            std::string fn;
+            if (ASR::is_a<ASR::Variable_t>(*ms)) {
+                fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
+            } else if (ASR::is_a<ASR::Struct_t>(*ms)) {
+                fn = struct_parent_proj(ASR::down_cast<ASR::Struct_t>(ms), loc);
+            } else {
+                unsupported("this assignment is", loc);
+            }
             update_lvalue(m.m_v, [&](const std::string &cur_s) {
                 return "{ " + cur_s + " with " + fn + " := " + rhs_fn(cur_s + "." + fn) + " }";
             }, loc, /*raw=*/false);
@@ -4139,6 +4253,13 @@ private:
                 unsupported("a recursive derived type is", st->base.base.loc);
             }
             state[st] = 1;
+            if (st->m_parent) {
+                ASR::symbol_t *ps = ASRUtils::symbol_get_past_external(st->m_parent);
+                if (ASR::is_a<ASR::Struct_t>(*ps)) {
+                    ASR::Struct_t *pdep = ASR::down_cast<ASR::Struct_t>(ps);
+                    if (struct_ns.count(pdep)) visit(pdep);
+                }
+            }
             for (size_t i = 0; i < st->n_members; i++) {
                 ASR::Variable_t *mv = struct_member(st, i, st->base.base.loc);
                 ASR::ttype_t *et = elem_type(mv->m_type);
@@ -4159,13 +4280,18 @@ private:
 
     std::string emit_struct(ASR::Struct_t *st) {
         const Location &loc = st->base.base.loc;
-        if (st->m_is_abstract) unsupported("an abstract derived type is", loc);
-        if (st->m_parent) unsupported("derived type inheritance is", loc);
         if (st->n_member_functions > 0) unsupported("type-bound procedures are", loc);
         if (st->n_kind_params > 0) unsupported("parameterized derived types are", loc);
         std::string sn = name(st->m_name, loc);
-        std::string s = "structure " + sn + " (K : Kinds) where\n";
+        std::string ext_clause;
         std::string init_fields;
+        if (st->m_parent) {
+            ASR::Struct_t *pst = resolve_struct(st->m_parent, loc);
+            ext_clause = " extends " + struct_qname(pst, loc) + " K";
+            init_fields = struct_parent_proj(pst, loc) + " := "
+                + struct_init_qname(pst, loc) + " (K := K)";
+        }
+        std::string s = "structure " + sn + " (K : Kinds)" + ext_clause + " where\n";
         SymbolTable *saved_scope = scope;
         int saved_level = level;
         scope = st->m_symtab;
@@ -4175,7 +4301,7 @@ private:
             const Location &mloc = mv->base.base.loc;
             std::string mn = name(mv->m_name, mloc);
             s += "  " + mn + " : " + vtype(mv->m_type, mloc, mv->m_type_declaration) + "\n";
-            if (i) init_fields += ", ";
+            if (!init_fields.empty()) init_fields += ", ";
             init_fields += mn + " := " + struct_member_default(mv);
         }
         int init_level = level;
