@@ -1,0 +1,13 @@
+{
+    "basename": "asr-deallocate_errmsg_01-9eb790b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/deallocate_errmsg_01.f90",
+    "infile_hash": "eeee5683a237bcf2f99dcd3e9c5f363e2739029758b451d199092b9a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-deallocate_errmsg_01-9eb790b.stderr",
+    "stderr_hash": "d02f2422b255bf014e49da7c0080fadc7dfe0625943bc97ae439c28a",
+    "returncode": 2
+}

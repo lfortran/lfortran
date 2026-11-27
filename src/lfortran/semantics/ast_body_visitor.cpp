@@ -359,6 +359,80 @@ public:
         return false;
     }
 
+    // Whether an argument designates a definable variable. Walks array
+    // items, components and sections without assuming a Var base.
+    bool is_definable_expr(ASR::expr_t *expr) {
+        switch (expr->type) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+                ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(sym);
+                if (!ASR::is_a<ASR::Variable_t>(*resolved)) return false;
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(resolved);
+                // Outside its module and that module's descendants, a
+                // nonpointer PROTECTED variable is not definable (F2018
+                // 8.5.15); a submodule is a descendant.
+                ASR::Module_t *owner = ASRUtils::get_sym_module0(resolved);
+                bool protected_here = sym != resolved && v->m_is_protected
+                    && !ASRUtils::is_pointer(v->m_type)
+                    && !(owner != nullptr
+                        && is_scope_in_module(current_scope, owner->m_name));
+                return v->m_storage != ASR::storage_typeType::Parameter
+                    && !selector_has_constant_or_non_definable_base(expr)
+                    && (v->m_intent != ASR::intentType::In
+                        || ASRUtils::is_pointer(v->m_type))
+                    && !protected_here;
+            }
+            case ASR::exprType::StringItem:
+                return is_definable_expr(ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
+            case ASR::exprType::StringSection:
+                return is_definable_expr(ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
+            case ASR::exprType::ArrayItem:
+                return is_definable_expr(ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
+            case ASR::exprType::ArraySection:
+                return is_definable_expr(ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
+            case ASR::exprType::ArrayPhysicalCast:
+                return is_definable_expr(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+            case ASR::exprType::StructInstanceMember: {
+                auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                // Defining a pointer's target does not define its containing object.
+                return ASRUtils::is_pointer(member->m_type)
+                    || is_definable_expr(member->m_v);
+            }
+            case ASR::exprType::CoarrayRef:
+                return is_definable_expr(ASR::down_cast<ASR::CoarrayRef_t>(expr)->m_var);
+            case ASR::exprType::FunctionCall:
+                return ASRUtils::is_pointer(ASRUtils::expr_type(expr));
+            default:
+                return false;
+        }
+    }
+
+    void validate_stat_errmsg_arg(ASR::expr_t *value, const std::string &arg_name,
+            const std::string &stmt_name) {
+        ASR::ttype_t *value_type = ASRUtils::expr_type(value);
+        bool is_stat = arg_name == "stat";
+        if (ASRUtils::is_array(value_type) || (is_stat ?
+                !ASRUtils::is_integer(*value_type) :
+                !ASRUtils::is_character(*value_type))) {
+            diag.add(Diagnostic(
+                "`" + arg_name + "` argument of `" + stmt_name + "` must be a scalar of type " +
+                (is_stat ? "integer" : "character") + ", found " +
+                ASRUtils::type_to_str_with_kind(value_type, value),
+                Level::Error, Stage::Semantic, {
+                    Label("", {value->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        if (!is_definable_expr(value)) {
+            diag.add(Diagnostic(
+                "`" + arg_name + "` argument of `" + stmt_name + "` must be a definable variable",
+                Level::Error, Stage::Semantic, {
+                    Label("", {value->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
     void add_assignment_to_constant_variable_error(const Location& assignment_loc,
             const Location& constant_loc, const std::string& constant_label) {
         diag.add(diag::Diagnostic(
@@ -4447,53 +4521,6 @@ public:
         ASR::expr_t *iolength = args[32], *sign=args[33], *encoding=args[34];
         ASR::expr_t *stream = args[35], *iomsg = args[36], *round = args[37];
         ASR::expr_t *pending = args[38], *asynchronous = args[39];
-        // Whether an argument designates a definable variable. Walks array
-        // items, components and sections without assuming a Var base.
-        auto is_definable = [&](auto &&self, ASR::expr_t *expr) -> bool {
-            switch (expr->type) {
-                case ASR::exprType::Var: {
-                    ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
-                    ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(sym);
-                    if (!ASR::is_a<ASR::Variable_t>(*resolved)) return false;
-                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(resolved);
-                    // Outside its module and that module's descendants, a
-                    // nonpointer PROTECTED variable is not definable (F2018
-                    // 8.5.15); a submodule is a descendant.
-                    ASR::Module_t *owner = ASRUtils::get_sym_module0(resolved);
-                    bool protected_here = sym != resolved && v->m_is_protected
-                        && !ASRUtils::is_pointer(v->m_type)
-                        && !(owner != nullptr
-                            && is_scope_in_module(current_scope, owner->m_name));
-                    return v->m_storage != ASR::storage_typeType::Parameter
-                        && !selector_has_constant_or_non_definable_base(expr)
-                        && (v->m_intent != ASR::intentType::In
-                            || ASRUtils::is_pointer(v->m_type))
-                        && !protected_here;
-                }
-                case ASR::exprType::StringItem:
-                    return self(self, ASR::down_cast<ASR::StringItem_t>(expr)->m_arg);
-                case ASR::exprType::StringSection:
-                    return self(self, ASR::down_cast<ASR::StringSection_t>(expr)->m_arg);
-                case ASR::exprType::ArrayItem:
-                    return self(self, ASR::down_cast<ASR::ArrayItem_t>(expr)->m_v);
-                case ASR::exprType::ArraySection:
-                    return self(self, ASR::down_cast<ASR::ArraySection_t>(expr)->m_v);
-                case ASR::exprType::ArrayPhysicalCast:
-                    return self(self, ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
-                case ASR::exprType::StructInstanceMember: {
-                    auto *member = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
-                    // Defining a pointer's target does not define its containing object.
-                    return ASRUtils::is_pointer(member->m_type)
-                        || self(self, member->m_v);
-                }
-                case ASR::exprType::CoarrayRef:
-                    return self(self, ASR::down_cast<ASR::CoarrayRef_t>(expr)->m_var);
-                case ASR::exprType::FunctionCall:
-                    return ASRUtils::is_pointer(ASRUtils::expr_type(expr));
-                default:
-                    return false;
-            }
-        };
         if (delim) {
             ASR::ttype_t *type = ASRUtils::expr_type(delim);
             if (!ASRUtils::is_character(*type) || ASRUtils::is_array(type)
@@ -4505,7 +4532,7 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            if (!is_definable(is_definable, delim)) {
+            if (!is_definable_expr(delim)) {
                 diag.add(Diagnostic("delim in inquire must be a definable variable",
                     Level::Error, Stage::Semantic, {
                         Label("", {delim->base.loc})
@@ -4523,7 +4550,7 @@ public:
                 continue;
             }
             ASR::expr_t *arg = args[argname2idx[spec]];
-            if (arg && !is_definable(is_definable, arg)) {
+            if (arg && !is_definable_expr(arg)) {
                 diag.add(Diagnostic(spec + " in inquire must be a definable variable",
                     Level::Error, Stage::Semantic, {
                         Label("", {arg->base.loc})
@@ -4567,7 +4594,7 @@ public:
             }
             ASR::ttype_t *type = ASRUtils::expr_type(arg);
             if (!ASRUtils::is_integer(*type) || ASRUtils::is_array(type)
-                    || !is_definable(is_definable, arg)) {
+                    || !is_definable_expr(arg)) {
                 diag.add(Diagnostic(
                     std::string(name) + " in inquire must be a scalar integer variable",
                     Level::Error, Stage::Semantic, {
@@ -5840,9 +5867,11 @@ public:
             if( is_stat ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 stat = ASRUtils::EXPR(tmp);
+                validate_stat_errmsg_arg(stat, "stat", "allocate");
             } else if( is_errmsg ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 errmsg = ASRUtils::EXPR(tmp);
+                validate_stat_errmsg_arg(errmsg, "errmsg", "allocate");
             } else if( is_source ) {
                 source_cond = true;
                 this->visit_expr(*(x.m_keywords[i].m_value));
@@ -6392,20 +6421,8 @@ public:
             }
             this->visit_expr(*(x.m_keywords[i].m_value));
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
-            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
             bool is_stat = name == "stat";
-            if (ASRUtils::is_array(value_type) || (is_stat ?
-                    !ASRUtils::is_integer(*value_type) :
-                    !ASRUtils::is_character(*value_type))) {
-                diag.add(Diagnostic(
-                    "`" + name + "` argument of `deallocate` must be a scalar of type " +
-                    (is_stat ? "integer" : "character") + ", found " +
-                    ASRUtils::type_to_str_with_kind(value_type, value),
-                    Level::Error, Stage::Semantic, {
-                        Label("", {value->base.loc})
-                    }));
-                throw SemanticAbort();
-            }
+            validate_stat_errmsg_arg(value, name, "deallocate");
             (is_stat ? stat : errmsg) = value;
         }
         tmp = ASR::make_ExplicitDeallocate_t(al, x.base.base.loc,
