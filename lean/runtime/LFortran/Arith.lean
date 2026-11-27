@@ -300,6 +300,15 @@ def slice (s : String) (lo hi : Int) : String :=
   if hi < lo then ""
   else String.ofList ((s.toList.drop (lo - 1).toNat).take (hi - lo + 1).toNat)
 
+def setSlice (s : String) (lo hi : Int) (v : String) : String :=
+  if hi < lo then s
+  else
+    let i0 := (lo - 1).toNat
+    let len := (hi - lo + 1).toNat
+    let cs := s.toList
+    let repl := (fix len v).toList
+    String.ofList (cs.take i0 ++ repl ++ cs.drop (i0 + len))
+
 def rep (s : String) (n : Int) : String := Id.run do
   let mut out := ""
   for _ in [:n.toNat] do

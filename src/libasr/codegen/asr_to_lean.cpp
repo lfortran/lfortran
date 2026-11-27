@@ -228,6 +228,8 @@ public:
                 e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
                 e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StringSection_t>(*e)) {
+                e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
                 e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
             } else if (ASR::is_a<ASR::Var_t>(*e)) {
@@ -472,6 +474,18 @@ private:
                 case ASR::exprType::ArrayTranspose:
                     e = ASR::down_cast<ASR::ArrayTranspose_t>(e)->m_matrix;
                     break;
+                case ASR::exprType::ArrayPack:
+                    e = ASR::down_cast<ASR::ArrayPack_t>(e)->m_array;
+                    break;
+                case ASR::exprType::IntrinsicArrayFunction: {
+                    auto &x = *ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
+                    if (static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id)
+                            == ASRUtils::IntrinsicArrayFunctions::Pack && x.n_args > 0) {
+                        e = x.m_args[0];
+                        break;
+                    }
+                    return nullptr;
+                }
                 case ASR::exprType::ImpliedDoLoop: {
                     auto &x = *ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
                     if (x.n_values > 0) { e = x.m_values[0]; break; }
@@ -1646,7 +1660,56 @@ private:
                     + " else d'.foldl " + fn + " d'[0]!) : " + ty + ")", pAtom};
             }
         }
+        if (id == F::MatMul && x.n_args == 2) {
+            ASR::ttype_t *et = scalar(elem_type(x.m_type), loc);
+            ASR::ttype_t *e0 = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            ASR::ttype_t *e1 = elem_type(ASRUtils::expr_type(x.m_args[1]));
+            bool same = e0 && e1 && e0->type == et->type && e1->type == et->type
+                && ASRUtils::extract_kind_from_ttype_t(e0) == ASRUtils::extract_kind_from_ttype_t(et)
+                && ASRUtils::extract_kind_from_ttype_t(e1) == ASRUtils::extract_kind_from_ttype_t(et);
+            if (!same) unsupported("mixed-type matmul is", loc);
+            std::string ty = type(et, loc);
+            std::string z, add, mul;
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                z = "(FInt.ofInt 0 : " + ty + ")";
+                add = "FInt.add";
+                mul = "FInt.mul";
+            } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                z = "(FReal.zero : " + ty + ")";
+                add = "FReal.add";
+                mul = "FReal.mul";
+            } else if (ASR::is_a<ASR::Complex_t>(*et)) {
+                z = "(FCplx.zero : " + ty + ")";
+                add = "FCplx.add";
+                mul = "FCplx.mul";
+            } else if (ASR::is_a<ASR::Logical_t>(*et)) {
+                z = "false";
+                add = "(fun x' y' => x' || y')";
+                mul = "(fun x' y' => x' && y')";
+            }
+            if (!z.empty()) {
+                return app("Arr.matmul", {{z, pAtom}, {add, pAtom}, {mul, pAtom},
+                    lower(x.m_args[0]), lower(x.m_args[1])});
+            }
+        }
+        if (id == F::Pack && x.n_args == 2) {
+            return lower_pack(x.m_args[0], x.m_args[1], loc);
+        }
         unsupported("this array intrinsic is", loc);
+    }
+
+    Val lower_pack(ASR::expr_t *arr, ASR::expr_t *mask, const Location &loc) {
+        if (!is_array(ASRUtils::expr_type(arr))) unsupported("this pack is", loc);
+        if (is_array(ASRUtils::expr_type(mask))) {
+            return {"((fun (a' : Arr _) (m' : Arr Bool) => "
+                "let out' := (Array.range a'.data.size).foldl "
+                "(fun acc' i' => if m'.data.getD i' false then acc'.push a'.data[i']! else acc') #[]; "
+                "Arr.mk #[1] #[out'.size] out') "
+                + atom(lower(arr)) + " " + atom(lower(mask)) + ")", pAtom};
+        }
+        return {"((fun (a' : Arr _) (m' : Bool) => "
+            "if m' then Arr.mk #[1] #[a'.data.size] a'.data else Arr.mk #[1] #[0] #[]) "
+            + atom(lower(arr)) + " " + atom(lower(mask)) + ")", pAtom};
     }
 
     Val array_section(const ASR::ArraySection_t &x) {
@@ -1712,6 +1775,12 @@ private:
                     "Arr.mk #[1, 1] #[n', m'] (Array.ofFn (n := m' * n') (fun k' => "
                     "a'.data[k'.val / n' + m' * (k'.val % n')]!))) "
                     + atom(lower(x.m_matrix)) + ")", pAtom};
+            }
+            case ASR::exprType::ArrayPack: {
+                auto &x = *ASR::down_cast<ASR::ArrayPack_t>(e);
+                if (x.m_value && x.m_value != e) return lower_raw(x.m_value);
+                if (x.m_vector) unsupported("pack with vector is", loc);
+                return lower_pack(x.m_array, x.m_mask, loc);
             }
             case ASR::exprType::IntrinsicArrayFunction:
                 return intrinsic_array(*ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e), loc);
@@ -2615,6 +2684,118 @@ private:
                             {rhs, pApp}}).src);
                         break;
                     }
+                }
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+                    auto &sec = *ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+                    if (!is_lvalue(sec.m_v)) unsupported("this assignment is", loc);
+                    // Hoist all explicit section bounds/steps before the update so
+                    // side effects execute once and no `←` enters `update_lvalue`.
+                    struct SpecH {
+                        bool is_idx = false;
+                        std::string idx, lo, hi, st;
+                    };
+                    std::vector<SpecH> specs(sec.n_args);
+                    for (size_t i = 0; i < sec.n_args; i++) {
+                        const ASR::array_index_t &idx = sec.m_args[i];
+                        if (!idx.m_left && !idx.m_step && idx.m_right) {
+                            specs[i].is_idx = true;
+                            std::string iv = "si'" + std::to_string(++loop_id);
+                            line("let " + iv + " : Int := " + int_expr(idx.m_right).src);
+                            specs[i].idx = iv;
+                        } else {
+                            if (idx.m_left) {
+                                std::string lv = "sl'" + std::to_string(++loop_id);
+                                line("let " + lv + " : Int := " + int_expr(idx.m_left).src);
+                                specs[i].lo = lv;
+                            }
+                            if (idx.m_right) {
+                                std::string hv = "sh'" + std::to_string(++loop_id);
+                                line("let " + hv + " : Int := " + int_expr(idx.m_right).src);
+                                specs[i].hi = hv;
+                            }
+                            if (idx.m_step) {
+                                std::string sv = "ss'" + std::to_string(++loop_id);
+                                line("let " + sv + " : Int := " + int_expr(idx.m_step).src);
+                                specs[i].st = sv;
+                            } else {
+                                specs[i].st = "1";
+                            }
+                        }
+                    }
+                    auto build_specs = [&](const std::string &cur_a) {
+                        std::vector<std::string> parts;
+                        for (size_t i = 0; i < specs.size(); i++) {
+                            if (specs[i].is_idx) {
+                                parts.push_back("Sum.inl " + specs[i].idx);
+                            } else {
+                                std::string dim = std::to_string(i + 1);
+                                std::string lo = specs[i].lo.empty()
+                                    ? "Arr.lbound " + cur_a + " " + dim : specs[i].lo;
+                                std::string hi = specs[i].hi.empty()
+                                    ? "Arr.ubound " + cur_a + " " + dim : specs[i].hi;
+                                parts.push_back("Sum.inr (" + lo + ", " + hi + ", " + specs[i].st + ")");
+                            }
+                        }
+                        return int_array(parts);
+                    };
+                    ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_target));
+                    ASR::expr_t *v = x.m_value;
+                    if (ASR::is_a<ASR::ArrayBroadcast_t>(*v)) {
+                        v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
+                    }
+                    if (is_array(ASRUtils::expr_type(v))) {
+                        std::string src = atom(lower(v));
+                        if (ASR::is_a<ASR::String_t>(*et)) {
+                            auto &st = *ASR::down_cast<ASR::String_t>(et);
+                            if (!st.m_len) {
+                                unsupported("an assumed- or deferred-length character array section assignment is", loc);
+                            }
+                            src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                        }
+                        std::string rv = "rhs'" + std::to_string(++loop_id);
+                        line("let " + rv + " := " + src);
+                        update_lvalue(sec.m_v, [&](const std::string &cur_a) {
+                            return "Arr.setSlice " + cur_a + " " + build_specs(cur_a) + " " + rv;
+                        }, loc);
+                    } else {
+                        if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                            unsupported("an assumed- or deferred-length character array section assignment is", loc);
+                        }
+                        std::string rhs = fix_string(et, "", lower(v), loc);
+                        std::string rv = "rhs'" + std::to_string(++loop_id);
+                        line("let " + rv + " := " + rhs);
+                        update_lvalue(sec.m_v, [&](const std::string &cur_a) {
+                            return "Arr.fillSlice " + cur_a + " " + build_specs(cur_a) + " " + rv;
+                        }, loc);
+                    }
+                    break;
+                }
+                if (ASR::is_a<ASR::StringSection_t>(*x.m_target)) {
+                    auto &sec = *ASR::down_cast<ASR::StringSection_t>(x.m_target);
+                    bool unit_step = !sec.m_step
+                        || (ASR::is_a<ASR::IntegerConstant_t>(*sec.m_step)
+                            && ASR::down_cast<ASR::IntegerConstant_t>(sec.m_step)->m_n == 1);
+                    if (!unit_step || !is_lvalue(sec.m_arg)
+                            || is_array(ASRUtils::expr_type(sec.m_arg))) {
+                        unsupported("this string section assignment is", loc);
+                    }
+                    std::string lo = "1";
+                    if (sec.m_start) {
+                        lo = "sl'" + std::to_string(++loop_id);
+                        line("let " + lo + " : Int := " + int_expr(sec.m_start).src);
+                    }
+                    std::string hi;
+                    if (sec.m_end) {
+                        hi = "sh'" + std::to_string(++loop_id);
+                        line("let " + hi + " : Int := " + int_expr(sec.m_end).src);
+                    }
+                    std::string rv = "rhs'" + std::to_string(++loop_id);
+                    line("let " + rv + " := " + lower(x.m_value).src);
+                    update_lvalue(sec.m_arg, [&](const std::string &cur_s) {
+                        std::string hv = hi.empty() ? "(FStr.len " + cur_s + ")" : hi;
+                        return "FStr.setSlice " + cur_s + " " + lo + " " + hv + " " + rv;
+                    }, loc);
+                    break;
                 }
                 if (!is_lvalue(x.m_target)) {
                     unsupported("this assignment is", loc);
