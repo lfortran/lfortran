@@ -21270,12 +21270,38 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         bool is_pointer_function_reference = ASR::is_a<ASR::FunctionCall_t>(*v_Var) &&
             ASRUtils::is_pointer(ASRUtils::expr_type(v_Var));
+        auto is_whole_array_or_component = [&](ASR::expr_t *expr) -> bool {
+            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
+                expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
+            }
+            return ASR::is_a<ASR::Var_t>(*expr) ||
+                   ASR::is_a<ASR::StructInstanceMember_t>(*expr) ||
+                   ASR::is_a<ASR::CoarrayRef_t>(*expr) ||
+                   (ASR::is_a<ASR::FunctionCall_t>(*expr) &&
+                    ASRUtils::is_pointer(ASRUtils::expr_type(expr)));
+        };
+        bool is_expr_only = !is_whole_array_or_component(v_Var);
+        auto make_expr_ubound = [&](ASR::expr_t *dim_arg, int64_t dim_idx,
+                                    ASR::dimension_t *dims_arr, int64_t n_dims_val) -> ASR::asr_t* {
+            ASR::expr_t *size_val = nullptr;
+            if (dim_idx >= 0 && dim_idx < n_dims_val && dims_arr && dims_arr[dim_idx].m_length) {
+                ASR::expr_t *len_expr = ASRUtils::expr_value(dims_arr[dim_idx].m_length);
+                int64_t const_len = -1;
+                if (ASRUtils::is_value_constant(len_expr) &&
+                    ASRUtils::extract_value(len_expr, const_len)) {
+                    size_val = make_ConstantWithType(make_IntegerConstant_t,
+                                                     const_len, type, x.base.base.loc);
+                }
+            }
+            return ASR::make_ArraySize_t(al, x.base.base.loc, v_Var, dim_arg, type, size_val);
+        };
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
             if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var))) {
                 return make_assumed_rank_bounds(x.base.base.loc, v_Var, type, bound);
             }
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
+            ASR::dimension_t* v_Var_dims = nullptr;
+            int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v_Var), v_Var_dims);
             // For assumed-size arrays (UnboundedPointerArray), ubound requires DIM
             ASR::ttype_t* v_Var_type = ASRUtils::type_get_past_allocatable_pointer(
                 ASRUtils::expr_type(v_Var));
@@ -21295,6 +21321,14 @@ public:
             ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
             for (int i = 1; i <= n_dims; i++) {
                 ASR::expr_t* dim_ = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i, int_type));
+                if (is_expr_only) {
+                    if (bound == ASR::arrayboundType::LBound) {
+                        arr_args.push_back(al, make_ConstantWithType(make_IntegerConstant_t, 1, type, x.base.base.loc));
+                    } else {
+                        arr_args.push_back(al, ASRUtils::EXPR(make_expr_ubound(dim_, i - 1, v_Var_dims, n_dims)));
+                    }
+                    continue;
+                }
                 if( is_pointer_function_reference ) {
                     arr_args.push_back(al, ASRUtils::EXPR(make_pointer_function_reference_bound(
                         x.base.base.loc, v_Var, dim_, type, bound)));
@@ -21359,6 +21393,12 @@ public:
                 throw SemanticAbort();
             }
             const_dim = const_dim - 1;
+            if (is_expr_only) {
+                if (bound == ASR::arrayboundType::LBound) {
+                    return (ASR::asr_t*)make_ConstantWithType(make_IntegerConstant_t, 1, type, x.base.base.loc);
+                }
+                return make_expr_ubound(dim, const_dim, v_Var_dims, v_Var_n_dims);
+            }
             if( !is_assumed_rank && v_Var_dims[const_dim].m_start &&
                 v_Var_dims[const_dim].m_length ) {
                 ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
@@ -21397,6 +21437,12 @@ public:
                                     ub_val, type, x.base.base.loc);
                 }
             }
+        }
+        if (is_expr_only) {
+            if (bound == ASR::arrayboundType::LBound) {
+                return (ASR::asr_t*)make_ConstantWithType(make_IntegerConstant_t, 1, type, x.base.base.loc);
+            }
+            return make_expr_ubound(dim, -1, nullptr, 0);
         }
         if( is_pointer_function_reference ) {
             return make_pointer_function_reference_bound(
