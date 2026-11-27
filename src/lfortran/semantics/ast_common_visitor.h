@@ -24077,6 +24077,52 @@ public:
                 if (var_name == "getcwd") {
                     std::vector<std::string> kwarg_names = {"c"};
                     handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, var_name);
+                } else if (var_name == "allocated") {
+                    if (x.n_args + x.n_keywords != 1) {
+                        diag.add(Diagnostic(
+                            "Intrinsic `allocated` accepts exactly one argument",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    args.reserve(al, 1);
+                    if (x.n_args == 1) {
+                        this->visit_expr(*x.m_args[0].m_end);
+                        args.push_back(al, ASRUtils::EXPR(tmp));
+                    } else {
+                        std::string kw = to_lower(x.m_keywords[0].m_arg);
+                        if (kw != "scalar" && kw != "array") {
+                            diag.add(Diagnostic(
+                                "Unrecognized keyword argument " + kw +
+                                " passed to allocated intrinsic.",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {x.base.base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        this->visit_expr(*x.m_keywords[0].m_value);
+                        ASR::expr_t* expr_arg = ASRUtils::EXPR(tmp);
+                        ASR::ttype_t* arg_type = ASRUtils::expr_type(expr_arg);
+                        bool is_arr = ASRUtils::is_array(arg_type);
+                        if (kw == "scalar" && is_arr) {
+                            diag.add(Diagnostic(
+                                "`scalar` argument of `allocated` must be scalar",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {expr_arg->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        if (kw == "array" && !is_arr) {
+                            diag.add(Diagnostic(
+                                "`array` argument of `allocated` must be an array",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {expr_arg->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                        args.push_back(al, expr_arg);
+                    }
                 } else {
                     args.reserve(al, 1);
                     for( size_t i = 0; i < x.n_args; i++ ) {

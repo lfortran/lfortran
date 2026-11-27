@@ -1837,6 +1837,14 @@ filename = "errors/allocated_05.f90"
 run = true
 
 [[test]]
+filename = "allocated_keywords_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/allocated_keywords_01.f90"
+asr = true
+
+[[test]]
 filename = "finalize_01.f90"
 pass = "intent_out_deallocate"
 llvm = true

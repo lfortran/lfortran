@@ -1,0 +1,5 @@
+semantic error: `scalar` argument of `allocated` must be scalar
+ --> tests/errors/allocated_keywords_01.f90:4:31
+  |
+4 |     print *, allocated(scalar=a)
+  |                               ^ 
