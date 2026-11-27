@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allocated_keywords_01-a3cbb3d",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/allocated_keywords_01.f90",
+    "infile_hash": "7c73fc28cd677892f1a4bebbdb79d8d629b6ddada1c5060a4fb71dad",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-allocated_keywords_01-a3cbb3d.stderr",
+    "stderr_hash": "2cc054e9a083e3779a07764231c3aaa4ee68480f21f6828b72770d21",
+    "returncode": 2
+}
