@@ -198,6 +198,59 @@ def matmul {α : Type} [Inhabited α] (z : α) (add mul : α → α → α)
       out := out.push s
     return { lbs := #[1], exts := #[n], data := out }
 
+/-- Fortran `spread(source, dim, ncopies)` for an array `source`. -/
+def spread {α : Type} [Inhabited α] (a : Arr α) (dim ncopies : Int) : Arr α := Id.run do
+  let d := (dim - 1).toNat
+  let nc := ncopies.toNat
+  let mut newExts : Array Nat := Array.mkEmpty (a.exts.size + 1)
+  for i in [:d] do newExts := newExts.push a.exts[i]!
+  newExts := newExts.push nc
+  for i in [d:a.exts.size] do newExts := newExts.push a.exts[i]!
+  let mut total : Nat := 1
+  for e in newExts do total := total * e
+  let mut out : Array α := Array.mkEmpty total
+  for flat in [:total] do
+    let mut rem := flat
+    let mut srcOff : Nat := 0
+    let mut srcStride : Nat := 1
+    for k in [:newExts.size] do
+      let e := newExts[k]!
+      let idx := rem % e
+      rem := rem / e
+      if k != d then
+        srcOff := srcOff + idx * srcStride
+        srcStride := srcStride * e
+    out := out.push a.data[srcOff]!
+  return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
+
+/-- 1-based coordinates of the first element maximizing/minimizing according to
+`better cur cand` (returns all zeros if no element is selected). -/
+def extremaLoc {α : Type} [Inhabited α] (better : α → α → Bool)
+    (a : Arr α) (mask : Option (Arr Bool) := none) : Array Int := Id.run do
+  let rank := a.exts.size
+  let mut found := false
+  let mut bestIdx : Nat := 0
+  let mut bestVal : α := default
+  for i in [:a.data.size] do
+    let ok := match mask with
+      | none => true
+      | some m => m.data.getD i false
+    if ok then
+      let v := a.data[i]!
+      if !found || better bestVal v then
+        found := true
+        bestIdx := i
+        bestVal := v
+  if !found then
+    return Array.replicate rank (0 : Int)
+  let mut coords : Array Int := Array.mkEmpty rank
+  let mut rem := bestIdx
+  for k in [:rank] do
+    let e := a.exts[k]!
+    coords := coords.push (Int.ofNat (rem % e + 1))
+    rem := rem / e
+  return coords
+
 end Arr
 
 end LFortran
