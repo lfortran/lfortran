@@ -1,0 +1,5 @@
+semantic error: RETURN statement is only allowed in a subprogram
+ --> tests/errors/return_main_program_01.f90:2:5
+  |
+2 |     return
+  |     ^^^^^^ 

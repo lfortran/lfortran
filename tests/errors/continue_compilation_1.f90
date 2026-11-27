@@ -5327,3 +5327,99 @@ subroutine associated_target_not_variable_in_continue_compilation_1()
     a => null()
     if (associated(a, 11)) print *, "bad"  ! {Error} 'target' argument of 'associated' intrinsic must be a pointer or target variable or function
 end subroutine
+
+! These I/O diagnostics are appended so that the shared fixture's earlier
+! line numbers stay identical to the committed reference output.
+subroutine inquire_unit_and_file()
+    implicit none
+    inquire(unit=10, file="a")  ! {Error} INQUIRE cannot contain both UNIT= and FILE= specifiers
+end subroutine
+
+subroutine read_write_bad_specifiers()
+    implicit none
+    integer :: y
+    read(10, *, foo=1) y  ! {Error} Unknown specifier `foo` in READ statement
+    write(10, *, foo=1) y  ! {Error} Unknown specifier `foo` in WRITE statement
+    read(10, *, unit=10) y  ! {Error} Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments
+    read(10, *, file="a") y  ! {Error} Unknown specifier `file` in READ statement
+end subroutine
+
+! Interface bodies contain only the specification of the procedure. The
+! symbol table visitor rejects the body, so this module goes last.
+module interface_body_errors_1
+contains
+    subroutine interface_body_stop()
+        interface
+            subroutine q1()
+                stop  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_assignment()
+        interface
+            subroutine q2()
+                v = 1  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_entry()
+        interface
+            subroutine q3()
+                entry e3()  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_print()
+        interface
+            subroutine q4()
+                print *, 'x'  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_if()
+        interface
+            subroutine q5()
+                if (.true.) then  ! {Error} Executable statements are not allowed in an INTERFACE body
+                end if
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_call()
+        interface
+            subroutine q6()
+                call foo()  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_read()
+        interface
+            subroutine q7()
+                read(10, *) x  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_contains()
+        interface
+            subroutine q8()
+                contains  ! {Error} CONTAINS is not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_contains_with_body()
+        interface
+            subroutine q9()
+                contains  ! {Error} CONTAINS is not allowed in an INTERFACE body
+                subroutine r()
+                end subroutine
+            end subroutine
+        end interface
+    end subroutine
+end module

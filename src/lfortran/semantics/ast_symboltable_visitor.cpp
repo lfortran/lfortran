@@ -1,4 +1,6 @@
 #include "libasr/assert.h"
+#include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <map>
 #include <string>
@@ -4107,10 +4109,150 @@ public:
         dflt_access = dflt_access_copy;
     }
 
+    // The AST represents CONTAINS only as the list of program units that
+    // follow it, so a bare `contains` leaves no node to point at. Recover the
+    // keyword from the source slice between the last specification statement
+    // and the END statement. This keeps the diagnostic on the offending
+    // statement instead of underlining the whole interface body.
+    bool locate_contains_keyword(uint32_t from_pos, const Location &unit_loc,
+            Location &loc) {
+        uint32_t in_first = lm.output_to_input_pos(unit_loc.first, false);
+        uint32_t in_last = lm.output_to_input_pos(unit_loc.last, true);
+        uint32_t in_from = lm.output_to_input_pos(from_pos, false);
+        if (in_last <= in_first || in_from < in_first) return false;
+        uint32_t line = 0, col = 0;
+        std::string filename;
+        lm.pos_to_linecol(in_first, line, col, filename);
+        const std::string *source = lm.source_at(in_first);
+        std::string file_source;
+        if (source == nullptr) {
+            if (!read_file(filename, file_source)) return false;
+            source = &file_source;
+        }
+        uint32_t index = bisection(lm.file_ends, in_first);
+        if (index != 0 && index == lm.file_ends.size()) index -= 1;
+        uint32_t file_offset = index > 0 ? lm.file_ends[index - 1] : 0;
+        if (in_first < file_offset || in_last < file_offset
+                || in_from < file_offset || in_last > file_offset + source->size()) {
+            return false;
+        }
+        // A raw input position only denotes a source statement if it survives
+        // preprocessing. Directive lines and inactive conditional branches do
+        // not produce any output interval, so text in them must not be
+        // diagnosed as a CONTAINS statement.
+        auto survives_preprocessing = [&](uint32_t input_pos) {
+            if (index >= lm.files.size() || !lm.files[index].preprocessor) {
+                return true;
+            }
+            const LocationManager::FileLocations &file = lm.files[index];
+            uint32_t local = input_pos - file_offset;
+            uint32_t interval = bisection(file.in_start0, local);
+            if (interval == 0 || interval > file.interval_type0.size()) {
+                return false;
+            }
+            interval -= 1;
+            if (interval + 1 >= file.in_start0.size()
+                    || interval + 1 >= file.out_start0.size()
+                    || file.interval_type0[interval] != 0
+                    || local < file.in_start0[interval]
+                    || local + 7 > file.in_start0[interval]
+                                   + file.in_size0[interval]
+                    || local + 7 > file.in_start0[interval + 1]) {
+                return false;
+            }
+            uint32_t out = file.out_start0[interval]
+                         + (local - file.in_start0[interval]);
+            return out + 7 <= file.out_start0[interval + 1];
+        };
+        size_t begin = in_from - file_offset;
+        size_t end = in_last - file_offset;
+        if (begin >= source->size()) return false;
+        end = std::min(end, source->size() - 1);
+        for (size_t i = begin; i + 7 <= end; i++) {
+            char c = (*source)[i];
+            if (c == '!') {
+                while (i <= end && (*source)[i] != '\n') i++;
+                continue;
+            }
+            if (c == '\'' || c == '"') {
+                char quote = c;
+                i++;
+                while (i <= end) {
+                    if ((*source)[i] == quote) {
+                        if (i + 1 <= end && (*source)[i + 1] == quote) {
+                            i += 2;
+                            continue;
+                        }
+                        break;
+                    }
+                    i++;
+                }
+                continue;
+            }
+            bool match = std::tolower(static_cast<unsigned char>(c)) == 'c';
+            for (size_t j = 1; match && j < 8; j++) {
+                match = std::tolower(static_cast<unsigned char>((*source)[i + j]))
+                    == "contains"[j];
+            }
+            if (!match) continue;
+            char before = i > 0 ? (*source)[i - 1] : ' ';
+            char after = i + 8 <= end ? (*source)[i + 8] : ' ';
+            auto is_name_char = [](char ch) {
+                return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_';
+            };
+            if (is_name_char(before) || is_name_char(after)) continue;
+            uint32_t kw = file_offset + static_cast<uint32_t>(i);
+            if (!survives_preprocessing(kw)) continue;
+            if (in_last - in_first == unit_loc.last - unit_loc.first) {
+                loc.first = unit_loc.first + (kw - in_first);
+                loc.last = loc.first + 7;
+            } else {
+                loc.first = lm.input_to_output_pos(kw, false);
+                loc.last = lm.input_to_output_pos(kw + 7, true);
+            }
+            return true;
+        }
+        return false;
+    }
+
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
         bool old_in_Subroutine = in_Subroutine;
         std::vector<std::string> old_procedure_args = current_procedure_args;
+        auto check_interface_body = [&](auto *proc) {
+            for (size_t i = 0; i < proc->n_items; i++) {
+                if (AST::is_executable_stmt(*proc->m_items[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Executable statements are not allowed in an INTERFACE body",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {proc->m_items[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            uint32_t from_pos = proc->n_items > 0
+                ? proc->m_items[proc->n_items - 1]->base.loc.last + 1
+                : (proc->m_start_name ? proc->m_start_name->last + 1
+                                      : proc->base.base.loc.first);
+            Location contains_loc{0, 0};
+            bool found = locate_contains_keyword(from_pos, proc->base.base.loc,
+                contains_loc);
+            if (found || proc->n_contains > 0) {
+                if (!found) {
+                    contains_loc = proc->n_contains > 0
+                        ? proc->m_contains[0]->base.loc : proc->base.base.loc;
+                }
+                diag.add(diag::Diagnostic(
+                    "CONTAINS is not allowed in an INTERFACE body",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {contains_loc})}));
+                throw SemanticAbort();
+            }
+        };
+        if (AST::is_a<AST::Subroutine_t>(*x.m_proc)) {
+            check_interface_body(AST::down_cast<AST::Subroutine_t>(x.m_proc));
+        } else if (AST::is_a<AST::Function_t>(*x.m_proc)) {
+            check_interface_body(AST::down_cast<AST::Function_t>(x.m_proc));
+        }
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
