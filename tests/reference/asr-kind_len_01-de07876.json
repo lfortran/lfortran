@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_len_01-de07876",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/kind_len_01.f90",
+    "infile_hash": "bb6126e95f53211611faced37edf95f993eb720d572eacde24447844",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-kind_len_01-de07876.stdout",
+    "stdout_hash": "adbf9a938e2cdb5532d6ad7f5c4e02ae216e6e2e6c8d820b512815d1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

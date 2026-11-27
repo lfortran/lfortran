@@ -3489,7 +3489,8 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
             }
             break;
         }
-        // allow integer binary operator kinds (e.g. '1 + 7')
+        // allow integer binary operator kinds (e.g. '1 + 7') and constant len()
+        case ASR::exprType::StringLen:
         case ASR::exprType::IntegerBinOp:
         // allow integer kinds (e.g. 4, 8 etc.)
         case ASR::exprType::IntegerConstant: {
