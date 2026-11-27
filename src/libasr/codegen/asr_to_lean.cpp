@@ -68,15 +68,34 @@ std::string int_lit(int64_t i) {
 }
 
 std::string string_lit(const std::string &s) {
+    static const char hex[] = "0123456789abcdef";
     std::string o = "\"";
-    for (char c : s) {
-        if (c == '\\' || c == '"') { o += '\\'; o += c; }
+    for (unsigned char c : s) {
+        if (c == '\\' || c == '"') { o += '\\'; o += static_cast<char>(c); }
         else if (c == '\n') o += "\\n";
         else if (c == '\r') o += "\\r";
         else if (c == '\t') o += "\\t";
-        else o += c;
+        else if (c < 0x20 || c >= 0x7f) {
+            o += "\\x";
+            o += hex[c >> 4];
+            o += hex[c & 0xf];
+        } else o += static_cast<char>(c);
     }
     return o + "\"";
+}
+
+std::string string_const_str(const ASR::StringConstant_t &x) {
+    if (x.m_type && ASR::is_a<ASR::String_t>(*x.m_type)) {
+        ASR::expr_t *le = ASR::down_cast<ASR::String_t>(x.m_type)->m_len;
+        if (le) {
+            ASR::expr_t *v = ASRUtils::expr_value(le);
+            if (v && ASR::is_a<ASR::IntegerConstant_t>(*v)) {
+                int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n;
+                if (n >= 0) return std::string(x.m_s, static_cast<size_t>(n));
+            }
+        }
+    }
+    return std::string(x.m_s);
 }
 
 // Fortran names that Lean 4 parses as keywords. They are emitted as `«name»`,
@@ -177,6 +196,8 @@ public:
         while (e) {
             if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
                 e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::StringPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
                 e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
@@ -212,6 +233,27 @@ public:
     void visit_Assignment(const ASR::Assignment_t &x) {
         if (ASR::Variable_t *v = root_var(x.m_target)) modified.insert(v);
         ASR::BaseWalkVisitor<ProcEffects>::visit_Assignment(x);
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (ASR::Variable_t *v = root_var(x.m_args[i].m_a)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_Allocate(x);
+    }
+
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (ASR::Variable_t *v = root_var(x.m_args[i].m_a)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_ReAlloc(x);
+    }
+
+    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            if (ASR::Variable_t *v = root_var(x.m_vars[i])) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_ExplicitDeallocate(x);
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {
@@ -275,6 +317,7 @@ private:
     std::set<ASR::Variable_t*> loop_vars;
     std::vector<std::string> exit_flags;
     std::map<const ASR::ArrayItem_t*, std::string> pre_idx;
+    std::map<ASR::Variable_t*, std::string> alloc_str_len;
     int loop_id = 0;
     std::string ns;
     std::string *buf = nullptr;
@@ -399,9 +442,81 @@ private:
 
     // Types ----------------------------------------------------------------
 
+    bool is_allocatable(ASR::ttype_t *t) const {
+        return t && ASR::is_a<ASR::Allocatable_t>(*t);
+    }
+
+    ASR::ttype_t *unalloc(ASR::ttype_t *t) const {
+        while (t && ASR::is_a<ASR::Allocatable_t>(*t)) {
+            t = ASR::down_cast<ASR::Allocatable_t>(t)->m_type;
+        }
+        return t;
+    }
+
+    ASR::ttype_t *unalloc_type(ASR::expr_t *e) const {
+        return unalloc(ASRUtils::expr_type(e));
+    }
+
+    static ASR::expr_t *unwrap_physical_cast(ASR::expr_t *e) {
+        while (e) {
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::StringPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg;
+            } else {
+                break;
+            }
+        }
+        return e;
+    }
+
+    bool is_option_expr(ASR::expr_t *e) const {
+        while (e) {
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::StringPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg;
+            } else {
+                break;
+            }
+        }
+        if (!e) return false;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*s)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                return v->m_storage != ASR::storage_typeType::Parameter
+                    && is_allocatable(v->m_type);
+            }
+            return false;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            auto &m = *ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            if (is_array(ASRUtils::expr_type(m.m_v))) return false;
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(m.m_m);
+            if (ASR::is_a<ASR::Variable_t>(*s)) {
+                return is_allocatable(ASR::down_cast<ASR::Variable_t>(s)->m_type);
+            }
+            return false;
+        }
+        if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+            ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::FunctionCall_t>(e)->m_name);
+            if (ASR::is_a<ASR::Function_t>(*s)) {
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+                if (fn->m_return_var && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+                    return is_allocatable(ASRUtils::EXPR2VAR(fn->m_return_var)->m_type);
+                }
+            }
+            return false;
+        }
+        return false;
+    }
+
     ASR::ttype_t *scalar(ASR::ttype_t *t, const Location &loc) {
-        if (!t || ASR::is_a<ASR::Array_t>(*t) || ASR::is_a<ASR::Pointer_t>(*t)
-                || ASR::is_a<ASR::Allocatable_t>(*t)) {
+        t = unalloc(t);
+        if (!t || ASR::is_a<ASR::Array_t>(*t) || ASR::is_a<ASR::Pointer_t>(*t)) {
             unsupported("this type is", loc);
         }
         return t;
@@ -463,12 +578,18 @@ private:
         unsupported("this type is", loc);
     }
 
-    bool is_array(ASR::ttype_t *t) {
+    bool is_array(ASR::ttype_t *t) const {
+        t = unalloc(t);
         return t && ASR::is_a<ASR::Array_t>(*t);
     }
 
-    // The type of a variable: a scalar type, or `Arr` of one.
+    // The type of a variable: a scalar type, an `Arr`, or `Option` of one.
     std::string vtype(ASR::ttype_t *t, const Location &loc, ASR::symbol_t *type_decl = nullptr) {
+        if (is_allocatable(t)) {
+            std::string inner = vtype(unalloc(t), loc, type_decl);
+            if (inner.find(' ') != std::string::npos) inner = "(" + inner + ")";
+            return "Option " + inner;
+        }
         if (is_array(t)) {
             std::string et = type(ASR::down_cast<ASR::Array_t>(t)->m_type, loc, type_decl);
             if (et.find(' ') != std::string::npos) et = "(" + et + ")";
@@ -506,7 +627,7 @@ private:
     // The declared lower bounds and, for an explicit shape, extents.
     void dims(ASR::ttype_t *t, std::vector<std::string> &lbs,
             std::vector<std::string> &exts, bool &assumed, const Location &loc) {
-        ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(t);
+        ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(unalloc(t));
         if (a->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray
                 || a->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
             unsupported("this array shape is", loc);
@@ -613,33 +734,34 @@ private:
     }
 
     bool is_int(ASR::expr_t *e) {
-        return ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(e));
+        return ASR::is_a<ASR::Integer_t>(*unalloc(ASRUtils::expr_type(e)));
     }
 
     bool is_real(ASR::expr_t *e) {
-        return ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(e));
+        return ASR::is_a<ASR::Real_t>(*unalloc(ASRUtils::expr_type(e)));
     }
 
     bool is_complex(ASR::expr_t *e) {
-        return ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(e));
+        return ASR::is_a<ASR::Complex_t>(*unalloc(ASRUtils::expr_type(e)));
     }
 
     bool is_logical(ASR::expr_t *e) {
-        return ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(e));
+        return ASR::is_a<ASR::Logical_t>(*unalloc(ASRUtils::expr_type(e)));
     }
 
     bool is_string(ASR::expr_t *e) {
-        return ASR::is_a<ASR::String_t>(
-            *ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(e)));
+        return ASR::is_a<ASR::String_t>(*unalloc(ASRUtils::expr_type(e)));
     }
 
     bool is_assumed_len_string(ASR::ttype_t *t) {
+        t = unalloc(t);
         return t && ASR::is_a<ASR::String_t>(*t)
             && !ASR::down_cast<ASR::String_t>(t)->m_len;
     }
 
     std::string fix_string(ASR::ttype_t *t, const std::string &var_name, const Val &rhs,
             const Location &loc) {
+        t = unalloc(t);
         if (!ASR::is_a<ASR::String_t>(*t)) return rhs.src;
         auto &st = *ASR::down_cast<ASR::String_t>(t);
         if (st.m_len) return "FStr.fix " + extent(st.m_len) + " " + atom(rhs);
@@ -651,7 +773,8 @@ private:
     }
 
     ASR::ttype_t *elem_type(ASR::ttype_t *t) {
-        return is_array(t) ? ASR::down_cast<ASR::Array_t>(t)->m_type : t;
+        t = unalloc(t);
+        return ASR::is_a<ASR::Array_t>(*t) ? ASR::down_cast<ASR::Array_t>(t)->m_type : t;
     }
 
     // Lift a binary operation on scalar expressions to arrays (handling
@@ -718,6 +841,7 @@ private:
             case ASR::exprType::ArraySize:
             case ASR::exprType::ArrayBound:
             case ASR::exprType::IntrinsicArrayFunction:
+            case ASR::exprType::IntrinsicImpureFunction:
             case ASR::exprType::FunctionCall:
             case ASR::exprType::IntegerCompare:
             case ASR::exprType::RealCompare:
@@ -778,22 +902,22 @@ private:
                 }
                 if (c.m_kind == ASR::cast_kindType::RealToReal
                         && ASR::down_cast<ASR::Real_t>(c.m_type)->m_kind
-                            == ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                            == ASR::down_cast<ASR::Real_t>(unalloc_type(c.m_arg))->m_kind) {
                     return determined(c.m_arg);
                 }
                 if (c.m_kind == ASR::cast_kindType::RealToComplex
                         && ASR::down_cast<ASR::Complex_t>(c.m_type)->m_kind
-                            == ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                            == ASR::down_cast<ASR::Real_t>(unalloc_type(c.m_arg))->m_kind) {
                     return determined(c.m_arg);
                 }
                 if (c.m_kind == ASR::cast_kindType::ComplexToReal
                         && ASR::down_cast<ASR::Real_t>(c.m_type)->m_kind
-                            == ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                            == ASR::down_cast<ASR::Complex_t>(unalloc_type(c.m_arg))->m_kind) {
                     return determined(c.m_arg);
                 }
                 if (c.m_kind == ASR::cast_kindType::ComplexToComplex
                         && ASR::down_cast<ASR::Complex_t>(c.m_type)->m_kind
-                            == ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(c.m_arg))->m_kind) {
+                            == ASR::down_cast<ASR::Complex_t>(unalloc_type(c.m_arg))->m_kind) {
                     return determined(c.m_arg);
                 }
                 return true;
@@ -946,11 +1070,18 @@ private:
             ASR::Variable_t *d = dummy(fn, i);
             if (!d) unsupported("a procedure argument is", args[i].m_value->base.loc);
             ASR::intentType in = arg_intent(fn, i);
-            if (in == ASR::intentType::Out && !is_array(d->m_type)
-                    && !is_assumed_len_string(d->m_type)) continue;
+            if (in == ASR::intentType::Out && (is_allocatable(d->m_type)
+                    || (!is_array(d->m_type) && !is_assumed_len_string(d->m_type)))) continue;
             ASR::expr_t *a = args[i].m_value;
             if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
                 unsupported("this argument is", a->base.loc);
+            }
+            if (is_allocatable(d->m_type)) {
+                if (!is_option_expr(a)) {
+                    unsupported("passing a non-allocatable to an allocatable dummy is", a->base.loc);
+                }
+                src += " " + atom(lower_raw(a));
+                continue;
             }
             if (is_array(ASRUtils::expr_type(a)) && in != ASR::intentType::In) {
                 a = array_var(a);
@@ -999,14 +1130,14 @@ private:
             if (is_real(x.m_args[0])) {
                 type(ASRUtils::expr_type(x.m_args[0]), x.m_args[0]->base.loc);
                 int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
-                int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_args[0]))->m_kind;
+                int src_k = ASR::down_cast<ASR::Real_t>(unalloc_type(x.m_args[0]))->m_kind;
                 if (src_k == dst_k) return {"(" + lower(x.m_args[0]).src + " : " + dst_ty + ")", pAtom};
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(x.m_args[0])});
             }
             if (is_complex(x.m_args[0])) {
                 type(ASRUtils::expr_type(x.m_args[0]), x.m_args[0]->base.loc);
                 int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
-                int src_k = ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(x.m_args[0]))->m_kind;
+                int src_k = ASR::down_cast<ASR::Complex_t>(unalloc_type(x.m_args[0]))->m_kind;
                 std::string re = atom(operand(x.m_args[0])) + ".re";
                 if (src_k == dst_k) return {"(" + re + " : " + dst_ty + ")", pAtom};
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {{re, pAtom}});
@@ -1033,7 +1164,7 @@ private:
             int rk = ASR::down_cast<ASR::Integer_t>(x.m_type)->m_kind;
             std::string rty = type(x.m_type, loc);
             auto arg_as = [&](ASR::expr_t *e) -> Val {
-                int ak = ASR::down_cast<ASR::Integer_t>(ASRUtils::expr_type(e))->m_kind;
+                int ak = ASR::down_cast<ASR::Integer_t>(unalloc_type(e))->m_kind;
                 if (ak == rk) return lower(e);
                 return {"(FInt.ofInt " + atom(app("FInt.toInt", {operand(e)}))
                     + " : " + rty + ")", pAtom};
@@ -1184,7 +1315,7 @@ private:
                 type(x.m_type, loc);
                 type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
                 int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
-                int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                int src_k = ASR::down_cast<ASR::Real_t>(unalloc_type(x.m_arg))->m_kind;
                 if (src_k == dst_k) return lower(x.m_arg);
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4",
                     {operand(x.m_arg)});
@@ -1193,7 +1324,7 @@ private:
                 type(x.m_type, loc);
                 type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
                 int dst_k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
-                int src_k = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                int src_k = ASR::down_cast<ASR::Real_t>(unalloc_type(x.m_arg))->m_kind;
                 Val r = src_k == dst_k ? lower(x.m_arg)
                     : app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(x.m_arg)});
                 return app("FCplx.ofReal", {r});
@@ -1210,7 +1341,7 @@ private:
                 type(x.m_type, loc);
                 type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
                 int dst_k = ASR::down_cast<ASR::Real_t>(x.m_type)->m_kind;
-                int src_k = ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                int src_k = ASR::down_cast<ASR::Complex_t>(unalloc_type(x.m_arg))->m_kind;
                 std::string re = atom(operand(x.m_arg)) + ".re";
                 if (src_k == dst_k) return {re, pAtom};
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {{re, pAtom}});
@@ -1224,7 +1355,7 @@ private:
                 type(x.m_type, loc);
                 type(ASRUtils::expr_type(x.m_arg), x.m_arg->base.loc);
                 int dst_k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
-                int src_k = ASR::down_cast<ASR::Complex_t>(ASRUtils::expr_type(x.m_arg))->m_kind;
+                int src_k = ASR::down_cast<ASR::Complex_t>(unalloc_type(x.m_arg))->m_kind;
                 if (src_k == dst_k) return lower(x.m_arg);
                 std::string fn = dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4";
                 return {"((fun z' => FCplx.mk (" + fn + " z'.re) (" + fn + " z'.im)) "
@@ -1376,10 +1507,16 @@ private:
     }
 
     Val lower(ASR::expr_t *e) {
+        Val v = lower_raw(e);
+        if (is_option_expr(e)) return {atom(v) + ".get!", pAtom};
+        return v;
+    }
+
+    Val lower_raw(ASR::expr_t *e) {
         const Location &loc = e->base.loc;
         switch (e->type) {
             case ASR::exprType::ArrayPhysicalCast:
-                return lower(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+                return lower_raw(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
             case ASR::exprType::ArrayConstant:
                 return array_constant(*ASR::down_cast<ASR::ArrayConstant_t>(e), loc);
             case ASR::exprType::ArrayConstructor:
@@ -1467,7 +1604,7 @@ private:
                     }
                     if (is_real(p)) {
                         type(ASRUtils::expr_type(p), p->base.loc);
-                        int pk = ASR::down_cast<ASR::Real_t>(ASRUtils::expr_type(p))->m_kind;
+                        int pk = ASR::down_cast<ASR::Real_t>(unalloc_type(p))->m_kind;
                         if (pk == k) return lower(p);
                         return app(k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(p)});
                     }
@@ -1542,10 +1679,10 @@ private:
             case ASR::exprType::StringConstant: {
                 auto &x = *ASR::down_cast<ASR::StringConstant_t>(e);
                 type(x.m_type, loc);
-                return {string_lit(x.m_s), pAtom};
+                return {string_lit(string_const_str(x)), pAtom};
             }
             case ASR::exprType::StringPhysicalCast:
-                return lower(ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg);
+                return lower_raw(ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg);
             case ASR::exprType::StringConcat: {
                 auto &x = *ASR::down_cast<ASR::StringConcat_t>(e);
                 if (x.m_value && x.m_value != e) return lower(x.m_value);
@@ -1769,6 +1906,15 @@ private:
             case ASR::exprType::IntrinsicElementalFunction:
                 return intrinsic(*ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e),
                     loc);
+            case ASR::exprType::IntrinsicImpureFunction: {
+                auto &x = *ASR::down_cast<ASR::IntrinsicImpureFunction_t>(e);
+                using F = ASRUtils::IntrinsicImpureFunctions;
+                F id = static_cast<F>(x.m_impure_intrinsic_id);
+                if (id == F::Allocated && x.n_args == 1 && is_option_expr(x.m_args[0])) {
+                    return {atom(lower_raw(x.m_args[0])) + ".isSome", pAtom};
+                }
+                unsupported("this impure intrinsic is", loc);
+            }
             case ASR::exprType::StructConstructor: {
                 auto &x = *ASR::down_cast<ASR::StructConstructor_t>(e);
                 return struct_ctor(x.m_dt_sym, x.m_args, x.n_args, loc);
@@ -1786,7 +1932,8 @@ private:
                 }
                 std::string fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
                 if (is_array(ASRUtils::expr_type(x.m_v))) {
-                    if (is_array(ASR::down_cast<ASR::Variable_t>(ms)->m_type)) {
+                    ASR::ttype_t *mt = ASR::down_cast<ASR::Variable_t>(ms)->m_type;
+                    if (is_array(mt) || is_allocatable(mt)) {
                         unsupported("this array of derived types member is", loc);
                     }
                     return app("Arr.map", {{"(fun s' => s'." + fn + ")", pAtom}, lower(x.m_v)});
@@ -1802,6 +1949,35 @@ private:
     }
 
     std::string struct_member_init(ASR::Variable_t *mv, ASR::expr_t *val, const Location &loc) {
+        if (is_allocatable(mv->m_type)) {
+            if (!val) return "none";
+            ASR::ttype_t *it = unalloc(mv->m_type);
+            if (is_option_expr(val)) {
+                std::string raw = atom(lower_raw(val));
+                if (is_array(it)) {
+                    ASR::ttype_t *et = elem_type(it);
+                    if (ASR::is_a<ASR::String_t>(*et) && ASR::down_cast<ASR::String_t>(et)->m_len) {
+                        std::string ln = extent(ASR::down_cast<ASR::String_t>(et)->m_len);
+                        return "(" + raw + ").map (fun a' => { a' with data := a'.data.map (FStr.fix "
+                            + ln + ") })";
+                    }
+                } else if (ASR::is_a<ASR::String_t>(*it) && ASR::down_cast<ASR::String_t>(it)->m_len) {
+                    return "(" + raw + ").map (FStr.fix "
+                        + extent(ASR::down_cast<ASR::String_t>(it)->m_len) + ")";
+                }
+                return raw;
+            }
+            if (is_array(it)) {
+                std::string src = atom(lower(val));
+                ASR::ttype_t *et = elem_type(it);
+                if (ASR::is_a<ASR::String_t>(*et) && ASR::down_cast<ASR::String_t>(et)->m_len) {
+                    src = "(Arr.map (FStr.fix "
+                        + extent(ASR::down_cast<ASR::String_t>(et)->m_len) + ") " + src + ")";
+                }
+                return "some " + src;
+            }
+            return "some " + atom({fix_string(it, "", lower(val), loc), pApp});
+        }
         if (val) {
             if (is_array(mv->m_type)) {
                 std::vector<std::string> lbs, exts;
@@ -1868,6 +2044,9 @@ private:
 
     std::string shown_val(const std::string &val_src, ASR::ttype_t *t,
             ASR::symbol_t *type_decl, const Location &loc, int depth = 0) {
+        if (is_allocatable(t)) {
+            return shown_val("(" + val_src + ").get!", unalloc(t), type_decl, loc, depth);
+        }
         if (is_array(t)) {
             ASR::ttype_t *et = scalar(elem_type(t), loc);
             std::string xv = "x'" + std::to_string(depth);
@@ -1916,7 +2095,7 @@ private:
     std::string shown(ASR::expr_t *e) {
         const Location &loc = e->base.loc;
         if (ASR::is_a<ASR::StringConstant_t>(*e)) {
-            return string_lit(ASR::down_cast<ASR::StringConstant_t>(e)->m_s);
+            return string_lit(string_const_str(*ASR::down_cast<ASR::StringConstant_t>(e)));
         }
         if (ASR::is_a<ASR::Var_t>(*e)) {
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
@@ -1925,7 +2104,8 @@ private:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 if (v->m_storage == ASR::storage_typeType::Parameter && v->m_value
                         && ASR::is_a<ASR::StringConstant_t>(*v->m_value)) {
-                    return string_lit(ASR::down_cast<ASR::StringConstant_t>(v->m_value)->m_s);
+                    return string_lit(string_const_str(
+                        *ASR::down_cast<ASR::StringConstant_t>(v->m_value)));
                 }
             }
         }
@@ -1934,7 +2114,7 @@ private:
                 ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n));
         }
         if (is_array(ASRUtils::expr_type(e))) {
-            return shown_val(atom(lower(e)), ASRUtils::expr_type(e), expr_type_decl(e), loc);
+            return shown_val(atom(lower(e)), unalloc(ASRUtils::expr_type(e)), expr_type_decl(e), loc);
         }
         if (is_string(e)) {
             return lower(e).src;
@@ -2015,9 +2195,7 @@ private:
     }
 
     bool is_lvalue(ASR::expr_t *e) {
-        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
-            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
-        }
+        e = unwrap_physical_cast(e);
         if (!e) return false;
         if (ASR::is_a<ASR::Var_t>(*e)) return true;
         if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
@@ -2032,9 +2210,14 @@ private:
 
     void update_lvalue(ASR::expr_t *lhs,
             const std::function<std::string(const std::string&)> &rhs_fn,
-            const Location &loc) {
-        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*lhs)) {
-            lhs = ASR::down_cast<ASR::ArrayPhysicalCast_t>(lhs)->m_arg;
+            const Location &loc, bool raw = false) {
+        lhs = unwrap_physical_cast(lhs);
+        if (!raw && is_option_expr(lhs)) {
+            std::string ov = "o'" + std::to_string(++loop_id);
+            update_lvalue(lhs, [&](const std::string &cur_opt) {
+                return "(" + cur_opt + ").map (fun " + ov + " => " + rhs_fn(ov) + ")";
+            }, loc, /*raw=*/true);
+            return;
         }
         if (ASR::is_a<ASR::Var_t>(*lhs)) {
             if (ASR::Variable_t *gv = global_var(lhs)) {
@@ -2044,7 +2227,7 @@ private:
                 line("modify fun g' => { g' with " + gf + " := " + tmp + " }");
                 return;
             }
-            std::string a = lower(lhs).src;
+            std::string a = lower_raw(lhs).src;
             line(a + " := " + rhs_fn(a));
             return;
         }
@@ -2058,7 +2241,7 @@ private:
             std::string fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
             update_lvalue(m.m_v, [&](const std::string &cur_s) {
                 return "{ " + cur_s + " with " + fn + " := " + rhs_fn(cur_s + "." + fn) + " }";
-            }, loc);
+            }, loc, /*raw=*/false);
             return;
         }
         if (ASR::is_a<ASR::ArrayItem_t>(*lhs)) {
@@ -2075,16 +2258,103 @@ private:
                 std::string elem = "(Arr.get " + cur_a + " " + iv + ")";
                 return app("Arr.set", {{cur_a, pAtom}, {iv, pAtom},
                     {rhs_fn(elem), pApp}}).src;
-            }, loc);
+            }, loc, /*raw=*/false);
             return;
         }
         unsupported("this assignment is", loc);
     }
 
-    void hoist_lvalue_indices(ASR::expr_t *e) {
-        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
-            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+    void alloc_one(const ASR::alloc_arg_t &aa, const std::string &src_var,
+            bool src_is_arr, const Location &loc) {
+        if (aa.n_codims > 0 || aa.m_sym_subclass || aa.m_type
+                || !is_option_expr(aa.m_a) || !is_lvalue(aa.m_a)) {
+            unsupported("this allocate is", loc);
         }
+        ASR::ttype_t *it = unalloc(ASRUtils::expr_type(aa.m_a));
+        std::string val;
+        if (is_array(it)) {
+            if (aa.n_dims == 0) {
+                if (src_var.empty() || !src_is_arr) unsupported("this allocate is", loc);
+                std::string s = src_var;
+                ASR::ttype_t *et = elem_type(it);
+                if (ASR::is_a<ASR::String_t>(*et)) {
+                    ASR::expr_t *le = aa.m_len_expr ? aa.m_len_expr
+                        : ASR::down_cast<ASR::String_t>(et)->m_len;
+                    if (le) {
+                        s = "{ " + s + " with data := " + s + ".data.map (FStr.fix "
+                            + extent(le) + ") }";
+                    }
+                }
+                val = "some " + s;
+            } else {
+                std::vector<std::string> lbs, exts;
+                for (size_t j = 0; j < aa.n_dims; j++) {
+                    lbs.push_back(aa.m_dims[j].m_start ? int_expr(aa.m_dims[j].m_start).src : "1");
+                    if (!aa.m_dims[j].m_length) unsupported("this allocate is", loc);
+                    exts.push_back(extent(aa.m_dims[j].m_length));
+                }
+                ASR::ttype_t *et = elem_type(it);
+                if (!src_var.empty()) {
+                    if (src_is_arr) {
+                        std::string s = src_var;
+                        if (ASR::is_a<ASR::String_t>(*et)) {
+                            ASR::expr_t *le = aa.m_len_expr ? aa.m_len_expr
+                                : ASR::down_cast<ASR::String_t>(et)->m_len;
+                            if (le) s = "(Arr.map (FStr.fix " + extent(le) + ") " + s + ")";
+                        }
+                        val = "some (Arr.reshape " + s + " " + int_array(lbs) + " "
+                            + int_array(exts) + ")";
+                    } else {
+                        std::string elem = src_var;
+                        if (ASR::is_a<ASR::String_t>(*et)) {
+                            ASR::expr_t *le = aa.m_len_expr ? aa.m_len_expr
+                                : ASR::down_cast<ASR::String_t>(et)->m_len;
+                            if (le) elem = "(FStr.fix " + extent(le) + " " + elem + ")";
+                        }
+                        val = "some (Arr.make " + int_array(lbs) + " " + int_array(exts)
+                            + " " + elem + ")";
+                    }
+                } else {
+                    std::string z = (ASR::is_a<ASR::String_t>(*et) && aa.m_len_expr)
+                        ? "FStr.fix " + extent(aa.m_len_expr) + " \"\""
+                        : zero(et, loc, expr_type_decl(aa.m_a));
+                    val = "some (Arr.make " + int_array(lbs) + " " + int_array(exts)
+                        + " " + atom({z, pApp}) + ")";
+                }
+            }
+        } else {
+            if (!src_var.empty()) {
+                std::string elem = src_var;
+                if (ASR::is_a<ASR::String_t>(*it)) {
+                    ASR::expr_t *le = aa.m_len_expr ? aa.m_len_expr
+                        : ASR::down_cast<ASR::String_t>(it)->m_len;
+                    if (le) elem = "(FStr.fix " + extent(le) + " " + elem + ")";
+                }
+                val = "some " + elem;
+            } else {
+                std::string z;
+                ASR::Variable_t *av = ASR::is_a<ASR::Var_t>(*aa.m_a)
+                    ? ASRUtils::EXPR2VAR(aa.m_a) : nullptr;
+                if (ASR::is_a<ASR::String_t>(*it) && aa.m_len_expr) {
+                    z = "FStr.fix " + extent(aa.m_len_expr) + " \"\"";
+                } else if (av && alloc_str_len.count(av)) {
+                    z = "FStr.fix " + alloc_str_len[av] + " \"\"";
+                } else {
+                    z = zero(it, loc, expr_type_decl(aa.m_a));
+                }
+                val = "some " + atom({z, pApp});
+            }
+        }
+        if (val.find("←") != std::string::npos) {
+            std::string rv = "rhs'" + std::to_string(++loop_id);
+            line("let " + rv + " := " + val);
+            val = rv;
+        }
+        update_lvalue(aa.m_a, [&](const std::string &) { return val; }, loc, /*raw=*/true);
+    }
+
+    void hoist_lvalue_indices(ASR::expr_t *e) {
+        e = unwrap_physical_cast(e);
         if (!e) return;
         if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
             hoist_lvalue_indices(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
@@ -2115,7 +2385,7 @@ private:
                     while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base)) {
                         base = ASR::down_cast<ASR::ArrayPhysicalCast_t>(base)->m_arg;
                     }
-                    if (ASR::is_a<ASR::Var_t>(*base) && !global_var(base)) {
+                    if (ASR::is_a<ASR::Var_t>(*base) && !global_var(base) && !is_option_expr(base)) {
                         std::string a = lower(base).src;
                         std::string rhs = fix_string(ASRUtils::expr_type(x.m_target), "",
                             lower(x.m_value), loc);
@@ -2138,17 +2408,28 @@ private:
                         std::string src = atom(lower(v));
                         if (ASR::is_a<ASR::String_t>(*et)) {
                             auto &st = *ASR::down_cast<ASR::String_t>(et);
-                            if (!st.m_len) unsupported("an assumed-length character array assignment is", loc);
-                            src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                            if (st.m_len) {
+                                src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                            } else if (st.m_len_kind != ASR::string_length_kindType::DeferredLength) {
+                                unsupported("an assumed-length character array assignment is", loc);
+                            }
                         }
-                        if (src.find("←") != std::string::npos) {
+                        if (src.find("←") != std::string::npos || is_option_expr(x.m_target)) {
                             std::string rv = "rhs'" + std::to_string(++loop_id);
                             line("let " + rv + " := " + src);
                             src = rv;
                         }
-                        update_lvalue(x.m_target, [&](const std::string &cur_a) {
-                            return "Arr.copyBack " + cur_a + " " + src;
-                        }, loc);
+                        if (is_option_expr(x.m_target)) {
+                            update_lvalue(x.m_target, [&](const std::string &cur_opt) {
+                                return "(match " + cur_opt + " with | some c' => if c'.exts == "
+                                    + src + ".exts then some (Arr.copyBack c' " + src
+                                    + ") else some " + src + " | none => some " + src + ")";
+                            }, loc, /*raw=*/true);
+                        } else {
+                            update_lvalue(x.m_target, [&](const std::string &cur_a) {
+                                return "Arr.copyBack " + cur_a + " " + src;
+                            }, loc);
+                        }
                     } else {
                         std::string rhs = fix_string(et, "", lower(v), loc);
                         if (rhs.find("←") != std::string::npos) {
@@ -2160,6 +2441,49 @@ private:
                             return "Arr.fill " + cur_a + " " + atom({rhs, pApp});
                         }, loc);
                     }
+                    break;
+                }
+                if (is_option_expr(x.m_target)) {
+                    ASR::Variable_t *tv = ASR::is_a<ASR::Var_t>(*x.m_target)
+                        ? ASRUtils::EXPR2VAR(x.m_target) : nullptr;
+                    auto len_for_target = [&]() -> std::string {
+                        if (tv && alloc_str_len.count(tv)) return alloc_str_len[tv];
+                        ASR::ttype_t *it = unalloc(ASRUtils::expr_type(x.m_target));
+                        if (ASR::is_a<ASR::String_t>(*it) && ASR::down_cast<ASR::String_t>(it)->m_len) {
+                            return extent(ASR::down_cast<ASR::String_t>(it)->m_len);
+                        }
+                        return "";
+                    };
+                    if (is_option_expr(x.m_value)) {
+                        Val rhs = lower_raw(x.m_value);
+                        std::string val = rhs.src;
+                        std::string slen = len_for_target();
+                        if (!slen.empty()) {
+                            val = "(" + val + ").map (FStr.fix " + slen + ")";
+                        }
+                        if (val.find("←") != std::string::npos) {
+                            std::string rv = "rhs'" + std::to_string(++loop_id);
+                            line("let " + rv + " := " + val);
+                            val = rv;
+                        }
+                        update_lvalue(x.m_target, [&](const std::string &) {
+                            return val;
+                        }, loc, /*raw=*/true);
+                        break;
+                    }
+                    Val rhs = lower(x.m_value);
+                    std::string slen = len_for_target();
+                    std::string val = !slen.empty()
+                        ? "FStr.fix " + slen + " " + atom(rhs)
+                        : fix_string(ASRUtils::expr_type(x.m_target), "", rhs, loc);
+                    if (val.find("←") != std::string::npos) {
+                        std::string rv = "rhs'" + std::to_string(++loop_id);
+                        line("let " + rv + " := " + val);
+                        val = rv;
+                    }
+                    update_lvalue(x.m_target, [&](const std::string &) {
+                        return "some " + atom({val, pApp});
+                    }, loc, /*raw=*/true);
                     break;
                 }
                 Val rhs = lower(x.m_value);
@@ -2181,7 +2505,7 @@ private:
                 // The `intent(out)`/`intent(inout)` actual arguments, in order.
                 // Hoist any array-element subscripts before the call so earlier
                 // copy-backs cannot alter the index and subscripts are evaluated once.
-                std::vector<ASR::expr_t*> outs;
+                std::vector<std::pair<ASR::expr_t*, bool>> outs;
                 for (size_t i = 0; i < x.n_args; i++) {
                     if (arg_intent(fn, i) == ASR::intentType::In) continue;
                     ASR::expr_t *a = x.m_args[i].m_value;
@@ -2193,12 +2517,21 @@ private:
                         unsupported("this intent(out) or intent(inout) argument is",
                             a->base.loc);
                     }
+                    ASR::Variable_t *d = dummy(fn, i);
+                    bool d_alloc = d && is_allocatable(d->m_type);
+                    if (d_alloc && !is_option_expr(a)) {
+                        unsupported("passing a non-allocatable to an allocatable dummy is",
+                            a->base.loc);
+                    }
                     hoist_lvalue_indices(a);
-                    outs.push_back(a);
+                    outs.push_back({a, d_alloc});
                 }
                 Val c = call(x.m_name, x.m_args, x.n_args, loc);
-                auto assign = [&](ASR::expr_t *a, const std::string &v) {
-                    if (is_array(ASRUtils::expr_type(a))) {
+                auto assign = [&](const std::pair<ASR::expr_t*, bool> &o, const std::string &v) {
+                    ASR::expr_t *a = o.first;
+                    if (o.second) {
+                        update_lvalue(a, [&](const std::string &) { return v; }, loc, /*raw=*/true);
+                    } else if (is_array(ASRUtils::expr_type(a))) {
                         update_lvalue(a, [&](const std::string &cur_a) {
                             return "Arr.copyBack " + cur_a + " " + v;
                         }, loc);
@@ -2451,6 +2784,60 @@ private:
                 }
                 unsupported("this print is", loc);
             }
+            case ASR::stmtType::Allocate: {
+                auto &x = *ASR::down_cast<ASR::Allocate_t>(s);
+                if (x.m_stat || x.m_errmsg) unsupported("allocate with stat/errmsg is", loc);
+                std::string src_var;
+                bool src_is_arr = false;
+                if (x.m_source) {
+                    src_is_arr = is_array(ASRUtils::expr_type(x.m_source));
+                    src_var = "src'" + std::to_string(++loop_id);
+                    line("let " + src_var + " := " + lower(x.m_source).src);
+                }
+                for (size_t i = 0; i < x.n_args; i++) {
+                    alloc_one(x.m_args[i], src_var, src_is_arr, loc);
+                }
+                break;
+            }
+            case ASR::stmtType::ReAlloc: {
+                auto &x = *ASR::down_cast<ASR::ReAlloc_t>(s);
+                if (x.n_args != 1) unsupported("this realloc is", loc);
+                const ASR::alloc_arg_t &aa = x.m_args[0];
+                if (!is_option_expr(aa.m_a) || !is_lvalue(aa.m_a)) {
+                    unsupported("this realloc is", loc);
+                }
+                line("if !(" + atom(lower_raw(aa.m_a)) + ".isSome) then");
+                ind++;
+                alloc_one(aa, "", false, loc);
+                ind--;
+                line("else if " + lower(x.m_shape_differs).src + " then");
+                ind++;
+                alloc_one(aa, "", false, loc);
+                ind--;
+                break;
+            }
+            case ASR::stmtType::ExplicitDeallocate: {
+                auto &x = *ASR::down_cast<ASR::ExplicitDeallocate_t>(s);
+                if (x.m_stat || x.m_errmsg) unsupported("deallocate with stat/errmsg is", loc);
+                for (size_t i = 0; i < x.n_vars; i++) {
+                    if (!is_option_expr(x.m_vars[i]) || !is_lvalue(x.m_vars[i])) {
+                        unsupported("this deallocate is", loc);
+                    }
+                    update_lvalue(x.m_vars[i], [&](const std::string &) { return "none"; },
+                        loc, /*raw=*/true);
+                }
+                break;
+            }
+            case ASR::stmtType::ImplicitDeallocate: {
+                auto &x = *ASR::down_cast<ASR::ImplicitDeallocate_t>(s);
+                for (size_t i = 0; i < x.n_vars; i++) {
+                    if (is_option_expr(x.m_vars[i]) && is_lvalue(x.m_vars[i])) {
+                        update_lvalue(x.m_vars[i], [&](const std::string &) { return "none"; },
+                            loc, /*raw=*/true);
+                    }
+                }
+                break;
+            }
             case ASR::stmtType::ErrorStop:
                 halt(ASR::down_cast<ASR::ErrorStop_t>(s)->m_code, true, loc);
                 break;
@@ -2516,6 +2903,23 @@ private:
             const Location &vloc = v->base.base.loc;
             if (!in_program && v->m_storage == ASR::storage_typeType::Save) {
                 unsupported("a saved local variable is", vloc);
+            }
+            if (is_allocatable(v->m_type)) {
+                if (v->m_symbolic_value || v->m_value) {
+                    unsupported("an initialized allocatable variable is", vloc);
+                }
+                ASR::ttype_t *it = unalloc(v->m_type);
+                if (ASR::is_a<ASR::String_t>(*it)) {
+                    ASR::expr_t *le = ASR::down_cast<ASR::String_t>(it)->m_len;
+                    if (le && !ASRUtils::expr_value(le)) {
+                        std::string lv = "len'" + std::to_string(++loop_id);
+                        line("let " + lv + " : Nat := " + extent(le));
+                        alloc_str_len[v] = lv;
+                    }
+                }
+                line("let mut " + name(v->m_name, vloc) + " : "
+                    + vtype(v->m_type, vloc, v->m_type_declaration) + " := none");
+                continue;
             }
             if (v->m_symbolic_value || v->m_value) {
                 if (!in_program) {
@@ -2583,6 +2987,7 @@ private:
         bool is_gl = global_procs.count(fn) > 0;
         level = is_io ? 2 : 0;
         loop_vars.clear();
+        alloc_str_len.clear();
         scope = fn->m_symtab;
         in_program = false;
         check_symbols(fn->m_symtab);
@@ -2611,7 +3016,23 @@ private:
             }
             dummies.insert(a);
             std::string let = in == ASR::intentType::In ? "let " : "let mut ";
-            if (is_array(a->m_type)) {
+            if (is_allocatable(a->m_type)) {
+                ASR::ttype_t *et = elem_type(a->m_type);
+                if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len
+                        && ASR::down_cast<ASR::String_t>(et)->m_len_kind
+                            == ASR::string_length_kindType::AssumedLength) {
+                    unsupported("an assumed-length allocatable character dummy is", aloc);
+                }
+                if (in == ASR::intentType::Out) {
+                    entry.push_back({aloc.first, "let mut " + an + " : "
+                        + vtype(a->m_type, aloc, a->m_type_declaration) + " := none"});
+                } else {
+                    p.sig += " (" + an + " : " + vtype(a->m_type, aloc, a->m_type_declaration) + ")";
+                    if (in == ASR::intentType::InOut) {
+                        entry.push_back({aloc.first, "let mut " + an + " := " + an});
+                    }
+                }
+            } else if (is_array(a->m_type)) {
                 // The dummy takes its declared bounds.
                 std::vector<std::string> lbs, exts;
                 bool assumed;
@@ -3029,6 +3450,7 @@ public:
             cur = &prog_proc;
             level = 2;
             loop_vars.clear();
+            alloc_str_len.clear();
             scope = prog->m_symtab;
             in_program = true;
             result = nullptr;
