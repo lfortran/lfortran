@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_bound_expr_01-ab6eaee",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array_bound_expr_01.f90",
+    "infile_hash": "8e1b90f71708b6ddaf3bdfdecedf9cc942cf7926c2bb10b19aa70116",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-array_bound_expr_01-ab6eaee.stdout",
+    "stdout_hash": "cf9700e520491662b5671c66109a08c3b699ae74c8beb32d8fcad85e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
