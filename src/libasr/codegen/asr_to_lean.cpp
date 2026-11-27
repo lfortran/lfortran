@@ -180,6 +180,14 @@ public:
         for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
         for (size_t i = 0; i < vs.size(); i++) index.pop_back();
     }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (ASR::is_a<ASR::Block_t>(*s)) {
+            ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(s);
+            for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+        }
+    }
 };
 
 // Pre-pass collecting direct IO usage, global-variable usage, callees, and
@@ -286,6 +294,19 @@ public:
         ASR::BaseWalkVisitor<ProcEffects>::visit_DoConcurrentLoop(x);
     }
 
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (ASR::is_a<ASR::Block_t>(*s)) {
+            ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(s);
+            for (auto &item : b->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    visit_ttype(*ASR::down_cast<ASR::Variable_t>(item.second)->m_type);
+                }
+            }
+            for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+        }
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
         if (ASR::is_a<ASR::Function_t>(*s)) callees.insert(ASR::down_cast<ASR::Function_t>(s));
@@ -343,6 +364,8 @@ private:
     std::vector<std::string> exit_flags;
     std::map<const ASR::ArrayItem_t*, std::string> pre_idx;
     std::map<ASR::Variable_t*, std::string> alloc_str_len;
+    std::map<ASR::Variable_t*, std::string> var_alias;
+    std::map<ASR::Variable_t*, std::string> implied_vars;
     int loop_id = 0;
     std::string ns;
     std::string *buf = nullptr;
@@ -362,6 +385,12 @@ private:
         if (n == "K") unsupported("the name 'K' is", loc);
         if (reserved.count(n)) return "«" + n + "»";
         return n;
+    }
+
+    std::string var_name(ASR::Variable_t *v) {
+        auto it = var_alias.find(v);
+        if (it != var_alias.end()) return it->second;
+        return name(v->m_name, v->base.base.loc);
     }
 
     // Derived types --------------------------------------------------------
@@ -440,6 +469,14 @@ private:
                 case ASR::exprType::ArrayReshape:
                     e = ASR::down_cast<ASR::ArrayReshape_t>(e)->m_array;
                     break;
+                case ASR::exprType::ArrayTranspose:
+                    e = ASR::down_cast<ASR::ArrayTranspose_t>(e)->m_matrix;
+                    break;
+                case ASR::exprType::ImpliedDoLoop: {
+                    auto &x = *ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+                    if (x.n_values > 0) { e = x.m_values[0]; break; }
+                    return nullptr;
+                }
                 case ASR::exprType::FunctionCall: {
                     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::FunctionCall_t>(e)->m_name);
@@ -761,6 +798,57 @@ private:
             + ", data := " + elems + " } : " + vtype(x.m_type, loc, td) + ")", pAtom};
     }
 
+    std::string implied_do_array(const ASR::ImpliedDoLoop_t &x, ASR::ttype_t *elem_ty,
+            const Location &loc) {
+        if (!x.m_var || !ASR::is_a<ASR::Var_t>(*x.m_var) || !x.m_start || !x.m_end) {
+            unsupported("this implied do loop is", loc);
+        }
+        ASR::Variable_t *iv = ASRUtils::EXPR2VAR(x.m_var);
+        std::string ity = type(ASRUtils::expr_type(x.m_var), loc);
+        std::string lo = "(" + lower(x.m_start).src + " : " + ity + ")";
+        std::string hi = atom(lower(x.m_end));
+        bool unit = !x.m_increment
+            || (ASR::is_a<ASR::IntegerConstant_t>(*x.m_increment)
+                && ASR::down_cast<ASR::IntegerConstant_t>(x.m_increment)->m_n == 1);
+        std::string range = unit
+            ? "(FInt.range " + lo + " " + hi + ")"
+            : "(FInt.rangeStep " + lo + " " + hi + " " + atom(lower(x.m_increment)) + ")";
+        std::string vn = "id'" + std::to_string(++loop_id);
+        std::string acc = "acc'" + std::to_string(++loop_id);
+        auto prev = implied_vars.find(iv);
+        bool had_prev = prev != implied_vars.end();
+        std::string prev_name = had_prev ? prev->second : "";
+        implied_vars[iv] = vn;
+        std::string body = acc;
+        for (size_t i = 0; i < x.n_values; i++) {
+            std::string chunk = array_ctor_chunk(x.m_values[i], elem_ty, loc);
+            if (chunk.find("←") != std::string::npos) {
+                if (had_prev) implied_vars[iv] = prev_name;
+                else implied_vars.erase(iv);
+                unsupported("a monadic expression in an implied do loop is", loc);
+            }
+            body += " ++ " + chunk;
+        }
+        if (had_prev) implied_vars[iv] = prev_name;
+        else implied_vars.erase(iv);
+        return "(" + range + ".foldl (fun " + acc + " " + vn + " => " + body + ") #[])";
+    }
+
+    std::string array_ctor_chunk(ASR::expr_t *arg, ASR::ttype_t *elem_ty, const Location &loc) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*arg)) {
+            return implied_do_array(*ASR::down_cast<ASR::ImpliedDoLoop_t>(arg), elem_ty, loc);
+        }
+        if (is_array(ASRUtils::expr_type(arg))) {
+            std::string s = atom(lower(arg)) + ".data";
+            if (ASR::is_a<ASR::String_t>(*elem_ty) && ASR::down_cast<ASR::String_t>(elem_ty)->m_len) {
+                s = "(" + s + ".map (FStr.fix "
+                    + extent(ASR::down_cast<ASR::String_t>(elem_ty)->m_len) + "))";
+            }
+            return s;
+        }
+        return "#[" + fix_string(elem_ty, "", lower(arg), loc) + "]";
+    }
+
     Val array_constructor(const ASR::ArrayConstructor_t &x, const Location &loc) {
         if (x.m_value && ASR::is_a<ASR::ArrayConstant_t>(*x.m_value)) {
             return array_constant(*ASR::down_cast<ASR::ArrayConstant_t>(x.m_value), loc);
@@ -770,19 +858,33 @@ private:
         }
         ASR::Array_t *at = ASR::down_cast<ASR::Array_t>(x.m_type);
         if (at->n_dims != 1) unsupported("this array expression is", loc);
-        std::string elems = "#[";
+        bool has_complex = false;
         for (size_t i = 0; i < x.n_args; i++) {
             if (is_array(ASRUtils::expr_type(x.m_args[i]))
                     || ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_args[i])) {
-                unsupported("this array expression is", loc);
+                has_complex = true;
+                break;
             }
-            if (i) elems += ", ";
-            elems += fix_string(at->m_type, "", lower(x.m_args[i]), loc);
         }
-        elems += "]";
         ASR::symbol_t *td = x.n_args > 0 ? expr_type_decl(x.m_args[0]) : nullptr;
-        return {"({ lbs := #[1], exts := #[" + std::to_string(x.n_args)
-            + "], data := " + elems + " } : " + vtype(x.m_type, loc, td) + ")", pAtom};
+        if (!has_complex) {
+            std::string elems = "#[";
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (i) elems += ", ";
+                elems += fix_string(at->m_type, "", lower(x.m_args[i]), loc);
+            }
+            elems += "]";
+            return {"({ lbs := #[1], exts := #[" + std::to_string(x.n_args)
+                + "], data := " + elems + " } : " + vtype(x.m_type, loc, td) + ")", pAtom};
+        }
+        std::string data = "#[]";
+        for (size_t i = 0; i < x.n_args; i++) {
+            std::string chunk = array_ctor_chunk(x.m_args[i], at->m_type, loc);
+            data = (i == 0) ? chunk : "(" + data + " ++ " + chunk + ")";
+        }
+        std::string dv = "d'" + std::to_string(++loop_id);
+        return {"((fun (" + dv + " : Array (" + type(at->m_type, loc, td)
+            + ")) => Arr.mk #[1] #[" + dv + ".size] " + dv + ") " + data + ")", pAtom};
     }
 
     bool is_int(ASR::expr_t *e) {
@@ -1040,7 +1142,7 @@ private:
             if (it != proc_ns.end() && !it->second.empty()) {
                 std::string mn = it->second.find('\'') != std::string::npos
                     ? it->second : name(it->second, sym->base.loc);
-                if (cur_scope() && cur_scope()->get_symbol(it->second)) {
+                if (name_in_scope(it->second)) {
                     return "_root_." + mn + "." + n;
                 }
                 return mn + "." + n;
@@ -1048,12 +1150,12 @@ private:
         }
         if (ASR::Module_t *m = ASRUtils::get_sym_module(sym)) {
             std::string mn = name(m->m_name, m->base.base.loc);
-            if (cur_scope() && cur_scope()->get_symbol(m->m_name)) {
+            if (name_in_scope(m->m_name)) {
                 return "_root_." + mn + "." + n;
             }
             return mn + "." + n;
         }
-        if (cur_scope() && cur_scope()->get_symbol(ASRUtils::symbol_name(sym))) {
+        if (name_in_scope(ASRUtils::symbol_name(sym))) {
             return "_root_." + n;
         }
         return n;
@@ -1128,6 +1230,14 @@ private:
             ASR::expr_t *a = args[i].m_value;
             if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
                 unsupported("this argument is", a->base.loc);
+            }
+            ASR::expr_t *au = unwrap_physical_cast(a);
+            if (is_array(d->m_type) && ASR::is_a<ASR::ArraySection_t>(*au)) {
+                ASR::Array_t *da = ASR::down_cast<ASR::Array_t>(unalloc(d->m_type));
+                ASR::Array_t *aa = ASR::down_cast<ASR::Array_t>(unalloc_type(au));
+                if (da->n_dims != aa->n_dims) {
+                    unsupported("legacy sequence association of an array section is", a->base.loc);
+                }
             }
             if (is_allocatable(d->m_type)) {
                 if (!is_option_expr(a)) {
@@ -1593,6 +1703,16 @@ private:
                     "Arr.mk (Array.replicate exts'.size (1 : Int)) exts' (a'.data.extract 0 n')) "
                     + atom(lower(x.m_array)) + " " + atom(lower(x.m_shape)) + ")", pAtom};
             }
+            case ASR::exprType::ArrayTranspose: {
+                auto &x = *ASR::down_cast<ASR::ArrayTranspose_t>(e);
+                if (x.m_value && x.m_value != e) return lower_raw(x.m_value);
+                return {"((fun (a' : Arr _) => "
+                    "let m' := a'.exts.getD 0 0; "
+                    "let n' := a'.exts.getD 1 0; "
+                    "Arr.mk #[1, 1] #[n', m'] (Array.ofFn (n := m' * n') (fun k' => "
+                    "a'.data[k'.val / n' + m' * (k'.val % n')]!))) "
+                    + atom(lower(x.m_matrix)) + ")", pAtom};
+            }
             case ASR::exprType::IntrinsicArrayFunction:
                 return intrinsic_array(*ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e), loc);
             case ASR::exprType::ArrayItem: {
@@ -1633,14 +1753,19 @@ private:
                     }
                     return lower(v->m_value);
                 }
+                auto iit = implied_vars.find(v);
+                if (iit != implied_vars.end()) {
+                    return {iit->second, pAtom};
+                }
                 if (global_fields.count(v)) {
                     if (!cur) unsupported("a non-constant global initializer is", loc);
                     return {"(← get)." + global_fields[v], pAtom};
                 }
-                if (v->m_parent_symtab != cur_scope()) {
+                if (!cur) unsupported("a non-constant static initializer is", loc);
+                if (!in_scope_stack(v->m_parent_symtab)) {
                     unsupported("a variable from another scope is", loc);
                 }
-                return {name(v->m_name, v->base.base.loc), pAtom};
+                return {var_name(v), pAtom};
             }
             case ASR::exprType::IntegerConstant: {
                 auto &x = *ASR::down_cast<ASR::IntegerConstant_t>(e);
@@ -2112,7 +2237,19 @@ private:
     // Statements -----------------------------------------------------------
 
     SymbolTable *scope = nullptr;
+    std::vector<SymbolTable*> scope_stack;
     SymbolTable *cur_scope() const { return scope; }
+    bool in_scope_stack(SymbolTable *st) const {
+        if (st == scope) return true;
+        return std::find(scope_stack.begin(), scope_stack.end(), st) != scope_stack.end();
+    }
+    bool name_in_scope(const std::string &n) const {
+        if (scope && scope->get_symbol(n)) return true;
+        for (SymbolTable *st : scope_stack) {
+            if (st && st->get_symbol(n)) return true;
+        }
+        return false;
+    }
 
     std::string shown_val(const std::string &val_src, ASR::ttype_t *t,
             ASR::symbol_t *type_decl, const Location &loc, int depth = 0) {
@@ -2236,6 +2373,12 @@ private:
             line("LFortran.halt (LFortran.stopCode " + atom(app("FInt.toInt", {operand(code)})) + ")");
             return;
         }
+        if (is_string(code)) {
+            level = std::max(level, 2);
+            line("IO.println " + atom(lower(code)));
+            line(std::string("LFortran.halt ") + (error ? "1" : "0"));
+            return;
+        }
         unsupported("this stop code is", loc);
     }
 
@@ -2261,6 +2404,13 @@ private:
                     }
                 }
                 if (body_has_exit(d.m_default, d.n_default)) return true;
+            } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(sym);
+                    if (body_has_exit(b->m_body, b->n_body)) return true;
+                }
             }
         }
         return false;
@@ -2492,10 +2642,15 @@ private:
                             src = rv;
                         }
                         if (is_option_expr(x.m_target)) {
+                            ASR::expr_t *vu = unwrap_physical_cast(v);
+                            bool keep_lbs = ASR::is_a<ASR::Var_t>(*vu)
+                                || ASR::is_a<ASR::StructInstanceMember_t>(*vu);
+                            std::string fresh = keep_lbs ? src
+                                : "{ " + src + " with lbs := Array.replicate " + src + ".exts.size (1 : Int) }";
                             update_lvalue(x.m_target, [&](const std::string &cur_opt) {
                                 return "(match " + cur_opt + " with | some c' => if c'.exts == "
                                     + src + ".exts then some (Arr.copyBack c' " + src
-                                    + ") else some " + src + " | none => some " + src + ")";
+                                    + ") else some " + fresh + " | none => some " + fresh + ")";
                             }, loc, /*raw=*/true);
                         } else {
                             update_lvalue(x.m_target, [&](const std::string &cur_a) {
@@ -2994,6 +3149,39 @@ private:
                 }
                 break;
             }
+            case ASR::stmtType::BlockCall: {
+                auto &x = *ASR::down_cast<ASR::BlockCall_t>(s);
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!ASR::is_a<ASR::Block_t>(*sym)) unsupported("this block is", loc);
+                ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(sym);
+                check_symbols(b->m_symtab);
+                line("if true then");
+                ind++;
+                SymbolTable *prev_scope = scope;
+                scope_stack.push_back(scope);
+                scope = b->m_symtab;
+                std::string bid = std::to_string(++loop_id);
+                std::vector<ASR::Variable_t*> aliased;
+                for (ASR::symbol_t *bs : symbols_in_order(b->m_symtab)) {
+                    if (ASR::is_a<ASR::Variable_t>(*bs)) {
+                        ASR::Variable_t *bv = ASR::down_cast<ASR::Variable_t>(bs);
+                        if (bv->m_storage != ASR::storage_typeType::Parameter) {
+                            name(bv->m_name, bv->base.base.loc);
+                            var_alias[bv] = std::string(bv->m_name) + "'b" + bid;
+                            aliased.push_back(bv);
+                        }
+                    }
+                }
+                size_t before = buf->size();
+                locals(b->m_symtab, {});
+                stmts(b->m_body, b->n_body);
+                if (buf->size() == before) line("Pure.pure ()");
+                for (ASR::Variable_t *bv : aliased) var_alias.erase(bv);
+                scope = prev_scope;
+                scope_stack.pop_back();
+                ind--;
+                break;
+            }
             case ASR::stmtType::ErrorStop:
                 halt(ASR::down_cast<ASR::ErrorStop_t>(s)->m_code, true, loc);
                 break;
@@ -3052,82 +3240,95 @@ private:
                     }
                 }
                 collect_loop_vars(d.m_default, d.n_default);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(sym);
+                    collect_loop_vars(b->m_body, b->n_body);
+                }
             }
         }
     }
 
-    // Locals of a procedure or program body: every variable that is not a
-    // dummy, a parameter or a loop index.
-    void locals(SymbolTable *st, const std::set<ASR::Variable_t*> &dummies) {
-        for (ASR::symbol_t *s : symbols_in_order(st)) {
-            if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
-            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-            if (dummies.count(v) || loop_vars.count(v)) continue;
-            if (v->m_storage == ASR::storage_typeType::Parameter) continue;
-            const Location &vloc = v->base.base.loc;
-            if (!in_program && v->m_storage == ASR::storage_typeType::Save) {
-                unsupported("a saved local variable is", vloc);
-            }
-            if (is_allocatable(v->m_type)) {
-                if (v->m_symbolic_value || v->m_value) {
-                    unsupported("an initialized allocatable variable is", vloc);
-                }
-                ASR::ttype_t *it = unalloc(v->m_type);
-                if (ASR::is_a<ASR::String_t>(*it)) {
-                    ASR::expr_t *le = ASR::down_cast<ASR::String_t>(it)->m_len;
-                    if (le && !ASRUtils::expr_value(le)) {
-                        std::string lv = "len'" + std::to_string(++loop_id);
-                        line("let " + lv + " : Nat := " + extent(le));
-                        alloc_str_len[v] = lv;
-                    }
-                }
-                line("let mut " + name(v->m_name, vloc) + " : "
-                    + vtype(v->m_type, vloc, v->m_type_declaration) + " := none");
-                continue;
-            }
+    // Emit one local variable declaration into `*buf`.
+    void emit_local(ASR::Variable_t *v) {
+        const Location &vloc = v->base.base.loc;
+        if ((!in_program || !scope_stack.empty()) && v->m_storage == ASR::storage_typeType::Save) {
+            unsupported("a saved local variable is", vloc);
+        }
+        std::string vn = var_name(v);
+        if (is_allocatable(v->m_type)) {
             if (v->m_symbolic_value || v->m_value) {
-                if (!in_program) {
-                    unsupported("an initialized local variable is", vloc);
-                }
-                ASR::expr_t *init = v->m_symbolic_value ? v->m_symbolic_value : v->m_value;
-                if (is_array(v->m_type)) {
-                    std::vector<std::string> lbs, exts;
-                    bool assumed;
-                    dims(v->m_type, lbs, exts, assumed, vloc);
-                    if (assumed) unsupported("this local array is", vloc);
-                    std::string src = atom(lower(array_var(init)));
-                    ASR::ttype_t *et = elem_type(v->m_type);
-                    if (ASR::is_a<ASR::String_t>(*et)) {
-                        auto &st = *ASR::down_cast<ASR::String_t>(et);
-                        if (!st.m_len) unsupported("this local array is", vloc);
-                        src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
-                    }
-                    line("let mut " + name(v->m_name, vloc) + " : "
-                        + vtype(v->m_type, vloc, v->m_type_declaration)
-                        + " := Arr.reshape " + src + " "
-                        + int_array(lbs) + " " + int_array(exts));
-                    continue;
-                }
-                line("let mut " + name(v->m_name, vloc) + " : "
-                    + type(v->m_type, vloc, v->m_type_declaration)
-                    + " := " + fix_string(v->m_type, "", lower(init), vloc));
-                continue;
+                unsupported("an initialized allocatable variable is", vloc);
             }
+            ASR::ttype_t *it = unalloc(v->m_type);
+            if (ASR::is_a<ASR::String_t>(*it)) {
+                ASR::expr_t *le = ASR::down_cast<ASR::String_t>(it)->m_len;
+                if (le && !ASRUtils::expr_value(le)) {
+                    std::string lv = "len'" + std::to_string(++loop_id);
+                    line("let " + lv + " : Nat := " + extent(le));
+                    alloc_str_len[v] = lv;
+                }
+            }
+            line("let mut " + vn + " : "
+                + vtype(v->m_type, vloc, v->m_type_declaration) + " := none");
+            return;
+        }
+        if (v->m_symbolic_value || v->m_value) {
+            if (!in_program) {
+                unsupported("an initialized local variable is", vloc);
+            }
+            ASR::expr_t *init = v->m_symbolic_value ? v->m_symbolic_value : v->m_value;
             if (is_array(v->m_type)) {
                 std::vector<std::string> lbs, exts;
                 bool assumed;
                 dims(v->m_type, lbs, exts, assumed, vloc);
                 if (assumed) unsupported("this local array is", vloc);
-                line("let mut " + name(v->m_name, vloc) + " : "
+                std::string src = atom(lower(array_var(init)));
+                ASR::ttype_t *et = elem_type(v->m_type);
+                if (ASR::is_a<ASR::String_t>(*et)) {
+                    auto &st = *ASR::down_cast<ASR::String_t>(et);
+                    if (!st.m_len) unsupported("this local array is", vloc);
+                    src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                }
+                line("let mut " + vn + " : "
                     + vtype(v->m_type, vloc, v->m_type_declaration)
-                    + " := Arr.make " + int_array(lbs) + " " + int_array(exts) + " "
-                    + atom({zero(ASR::down_cast<ASR::Array_t>(v->m_type)->m_type, vloc,
-                        v->m_type_declaration), pApp}));
-                continue;
+                    + " := Arr.reshape " + src + " "
+                    + int_array(lbs) + " " + int_array(exts));
+                return;
             }
-            line("let mut " + name(v->m_name, vloc) + " : "
+            line("let mut " + vn + " : "
                 + type(v->m_type, vloc, v->m_type_declaration)
-                + " := " + zero(v->m_type, vloc, v->m_type_declaration));
+                + " := " + fix_string(v->m_type, "", lower(init), vloc));
+            return;
+        }
+        if (is_array(v->m_type)) {
+            std::vector<std::string> lbs, exts;
+            bool assumed;
+            dims(v->m_type, lbs, exts, assumed, vloc);
+            if (assumed) unsupported("this local array is", vloc);
+            line("let mut " + vn + " : "
+                + vtype(v->m_type, vloc, v->m_type_declaration)
+                + " := Arr.make " + int_array(lbs) + " " + int_array(exts) + " "
+                + atom({zero(ASR::down_cast<ASR::Array_t>(v->m_type)->m_type, vloc,
+                    v->m_type_declaration), pApp}));
+            return;
+        }
+        line("let mut " + vn + " : "
+            + type(v->m_type, vloc, v->m_type_declaration)
+            + " := " + zero(v->m_type, vloc, v->m_type_declaration));
+    }
+
+    // Locals of a procedure or program body: every variable that is not a
+    // dummy, a parameter, a global/saved variable or a loop index.
+    void locals(SymbolTable *st, const std::set<ASR::Variable_t*> &dummies) {
+        for (ASR::symbol_t *s : symbols_in_order(st)) {
+            if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            if (dummies.count(v) || loop_vars.count(v) || global_fields.count(v)) continue;
+            if (v->m_storage == ASR::storage_typeType::Parameter) continue;
+            emit_local(v);
         }
     }
 
@@ -3137,6 +3338,7 @@ private:
                     || ASR::is_a<ASR::Struct_t>(*s)
                     || ASR::is_a<ASR::GenericProcedure_t>(*s)
                     || ASR::is_a<ASR::CustomOperator_t>(*s)
+                    || ASR::is_a<ASR::Block_t>(*s)
                     || (allow_functions && ASR::is_a<ASR::Function_t>(*s))) {
                 continue;
             }
@@ -3181,7 +3383,7 @@ private:
                 unsupported("a function argument that is not intent(in) is", aloc);
             }
             dummies.insert(a);
-            std::string let = in == ASR::intentType::In ? "let " : "let mut ";
+            std::string let = (in == ASR::intentType::In && !a->m_value_attr) ? "let " : "let mut ";
             if (is_allocatable(a->m_type)) {
                 ASR::ttype_t *et = elem_type(a->m_type);
                 if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len
@@ -3194,7 +3396,7 @@ private:
                         + vtype(a->m_type, aloc, a->m_type_declaration) + " := none"});
                 } else {
                     p.sig += " (" + an + " : " + vtype(a->m_type, aloc, a->m_type_declaration) + ")";
-                    if (in == ASR::intentType::InOut) {
+                    if (in == ASR::intentType::InOut || a->m_value_attr) {
                         entry.push_back({aloc.first, "let mut " + an + " := " + an});
                     }
                 }
@@ -3227,7 +3429,7 @@ private:
                 if (ASR::is_a<ASR::String_t>(*a->m_type) && ASR::down_cast<ASR::String_t>(a->m_type)->m_len) {
                     entry.push_back({aloc.first, let + an + " := FStr.fix "
                         + extent(ASR::down_cast<ASR::String_t>(a->m_type)->m_len) + " " + an});
-                } else if (in == ASR::intentType::InOut) {
+                } else if (in == ASR::intentType::InOut || a->m_value_attr) {
                     entry.push_back({aloc.first, "let mut " + an + " := " + an});
                 }
             }
@@ -3274,8 +3476,26 @@ private:
         if (result) loop_vars.erase(result);
         buf = &p.body;
         ind = 1;
-        for (const auto &l : entry) line(l.second);
-        locals(fn->m_symtab, dummies);
+        // Emit dummy `entry` rebinds and local variable declarations in source
+        // declaration order so a dummy's dimension can reference an earlier local.
+        std::vector<ASR::Variable_t*> local_vars;
+        for (ASR::symbol_t *s : symbols_in_order(fn->m_symtab)) {
+            if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            if (dummies.count(v) || loop_vars.count(v) || global_fields.count(v)) continue;
+            if (v->m_storage == ASR::storage_typeType::Parameter) continue;
+            local_vars.push_back(v);
+        }
+        size_t ei = 0, li = 0;
+        while (ei < entry.size() || li < local_vars.size()) {
+            if (ei < entry.size() && (li == local_vars.size()
+                    || local_vars[li] == result
+                    || entry[ei].first <= local_vars[li]->base.base.loc.first)) {
+                line(entry[ei++].second);
+            } else {
+                emit_local(local_vars[li++]);
+            }
+        }
         stmts(fn->m_body, fn->n_body);
         bool returned = fn->n_body
             && ASR::is_a<ASR::Return_t>(*fn->m_body[fn->n_body - 1]);
@@ -3355,6 +3575,8 @@ private:
                 ASR::Variable_t *d = dummy(fn, i);
                 if (!d) {
                     ins[i] = ASR::intentType::Unspecified;
+                } else if (d->m_value_attr) {
+                    ins[i] = ASR::intentType::In;
                 } else if (d->m_intent == ASR::intentType::Unspecified) {
                     ins[i] = pe.modified.count(d)
                         ? ASR::intentType::InOut : ASR::intentType::In;
@@ -3396,7 +3618,8 @@ private:
                     if (cin == ASR::intentType::In) continue;
                     for (size_t i = 0; i < fn->n_args; i++) {
                         ASR::Variable_t *d = dummy(fn, i);
-                        if (d && d == sa.var && d->m_intent == ASR::intentType::Unspecified
+                        if (d && d == sa.var && !d->m_value_attr
+                                && d->m_intent == ASR::intentType::Unspecified
                                 && ins[i] == ASR::intentType::In) {
                             ins[i] = ASR::intentType::InOut;
                             changed = true;
@@ -3569,11 +3792,21 @@ public:
                     : name(raw_ns, fn->base.base.loc));
             std::string lns = (fns.empty() ? "" : fns + ".")
                 + std::string(fn->m_name) + "'types";
+            std::string fn_prefix = (raw_ns.empty() ? std::string("top") : raw_ns)
+                + "'" + std::string(fn->m_name) + "'save'";
             for (ASR::symbol_t *s : symbols_in_order(fn->m_symtab)) {
                 if (ASR::is_a<ASR::Struct_t>(*s)) {
                     ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
                     struct_ns[st] = lns;
                     all_structs.push_back(st);
+                } else if (ASR::is_a<ASR::Variable_t>(*s)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                    if (v->m_storage == ASR::storage_typeType::Save
+                            && v->m_intent == ASR::intentType::Local) {
+                        name(v->m_name, v->base.base.loc);
+                        global_fields[v] = fn_prefix + std::string(v->m_name);
+                        all_globals.push_back(v);
+                    }
                 }
             }
         }
