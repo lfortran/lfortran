@@ -177,6 +177,11 @@ public:
                 ? ASRUtils::EXPR2VAR(h.m_v) : nullptr;
             if (v) { index.push_back(v); vs.push_back(v); }
         }
+        for (size_t i = 0; i < x.n_local; i++) {
+            if (x.m_local[i] && ASR::is_a<ASR::Var_t>(*x.m_local[i])) {
+                outside.insert(ASRUtils::EXPR2VAR(x.m_local[i]));
+            }
+        }
         for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
         for (size_t i = 0; i < vs.size(); i++) index.pop_back();
     }
@@ -267,6 +272,9 @@ public:
         for (size_t i = 0; i < x.n_args; i++) {
             if (ASR::Variable_t *v = root_var(x.m_args[i].m_a)) modified.insert(v);
         }
+        if (x.m_stat) {
+            if (ASR::Variable_t *v = root_var(x.m_stat)) modified.insert(v);
+        }
         ASR::BaseWalkVisitor<ProcEffects>::visit_Allocate(x);
     }
 
@@ -280,6 +288,9 @@ public:
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         for (size_t i = 0; i < x.n_vars; i++) {
             if (ASR::Variable_t *v = root_var(x.m_vars[i])) modified.insert(v);
+        }
+        if (x.m_stat) {
+            if (ASR::Variable_t *v = root_var(x.m_stat)) modified.insert(v);
         }
         ASR::BaseWalkVisitor<ProcEffects>::visit_ExplicitDeallocate(x);
     }
@@ -1278,7 +1289,7 @@ private:
             ASR::down_cast<ASR::Var_t>(e)->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*s)) return nullptr;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-        return global_fields.count(v) ? v : nullptr;
+        return (!var_alias.count(v) && global_fields.count(v)) ? v : nullptr;
     }
 
     // The application of a procedure to the arguments it takes: every
@@ -1914,8 +1925,18 @@ private:
                     lower(x.m_args[0]), lower(x.m_args[1])});
             }
         }
-        if (id == F::Pack && x.n_args == 2) {
-            return lower_pack(x.m_args[0], x.m_args[1], loc);
+        if (id == F::Shape && (x.n_args == 1 || x.n_args == 2) && is_array(x.m_type)) {
+            std::string rty = type(elem_type(x.m_type), loc);
+            if (!is_array(ASRUtils::expr_type(x.m_args[0]))) {
+                return {"(Arr.mk #[1] #[0] (#[] : Array " + rty + "))", pAtom};
+            }
+            return {"((fun (a' : Arr _) => Arr.mk #[1] #[a'.exts.size] "
+                "(a'.exts.map (fun e' => (FInt.ofInt (Int.ofNat e') : " + rty + ")))) "
+                + atom(lower(x.m_args[0])) + ")", pAtom};
+        }
+        if (id == F::Pack && (x.n_args == 2 || x.n_args == 3)) {
+            return lower_pack(x.m_args[0], x.m_args[1], loc,
+                x.n_args == 3 ? x.m_args[2] : nullptr);
         }
         if (id == F::Spread && x.n_args == 3) {
             if (x.m_overload_id == -1 || !is_array(ASRUtils::expr_type(x.m_args[0]))) {
@@ -1928,8 +1949,8 @@ private:
             return app("Arr.spread", {lower(x.m_args[0]),
                 int_expr(x.m_args[1]), int_expr(x.m_args[2])});
         }
-        if ((id == F::MaxLoc || id == F::MinLoc) && is_array(x.m_type)
-                && x.n_args == 5 && (x.m_overload_id == 0 || x.m_overload_id == 1)
+        if ((id == F::MaxLoc || id == F::MinLoc) && x.n_args == 5
+                && x.m_overload_id >= 0 && x.m_overload_id <= 3
                 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
             ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
             type(et, loc);
@@ -1962,36 +1983,80 @@ private:
                 }
                 std::string rty = type(elem_type(x.m_type), loc);
                 std::string arr_src = atom(lower(x.m_args[0]));
-                std::string loc_expr;
-                if (x.m_overload_id == 1 && x.m_args[2]) {
-                    if (is_array(ASRUtils::expr_type(x.m_args[2]))) {
-                        loc_expr = "(Arr.extremaLoc " + better + " " + arr_src
-                            + " (some " + atom(lower(x.m_args[2])) + "))";
+                bool has_dim = (x.m_overload_id == 2 || x.m_overload_id == 3);
+                bool has_mask = (x.m_overload_id == 1 || x.m_overload_id == 3) && x.m_args[2];
+                if (!has_dim || !is_array(x.m_type)) {
+                    // Whole-array maxloc/minloc or rank-1 maxloc/minloc with dim=1.
+                    std::string loc_expr;
+                    if (has_mask) {
+                        if (is_array(ASRUtils::expr_type(x.m_args[2]))) {
+                            loc_expr = "(Arr.extremaLoc " + better + " " + arr_src
+                                + " (some " + atom(lower(x.m_args[2])) + "))";
+                        } else {
+                            loc_expr = "((fun (a' : Arr _) (m' : Bool) (cmp' : _ → _ → Bool) => "
+                                "if m' then Arr.extremaLoc cmp' a' none "
+                                "else Array.replicate a'.exts.size (0 : Int)) "
+                                + arr_src + " " + atom(lower(x.m_args[2])) + " " + better + ")";
+                        }
                     } else {
-                        loc_expr = "((fun (a' : Arr _) (m' : Bool) (cmp' : _ → _ → Bool) => "
-                            "if m' then Arr.extremaLoc cmp' a' none "
-                            "else Array.replicate a'.exts.size (0 : Int)) "
-                            + arr_src + " " + atom(lower(x.m_args[2])) + " " + better + ")";
+                        loc_expr = "(Arr.extremaLoc " + better + " " + arr_src + " none)";
+                    }
+                    if (!is_array(x.m_type)) {
+                        return {"(FInt.ofInt (" + loc_expr + ".getD 0 0) : " + rty + ")", pAtom};
+                    }
+                    return {"((fun c' => Arr.mk #[1] #[c'.size] "
+                        "(c'.map (fun x' => (FInt.ofInt x' : " + rty + ")))) "
+                        + loc_expr + ")", pAtom};
+                }
+                // Rank >= 2 array maxloc/minloc with `dim=` returning rank - 1 array.
+                std::string dim_src = atom(int_expr(x.m_args[1]));
+                std::string res_expr;
+                if (has_mask) {
+                    if (is_array(ASRUtils::expr_type(x.m_args[2]))) {
+                        res_expr = "(Arr.extremaLocDim " + better + " " + arr_src + " "
+                            + dim_src + " (some " + atom(lower(x.m_args[2])) + "))";
+                    } else {
+                        res_expr = "((fun (a' : Arr _) (d' : Int) (m' : Bool) (cmp' : _ → _ → Bool) => "
+                            "if m' then Arr.extremaLocDim cmp' a' d' none "
+                            "else Arr.extremaLocDim cmp' a' d' (some { a' with data := Array.replicate a'.data.size false })) "
+                            + arr_src + " " + dim_src + " " + atom(lower(x.m_args[2])) + " " + better + ")";
                     }
                 } else {
-                    loc_expr = "(Arr.extremaLoc " + better + " " + arr_src + " none)";
+                    res_expr = "(Arr.extremaLocDim " + better + " " + arr_src + " "
+                        + dim_src + " none)";
                 }
-                return {"((fun c' => Arr.mk #[1] #[c'.size] "
-                    "(c'.map (fun x' => (FInt.ofInt x' : " + rty + ")))) "
-                    + loc_expr + ")", pAtom};
+                return {"(Arr.map (fun x' => (FInt.ofInt x' : " + rty + ")) "
+                    + res_expr + ")", pAtom};
             }
         }
         unsupported("this array intrinsic is", loc);
     }
 
-    Val lower_pack(ASR::expr_t *arr, ASR::expr_t *mask, const Location &loc) {
+    Val lower_pack(ASR::expr_t *arr, ASR::expr_t *mask, const Location &loc,
+            ASR::expr_t *vec = nullptr) {
         if (!is_array(ASRUtils::expr_type(arr))) unsupported("this pack is", loc);
+        if (vec && !is_array(ASRUtils::expr_type(vec))) unsupported("this pack is", loc);
         if (is_array(ASRUtils::expr_type(mask))) {
+            if (vec) {
+                return {"((fun (a' : Arr _) (m' : Arr Bool) (v' : Arr _) => "
+                    "let p' := (Array.range a'.data.size).foldl "
+                    "(fun acc' i' => if m'.data.getD i' false then acc'.push a'.data[i']! else acc') #[]; "
+                    "let out' := if p'.size < v'.data.size then p' ++ v'.data.extract p'.size v'.data.size else p'; "
+                    "Arr.mk #[1] #[out'.size] out') "
+                    + atom(lower(arr)) + " " + atom(lower(mask)) + " " + atom(lower(vec)) + ")", pAtom};
+            }
             return {"((fun (a' : Arr _) (m' : Arr Bool) => "
                 "let out' := (Array.range a'.data.size).foldl "
                 "(fun acc' i' => if m'.data.getD i' false then acc'.push a'.data[i']! else acc') #[]; "
                 "Arr.mk #[1] #[out'.size] out') "
                 + atom(lower(arr)) + " " + atom(lower(mask)) + ")", pAtom};
+        }
+        if (vec) {
+            return {"((fun (a' : Arr _) (m' : Bool) (v' : Arr _) => "
+                "let p' := if m' then a'.data else #[]; "
+                "let out' := if p'.size < v'.data.size then p' ++ v'.data.extract p'.size v'.data.size else p'; "
+                "Arr.mk #[1] #[out'.size] out') "
+                + atom(lower(arr)) + " " + atom(lower(mask)) + " " + atom(lower(vec)) + ")", pAtom};
         }
         return {"((fun (a' : Arr _) (m' : Bool) => "
             "if m' then Arr.mk #[1] #[a'.data.size] a'.data else Arr.mk #[1] #[0] #[]) "
@@ -2111,6 +2176,10 @@ private:
                 auto iit = implied_vars.find(v);
                 if (iit != implied_vars.end()) {
                     return {iit->second, pAtom};
+                }
+                auto vit = var_alias.find(v);
+                if (vit != var_alias.end()) {
+                    return {vit->second, pAtom};
                 }
                 if (global_fields.count(v)) {
                     if (!cur) unsupported("a non-constant global initializer is", loc);
@@ -2889,11 +2958,21 @@ private:
 
     void alloc_one(const ASR::alloc_arg_t &aa, const std::string &src_var,
             bool src_is_arr, const Location &loc) {
-        if (aa.n_codims > 0 || aa.m_sym_subclass || aa.m_type
+        if (aa.n_codims > 0 || aa.m_sym_subclass
                 || !is_option_expr(aa.m_a) || !is_lvalue(aa.m_a)) {
             unsupported("this allocate is", loc);
         }
         ASR::ttype_t *it = unalloc(ASRUtils::expr_type(aa.m_a));
+        if (aa.m_type) {
+            ASR::ttype_t *at = elem_type(aa.m_type);
+            ASR::ttype_t *et = elem_type(it);
+            if (!at || !et || at->type != et->type
+                    || ASR::is_a<ASR::StructType_t>(*at)
+                    || ASRUtils::extract_kind_from_ttype_t(at)
+                        != ASRUtils::extract_kind_from_ttype_t(et)) {
+                unsupported("this allocate is", loc);
+            }
+        }
         std::string val;
         if (is_array(it)) {
             if (aa.n_dims == 0) {
@@ -3445,8 +3524,22 @@ private:
             }
             case ASR::stmtType::DoConcurrentLoop: {
                 auto &x = *ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
-                if (x.n_head == 0 || x.n_local > 0 || x.n_reduction > 0) {
+                if (x.n_head == 0) {
                     unsupported("this do concurrent loop is", loc);
+                }
+                std::vector<std::pair<ASR::Variable_t*, ASR::expr_t*>> local_vars;
+                std::set<ASR::Variable_t*> seen_local;
+                for (size_t i = 0; i < x.n_local; i++) {
+                    if (!x.m_local[i] || !ASR::is_a<ASR::Var_t>(*x.m_local[i])) {
+                        unsupported("this do concurrent loop is", loc);
+                    }
+                    ASR::Variable_t *lv = ASRUtils::EXPR2VAR(x.m_local[i]);
+                    if (is_optional_dummy(lv)) {
+                        unsupported("this do concurrent loop is", loc);
+                    }
+                    if (seen_local.insert(lv).second) {
+                        local_vars.push_back({lv, x.m_local[i]});
+                    }
                 }
                 struct DCBound {
                     std::string lv, hv, sv, iv;
@@ -3475,8 +3568,59 @@ private:
                 }
                 std::function<void(size_t)> emit_nest = [&](size_t idx) {
                     if (idx == x.n_head) {
+                        std::string dcid = std::to_string(++loop_id);
+                        std::vector<std::pair<ASR::Variable_t*, std::string>> new_aliases;
+                        for (auto &[lv, le] : local_vars) {
+                            const Location &vloc = lv->base.base.loc;
+                            name(lv->m_name, vloc);
+                            std::string alias = std::string(lv->m_name) + "'dc" + dcid;
+                            std::string linit;
+                            if (is_allocatable(lv->m_type)) {
+                                linit = "none";
+                            } else if (is_array(lv->m_type)) {
+                                ASR::ttype_t *et = ASR::down_cast<ASR::Array_t>(lv->m_type)->m_type;
+                                if (ASR::is_a<ASR::String_t>(*et)
+                                        && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                                    unsupported("this do concurrent loop is", vloc);
+                                }
+                                std::vector<std::string> lbs, exts;
+                                bool assumed;
+                                dims(lv->m_type, lbs, exts, assumed, vloc);
+                                std::string z = atom({zero(et, vloc, lv->m_type_declaration), pApp});
+                                if (assumed) {
+                                    std::string outer = atom(lower(le));
+                                    linit = "Arr.make " + outer + ".lbs " + outer + ".exts " + z;
+                                } else {
+                                    linit = "Arr.make " + int_array(lbs) + " "
+                                        + int_array(exts) + " " + z;
+                                }
+                            } else if (ASR::is_a<ASR::String_t>(*lv->m_type)
+                                    && !ASR::down_cast<ASR::String_t>(lv->m_type)->m_len) {
+                                linit = "FStr.fix " + atom(lower(le)) + ".length \"\"";
+                            } else {
+                                linit = zero(lv->m_type, vloc, lv->m_type_declaration);
+                            }
+                            line("let mut " + alias + " : "
+                                + vtype(lv->m_type, vloc, lv->m_type_declaration)
+                                + " := " + linit);
+                            new_aliases.push_back({lv, alias});
+                        }
+                        std::vector<std::pair<ASR::Variable_t*, std::pair<bool, std::string>>> saved;
+                        for (auto &[lv, alias] : new_aliases) {
+                            auto it = var_alias.find(lv);
+                            if (it != var_alias.end()) {
+                                saved.push_back({lv, {true, it->second}});
+                            } else {
+                                saved.push_back({lv, {false, ""}});
+                            }
+                            var_alias[lv] = alias;
+                        }
                         if (x.n_body == 0) line("Pure.pure ()");
                         stmts(x.m_body, x.n_body);
+                        for (auto it = saved.rbegin(); it != saved.rend(); ++it) {
+                            if (it->second.first) var_alias[it->first] = it->second.second;
+                            else var_alias.erase(it->first);
+                        }
                         return;
                     }
                     const ASR::do_loop_head_t &h = x.m_head[idx];
@@ -3650,7 +3794,34 @@ private:
             }
             case ASR::stmtType::Allocate: {
                 auto &x = *ASR::down_cast<ASR::Allocate_t>(s);
-                if (x.m_stat || x.m_errmsg) unsupported("allocate with stat/errmsg is", loc);
+                if (x.m_errmsg) unsupported("allocate with stat/errmsg is", loc);
+                std::string stat_ty;
+                bool guarded = false;
+                if (x.m_stat) {
+                    if (!is_lvalue(x.m_stat) || !is_int(x.m_stat)) {
+                        unsupported("allocate with stat/errmsg is", loc);
+                    }
+                    stat_ty = type(unalloc(ASRUtils::expr_type(x.m_stat)), loc);
+                    std::string already;
+                    for (size_t i = 0; i < x.n_args; i++) {
+                        if (!is_option_expr(x.m_args[i].m_a) || !is_lvalue(x.m_args[i].m_a)) {
+                            unsupported("this allocate is", loc);
+                        }
+                        if (i) already += " || ";
+                        already += "(" + atom(lower_raw(x.m_args[i].m_a)) + ".isSome)";
+                    }
+                    if (!already.empty()) {
+                        guarded = true;
+                        line("if " + already + " then");
+                        ind++;
+                        update_lvalue(x.m_stat, [&](const std::string &) {
+                            return "(FInt.ofInt 1 : " + stat_ty + ")";
+                        }, loc);
+                        ind--;
+                        line("else");
+                        ind++;
+                    }
+                }
                 std::string src_var;
                 bool src_is_arr = false;
                 if (x.m_source) {
@@ -3660,6 +3831,12 @@ private:
                 }
                 for (size_t i = 0; i < x.n_args; i++) {
                     alloc_one(x.m_args[i], src_var, src_is_arr, loc);
+                }
+                if (x.m_stat) {
+                    update_lvalue(x.m_stat, [&](const std::string &) {
+                        return "(FInt.ofInt 0 : " + stat_ty + ")";
+                    }, loc);
+                    if (guarded) ind--;
                 }
                 break;
             }
@@ -3682,13 +3859,46 @@ private:
             }
             case ASR::stmtType::ExplicitDeallocate: {
                 auto &x = *ASR::down_cast<ASR::ExplicitDeallocate_t>(s);
-                if (x.m_stat || x.m_errmsg) unsupported("deallocate with stat/errmsg is", loc);
+                if (x.m_errmsg) unsupported("deallocate with stat/errmsg is", loc);
+                std::string stat_ty;
+                bool guarded = false;
+                if (x.m_stat) {
+                    if (!is_lvalue(x.m_stat) || !is_int(x.m_stat)) {
+                        unsupported("deallocate with stat/errmsg is", loc);
+                    }
+                    stat_ty = type(unalloc(ASRUtils::expr_type(x.m_stat)), loc);
+                    std::string not_alloc;
+                    for (size_t i = 0; i < x.n_vars; i++) {
+                        if (!is_option_expr(x.m_vars[i]) || !is_lvalue(x.m_vars[i])) {
+                            unsupported("this deallocate is", loc);
+                        }
+                        if (i) not_alloc += " || ";
+                        not_alloc += "!(" + atom(lower_raw(x.m_vars[i])) + ".isSome)";
+                    }
+                    if (!not_alloc.empty()) {
+                        guarded = true;
+                        line("if " + not_alloc + " then");
+                        ind++;
+                        update_lvalue(x.m_stat, [&](const std::string &) {
+                            return "(FInt.ofInt 1 : " + stat_ty + ")";
+                        }, loc);
+                        ind--;
+                        line("else");
+                        ind++;
+                    }
+                }
                 for (size_t i = 0; i < x.n_vars; i++) {
                     if (!is_option_expr(x.m_vars[i]) || !is_lvalue(x.m_vars[i])) {
                         unsupported("this deallocate is", loc);
                     }
                     update_lvalue(x.m_vars[i], [&](const std::string &) { return "none"; },
                         loc, /*raw=*/true);
+                }
+                if (x.m_stat) {
+                    update_lvalue(x.m_stat, [&](const std::string &) {
+                        return "(FInt.ofInt 0 : " + stat_ty + ")";
+                    }, loc);
+                    if (guarded) ind--;
                 }
                 break;
             }
