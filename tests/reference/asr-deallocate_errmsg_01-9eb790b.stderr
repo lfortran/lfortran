@@ -1,0 +1,5 @@
+semantic error: `errmsg` argument of `deallocate` must be a definable variable
+ --> tests/errors/deallocate_errmsg_01.f90:6:34
+  |
+6 |     deallocate(a, stat=s, errmsg='y')
+  |                                  ^^^ 
