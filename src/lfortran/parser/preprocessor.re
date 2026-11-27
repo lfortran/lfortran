@@ -527,6 +527,38 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
             output.append(token(tok, cur));
             continue;
         }
+        if (!branch_enabled) {
+            // Skip inactive conditional branch lines without running the full
+            // tokenizer so unmatched quotes or comments inside disabled blocks
+            // cannot swallow #if/#elif/#else/#endif directives.
+            auto is_ws = [](unsigned char c) {
+                return c == ' ' || c == '\t' || c == '\v' || c == '\r';
+            };
+            auto is_cond_directive = [&](const unsigned char *p) {
+                if (strncmp((const char *)p, "if", 2) == 0 && (is_ws(p[2]) || p[2] == '(')) return true;
+                if (strncmp((const char *)p, "ifdef", 5) == 0 && is_ws(p[5])) return true;
+                if (strncmp((const char *)p, "ifndef", 6) == 0 && is_ws(p[6])) return true;
+                if (strncmp((const char *)p, "elif", 4) == 0 && (is_ws(p[4]) || p[4] == '(')) return true;
+                if (strncmp((const char *)p, "else", 4) == 0 && (is_ws(p[4]) || p[4] == '\n' || p[4] == '\0' || p[4] == '/')) return true;
+                if (strncmp((const char *)p, "endif", 5) == 0 && (is_ws(p[5]) || p[5] == '\n' || p[5] == '\0' || p[5] == '/')) return true;
+                return false;
+            };
+            while (*cur != '\0') {
+                const unsigned char *p = cur;
+                while (is_ws(*p)) p++;
+                if (*p == '#') {
+                    const unsigned char *hash = p++;
+                    while (is_ws(*p)) p++;
+                    if (is_cond_directive(p)) {
+                        cur = const_cast<unsigned char *>(hash);
+                        break;
+                    }
+                }
+                while (*cur != '\n' && *cur != '\0') cur++;
+                if (*cur == '\n') cur++;
+            }
+            tok = cur;
+        }
         /*!stags:re2c format = 'unsigned char *@@;\n'; */
         /*!re2c
             re2c:define:YYCURSOR = cur;
