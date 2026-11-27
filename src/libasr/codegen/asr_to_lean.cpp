@@ -145,12 +145,14 @@ public:
     }
 };
 
-// Pre-pass collecting direct IO usage, callees, and modified variables of a
-// procedure so `io_procs` and effective `Unspecified` intents are known before
-// any body is lowered.
+// Pre-pass collecting direct IO usage, global-variable usage, callees, and
+// modified variables of a procedure so `io_procs`, `global_procs`, and
+// effective `Unspecified` intents are known before any body is lowered.
 class ProcEffects : public ASR::BaseWalkVisitor<ProcEffects> {
 public:
+    const std::map<ASR::Variable_t*, std::string> &global_fields;
     bool has_io = false;
+    bool uses_globals = false;
     std::set<ASR::Function_t*> callees;
     std::set<ASR::Variable_t*> modified;
     struct SubArg {
@@ -159,6 +161,17 @@ public:
         ASR::Variable_t *var;
     };
     std::vector<SubArg> sub_args;
+
+    explicit ProcEffects(const std::map<ASR::Variable_t*, std::string> &gf)
+        : global_fields(gf) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Variable_t>(*s)
+                && global_fields.count(ASR::down_cast<ASR::Variable_t>(s))) {
+            uses_globals = true;
+        }
+    }
 
     static ASR::Variable_t *root_var(ASR::expr_t *e) {
         while (e) {
@@ -248,11 +261,14 @@ private:
     std::map<ASR::Function_t*, Proc> procs;
     std::map<ASR::Function_t*, std::string> proc_ns;
     std::map<ASR::Struct_t*, std::string> struct_ns;
+    std::map<ASR::Variable_t*, std::string> global_fields;
     std::set<ASR::Function_t*> io_procs;
+    std::set<ASR::Function_t*> global_procs;
     std::map<ASR::Function_t*, std::vector<ASR::intentType>> eff_intents;
     std::vector<ASR::Function_t*> order;
     Proc *cur = nullptr;
     bool in_program = false;
+    bool prog_uses_globals = false;
     int level = 0;
     int ind = 0;
     ASR::Variable_t *result = nullptr;
@@ -886,11 +902,41 @@ private:
         return d ? d->m_intent : ASR::intentType::Unspecified;
     }
 
+    bool cur_has_io() const {
+        return in_program || (cur && io_procs.count(cur->fn) > 0);
+    }
+
+    bool cur_has_globals() const {
+        return in_program ? prog_uses_globals : (cur && global_procs.count(cur->fn) > 0);
+    }
+
+    std::pair<bool, std::string> monadic_call(ASR::Function_t *fn, const Val &c) const {
+        bool cal_io = io_procs.count(fn) > 0;
+        bool cal_gl = global_procs.count(fn) > 0;
+        if (!cal_io && !cal_gl) return {false, c.src};
+        if (cal_gl && !cal_io && cur_has_io()) {
+            return {true, "modifyGet (" + c.src + ").run"};
+        }
+        if (cal_io && !cal_gl && cur_has_globals()) {
+            return {true, "liftM (" + c.src + ")"};
+        }
+        return {true, c.src};
+    }
+
+    ASR::Variable_t *global_var(ASR::expr_t *e) const {
+        if (!e || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) return nullptr;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+        return global_fields.count(v) ? v : nullptr;
+    }
+
     // The application of a procedure to the arguments it takes: every
     // argument except an `intent(out)` scalar.
     Val call(ASR::symbol_t *sym, ASR::call_arg_t *args, size_t n,
             const Location &loc) {
-        if (!cur) unsupported("a function call in a derived type definition is", loc);
+        if (!cur) unsupported("a function call in a static initializer is", loc);
         ASR::Function_t *fn = callee(sym, loc);
         cur->callees.insert(fn);
         if (n != fn->n_args) unsupported("this call is", loc);
@@ -1380,6 +1426,10 @@ private:
                     }
                     return lower(v->m_value);
                 }
+                if (global_fields.count(v)) {
+                    if (!cur) unsupported("a non-constant global initializer is", loc);
+                    return {"(← get)." + global_fields[v], pAtom};
+                }
                 if (v->m_parent_symtab != cur_scope()) {
                     unsupported("a variable from another scope is", loc);
                 }
@@ -1712,7 +1762,8 @@ private:
                 if (x.m_dt) unsupported("a type-bound call is", loc);
                 ASR::Function_t *fn = callee(x.m_name, loc);
                 Val c = call(x.m_name, x.m_args, x.n_args, loc);
-                if (io_procs.count(fn)) return {"(← " + c.src + ")", pAtom};
+                auto [is_m, expr] = monadic_call(fn, c);
+                if (is_m) return {"(← " + expr + ")", pAtom};
                 return c;
             }
             case ASR::exprType::IntrinsicElementalFunction:
@@ -1986,6 +2037,13 @@ private:
             lhs = ASR::down_cast<ASR::ArrayPhysicalCast_t>(lhs)->m_arg;
         }
         if (ASR::is_a<ASR::Var_t>(*lhs)) {
+            if (ASR::Variable_t *gv = global_var(lhs)) {
+                std::string gf = global_fields[gv];
+                std::string tmp = "v'" + std::to_string(++loop_id);
+                line("let " + tmp + " := " + rhs_fn("(← get)." + gf));
+                line("modify fun g' => { g' with " + gf + " := " + tmp + " }");
+                return;
+            }
             std::string a = lower(lhs).src;
             line(a + " := " + rhs_fn(a));
             return;
@@ -2057,7 +2115,7 @@ private:
                     while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base)) {
                         base = ASR::down_cast<ASR::ArrayPhysicalCast_t>(base)->m_arg;
                     }
-                    if (ASR::is_a<ASR::Var_t>(*base)) {
+                    if (ASR::is_a<ASR::Var_t>(*base) && !global_var(base)) {
                         std::string a = lower(base).src;
                         std::string rhs = fix_string(ASRUtils::expr_type(x.m_target), "",
                             lower(x.m_value), loc);
@@ -2083,11 +2141,21 @@ private:
                             if (!st.m_len) unsupported("an assumed-length character array assignment is", loc);
                             src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
                         }
+                        if (src.find("←") != std::string::npos) {
+                            std::string rv = "rhs'" + std::to_string(++loop_id);
+                            line("let " + rv + " := " + src);
+                            src = rv;
+                        }
                         update_lvalue(x.m_target, [&](const std::string &cur_a) {
                             return "Arr.copyBack " + cur_a + " " + src;
                         }, loc);
                     } else {
                         std::string rhs = fix_string(et, "", lower(v), loc);
+                        if (rhs.find("←") != std::string::npos) {
+                            std::string rv = "rhs'" + std::to_string(++loop_id);
+                            line("let " + rv + " := " + rhs);
+                            rhs = rv;
+                        }
                         update_lvalue(x.m_target, [&](const std::string &cur_a) {
                             return "Arr.fill " + cur_a + " " + atom({rhs, pApp});
                         }, loc);
@@ -2095,6 +2163,11 @@ private:
                     break;
                 }
                 Val rhs = lower(x.m_value);
+                if (rhs.src.find("←") != std::string::npos) {
+                    std::string rv = "rhs'" + std::to_string(++loop_id);
+                    line("let " + rv + " := " + rhs.src);
+                    rhs = {rv, pAtom};
+                }
                 update_lvalue(x.m_target, [&](const std::string &cur_v) {
                     return fix_string(ASRUtils::expr_type(x.m_target), cur_v, rhs, loc);
                 }, loc);
@@ -2135,12 +2208,15 @@ private:
                         }, loc);
                     }
                 };
-                bool cal_io = io_procs.count(fn) > 0;
+                auto [cal_m, cal_expr] = monadic_call(fn, c);
                 if (outs.empty()) {
-                    line(cal_io ? c.src : "let _ := " + c.src);
+                    line(cal_m ? cal_expr : "let _ := " + cal_expr);
                 } else if (outs.size() == 1) {
-                    if (cal_io) {
-                        line("let r'1 ← " + c.src);
+                    if (cal_m) {
+                        line("let r'1 ← " + cal_expr);
+                        assign(outs[0], "r'1");
+                    } else if (c.src.find("←") != std::string::npos) {
+                        line("let r'1 := " + c.src);
                         assign(outs[0], "r'1");
                     } else {
                         assign(outs[0], atom(c));
@@ -2151,7 +2227,7 @@ private:
                     for (size_t i = 0; i < outs.size(); i++) {
                         pat += (i ? ", " : "") + std::string("r'") + std::to_string(i + 1);
                     }
-                    line("let (" + pat + ") " + (cal_io ? "← " : ":= ") + c.src);
+                    line("let (" + pat + ") " + (cal_m ? "← " : ":= ") + cal_expr);
                     for (size_t i = 0; i < outs.size(); i++) {
                         assign(outs[i], "r'" + std::to_string(i + 1));
                     }
@@ -2233,24 +2309,24 @@ private:
                 }
                 ind++;
                 exit_flags.push_back(brk);
-                line(v + " := " + iv);
+                update_lvalue(h.m_v, [&](const std::string &) { return iv; }, loc);
                 stmts(x.m_body, x.n_body);
                 exit_flags.pop_back();
                 ind--;
-                std::string post = unit
-                    ? v + " := FInt.ofInt (FInt.toInt " + lv + " + Max.max 0 (FInt.toInt " + hv
+                std::string post_val = unit
+                    ? "FInt.ofInt (FInt.toInt " + lv + " + Max.max 0 (FInt.toInt " + hv
                         + " + 1 - FInt.toInt " + lv + "))"
-                    : v + " := FInt.ofInt (FInt.toInt " + lv + " + (if FInt.toInt " + sv
+                    : "FInt.ofInt (FInt.toInt " + lv + " + (if FInt.toInt " + sv
                         + " == 0 then 0 else Max.max 0 ((FInt.toInt " + hv + " - FInt.toInt "
                         + lv + " + FInt.toInt " + sv + ").tdiv (FInt.toInt " + sv
                         + ")) * FInt.toInt " + sv + "))";
                 if (has_ex) {
                     line("if !" + brk + " then");
                     ind++;
-                    line(post);
+                    update_lvalue(h.m_v, [&](const std::string &) { return post_val; }, loc);
                     ind--;
                 } else {
-                    line(post);
+                    update_lvalue(h.m_v, [&](const std::string &) { return post_val; }, loc);
                 }
                 break;
             }
@@ -2393,6 +2469,7 @@ private:
         LoopVarUses u;
         for (size_t i = 0; i < n; i++) u.visit_stmt(*body[i]);
         for (ASR::Variable_t *v : u.outside) loop_vars.erase(v);
+        for (const auto &kv : global_fields) loop_vars.erase(kv.first);
     }
 
     void collect_loop_vars(ASR::stmt_t **body, size_t n) {
@@ -2503,6 +2580,7 @@ private:
         p.fn = fn;
         cur = &p;
         bool is_io = io_procs.count(fn) > 0;
+        bool is_gl = global_procs.count(fn) > 0;
         level = is_io ? 2 : 0;
         loop_vars.clear();
         scope = fn->m_symtab;
@@ -2573,14 +2651,28 @@ private:
         }
         std::stable_sort(entry.begin(), entry.end(),
             [](const auto &a, const auto &b) { return a.first < b.first; });
+        auto ret_sig = [&](const std::string &rty, bool is_unit) -> std::string {
+            if (is_gl && is_io) {
+                return is_unit ? " : StateT (Globals' K) IO Unit"
+                    : " : StateT (Globals' K) IO (" + rty + ")";
+            }
+            if (is_gl) {
+                return is_unit ? " : StateM (Globals' K) Unit"
+                    : " : StateM (Globals' K) (" + rty + ")";
+            }
+            if (is_io) {
+                return is_unit ? " : IO Unit" : " : IO (" + rty + ")";
+            }
+            return " : " + rty;
+        };
         if (result) {
             p.ret = name(result->m_name, result->base.base.loc);
             std::string rty = vtype(result->m_type, result->base.base.loc,
                 result->m_type_declaration);
-            p.sig += is_io ? " : IO (" + rty + ")" : " : " + rty;
+            p.sig += ret_sig(rty, false);
         } else if (outs.empty()) {
             p.ret = "()";
-            p.sig += is_io ? " : IO Unit" : " : Unit";
+            p.sig += ret_sig("Unit", true);
         } else {
             std::string ret, ty;
             for (size_t i = 0; i < outs.size(); i++) {
@@ -2588,7 +2680,7 @@ private:
                 ty += (i ? " × " : "") + out_types[i];
             }
             p.ret = outs.size() == 1 ? ret : "(" + ret + ")";
-            p.sig += is_io ? " : IO (" + ty + ")" : " : " + ty;
+            p.sig += ret_sig(ty, false);
         }
         collect_simple_loop_vars(fn->m_body, fn->n_body);
         for (ASR::Variable_t *d : dummies) loop_vars.erase(d);
@@ -2652,15 +2744,16 @@ private:
 
     std::string def(const Proc &p, const std::string &short_name) {
         std::string kw = (p.callees.count(p.fn) || p.uses_while) ? "partial def " : "def ";
-        std::string rhs = io_procs.count(p.fn) ? " := do\n" : " := Id.run do\n";
+        std::string rhs = (io_procs.count(p.fn) || global_procs.count(p.fn))
+            ? " := do\n" : " := Id.run do\n";
         return kw + short_name + " {K : Kinds} [" + level_class(p.level) + " K]"
             + p.sig + rhs + p.body + "\n";
     }
 
-    void analyze_procs(const std::vector<ASR::Function_t*> &all_fns) {
+    void analyze_procs(const std::vector<ASR::Function_t*> &all_fns, ASR::Program_t *prog) {
         std::map<ASR::Function_t*, ProcEffects> effs;
         for (ASR::Function_t *fn : all_fns) {
-            ProcEffects &pe = effs[fn];
+            ProcEffects &pe = effs.emplace(fn, ProcEffects(global_fields)).first->second;
             for (ASR::symbol_t *s : symbols_in_order(fn->m_symtab)) {
                 if (ASR::is_a<ASR::Variable_t>(*s)) {
                     pe.visit_ttype(*ASR::down_cast<ASR::Variable_t>(s)->m_type);
@@ -2668,6 +2761,7 @@ private:
             }
             for (size_t i = 0; i < fn->n_body; i++) pe.visit_stmt(*fn->m_body[i]);
             if (pe.has_io) io_procs.insert(fn);
+            if (pe.uses_globals) global_procs.insert(fn);
             std::vector<ASR::intentType> &ins = eff_intents[fn];
             ins.resize(fn->n_args);
             for (size_t i = 0; i < fn->n_args; i++) {
@@ -2686,11 +2780,20 @@ private:
         while (changed) {
             changed = false;
             for (ASR::Function_t *fn : all_fns) {
-                ProcEffects &pe = effs[fn];
+                ProcEffects &pe = effs.at(fn);
                 if (!io_procs.count(fn)) {
                     for (ASR::Function_t *c : pe.callees) {
                         if (io_procs.count(c)) {
                             io_procs.insert(fn);
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+                if (!global_procs.count(fn)) {
+                    for (ASR::Function_t *c : pe.callees) {
+                        if (global_procs.count(c)) {
+                            global_procs.insert(fn);
                             changed = true;
                             break;
                         }
@@ -2712,6 +2815,22 @@ private:
                             changed = true;
                         }
                     }
+                }
+            }
+        }
+        if (prog && !global_fields.empty()) {
+            ProcEffects pe(global_fields);
+            for (ASR::symbol_t *s : symbols_in_order(prog->m_symtab)) {
+                if (ASR::is_a<ASR::Variable_t>(*s)) {
+                    pe.visit_ttype(*ASR::down_cast<ASR::Variable_t>(s)->m_type);
+                }
+            }
+            for (size_t i = 0; i < prog->n_body; i++) pe.visit_stmt(*prog->m_body[i]);
+            prog_uses_globals = pe.uses_globals;
+            for (ASR::Function_t *c : pe.callees) {
+                if (global_procs.count(c)) {
+                    prog_uses_globals = true;
+                    break;
                 }
             }
         }
@@ -2805,6 +2924,7 @@ public:
         }
         std::vector<ASR::Function_t*> all_fns;
         std::vector<ASR::Struct_t*> all_structs;
+        std::vector<ASR::Variable_t*> all_globals;
         for (ASR::Module_t *m : mods) {
             std::string mns = name(m->m_name, m->base.base.loc);
             for (ASR::symbol_t *s : symbols_in_order(m->m_symtab)) {
@@ -2819,7 +2939,9 @@ public:
                 } else if (ASR::is_a<ASR::Variable_t>(*s)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                     if (v->m_storage != ASR::storage_typeType::Parameter) {
-                        unsupported("a module variable is", s->base.loc);
+                        name(v->m_name, v->base.base.loc);
+                        global_fields[v] = std::string(m->m_name) + "'" + std::string(v->m_name);
+                        all_globals.push_back(v);
                     }
                 } else if (!ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
                     unsupported("this module entity is", s->base.loc);
@@ -2871,7 +2993,34 @@ public:
         for (ASR::Struct_t *st : sorted_structs) {
             struct_defs[st] = emit_struct(st);
         }
-        analyze_procs(all_fns);
+        std::string globals_def;
+        if (!all_globals.empty()) {
+            globals_def = "structure Globals' (K : Kinds) where\n";
+            std::string init_fields;
+            SymbolTable *saved_scope = scope;
+            int saved_level = level;
+            level = 0;
+            for (size_t i = 0; i < all_globals.size(); i++) {
+                ASR::Variable_t *v = all_globals[i];
+                const Location &vloc = v->base.base.loc;
+                scope = v->m_parent_symtab;
+                std::string gf = global_fields[v];
+                globals_def += "  " + gf + " : " + vtype(v->m_type, vloc, v->m_type_declaration) + "\n";
+                if (i) init_fields += ", ";
+                init_fields += gf + " := " + struct_member_default(v);
+                if (level > 0) {
+                    scope = saved_scope;
+                    level = saved_level;
+                    unsupported("a module variable initializer using math or IO is", vloc);
+                }
+            }
+            scope = saved_scope;
+            level = saved_level;
+            globals_def += "\ndef Globals''init {K : Kinds} [FKinds K] : Globals' K :=\n  { "
+                + init_fields + " }\n\n";
+            globals_def += "instance {K : Kinds} [FKinds K] : Inhabited (Globals' K) := ⟨Globals''init (K := K)⟩\n\n";
+        }
+        analyze_procs(all_fns, prog);
         for (ASR::Function_t *fn : all_fns) function(fn);
         std::string prog_body;
         int prog_level = 2;
@@ -2905,6 +3054,11 @@ public:
             }
             out += struct_defs[st];
         }
+        if (!cur_ns.empty()) {
+            out += "end " + cur_ns + "\n\n";
+            cur_ns.clear();
+        }
+        if (!globals_def.empty()) out += globals_def;
         for (ASR::Function_t *fn : callees_first(all_fns)) {
             std::string raw_ns = proc_ns[fn];
             std::string fns = raw_ns.empty() ? ""
@@ -2931,10 +3085,17 @@ public:
             std::string pn = top_names.count(raw_pn)
                 ? std::string(prog->m_name) + "'main"
                 : name(raw_pn, prog->base.base.loc);
-            out += "def " + pn + " {K : Kinds} [" + level_class(prog_level)
-                + " K] : IO Unit := do\n" + prog_body + "\n";
-            out += "def main : IO UInt32 := LFortran.run (" + pn
-                + " (K := LFortran.machine))\n";
+            if (prog_uses_globals) {
+                out += "def " + pn + " {K : Kinds} [" + level_class(prog_level)
+                    + " K] : StateT (Globals' K) IO Unit := do\n" + prog_body + "\n";
+                out += "def main : IO UInt32 := LFortran.run ((" + pn
+                    + " (K := LFortran.machine)).run' (Globals''init (K := LFortran.machine)))\n";
+            } else {
+                out += "def " + pn + " {K : Kinds} [" + level_class(prog_level)
+                    + " K] : IO Unit := do\n" + prog_body + "\n";
+                out += "def main : IO UInt32 := LFortran.run (" + pn
+                    + " (K := LFortran.machine))\n";
+            }
         }
         while (out.size() >= 2 && out.back() == '\n' && out[out.size() - 2] == '\n') {
             out.pop_back();
