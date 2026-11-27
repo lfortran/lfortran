@@ -251,6 +251,54 @@ def extremaLoc {α : Type} [Inhabited α] (better : α → α → Bool)
     rem := rem / e
   return coords
 
+/-- Reduce `a` along 1-based dimension `dim` using `(init, f)`, removing that
+dimension from the result shape. When `mask` is `some m`, only elements where
+`m` is `true` contribute. -/
+def reduceDim {α β : Type} [Inhabited α] (init : β) (f : β → α → β)
+    (a : Arr α) (dim : Int) (mask : Option (Arr Bool) := none) : Arr β := Id.run do
+  let d := (dim - 1).toNat
+  let mut newExts : Array Nat := Array.mkEmpty (a.exts.size - 1)
+  for i in [:a.exts.size] do
+    if i != d then newExts := newExts.push a.exts[i]!
+  let mut total : Nat := 1
+  for e in newExts do total := total * e
+  let dExt := a.exts.getD d 0
+  let mut out : Array β := Array.mkEmpty total
+  for flat in [:total] do
+    let mut rem := flat
+    let mut baseOff : Nat := 0
+    let mut stride : Nat := 1
+    let mut dStride : Nat := 1
+    for k in [:a.exts.size] do
+      let e := a.exts[k]!
+      if k == d then
+        dStride := stride
+      else
+        let idx := rem % e
+        rem := rem / e
+        baseOff := baseOff + idx * stride
+      stride := stride * e
+    let mut acc := init
+    for j in [:dExt] do
+      let off := baseOff + j * dStride
+      let ok := match mask with
+        | some m => m.data.getD off false
+        | none => true
+      if ok then
+        acc := f acc a.data[off]!
+    out := out.push acc
+  return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
+
+/-- Reduce `a` along 1-based dimension `dim` seeding from the first selected
+element, returning `emptyVal` when a slice has no selected elements (used by
+`maxval` / `minval`). -/
+def reduceDim1 {α : Type} [Inhabited α] (emptyVal : α) (f : α → α → α)
+    (a : Arr α) (dim : Int) (mask : Option (Arr Bool) := none) : Arr α :=
+  let res := reduceDim (none : Option α)
+    (fun acc x => match acc with | none => some x | some v => some (f v x))
+    a dim mask
+  { res with data := res.data.map (·.getD emptyVal) }
+
 end Arr
 
 end LFortran
