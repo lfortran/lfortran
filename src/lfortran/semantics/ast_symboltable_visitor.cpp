@@ -4136,6 +4136,34 @@ public:
                 || in_from < file_offset || in_last > file_offset + source->size()) {
             return false;
         }
+        // A raw input position only denotes a source statement if it survives
+        // preprocessing. Directive lines and inactive conditional branches do
+        // not produce any output interval, so text in them must not be
+        // diagnosed as a CONTAINS statement.
+        auto survives_preprocessing = [&](uint32_t input_pos) {
+            if (index >= lm.files.size() || !lm.files[index].preprocessor) {
+                return true;
+            }
+            const LocationManager::FileLocations &file = lm.files[index];
+            uint32_t local = input_pos - file_offset;
+            uint32_t interval = bisection(file.in_start0, local);
+            if (interval == 0 || interval > file.interval_type0.size()) {
+                return false;
+            }
+            interval -= 1;
+            if (interval + 1 >= file.in_start0.size()
+                    || interval + 1 >= file.out_start0.size()
+                    || file.interval_type0[interval] != 0
+                    || local < file.in_start0[interval]
+                    || local + 7 > file.in_start0[interval]
+                                   + file.in_size0[interval]
+                    || local + 7 > file.in_start0[interval + 1]) {
+                return false;
+            }
+            uint32_t out = file.out_start0[interval]
+                         + (local - file.in_start0[interval]);
+            return out + 7 <= file.out_start0[interval + 1];
+        };
         size_t begin = in_from - file_offset;
         size_t end = in_last - file_offset;
         if (begin >= source->size()) return false;
@@ -4174,6 +4202,7 @@ public:
             };
             if (is_name_char(before) || is_name_char(after)) continue;
             uint32_t kw = file_offset + static_cast<uint32_t>(i);
+            if (!survives_preprocessing(kw)) continue;
             if (in_last - in_first == unit_loc.last - unit_loc.first) {
                 loc.first = unit_loc.first + (kw - in_first);
                 loc.last = loc.first + 7;
