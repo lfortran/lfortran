@@ -479,8 +479,9 @@ private:
                     break;
                 case ASR::exprType::IntrinsicArrayFunction: {
                     auto &x = *ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
-                    if (static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id)
-                            == ASRUtils::IntrinsicArrayFunctions::Pack && x.n_args > 0) {
+                    auto aid = static_cast<ASRUtils::IntrinsicArrayFunctions>(x.m_arr_intrinsic_id);
+                    if ((aid == ASRUtils::IntrinsicArrayFunctions::Pack
+                            || aid == ASRUtils::IntrinsicArrayFunctions::Spread) && x.n_args > 0) {
                         e = x.m_args[0];
                         break;
                     }
@@ -640,6 +641,13 @@ private:
             }
             return struct_qname(resolve_struct(type_decl, loc), loc) + " K";
         }
+        if (ASR::is_a<ASR::EnumType_t>(*t)) {
+            ASR::symbol_t *es = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::EnumType_t>(t)->m_enum_type);
+            if (ASR::is_a<ASR::Enum_t>(*es)) {
+                return type(ASR::down_cast<ASR::Enum_t>(es)->m_type, loc);
+            }
+        }
         unsupported("this type is", loc);
     }
 
@@ -660,6 +668,13 @@ private:
                 unsupported("a polymorphic derived type is", loc);
             }
             return struct_init_qname(resolve_struct(type_decl, loc), loc) + " (K := K)";
+        }
+        if (ASR::is_a<ASR::EnumType_t>(*t)) {
+            ASR::symbol_t *es = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::EnumType_t>(t)->m_enum_type);
+            if (ASR::is_a<ASR::Enum_t>(*es)) {
+                return zero(ASR::down_cast<ASR::Enum_t>(es)->m_type, loc);
+            }
         }
         unsupported("this type is", loc);
     }
@@ -1100,7 +1115,8 @@ private:
                 auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
                 std::string f = ASRUtils::get_intrinsic_name(x.m_intrinsic_id);
                 std::transform(f.begin(), f.end(), f.begin(), ::tolower);
-                if (f == "int" || f == "real" || f == "dble" || f == "floor" || f == "ceiling" || f == "nint"
+                if (f == "int" || f == "real" || f == "dble" || f == "cmplx"
+                        || f == "floor" || f == "ceiling" || f == "nint"
                         || f == "present" || f == "stringlentrim" || f == "substrindex" || f == "stringtrim"
                         || f == "stringconcat" || f == "repeat" || f == "adjustl"
                         || f == "adjustr" || f == "lge" || f == "lgt" || f == "lle" || f == "llt") {
@@ -1153,15 +1169,31 @@ private:
         return app(c + ".beq", {a, b});
     }
 
+    std::string escape_ns(const std::string &raw, const Location &loc) {
+        if (raw.empty()) return "";
+        std::string res;
+        size_t pos = 0;
+        while (pos <= raw.size()) {
+            size_t dot = raw.find('.', pos);
+            std::string seg = dot == std::string::npos ? raw.substr(pos) : raw.substr(pos, dot - pos);
+            if (!res.empty()) res += ".";
+            res += (seg.find('\'') != std::string::npos) ? seg : name(seg, loc);
+            if (dot == std::string::npos) break;
+            pos = dot + 1;
+        }
+        return res;
+    }
+
     std::string call_name(ASR::symbol_t *sym) {
         sym = ASRUtils::symbol_get_past_external(sym);
         std::string n = name(ASRUtils::symbol_name(sym), sym->base.loc);
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             auto it = proc_ns.find(ASR::down_cast<ASR::Function_t>(sym));
             if (it != proc_ns.end() && !it->second.empty()) {
-                std::string mn = it->second.find('\'') != std::string::npos
-                    ? it->second : name(it->second, sym->base.loc);
-                if (name_in_scope(it->second)) {
+                std::string mn = escape_ns(it->second, sym->base.loc);
+                size_t dot = it->second.find('.');
+                std::string head = dot == std::string::npos ? it->second : it->second.substr(0, dot);
+                if (name_in_scope(head)) {
                     return "_root_." + mn + "." + n;
                 }
                 return mn + "." + n;
@@ -1378,6 +1410,40 @@ private:
                 if (src_k == dst_k) return {"(" + re + " : " + dst_ty + ")", pAtom};
                 return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {{re, pAtom}});
             }
+        }
+        if (x.n_args >= 1 && f == "cmplx" && !is_array(x.m_type)) {
+            std::string dst_ty = type(x.m_type, loc);
+            int dst_k = ASR::down_cast<ASR::Complex_t>(x.m_type)->m_kind;
+            auto to_real_part = [&](ASR::expr_t *p) -> Val {
+                if (is_int(p)) {
+                    if (ASR::is_a<ASR::IntegerConstant_t>(*p)) {
+                        auto &ic = *ASR::down_cast<ASR::IntegerConstant_t>(p);
+                        if (ic.m_intboz_type != ASR::integerbozType::Decimal) {
+                            unsupported("a BOZ argument to cmplx is", p->base.loc);
+                        }
+                        return {"FReal.ofInt " + int_lit(ic.m_n), pApp};
+                    }
+                    return app("FReal.ofInt", {app("FInt.toInt", {operand(p)})});
+                }
+                if (is_real(p)) {
+                    type(ASRUtils::expr_type(p), p->base.loc);
+                    int pk = ASR::down_cast<ASR::Real_t>(unalloc_type(p))->m_kind;
+                    if (pk == dst_k) return lower(p);
+                    return app(dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4", {operand(p)});
+                }
+                unsupported("this cmplx argument is", p->base.loc);
+            };
+            if (is_complex(x.m_args[0])) {
+                type(ASRUtils::expr_type(x.m_args[0]), x.m_args[0]->base.loc);
+                int src_k = ASR::down_cast<ASR::Complex_t>(unalloc_type(x.m_args[0]))->m_kind;
+                if (src_k == dst_k) return {"(" + lower(x.m_args[0]).src + " : " + dst_ty + ")", pAtom};
+                std::string fn = dst_k == 8 ? "FKinds.r4to8" : "FKinds.r8to4";
+                return {"((fun z' => FCplx.mk (" + fn + " z'.re) (" + fn + " z'.im)) "
+                    + atom(operand(x.m_args[0])) + ")", pAtom};
+            }
+            Val re = to_real_part(x.m_args[0]);
+            Val im = (x.n_args >= 2 && x.m_args[1]) ? to_real_part(x.m_args[1]) : Val{"FReal.zero", pAtom};
+            return {"(" + app("FCplx.mk", {re, im}).src + " : " + dst_ty + ")", pAtom};
         }
         if (x.n_args >= 2 && (f == "max" || f == "min")) {
             bool all_int = is_int(x.m_args[0]);
@@ -1769,6 +1835,70 @@ private:
         }
         if (id == F::Pack && x.n_args == 2) {
             return lower_pack(x.m_args[0], x.m_args[1], loc);
+        }
+        if (id == F::Spread && x.n_args == 3) {
+            if (x.m_overload_id == -1 || !is_array(ASRUtils::expr_type(x.m_args[0]))) {
+                std::string nc = extent(x.m_args[2]);
+                std::string elem = is_array(ASRUtils::expr_type(x.m_args[0]))
+                    ? "(" + atom(lower(x.m_args[0])) + ".data[0]!)"
+                    : atom(operand(x.m_args[0]));
+                return {"(Arr.make #[1] #[" + nc + "] " + elem + ")", pAtom};
+            }
+            return app("Arr.spread", {lower(x.m_args[0]),
+                int_expr(x.m_args[1]), int_expr(x.m_args[2])});
+        }
+        if ((id == F::MaxLoc || id == F::MinLoc) && is_array(x.m_type)
+                && x.n_args == 5 && (x.m_overload_id == 0 || x.m_overload_id == 1)
+                && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            type(et, loc);
+            std::string lt_cmp, le_cmp;
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                lt_cmp = id == F::MaxLoc
+                    ? "(fun cur' cand' => FInt.lt cur' cand')"
+                    : "(fun cur' cand' => FInt.lt cand' cur')";
+                le_cmp = id == F::MaxLoc
+                    ? "(fun cur' cand' => FInt.le cur' cand')"
+                    : "(fun cur' cand' => FInt.le cand' cur')";
+            } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                lt_cmp = id == F::MaxLoc
+                    ? "(fun cur' cand' => FReal.lt cur' cand')"
+                    : "(fun cur' cand' => FReal.lt cand' cur')";
+                le_cmp = id == F::MaxLoc
+                    ? "(fun cur' cand' => FReal.le cur' cand')"
+                    : "(fun cur' cand' => FReal.le cand' cur')";
+            }
+            if (!lt_cmp.empty()) {
+                std::string better = lt_cmp;
+                if (x.m_args[4]) {
+                    ASR::expr_t *bv = ASRUtils::expr_value(x.m_args[4]);
+                    if (bv && ASR::is_a<ASR::LogicalConstant_t>(*bv)) {
+                        if (ASR::down_cast<ASR::LogicalConstant_t>(bv)->m_value) better = le_cmp;
+                    } else {
+                        better = "(if " + lower(x.m_args[4]).src + " then " + le_cmp
+                            + " else " + lt_cmp + ")";
+                    }
+                }
+                std::string rty = type(elem_type(x.m_type), loc);
+                std::string arr_src = atom(lower(x.m_args[0]));
+                std::string loc_expr;
+                if (x.m_overload_id == 1 && x.m_args[2]) {
+                    if (is_array(ASRUtils::expr_type(x.m_args[2]))) {
+                        loc_expr = "(Arr.extremaLoc " + better + " " + arr_src
+                            + " (some " + atom(lower(x.m_args[2])) + "))";
+                    } else {
+                        loc_expr = "((fun (a' : Arr _) (m' : Bool) (cmp' : _ → _ → Bool) => "
+                            "if m' then Arr.extremaLoc cmp' a' none "
+                            "else Array.replicate a'.exts.size (0 : Int)) "
+                            + arr_src + " " + atom(lower(x.m_args[2])) + " " + better + ")";
+                    }
+                } else {
+                    loc_expr = "(Arr.extremaLoc " + better + " " + arr_src + " none)";
+                }
+                return {"((fun c' => Arr.mk #[1] #[c'.size] "
+                    "(c'.map (fun x' => (FInt.ofInt x' : " + rty + ")))) "
+                    + loc_expr + ")", pAtom};
+            }
         }
         unsupported("this array intrinsic is", loc);
     }
@@ -3645,6 +3775,7 @@ private:
         for (ASR::symbol_t *s : symbols_in_order(st)) {
             if (ASR::is_a<ASR::Variable_t>(*s) || ASR::is_a<ASR::ExternalSymbol_t>(*s)
                     || ASR::is_a<ASR::Struct_t>(*s)
+                    || ASR::is_a<ASR::Enum_t>(*s)
                     || ASR::is_a<ASR::GenericProcedure_t>(*s)
                     || ASR::is_a<ASR::CustomOperator_t>(*s)
                     || ASR::is_a<ASR::Block_t>(*s)
@@ -3667,7 +3798,7 @@ private:
         alloc_str_len.clear();
         scope = fn->m_symtab;
         in_program = false;
-        check_symbols(fn->m_symtab);
+        check_symbols(fn->m_symtab, /*allow_functions=*/true);
         // An interface body declares a procedure implemented elsewhere (a
         // separate module procedure, an external procedure).
         if (ASRUtils::get_FunctionType(fn)->m_deftype != ASR::deftypeType::Implementation) {
@@ -4076,7 +4207,7 @@ public:
                 top_fns.push_back(ASR::down_cast<ASR::Function_t>(s));
             } else if (ASR::is_a<ASR::Program_t>(*s)) {
                 prog = ASR::down_cast<ASR::Program_t>(s);
-            } else if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+            } else if (ASR::is_a<ASR::ExternalSymbol_t>(*s) || ASR::is_a<ASR::Enum_t>(*s)) {
                 continue;
             } else {
                 unsupported("this top-level entity is", s->base.loc);
@@ -4107,6 +4238,7 @@ public:
                         all_globals.push_back(v);
                     }
                 } else if (!ASR::is_a<ASR::ExternalSymbol_t>(*s)
+                        && !ASR::is_a<ASR::Enum_t>(*s)
                         && !ASR::is_a<ASR::GenericProcedure_t>(*s)
                         && !ASR::is_a<ASR::CustomOperator_t>(*s)) {
                     unsupported("this module entity is", s->base.loc);
@@ -4138,20 +4270,26 @@ public:
                 }
             }
         }
-        for (ASR::Function_t *fn : all_fns) {
+        for (size_t fi = 0; fi < all_fns.size(); fi++) {
+            ASR::Function_t *fn = all_fns[fi];
             std::string raw_ns = proc_ns[fn];
-            std::string fns = raw_ns.empty() ? ""
-                : (raw_ns.find('\'') != std::string::npos ? raw_ns
-                    : name(raw_ns, fn->base.base.loc));
+            std::string fns = escape_ns(raw_ns, fn->base.base.loc);
             std::string lns = (fns.empty() ? "" : fns + ".")
                 + std::string(fn->m_name) + "'types";
+            std::string raw_sub_ns = (raw_ns.empty() ? "" : raw_ns + ".")
+                + std::string(fn->m_name) + "'procs";
             std::string fn_prefix = (raw_ns.empty() ? std::string("top") : raw_ns)
                 + "'" + std::string(fn->m_name) + "'save'";
+            std::replace(fn_prefix.begin(), fn_prefix.end(), '.', '\'');
             for (ASR::symbol_t *s : symbols_in_order(fn->m_symtab)) {
                 if (ASR::is_a<ASR::Struct_t>(*s)) {
                     ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
                     struct_ns[st] = lns;
                     all_structs.push_back(st);
+                } else if (ASR::is_a<ASR::Function_t>(*s)) {
+                    ASR::Function_t *sub = ASR::down_cast<ASR::Function_t>(s);
+                    proc_ns[sub] = raw_sub_ns;
+                    all_fns.push_back(sub);
                 } else if (ASR::is_a<ASR::Variable_t>(*s)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                     if (v->m_storage == ASR::storage_typeType::Save
@@ -4236,10 +4374,7 @@ public:
         }
         if (!globals_def.empty()) out += globals_def;
         for (ASR::Function_t *fn : callees_first(all_fns)) {
-            std::string raw_ns = proc_ns[fn];
-            std::string fns = raw_ns.empty() ? ""
-                : (raw_ns.find('\'') != std::string::npos ? raw_ns
-                    : name(raw_ns, fn->base.base.loc));
+            std::string fns = escape_ns(proc_ns[fn], fn->base.base.loc);
             if (fns != cur_ns) {
                 if (!cur_ns.empty()) out += "end " + cur_ns + "\n\n";
                 if (!fns.empty()) out += "namespace " + fns + "\n\n";
