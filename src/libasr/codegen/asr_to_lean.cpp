@@ -168,6 +168,8 @@ public:
                 e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
                 e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
             } else if (ASR::is_a<ASR::Var_t>(*e)) {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(e)->m_v);
@@ -245,6 +247,7 @@ public:
 private:
     std::map<ASR::Function_t*, Proc> procs;
     std::map<ASR::Function_t*, std::string> proc_ns;
+    std::map<ASR::Struct_t*, std::string> struct_ns;
     std::set<ASR::Function_t*> io_procs;
     std::map<ASR::Function_t*, std::vector<ASR::intentType>> eff_intents;
     std::vector<ASR::Function_t*> order;
@@ -255,6 +258,7 @@ private:
     ASR::Variable_t *result = nullptr;
     std::set<ASR::Variable_t*> loop_vars;
     std::vector<std::string> exit_flags;
+    std::map<const ASR::ArrayItem_t*, std::string> pre_idx;
     int loop_id = 0;
     std::string ns;
     std::string *buf = nullptr;
@@ -276,6 +280,107 @@ private:
         return n;
     }
 
+    // Derived types --------------------------------------------------------
+
+    ASR::Struct_t *resolve_struct(ASR::symbol_t *sym, const Location &loc) {
+        if (!sym) unsupported("this derived type is", loc);
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Struct_t>(*sym)) unsupported("this derived type is", loc);
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
+        if (!struct_ns.count(st)) unsupported("this derived type is", loc);
+        return st;
+    }
+
+    ASR::Variable_t *struct_member(ASR::Struct_t *st, size_t i, const Location &loc) {
+        ASR::symbol_t *ms = st->m_symtab->get_symbol(st->m_members[i]);
+        if (!ms || !ASR::is_a<ASR::Variable_t>(*ms)) {
+            unsupported("this derived type member is", loc);
+        }
+        return ASR::down_cast<ASR::Variable_t>(ms);
+    }
+
+    std::string struct_qname(ASR::Struct_t *st, const Location &loc) {
+        std::string sn = name(st->m_name, loc);
+        auto it = struct_ns.find(st);
+        if (it == struct_ns.end() || it->second.empty()) return "_root_." + sn;
+        return "_root_." + it->second + "." + sn;
+    }
+
+    std::string struct_init_name(ASR::Struct_t *st, const Location &loc) {
+        name(st->m_name, loc);
+        return std::string(st->m_name) + "'init";
+    }
+
+    std::string struct_init_qname(ASR::Struct_t *st, const Location &loc) {
+        std::string in = struct_init_name(st, loc);
+        auto it = struct_ns.find(st);
+        if (it == struct_ns.end() || it->second.empty()) return "_root_." + in;
+        return "_root_." + it->second + "." + in;
+    }
+
+    ASR::symbol_t *expr_type_decl(ASR::expr_t *e) {
+        while (e) {
+            switch (e->type) {
+                case ASR::exprType::Var: {
+                    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(e)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*s)) {
+                        return ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+                    }
+                    return nullptr;
+                }
+                case ASR::exprType::StructConstructor:
+                    return ASR::down_cast<ASR::StructConstructor_t>(e)->m_dt_sym;
+                case ASR::exprType::StructConstant:
+                    return ASR::down_cast<ASR::StructConstant_t>(e)->m_dt_sym;
+                case ASR::exprType::StructInstanceMember: {
+                    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+                    if (ASR::is_a<ASR::Variable_t>(*s)) {
+                        return ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+                    }
+                    return nullptr;
+                }
+                case ASR::exprType::ArrayItem:
+                    e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                    break;
+                case ASR::exprType::ArraySection:
+                    e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                    break;
+                case ASR::exprType::ArrayPhysicalCast:
+                    e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                    break;
+                case ASR::exprType::ArrayBroadcast:
+                    e = ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array;
+                    break;
+                case ASR::exprType::FunctionCall: {
+                    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::FunctionCall_t>(e)->m_name);
+                    if (ASR::is_a<ASR::Function_t>(*s)) {
+                        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+                        if (fn->m_return_var && ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
+                            return ASRUtils::EXPR2VAR(fn->m_return_var)->m_type_declaration;
+                        }
+                    }
+                    return nullptr;
+                }
+                case ASR::exprType::ArrayConstructor: {
+                    auto &x = *ASR::down_cast<ASR::ArrayConstructor_t>(e);
+                    if (x.n_args > 0) { e = x.m_args[0]; break; }
+                    return nullptr;
+                }
+                case ASR::exprType::IntrinsicElementalFunction: {
+                    auto &x = *ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+                    if (x.n_args > 0) { e = x.m_args[0]; break; }
+                    return nullptr;
+                }
+                default:
+                    return nullptr;
+            }
+        }
+        return nullptr;
+    }
+
     // Types ----------------------------------------------------------------
 
     ASR::ttype_t *scalar(ASR::ttype_t *t, const Location &loc) {
@@ -286,7 +391,7 @@ private:
         return t;
     }
 
-    std::string type(ASR::ttype_t *t, const Location &loc) {
+    std::string type(ASR::ttype_t *t, const Location &loc, ASR::symbol_t *type_decl = nullptr) {
         t = scalar(t, loc);
         if (ASR::is_a<ASR::Integer_t>(*t)) {
             int k = ASR::down_cast<ASR::Integer_t>(t)->m_kind;
@@ -311,10 +416,17 @@ private:
             if (k == 1) return "String";
             unsupported("character kind " + std::to_string(k) + " is", loc);
         }
+        if (ASR::is_a<ASR::StructType_t>(*t)) {
+            auto &st = *ASR::down_cast<ASR::StructType_t>(t);
+            if (st.m_is_unlimited_polymorphic || ASRUtils::is_class_type(t)) {
+                unsupported("a polymorphic derived type is", loc);
+            }
+            return struct_qname(resolve_struct(type_decl, loc), loc) + " K";
+        }
         unsupported("this type is", loc);
     }
 
-    std::string zero(ASR::ttype_t *t, const Location &loc) {
+    std::string zero(ASR::ttype_t *t, const Location &loc, ASR::symbol_t *type_decl = nullptr) {
         t = scalar(t, loc);
         if (ASR::is_a<ASR::Integer_t>(*t)) return "FInt.ofInt 0";
         if (ASR::is_a<ASR::Real_t>(*t)) return "FReal.zero";
@@ -325,6 +437,13 @@ private:
             if (s.m_len) return "FStr.fix " + extent(s.m_len) + " \"\"";
             return "\"\"";
         }
+        if (ASR::is_a<ASR::StructType_t>(*t)) {
+            auto &st = *ASR::down_cast<ASR::StructType_t>(t);
+            if (st.m_is_unlimited_polymorphic || ASRUtils::is_class_type(t)) {
+                unsupported("a polymorphic derived type is", loc);
+            }
+            return struct_init_qname(resolve_struct(type_decl, loc), loc) + " (K := K)";
+        }
         unsupported("this type is", loc);
     }
 
@@ -333,13 +452,13 @@ private:
     }
 
     // The type of a variable: a scalar type, or `Arr` of one.
-    std::string vtype(ASR::ttype_t *t, const Location &loc) {
+    std::string vtype(ASR::ttype_t *t, const Location &loc, ASR::symbol_t *type_decl = nullptr) {
         if (is_array(t)) {
-            std::string et = type(ASR::down_cast<ASR::Array_t>(t)->m_type, loc);
+            std::string et = type(ASR::down_cast<ASR::Array_t>(t)->m_type, loc, type_decl);
             if (et.find(' ') != std::string::npos) et = "(" + et + ")";
             return "Arr " + et;
         }
-        return type(t, loc);
+        return type(t, loc, type_decl);
     }
 
     // An integer expression as a Lean `Int`.
@@ -395,7 +514,8 @@ private:
             e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
         }
         if (!ASR::is_a<ASR::Var_t>(*e) && !ASR::is_a<ASR::ArrayConstant_t>(*e)
-                && !ASR::is_a<ASR::ArrayConstructor_t>(*e)) {
+                && !ASR::is_a<ASR::ArrayConstructor_t>(*e)
+                && !ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
             unsupported("this array expression is", e->base.loc);
         }
         return e;
@@ -471,8 +591,9 @@ private:
             elems += fix_string(at->m_type, "", lower(x.m_args[i]), loc);
         }
         elems += "]";
+        ASR::symbol_t *td = x.n_args > 0 ? expr_type_decl(x.m_args[0]) : nullptr;
         return {"({ lbs := #[1], exts := #[" + std::to_string(x.n_args)
-            + "], data := " + elems + " } : " + vtype(x.m_type, loc) + ")", pAtom};
+            + "], data := " + elems + " } : " + vtype(x.m_type, loc, td) + ")", pAtom};
     }
 
     bool is_int(ASR::expr_t *e) {
@@ -597,6 +718,9 @@ private:
             case ASR::exprType::StringPhysicalCast:
             case ASR::exprType::LogicalBinOp:
             case ASR::exprType::LogicalNot:
+            case ASR::exprType::StructInstanceMember:
+            case ASR::exprType::StructConstructor:
+            case ASR::exprType::StructConstant:
                 return true;
             case ASR::exprType::ComplexConstructor: {
                 auto &x = *ASR::down_cast<ASR::ComplexConstructor_t>(e);
@@ -689,7 +813,7 @@ private:
         Val v = lower(e);
         if (!determined(e)) {
             return {"(" + v.src + " : "
-                + type(ASRUtils::expr_type(e), e->base.loc) + ")", pAtom};
+                + type(ASRUtils::expr_type(e), e->base.loc, expr_type_decl(e)) + ")", pAtom};
         }
         return v;
     }
@@ -766,6 +890,7 @@ private:
     // argument except an `intent(out)` scalar.
     Val call(ASR::symbol_t *sym, ASR::call_arg_t *args, size_t n,
             const Location &loc) {
+        if (!cur) unsupported("a function call in a derived type definition is", loc);
         ASR::Function_t *fn = callee(sym, loc);
         cur->callees.insert(fn);
         if (n != fn->n_args) unsupported("this call is", loc);
@@ -1068,6 +1193,8 @@ private:
 
     // The subscripts of an array element, as `#[i₁, …]`.
     std::string index(const ASR::ArrayItem_t &x) {
+        auto it = pre_idx.find(&x);
+        if (it != pre_idx.end()) return it->second;
         std::vector<std::string> idx;
         for (size_t i = 0; i < x.n_args; i++) {
             const ASR::array_index_t &a = x.m_args[i];
@@ -1182,7 +1309,7 @@ private:
         unsupported("this array intrinsic is", loc);
     }
 
-    Val array_section(const ASR::ArraySection_t &x, const Location &loc) {
+    Val array_section(const ASR::ArraySection_t &x) {
         std::string a = atom(lower(x.m_v));
         std::vector<std::string> specs;
         for (size_t i = 0; i < x.n_args; i++) {
@@ -1212,7 +1339,7 @@ private:
             case ASR::exprType::ArrayConstructor:
                 return array_constructor(*ASR::down_cast<ASR::ArrayConstructor_t>(e), loc);
             case ASR::exprType::ArraySection:
-                return array_section(*ASR::down_cast<ASR::ArraySection_t>(e), loc);
+                return array_section(*ASR::down_cast<ASR::ArraySection_t>(e));
             case ASR::exprType::IntrinsicArrayFunction:
                 return intrinsic_array(*ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e), loc);
             case ASR::exprType::ArrayItem: {
@@ -1591,6 +1718,30 @@ private:
             case ASR::exprType::IntrinsicElementalFunction:
                 return intrinsic(*ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e),
                     loc);
+            case ASR::exprType::StructConstructor: {
+                auto &x = *ASR::down_cast<ASR::StructConstructor_t>(e);
+                return struct_ctor(x.m_dt_sym, x.m_args, x.n_args, loc);
+            }
+            case ASR::exprType::StructConstant: {
+                auto &x = *ASR::down_cast<ASR::StructConstant_t>(e);
+                return struct_ctor(x.m_dt_sym, x.m_args, x.n_args, loc);
+            }
+            case ASR::exprType::StructInstanceMember: {
+                auto &x = *ASR::down_cast<ASR::StructInstanceMember_t>(e);
+                if (x.m_value && x.m_value != e) return lower(x.m_value);
+                ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!ASR::is_a<ASR::Variable_t>(*ms)) {
+                    unsupported("this derived type member is", loc);
+                }
+                std::string fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
+                if (is_array(ASRUtils::expr_type(x.m_v))) {
+                    if (is_array(ASR::down_cast<ASR::Variable_t>(ms)->m_type)) {
+                        unsupported("this array of derived types member is", loc);
+                    }
+                    return app("Arr.map", {{"(fun s' => s'." + fn + ")", pAtom}, lower(x.m_v)});
+                }
+                return {atom(lower(x.m_v)) + "." + fn, pAtom};
+            }
             default:
                 if (ASR::expr_t *v = ASRUtils::expr_value(e); v && v != e) {
                     return lower(v);
@@ -1599,10 +1750,117 @@ private:
         }
     }
 
+    std::string struct_member_init(ASR::Variable_t *mv, ASR::expr_t *val, const Location &loc) {
+        if (val) {
+            if (is_array(mv->m_type)) {
+                std::vector<std::string> lbs, exts;
+                bool assumed;
+                dims(mv->m_type, lbs, exts, assumed, loc);
+                if (assumed) unsupported("this derived type array member is", loc);
+                ASR::ttype_t *et = elem_type(mv->m_type);
+                ASR::expr_t *v = val;
+                if (ASR::is_a<ASR::ArrayBroadcast_t>(*v)) {
+                    v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
+                }
+                if (is_array(ASRUtils::expr_type(v))) {
+                    std::string src = atom(lower(v));
+                    if (ASR::is_a<ASR::String_t>(*et)) {
+                        auto &st = *ASR::down_cast<ASR::String_t>(et);
+                        if (!st.m_len) unsupported("this derived type array member is", loc);
+                        src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                    }
+                    return "Arr.reshape " + src + " " + int_array(lbs) + " " + int_array(exts);
+                }
+                std::string rhs = fix_string(et, "", lower(v), loc);
+                return "Arr.make " + int_array(lbs) + " " + int_array(exts) + " " + atom({rhs, pApp});
+            }
+            return fix_string(mv->m_type, "", lower(val), loc);
+        }
+        if (is_array(mv->m_type)) {
+            std::vector<std::string> lbs, exts;
+            bool assumed;
+            dims(mv->m_type, lbs, exts, assumed, loc);
+            if (assumed) unsupported("this derived type array member is", loc);
+            return "Arr.make " + int_array(lbs) + " " + int_array(exts) + " "
+                + atom({zero(ASR::down_cast<ASR::Array_t>(mv->m_type)->m_type, loc,
+                    mv->m_type_declaration), pApp});
+        }
+        return zero(mv->m_type, loc, mv->m_type_declaration);
+    }
+
+    std::string struct_member_default(ASR::Variable_t *mv) {
+        const Location &loc = mv->base.base.loc;
+        ASR::expr_t *init = mv->m_value ? mv->m_value : mv->m_symbolic_value;
+        return struct_member_init(mv, init, loc);
+    }
+
+    Val struct_ctor(ASR::symbol_t *dt_sym, ASR::call_arg_t *args, size_t n_args,
+            const Location &loc) {
+        ASR::Struct_t *st = resolve_struct(dt_sym, loc);
+        if (n_args > st->n_members) unsupported("this derived type constructor is", loc);
+        std::string fields;
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::Variable_t *mv = struct_member(st, i, loc);
+            if (i) fields += ", ";
+            ASR::expr_t *arg = (i < n_args) ? args[i].m_value : nullptr;
+            std::string val = arg ? struct_member_init(mv, arg, loc) : struct_member_default(mv);
+            fields += name(mv->m_name, mv->base.base.loc) + " := " + val;
+        }
+        std::string body = fields.empty() ? "{}" : "{ " + fields + " }";
+        return {"(" + body + " : " + struct_qname(st, loc) + " K)", pAtom};
+    }
+
     // Statements -----------------------------------------------------------
 
     SymbolTable *scope = nullptr;
     SymbolTable *cur_scope() const { return scope; }
+
+    std::string shown_val(const std::string &val_src, ASR::ttype_t *t,
+            ASR::symbol_t *type_decl, const Location &loc, int depth = 0) {
+        if (is_array(t)) {
+            ASR::ttype_t *et = scalar(elem_type(t), loc);
+            std::string xv = "x'" + std::to_string(depth);
+            std::string fmt = shown_val(xv, et, type_decl, loc, depth + 1);
+            return "(String.intercalate \" \" (" + val_src + ".data.toList.map (fun "
+                + xv + " => " + fmt + ")))";
+        }
+        t = scalar(t, loc);
+        if (ASR::is_a<ASR::Integer_t>(*t)) {
+            return "toString (FInt.toInt (" + val_src + " : " + type(t, loc) + "))";
+        }
+        if (ASR::is_a<ASR::Real_t>(*t)) {
+            int k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
+            return "FKindsIO.fmtR" + std::to_string(k) + " (" + val_src + " : " + type(t, loc) + ")";
+        }
+        if (ASR::is_a<ASR::Complex_t>(*t)) {
+            int k = ASR::down_cast<ASR::Complex_t>(t)->m_kind;
+            std::string fn = "FKindsIO.fmtR" + std::to_string(k);
+            std::string zv = "z'" + std::to_string(depth);
+            return "((fun " + zv + " => \"(\" ++ " + fn + " " + zv + ".re ++ \",\" ++ " + fn
+                + " " + zv + ".im ++ \")\") (" + val_src + " : " + type(t, loc) + "))";
+        }
+        if (ASR::is_a<ASR::Logical_t>(*t)) {
+            return "(if " + val_src + " then \"T\" else \"F\")";
+        }
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            return val_src;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*t)) {
+            ASR::Struct_t *st = resolve_struct(type_decl, loc);
+            if (st->n_members == 0) return "((fun _ => \"\") " + atom({val_src, pApp}) + ")";
+            std::string sv = "s'" + std::to_string(depth);
+            std::string parts;
+            for (size_t i = 0; i < st->n_members; i++) {
+                ASR::Variable_t *mv = struct_member(st, i, loc);
+                if (i) parts += ", ";
+                parts += shown_val(sv + "." + name(mv->m_name, mv->base.base.loc),
+                    mv->m_type, mv->m_type_declaration, loc, depth + 1);
+            }
+            return "((fun " + sv + " => String.intercalate \" \" [" + parts + "]) "
+                + atom({val_src, pApp}) + ")";
+        }
+        unsupported("printing this value is", loc);
+    }
 
     std::string shown(ASR::expr_t *e) {
         const Location &loc = e->base.loc;
@@ -1625,26 +1883,15 @@ private:
                 ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n));
         }
         if (is_array(ASRUtils::expr_type(e))) {
-            ASR::ttype_t *et = scalar(elem_type(ASRUtils::expr_type(e)), loc);
-            std::string ety = type(et, loc);
-            std::string fmt;
-            if (ASR::is_a<ASR::Integer_t>(*et)) fmt = "toString (FInt.toInt (x' : " + ety + "))";
-            else if (ASR::is_a<ASR::Real_t>(*et)) {
-                fmt = "FKindsIO.fmtR" + std::to_string(ASR::down_cast<ASR::Real_t>(et)->m_kind)
-                    + " (x' : " + ety + ")";
-            } else if (ASR::is_a<ASR::Complex_t>(*et)) {
-                std::string fn = "FKindsIO.fmtR" + std::to_string(ASR::down_cast<ASR::Complex_t>(et)->m_kind);
-                fmt = "\"(\" ++ " + fn + " (x' : " + ety + ").re ++ \",\" ++ " + fn + " x'.im ++ \")\"";
-            } else if (ASR::is_a<ASR::Logical_t>(*et)) fmt = "(if x' then \"T\" else \"F\")";
-            else if (ASR::is_a<ASR::String_t>(*et)) fmt = "x'";
-            else unsupported("printing this value is", loc);
-            return "(String.intercalate \" \" (" + atom(lower(e))
-                + ".data.toList.map (fun x' => " + fmt + ")))";
+            return shown_val(atom(lower(e)), ASRUtils::expr_type(e), expr_type_decl(e), loc);
         }
         if (is_string(e)) {
             return lower(e).src;
         }
         ASR::ttype_t *t = scalar(ASRUtils::expr_type(e), loc);
+        if (ASR::is_a<ASR::StructType_t>(*t)) {
+            return shown_val(atom(lower(e)), t, expr_type_decl(e), loc);
+        }
         // The kind is stated: a value such as `FInt.ofInt 10` does not fix it.
         std::string v = "(" + lower(e).src + " : " + type(t, loc) + ")";
         if (ASR::is_a<ASR::Integer_t>(*t)) {
@@ -1716,6 +1963,84 @@ private:
         return false;
     }
 
+    bool is_lvalue(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        if (!e) return false;
+        if (ASR::is_a<ASR::Var_t>(*e)) return true;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            auto &m = *ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            return !is_array(ASRUtils::expr_type(m.m_v)) && is_lvalue(m.m_v);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            return is_lvalue(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        }
+        return false;
+    }
+
+    void update_lvalue(ASR::expr_t *lhs,
+            const std::function<std::string(const std::string&)> &rhs_fn,
+            const Location &loc) {
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*lhs)) {
+            lhs = ASR::down_cast<ASR::ArrayPhysicalCast_t>(lhs)->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*lhs)) {
+            std::string a = lower(lhs).src;
+            line(a + " := " + rhs_fn(a));
+            return;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*lhs)) {
+            auto &m = *ASR::down_cast<ASR::StructInstanceMember_t>(lhs);
+            if (is_array(ASRUtils::expr_type(m.m_v))) {
+                unsupported("this assignment is", loc);
+            }
+            ASR::symbol_t *ms = ASRUtils::symbol_get_past_external(m.m_m);
+            if (!ASR::is_a<ASR::Variable_t>(*ms)) unsupported("this assignment is", loc);
+            std::string fn = name(ASR::down_cast<ASR::Variable_t>(ms)->m_name, loc);
+            update_lvalue(m.m_v, [&](const std::string &cur_s) {
+                return "{ " + cur_s + " with " + fn + " := " + rhs_fn(cur_s + "." + fn) + " }";
+            }, loc);
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*lhs)) {
+            auto &t = *ASR::down_cast<ASR::ArrayItem_t>(lhs);
+            auto it = pre_idx.find(&t);
+            std::string iv;
+            if (it != pre_idx.end()) {
+                iv = it->second;
+            } else {
+                iv = "idx'" + std::to_string(++loop_id);
+                line("let " + iv + " := " + index(t));
+            }
+            update_lvalue(t.m_v, [&](const std::string &cur_a) {
+                std::string elem = "(Arr.get " + cur_a + " " + iv + ")";
+                return app("Arr.set", {{cur_a, pAtom}, {iv, pAtom},
+                    {rhs_fn(elem), pApp}}).src;
+            }, loc);
+            return;
+        }
+        unsupported("this assignment is", loc);
+    }
+
+    void hoist_lvalue_indices(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        if (!e) return;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            hoist_lvalue_indices(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            auto &t = *ASR::down_cast<ASR::ArrayItem_t>(e);
+            hoist_lvalue_indices(t.m_v);
+            if (!pre_idx.count(&t)) {
+                std::string iv = "idx'" + std::to_string(++loop_id);
+                line("let " + iv + " := " + index(t));
+                pre_idx[&t] = iv;
+            }
+        }
+    }
+
     void stmts(ASR::stmt_t **body, size_t n) {
         for (size_t i = 0; i < n; i++) stmt(body[i]);
     }
@@ -1728,17 +2053,22 @@ private:
                 if (x.m_overloaded) unsupported("this assignment is", loc);
                 if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
                     auto &t = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
-                    std::string a = lower(array_var(t.m_v)).src;
-                    std::string rhs = fix_string(ASRUtils::expr_type(x.m_target), "",
-                        lower(x.m_value), loc);
-                    line(a + " := " + app("Arr.set", {{a, pAtom}, {index(t), pAtom},
-                        {rhs, pApp}}).src);
-                    break;
+                    ASR::expr_t *base = t.m_v;
+                    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base)) {
+                        base = ASR::down_cast<ASR::ArrayPhysicalCast_t>(base)->m_arg;
+                    }
+                    if (ASR::is_a<ASR::Var_t>(*base)) {
+                        std::string a = lower(base).src;
+                        std::string rhs = fix_string(ASRUtils::expr_type(x.m_target), "",
+                            lower(x.m_value), loc);
+                        line(a + " := " + app("Arr.set", {{a, pAtom}, {index(t), pAtom},
+                            {rhs, pApp}}).src);
+                        break;
+                    }
                 }
-                if (!ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                if (!is_lvalue(x.m_target)) {
                     unsupported("this assignment is", loc);
                 }
-                std::string a = lower(x.m_target).src;
                 if (is_array(ASRUtils::expr_type(x.m_target))) {
                     // `a = b` keeps the bounds of `a`; `a = v` sets every element.
                     ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_target));
@@ -1753,40 +2083,56 @@ private:
                             if (!st.m_len) unsupported("an assumed-length character array assignment is", loc);
                             src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
                         }
-                        line(a + " := Arr.copyBack " + a + " " + src);
+                        update_lvalue(x.m_target, [&](const std::string &cur_a) {
+                            return "Arr.copyBack " + cur_a + " " + src;
+                        }, loc);
                     } else {
                         std::string rhs = fix_string(et, "", lower(v), loc);
-                        line(a + " := Arr.fill " + a + " " + atom({rhs, pApp}));
+                        update_lvalue(x.m_target, [&](const std::string &cur_a) {
+                            return "Arr.fill " + cur_a + " " + atom({rhs, pApp});
+                        }, loc);
                     }
                     break;
                 }
-                line(a + " := " + fix_string(ASRUtils::expr_type(x.m_target), a, lower(x.m_value), loc));
+                Val rhs = lower(x.m_value);
+                update_lvalue(x.m_target, [&](const std::string &cur_v) {
+                    return fix_string(ASRUtils::expr_type(x.m_target), cur_v, rhs, loc);
+                }, loc);
                 break;
             }
             case ASR::stmtType::SubroutineCall: {
                 auto &x = *ASR::down_cast<ASR::SubroutineCall_t>(s);
                 if (x.m_dt) unsupported("a type-bound call is", loc);
                 ASR::Function_t *fn = callee(x.m_name, loc);
-                if (fn->m_return_var) unsupported("this call is", loc);
-                Val c = call(x.m_name, x.m_args, x.n_args, loc);
+                if (fn->m_return_var || x.n_args != fn->n_args) unsupported("this call is", loc);
                 // The `intent(out)`/`intent(inout)` actual arguments, in order.
+                // Hoist any array-element subscripts before the call so earlier
+                // copy-backs cannot alter the index and subscripts are evaluated once.
                 std::vector<ASR::expr_t*> outs;
                 for (size_t i = 0; i < x.n_args; i++) {
                     if (arg_intent(fn, i) == ASR::intentType::In) continue;
                     ASR::expr_t *a = x.m_args[i].m_value;
-                    if (is_array(ASRUtils::expr_type(a))) a = array_var(a);
-                    if (!ASR::is_a<ASR::Var_t>(*a)) {
+                    if (!a) unsupported("an omitted argument is", loc);
+                    while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*a)) {
+                        a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg;
+                    }
+                    if (!is_lvalue(a)) {
                         unsupported("this intent(out) or intent(inout) argument is",
                             a->base.loc);
                     }
+                    hoist_lvalue_indices(a);
                     outs.push_back(a);
                 }
+                Val c = call(x.m_name, x.m_args, x.n_args, loc);
                 auto assign = [&](ASR::expr_t *a, const std::string &v) {
-                    std::string n = lower(a).src;
                     if (is_array(ASRUtils::expr_type(a))) {
-                        line(n + " := Arr.copyBack " + n + " " + v);
+                        update_lvalue(a, [&](const std::string &cur_a) {
+                            return "Arr.copyBack " + cur_a + " " + v;
+                        }, loc);
                     } else {
-                        line(n + " := " + fix_string(ASRUtils::expr_type(a), n, {v, pAtom}, loc));
+                        update_lvalue(a, [&](const std::string &cur_v) {
+                            return fix_string(ASRUtils::expr_type(a), cur_v, {v, pAtom}, loc);
+                        }, loc);
                     }
                 };
                 bool cal_io = io_procs.count(fn) > 0;
@@ -1810,6 +2156,7 @@ private:
                         assign(outs[i], "r'" + std::to_string(i + 1));
                     }
                 }
+                pre_idx.clear();
                 break;
             }
             case ASR::stmtType::If: {
@@ -2110,12 +2457,14 @@ private:
                         if (!st.m_len) unsupported("this local array is", vloc);
                         src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
                     }
-                    line("let mut " + name(v->m_name, vloc) + " : " + vtype(v->m_type, vloc)
+                    line("let mut " + name(v->m_name, vloc) + " : "
+                        + vtype(v->m_type, vloc, v->m_type_declaration)
                         + " := Arr.reshape " + src + " "
                         + int_array(lbs) + " " + int_array(exts));
                     continue;
                 }
-                line("let mut " + name(v->m_name, vloc) + " : " + type(v->m_type, vloc)
+                line("let mut " + name(v->m_name, vloc) + " : "
+                    + type(v->m_type, vloc, v->m_type_declaration)
                     + " := " + fix_string(v->m_type, "", lower(init), vloc));
                 continue;
             }
@@ -2124,20 +2473,23 @@ private:
                 bool assumed;
                 dims(v->m_type, lbs, exts, assumed, vloc);
                 if (assumed) unsupported("this local array is", vloc);
-                line("let mut " + name(v->m_name, vloc) + " : " + vtype(v->m_type, vloc)
+                line("let mut " + name(v->m_name, vloc) + " : "
+                    + vtype(v->m_type, vloc, v->m_type_declaration)
                     + " := Arr.make " + int_array(lbs) + " " + int_array(exts) + " "
-                    + atom({zero(ASR::down_cast<ASR::Array_t>(v->m_type)->m_type, vloc),
-                        pApp}));
+                    + atom({zero(ASR::down_cast<ASR::Array_t>(v->m_type)->m_type, vloc,
+                        v->m_type_declaration), pApp}));
                 continue;
             }
-            line("let mut " + name(v->m_name, vloc) + " : " + type(v->m_type, vloc)
-                + " := " + zero(v->m_type, vloc));
+            line("let mut " + name(v->m_name, vloc) + " : "
+                + type(v->m_type, vloc, v->m_type_declaration)
+                + " := " + zero(v->m_type, vloc, v->m_type_declaration));
         }
     }
 
     void check_symbols(SymbolTable *st, bool allow_functions = false) {
         for (ASR::symbol_t *s : symbols_in_order(st)) {
             if (ASR::is_a<ASR::Variable_t>(*s) || ASR::is_a<ASR::ExternalSymbol_t>(*s)
+                    || ASR::is_a<ASR::Struct_t>(*s)
                     || (allow_functions && ASR::is_a<ASR::Function_t>(*s))) {
                 continue;
             }
@@ -2186,20 +2538,27 @@ private:
                 std::vector<std::string> lbs, exts;
                 bool assumed;
                 dims(a->m_type, lbs, exts, assumed, aloc);
-                p.sig += " (" + an + " : " + vtype(a->m_type, aloc) + ")";
-                entry.push_back({aloc.first, let + an + " := " + (assumed
+                p.sig += " (" + an + " : " + vtype(a->m_type, aloc, a->m_type_declaration) + ")";
+                std::string init_arr = assumed
                     ? "Arr.rebase " + an + " " + int_array(lbs)
-                    : "Arr.reshape " + an + " " + int_array(lbs) + " " + int_array(exts))});
+                    : "Arr.reshape " + an + " " + int_array(lbs) + " " + int_array(exts);
+                ASR::ttype_t *et = ASR::down_cast<ASR::Array_t>(a->m_type)->m_type;
+                if (in == ASR::intentType::Out && ASR::is_a<ASR::StructType_t>(*et)) {
+                    init_arr = "Arr.fill (" + init_arr + ") ("
+                        + zero(et, aloc, a->m_type_declaration) + ")";
+                }
+                entry.push_back({aloc.first, let + an + " := " + init_arr});
             } else if (in == ASR::intentType::Out) {
                 if (is_assumed_len_string(a->m_type)) {
                     p.sig += " (" + an + " : String)";
                     entry.push_back({aloc.first, "let mut " + an + " := FStr.fix " + an + ".length \"\""});
                 } else {
-                    entry.push_back({aloc.first, "let mut " + an + " : " + type(a->m_type, aloc) + " := "
-                        + zero(a->m_type, aloc)});
+                    entry.push_back({aloc.first, "let mut " + an + " : "
+                        + type(a->m_type, aloc, a->m_type_declaration) + " := "
+                        + zero(a->m_type, aloc, a->m_type_declaration)});
                 }
             } else {
-                p.sig += " (" + an + " : " + type(a->m_type, aloc) + ")";
+                p.sig += " (" + an + " : " + type(a->m_type, aloc, a->m_type_declaration) + ")";
                 if (ASR::is_a<ASR::String_t>(*a->m_type) && ASR::down_cast<ASR::String_t>(a->m_type)->m_len) {
                     entry.push_back({aloc.first, let + an + " := FStr.fix "
                         + extent(ASR::down_cast<ASR::String_t>(a->m_type)->m_len) + " " + an});
@@ -2209,14 +2568,15 @@ private:
             }
             if (in != ASR::intentType::In) {
                 outs.push_back(an);
-                out_types.push_back(vtype(a->m_type, aloc));
+                out_types.push_back(vtype(a->m_type, aloc, a->m_type_declaration));
             }
         }
         std::stable_sort(entry.begin(), entry.end(),
             [](const auto &a, const auto &b) { return a.first < b.first; });
         if (result) {
             p.ret = name(result->m_name, result->base.base.loc);
-            std::string rty = vtype(result->m_type, result->base.base.loc);
+            std::string rty = vtype(result->m_type, result->base.base.loc,
+                result->m_type_declaration);
             p.sig += is_io ? " : IO (" + rty + ")" : " : " + rty;
         } else if (outs.empty()) {
             p.ret = "()";
@@ -2357,6 +2717,69 @@ private:
         }
     }
 
+    std::vector<ASR::Struct_t*> structs_in_order(const std::vector<ASR::Struct_t*> &sts) {
+        std::vector<ASR::Struct_t*> sorted;
+        std::map<ASR::Struct_t*, int> state;
+        std::function<void(ASR::Struct_t*)> visit = [&](ASR::Struct_t *st) {
+            if (state[st] == 2) return;
+            if (state[st] == 1) {
+                unsupported("a recursive derived type is", st->base.base.loc);
+            }
+            state[st] = 1;
+            for (size_t i = 0; i < st->n_members; i++) {
+                ASR::Variable_t *mv = struct_member(st, i, st->base.base.loc);
+                ASR::ttype_t *et = elem_type(mv->m_type);
+                if (ASR::is_a<ASR::StructType_t>(*et) && mv->m_type_declaration) {
+                    ASR::symbol_t *ds = ASRUtils::symbol_get_past_external(mv->m_type_declaration);
+                    if (ASR::is_a<ASR::Struct_t>(*ds)) {
+                        ASR::Struct_t *dep = ASR::down_cast<ASR::Struct_t>(ds);
+                        if (struct_ns.count(dep)) visit(dep);
+                    }
+                }
+            }
+            state[st] = 2;
+            sorted.push_back(st);
+        };
+        for (ASR::Struct_t *st : sts) visit(st);
+        return sorted;
+    }
+
+    std::string emit_struct(ASR::Struct_t *st) {
+        const Location &loc = st->base.base.loc;
+        if (st->m_is_abstract) unsupported("an abstract derived type is", loc);
+        if (st->m_parent) unsupported("derived type inheritance is", loc);
+        if (st->n_member_functions > 0) unsupported("type-bound procedures are", loc);
+        if (st->n_kind_params > 0) unsupported("parameterized derived types are", loc);
+        std::string sn = name(st->m_name, loc);
+        std::string s = "structure " + sn + " (K : Kinds) where\n";
+        std::string init_fields;
+        SymbolTable *saved_scope = scope;
+        int saved_level = level;
+        scope = st->m_symtab;
+        level = 0;
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::Variable_t *mv = struct_member(st, i, loc);
+            const Location &mloc = mv->base.base.loc;
+            std::string mn = name(mv->m_name, mloc);
+            s += "  " + mn + " : " + vtype(mv->m_type, mloc, mv->m_type_declaration) + "\n";
+            if (i) init_fields += ", ";
+            init_fields += mn + " := " + struct_member_default(mv);
+        }
+        int init_level = level;
+        scope = saved_scope;
+        level = saved_level;
+        if (init_level > 0) {
+            unsupported("a derived type default initializer using math or IO is", loc);
+        }
+        std::string init_body = init_fields.empty() ? "{}" : "{ " + init_fields + " }";
+        std::string in = struct_init_name(st, loc);
+        s += "\ndef " + in + " {K : Kinds} [FKinds K] : " + sn + " K :=\n  "
+            + init_body + "\n\n";
+        s += "instance {K : Kinds} [FKinds K] : Inhabited (" + sn + " K) := ⟨"
+            + in + " (K := K)⟩\n\n";
+        return s;
+    }
+
 public:
     void translate(ASR::TranslationUnit_t &tu) {
         std::vector<ASR::Module_t*> mods;
@@ -2371,6 +2794,8 @@ public:
                 top_fns.push_back(ASR::down_cast<ASR::Function_t>(s));
             } else if (ASR::is_a<ASR::Program_t>(*s)) {
                 prog = ASR::down_cast<ASR::Program_t>(s);
+            } else if (ASR::is_a<ASR::ExternalSymbol_t>(*s)) {
+                continue;
             } else {
                 unsupported("this top-level entity is", s->base.loc);
             }
@@ -2379,13 +2804,18 @@ public:
             unsupported("a file with no program is", tu.base.base.loc);
         }
         std::vector<ASR::Function_t*> all_fns;
+        std::vector<ASR::Struct_t*> all_structs;
         for (ASR::Module_t *m : mods) {
-            name(m->m_name, m->base.base.loc);
+            std::string mns = name(m->m_name, m->base.base.loc);
             for (ASR::symbol_t *s : symbols_in_order(m->m_symtab)) {
                 if (ASR::is_a<ASR::Function_t>(*s)) {
                     ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
                     proc_ns[fn] = m->m_name;
                     all_fns.push_back(fn);
+                } else if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+                    struct_ns[st] = mns;
+                    all_structs.push_back(st);
                 } else if (ASR::is_a<ASR::Variable_t>(*s)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                     if (v->m_storage != ASR::storage_typeType::Parameter) {
@@ -2414,8 +2844,32 @@ public:
                     ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
                     proc_ns[fn] = prog_ns;
                     all_fns.push_back(fn);
+                } else if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+                    struct_ns[st] = prog_ns;
+                    all_structs.push_back(st);
                 }
             }
+        }
+        for (ASR::Function_t *fn : all_fns) {
+            std::string raw_ns = proc_ns[fn];
+            std::string fns = raw_ns.empty() ? ""
+                : (raw_ns.find('\'') != std::string::npos ? raw_ns
+                    : name(raw_ns, fn->base.base.loc));
+            std::string lns = (fns.empty() ? "" : fns + ".")
+                + std::string(fn->m_name) + "'types";
+            for (ASR::symbol_t *s : symbols_in_order(fn->m_symtab)) {
+                if (ASR::is_a<ASR::Struct_t>(*s)) {
+                    ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+                    struct_ns[st] = lns;
+                    all_structs.push_back(st);
+                }
+            }
+        }
+        std::vector<ASR::Struct_t*> sorted_structs = structs_in_order(all_structs);
+        std::map<ASR::Struct_t*, std::string> struct_defs;
+        for (ASR::Struct_t *st : sorted_structs) {
+            struct_defs[st] = emit_struct(st);
         }
         analyze_procs(all_fns);
         for (ASR::Function_t *fn : all_fns) function(fn);
@@ -2442,6 +2896,15 @@ public:
             + std::string(executable ? "--backend=lean " : "--show-lean ") + filename
             + "`). Do not edit.\nimport LFortran.Runtime\n\nopen LFortran\n\n";
         std::string cur_ns;
+        for (ASR::Struct_t *st : sorted_structs) {
+            std::string sns = struct_ns[st];
+            if (sns != cur_ns) {
+                if (!cur_ns.empty()) out += "end " + cur_ns + "\n\n";
+                if (!sns.empty()) out += "namespace " + sns + "\n\n";
+                cur_ns = sns;
+            }
+            out += struct_defs[st];
+        }
         for (ASR::Function_t *fn : callees_first(all_fns)) {
             std::string raw_ns = proc_ns[fn];
             std::string fns = raw_ns.empty() ? ""
