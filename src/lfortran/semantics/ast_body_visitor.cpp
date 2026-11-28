@@ -5665,6 +5665,14 @@ public:
             auto visit_ast_alloc_expr = [&](AST::expr_t* ast_target) -> ASR::expr_t* {
                 if (AST::is_a<AST::CoarrayRef_t>(*ast_target)) {
                     const AST::CoarrayRef_t &coarray_ast = *AST::down_cast<AST::CoarrayRef_t>(ast_target);
+                    if (coarray_ast.n_member > 0) {
+                        diag.add(Diagnostic(
+                            "Allocating a coarray component of a derived type is not supported yet",
+                            Level::Error, Stage::Semantic, {
+                                Label("coarray component", {coarray_ast.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
                     Vec<ASR::codimension_t> codims_vec;
                     codims_vec.reserve(al, coarray_ast.n_coargs);
                     for (size_t j = 0; j < coarray_ast.n_coargs; j++) {
