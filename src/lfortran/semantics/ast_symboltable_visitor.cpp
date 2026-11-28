@@ -2760,7 +2760,9 @@ public:
                 throw SemanticAbort();
             }
         }
-        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        ASR::symbol_t* existing_sym_check = in_submodule
+            ? parent_scope->resolve_symbol(sym_name)
+            : parent_scope->get_symbol(sym_name);
         if (existing_sym_check) {
             existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
         }
@@ -3611,7 +3613,9 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
 
-        ASR::symbol_t* existing_sym_check = parent_scope->resolve_symbol(sym_name);
+        ASR::symbol_t* existing_sym_check = in_submodule
+            ? parent_scope->resolve_symbol(sym_name)
+            : parent_scope->get_symbol(sym_name);
         if (existing_sym_check) {
             existing_sym_check = ASRUtils::symbol_get_past_external(existing_sym_check);
         }
