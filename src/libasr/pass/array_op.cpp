@@ -1787,6 +1787,22 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::arraystorageType::ColMajor, nullptr));
     }
 
+    // The address of the array the loop indexes: `s` in `s%val` with `s` an array.
+    ASR::expr_t** indexed_array_address(ASR::expr_t** expr_address) {
+        ASR::expr_t* expr = *expr_address;
+        if( !ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
+            !(ASR::is_a<ASR::ArrayItem_t>(*expr) &&
+              ASRUtils::struct_base_lending_shape(
+                ASR::down_cast<ASR::ArrayItem_t>(expr)) != nullptr) ) {
+            return expr_address;
+        }
+        Vec<ASR::expr_t**> arrays; arrays.reserve(al, 1);
+        ArrayVarAddressCollector collector(al, arrays);
+        collector.current_expr = expr_address;
+        collector.call_replacer();
+        return arrays.size() == 1 ? arrays[0] : expr_address;
+    }
+
     inline void create_array_item_array_indexed_expr(
             ASR::expr_t* expr, ASR::expr_t** expr_address,
             bool is_expr_array, int var2indices_key,
@@ -1842,6 +1858,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     void generate_loop_for_array_indexed_with_array_indices(const T& x,
         ASR::expr_t** target_address, ASR::expr_t** value_address,
         const Location& loc) {
+        ASR::expr_t** whole_target_address = target_address;
+        target_address = indexed_array_address(target_address);
         ASR::expr_t* target = *target_address;
         ASR::expr_t* value = *value_address;
         size_t var_rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
@@ -1916,6 +1934,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         create_array_item_array_indexed_expr(
             value, value_address, is_value_array, 1,
             var_rank, loc, var2indices, j);
+        if( target_address != whole_target_address ) {
+            // The components selected from the indexed element are scalars
+            FixTypeVisitor fix_types(al);
+            fix_types.current_scope = current_scope;
+            fix_types.visit_expr(**whole_target_address);
+        }
 
         size_t vars_expr_size = vars_expr.size();
         for( size_t i = offset_for_array_indices; i < vars_expr_size; i++ ) {
