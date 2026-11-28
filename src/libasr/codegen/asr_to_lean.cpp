@@ -2166,6 +2166,54 @@ private:
             }
             return app("Arr.unpack", {lower(x.m_args[0]), lower(x.m_args[1]), {fld_src, pAtom}});
         }
+        if ((id == F::Cshift && (x.n_args == 2 || x.n_args == 3))
+                || (id == F::Eoshift && (x.n_args == 3 || x.n_args == 4))) {
+            if (is_array(ASRUtils::expr_type(x.m_args[0]))) {
+                ASR::expr_t *sh = unwrap_physical_cast(x.m_args[1]);
+                bool sh_bcast = ASR::is_a<ASR::ArrayBroadcast_t>(*sh);
+                bool sh_scalar = sh_bcast || !is_array(ASRUtils::expr_type(sh));
+                std::string sh_src;
+                if (sh_scalar) {
+                    ASR::expr_t *ss = sh_bcast ? ASR::down_cast<ASR::ArrayBroadcast_t>(sh)->m_array : sh;
+                    if (is_array(ASRUtils::expr_type(ss))) unsupported("this shift is", loc);
+                    sh_src = "(Sum.inl " + atom(int_expr(ss)) + ")";
+                } else {
+                    sh_src = "(Sum.inr (Arr.map FInt.toInt " + atom(lower(sh)) + "))";
+                }
+                if (id == F::Cshift) {
+                    Val dim_v = (x.n_args == 3 && x.m_args[2]) ? int_expr(x.m_args[2]) : Val{"1", pAtom};
+                    return app("Arr.cshift", {lower(x.m_args[0]), {sh_src, pAtom}, dim_v});
+                }
+                ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+                if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                    unsupported("this eoshift is", loc);
+                }
+                std::string bnd_src;
+                if (!x.m_args[2]) {
+                    bnd_src = "(Sum.inl " + atom({zero(et, loc, expr_type_decl(x.m_args[0])), pApp}) + ")";
+                } else {
+                    ASR::expr_t *bn = unwrap_physical_cast(x.m_args[2]);
+                    bool bn_bcast = ASR::is_a<ASR::ArrayBroadcast_t>(*bn);
+                    bool bn_scalar = bn_bcast || !is_array(ASRUtils::expr_type(bn));
+                    if (bn_scalar) {
+                        ASR::expr_t *bs = bn_bcast ? ASR::down_cast<ASR::ArrayBroadcast_t>(bn)->m_array : bn;
+                        if (is_array(ASRUtils::expr_type(bs))) unsupported("this eoshift is", loc);
+                        std::string bval = fix_string(et, "", operand(bs), loc);
+                        bnd_src = "(Sum.inl " + atom({bval, pApp}) + ")";
+                    } else {
+                        std::string bval = atom(lower(bn));
+                        if (ASR::is_a<ASR::String_t>(*et)) {
+                            bval = "(Arr.map (FStr.fix "
+                                + extent(ASR::down_cast<ASR::String_t>(et)->m_len)
+                                + ") " + bval + ")";
+                        }
+                        bnd_src = "(Sum.inr " + bval + ")";
+                    }
+                }
+                Val dim_v = (x.n_args == 4 && x.m_args[3]) ? int_expr(x.m_args[3]) : Val{"1", pAtom};
+                return app("Arr.eoshift", {lower(x.m_args[0]), {sh_src, pAtom}, {bnd_src, pAtom}, dim_v});
+            }
+        }
         if (id == F::Spread && x.n_args == 3) {
             if (x.m_overload_id == -1 || !is_array(ASRUtils::expr_type(x.m_args[0]))) {
                 std::string nc = extent(x.m_args[2]);
@@ -2291,24 +2339,29 @@ private:
             + atom(lower(arr)) + " " + atom(lower(mask)) + ")", pAtom};
     }
 
-    Val array_section(const ASR::ArraySection_t &x) {
-        std::string a = atom(lower(x.m_v));
+    Val array_section_args(ASR::expr_t *v, ASR::array_index_t *args, size_t n_args) {
         std::vector<std::string> specs;
-        for (size_t i = 0; i < x.n_args; i++) {
-            const ASR::array_index_t &idx = x.m_args[i];
-            std::string dim = std::to_string(i + 1);
+        for (size_t i = 0; i < n_args; i++) {
+            const ASR::array_index_t &idx = args[i];
             if (!idx.m_left && !idx.m_step && idx.m_right) {
-                specs.push_back("Sum.inl " + atom(int_expr(idx.m_right)));
+                if (is_array(ASRUtils::expr_type(idx.m_right))) {
+                    specs.push_back("Arr.DimSpec.vec (" + atom(lower(idx.m_right))
+                        + ".data.map FInt.toInt)");
+                } else {
+                    specs.push_back("Arr.DimSpec.idx " + atom(int_expr(idx.m_right)));
+                }
             } else {
-                std::string lo = idx.m_left ? int_expr(idx.m_left).src
-                    : "Arr.lbound " + a + " " + dim;
-                std::string hi = idx.m_right ? int_expr(idx.m_right).src
-                    : "Arr.ubound " + a + " " + dim;
-                std::string st = idx.m_step ? int_expr(idx.m_step).src : "1";
-                specs.push_back("Sum.inr (" + lo + ", " + hi + ", " + st + ")");
+                std::string lo = idx.m_left ? "(some " + atom(int_expr(idx.m_left)) + ")" : "none";
+                std::string hi = idx.m_right ? "(some " + atom(int_expr(idx.m_right)) + ")" : "none";
+                std::string st = idx.m_step ? atom(int_expr(idx.m_step)) : "1";
+                specs.push_back("Arr.DimSpec.slice " + lo + " " + hi + " " + st);
             }
         }
-        return app("Arr.slice", {{a, pAtom}, {int_array(specs), pAtom}});
+        return app("Arr.slice", {lower(v), {int_array(specs), pAtom}});
+    }
+
+    Val array_section(const ASR::ArraySection_t &x) {
+        return array_section_args(x.m_v, x.m_args, x.n_args);
     }
 
     Val lower(ASR::expr_t *e) {
@@ -2373,6 +2426,9 @@ private:
                 return intrinsic_array(*ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e), loc);
             case ASR::exprType::ArrayItem: {
                 auto &x = *ASR::down_cast<ASR::ArrayItem_t>(e);
+                if (is_array(x.m_type)) {
+                    return array_section_args(x.m_v, x.m_args, x.n_args);
+                }
                 return app("Arr.get", {lower(x.m_v), {index(x), pAtom}});
             }
             case ASR::exprType::ArraySize: {
@@ -2384,9 +2440,16 @@ private:
             }
             case ASR::exprType::ArrayBound: {
                 auto &x = *ASR::down_cast<ASR::ArrayBound_t>(e);
-                if (!x.m_dim) unsupported("this array bound is", loc);
                 std::string f = x.m_bound == ASR::arrayboundType::LBound
                     ? "Arr.lbound " : "Arr.ubound ";
+                if (!x.m_dim) {
+                    if (!is_array(x.m_type)) unsupported("this array bound is", loc);
+                    std::string rty = type(elem_type(x.m_type), loc);
+                    return {"((fun (a' : Arr _) => Arr.mk #[1] #[a'.exts.size] "
+                        "((Array.range a'.exts.size).map (fun k' => "
+                        "(FInt.ofInt (" + f + "a' (Int.ofNat (k' + 1))) : " + rty + ")))) "
+                        + atom(lower(x.m_v)) + ")", pAtom};
+                }
                 return {"(FInt.ofInt (" + f + atom(lower(x.m_v)) + " "
                     + atom(int_expr(x.m_dim)) + ") : " + type(x.m_type, loc) + ")", pAtom};
             }
@@ -3386,7 +3449,8 @@ private:
                     stmt(x.m_overloaded);
                     break;
                 }
-                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)
+                        && !is_array(ASRUtils::expr_type(x.m_target))) {
                     auto &t = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                     ASR::expr_t *base = t.m_v;
                     while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base)) {
@@ -3401,23 +3465,42 @@ private:
                         break;
                     }
                 }
-                if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
-                    auto &sec = *ASR::down_cast<ASR::ArraySection_t>(x.m_target);
-                    if (!is_lvalue(sec.m_v)) unsupported("this assignment is", loc);
-                    // Hoist all explicit section bounds/steps before the update so
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)
+                        || (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)
+                            && is_array(ASRUtils::expr_type(x.m_target)))) {
+                    ASR::expr_t *sec_v = nullptr;
+                    ASR::array_index_t *sec_args = nullptr;
+                    size_t sec_n_args = 0;
+                    if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+                        auto &sec = *ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+                        sec_v = sec.m_v; sec_args = sec.m_args; sec_n_args = sec.n_args;
+                    } else {
+                        auto &sec = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                        sec_v = sec.m_v; sec_args = sec.m_args; sec_n_args = sec.n_args;
+                    }
+                    if (!is_lvalue(sec_v)) unsupported("this assignment is", loc);
+                    // Hoist all explicit section bounds/steps/vectors before the update so
                     // side effects execute once and no `←` enters `update_lvalue`.
                     struct SpecH {
-                        bool is_idx = false;
+                        int kind = 0; // 0 = slice, 1 = idx, 2 = vec
                         std::string idx, lo, hi, st;
                     };
-                    std::vector<SpecH> specs(sec.n_args);
-                    for (size_t i = 0; i < sec.n_args; i++) {
-                        const ASR::array_index_t &idx = sec.m_args[i];
+                    std::vector<SpecH> specs(sec_n_args);
+                    for (size_t i = 0; i < sec_n_args; i++) {
+                        const ASR::array_index_t &idx = sec_args[i];
                         if (!idx.m_left && !idx.m_step && idx.m_right) {
-                            specs[i].is_idx = true;
-                            std::string iv = "si'" + std::to_string(++loop_id);
-                            line("let " + iv + " : Int := " + int_expr(idx.m_right).src);
-                            specs[i].idx = iv;
+                            if (is_array(ASRUtils::expr_type(idx.m_right))) {
+                                specs[i].kind = 2;
+                                std::string vv = "sv'" + std::to_string(++loop_id);
+                                line("let " + vv + " : Array Int := (" + atom(lower(idx.m_right))
+                                    + ".data.map FInt.toInt)");
+                                specs[i].idx = vv;
+                            } else {
+                                specs[i].kind = 1;
+                                std::string iv = "si'" + std::to_string(++loop_id);
+                                line("let " + iv + " : Int := " + int_expr(idx.m_right).src);
+                                specs[i].idx = iv;
+                            }
                         } else {
                             if (idx.m_left) {
                                 std::string lv = "sl'" + std::to_string(++loop_id);
@@ -3438,24 +3521,21 @@ private:
                             }
                         }
                     }
-                    auto build_specs = [&](const std::string &cur_a) {
-                        std::vector<std::string> parts;
-                        for (size_t i = 0; i < specs.size(); i++) {
-                            if (specs[i].is_idx) {
-                                parts.push_back("Sum.inl " + specs[i].idx);
-                            } else {
-                                std::string dim = std::to_string(i + 1);
-                                std::string lo = specs[i].lo.empty()
-                                    ? "Arr.lbound " + cur_a + " " + dim : specs[i].lo;
-                                std::string hi = specs[i].hi.empty()
-                                    ? "Arr.ubound " + cur_a + " " + dim : specs[i].hi;
-                                parts.push_back("Sum.inr (" + lo + ", " + hi + ", " + specs[i].st + ")");
-                            }
+                    std::vector<std::string> spec_parts;
+                    for (size_t i = 0; i < specs.size(); i++) {
+                        if (specs[i].kind == 1) {
+                            spec_parts.push_back("Arr.DimSpec.idx " + specs[i].idx);
+                        } else if (specs[i].kind == 2) {
+                            spec_parts.push_back("Arr.DimSpec.vec " + specs[i].idx);
+                        } else {
+                            std::string lo = specs[i].lo.empty() ? "none" : "(some " + specs[i].lo + ")";
+                            std::string hi = specs[i].hi.empty() ? "none" : "(some " + specs[i].hi + ")";
+                            spec_parts.push_back("Arr.DimSpec.slice " + lo + " " + hi + " " + specs[i].st);
                         }
-                        return int_array(parts);
-                    };
+                    }
+                    std::string specs_src = int_array(spec_parts);
                     ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_target));
-                    ASR::expr_t *v = x.m_value;
+                    ASR::expr_t *v = unwrap_physical_cast(x.m_value);
                     if (ASR::is_a<ASR::ArrayBroadcast_t>(*v)) {
                         v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
                     }
@@ -3470,8 +3550,8 @@ private:
                         }
                         std::string rv = "rhs'" + std::to_string(++loop_id);
                         line("let " + rv + " := " + src);
-                        update_lvalue(sec.m_v, [&](const std::string &cur_a) {
-                            return "Arr.setSlice " + cur_a + " " + build_specs(cur_a) + " " + rv;
+                        update_lvalue(sec_v, [&](const std::string &cur_a) {
+                            return "Arr.setSlice " + cur_a + " " + specs_src + " " + rv;
                         }, loc);
                     } else {
                         if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len) {
@@ -3480,8 +3560,8 @@ private:
                         std::string rhs = fix_string(et, "", lower(v), loc);
                         std::string rv = "rhs'" + std::to_string(++loop_id);
                         line("let " + rv + " := " + rhs);
-                        update_lvalue(sec.m_v, [&](const std::string &cur_a) {
-                            return "Arr.fillSlice " + cur_a + " " + build_specs(cur_a) + " " + rv;
+                        update_lvalue(sec_v, [&](const std::string &cur_a) {
+                            return "Arr.fillSlice " + cur_a + " " + specs_src + " " + rv;
                         }, loc);
                     }
                     break;

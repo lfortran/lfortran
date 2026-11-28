@@ -85,9 +85,14 @@ def ubound {α : Type} (a : Arr α) (dim : Int) : Int :=
   let i := dim.toNat - 1
   if a.exts[i]! == 0 then 0 else a.lbs[i]! + Int.ofNat (a.exts[i]!) - 1
 
-private def sliceLayout {α : Type} (a : Arr α)
-    (specs : Array (Int ⊕ (Int × Int × Int)))
-    : Array Nat × Int × Array Int × Nat := Id.run do
+/-- Dimension selector for `slice`, `setSlice`, and `fillSlice`. -/
+inductive DimSpec where
+  | idx (i : Int)
+  | slice (lo hi : Option Int) (step : Int)
+  | vec (vs : Array Int)
+
+private def sliceLayout {α : Type} (a : Arr α) (specs : Array DimSpec)
+    : Array Nat × Int × Array (Array Int) × Nat := Id.run do
   let mut newExts : Array Nat := #[]
   let mut strides : Array Nat := #[]
   let mut stride : Nat := 1
@@ -95,29 +100,33 @@ private def sliceLayout {α : Type} (a : Arr α)
     strides := strides.push stride
     stride := stride * a.exts[d]!
   let mut baseOff : Int := 0
-  let mut sliceStrides : Array Int := #[]
+  let mut dimOffs : Array (Array Int) := #[]
   for d in [:specs.size] do
     let lb := a.lbs[d]!
     let st : Int := Int.ofNat strides[d]!
-    match specs.getD d (Sum.inl 0) with
-    | Sum.inl idx =>
+    match specs.getD d (DimSpec.idx 0) with
+    | DimSpec.idx idx =>
       baseOff := baseOff + (idx - lb) * st
-    | Sum.inr (lo, hi, step) =>
+    | DimSpec.slice loOpt hiOpt step =>
+      let lo := loOpt.getD (lbound a (Int.ofNat (d + 1)))
+      let hi := hiOpt.getD (ubound a (Int.ofNat (d + 1)))
       let count : Nat := if step == 0 then 0 else ((hi - lo + step).tdiv step).toNat
       newExts := newExts.push count
-      baseOff := baseOff + (lo - lb) * st
-      sliceStrides := sliceStrides.push (step * st)
+      let mut offs : Array Int := Array.mkEmpty count
+      for j in [:count] do
+        offs := offs.push ((lo + Int.ofNat j * step - lb) * st)
+      dimOffs := dimOffs.push offs
+    | DimSpec.vec vs =>
+      newExts := newExts.push vs.size
+      dimOffs := dimOffs.push (vs.map fun i => (i - lb) * st)
   let mut total : Nat := 1
   for e in newExts do total := total * e
-  return (newExts, baseOff, sliceStrides, total)
+  return (newExts, baseOff, dimOffs, total)
 
-/-- Slice an array along each dimension.
-`specs[d]` is `Sum.inl idx` for a fixed scalar index (rank-reducing) or
-`Sum.inr (start, stop, step)` for a triplet slice `start:stop:step`.
-Resulting dimensions have lower bound 1, as in Fortran. -/
-def slice {α : Type} [Inhabited α] (a : Arr α)
-    (specs : Array (Int ⊕ (Int × Int × Int))) : Arr α := Id.run do
-  let (newExts, baseOff, sliceStrides, total) := sliceLayout a specs
+/-- Slice an array along each dimension using scalar indices, triplet slices,
+and/or vector subscripts. Resulting dimensions have lower bound 1, as in Fortran. -/
+def slice {α : Type} [Inhabited α] (a : Arr α) (specs : Array DimSpec) : Arr α := Id.run do
+  let (newExts, baseOff, dimOffs, total) := sliceLayout a specs
   let mut out : Array α := Array.mkEmpty total
   for flat in [:total] do
     let mut rem := flat
@@ -126,14 +135,14 @@ def slice {α : Type} [Inhabited α] (a : Arr α)
       let e := newExts[k]!
       let idx := rem % e
       rem := rem / e
-      off := off + Int.ofNat idx * sliceStrides[k]!
+      off := off + dimOffs[k]![idx]!
     out := out.push a.data[off.toNat]!
   return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
 
-/-- Assign an array into a slice of `a`, keeping `a`'s shape and bounds. -/
-def setSlice {α : Type} [Inhabited α] (a : Arr α)
-    (specs : Array (Int ⊕ (Int × Int × Int))) (src : Arr α) : Arr α := Id.run do
-  let (newExts, baseOff, sliceStrides, total) := sliceLayout a specs
+/-- Assign an array into a slice/vector-subscript of `a`, keeping `a`'s shape and bounds. -/
+def setSlice {α : Type} [Inhabited α] (a : Arr α) (specs : Array DimSpec)
+    (src : Arr α) : Arr α := Id.run do
+  let (newExts, baseOff, dimOffs, total) := sliceLayout a specs
   let mut data := a.data
   for flat in [:total] do
     let mut rem := flat
@@ -142,14 +151,13 @@ def setSlice {α : Type} [Inhabited α] (a : Arr α)
       let e := newExts[k]!
       let idx := rem % e
       rem := rem / e
-      off := off + Int.ofNat idx * sliceStrides[k]!
+      off := off + dimOffs[k]![idx]!
     data := data.set! off.toNat src.data[flat]!
   return { a with data := data }
 
-/-- Fill a slice of `a` with a scalar value, keeping `a`'s shape and bounds. -/
-def fillSlice {α : Type} (a : Arr α)
-    (specs : Array (Int ⊕ (Int × Int × Int))) (v : α) : Arr α := Id.run do
-  let (newExts, baseOff, sliceStrides, total) := sliceLayout a specs
+/-- Fill a slice/vector-subscript of `a` with a scalar value, keeping `a`'s shape and bounds. -/
+def fillSlice {α : Type} (a : Arr α) (specs : Array DimSpec) (v : α) : Arr α := Id.run do
+  let (newExts, baseOff, dimOffs, total) := sliceLayout a specs
   let mut data := a.data
   for flat in [:total] do
     let mut rem := flat
@@ -158,7 +166,7 @@ def fillSlice {α : Type} (a : Arr α)
       let e := newExts[k]!
       let idx := rem % e
       rem := rem / e
-      off := off + Int.ofNat idx * sliceStrides[k]!
+      off := off + dimOffs[k]![idx]!
     data := data.set! off.toNat v
   return { a with data := data }
 
@@ -420,6 +428,73 @@ def reshapeFull {α : Type} [Inhabited α] (a : Arr α) (newExts : Array Nat)
         dstOff := dstOff + c * dstStrides.getD d 1
       out := out.set! dstOff flat[idx]!
     return { lbs := Array.replicate rank 1, exts := newExts, data := out }
+
+/-- Fortran `cshift(array, shift, dim)`: circular shift along 1-based dimension `dim`. -/
+def cshift {α : Type} [Inhabited α] (a : Arr α) (shift : Sum Int (Arr Int))
+    (dim : Int := 1) : Arr α := Id.run do
+  let d := (dim - 1).toNat
+  let dExt := a.exts.getD d 0
+  if a.data.size == 0 || dExt == 0 then
+    return { lbs := Array.replicate a.exts.size 1, exts := a.exts, data := a.data }
+  let mut totalSlices : Nat := 1
+  for k in [:a.exts.size] do
+    if k != d then totalSlices := totalSlices * a.exts[k]!
+  let mut out : Array α := Array.replicate a.data.size default
+  for flat in [:totalSlices] do
+    let mut rem := flat
+    let mut baseOff : Nat := 0
+    let mut stride : Nat := 1
+    let mut dStride : Nat := 1
+    for k in [:a.exts.size] do
+      let e := a.exts[k]!
+      if k == d then
+        dStride := stride
+      else
+        let idx := rem % e
+        rem := rem / e
+        baseOff := baseOff + idx * stride
+      stride := stride * e
+    let sh := match shift with | Sum.inl s => s | Sum.inr sa => sa.data[flat]!
+    for j in [:dExt] do
+      let srcJ := ((Int.ofNat j + sh) % Int.ofNat dExt).toNat
+      out := out.set! (baseOff + j * dStride) a.data[baseOff + srcJ * dStride]!
+  return { lbs := Array.replicate a.exts.size 1, exts := a.exts, data := out }
+
+/-- Fortran `eoshift(array, shift, boundary, dim)`: end-off shift along 1-based dimension `dim`. -/
+def eoshift {α : Type} [Inhabited α] (a : Arr α) (shift : Sum Int (Arr Int))
+    (boundary : Sum α (Arr α)) (dim : Int := 1) : Arr α := Id.run do
+  let d := (dim - 1).toNat
+  let dExt := a.exts.getD d 0
+  if a.data.size == 0 || dExt == 0 then
+    return { lbs := Array.replicate a.exts.size 1, exts := a.exts, data := a.data }
+  let mut totalSlices : Nat := 1
+  for k in [:a.exts.size] do
+    if k != d then totalSlices := totalSlices * a.exts[k]!
+  let mut out : Array α := Array.replicate a.data.size default
+  for flat in [:totalSlices] do
+    let mut rem := flat
+    let mut baseOff : Nat := 0
+    let mut stride : Nat := 1
+    let mut dStride : Nat := 1
+    for k in [:a.exts.size] do
+      let e := a.exts[k]!
+      if k == d then
+        dStride := stride
+      else
+        let idx := rem % e
+        rem := rem / e
+        baseOff := baseOff + idx * stride
+      stride := stride * e
+    let sh := match shift with | Sum.inl s => s | Sum.inr sa => sa.data[flat]!
+    let bnd := match boundary with | Sum.inl b => b | Sum.inr ba => ba.data[flat]!
+    for j in [:dExt] do
+      let srcJ := Int.ofNat j + sh
+      let val := if 0 ≤ srcJ && srcJ < Int.ofNat dExt then
+        a.data[baseOff + srcJ.toNat * dStride]!
+      else
+        bnd
+      out := out.set! (baseOff + j * dStride) val
+  return { lbs := Array.replicate a.exts.size 1, exts := a.exts, data := out }
 
 end Arr
 
