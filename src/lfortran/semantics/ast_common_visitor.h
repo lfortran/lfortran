@@ -9900,6 +9900,14 @@ public:
                                         if (ASR::is_a<ASR::Variable_t>(*sym_past_external)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                                                 sym_past_external);
+                                            if (v->m_storage == ASR::storage_typeType::Parameter) {
+                                                diag.add(Diagnostic(
+                                                    "`parameter` attribute conflicts with `optional` attribute",
+                                                    Level::Error, Stage::Semantic, {
+                                                        Label("", {attr_loc})
+                                                    }));
+                                                throw SemanticAbort();
+                                            }
                                             v->m_presence = ASR::presenceType::Optional;
                                         } else if (ASR::is_a<ASR::Function_t>(*sym_past_external)) {
                                             make_optional_procedure_dummy(sym,
@@ -11731,6 +11739,15 @@ public:
                                 Label("",{x.base.base.loc})
                             }
                         )));
+                        throw SemanticAbort();
+                    }
+                    if (s_presence == ASR::presenceType::Optional &&
+                            storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add(Diagnostic(
+                            "`parameter` attribute conflicts with `optional` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }));
                         throw SemanticAbort();
                     }
 
