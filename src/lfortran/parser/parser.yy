@@ -1557,7 +1557,11 @@ data_stmt_value_list
 
 slash_init_list
     : slash_init_list "," data_stmt_constant { $$ = $1; LIST_ADD($$, $3); }
+    | slash_init_list "," data_stmt_repeat "*" data_stmt_constant {
+            $$ = $1; REPEAT_LIST_ADD($$, $3, $5); }
     | data_stmt_constant { LIST_NEW($$); LIST_ADD($$, $1); }
+    | data_stmt_repeat "*" data_stmt_constant {
+            LIST_NEW($$); REPEAT_LIST_ADD($$, $1, $3); }
     ;
 
 data_stmt_repeat

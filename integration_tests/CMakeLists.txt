@@ -675,6 +675,8 @@ RUN(NAME data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME data_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME data_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
+RUN(NAME data_slash_repeat_01 LABELS gfortran llvm)
+RUN(NAME data_slash_repeat_01 LABELS gfortran llvm)
 RUN(NAME data_05 LABELS gfortran) # llvmImplicit removed
 RUN(NAME data_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME data_07 LABELS gfortran) # TODO: Fix this test
