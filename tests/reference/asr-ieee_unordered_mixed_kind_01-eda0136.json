@@ -1,0 +1,13 @@
+{
+    "basename": "asr-ieee_unordered_mixed_kind_01-eda0136",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/ieee_unordered_mixed_kind_01.f90",
+    "infile_hash": "03b4ab8dd3770f1fab1c0bc704fea241677eab56f5bbf86fed5268c0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-ieee_unordered_mixed_kind_01-eda0136.stdout",
+    "stdout_hash": "2b0dc47c9fb336f374913f898dbcbde4438992149ad0e2b118490c68",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
