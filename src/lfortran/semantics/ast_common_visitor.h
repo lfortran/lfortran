@@ -13747,8 +13747,22 @@ public:
                     } else if (simple_attr->m_attr == AST::simple_attributeType::AttrDeferred) {
                         is_deferred = true;
                     } else if (simple_attr->m_attr == AST::simple_attributeType::AttrPublic) {
+                        if (!in_module || in_Subroutine) {
+                            diag.add(diag::Diagnostic(
+                                "`public` attribute on a derived type is only allowed in specification part of a module",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {simple_attr->base.base.loc})}));
+                            throw SemanticAbort();
+                        }
                         assgnd_access[dt_name] = ASR::accessType::Public;
                     } else if (simple_attr->m_attr == AST::simple_attributeType::AttrPrivate) {
+                        if (!in_module || in_Subroutine) {
+                            diag.add(diag::Diagnostic(
+                                "`private` attribute on a derived type is only allowed in specification part of a module",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {simple_attr->base.base.loc})}));
+                            throw SemanticAbort();
+                        }
                         assgnd_access[dt_name] = ASR::accessType::Private;
                     }
                     break;
