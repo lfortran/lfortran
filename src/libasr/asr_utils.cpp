@@ -3318,7 +3318,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     const Location& value_loc, SymbolTable* curr_scope, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
     const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr,
-    ASR::symbol_t* specific=nullptr) {
+    ASR::symbol_t* specific=nullptr, bool add_dependencies=true) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     if( subrout->n_args == 2 ) {
@@ -3397,21 +3397,23 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 // a template) is referenced through its host symbol.
                 a_name = resolved;
             }
-            if( a_name == nullptr ) {
-                a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                            al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
-                            ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                            nullptr, 0, subrout->m_name, ASR::accessType::Public));
-                curr_scope->add_symbol(matched_subrout_name, a_name);
+            if (add_dependencies) {
+                if( a_name == nullptr ) {
+                    a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
+                                ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                nullptr, 0, subrout->m_name, ASR::accessType::Public));
+                    curr_scope->add_symbol(matched_subrout_name, a_name);
+                }
+                if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+                    ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
+                }
+                ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+                ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
+                ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
+                asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
+                                                a_args.p, 2, nullptr, nullptr, false);
             }
-            if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
-                ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
-            }
-            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-            ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
-            ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
-            asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
-                                            a_args.p, 2, nullptr, nullptr, false);
         }
     }
 }
@@ -3772,12 +3774,13 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
                     ASR::symbol_t* proc_func = ASRUtils::symbol_get_past_external(class_proc->m_proc);
+                    bool is_class_dt = expr_dt && ASRUtils::is_class_type(
+                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr_dt)));
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                        expr_dt, err, class_proc->m_self_argument);
-                    if (found && expr_dt && ASRUtils::is_class_type(
-                            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr_dt)))) {
+                        expr_dt, err, class_proc->m_self_argument, nullptr, !is_class_dt);
+                    if (found && is_class_dt) {
                         // For polymorphic (class) types, create a type-bound call
                         // referencing the StructMethodDeclaration with m_dt set,
                         // so codegen can use vtable dispatch.

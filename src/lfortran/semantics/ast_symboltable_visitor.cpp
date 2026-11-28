@@ -1402,6 +1402,7 @@ public:
         report_unresolved_proc_placeholders();
         try {
             add_class_procedures();
+            add_generic_class_procedures();
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }
@@ -1431,6 +1432,7 @@ public:
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         ClassProcedureScope class_procedure_scope(*this);
+        GenericClassProcedureScope generic_class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
         // Isolate this program's externals from a previous program unit.
@@ -2340,6 +2342,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
+        GenericClassProcedureScope generic_class_procedure_scope(*this);
         // The braces of a templated subprogram hold its deferred arguments;
         // an ordinary subprogram has none, and must not inherit the list of a
         // host template (C1613).
@@ -2875,6 +2878,7 @@ public:
         entry_function_args.clear();
         try {
             add_class_procedures();
+            add_generic_class_procedures();
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }
@@ -3018,6 +3022,7 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
+        GenericClassProcedureScope generic_class_procedure_scope(*this);
         // The braces of a templated subprogram hold its deferred arguments;
         // an ordinary subprogram has none, and must not inherit the list of a
         // host template (C1613).
@@ -3824,6 +3829,7 @@ public:
         }
         try {
             add_class_procedures();
+            add_generic_class_procedures();
         } catch (SemanticAbort &e) {
             if ( !compiler_options.continue_compilation ) throw e;
         }
