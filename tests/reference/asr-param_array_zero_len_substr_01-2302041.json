@@ -1,0 +1,13 @@
+{
+    "basename": "asr-param_array_zero_len_substr_01-2302041",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/param_array_zero_len_substr_01.f90",
+    "infile_hash": "49a7c85f8d0388e394f161ab3e339703c5dbf42cb72e4869cb178213",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-param_array_zero_len_substr_01-2302041.stdout",
+    "stdout_hash": "79463ee3b00f92edb372833ae76d1998376663ee460df1e7c45205ed",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
