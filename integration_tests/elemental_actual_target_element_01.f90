@@ -7,6 +7,7 @@ end type
 
 type :: box_t
     real :: arr(4) = 0.0
+    real, allocatable :: opt
 end type
 
 type :: scaler_t
@@ -32,6 +33,13 @@ elemental real function target_blend(p, q)
 real, intent(in) :: p
 real, intent(in), target :: q
 target_blend = p * q
+end function
+
+elemental real function optional_blend(p, q)
+real, intent(in) :: p
+real, intent(in), optional :: q
+optional_blend = -p
+if (present(q)) optional_blend = p * q
 end function
 
 elemental type(point_t) function point_blend(p, q)
@@ -98,6 +106,13 @@ if (any(w /= 6.0)) error stop
 w = [3.0, 1.0, 1.0, 1.0]
 w = target_blend(f, w(1))
 if (any(w /= 6.0)) error stop
+
+! An OPTIONAL dummy does not take a copy: an unallocated actual is absent
+w = [3.0, 1.0, 1.0, 1.0]
+w = optional_blend(f, w(1))
+if (any(w /= 6.0)) error stop
+s%arr = optional_blend(f, s%opt)
+if (any(s%arr /= -2.0)) error stop
 
 ! Derived type arguments and result
 a%x = [3.0, 1.0, 1.0, 1.0]
