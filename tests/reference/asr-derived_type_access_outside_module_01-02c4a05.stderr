@@ -1,0 +1,5 @@
+semantic error: `private` attribute on a derived type is only allowed in specification part of a module
+ --> tests/errors/derived_type_access_outside_module_01.f90:3:9
+  |
+3 |   type, private :: t1
+  |         ^^^^^^^ 

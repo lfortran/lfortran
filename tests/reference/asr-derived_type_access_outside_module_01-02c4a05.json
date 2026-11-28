@@ -1,0 +1,13 @@
+{
+    "basename": "asr-derived_type_access_outside_module_01-02c4a05",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/derived_type_access_outside_module_01.f90",
+    "infile_hash": "2733f9a143c94f1ba28dad032a92c34cea5b52c67bde17efb8bbda1f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-derived_type_access_outside_module_01-02c4a05.stderr",
+    "stderr_hash": "fc8d445cd2daddef7da3b5f028d4d8f7e617b452c9b06ae445c4d070",
+    "returncode": 2
+}
