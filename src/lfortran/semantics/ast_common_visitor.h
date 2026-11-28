@@ -24373,7 +24373,7 @@ public:
         ASR::ttype_t *type = nullptr;
         if (args.size() > 0) {
             arg = args[0].m_value;
-            type = ASRUtils::expr_type(arg);
+            type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arg));
         }
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
         if (!arg) {
@@ -24434,7 +24434,7 @@ public:
         ASR::ttype_t *type = nullptr;
         if (args.size() > 0) {
             arg = args[0].m_value;
-            type = ASRUtils::expr_type(arg);
+            type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arg));
         }
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8));
         if (!arg) {
