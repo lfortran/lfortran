@@ -39,6 +39,15 @@ contains
         end do
     end function
 
+    integer function total_in(s)
+        type(slot), intent(in) :: s(:)
+        integer :: i
+        total_in = 0
+        do i = 1, size(s)
+            total_in = total_in + s(i)%id
+        end do
+    end function
+
     subroutine mark2(s)
         type(slot) :: s(:, :)
         if (size(s, 1) /= 2) error stop 8
@@ -77,6 +86,7 @@ program class_184
     class(slot), allocatable :: rack(:)
     class(slot), allocatable :: grid(:, :)
     class(slot), pointer :: shelf(:)
+    type(slot), target :: bins(3)
     integer :: i, j
 
     allocate(rack(5))
@@ -128,7 +138,15 @@ program class_184
     call mark_target(shelf)
     if (any(shelf%id /= [10, 20, -30, 40, 50])) error stop 23
     if (total(shelf) /= 90) error stop 24
+    if (total_in(shelf) /= 90) error stop 30
     deallocate(shelf)
+
+    bins%id = [3, 4, 5]
+    shelf => bins
+    if (total(shelf) /= 12) error stop 31
+    if (total_in(shelf) /= 12) error stop 32
+    call check_ids(shelf, [3, 4, 5])
+    if (any(bins%id /= [-3, 4, 5])) error stop 33
 
     print *, "OK"
 contains
