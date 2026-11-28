@@ -1546,6 +1546,70 @@ private:
             }
             return {"(if " + m.src + " then " + t.src + " else " + fv.src + ")", pAtom};
         }
+        if (x.n_args == 3 && f == "merge" && is_array(x.m_type)) {
+            auto sum_arg = [&](ASR::expr_t *arg) -> std::string {
+                arg = unwrap_physical_cast(arg);
+                bool b = ASR::is_a<ASR::ArrayBroadcast_t>(*arg);
+                if (b || !is_array(ASRUtils::expr_type(arg))) {
+                    ASR::expr_t *s = b ? ASR::down_cast<ASR::ArrayBroadcast_t>(arg)->m_array : arg;
+                    if (is_array(ASRUtils::expr_type(s))) unsupported("the intrinsic 'merge' is", loc);
+                    return "(Sum.inl " + atom(operand(s)) + ")";
+                }
+                return "(Sum.inr " + atom(lower(arg)) + ")";
+            };
+            ASR::symbol_t *td = expr_type_decl(x.m_args[0]);
+            if (!td) td = expr_type_decl(x.m_args[1]);
+            return {"(" + app("Arr.merge", {{sum_arg(x.m_args[0]), pAtom},
+                {sum_arg(x.m_args[1]), pAtom}, {sum_arg(x.m_args[2]), pAtom}}).src
+                + " : " + vtype(unalloc(x.m_type), loc, td) + ")", pAtom};
+        }
+        if (x.n_args == 1 && f == "aimag" && is_complex(x.m_args[0])) {
+            type(ASRUtils::expr_type(x.m_args[0]), x.m_args[0]->base.loc);
+            return {atom(operand(x.m_args[0])) + ".im", pAtom};
+        }
+        if ((x.n_args == 1 || x.n_args == 2) && (f == "iachar" || f == "ichar")
+                && is_string(x.m_args[0])) {
+            return {"(FInt.ofInt " + atom(app("FStr.ord", {lower(x.m_args[0])}))
+                + " : " + type(x.m_type, loc) + ")", pAtom};
+        }
+        if ((x.n_args == 1 || x.n_args == 2) && (f == "achar" || f == "char")
+                && is_int(x.m_args[0])) {
+            type(x.m_type, loc);
+            return app("FStr.chr", {int_expr(x.m_args[0])});
+        }
+        if (!is_array(x.m_type)) {
+            if (x.n_args == 1 && f == "not" && is_int(x.m_args[0])) {
+                std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(unalloc_type(x.m_args[0]))->m_kind);
+                return app("FInt.inot", {{w, pAtom}, operand(x.m_args[0])});
+            }
+            if (x.n_args == 2 && (f == "iand" || f == "ior" || f == "ieor")
+                    && is_int(x.m_args[0]) && is_int(x.m_args[1])) {
+                int k0 = ASR::down_cast<ASR::Integer_t>(unalloc_type(x.m_args[0]))->m_kind;
+                int k1 = ASR::down_cast<ASR::Integer_t>(unalloc_type(x.m_args[1]))->m_kind;
+                if (k0 == k1) {
+                    std::string w = std::to_string(8 * k0);
+                    return app("FInt." + f, {{w, pAtom}, operand(x.m_args[0]), operand(x.m_args[1])});
+                }
+            }
+            if (x.n_args == 2 && (f == "ishft" || f == "shiftl" || f == "shiftr")
+                    && is_int(x.m_args[0]) && is_int(x.m_args[1])) {
+                std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(unalloc_type(x.m_args[0]))->m_kind);
+                Val sh = int_expr(x.m_args[1]);
+                if (f == "shiftr") sh = {"(-" + atom(sh) + ")", pAtom};
+                return app("FInt.ishft", {{w, pAtom}, operand(x.m_args[0]), sh});
+            }
+            if (x.n_args == 2 && (f == "btest" || f == "ibset" || f == "ibclr")
+                    && is_int(x.m_args[0]) && is_int(x.m_args[1])) {
+                std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(unalloc_type(x.m_args[0]))->m_kind);
+                return app("FInt." + f, {{w, pAtom}, operand(x.m_args[0]), int_expr(x.m_args[1])});
+            }
+            if (x.n_args == 3 && f == "ibits"
+                    && is_int(x.m_args[0]) && is_int(x.m_args[1]) && is_int(x.m_args[2])) {
+                std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(unalloc_type(x.m_args[0]))->m_kind);
+                return app("FInt.ibits", {{w, pAtom}, operand(x.m_args[0]),
+                    int_expr(x.m_args[1]), int_expr(x.m_args[2])});
+            }
+        }
         static const std::set<std::string> math = {
             "sqrt", "exp", "log", "log10", "sin", "cos", "tan",
             "asin", "acos", "atan", "sinh", "cosh", "tanh"};
@@ -1586,14 +1650,25 @@ private:
             level = std::max(level, 1);
             return app("FRealMath.atan2", {operand(x.m_args[0]), lower(x.m_args[1])});
         }
-        if (x.n_args == 1 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+        if ((x.n_args == 1 || (x.n_args == 2 && (f == "iachar" || f == "ichar"
+                || f == "achar" || f == "char" || f == "int" || f == "floor"
+                || f == "ceiling" || f == "nint")))
+                && is_array(x.m_type) && is_array(ASRUtils::expr_type(x.m_args[0]))) {
             ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
             std::string body;
             if (f == "abs") {
                 if (ASR::is_a<ASR::Real_t>(*et)) body = "FReal.abs x'";
                 else if (ASR::is_a<ASR::Integer_t>(*et)) {
                     body = "(FInt.ofInt (Int.natAbs (FInt.toInt x')) : " + type(et, loc) + ")";
+                } else if (ASR::is_a<ASR::Complex_t>(*et)) {
+                    level = std::max(level, 1);
+                    body = "FCplx.abs x'";
                 }
+            } else if (f == "aimag" && ASR::is_a<ASR::Complex_t>(*et)) {
+                body = "x'.im";
+            } else if (f == "not" && ASR::is_a<ASR::Integer_t>(*et)) {
+                std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(et)->m_kind);
+                body = "FInt.inot " + w + " x'";
             } else if (math.count(f) && ASR::is_a<ASR::Real_t>(*et)) {
                 level = std::max(level, 1);
                 body = "FRealMath." + f + " x'";
@@ -1602,9 +1677,90 @@ private:
                 std::string h = f == "int" ? "FReal.toInt" : f == "floor" ? "FReal.floorInt"
                     : f == "ceiling" ? "FReal.ceilInt" : "FReal.nintInt";
                 body = "(FInt.ofInt (" + h + " x') : " + type(elem_type(x.m_type), loc) + ")";
+            } else if (f == "int" && ASR::is_a<ASR::Integer_t>(*et)) {
+                body = "(FInt.ofInt (FInt.toInt x') : " + type(elem_type(x.m_type), loc) + ")";
+            } else if ((f == "iachar" || f == "ichar") && ASR::is_a<ASR::String_t>(*et)) {
+                body = "(FInt.ofInt (FStr.ord x') : " + type(elem_type(x.m_type), loc) + ")";
+            } else if ((f == "achar" || f == "char") && ASR::is_a<ASR::Integer_t>(*et)) {
+                type(elem_type(x.m_type), loc);
+                body = "FStr.chr (FInt.toInt x')";
+            } else if (f == "stringtrim" && ASR::is_a<ASR::String_t>(*et)) {
+                body = "FStr.trim x'";
+            } else if (f == "stringlentrim" && ASR::is_a<ASR::String_t>(*et)) {
+                body = "(FInt.ofInt (FStr.lenTrim x') : " + type(elem_type(x.m_type), loc) + ")";
+            } else if ((f == "adjustl" || f == "adjustr") && ASR::is_a<ASR::String_t>(*et)) {
+                body = "FStr." + f + " x'";
             }
             if (!body.empty()) {
                 return app("Arr.map", {{"(fun x' => " + body + ")", pAtom}, lower(x.m_args[0])});
+            }
+        }
+        if (x.n_args == 2 && is_array(x.m_type)) {
+            ASR::ttype_t *e0 = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            ASR::ttype_t *e1 = elem_type(ASRUtils::expr_type(x.m_args[1]));
+            if ((f == "max" || f == "min") && e0->type == e1->type) {
+                if (ASR::is_a<ASR::Integer_t>(*e0)
+                        && ASR::down_cast<ASR::Integer_t>(e0)->m_kind
+                            == ASR::down_cast<ASR::Integer_t>(e1)->m_kind) {
+                    std::string fn = f == "max" ? "FInt.fmax" : "FInt.fmin";
+                    return lift_binop(x.m_args[0], x.m_args[1],
+                        [&](const std::string &a, const std::string &b) {
+                            return fn + " " + a + " " + b;
+                        });
+                }
+                if (ASR::is_a<ASR::Real_t>(*e0)
+                        && ASR::down_cast<ASR::Real_t>(e0)->m_kind
+                            == ASR::down_cast<ASR::Real_t>(e1)->m_kind) {
+                    std::string fn = f == "max" ? "FReal.fmax" : "FReal.fmin";
+                    return lift_binop(x.m_args[0], x.m_args[1],
+                        [&](const std::string &a, const std::string &b) {
+                            return fn + " " + a + " " + b;
+                        });
+                }
+            } else if ((f == "mod" || f == "modulo" || f == "iand" || f == "ior" || f == "ieor")
+                    && ASR::is_a<ASR::Integer_t>(*e0) && ASR::is_a<ASR::Integer_t>(*e1)
+                    && ASR::down_cast<ASR::Integer_t>(e0)->m_kind
+                        == ASR::down_cast<ASR::Integer_t>(e1)->m_kind) {
+                int k = ASR::down_cast<ASR::Integer_t>(e0)->m_kind;
+                std::string w = std::to_string(8 * k);
+                bool bit = (f == "iand" || f == "ior" || f == "ieor");
+                std::string fn = "FInt." + f + (bit ? " " + w : "");
+                return lift_binop(x.m_args[0], x.m_args[1],
+                    [&](const std::string &a, const std::string &b) {
+                        return fn + " " + a + " " + b;
+                    });
+            } else if ((f == "ishft" || f == "shiftl" || f == "shiftr"
+                    || f == "btest" || f == "ibset" || f == "ibclr")
+                    && ASR::is_a<ASR::Integer_t>(*e0) && ASR::is_a<ASR::Integer_t>(*e1)) {
+                std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(e0)->m_kind);
+                std::string fn = (f == "shiftl" || f == "shiftr") ? "FInt.ishft" : "FInt." + f;
+                bool neg = (f == "shiftr");
+                return lift_binop(x.m_args[0], x.m_args[1],
+                    [&](const std::string &a, const std::string &b) {
+                        std::string sh = neg ? "(-(FInt.toInt " + b + "))" : "(FInt.toInt " + b + ")";
+                        return fn + " " + w + " " + a + " " + sh;
+                    });
+            } else if (f == "atan2" && ASR::is_a<ASR::Real_t>(*e0) && ASR::is_a<ASR::Real_t>(*e1)
+                    && ASR::down_cast<ASR::Real_t>(e0)->m_kind
+                        == ASR::down_cast<ASR::Real_t>(e1)->m_kind) {
+                level = std::max(level, 1);
+                return lift_binop(x.m_args[0], x.m_args[1],
+                    [](const std::string &a, const std::string &b) {
+                        return "FRealMath.atan2 " + a + " " + b;
+                    });
+            } else if (f == "stringconcat" && ASR::is_a<ASR::String_t>(*e0)
+                    && ASR::is_a<ASR::String_t>(*e1)) {
+                return lift_binop(x.m_args[0], x.m_args[1],
+                    [](const std::string &a, const std::string &b) {
+                        return "(" + a + " ++ " + b + ")";
+                    });
+            } else if (f == "substrindex" && ASR::is_a<ASR::String_t>(*e0)
+                    && ASR::is_a<ASR::String_t>(*e1)) {
+                std::string rty = type(elem_type(x.m_type), loc);
+                return lift_binop(x.m_args[0], x.m_args[1],
+                    [&](const std::string &a, const std::string &b) {
+                        return "(FInt.ofInt (FStr.index " + a + " " + b + ") : " + rty + ")";
+                    });
             }
         }
         if (x.m_value && x.m_value != (ASR::expr_t*) &x) return lower(x.m_value);

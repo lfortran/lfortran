@@ -357,6 +357,26 @@ def unpack {α : Type} [Inhabited α] (vec : Arr α) (mask : Arr Bool)
       out := out.push (match field with | Sum.inl s => s | Sum.inr f => f.data[i]!)
   return { lbs := Array.replicate mask.exts.size 1, exts := mask.exts, data := out }
 
+/-- Fortran `merge(tsource, fsource, mask)` when at least one argument is an array. -/
+def merge {α : Type} [Inhabited α] (t : Sum α (Arr α)) (f : Sum α (Arr α))
+    (m : Sum Bool (Arr Bool)) : Arr α := Id.run do
+  let (exts, n) := match m with
+    | Sum.inr ma => (ma.exts, ma.data.size)
+    | Sum.inl _ => match t with
+      | Sum.inr ta => (ta.exts, ta.data.size)
+      | Sum.inl _ => match f with
+        | Sum.inr fa => (fa.exts, fa.data.size)
+        | Sum.inl _ => (#[], 0)
+  let mut out : Array α := Array.mkEmpty n
+  for i in [:n] do
+    let cond := match m with | Sum.inl b => b | Sum.inr ma => ma.data[i]!
+    let v := if cond then
+      match t with | Sum.inl tv => tv | Sum.inr ta => ta.data[i]!
+    else
+      match f with | Sum.inl fv => fv | Sum.inr fa => fa.data[i]!
+    out := out.push v
+  return { lbs := Array.replicate exts.size 1, exts := exts, data := out }
+
 end Arr
 
 end LFortran
