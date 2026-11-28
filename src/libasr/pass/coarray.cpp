@@ -489,9 +489,8 @@ class PRIFInterface {
                 ASR::symbol_t *hsym_use = get_symbol_in_scope(orig_scope, current_scope, hsym_orig, loc);
                 return ASRUtils::EXPR(ASR::make_Var_t(al, loc, hsym_use));
             }
-            LCOMPILERS_ASSERT_MSG(false,
-                "Coarray variable used before prif_allocate_coarray initialization");
-            return nullptr;
+            throw LCompilersException(
+                "coarray components of derived types are not implemented yet");
         }
 
         ASR::expr_t* get_handle_base_expr(ASR::expr_t *expr) {

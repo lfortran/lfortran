@@ -1,0 +1,5 @@
+semantic error: Allocating a coarray component of a derived type is not supported yet
+ --> tests/errors/coarray_component_01.f90:7:14
+  |
+7 |     allocate(a%caf[3:*])
+  |              ^^^^^^^^^^ coarray component
