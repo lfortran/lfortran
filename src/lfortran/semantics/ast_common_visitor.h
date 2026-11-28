@@ -22947,8 +22947,8 @@ public:
                         size_dim.m_start = start;
                         size_dim.m_length = array_section->m_args[0].m_right;
                         new_dims.push_back(al, size_dim);
-                        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
+                        ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+                            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold)), &new_dims);
                         return ASR::make_BitCast_t(al, x.base.base.loc, source, mold, size, type, nullptr);
                     }
                 }
@@ -23025,7 +23025,7 @@ public:
                 ASR::expr_t* result_size_expr = nullptr;
                 if( src_bytes > 0 ) {
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
+                        ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold)));
                     int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
                     if( mold_bytes > 0 ) {
                         result_size = (src_bytes + mold_bytes - 1) / mold_bytes;
@@ -23033,7 +23033,7 @@ public:
                 } else if( src_len_expr ) {
                     // For runtime-sized strings with known length expression, use it
                     ASR::ttype_t* mold_elem_type = ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(mold)));
+                        ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold)));
                     int64_t mold_bytes = ASRUtils::get_type_byte_size(mold_elem_type);
                     if( mold_bytes > 0 ) {
                         // Calculate: ceiling(src_len_expr / mold_bytes)
@@ -23067,7 +23067,7 @@ public:
                 new_dims.push_back(al, size_dim);
             }
         }
-        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(ASRUtils::duplicate_type(al, ASRUtils::expr_type(mold), &new_dims));
+        ASR::ttype_t* type = ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold)), &new_dims);
         ASR::expr_t *transfer_value = nullptr, *source_value = ASRUtils::expr_value(source),
             *mold_value = ASRUtils::expr_value(mold), *size_value = nullptr;
         if(size) size_value = ASRUtils::expr_value(size);
