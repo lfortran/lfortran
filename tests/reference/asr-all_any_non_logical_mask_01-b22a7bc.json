@@ -1,0 +1,13 @@
+{
+    "basename": "asr-all_any_non_logical_mask_01-b22a7bc",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/all_any_non_logical_mask_01.f90",
+    "infile_hash": "6a6b149632736fe85ccc328df9bccb25f05e89cefe2c3e8c540507ae",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-all_any_non_logical_mask_01-b22a7bc.stderr",
+    "stderr_hash": "0d5f6d36cad835f8294e8f37164a919732c85d2d697552d80a4c8794",
+    "returncode": 2
+}
