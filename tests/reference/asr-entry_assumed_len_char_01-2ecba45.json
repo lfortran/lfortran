@@ -1,0 +1,13 @@
+{
+    "basename": "asr-entry_assumed_len_char_01-2ecba45",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/entry_assumed_len_char_01.f90",
+    "infile_hash": "c1bf9106394f71424e97651738928ee90ebd043deefbd2b0c829e2d7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-entry_assumed_len_char_01-2ecba45.stdout",
+    "stdout_hash": "c6c5081fde67a7ba47f4a10c6ce79f434b941134dc36c6c70fb749cc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
