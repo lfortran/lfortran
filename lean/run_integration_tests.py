@@ -61,6 +61,7 @@ def parse_runs(text):
         filename = None
         labels = []
         extra = []
+        copy_to_bin = []
         fail = False
         mode = None
         for tok in tokens:
@@ -80,6 +81,8 @@ def parse_runs(text):
                 labels.append(tok)
             elif mode == "EXTRA_ARGS":
                 extra.append(tok)
+            elif mode == "COPY_TO_BIN":
+                copy_to_bin.append(tok)
             elif mode is None:
                 continue
         if name:
@@ -88,6 +91,7 @@ def parse_runs(text):
                 "file": filename or name,
                 "labels": labels,
                 "extra": extra,
+                "copy_to_bin": copy_to_bin,
                 "fail": fail,
                 "start": j,
                 "end": k,
@@ -139,10 +143,18 @@ def run_one(task):
         return name, "translate", first_reason(proc.stderr + proc.stdout), task["fail"]
     env = os.environ.copy()
     env["LEAN_PATH"] = task["lean_path"]
+    run_dir = Path(task["workdir"]) / ("run_" + name)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    for fname in task.get("copy_to_bin", []):
+        src_file = TESTS / fname
+        if src_file.is_file():
+            dst_file = run_dir / Path(fname).name
+            shutil.copy2(src_file, dst_file)
     try:
         run = subprocess.run(
             ["elan", "run", task["toolchain"], "lean", "--run", str(lean_file)],
-            capture_output=True, text=True, timeout=task["timeout"], env=env)
+            capture_output=True, text=True, timeout=task["timeout"], env=env,
+            cwd=str(run_dir))
     except subprocess.TimeoutExpired:
         return name, "timeout", "lean timed out", task["fail"]
     output = run.stderr + "\n" + run.stdout
@@ -155,7 +167,7 @@ def run_one(task):
     return name, "run", f"exit {run.returncode}", task["fail"]
 
 
-RUNTIME = ["Arith", "Arr", "Fmt", "Runtime"]
+RUNTIME = ["Arith", "Arr", "Fmt", "FileIO", "Runtime"]
 
 
 def prepare_runtime(toolchain):
@@ -244,6 +256,7 @@ def main():
             "name": run["name"],
             "file": run["file"],
             "extra": run["extra"],
+            "copy_to_bin": run["copy_to_bin"],
             "fail": run["fail"],
             "lfortran": lfortran,
             "toolchain": TOOLCHAIN,

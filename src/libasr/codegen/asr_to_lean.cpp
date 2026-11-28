@@ -259,7 +259,8 @@ public:
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if (x.m_unit && ASR::is_a<ASR::String_t>(
-                *ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_unit)))) {
+                *ASRUtils::type_get_past_allocatable(
+                    ASRUtils::extract_type(ASRUtils::expr_type(x.m_unit))))) {
             if (ASR::Variable_t *v = root_var(x.m_unit)) modified.insert(v);
         } else {
             has_io = true;
@@ -267,22 +268,115 @@ public:
         if (x.m_iostat) {
             if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
         }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
         ASR::BaseWalkVisitor<ProcEffects>::visit_FileWrite(x);
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
-        if (x.m_unit && ASR::is_a<ASR::String_t>(
-                *ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_unit)))) {
-            for (size_t i = 0; i < x.n_values; i++) {
-                if (ASR::Variable_t *v = root_var(x.m_values[i])) modified.insert(v);
-            }
-        } else {
+        bool is_internal = x.m_unit && ASR::is_a<ASR::String_t>(
+            *ASRUtils::type_get_past_allocatable(
+                ASRUtils::extract_type(ASRUtils::expr_type(x.m_unit))));
+        if (!is_internal) {
             has_io = true;
+        }
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (ASR::Variable_t *v = root_var(x.m_values[i])) modified.insert(v);
         }
         if (x.m_iostat) {
             if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
         }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        if (x.m_size) {
+            if (ASR::Variable_t *v = root_var(x.m_size)) modified.insert(v);
+        }
         ASR::BaseWalkVisitor<ProcEffects>::visit_FileRead(x);
+    }
+
+    void visit_FileOpen(const ASR::FileOpen_t &x) {
+        has_io = true;
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileOpen(x);
+    }
+
+    void visit_FileClose(const ASR::FileClose_t &x) {
+        has_io = true;
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileClose(x);
+    }
+
+    void visit_FileRewind(const ASR::FileRewind_t &x) {
+        has_io = true;
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileRewind(x);
+    }
+
+    void visit_FileBackspace(const ASR::FileBackspace_t &x) {
+        has_io = true;
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileBackspace(x);
+    }
+
+    void visit_FileEndfile(const ASR::FileEndfile_t &x) {
+        has_io = true;
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileEndfile(x);
+    }
+
+    void visit_Flush(const ASR::Flush_t &x) {
+        has_io = true;
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        if (x.m_iomsg) {
+            if (ASR::Variable_t *v = root_var(x.m_iomsg)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_Flush(x);
+    }
+
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        has_io = true;
+        ASR::expr_t *outs[] = {
+            x.m_iostat, x.m_iomsg, x.m_exist, x.m_opened, x.m_number,
+            x.m_named, x.m_name, x.m_access, x.m_sequential, x.m_direct,
+            x.m_form, x.m_formatted, x.m_unformatted, x.m_recl, x.m_nextrec,
+            x.m_action, x.m_read, x.m_write, x.m_readwrite, x.m_position,
+            x.m_size, x.m_pos
+        };
+        for (ASR::expr_t *e : outs) {
+            if (e) {
+                if (ASR::Variable_t *v = root_var(e)) modified.insert(v);
+            }
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileInquire(x);
     }
 
     void visit_Stop(const ASR::Stop_t &x) {
@@ -4627,23 +4721,25 @@ private:
                 if (x.m_iomsg && (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg))) {
                     unsupported("this file write is", loc);
                 }
-                bool is_str_unit = x.m_unit && is_string(x.m_unit) && is_lvalue(x.m_unit);
-                bool is_stdout = !x.m_unit;
-                if (!is_stdout && !is_str_unit && x.m_unit && is_int(x.m_unit)) {
-                    ASR::expr_t *uv = ASRUtils::expr_value(x.m_unit);
-                    if (uv && ASR::is_a<ASR::IntegerConstant_t>(*uv)
-                            && ASR::down_cast<ASR::IntegerConstant_t>(uv)->m_n == 6) {
-                        is_stdout = true;
-                    }
-                }
-                if (!is_stdout && !is_str_unit) unsupported("this file write is", loc);
-                if (is_stdout && !in_program && !(cur && io_procs.count(cur->fn))) {
-                    unsupported("write in a procedure is", loc);
-                }
                 if (x.m_iostat && (!is_lvalue(x.m_iostat) || !is_int(x.m_iostat))) {
                     unsupported("this file write is", loc);
                 }
-                if (is_stdout) level = std::max(level, 2);
+                ASR::expr_t *uexpr = x.m_unit ? unwrap_physical_cast(x.m_unit) : nullptr;
+                bool is_stdout = !uexpr;
+                bool is_str_sec = uexpr && ASR::is_a<ASR::StringSection_t>(*uexpr);
+                bool is_str_arr = uexpr && is_array(ASRUtils::expr_type(uexpr))
+                    && ASR::is_a<ASR::String_t>(*elem_type(ASRUtils::expr_type(uexpr)))
+                    && is_lvalue(uexpr);
+                bool is_str_unit = is_str_sec || is_str_arr
+                    || (uexpr && is_string(uexpr) && is_lvalue(uexpr));
+                bool is_ext_unit = !is_stdout && !is_str_unit && uexpr && is_int(uexpr);
+                if (!is_stdout && !is_str_unit && !is_ext_unit) {
+                    unsupported("this file write is", loc);
+                }
+                if ((is_stdout || is_ext_unit) && !in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("write in a procedure is", loc);
+                }
+                if (is_stdout || is_ext_unit) level = std::max(level, 2);
                 std::string sep = x.m_separator ? atom(lower(x.m_separator)) : "\" \"";
                 std::string text;
                 if (x.n_values == 0) {
@@ -4675,29 +4771,144 @@ private:
                     } else {
                         line("IO.println " + text);
                     }
+                    if (x.m_iostat) {
+                        std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                        update_lvalue(x.m_iostat, [&](const std::string &) {
+                            return "(FInt.ofInt 0 : " + ity + ")";
+                        }, loc);
+                    }
+                } else if (is_ext_unit) {
+                    std::string wid = std::to_string(++loop_id);
+                    std::string stv = "wst'" + wid;
+                    std::string msgv = "wmsg'" + wid;
+                    std::string uval = atom(int_expr(uexpr));
+                    if (x.m_end && !ASR::is_a<ASR::StringConstant_t>(*x.m_end)) {
+                        std::string ev = "wend'" + wid;
+                        line("let " + ev + " : String := " + atom(lower(x.m_end)));
+                        line("let (" + stv + ", " + (x.m_iomsg ? msgv : std::string("_"))
+                            + ") ← if " + ev + " == \"\\n\" then FileIO.writeLine "
+                            + uval + " " + text + " true else FileIO.writeLine "
+                            + uval + " (" + text + " ++ " + ev + ") false");
+                    } else {
+                        bool adv = true;
+                        std::string out_expr = text;
+                        if (x.m_end) {
+                            std::string es = string_const_str(
+                                *ASR::down_cast<ASR::StringConstant_t>(x.m_end));
+                            if (es.empty()) {
+                                adv = false;
+                            } else if (es != "\n") {
+                                adv = false;
+                                out_expr = "(" + text + " ++ " + string_lit(es) + ")";
+                            }
+                        }
+                        line("let (" + stv + ", " + (x.m_iomsg ? msgv : std::string("_"))
+                            + ") ← FileIO.writeLine "
+                            + uval + " " + out_expr + " " + (adv ? "true" : "false"));
+                    }
+                    if (x.m_iostat) {
+                        std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                        update_lvalue(x.m_iostat, [&](const std::string &) {
+                            return "(FInt.ofInt " + stv + " : " + ity + ")";
+                        }, loc);
+                    }
+                    if (x.m_iomsg) {
+                        ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(x.m_iomsg));
+                        ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                        line("if " + stv + " != 0 then");
+                        ind++;
+                        update_lvalue(x.m_iomsg, [&](const std::string &cur_s) {
+                            if (mle) return "FStr.fix " + extent(mle) + " " + msgv;
+                            return "FStr.fix " + cur_s + ".length " + msgv;
+                        }, loc);
+                        ind--;
+                    }
+                    if (!x.m_iostat) {
+                        line("if " + stv + " != 0 then LFortran.halt 1");
+                    }
+                } else if (is_str_sec) {
+                    auto &sec = *ASR::down_cast<ASR::StringSection_t>(uexpr);
+                    bool unit_step = !sec.m_step
+                        || (ASR::is_a<ASR::IntegerConstant_t>(*sec.m_step)
+                            && ASR::down_cast<ASR::IntegerConstant_t>(sec.m_step)->m_n == 1);
+                    if (!unit_step || !is_lvalue(sec.m_arg)
+                            || is_array(ASRUtils::expr_type(sec.m_arg))) {
+                        unsupported("this file write is", loc);
+                    }
+                    std::string lo = "1";
+                    if (sec.m_start) {
+                        lo = "sl'" + std::to_string(++loop_id);
+                        line("let " + lo + " : Int := " + int_expr(sec.m_start).src);
+                    }
+                    std::string hi;
+                    if (sec.m_end) {
+                        hi = "sh'" + std::to_string(++loop_id);
+                        line("let " + hi + " : Int := " + int_expr(sec.m_end).src);
+                    }
+                    std::string rv = "wr'" + std::to_string(++loop_id);
+                    line("let " + rv + " : String := " + text);
+                    update_lvalue(sec.m_arg, [&](const std::string &cur_s) {
+                        std::string hv = hi.empty() ? "(FStr.len " + cur_s + ")" : hi;
+                        return "FStr.setSlice " + cur_s + " " + lo + " " + hv + " " + rv;
+                    }, loc);
+                    if (x.m_iostat) {
+                        std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                        update_lvalue(x.m_iostat, [&](const std::string &) {
+                            return "(FInt.ofInt 0 : " + ity + ")";
+                        }, loc);
+                    }
+                } else if (is_str_arr) {
+                    ASR::ttype_t *et = elem_type(ASRUtils::expr_type(uexpr));
+                    ASR::expr_t *le = ASR::down_cast<ASR::String_t>(et)->m_len;
+                    if (!le) unsupported("this file write is", loc);
+                    std::string wid = std::to_string(++loop_id);
+                    std::string rv = "wr'" + wid;
+                    std::string lns = "wlns'" + wid;
+                    std::string av = "warr'" + wid;
+                    std::string dv = "wdat'" + wid;
+                    std::string iv = "wi'" + wid;
+                    std::string elen = extent(le);
+                    line("let " + rv + " : String := " + text);
+                    line("let " + lns + " : Array String := (" + rv + ".splitOn \"\\n\").toArray");
+                    line("let " + av + " := " + lower(uexpr).src);
+                    line("let mut " + dv + " := " + av + ".data");
+                    line("for " + iv + " in [:" + dv + ".size] do");
+                    ind++;
+                    line("let ln' := if " + iv + " < " + lns + ".size then " + lns + "[" + iv + "]! else \"\"");
+                    line(dv + " := " + dv + ".set! " + iv + " (FStr.fix " + elen + " ln')");
+                    ind--;
+                    update_lvalue(uexpr, [&](const std::string &cur_a) {
+                        return "{ " + cur_a + " with data := " + dv + " }";
+                    }, loc);
+                    if (x.m_iostat) {
+                        std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                        update_lvalue(x.m_iostat, [&](const std::string &) {
+                            return "(FInt.ofInt 0 : " + ity + ")";
+                        }, loc);
+                    }
                 } else {
                     std::string rv = "wr'" + std::to_string(++loop_id);
                     line("let " + rv + " : String := " + text);
-                    ASR::ttype_t *it = unalloc(ASRUtils::expr_type(x.m_unit));
+                    ASR::ttype_t *it = unalloc(ASRUtils::expr_type(uexpr));
                     ASR::expr_t *le = ASR::down_cast<ASR::String_t>(it)->m_len;
-                    update_lvalue(x.m_unit, [&](const std::string &cur_s) {
+                    update_lvalue(uexpr, [&](const std::string &cur_s) {
                         if (le) return "FStr.fix " + extent(le) + " " + rv;
                         return "FStr.fix " + cur_s + ".length " + rv;
                     }, loc);
-                }
-                if (x.m_iostat) {
-                    std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
-                    update_lvalue(x.m_iostat, [&](const std::string &) {
-                        return "(FInt.ofInt 0 : " + ity + ")";
-                    }, loc);
+                    if (x.m_iostat) {
+                        std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                        update_lvalue(x.m_iostat, [&](const std::string &) {
+                            return "(FInt.ofInt 0 : " + ity + ")";
+                        }, loc);
+                    }
                 }
                 break;
             }
             case ASR::stmtType::FileRead: {
                 auto &x = *ASR::down_cast<ASR::FileRead_t>(s);
-                if (!x.m_unit || !is_string(x.m_unit) || x.m_fmt || !x.m_is_formatted
-                        || x.m_overloaded || x.m_nml || x.m_rec || x.m_pos || x.m_id
-                        || x.m_advance || x.m_size || x.m_pad || x.m_decimal) {
+                if (!x.m_is_formatted || x.m_overloaded || x.m_nml || x.m_rec
+                        || x.m_pos || x.m_id || x.m_advance || x.m_size
+                        || x.m_pad || x.m_decimal) {
                     unsupported("this file read is", loc);
                 }
                 if (x.m_iomsg && (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg))) {
@@ -4706,13 +4917,26 @@ private:
                 if (x.m_iostat && (!is_lvalue(x.m_iostat) || !is_int(x.m_iostat))) {
                     unsupported("this file read is", loc);
                 }
+                if (x.m_fmt && !is_string(x.m_fmt)) {
+                    unsupported("this file read is", loc);
+                }
+                ASR::expr_t *uexpr = x.m_unit ? unwrap_physical_cast(x.m_unit) : nullptr;
+                bool is_str_arr = uexpr && is_array(ASRUtils::expr_type(uexpr))
+                    && ASR::is_a<ASR::String_t>(*elem_type(ASRUtils::expr_type(uexpr)));
+                bool is_str_unit = is_str_arr || (uexpr && is_string(uexpr));
+                bool is_ext_unit = !is_str_unit && (!uexpr || is_int(uexpr));
+                if (!is_str_unit && !is_ext_unit) {
+                    unsupported("this file read is", loc);
+                }
+                if (is_ext_unit && !in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("read in a procedure is", loc);
+                }
+                if (is_ext_unit) level = std::max(level, 2);
                 std::string rid = std::to_string(++loop_id);
                 std::string toks = "rtok'" + rid;
                 std::string pos = "rpos'" + rid;
                 std::string stv = "rstat'" + rid;
-                line("let " + toks + " : Array String := FRead.tokenize " + atom(lower(x.m_unit)));
-                line("let mut " + pos + " : Nat := 0");
-                line("let mut " + stv + " : Int := 0");
+                std::string msgv = "rmsg'" + rid;
                 auto parse_scalar = [&](ASR::ttype_t *et, const std::string &tok_var,
                         const Location &vloc) -> std::string {
                     et = scalar(et, vloc);
@@ -4743,73 +4967,301 @@ private:
                     }
                     unsupported("reading this type is", vloc);
                 };
-                for (size_t i = 0; i < x.n_values; i++) {
-                    ASR::expr_t *val = unwrap_physical_cast(x.m_values[i]);
-                    const Location &vloc = val->base.loc;
-                    if (!is_lvalue(val)) unsupported("this file read is", vloc);
-                    ASR::ttype_t *vt = unalloc(ASRUtils::expr_type(val));
-                    if (is_array(vt)) {
-                        ASR::ttype_t *et = elem_type(vt);
-                        if (ASR::is_a<ASR::String_t>(*et)
-                                && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                if (x.m_fmt) {
+                    // Formatted read (internal or external)
+                    std::string karr = "rkinds'" + rid;
+                    line("let mut " + karr + " : Array FRead.FReadKind := #[]");
+                    auto push_kind = [&](ASR::ttype_t *et, const std::string &cur_str_expr,
+                            const Location &vloc) {
+                        et = scalar(et, vloc);
+                        if (ASR::is_a<ASR::Integer_t>(*et)) {
+                            line(karr + " := " + karr + ".push .int");
+                        } else if (ASR::is_a<ASR::Real_t>(*et)) {
+                            level = std::max(level, 2);
+                            line(karr + " := " + karr + ".push .real");
+                        } else if (ASR::is_a<ASR::Complex_t>(*et)) {
+                            level = std::max(level, 2);
+                            line(karr + " := (" + karr + ".push .real).push .real");
+                        } else if (ASR::is_a<ASR::Logical_t>(*et)) {
+                            line(karr + " := " + karr + ".push .bool");
+                        } else if (ASR::is_a<ASR::String_t>(*et)) {
+                            ASR::expr_t *le = ASR::down_cast<ASR::String_t>(et)->m_len;
+                            std::string lstr = le ? extent(le) : cur_str_expr + ".length";
+                            line(karr + " := " + karr + ".push (.str " + lstr + ")");
+                        } else {
                             unsupported("reading this type is", vloc);
                         }
-                        std::string aid = std::to_string(++loop_id);
-                        std::string av = "rarr'" + aid;
-                        std::string dv = "rdat'" + aid;
-                        std::string iv = "ri'" + aid;
-                        line("let " + av + " := " + lower(val).src);
-                        line("let mut " + dv + " := " + av + ".data");
-                        line("for " + iv + " in [:" + dv + ".size] do");
-                        ind++;
-                        line("if " + stv + " == 0 then");
-                        ind++;
-                        line("if " + pos + " >= " + toks + ".size then");
-                        ind++;
-                        line(stv + " := -1");
-                        ind--;
-                        line("else");
-                        ind++;
-                        std::string tv = "rt'" + std::to_string(++loop_id);
-                        line("let " + tv + " := " + toks + "[" + pos + "]!");
-                        line(pos + " := " + pos + " + 1");
-                        line("match " + parse_scalar(et, tv, vloc) + " with");
-                        line("| some v' => " + dv + " := " + dv + ".set! " + iv + " v'");
-                        line("| none => " + stv + " := 1");
-                        ind--;
-                        ind--;
-                        ind--;
-                        update_lvalue(val, [&](const std::string &cur_a) {
-                            return "{ " + cur_a + " with data := " + dv + " }";
-                        }, vloc);
+                    };
+                    for (size_t i = 0; i < x.n_values; i++) {
+                        ASR::expr_t *val = unwrap_physical_cast(x.m_values[i]);
+                        const Location &vloc = val->base.loc;
+                        if (!is_lvalue(val)) unsupported("this file read is", vloc);
+                        ASR::ttype_t *vt = unalloc(ASRUtils::expr_type(val));
+                        if (is_array(vt)) {
+                            ASR::ttype_t *et = elem_type(vt);
+                            if (ASR::is_a<ASR::String_t>(*et)
+                                    && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                                unsupported("reading this type is", vloc);
+                            }
+                            line("for _ in [:(" + lower(val).src + ").data.size] do");
+                            ind++;
+                            push_kind(et, "\"\"", vloc);
+                            ind--;
+                        } else {
+                            std::string cs = ASR::is_a<ASR::String_t>(*vt)
+                                && !ASR::down_cast<ASR::String_t>(vt)->m_len
+                                ? atom(lower(val)) : "\"\"";
+                            push_kind(vt, cs, vloc);
+                        }
+                    }
+                    std::string fmts = atom(lower(x.m_fmt));
+                    if (is_ext_unit) {
+                        std::string uval = uexpr ? atom(int_expr(uexpr)) : "5";
+                        line("let (" + toks + ", " + stv + "_init, " + msgv + "_init) ← FRead.readFormattedM " + fmts
+                            + " (FileIO.readLine " + uval + ") " + karr);
+                    } else if (is_str_arr) {
+                        line("let (" + toks + ", " + stv + "_init, " + msgv + "_init) := FRead.readFormattedPure " + fmts
+                            + " (" + lower(uexpr).src + ").data " + karr);
                     } else {
-                        line("if " + stv + " == 0 then");
-                        ind++;
-                        line("if " + pos + " >= " + toks + ".size then");
-                        ind++;
-                        line(stv + " := -1");
-                        ind--;
-                        line("else");
-                        ind++;
-                        std::string tv = "rt'" + std::to_string(++loop_id);
-                        line("let " + tv + " := " + toks + "[" + pos + "]!");
-                        line(pos + " := " + pos + " + 1");
-                        if (ASR::is_a<ASR::String_t>(*vt)) {
-                            ASR::expr_t *le = ASR::down_cast<ASR::String_t>(vt)->m_len;
-                            update_lvalue(val, [&](const std::string &cur_s) {
-                                if (le) return "FStr.fix " + extent(le) + " " + tv;
-                                return "FStr.fix " + cur_s + ".length " + tv;
+                        line("let (" + toks + ", " + stv + "_init, " + msgv + "_init) := FRead.readFormattedPure " + fmts
+                            + " #[" + lower(uexpr).src + "] " + karr);
+                    }
+                    line("let mut " + pos + " : Nat := 0");
+                    line("let mut " + stv + " : Int := " + stv + "_init");
+                    line("let mut " + msgv + " : String := " + msgv + "_init");
+                    auto extract_fval = [&](ASR::ttype_t *et, const std::string &fv_var,
+                            const Location &vloc) -> std::string {
+                        et = scalar(et, vloc);
+                        if (ASR::is_a<ASR::Integer_t>(*et)) {
+                            return "(match " + fv_var + " with | .int n' => some (FInt.ofInt n' : "
+                                + type(et, vloc) + ") | _ => none)";
+                        }
+                        if (ASR::is_a<ASR::Real_t>(*et)) {
+                            level = std::max(level, 2);
+                            int k = ASR::down_cast<ASR::Real_t>(et)->m_kind;
+                            return "(match " + fv_var + " with | .real r' => some (FKindsIO.ofFloatR"
+                                + std::to_string(k) + " r') | _ => none)";
+                        }
+                        if (ASR::is_a<ASR::Logical_t>(*et)) {
+                            return "(match " + fv_var + " with | .bool b' => some b' | _ => none)";
+                        }
+                        if (ASR::is_a<ASR::String_t>(*et)) {
+                            ASR::expr_t *le = ASR::down_cast<ASR::String_t>(et)->m_len;
+                            if (le) return "(match " + fv_var + " with | .str s' => some (FStr.fix " + extent(le) + " s') | _ => none)";
+                            return "(match " + fv_var + " with | .str s' => some s' | _ => none)";
+                        }
+                        unsupported("reading this type is", vloc);
+                    };
+                    auto assign_formatted_scalar = [&](ASR::expr_t *val, ASR::ttype_t *vt,
+                            const Location &vloc) {
+                        if (ASR::is_a<ASR::Complex_t>(*vt)) {
+                            int k = ASR::down_cast<ASR::Complex_t>(vt)->m_kind;
+                            std::string fn = "FKindsIO.ofFloatR" + std::to_string(k);
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            line("if " + pos + " + 1 >= " + toks + ".size then " + stv + " := -1; " + msgv + " := \"End of file\"");
+                            line("else");
+                            ind++;
+                            std::string t1 = "rt1'" + std::to_string(++loop_id);
+                            std::string t2 = "rt2'" + std::to_string(++loop_id);
+                            line("let " + t1 + " := " + toks + "[" + pos + "]!");
+                            line("let " + t2 + " := " + toks + "[" + pos + " + 1]!");
+                            line(pos + " := " + pos + " + 2");
+                            line("match " + t1 + ", " + t2 + " with");
+                            line("| .real r', .real i' =>");
+                            ind++;
+                            update_lvalue(val, [&](const std::string &) {
+                                return "FCplx.mk (" + fn + " r') (" + fn + " i')";
+                            }, vloc);
+                            ind--;
+                            line("| _, _ => " + stv + " := 1; " + msgv + " := \"Invalid complex\"");
+                            ind--;
+                            ind--;
+                        } else {
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            line("if " + pos + " >= " + toks + ".size then " + stv + " := -1; " + msgv + " := \"End of file\"");
+                            line("else");
+                            ind++;
+                            std::string tv = "rt'" + std::to_string(++loop_id);
+                            line("let " + tv + " := " + toks + "[" + pos + "]!");
+                            line(pos + " := " + pos + " + 1");
+                            if (ASR::is_a<ASR::String_t>(*vt)) {
+                                ASR::expr_t *le = ASR::down_cast<ASR::String_t>(vt)->m_len;
+                                line("match " + tv + " with");
+                                line("| .str sv' =>");
+                                ind++;
+                                update_lvalue(val, [&](const std::string &cur_s) {
+                                    if (le) return "FStr.fix " + extent(le) + " sv'";
+                                    return "FStr.fix " + cur_s + ".length sv'";
+                                }, vloc);
+                                ind--;
+                                line("| _ => " + stv + " := 1; " + msgv + " := \"Read error\"");
+                            } else {
+                                line("match " + extract_fval(vt, tv, vloc) + " with");
+                                line("| some v' =>");
+                                ind++;
+                                update_lvalue(val, [&](const std::string &) { return "v'"; }, vloc);
+                                ind--;
+                                line("| none => " + stv + " := 1; " + msgv + " := \"Read error\"");
+                            }
+                            ind--;
+                            ind--;
+                        }
+                    };
+                    for (size_t i = 0; i < x.n_values; i++) {
+                        ASR::expr_t *val = unwrap_physical_cast(x.m_values[i]);
+                        const Location &vloc = val->base.loc;
+                        ASR::ttype_t *vt = unalloc(ASRUtils::expr_type(val));
+                        if (is_array(vt)) {
+                            ASR::ttype_t *et = elem_type(vt);
+                            std::string aid = std::to_string(++loop_id);
+                            std::string av = "rarr'" + aid;
+                            std::string dv = "rdat'" + aid;
+                            std::string iv = "ri'" + aid;
+                            line("let " + av + " := " + lower(val).src);
+                            line("let mut " + dv + " := " + av + ".data");
+                            line("for " + iv + " in [:" + dv + ".size] do");
+                            ind++;
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            if (ASR::is_a<ASR::Complex_t>(*et)) {
+                                int k = ASR::down_cast<ASR::Complex_t>(et)->m_kind;
+                                std::string fn = "FKindsIO.ofFloatR" + std::to_string(k);
+                                line("if " + pos + " + 1 >= " + toks + ".size then " + stv + " := -1; " + msgv + " := \"End of file\"");
+                                line("else");
+                                ind++;
+                                std::string t1 = "rt1'" + std::to_string(++loop_id);
+                                std::string t2 = "rt2'" + std::to_string(++loop_id);
+                                line("let " + t1 + " := " + toks + "[" + pos + "]!");
+                                line("let " + t2 + " := " + toks + "[" + pos + " + 1]!");
+                                line(pos + " := " + pos + " + 2");
+                                line("match " + t1 + ", " + t2 + " with");
+                                line("| .real r', .real i' => " + dv + " := " + dv + ".set! " + iv + " (FCplx.mk (" + fn + " r') (" + fn + " i'))");
+                                line("| _, _ => " + stv + " := 1; " + msgv + " := \"Invalid complex\"");
+                                ind--;
+                            } else {
+                                line("if " + pos + " >= " + toks + ".size then " + stv + " := -1; " + msgv + " := \"End of file\"");
+                                line("else");
+                                ind++;
+                                std::string tv = "rt'" + std::to_string(++loop_id);
+                                line("let " + tv + " := " + toks + "[" + pos + "]!");
+                                line(pos + " := " + pos + " + 1");
+                                line("match " + extract_fval(et, tv, vloc) + " with");
+                                line("| some v' => " + dv + " := " + dv + ".set! " + iv + " v'");
+                                line("| none => " + stv + " := 1; " + msgv + " := \"Read error\"");
+                                ind--;
+                            }
+                            ind--;
+                            ind--;
+                            update_lvalue(val, [&](const std::string &cur_a) {
+                                return "{ " + cur_a + " with data := " + dv + " }";
                             }, vloc);
                         } else {
-                            line("match " + parse_scalar(vt, tv, vloc) + " with");
-                            line("| some v' =>");
-                            ind++;
-                            update_lvalue(val, [&](const std::string &) { return "v'"; }, vloc);
-                            ind--;
-                            line("| none => " + stv + " := 1");
+                            assign_formatted_scalar(val, vt, vloc);
                         }
-                        ind--;
-                        ind--;
+                    }
+                } else {
+                    // List-directed read (internal or external)
+                    std::string uval = is_ext_unit ? (uexpr ? atom(int_expr(uexpr)) : "5") : "";
+                    if (is_ext_unit) {
+                        line("let mut " + toks + " : Array String := #[]");
+                        line("let mut " + pos + " : Nat := 0");
+                        line("let mut " + stv + " : Int := 0");
+                        line("let mut " + msgv + " : String := \"\"");
+                        if (x.n_values == 0) {
+                            line("let (_, st', mg') ← FileIO.readLine " + uval);
+                            line(stv + " := st'; " + msgv + " := mg'");
+                        }
+                    } else if (is_str_arr) {
+                        line("let " + toks + " : Array String := FRead.tokenize (String.intercalate \" \" (" + lower(uexpr).src + ").data.toList)");
+                        line("let mut " + pos + " : Nat := 0");
+                        line("let mut " + stv + " : Int := 0");
+                        line("let mut " + msgv + " : String := \"\"");
+                    } else {
+                        line("let " + toks + " : Array String := FRead.tokenize " + atom(lower(uexpr)));
+                        line("let mut " + pos + " : Nat := 0");
+                        line("let mut " + stv + " : Int := 0");
+                        line("let mut " + msgv + " : String := \"\"");
+                    }
+                    auto ensure_token = [&]() {
+                        if (is_ext_unit) {
+                            line("while " + stv + " == 0 && " + pos + " >= " + toks + ".size do");
+                            ind++;
+                            line("let (ol', st', mg') ← FileIO.readLine " + uval);
+                            line("if st' != 0 then " + stv + " := st'; " + msgv + " := mg'");
+                            line("else");
+                            ind++;
+                            line(toks + " := FRead.tokenize (ol'.getD \"\")");
+                            line(pos + " := 0");
+                            ind--;
+                            ind--;
+                        } else {
+                            line("if " + pos + " >= " + toks + ".size then " + stv + " := -1; " + msgv + " := \"End of file\"");
+                        }
+                    };
+                    for (size_t i = 0; i < x.n_values; i++) {
+                        ASR::expr_t *val = unwrap_physical_cast(x.m_values[i]);
+                        const Location &vloc = val->base.loc;
+                        if (!is_lvalue(val)) unsupported("this file read is", vloc);
+                        ASR::ttype_t *vt = unalloc(ASRUtils::expr_type(val));
+                        if (is_array(vt)) {
+                            ASR::ttype_t *et = elem_type(vt);
+                            if (ASR::is_a<ASR::String_t>(*et)
+                                    && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                                unsupported("reading this type is", vloc);
+                            }
+                            std::string aid = std::to_string(++loop_id);
+                            std::string av = "rarr'" + aid;
+                            std::string dv = "rdat'" + aid;
+                            std::string iv = "ri'" + aid;
+                            line("let " + av + " := " + lower(val).src);
+                            line("let mut " + dv + " := " + av + ".data");
+                            line("for " + iv + " in [:" + dv + ".size] do");
+                            ind++;
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            ensure_token();
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            std::string tv = "rt'" + std::to_string(++loop_id);
+                            line("let " + tv + " := " + toks + "[" + pos + "]!");
+                            line(pos + " := " + pos + " + 1");
+                            line("match " + parse_scalar(et, tv, vloc) + " with");
+                            line("| some v' => " + dv + " := " + dv + ".set! " + iv + " v'");
+                            line("| none => " + stv + " := 1; " + msgv + " := \"Read error\"");
+                            ind--;
+                            ind--;
+                            ind--;
+                            update_lvalue(val, [&](const std::string &cur_a) {
+                                return "{ " + cur_a + " with data := " + dv + " }";
+                            }, vloc);
+                        } else {
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            ensure_token();
+                            line("if " + stv + " == 0 then");
+                            ind++;
+                            std::string tv = "rt'" + std::to_string(++loop_id);
+                            line("let " + tv + " := " + toks + "[" + pos + "]!");
+                            line(pos + " := " + pos + " + 1");
+                            if (ASR::is_a<ASR::String_t>(*vt)) {
+                                ASR::expr_t *le = ASR::down_cast<ASR::String_t>(vt)->m_len;
+                                update_lvalue(val, [&](const std::string &cur_s) {
+                                    if (le) return "FStr.fix " + extent(le) + " " + tv;
+                                    return "FStr.fix " + cur_s + ".length " + tv;
+                                }, vloc);
+                            } else {
+                                line("match " + parse_scalar(vt, tv, vloc) + " with");
+                                line("| some v' =>");
+                                ind++;
+                                update_lvalue(val, [&](const std::string &) { return "v'"; }, vloc);
+                                ind--;
+                                line("| none => " + stv + " := 1; " + msgv + " := \"Read error\"");
+                            }
+                            ind--;
+                            ind--;
+                        }
                     }
                 }
                 if (x.m_iostat) {
@@ -4817,6 +5269,272 @@ private:
                     update_lvalue(x.m_iostat, [&](const std::string &) {
                         return "(FInt.ofInt " + stv + " : " + ity + ")";
                     }, loc);
+                }
+                if (x.m_iomsg) {
+                    ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(x.m_iomsg));
+                    ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                    line("if " + stv + " != 0 then");
+                    ind++;
+                    update_lvalue(x.m_iomsg, [&](const std::string &cur_s) {
+                        if (mle) return "FStr.fix " + extent(mle) + " " + msgv;
+                        return "FStr.fix " + cur_s + ".length " + msgv;
+                    }, loc);
+                    ind--;
+                }
+                if (is_ext_unit && !x.m_iostat) {
+                    line("if " + stv + " != 0 then LFortran.halt 1");
+                }
+                break;
+            }
+            case ASR::stmtType::FileOpen: {
+                auto &x = *ASR::down_cast<ASR::FileOpen_t>(s);
+                if (!x.m_newunit || !is_int(x.m_newunit) || x.m_asynchronous || x.m_convert) {
+                    unsupported("this file open is", loc);
+                }
+                if (x.m_iostat && (!is_lvalue(x.m_iostat) || !is_int(x.m_iostat))) {
+                    unsupported("this file open is", loc);
+                }
+                if (x.m_iomsg && (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg))) {
+                    unsupported("this file open is", loc);
+                }
+                if (!in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("open in a procedure is", loc);
+                }
+                level = std::max(level, 2);
+                auto opt_str = [&](ASR::expr_t *e) -> std::string {
+                    if (!e) return "none";
+                    if (!is_string(e)) unsupported("this file open is", loc);
+                    return "(some " + atom(lower(e)) + ")";
+                };
+                std::string opt_recl = "none";
+                if (x.m_recl) {
+                    if (!is_int(x.m_recl)) unsupported("this file open is", loc);
+                    opt_recl = "(some " + atom(int_expr(x.m_recl)) + ")";
+                }
+                std::string oid = std::to_string(++loop_id);
+                std::string stv = "ost'" + oid;
+                std::string msgv = "omsg'" + oid;
+                line("let (" + stv + ", " + (x.m_iomsg ? msgv : std::string("_"))
+                    + ") ← FileIO.openUnit "
+                    + atom(int_expr(x.m_newunit)) + " "
+                    + opt_str(x.m_filename) + " " + opt_str(x.m_status) + " "
+                    + opt_str(x.m_form) + " " + opt_str(x.m_access) + " "
+                    + opt_str(x.m_action) + " " + opt_str(x.m_position) + " "
+                    + opt_recl);
+                if (x.m_iostat) {
+                    std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                    update_lvalue(x.m_iostat, [&](const std::string &) {
+                        return "(FInt.ofInt " + stv + " : " + ity + ")";
+                    }, loc);
+                }
+                if (x.m_iomsg) {
+                    ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(x.m_iomsg));
+                    ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                    line("if " + stv + " != 0 then");
+                    ind++;
+                    update_lvalue(x.m_iomsg, [&](const std::string &cur_s) {
+                        if (mle) return "FStr.fix " + extent(mle) + " " + msgv;
+                        return "FStr.fix " + cur_s + ".length " + msgv;
+                    }, loc);
+                    ind--;
+                }
+                if (!x.m_iostat) {
+                    line("if " + stv + " != 0 then LFortran.halt 1");
+                }
+                break;
+            }
+            case ASR::stmtType::FileClose: {
+                auto &x = *ASR::down_cast<ASR::FileClose_t>(s);
+                if (!x.m_unit || !is_int(x.m_unit) || x.m_err) {
+                    unsupported("this file close is", loc);
+                }
+                if (x.m_iostat && (!is_lvalue(x.m_iostat) || !is_int(x.m_iostat))) {
+                    unsupported("this file close is", loc);
+                }
+                if (x.m_iomsg && (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg))) {
+                    unsupported("this file close is", loc);
+                }
+                if (!in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("close in a procedure is", loc);
+                }
+                level = std::max(level, 2);
+                std::string opt_st = "none";
+                if (x.m_status) {
+                    if (!is_string(x.m_status)) unsupported("this file close is", loc);
+                    opt_st = "(some " + atom(lower(x.m_status)) + ")";
+                }
+                std::string cid = std::to_string(++loop_id);
+                std::string stv = "cst'" + cid;
+                std::string msgv = "cmsg'" + cid;
+                line("let (" + stv + ", " + (x.m_iomsg ? msgv : std::string("_"))
+                    + ") ← FileIO.closeUnit "
+                    + atom(int_expr(x.m_unit)) + " " + opt_st);
+                if (x.m_iostat) {
+                    std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                    update_lvalue(x.m_iostat, [&](const std::string &) {
+                        return "(FInt.ofInt " + stv + " : " + ity + ")";
+                    }, loc);
+                }
+                if (x.m_iomsg) {
+                    ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(x.m_iomsg));
+                    ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                    line("if " + stv + " != 0 then");
+                    ind++;
+                    update_lvalue(x.m_iomsg, [&](const std::string &cur_s) {
+                        if (mle) return "FStr.fix " + extent(mle) + " " + msgv;
+                        return "FStr.fix " + cur_s + ".length " + msgv;
+                    }, loc);
+                    ind--;
+                }
+                if (!x.m_iostat) {
+                    line("if " + stv + " != 0 then LFortran.halt 1");
+                }
+                break;
+            }
+            case ASR::stmtType::FileRewind:
+            case ASR::stmtType::FileBackspace:
+            case ASR::stmtType::FileEndfile:
+            case ASR::stmtType::Flush: {
+                ASR::expr_t *uexpr = nullptr;
+                ASR::expr_t *iostat = nullptr;
+                ASR::expr_t *iomsg = nullptr;
+                ASR::expr_t *err = nullptr;
+                std::string fn;
+                if (ASR::is_a<ASR::FileRewind_t>(*s)) {
+                    auto &x = *ASR::down_cast<ASR::FileRewind_t>(s);
+                    uexpr = x.m_unit; iostat = x.m_iostat; iomsg = x.m_iomsg; err = x.m_err;
+                    fn = "FileIO.rewindUnit";
+                } else if (ASR::is_a<ASR::FileBackspace_t>(*s)) {
+                    auto &x = *ASR::down_cast<ASR::FileBackspace_t>(s);
+                    uexpr = x.m_unit; iostat = x.m_iostat; iomsg = x.m_iomsg; err = x.m_err;
+                    fn = "FileIO.backspaceUnit";
+                } else if (ASR::is_a<ASR::FileEndfile_t>(*s)) {
+                    auto &x = *ASR::down_cast<ASR::FileEndfile_t>(s);
+                    uexpr = x.m_unit; iostat = x.m_iostat; iomsg = x.m_iomsg; err = x.m_err;
+                    fn = "FileIO.endfileUnit";
+                } else {
+                    auto &x = *ASR::down_cast<ASR::Flush_t>(s);
+                    uexpr = x.m_unit; iostat = x.m_iostat; iomsg = x.m_iomsg; err = x.m_err;
+                    fn = "FileIO.flushUnit";
+                }
+                if (!uexpr || !is_int(uexpr) || err) unsupported("this file operation is", loc);
+                if (iostat && (!is_lvalue(iostat) || !is_int(iostat))) unsupported("this file operation is", loc);
+                if (iomsg && (!is_lvalue(iomsg) || !is_string(iomsg))) unsupported("this file operation is", loc);
+                if (!in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("file I/O in a procedure is", loc);
+                }
+                level = std::max(level, 2);
+                std::string fid = std::to_string(++loop_id);
+                std::string stv = "fst'" + fid;
+                std::string msgv = "fmsg'" + fid;
+                line("let (" + stv + ", " + (iomsg ? msgv : std::string("_"))
+                    + ") ← " + fn + " " + atom(int_expr(uexpr)));
+                if (iostat) {
+                    std::string ity = type(unalloc(ASRUtils::expr_type(iostat)), loc);
+                    update_lvalue(iostat, [&](const std::string &) {
+                        return "(FInt.ofInt " + stv + " : " + ity + ")";
+                    }, loc);
+                }
+                if (iomsg) {
+                    ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(iomsg));
+                    ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                    line("if " + stv + " != 0 then");
+                    ind++;
+                    update_lvalue(iomsg, [&](const std::string &cur_s) {
+                        if (mle) return "FStr.fix " + extent(mle) + " " + msgv;
+                        return "FStr.fix " + cur_s + ".length " + msgv;
+                    }, loc);
+                    ind--;
+                }
+                if (!iostat) {
+                    line("if " + stv + " != 0 then LFortran.halt 1");
+                }
+                break;
+            }
+            case ASR::stmtType::FileInquire: {
+                auto &x = *ASR::down_cast<ASR::FileInquire_t>(s);
+                if (x.m_err || x.m_iolength || x.n_iolength_vars > 0
+                        || x.m_blank || x.m_delim || x.m_pad || x.m_flen || x.m_blocksize
+                        || x.m_convert || x.m_carriagecontrol || x.m_decimal || x.m_sign
+                        || x.m_encoding || x.m_stream || x.m_round || x.m_pending
+                        || x.m_asynchronous) {
+                    unsupported("this inquire statement is", loc);
+                }
+                if (!in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("inquire in a procedure is", loc);
+                }
+                level = std::max(level, 2);
+                std::string opt_u = "none";
+                if (x.m_unit) {
+                    if (!is_int(x.m_unit)) unsupported("this inquire statement is", loc);
+                    opt_u = "(some " + atom(int_expr(x.m_unit)) + ")";
+                }
+                std::string opt_f = "none";
+                if (x.m_file) {
+                    if (!is_string(x.m_file)) unsupported("this inquire statement is", loc);
+                    opt_f = "(some " + atom(lower(x.m_file)) + ")";
+                }
+                std::string iv = "inq'" + std::to_string(++loop_id);
+                line("let " + iv + " ← FileIO.inquireUnit " + opt_u + " " + opt_f);
+                auto set_bool = [&](ASR::expr_t *e, const std::string &field) {
+                    if (!e) return;
+                    if (!is_lvalue(e) || !ASR::is_a<ASR::Logical_t>(*unalloc(ASRUtils::expr_type(e)))) {
+                        unsupported("this inquire statement is", loc);
+                    }
+                    update_lvalue(e, [&](const std::string &) { return iv + "." + field; }, loc);
+                };
+                auto set_int = [&](ASR::expr_t *e, const std::string &field) {
+                    if (!e) return;
+                    if (!is_lvalue(e) || !is_int(e)) unsupported("this inquire statement is", loc);
+                    std::string ity = type(unalloc(ASRUtils::expr_type(e)), loc);
+                    update_lvalue(e, [&](const std::string &) {
+                        return "(FInt.ofInt " + iv + "." + field + " : " + ity + ")";
+                    }, loc);
+                };
+                auto set_str = [&](ASR::expr_t *e, const std::string &field) {
+                    if (!e) return;
+                    if (!is_lvalue(e) || !is_string(e)) unsupported("this inquire statement is", loc);
+                    ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(e));
+                    ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                    update_lvalue(e, [&](const std::string &cur_s) {
+                        if (mle) return "FStr.fix " + extent(mle) + " " + iv + "." + field;
+                        return "FStr.fix " + cur_s + ".length " + iv + "." + field;
+                    }, loc);
+                };
+                set_bool(x.m_exist, "exist");
+                set_bool(x.m_opened, "opened");
+                set_int(x.m_number, "number");
+                set_bool(x.m_named, "named");
+                set_str(x.m_name, "name");
+                set_str(x.m_access, "access");
+                set_str(x.m_sequential, "sequential");
+                set_str(x.m_direct, "direct");
+                set_str(x.m_form, "form");
+                set_str(x.m_formatted, "formatted");
+                set_str(x.m_unformatted, "unformatted");
+                set_int(x.m_recl, "recl");
+                set_int(x.m_nextrec, "nextrec");
+                set_str(x.m_action, "action");
+                set_str(x.m_read, "read");
+                set_str(x.m_write, "write");
+                set_str(x.m_readwrite, "readwrite");
+                set_str(x.m_position, "position");
+                set_int(x.m_size, "size");
+                set_int(x.m_pos, "pos");
+                set_int(x.m_iostat, "iostat");
+                if (x.m_iomsg) {
+                    if (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg)) {
+                        unsupported("this inquire statement is", loc);
+                    }
+                    ASR::ttype_t *mt = unalloc(ASRUtils::expr_type(x.m_iomsg));
+                    ASR::expr_t *mle = ASR::down_cast<ASR::String_t>(mt)->m_len;
+                    line("if " + iv + ".iostat != 0 then");
+                    ind++;
+                    update_lvalue(x.m_iomsg, [&](const std::string &cur_s) {
+                        if (mle) return "FStr.fix " + extent(mle) + " " + iv + ".iomsg";
+                        return "FStr.fix " + cur_s + ".length " + iv + ".iomsg";
+                    }, loc);
+                    ind--;
                 }
                 break;
             }
@@ -5647,6 +6365,60 @@ public:
                     struct_ns[st] = prog_ns;
                     all_structs.push_back(st);
                 }
+            }
+        }
+        // Include intrinsic-module procedures that are actually called and have a body.
+        std::map<ASR::Function_t*, std::string> intr_fns;
+        for (ASR::symbol_t *s : symbols_in_order(tu.m_symtab)) {
+            if (ASR::is_a<ASR::Module_t>(*s)) {
+                ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(s);
+                if (!m->m_intrinsic) continue;
+                for (ASR::symbol_t *ms : symbols_in_order(m->m_symtab)) {
+                    if (ASR::is_a<ASR::Function_t>(*ms)) {
+                        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(ms);
+                        if (fn->n_body > 0) intr_fns[fn] = m->m_name;
+                    }
+                }
+            }
+        }
+        if (!intr_fns.empty()) {
+            struct IntrCallFinder : ASR::BaseWalkVisitor<IntrCallFinder> {
+                const std::map<ASR::Function_t*, std::string> &intr_fns;
+                std::set<ASR::Function_t*> &seen;
+                std::vector<ASR::Function_t*> &queue;
+                IntrCallFinder(const std::map<ASR::Function_t*, std::string> &i,
+                    std::set<ASR::Function_t*> &s, std::vector<ASR::Function_t*> &q)
+                    : intr_fns(i), seen(s), queue(q) {}
+                void check(ASR::symbol_t *sym) {
+                    if (!sym) return;
+                    sym = ASRUtils::symbol_get_past_external(sym);
+                    if (ASR::is_a<ASR::Function_t>(*sym)) {
+                        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+                        if (intr_fns.count(fn) && !seen.count(fn)) {
+                            seen.insert(fn);
+                            queue.push_back(fn);
+                        }
+                    }
+                }
+                void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                    check(x.m_name);
+                    ASR::BaseWalkVisitor<IntrCallFinder>::visit_FunctionCall(x);
+                }
+                void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                    check(x.m_name);
+                    ASR::BaseWalkVisitor<IntrCallFinder>::visit_SubroutineCall(x);
+                }
+            };
+            std::set<ASR::Function_t*> seen_intr;
+            std::vector<ASR::Function_t*> q_intr;
+            IntrCallFinder finder(intr_fns, seen_intr, q_intr);
+            for (ASR::Function_t *fn : all_fns) finder.visit_Function(*fn);
+            if (prog) finder.visit_Program(*prog);
+            for (size_t qi = 0; qi < q_intr.size(); qi++) {
+                ASR::Function_t *fn = q_intr[qi];
+                proc_ns[fn] = intr_fns[fn];
+                all_fns.push_back(fn);
+                finder.visit_Function(*fn);
             }
         }
         for (size_t fi = 0; fi < all_fns.size(); fi++) {
