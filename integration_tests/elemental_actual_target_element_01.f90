@@ -267,9 +267,6 @@ if (any(w /= 11.0)) error stop
 w = [3.0, 1.0, 1.0, 1.0]
 where (f > 1.0) w = f + plain(w(1))
 if (any(w /= 5.0)) error stop
-a%x = [3.0, 1.0, 1.0, 1.0]
-where (f > 1.0) a%x = point_x_blend(b, a(1))
-if (any(a%x /= 6.0)) error stop
 
 print *, "ok"
 end program

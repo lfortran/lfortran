@@ -5396,6 +5396,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // A WHERE assignment never reallocates its variable (F2018 10.2.3.1)
     bool inside_where = false;
 
+    // The temporaries of a WHERE construct precede it, unmasked: only its first assignment reads current values there
+    bool is_first_where_assignment = false;
+
     // Whether the scalar operand `x` of an array expression is evaluated
     // once into a variable. One of a derived type is not if it is
     // polymorphic or finalized, since the variable would be one more entity
@@ -5822,11 +5825,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 if (is_target_part_read_per_element(x, i)) {
                     // Later elements must not read the part after it was assigned
                     if (is_actual_passed_as_copy(x, i)) {
-                        current_expr = &arg;
-                        force_replace_current_expr_for_scalar(current_expr,
-                            "_actual_value_", al, current_body, current_scope,
-                            exprs_with_target);
-                    } else {
+                        if (!inside_where || is_first_where_assignment) {
+                            current_expr = &arg;
+                            force_replace_current_expr_for_scalar(current_expr,
+                                "_actual_value_", al, current_body, current_scope,
+                                exprs_with_target);
+                        }
+                    } else if (!inside_where) {
                         target_part_read_per_element = true;
                     }
                 }
@@ -6544,6 +6549,8 @@ class ReplaceExprWithTemporaryVisitor:
     ReplaceExprWithTemporary replacer;
     Vec<ASR::stmt_t*>* parent_body_for_where;
     bool inside_where;
+    // The first statement of the outermost WHERE construct, if it is an assignment
+    const ASR::stmt_t* first_where_assignment = nullptr;
     bool stack_arrays;
     const DummiesSharingActualType& dummies_sharing_actual;
 
@@ -6652,6 +6659,8 @@ class ReplaceExprWithTemporaryVisitor:
         if( !inside_where ) {
             inside_where = true;
             parent_body_for_where = current_body;
+            first_where_assignment = (x.n_body > 0 &&
+                ASR::is_a<ASR::Assignment_t>(*x.m_body[0])) ? x.m_body[0] : nullptr;
         }
         replacer.inside_where = true;
         // Only the first mask expression of the construct is evaluated
@@ -6678,6 +6687,7 @@ class ReplaceExprWithTemporaryVisitor:
         if( !inside_where_copy ) {
             inside_where = false;
             parent_body_for_where = nullptr;
+            first_where_assignment = nullptr;
             replacer.inside_where = false;
         }
     }
@@ -6998,6 +7008,7 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.evaluate_function_references_once =
             evaluate_once_copy && x.m_overloaded == nullptr;
         replacer.target_part_read_per_element = false;
+        replacer.is_first_where_assignment = &x.base == first_where_assignment;
         call_replacer();
         replacer.evaluate_function_references_once = evaluate_once_copy;
         replacer.in_array_context = false;
