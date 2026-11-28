@@ -2710,6 +2710,39 @@ ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
     return sym;
 }
 
+// Whether the designators `a` and `b` are parts of the same variable, e.g. `s%arr` and `s%arr(1)%re`
+bool are_parts_of_same_variable(ASR::expr_t* a, ASR::expr_t* b) {
+    auto root = [](ASR::expr_t* e) -> ASR::symbol_t* {
+        while (e != nullptr) {
+            switch (e->type) {
+                case ASR::exprType::ArrayPhysicalCast:
+                    e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                    break;
+                case ASR::exprType::StringSection:
+                    e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+                    break;
+                case ASR::exprType::StringItem:
+                    e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+                    break;
+                case ASR::exprType::ComplexRe:
+                    e = ASR::down_cast<ASR::ComplexRe_t>(e)->m_arg;
+                    break;
+                case ASR::exprType::ComplexIm:
+                    e = ASR::down_cast<ASR::ComplexIm_t>(e)->m_arg;
+                    break;
+                default: {
+                    ASR::symbol_t* sym = get_root_var(e);
+                    return sym ? get_associated_symbol(
+                        ASRUtils::symbol_get_past_external(sym)) : nullptr;
+                }
+            }
+        }
+        return nullptr;
+    };
+    ASR::symbol_t* a_root = root(a);
+    return a_root != nullptr && a_root == root(b);
+}
+
 // The component that `x` (a component, or an element or a section of one)
 // is part of, e.g. `a%x` for `a%x(1:n)`, if no pointer can reach it (see
 // is_unaliased_designator), otherwise nullptr.
@@ -5332,6 +5365,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::expr_t* lhs_var;
     // Sections that ArgSimplifier left in place (see get_sections_read_in_place)
     const std::set<ASR::expr_t*>* sections_read_in_place = nullptr;
+    // Set when a function reference of the value still reads a part of the assigned variable for every element
+    bool target_part_read_per_element = false;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_,
@@ -5693,6 +5728,35 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
     }
 
+    // Whether the scalar actual `i` of `x` is a part of the assigned variable that `x` reads for every element
+    bool is_target_part_read_per_element(ASR::FunctionCall_t* x, size_t i) {
+        ASR::expr_t* arg = x->m_args[i].m_value;
+        return in_array_context && lhs_var != nullptr &&
+            !ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
+            (ASRUtils::is_elemental(x->m_name) || !ASRUtils::is_array(x->m_type)) &&
+            are_parts_of_same_variable(lhs_var, arg);
+    }
+
+    // Whether the scalar actual `i` of `x` can be replaced by a copy of its value
+    bool is_actual_passed_as_copy(ASR::FunctionCall_t* x, size_t i) {
+        // A value of derived type may be large, polymorphic or finalized
+        ASR::ttype_t* type = ASRUtils::expr_type(x->m_args[i].m_value);
+        if (!(ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
+                ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type) ||
+                ASRUtils::is_character(*type))) {
+            return false;
+        }
+        ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x->m_name);
+        ASR::Function_t* fn = (ASR::is_a<ASR::Function_t>(*callee) ||
+            ASR::is_a<ASR::StructMethodDeclaration_t>(*callee) ||
+            ASR::is_a<ASR::Variable_t>(*callee)) ? ASRUtils::get_function(callee) : nullptr;
+        ASR::Variable_t* dummy = (fn && i < fn->n_args) ?
+            ASRUtils::expr_to_variable_or_null(fn->m_args[i]) : nullptr;
+        // Only a dummy that reads the value and keeps no address of it takes a copy
+        return dummy && (dummy->m_intent == ASRUtils::intent_in || dummy->m_value_attr) &&
+            !dummy->m_target_attr && !ASRUtils::is_allocatable_or_pointer(dummy->m_type);
+    }
+
     void materialize_array_actual(ASR::expr_t*& arg) {
         ASR::ArrayPhysicalCast_t* cast = ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg) ?
             ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg) : nullptr;
@@ -5755,6 +5819,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::expr_t*& arg = x->m_args[i].m_value;
             if (is_association_actual(arg)) {
                 stabilize_actual_designator(arg);
+                if (is_target_part_read_per_element(x, i)) {
+                    // Later elements must not read the part after it was assigned
+                    if (is_actual_passed_as_copy(x, i)) {
+                        current_expr = &arg;
+                        force_replace_current_expr_for_scalar(current_expr,
+                            "_actual_value_", al, current_body, current_scope,
+                            exprs_with_target);
+                    } else {
+                        target_part_read_per_element = true;
+                    }
+                }
             } else {
                 current_expr = &arg;
                 replace_expr(arg);
@@ -6922,6 +6997,7 @@ class ReplaceExprWithTemporaryVisitor:
         bool evaluate_once_copy = replacer.evaluate_function_references_once;
         replacer.evaluate_function_references_once =
             evaluate_once_copy && x.m_overloaded == nullptr;
+        replacer.target_part_read_per_element = false;
         call_replacer();
         replacer.evaluate_function_references_once = evaluate_once_copy;
         replacer.in_array_context = false;
@@ -6941,7 +7017,9 @@ class ReplaceExprWithTemporaryVisitor:
             !ASRUtils::is_allocatable(x.m_target) &&
             is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value, dummies_sharing_actual)) ||
             is_self_ref_allocatable_array ||
-            is_defined_assignment_value_aliasing_target ) {
+            is_defined_assignment_value_aliasing_target ||
+            (replacer.target_part_read_per_element &&
+             ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) ) {
             replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
         }
