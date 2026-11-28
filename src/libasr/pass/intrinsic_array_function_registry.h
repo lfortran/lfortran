@@ -2112,17 +2112,18 @@ static inline ASR::asr_t* create_MaxMinLoc(Allocator& al, const Location& loc,
         if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
             append_error(diag, "`dim` should be a scalar integer type", loc);
             return nullptr;
-        } else if (!extract_value(expr_value(dim_expr), dim)) {
-            append_error(diag, "Runtime values for `dim` argument is not supported yet", loc);
-            return nullptr;
         }
-        if ( dim < 1 || dim > n_dims ) {
+        bool runtime_dim = !extract_value(expr_value(dim_expr), dim);
+        if ( !runtime_dim && (dim < 1 || dim > n_dims) ) {
             append_error(diag, "`dim` argument of `"+ intrinsic_name +"` is out of "
                 "array index range", loc);
             return nullptr;
         }
         if ( n_dims == 1 ) {
             return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+        } else if ( runtime_dim ) {
+            fill_dimensions_for_ArrIntrinsic(al, n_dims - 1, array, dim_expr,
+                diag, true, result_dims);
         } else {
             for ( int i = 1; i <= n_dims; i++ ) {
                 if ( i == dim ) {
@@ -2331,21 +2332,14 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                 doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts, {}));
             }, index_kind);
     } else {
-        int dim = 0;
-        extract_value(expr_value(m_args[1].m_value), dim);
+        int branch_dim = 0;
         b.generate_reduction_intrinsic_stmts_for_array_output(
             loc, args[0], args[1], fn_symtab, body, idx_vars,
             target_idx_vars, doloop_body,
-            [=, &al, &body, &b, &result_kind, &index_kind] () {
+            [=, &al, &body, &b] () {
                 body.push_back(al, b.Assignment(result, b.i_t(0, type)));
-                if (overload_id != 3) {
-                    ASR::expr_t *lb = b.GetLBound(args[0], dim, index_kind);
-                    if (result_kind != index_kind) {
-                        lb = b.i2i_t(lb, type);
-                    }
-                    body.push_back(al, b.Assignment(result, lb));
-                }
-            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind] () {
+            }, [=, &al, &b, &idx_vars, &target_idx_vars, &doloop_body, &result_kind, &index_kind, &branch_dim] () {
+                int dim = branch_dim;
                 ASR::expr_t *result_ref, *array_ref_02;
                 ASR::ttype_t *idx_type = (index_kind == 8) ? int64 : int32;
                 bool condition = is_array(return_type);
@@ -2411,9 +2405,11 @@ static inline ASR::expr_t *instantiate_MaxMinLoc(Allocator &al,
                         }, {})
                     }));
                 } else {
-                    doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {}));
+                    doloop_body.push_back(al, b.If(b.NotEq(result_check, b.i_t(0, type)), guard_stmts_dim, {
+                        b.Assignment(result_ref, res_idx)
+                    }));
                 }
-            }, index_kind);
+            }, index_kind, &branch_dim);
     }
     body.push_back(al, b.Return());
     ASR::symbol_t *fn_sym = nullptr;
@@ -5319,6 +5315,7 @@ namespace FindLoc {
         ASR::expr_t* back = args[5];
         if (!array) return nullptr;
         if (!value) return nullptr;
+        if (!ASRUtils::expr_value(dim)) return nullptr;
         // complex(16) elements are compared as doubles
         if (ASRUtils::is_kind16_array_constant(ASRUtils::expr_value(array)) &&
                 is_complex(*expr_type(array))) return nullptr;
@@ -5594,17 +5591,18 @@ namespace FindLoc {
             if ( !ASR::is_a<ASR::Integer_t>(*expr_type(dim_expr)) ) {
                 append_error(diag, "`dim` should be a scalar integer type", dim_expr->base.loc);
                 return nullptr;
-            } else if (!extract_value(expr_value(dim_expr), dim)) {
-                append_error(diag, "Runtime values for `dim` argument is not supported yet", dim_expr->base.loc);
-                return nullptr;
             }
-            if ( dim < 1 || dim > n_dims ) {
+            bool runtime_dim = !extract_value(expr_value(dim_expr), dim);
+            if ( !runtime_dim && (dim < 1 || dim > n_dims) ) {
                 append_error(diag, "`dim` argument of `findloc` is out of "
                     "array index range", dim_expr->base.loc);
                 return nullptr;
             }
             if ( n_dims == 1 ) {
                 return_type = TYPE(ASR::make_Integer_t(al, loc, kind)); // 1D
+            } else if ( runtime_dim ) {
+                ArrIntrinsic::fill_dimensions_for_ArrIntrinsic(al, n_dims - 1, array,
+                    dim_expr, diag, true, result_dims);
             } else {
                 for ( int i = 1; i <= n_dims; i++ ) {
                     if ( i == dim ) {
@@ -5681,7 +5679,7 @@ namespace FindLoc {
             const Location &loc, SymbolTable *scope,
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& m_args, int64_t overload_id,
-            int /*index_kind*/) {
+            int index_kind) {
     declare_basic_variables("_lcompilers_findloc")
     /*
      *findloc(array, value, dim, mask, kind, back)
@@ -5764,7 +5762,7 @@ namespace FindLoc {
                 }, {})
             }, {})
         }));
-    } else {
+    } else if (overload_id == 0) {
         int array_rank = ASRUtils::extract_n_dims_from_ttype(array_type);
         if (array_rank == 1) {
             body.push_back(al, b.Assignment(result, b.i_t(0, type)));
@@ -5777,59 +5775,52 @@ namespace FindLoc {
                 }, {})
             }));
         } else if (array_rank == 2) {
-            Vec<ASR::expr_t*> idx_vars_ij; idx_vars_ij.reserve(al, 2);
             Vec<ASR::expr_t*> idx_vars_ji; idx_vars_ji.reserve(al, 2);
-            idx_vars_ij.push_back(al, i); idx_vars_ij.push_back(al, j);
             idx_vars_ji.push_back(al, j); idx_vars_ji.push_back(al, i);
             body.push_back(al,b.Assignment(result, b.i_t(0, type)));
-            body.push_back(al, b.If(b.Eq(dim, b.i_t(-1, expr_type(dim))), {
-                b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
-                    b.Assignment(found_value, b.bool_t(0, logical)),
-                    b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
-                        b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ji)), value), b.Or(b.Not(found_value), back)), {
-                            b.Assignment(b.ArrayItem_01(result, {b.i_t(1, type)}), j),
-                            b.Assignment(b.ArrayItem_01(result, {b.i_t(2, type)}), i),
-                            b.Assignment(found_value, b.bool_t(1, logical)),
-                        }, {}),
-                    }),
-                    b.If(b.And(found_value, b.Not(back)), {
-                        b.Exit()
-                    }, {})
-                })
-            },
-            {
-                b.If(b.Eq(dim, b.i_t(1, expr_type(dim))), {
-                    b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
-                        b.Assignment(found_value, b.bool_t(0, logical)),
-                        b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
-                            b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ji)), value), b.Or(b.Not(found_value), back)), {
-                                b.Assignment(b.ArrayItem_01(result, {i}), j),
-                                b.Assignment(found_value, b.bool_t(1, logical)),
-                            }, {}),
-                            b.If(b.And(found_value, b.Not(back)), {
-                                b.Exit()
-                            }, {})
-                        }),
-                    })
-                }, {
-                    b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 1), {
-                        b.Assignment(found_value, b.bool_t(0, logical)),
-                        b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 2), {
-                            b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ij)), value), b.Or(b.Not(found_value), back)), {
-                                b.Assignment(b.ArrayItem_01(result, {i}), j),
-                                b.Assignment(found_value, b.bool_t(1, logical)),
-                            }, {}),
-                            b.If(b.And(found_value, b.Not(back)), {
-                                b.Exit()
-                            }, {})
-                        }),
-
-                    })
-                })
+            body.push_back(al, b.DoLoop(i, b.i_t(1, type), b.GetUBound(array, 2), {
+                b.Assignment(found_value, b.bool_t(0, logical)),
+                b.DoLoop(j, b.i_t(1, type), b.GetUBound(array, 1), {
+                    b.If(b.And(b.Eq(element(ArrayItem_02(array, idx_vars_ji)), value), b.Or(b.Not(found_value), back)), {
+                        b.Assignment(b.ArrayItem_01(result, {b.i_t(1, type)}), j),
+                        b.Assignment(b.ArrayItem_01(result, {b.i_t(2, type)}), i),
+                        b.Assignment(found_value, b.bool_t(1, logical)),
+                    }, {}),
+                }),
+                b.If(b.And(found_value, b.Not(back)), {
+                    b.Exit()
+                }, {})
             }));
         }
+    } else {
+        // `dim` is given: result(..) is the first (or with `back` the last)
+        // position along `dim` where `array` equals `value` and `mask` is true
+        int array_rank = ASRUtils::extract_n_dims_from_ttype(array_type);
+        Vec<ASR::expr_t*> idx_vars, target_idx_vars;
+        Vec<ASR::stmt_t*> doloop_body;
+        int branch_dim = 0;
+        b.generate_reduction_intrinsic_stmts_for_array_output(
+            loc, array, dim, fn_symtab, body, idx_vars, target_idx_vars, doloop_body,
+            [&] () {
+                body.push_back(al, b.Assignment(result, b.i_t(0, type)));
+            }, [&] () {
+                ASR::expr_t *result_ref = array_rank == 1 ? result
+                    : ArrayItem_02(result, target_idx_vars);
+                ASR::expr_t *position = idx_vars[branch_dim - 1];
+                if (extract_kind_from_ttype_t(expr_type(position)) != extract_kind_from_ttype_t(type)) {
+                    position = b.i2i_t(position, type);
+                }
+                ASR::expr_t *found = b.Eq(element(ArrayItem_02(array, idx_vars)), value);
+                if (overload_id == 3) {
+                    found = b.And(found, ASRUtils::is_array(expr_type(mask))
+                        ? ArrayItem_02(mask, idx_vars) : mask);
+                }
+                doloop_body.push_back(al, b.If(b.And(found,
+                    b.Or(back, b.Eq(result_ref, b.i_t(0, type)))), {
+                    b.Assignment(result_ref, position)
+                }, {}));
+            }, index_kind, &branch_dim);
     }
-
     body.push_back(al, b.Return());
     ASR::symbol_t *fn_sym = nullptr;
     if( ASRUtils::expr_intent(result) == ASR::intentType::ReturnVar ) {

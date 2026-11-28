@@ -1273,7 +1273,8 @@ class ASRBuilder {
         ASR::expr_t* array, ASR::expr_t* dim, SymbolTable* fn_scope,
         Vec<ASR::stmt_t*>& fn_body, Vec<ASR::expr_t*>& idx_vars,
         Vec<ASR::expr_t*>& target_idx_vars, Vec<ASR::stmt_t*>& doloop_body,
-        INIT init_stmts, LOOP_BODY loop_body, int index_kind = 4) {
+        INIT init_stmts, LOOP_BODY loop_body, int index_kind = 4,
+        int* reduced_dim = nullptr) {
         init_stmts();
         int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
         ASR::stmt_t** else_ = nullptr;
@@ -1281,6 +1282,10 @@ class ASRBuilder {
         idx_vars.reserve(al, n_dims);
         PassUtils::create_idx_vars(idx_vars, n_dims, loc, al, fn_scope, "_j", index_kind);
         for( int i = 1; i <= n_dims; i++ ) {
+            // `loop_body` builds the branch for `dim == i` and reads `i` from here
+            if( reduced_dim ) {
+                *reduced_dim = i;
+            }
             ASR::expr_t* current_dim = (index_kind == 8) ? i64(i) : i32(i);
             ASR::expr_t* test_expr = Eq(dim, current_dim);
             Vec<ASR::expr_t*> loop_vars;
