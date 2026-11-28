@@ -1,0 +1,21 @@
+# The proof library for generated code: the arithmetic models (`FPModel`,
+# `NoGuardModel`, `VModel`), the proof instances of the templates, error
+# propagation, and the proofs that Lean's `Float` is a `VModel`.
+name = "lfortran_proof"
+defaultTargets = ["LFortranProof"]
+
+[leanOptions]
+autoImplicit = false
+
+[[require]]
+name = "lfortran_runtime"
+path = "../runtime"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "0df444a360eaa60ab8c11dca51a86af692955474"
+
+[[lean_lib]]
+name = "LFortranProof"
+globs = ["LFortranProof.+"]
