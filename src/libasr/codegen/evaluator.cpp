@@ -775,7 +775,7 @@ LLVMTargetConfig resolve_llvm_target_config(
 
     LLVMTargetConfig config;
     config.fast = compiler_options.po.fast;
-    config.fast_math = compiler_options.po.fast
+    config.fast_math = compiler_options.po.assume_no_runtime_errors()
         && !compiler_options.po.no_fast_math;
     config.triple = compiler_options.target.empty()
         ? apply_macos_deployment_target(llvm::sys::getDefaultTargetTriple())

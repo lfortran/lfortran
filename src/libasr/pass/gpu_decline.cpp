@@ -115,8 +115,8 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         // 12,288 `real(8)` reads 3.2 TB/s with a warp per column and
         // 4.4 TB/s with a block).
         // The block combines the sums of its lanes in a different order than
-        // a warp does, which only --fast permits.
-        if (pass_options.fast) {
+        // a warp does. --fast permits that reassociation. --fast-safe does not.
+        if (pass_options.assume_no_runtime_errors()) {
             caps.lanes_column_block = caps.threads_per_block;
         }
         caps.lane_reductions = true;

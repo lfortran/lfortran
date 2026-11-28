@@ -1712,6 +1712,133 @@ end module
     CHECK(noalias_parameters(source, false, procedures).empty());
 }
 
+static void enable_fast_safe(CompilerOptions &co) {
+    co.po.fast_safe = true;
+    co.po.bounds_checking = true;
+}
+
+TEST_CASE("LLVM --fast-safe keeps checks and drops unsound facts") {
+    std::string source = R"(module fast_safe_m
+implicit none
+contains
+integer function combine(a, b, c) result(r)
+    integer, intent(in) :: a, b, c
+    r = a*b + c - a
+end function
+subroutine store(y, n)
+    integer, intent(in) :: n
+    integer, intent(inout) :: y(n)
+    y(n + 1) = 1
+end subroutine
+end module
+)";
+    auto count_i32_ops = [](llvm::Function &fn, size_t &ops, size_t &nsw) {
+        ops = 0;
+        nsw = 0;
+        for (llvm::BasicBlock &block: fn) {
+            for (llvm::Instruction &inst: block) {
+                auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                if (!op || !op->getType()->isIntegerTy(32)) continue;
+                unsigned opcode = op->getOpcode();
+                if (opcode != llvm::Instruction::Add &&
+                        opcode != llvm::Instruction::Sub &&
+                        opcode != llvm::Instruction::Mul) continue;
+                ops++;
+                if (op->hasNoSignedWrap()) nsw++;
+            }
+        }
+    };
+    auto count_bounds_checks = [](llvm::Function &fn) {
+        size_t checks = 0;
+        for (llvm::BasicBlock &block: fn) {
+            for (llvm::Instruction &inst: block) {
+                auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                if (!call || !call->getCalledFunction()) continue;
+                if (call->getCalledFunction()->getName() ==
+                        "_lcompilers_runtime_error_exit") {
+                    checks++;
+                }
+            }
+        }
+        return checks;
+    };
+
+    inspect_definitions(source, true,
+        {{"combine", "_m_combine"}, {"store", "_m_store"}},
+        [&](const std::string &procedure, llvm::Function &fn) {
+            if (procedure == "combine") {
+                size_t ops = 0, nsw = 0;
+                count_i32_ops(fn, ops, nsw);
+                CHECK(ops == 3);
+                CHECK(nsw == 3);
+                CHECK(fn.hasFnAttribute("no-nans-fp-math"));
+                size_t noalias = 0;
+                for (llvm::Argument &arg: fn.args()) {
+                    if (arg.hasNoAliasAttr()) noalias++;
+                }
+                CHECK(noalias == 3);
+            } else {
+                CHECK(count_bounds_checks(fn) == 0);
+            }
+        });
+    inspect_definitions(source, true,
+        {{"combine", "_m_combine"}, {"store", "_m_store"}},
+        [&](const std::string &procedure, llvm::Function &fn) {
+            if (procedure == "combine") {
+                size_t ops = 0, nsw = 0;
+                count_i32_ops(fn, ops, nsw);
+                CHECK(ops == 3);
+                CHECK(nsw == 0);
+                CHECK(!fn.hasFnAttribute("no-nans-fp-math"));
+                CHECK(!fn.hasFnAttribute("no-infs-fp-math"));
+                for (llvm::Argument &arg: fn.args()) {
+                    CHECK(!arg.hasNoAliasAttr());
+                }
+            } else {
+                CHECK(count_bounds_checks(fn) > 0);
+            }
+        }, false, false, false, enable_fast_safe);
+}
+
+TEST_CASE("LLVM loops are not runtime unrolled under --fast-safe") {
+    std::string source = R"(module runtime_unroll_safe_m
+implicit none
+contains
+subroutine window(x, y, i0, i1)
+    real, intent(in) :: x(:,:)
+    real, intent(inout) :: y(:,:)
+    integer, intent(in) :: i0, i1
+    integer :: j
+    do j = 1, size(y, 2)
+        y(:, j) = y(:, j) + x(i0:i1, j)
+    end do
+end subroutine
+end module
+)";
+    inspect_definitions(source, true,
+        {{"window", "_window_real_______0_real_______1"}},
+        [&](const std::string &, llvm::Function &fn) {
+            size_t latches = 0, rolled = 0;
+            for (llvm::BasicBlock &block: fn) {
+                llvm::MDNode *loop = block.getTerminator()->getMetadata(
+                    llvm::LLVMContext::MD_loop);
+                if (!loop) continue;
+                latches++;
+                for (const llvm::MDOperand &op: loop->operands()) {
+                    auto *node = llvm::dyn_cast_or_null<llvm::MDNode>(op.get());
+                    if (!node || node->getNumOperands() == 0) continue;
+                    auto *name = llvm::dyn_cast<llvm::MDString>(node->getOperand(0));
+                    if (name && name->getString() ==
+                            "llvm.loop.unroll.runtime.disable") {
+                        rolled++;
+                    }
+                }
+            }
+            CHECK(rolled == latches);
+            CHECK(latches == 2);
+        }, false, false, false, enable_fast_safe);
+}
+
 TEST_CASE("LLVM signed integer arithmetic is nsw under --fast") {
     std::string source = R"(module integer_nsw_m
 implicit none
@@ -8306,6 +8433,35 @@ end module
         "print *, '@'\ndo\n  n = mod(n + 1, 7)\nend do", output));
     run_cell(e, "b = 1");
     CHECK(cell_value(e, "b%v") == "1");
+}
+
+TEST_CASE("FortranEvaluator: --fast-safe reports an out-of-bounds index") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.fast = true;
+    cu.po.fast_safe = true;
+    FortranEvaluator e(cu);
+    std::string out, err;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int stream, const std::string &text) {
+        (stream == 2 ? err : out) += text;
+    };
+    // The read of `a` keeps the out-of-bounds store live. A store into an
+    // unused local is removed before the bounds check is emitted.
+    // The interactive runtime does not set the process arguments, so
+    // command_argument_count() is -1. Adding 4 then selects a(3), which is
+    // in range, and the check correctly allows it. abs() makes the index
+    // at least 4 for every argument count, including that -1.
+    auto cell = e.execute(
+        "integer :: a(3)\n"
+        "a(abs(command_argument_count()) + 4) = 1\n"
+        "print *, a(1)\n",
+        false, io);
+    INFO(out);
+    INFO(err);
+    CHECK(!cell.ok);
+    CHECK(cell.error_name == "RuntimeError");
+    CHECK(err.find("index out of bounds") != std::string::npos);
 }
 
 TEST_CASE("FortranEvaluator interrupt: at arbitrary times") {
