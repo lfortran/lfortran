@@ -865,8 +865,17 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             elem_len_expr_for_alloc = declared_len_expr;
             if (!declared_len_expr && x->n_args > 0) {
                 ASR::expr_t* sample_expr_any = get_first_scalar_expr(x->m_args[0]);
-                ASR::expr_t* derived_len = get_string_source_len(sample_expr_any);
-                if (derived_len) elem_len_expr_for_alloc = derived_len;
+                if (x->n_args == 1 && !ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_args[0]) &&
+                    sample_expr_any && ASR::is_a<ASR::IntrinsicElementalFunction_t>(*sample_expr_any) &&
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(sample_expr_any)->m_intrinsic_id ==
+                        static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim)) {
+                    elem_len_expr_for_alloc = ASRUtils::EXPR(ASR::make_StringLen_t(
+                        al, loc, sample_expr_any,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr));
+                } else {
+                    ASR::expr_t* derived_len = get_string_source_len(sample_expr_any);
+                    if (derived_len) elem_len_expr_for_alloc = derived_len;
+                }
             }
         }
 

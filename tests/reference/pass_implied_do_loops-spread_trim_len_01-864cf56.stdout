@@ -1,0 +1,227 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            spread_trim_len_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __1__libasr_index_:
+                                (Variable
+                                    2
+                                    __1__libasr_index_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr__created__var__0__array_constructor_:
+                                (Variable
+                                    2
+                                    __libasr__created__var__0__array_constructor_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (String 1 () DeferredLength DescriptorString)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            root:
+                                (Variable
+                                    2
+                                    root
+                                    []
+                                    Local
+                                    (StringConstant
+                                        "/r/"
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    (StringConstant
+                                        "/r/"
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    )
+                                    Save
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    spread_trim_len_01
+                    []
+                    [(ExplicitDeallocate
+                        [(Var 2 __libasr__created__var__0__array_constructor_)]
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 __libasr__created__var__0__array_constructor_)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 1 (Integer 4) Decimal))]
+                        []
+                        (StringLen
+                            (IntrinsicElementalFunction
+                                StringTrim
+                                [(Var 2 root)]
+                                0
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 __1__libasr_index_)
+                        (ArrayBound
+                            (Var 2 __libasr__created__var__0__array_constructor_)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 __libasr__created__var__0__array_constructor_)
+                            [(()
+                            (Var 2 __1__libasr_index_)
+                            ())]
+                            (String 1 () DeferredLength DescriptorString)
+                            RowMajor
+                            ()
+                            .false.
+                        )
+                        (IntrinsicElementalFunction
+                            StringTrim
+                            [(Var 2 root)]
+                            0
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __1__libasr_index_)
+                        (IntegerBinOp
+                            (Var 2 __1__libasr_index_)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StringLen
+                                (IntrinsicArrayFunction
+                                    Spread
+                                    [(Var 2 __libasr__created__var__0__array_constructor_)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)]
+                                    -1
+                                    (Array
+                                        (String 1 () DeferredLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                        )]
+                        []
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

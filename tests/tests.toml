@@ -6240,6 +6240,11 @@ fortran = true
 pass = "implied_do_loops"
 
 [[test]]
+filename = "spread_trim_len_01.f90"
+asr = true
+pass = "implied_do_loops"
+
+[[test]]
 filename = "int_to_int_cast_fortran_codegen.f90"
 fortran = true
 
