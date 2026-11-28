@@ -1,0 +1,13 @@
+{
+    "basename": "pass_implied_do_loops-spread_trim_len_01-864cf56",
+    "cmd": "lfortran --pass=implied_do_loops --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/spread_trim_len_01.f90",
+    "infile_hash": "b15517bceefa4580b4d1cba58a3f84f541923d7f3074ff3a8fcc8cc6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_implied_do_loops-spread_trim_len_01-864cf56.stdout",
+    "stdout_hash": "2bde087b28390ab863c16adb12f8937cba8e9753a3bc74b799a29ec7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
