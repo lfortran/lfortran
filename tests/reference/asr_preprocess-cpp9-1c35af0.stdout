@@ -1,0 +1,25 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            cpp9:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    cpp9
+                    []
+                    [(Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)
