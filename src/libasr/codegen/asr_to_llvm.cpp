@@ -27624,7 +27624,12 @@ public:
                                 }
                             }
                         } else {
-                            if( orig_arg &&
+                            // A class array for a type array dummy is loaded by convert_class_to_type
+                            bool class_to_type_array = orig_arg &&
+                                ASRUtils::is_array(orig_arg->m_type) &&
+                                ASRUtils::is_class_type(ASRUtils::extract_type(arg->m_type)) &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type));
+                            if( orig_arg && !class_to_type_array &&
                                 !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                                 LLVM::is_llvm_pointer(*arg->m_type) &&
                                 !(ASRUtils::is_unlimited_polymorphic_type(arg->m_type) &&
@@ -27633,7 +27638,8 @@ public:
                                 tmp = llvm_utils->CreateLoad2(ptr_load_type, tmp);
                             }
                             // If both are struct arrays and types don't match, bitcast to orig_arg_type
-                            if (ASRUtils::is_array(orig_arg->m_type) && ASRUtils::is_array(arg->m_type) &&
+                            if (!class_to_type_array &&
+                                ASRUtils::is_array(orig_arg->m_type) && ASRUtils::is_array(arg->m_type) &&
                                 !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type)) &&
                                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg->m_type)) &&
                                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg->m_type))) {
@@ -27643,11 +27649,7 @@ public:
                                     tmp = builder->CreateBitCast(tmp, llvm_orig_arg_type->getPointerTo());
                                 }
                             }
-                            if (orig_arg &&
-                                ASRUtils::is_array(orig_arg->m_type) &&
-                                ASRUtils::is_array(arg->m_type) &&
-                                ASRUtils::is_class_type(ASRUtils::extract_type(arg->m_type)) &&
-                                !ASRUtils::is_class_type(ASRUtils::extract_type(orig_arg->m_type))) {
+                            if (class_to_type_array) {
                                 tmp = convert_class_to_type(x.m_args[i].m_value, nullptr, orig_arg->m_type_declaration, orig_arg->m_type, tmp);
                             }
                         }
