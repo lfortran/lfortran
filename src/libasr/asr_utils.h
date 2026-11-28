@@ -3929,6 +3929,8 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
         }
     }
 
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x);
+
 };
 
 // Finds the argument index that is equal to `v`, otherwise -1.

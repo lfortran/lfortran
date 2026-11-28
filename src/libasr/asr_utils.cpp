@@ -15754,6 +15754,17 @@ void ReplaceArgVisitor::replace_Var(ASR::Var_t* x) {
     }
 }
 
+void ReplaceArgVisitor::replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+    ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_ArrayPhysicalCast(x);
+    ASR::array_physical_typeType new_old =
+        ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+    if (x->m_old != new_old) {
+        *current_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+            al, x->base.base.loc, x->m_arg, new_old, x->m_new,
+            x->m_type, x->m_value));
+    }
+}
+
 ASR::asr_t* ExprStmtWithScopeDuplicator::duplicate_FunctionPointerCast(ASR::FunctionPointerCast_t* x) {
     ASR::expr_t* m_arg = duplicate_expr(x->m_arg);
     ASR::symbol_t* m_to = x->m_to;
