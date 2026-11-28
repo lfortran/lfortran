@@ -13833,6 +13833,13 @@ public:
             current_scope->add_symbol(dt_name, ASR::down_cast<ASR::symbol_t>(tmp));
             return;
         }
+        if (is_abstract && is_bindc) {
+            diag.add(diag::Diagnostic(
+                "A BIND(C) derived type cannot be ABSTRACT",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         ASR::symbol_t* parent_sym = nullptr;
         if( attr_extend != nullptr ) {
             std::string parent_sym_name = to_lower(attr_extend->m_name);
