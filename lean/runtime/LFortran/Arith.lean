@@ -162,6 +162,58 @@ def pow (a b : ι) : ι :=
 def fmax (a b : ι) : ι := if lt a b then b else a
 def fmin (a b : ι) : ι := if lt b a then b else a
 
+/-- Unsigned `w`-bit two's-complement representation of an `FInt`. -/
+def toBits (w : Nat) (x : ι) : Nat :=
+  let m : Int := Int.ofNat (1 <<< w)
+  ((toInt x) % m).toNat
+
+/-- Convert a `w`-bit unsigned `Nat` back to signed two's-complement `FInt`. -/
+def ofBits (w : Nat) (u : Nat) : ι :=
+  let m := 1 <<< w
+  let u' := u % m
+  let half := 1 <<< (w - 1)
+  ofInt (if u' >= half then (u' : Int) - (m : Int) else (u' : Int))
+
+def iand (w : Nat) (a b : ι) : ι := ofBits w (toBits w a &&& toBits w b)
+def ior (w : Nat) (a b : ι) : ι := ofBits w (toBits w a ||| toBits w b)
+def ieor (w : Nat) (a b : ι) : ι := ofBits w (toBits w a ^^^ toBits w b)
+def inot (w : Nat) (a : ι) : ι := ofBits w (((1 <<< w) - 1) ^^^ toBits w a)
+
+def ishft (w : Nat) (a : ι) (shift : Int) : ι :=
+  let u := toBits w a
+  if shift >= 0 then
+    let s := shift.toNat
+    if s >= w then ofInt 0 else ofBits w (u <<< s)
+  else
+    let s := (-shift).toNat
+    if s >= w then ofInt 0 else ofBits w (u >>> s)
+
+def ibits (w : Nat) (a : ι) (pos len : Int) : ι :=
+  if pos < 0 || len <= 0 then ofInt 0
+  else
+    let p := pos.toNat
+    let l := len.toNat
+    if p >= w then ofInt 0
+    else ofBits w ((toBits w a >>> p) &&& ((1 <<< l) - 1))
+
+def btest (w : Nat) (a : ι) (pos : Int) : Bool :=
+  if pos < 0 then false
+  else
+    let p := pos.toNat
+    if p >= w then false else ((toBits w a >>> p) &&& 1) == 1
+
+def ibset (w : Nat) (a : ι) (pos : Int) : ι :=
+  if pos < 0 then a
+  else
+    let p := pos.toNat
+    if p >= w then a else ofBits w (toBits w a ||| (1 <<< p))
+
+def ibclr (w : Nat) (a : ι) (pos : Int) : ι :=
+  if pos < 0 then a
+  else
+    let p := pos.toNat
+    if p >= w then a else ofBits w (toBits w a &&& (((1 <<< w) - 1) ^^^ (1 <<< p)))
+
 end FInt
 
 namespace FReal
