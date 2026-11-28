@@ -1,0 +1,4 @@
+.lake/
+*.olean
+/runtime/lake-manifest.json
+/proof/lake-manifest.json

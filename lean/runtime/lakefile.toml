@@ -1,0 +1,12 @@
+# The Lean runtime of `lfortran --backend=lean`: the interface generated code
+# is written against (`LFortran.Arith`), arrays (`LFortran.Arr`) and the
+# executable instance (`LFortran.Runtime`). No dependencies, no Mathlib.
+name = "lfortran_runtime"
+defaultTargets = ["LFortranRuntime"]
+
+[leanOptions]
+autoImplicit = false
+
+[[lean_lib]]
+name = "LFortranRuntime"
+roots = ["LFortran.Arith", "LFortran.Arr", "LFortran.Fmt", "LFortran.FileIO", "LFortran.Runtime"]
