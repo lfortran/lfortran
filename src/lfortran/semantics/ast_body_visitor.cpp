@@ -7810,6 +7810,11 @@ public:
                     ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(master_function_arg);
                     std::string sym_name = ASRUtils::symbol_name(var->m_v);
                     sym = entry_function->m_symtab->resolve_symbol(sym_name);
+                    if (sym == nullptr && entry_function->m_return_var &&
+                            ASRUtils::types_equal(ASRUtils::symbol_type(var->m_v),
+                                ASRUtils::expr_type(entry_function->m_return_var), nullptr, nullptr)) {
+                        sym = ASR::down_cast<ASR::Var_t>(entry_function->m_return_var)->m_v;
+                    }
                 }
                 LCOMPILERS_ASSERT(sym != nullptr);
                 // result variables of the same type are one variable
@@ -7817,7 +7822,13 @@ public:
                         ASR::down_cast<ASR::Variable_t>(sym)->m_intent == ASR::intentType::Local &&
                         ASRUtils::types_equal(ASRUtils::symbol_type(sym),
                             ASRUtils::expr_type(entry_function->m_return_var), nullptr, nullptr)) {
-                    sym = ASR::down_cast<ASR::Var_t>(entry_function->m_return_var)->m_v;
+                    ASR::symbol_t* ret_sym = ASR::down_cast<ASR::Var_t>(entry_function->m_return_var)->m_v;
+                    ASR::ttype_t* sym_type = ASRUtils::symbol_type(sym);
+                    if (sym != ret_sym && ASRUtils::is_character(*sym_type) &&
+                            ASRUtils::get_string_type(sym_type)->m_len_kind == ASR::AssumedLength) {
+                        entry_function->m_symtab->erase_symbol(ASRUtils::symbol_name(sym));
+                    }
+                    sym = ret_sym;
                 }
                 arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             } else {

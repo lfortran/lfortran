@@ -1817,7 +1817,15 @@ public:
                 ASR::down_cast<ASR::Variable_t>(result)->m_intent = ASR::intentType::ReturnVar;
                 return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, result));
             } else if (!is_master) {
-                ASR::down_cast<ASR::Variable_t>(result)->m_intent = ASR::intentType::Local;
+                ASR::Variable_t* res_var = ASR::down_cast<ASR::Variable_t>(result);
+                if (ASRUtils::is_character(*res_var->m_type) &&
+                        ASRUtils::get_string_type(res_var->m_type)->m_len_kind == ASR::AssumedLength) {
+                    current_scope->erase_symbol(name);
+                } else {
+                    res_var->m_intent = ASR::intentType::Local;
+                }
+            } else {
+                ASR::down_cast<ASR::Variable_t>(result)->m_intent = ASR::intentType::Out;
             }
         }
 
@@ -3821,6 +3829,17 @@ public:
             std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name, result_names);
 
             create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, result_names);
+            for (auto &name: result_names) {
+                if (name == result->m_name) continue;
+                ASR::symbol_t* res_sym = current_scope->get_symbol(name);
+                if (res_sym && ASR::is_a<ASR::Variable_t>(*res_sym)) {
+                    ASR::Variable_t* res_var = ASR::down_cast<ASR::Variable_t>(res_sym);
+                    if (ASRUtils::is_character(*res_var->m_type) &&
+                            ASRUtils::get_string_type(res_var->m_type)->m_len_kind == ASR::AssumedLength) {
+                        current_scope->erase_symbol(name);
+                    }
+                }
+            }
         }
         try {
             add_class_procedures();
