@@ -31473,6 +31473,11 @@ public:
             }
         }
 
+        if (str->m_physical_type == ASR::CChar &&
+                str->m_len_kind == ASR::DeferredLength) {
+            str->m_physical_type = ASR::DescriptorString;
+        }
+
     // Check CChar length
         if(str->m_physical_type == ASR::CChar
                 && str->m_len_kind != ASR::DeferredLength

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-bindc_cchar_deferred_ptr_01-bdcc61b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/bindc_cchar_deferred_ptr_01.f90",
+    "infile_hash": "6c1c42d2ee18e2fafe9035bf61acc13f29b78d06a29c503acf29e106",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-bindc_cchar_deferred_ptr_01-bdcc61b.stdout",
+    "stdout_hash": "33598a68187699a186515adb57c947235916187175ea392691ec7beb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

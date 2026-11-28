@@ -3420,16 +3420,17 @@ public:
                             }
                         }
                     }
-                    ASR::string_physical_typeType phys_type =
-                        (is_c_char_kind && current_procedure_abi_type == ASR::abiType::BindC)
-                        ? ASR::string_physical_typeType::CChar
-                        : ASR::string_physical_typeType::DescriptorString;
                     ASR::string_length_kindType len_kind = ASR::string_length_kindType::ExpressionLength;
                     if (a_len == -3) {
                         len_kind = ASR::string_length_kindType::AssumedLength;
                     } else if (a_len == -1 && len_expr == nullptr) {
                         len_kind = ASR::string_length_kindType::DeferredLength;
                     }
+                    ASR::string_physical_typeType phys_type =
+                        (is_c_char_kind && current_procedure_abi_type == ASR::abiType::BindC &&
+                         len_kind != ASR::string_length_kindType::DeferredLength)
+                        ? ASR::string_physical_typeType::CChar
+                        : ASR::string_physical_typeType::DescriptorString;
                     type = ASRUtils::TYPE(ASR::make_String_t( al, x.base.base.loc, 1,
                         len_expr,
                         len_kind,
