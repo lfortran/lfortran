@@ -8142,3 +8142,9 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_overlap_trigger_01.f90"
 gpu_cuda_kernel = true
 options = "--gpu-overlap"
+
+
+[[test]]
+filename = "cpu_time_allocatable_01.f90"
+options = "--pass=intrinsic_subroutine,subroutine_from_function"
+asr = true

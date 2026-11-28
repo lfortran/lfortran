@@ -1505,22 +1505,23 @@ namespace CpuTime {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
                 
+        ASR::ttype_t* time_type = ASRUtils::type_get_past_allocatable_pointer(arg_types[0]);
         std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
+        if (ASRUtils::extract_kind_from_ttype_t(time_type) == 4) {
             c_func_name = "_lfortran_s_cpu_time";
         } else {
             c_func_name = "_lfortran_d_cpu_time";
         }
-        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        std::string new_name = "_lcompilers_cpu_time_" + type_to_str_python_expr(time_type, new_args[0].m_value);
         declare_basic_variables(new_name);
-        fill_func_arg_sub("time", arg_types[0], Out);
+        fill_func_arg_sub("time", time_type, Out);
 
-        ASR::symbol_t *s = b.create_c_func_subroutines(c_func_name, fn_symtab, 0, arg_types[0]);
+        ASR::symbol_t *s = b.create_c_func_subroutines(c_func_name, fn_symtab, 0, time_type);
         fn_symtab->add_symbol(c_func_name, s);
         dep.push_back(al, s2c(al, c_func_name));
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
-        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, arg_types[0])));
+        body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, time_type)));
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, new_symbol);
