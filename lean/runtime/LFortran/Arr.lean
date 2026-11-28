@@ -377,6 +377,50 @@ def merge {α : Type} [Inhabited α] (t : Sum α (Arr α)) (f : Sum α (Arr α))
     out := out.push v
   return { lbs := Array.replicate exts.size 1, exts := exts, data := out }
 
+/-- Fortran `reshape(source, shape, pad, order)`: reshape `a` to `newExts`
+(1-based `lbs`), cycling `pad` when `source` has fewer elements than `∏ newExts`,
+and permuting destination dimensions by 1-based `order` when provided. -/
+def reshapeFull {α : Type} [Inhabited α] (a : Arr α) (newExts : Array Nat)
+    (pad : Option (Arr α) := none) (order : Option (Array Nat) := none) : Arr α := Id.run do
+  let mut total : Nat := 1
+  for e in newExts do total := total * e
+  let mut flat : Array α := Array.mkEmpty total
+  for i in [:total] do
+    if i < a.data.size then
+      flat := flat.push a.data[i]!
+    else
+      match pad with
+      | some p =>
+        if p.data.size > 0 then
+          flat := flat.push p.data[(i - a.data.size) % p.data.size]!
+        else
+          flat := flat.push default
+      | none => flat := flat.push default
+  match order with
+  | none => return { lbs := Array.replicate newExts.size 1, exts := newExts, data := flat }
+  | some ord =>
+    let rank := newExts.size
+    let mut out : Array α := Array.replicate total default
+    let mut srcExts : Array Nat := Array.mkEmpty rank
+    for k in [:rank] do
+      srcExts := srcExts.push (newExts.getD (ord.getD k 1 - 1) 0)
+    let mut dstStrides : Array Nat := Array.mkEmpty rank
+    let mut st : Nat := 1
+    for k in [:rank] do
+      dstStrides := dstStrides.push st
+      st := st * newExts[k]!
+    for idx in [:total] do
+      let mut rem := idx
+      let mut dstOff : Nat := 0
+      for k in [:rank] do
+        let e := srcExts[k]!
+        let c := rem % e
+        rem := rem / e
+        let d := ord.getD k 1 - 1
+        dstOff := dstOff + c * dstStrides.getD d 1
+      out := out.set! dstOff flat[idx]!
+    return { lbs := Array.replicate rank 1, exts := newExts, data := out }
+
 end Arr
 
 end LFortran
