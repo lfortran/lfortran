@@ -5383,7 +5383,7 @@ public:
                 // sizes, or deferred-length string expressions like
                 // concatenation), wrap in Allocatable so that the subsequent
                 // assignment can allocate memory for the target.
-                tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+                tmp_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
                     tmp_type->base.loc, tmp_type));
             }
 
