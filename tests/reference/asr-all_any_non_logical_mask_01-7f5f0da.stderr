@@ -1,0 +1,11 @@
+semantic error: `mask` argument of `All` intrinsic must be a logical array
+ --> tests/errors/all_any_non_logical_mask_01.f90:3:18
+  |
+3 |     print *, all(a)
+  |                  ^ 
+
+semantic error: `mask` argument of `Any` intrinsic must be a logical array
+ --> tests/errors/all_any_non_logical_mask_01.f90:4:18
+  |
+4 |     print *, any(a)
+  |                  ^ 

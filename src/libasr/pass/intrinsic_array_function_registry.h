@@ -4116,7 +4116,9 @@ namespace AnyAll {
         if( args.size() == 2 ) {
             dim = args[1];
         }
-        if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask)) == 0 ) {
+        ASR::ttype_t* mask_type = ASRUtils::expr_type(mask);
+        if( ASRUtils::extract_n_dims_from_ttype(mask_type) == 0 ||
+                !ASRUtils::is_logical(*mask_type) ) {
             append_error(diag, "`mask` argument of `" + intrinsic_func_name + "` intrinsic must be a logical array",
                 mask->base.loc);
             return nullptr;
