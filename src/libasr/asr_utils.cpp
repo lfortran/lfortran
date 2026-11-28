@@ -3939,13 +3939,6 @@ ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t
             }
         }
         if (a_name == nullptr) {
-            sym = arg_struct->m_symtab->parent->resolve_symbol(read_write);
-            if (sym) {
-                expr_dt = item;
-                resolve_generic(sym);
-            }
-        }
-        if (a_name == nullptr) {
             expr_dt = nullptr;
         }
     }
