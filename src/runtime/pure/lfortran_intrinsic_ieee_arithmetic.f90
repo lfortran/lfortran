@@ -86,7 +86,7 @@ module lfortran_intrinsic_ieee_arithmetic
     end interface
 
     interface ieee_unordered
-        module procedure spieee_unordered, dpieee_unordered
+        module procedure spieee_unordered, dpieee_unordered, spdpieee_unordered, dpspieee_unordered
     end interface
 
     interface ieee_logb
@@ -453,6 +453,22 @@ module lfortran_intrinsic_ieee_arithmetic
     elemental function dpieee_unordered(x, y) result(r)
         use iso_fortran_env, only: real64
         real(real64), intent(in) :: x, y
+        logical :: r
+        r = x /= x .or. y /= y
+    end function
+
+    elemental function spdpieee_unordered(x, y) result(r)
+        use iso_fortran_env, only: real32, real64
+        real(real32), intent(in) :: x
+        real(real64), intent(in) :: y
+        logical :: r
+        r = x /= x .or. y /= y
+    end function
+
+    elemental function dpspieee_unordered(x, y) result(r)
+        use iso_fortran_env, only: real32, real64
+        real(real64), intent(in) :: x
+        real(real32), intent(in) :: y
         logical :: r
         r = x /= x .or. y /= y
     end function
