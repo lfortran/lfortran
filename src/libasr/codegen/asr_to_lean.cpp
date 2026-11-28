@@ -868,15 +868,24 @@ private:
             unsupported("this implied do loop is", loc);
         }
         ASR::Variable_t *iv = ASRUtils::EXPR2VAR(x.m_var);
-        std::string ity = type(ASRUtils::expr_type(x.m_var), loc);
-        std::string lo = "(" + lower(x.m_start).src + " : " + ity + ")";
-        std::string hi = atom(lower(x.m_end));
+        ASR::ttype_t *ivt = unalloc(ASRUtils::expr_type(x.m_var));
+        std::string ity = type(ivt, loc);
+        int ik = ASRUtils::extract_kind_from_ttype_t(ivt);
+        auto bound_in_kind = [&](ASR::expr_t *b) -> std::string {
+            ASR::ttype_t *bt = unalloc(ASRUtils::expr_type(b));
+            if (ASRUtils::extract_kind_from_ttype_t(bt) != ik) {
+                return "(FInt.ofInt " + atom(int_expr(b)) + " : " + ity + ")";
+            }
+            return atom(lower(b));
+        };
+        std::string lo = "(" + bound_in_kind(x.m_start) + " : " + ity + ")";
+        std::string hi = bound_in_kind(x.m_end);
         bool unit = !x.m_increment
             || (ASR::is_a<ASR::IntegerConstant_t>(*x.m_increment)
                 && ASR::down_cast<ASR::IntegerConstant_t>(x.m_increment)->m_n == 1);
         std::string range = unit
             ? "(FInt.range " + lo + " " + hi + ")"
-            : "(FInt.rangeStep " + lo + " " + hi + " " + atom(lower(x.m_increment)) + ")";
+            : "(FInt.rangeStep " + lo + " " + hi + " " + bound_in_kind(x.m_increment) + ")";
         std::string vn = "id'" + std::to_string(++loop_id);
         std::string acc = "acc'" + std::to_string(++loop_id);
         auto prev = implied_vars.find(iv);
@@ -996,26 +1005,30 @@ private:
     }
 
     // Lift a binary operation on scalar expressions to arrays (handling
-    // ArrayBroadcast on either side via Arr.map, or two arrays via Arr.zipWith).
+    // scalar or ArrayBroadcast on either side via Arr.map, or two arrays via Arr.zipWith).
     Val lift_binop(ASR::expr_t *l, ASR::expr_t *r,
             const std::function<std::string(const std::string&, const std::string&)> &fn) {
+        l = unwrap_physical_cast(l);
+        r = unwrap_physical_cast(r);
         bool lb = ASR::is_a<ASR::ArrayBroadcast_t>(*l);
         bool rb = ASR::is_a<ASR::ArrayBroadcast_t>(*r);
-        if (lb && !rb) {
-            ASR::expr_t *ls = ASR::down_cast<ASR::ArrayBroadcast_t>(l)->m_array;
+        bool ls_scalar = lb || !is_array(ASRUtils::expr_type(l));
+        bool rs_scalar = rb || !is_array(ASRUtils::expr_type(r));
+        if (ls_scalar && !rs_scalar) {
+            ASR::expr_t *ls = lb ? ASR::down_cast<ASR::ArrayBroadcast_t>(l)->m_array : l;
             if (is_array(ASRUtils::expr_type(ls))) unsupported("this array expression is", l->base.loc);
             std::string sv = atom(operand(ls));
             return app("Arr.map", {{"((fun s' y' => " + fn("s'", "y'") + ") " + sv + ")", pAtom},
                 lower(r)});
         }
-        if (rb && !lb) {
-            ASR::expr_t *rs = ASR::down_cast<ASR::ArrayBroadcast_t>(r)->m_array;
+        if (rs_scalar && !ls_scalar) {
+            ASR::expr_t *rs = rb ? ASR::down_cast<ASR::ArrayBroadcast_t>(r)->m_array : r;
             if (is_array(ASRUtils::expr_type(rs))) unsupported("this array expression is", r->base.loc);
             std::string sv = atom(operand(rs));
             return app("Arr.map", {{"((fun s' x' => " + fn("x'", "s'") + ") " + sv + ")", pAtom},
                 lower(l)});
         }
-        if (is_array(ASRUtils::expr_type(l)) && is_array(ASRUtils::expr_type(r)) && !lb && !rb) {
+        if (!ls_scalar && !rs_scalar) {
             return app("Arr.zipWith", {{"(fun x' y' => " + fn("x'", "y'") + ")", pAtom},
                 lower(l), lower(r)});
         }
@@ -1722,64 +1735,75 @@ private:
         auto is_mask_arg = [&](ASR::expr_t *m) -> bool {
             return m && ASR::is_a<ASR::Logical_t>(*elem_type(ASRUtils::expr_type(m)));
         };
-        bool scalar_red = (x.n_args == 1)
-            || (x.n_args == 2 && (!x.m_args[1] || is_mask_arg(x.m_args[1])))
-            || (x.n_args == 3 && !x.m_args[1] && (!x.m_args[2] || is_mask_arg(x.m_args[2])));
+        bool scalar_red = !is_array(x.m_type) && ((x.n_args == 1)
+            || (x.n_args == 2 && (!x.m_args[1] || is_mask_arg(x.m_args[1]) || is_int(x.m_args[1])))
+            || (x.n_args == 3 && (!x.m_args[1] || is_int(x.m_args[1]))
+                && (!x.m_args[2] || is_mask_arg(x.m_args[2]))));
         size_t mask_idx = (x.n_args == 2 && is_mask_arg(x.m_args[1])) ? 1
             : ((x.n_args == 3 && is_mask_arg(x.m_args[2])) ? 2 : x.n_args);
+        ASR::expr_t *scalar_dim = (scalar_red && x.n_args >= 2 && x.m_args[1] && is_int(x.m_args[1]))
+            ? x.m_args[1] : nullptr;
+        auto wrap_scalar_dim = [&](Val res) -> Val {
+            if (!scalar_dim || ASR::is_a<ASR::IntegerConstant_t>(*scalar_dim)) return res;
+            return {"((fun r' (_ : Int) => r') " + atom(res) + " "
+                + atom(int_expr(scalar_dim)) + ")", pAtom};
+        };
         auto red_arr = [&]() -> std::string {
             if (mask_idx < x.n_args && x.m_args[mask_idx]) {
                 return atom(lower_pack(x.m_args[0], x.m_args[mask_idx], loc));
             }
             return atom(lower(x.m_args[0]));
         };
-        if (id == F::Sum && scalar_red && !is_array(x.m_type)
+        if (id == F::Sum && scalar_red
                 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
             ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
             std::string a = red_arr();
             if (ASR::is_a<ASR::Integer_t>(*et)) {
-                return {"(" + a + ".data.foldl FInt.add (FInt.ofInt 0) : "
-                    + type(x.m_type, loc) + ")", pAtom};
+                return wrap_scalar_dim({"(" + a + ".data.foldl FInt.add (FInt.ofInt 0) : "
+                    + type(x.m_type, loc) + ")", pAtom});
             }
             if (ASR::is_a<ASR::Real_t>(*et)) {
-                return {"(" + a + ".data.foldl FReal.add (FReal.ofInt 0) : "
-                    + type(x.m_type, loc) + ")", pAtom};
+                return wrap_scalar_dim({"(" + a + ".data.foldl FReal.add (FReal.ofInt 0) : "
+                    + type(x.m_type, loc) + ")", pAtom});
             }
             if (ASR::is_a<ASR::Complex_t>(*et)) {
-                return {"(" + a + ".data.foldl FCplx.add FCplx.zero : "
-                    + type(x.m_type, loc) + ")", pAtom};
+                return wrap_scalar_dim({"(" + a + ".data.foldl FCplx.add FCplx.zero : "
+                    + type(x.m_type, loc) + ")", pAtom});
             }
         }
-        if (id == F::Product && scalar_red && !is_array(x.m_type)
+        if (id == F::Product && scalar_red
                 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
             ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
             std::string a = red_arr();
             if (ASR::is_a<ASR::Integer_t>(*et)) {
-                return {"(" + a + ".data.foldl FInt.mul (FInt.ofInt 1) : "
-                    + type(x.m_type, loc) + ")", pAtom};
+                return wrap_scalar_dim({"(" + a + ".data.foldl FInt.mul (FInt.ofInt 1) : "
+                    + type(x.m_type, loc) + ")", pAtom});
             }
             if (ASR::is_a<ASR::Real_t>(*et)) {
-                return {"(" + a + ".data.foldl FReal.mul (FReal.ofInt 1) : "
-                    + type(x.m_type, loc) + ")", pAtom};
+                return wrap_scalar_dim({"(" + a + ".data.foldl FReal.mul (FReal.ofInt 1) : "
+                    + type(x.m_type, loc) + ")", pAtom});
             }
             if (ASR::is_a<ASR::Complex_t>(*et)) {
-                return {"(" + a + ".data.foldl FCplx.mul (FCplx.ofReal (FReal.ofInt 1)) : "
-                    + type(x.m_type, loc) + ")", pAtom};
+                return wrap_scalar_dim({"(" + a + ".data.foldl FCplx.mul (FCplx.ofReal (FReal.ofInt 1)) : "
+                    + type(x.m_type, loc) + ")", pAtom});
             }
         }
-        if ((id == F::Any || id == F::All) && x.n_args == 1
+        if ((id == F::Any || id == F::All) && !is_array(x.m_type)
+                && (x.n_args == 1 || (x.n_args == 2 && (!x.m_args[1] || is_int(x.m_args[1]))))
                 && is_array(ASRUtils::expr_type(x.m_args[0]))
                 && ASR::is_a<ASR::Logical_t>(*elem_type(ASRUtils::expr_type(x.m_args[0])))) {
             std::string a = atom(lower(x.m_args[0]));
-            return {a + ".data." + (id == F::Any ? "any" : "all") + " (fun b' => b')", pApp};
+            return wrap_scalar_dim({a + ".data." + (id == F::Any ? "any" : "all")
+                + " (fun b' => b')", pApp});
         }
-        if (id == F::Count && x.n_args == 1
+        if (id == F::Count && !is_array(x.m_type)
+                && (x.n_args == 1 || (x.n_args == 2 && (!x.m_args[1] || is_int(x.m_args[1]))))
                 && is_array(ASRUtils::expr_type(x.m_args[0]))
                 && ASR::is_a<ASR::Logical_t>(*elem_type(ASRUtils::expr_type(x.m_args[0])))) {
             std::string a = atom(lower(x.m_args[0]));
-            return {"(FInt.ofInt (Int.ofNat (" + a
+            return wrap_scalar_dim({"(FInt.ofInt (Int.ofNat (" + a
                 + ".data.foldl (fun n' b' => if b' then n' + 1 else n') 0)) : "
-                + type(x.m_type, loc) + ")", pAtom};
+                + type(x.m_type, loc) + ")", pAtom});
         }
         if (id == F::DotProduct && x.n_args == 2
                 && is_array(ASRUtils::expr_type(x.m_args[0]))
@@ -1827,8 +1851,8 @@ private:
                 fn = id == F::MaxVal ? "FReal.fmax" : "FReal.fmin";
             }
             if (!fn.empty()) {
-                return {"((let d' := " + a + ".data; if d'.isEmpty then " + empty_val
-                    + " else d'.foldl " + fn + " d'[0]!) : " + ty + ")", pAtom};
+                return wrap_scalar_dim({"((let d' := " + a + ".data; if d'.isEmpty then "
+                    + empty_val + " else d'.foldl " + fn + " d'[0]!) : " + ty + ")", pAtom});
             }
         }
         // `dim=` reductions (`sum`, `product`, `any`, `all`, `count`, `maxval`, `minval`)
@@ -1937,6 +1961,22 @@ private:
         if (id == F::Pack && (x.n_args == 2 || x.n_args == 3)) {
             return lower_pack(x.m_args[0], x.m_args[1], loc,
                 x.n_args == 3 ? x.m_args[2] : nullptr);
+        }
+        if (id == F::Unpack && x.n_args == 3
+                && is_array(ASRUtils::expr_type(x.m_args[0]))
+                && is_array(ASRUtils::expr_type(x.m_args[1]))) {
+            ASR::expr_t *fld = unwrap_physical_cast(x.m_args[2]);
+            bool fld_bcast = ASR::is_a<ASR::ArrayBroadcast_t>(*fld);
+            bool fld_scalar = fld_bcast || !is_array(ASRUtils::expr_type(fld));
+            std::string fld_src;
+            if (fld_scalar) {
+                ASR::expr_t *fs = fld_bcast ? ASR::down_cast<ASR::ArrayBroadcast_t>(fld)->m_array : fld;
+                if (is_array(ASRUtils::expr_type(fs))) unsupported("this unpack is", loc);
+                fld_src = "(Sum.inl " + atom(operand(fs)) + ")";
+            } else {
+                fld_src = "(Sum.inr " + atom(lower(fld)) + ")";
+            }
+            return app("Arr.unpack", {lower(x.m_args[0]), lower(x.m_args[1]), {fld_src, pAtom}});
         }
         if (id == F::Spread && x.n_args == 3) {
             if (x.m_overload_id == -1 || !is_array(ASRUtils::expr_type(x.m_args[0]))) {
@@ -2305,7 +2345,12 @@ private:
             case ASR::exprType::StringConcat: {
                 auto &x = *ASR::down_cast<ASR::StringConcat_t>(e);
                 if (x.m_value && x.m_value != e) return lower(x.m_value);
-                if (is_array(x.m_type)) unsupported("this array expression is", loc);
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [](const std::string &a, const std::string &b) {
+                            return "(" + a + " ++ " + b + ")";
+                        });
+                }
                 return {"(" + atom(lower(x.m_left)) + " ++ " + atom(lower(x.m_right)) + ")", pAtom};
             }
             case ASR::exprType::StringRepeat: {
@@ -2365,7 +2410,20 @@ private:
             case ASR::exprType::StringCompare: {
                 auto &x = *ASR::down_cast<ASR::StringCompare_t>(e);
                 if (x.m_value && x.m_value != e) return lower(x.m_value);
-                if (is_array(x.m_type)) unsupported("this array expression is", loc);
+                if (is_array(x.m_type)) {
+                    return lift_binop(x.m_left, x.m_right,
+                        [&](const std::string &a, const std::string &b) -> std::string {
+                            switch (x.m_op) {
+                                case ASR::cmpopType::Eq: return "FStr.beq " + a + " " + b;
+                                case ASR::cmpopType::NotEq: return "!(FStr.beq " + a + " " + b + ")";
+                                case ASR::cmpopType::Lt: return "FStr.lt " + a + " " + b;
+                                case ASR::cmpopType::LtE: return "FStr.le " + a + " " + b;
+                                case ASR::cmpopType::Gt: return "FStr.lt " + b + " " + a;
+                                case ASR::cmpopType::GtE: return "FStr.le " + b + " " + a;
+                            }
+                            return "FStr.beq " + a + " " + b;
+                        });
+                }
                 Val a = lower(x.m_left), b = lower(x.m_right);
                 switch (x.m_op) {
                     case ASR::cmpopType::Eq: return app("FStr.beq", {a, b});
@@ -2376,6 +2434,25 @@ private:
                     case ASR::cmpopType::GtE: return app("FStr.le", {b, a});
                 }
                 return app("FStr.beq", {a, b});
+            }
+            case ASR::exprType::IfExp: {
+                auto &x = *ASR::down_cast<ASR::IfExp_t>(e);
+                if (is_array(ASRUtils::expr_type(x.m_test))) {
+                    unsupported("this expression is", loc);
+                }
+                ASR::symbol_t *td = expr_type_decl(x.m_body);
+                if (!td) td = expr_type_decl(x.m_orelse);
+                Val cond = lower(x.m_test);
+                Val body = lower(x.m_body);
+                Val orelse = lower(x.m_orelse);
+                std::string ty = vtype(unalloc(x.m_type), loc, td);
+                if (body.src.find("←") != std::string::npos
+                        || orelse.src.find("←") != std::string::npos) {
+                    return {"(← (do if " + cond.src + " then return (" + body.src + " : " + ty
+                        + ") else return (" + orelse.src + " : " + ty + ")))", pAtom};
+                }
+                return {"((if " + cond.src + " then " + body.src
+                    + " else " + orelse.src + ") : " + ty + ")", pAtom};
             }
             case ASR::exprType::StringOrd: {
                 auto &x = *ASR::down_cast<ASR::StringOrd_t>(e);
@@ -2417,8 +2494,9 @@ private:
                     case ASR::binopType::Div: f = "FReal.div"; break;
                     case ASR::binopType::Pow:
                         if (is_array(x.m_type)) {
-                            ASR::expr_t *rb = ASR::is_a<ASR::ArrayBroadcast_t>(*x.m_right)
-                                ? ASR::down_cast<ASR::ArrayBroadcast_t>(x.m_right)->m_array : x.m_right;
+                            ASR::expr_t *ru = unwrap_physical_cast(x.m_right);
+                            ASR::expr_t *rb = ASR::is_a<ASR::ArrayBroadcast_t>(*ru)
+                                ? ASR::down_cast<ASR::ArrayBroadcast_t>(ru)->m_array : ru;
                             if (ASR::is_a<ASR::Integer_t>(*elem_type(ASRUtils::expr_type(rb)))) {
                                 return lift_binop(x.m_left, x.m_right,
                                     [](const std::string &a, const std::string &b) {

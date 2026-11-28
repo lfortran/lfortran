@@ -343,6 +343,20 @@ def extremaLocDim {α : Type} [Inhabited α] (better : α → α → Bool)
     out := out.push bestPos
   return { lbs := Array.replicate newExts.size 1, exts := newExts, data := out }
 
+/-- Fortran `unpack(vector, mask, field)`: scatter elements of `vec` into positions
+where `mask` is `true`, filling `false` positions from scalar or array `field`. -/
+def unpack {α : Type} [Inhabited α] (vec : Arr α) (mask : Arr Bool)
+    (field : Sum α (Arr α)) : Arr α := Id.run do
+  let mut out : Array α := Array.mkEmpty mask.data.size
+  let mut vi : Nat := 0
+  for i in [:mask.data.size] do
+    if mask.data[i]! then
+      out := out.push vec.data[vi]!
+      vi := vi + 1
+    else
+      out := out.push (match field with | Sum.inl s => s | Sum.inr f => f.data[i]!)
+  return { lbs := Array.replicate mask.exts.size 1, exts := mask.exts, data := out }
+
 end Arr
 
 end LFortran
