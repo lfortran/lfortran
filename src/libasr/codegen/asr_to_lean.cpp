@@ -257,6 +257,19 @@ public:
         ASR::BaseWalkVisitor<ProcEffects>::visit_Print(x);
     }
 
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        if (x.m_unit && ASR::is_a<ASR::String_t>(
+                *ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_unit)))) {
+            if (ASR::Variable_t *v = root_var(x.m_unit)) modified.insert(v);
+        } else {
+            has_io = true;
+        }
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileWrite(x);
+    }
+
     void visit_Stop(const ASR::Stop_t &x) {
         has_io = true;
         ASR::BaseWalkVisitor<ProcEffects>::visit_Stop(x);
@@ -378,7 +391,13 @@ private:
     int ind = 0;
     ASR::Variable_t *result = nullptr;
     std::set<ASR::Variable_t*> loop_vars;
-    std::vector<std::string> exit_flags;
+    struct LoopFrame {
+        std::string name;
+        std::string brk;
+        std::string named_brk;
+        std::string named_cyc;
+    };
+    std::vector<LoopFrame> loop_stack;
     std::map<const ASR::ArrayItem_t*, std::string> pre_idx;
     std::map<ASR::Variable_t*, std::string> alloc_str_len;
     std::map<ASR::Variable_t*, std::string> var_alias;
@@ -3068,10 +3087,12 @@ private:
             return "toString (FInt.toInt (" + val_src + " : " + type(t, loc) + "))";
         }
         if (ASR::is_a<ASR::Real_t>(*t)) {
+            level = std::max(level, 2);
             int k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
             return "FKindsIO.fmtR" + std::to_string(k) + " (" + val_src + " : " + type(t, loc) + ")";
         }
         if (ASR::is_a<ASR::Complex_t>(*t)) {
+            level = std::max(level, 2);
             int k = ASR::down_cast<ASR::Complex_t>(t)->m_kind;
             std::string fn = "FKindsIO.fmtR" + std::to_string(k);
             std::string zv = "z'" + std::to_string(depth);
@@ -3139,10 +3160,12 @@ private:
             return "toString (FInt.toInt " + v + ")";
         }
         if (ASR::is_a<ASR::Real_t>(*t)) {
+            level = std::max(level, 2);
             int k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
             return "FKindsIO.fmtR" + std::to_string(k) + " " + v;
         }
         if (ASR::is_a<ASR::Complex_t>(*t)) {
+            level = std::max(level, 2);
             int k = ASR::down_cast<ASR::Complex_t>(t)->m_kind;
             std::string fn = "FKindsIO.fmtR" + std::to_string(k);
             return "((fun z' => \"(\" ++ " + fn + " z'.re ++ \",\" ++ " + fn
@@ -3183,13 +3206,28 @@ private:
         unsupported("this stop code is", loc);
     }
 
-    static bool body_has_exit(ASR::stmt_t **body, size_t n) {
+    static bool body_has_exit(ASR::stmt_t **body, size_t n, bool nested = false) {
         for (size_t i = 0; i < n; i++) {
             ASR::stmt_t *s = body[i];
-            if (ASR::is_a<ASR::Exit_t>(*s)) return true;
-            if (ASR::is_a<ASR::If_t>(*s)) {
+            if (ASR::is_a<ASR::Exit_t>(*s)) {
+                auto &ex = *ASR::down_cast<ASR::Exit_t>(s);
+                if (!nested || ex.m_stmt_name) return true;
+            } else if (ASR::is_a<ASR::Cycle_t>(*s)) {
+                auto &cy = *ASR::down_cast<ASR::Cycle_t>(s);
+                if (cy.m_stmt_name) return true;
+            } else if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::DoLoop_t>(s);
+                if (body_has_exit(d.m_body, d.n_body, true)) return true;
+            } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::WhileLoop_t>(s);
+                if (body_has_exit(d.m_body, d.n_body, true)) return true;
+            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+                auto &d = *ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                if (body_has_exit(d.m_body, d.n_body, true)) return true;
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
                 auto &d = *ASR::down_cast<ASR::If_t>(s);
-                if (body_has_exit(d.m_body, d.n_body) || body_has_exit(d.m_orelse, d.n_orelse)) {
+                if (body_has_exit(d.m_body, d.n_body, nested)
+                        || body_has_exit(d.m_orelse, d.n_orelse, nested)) {
                     return true;
                 }
             } else if (ASR::is_a<ASR::Select_t>(*s)) {
@@ -3198,23 +3236,157 @@ private:
                     ASR::case_stmt_t *c = d.m_body[j];
                     if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
                         auto &cs = *ASR::down_cast<ASR::CaseStmt_t>(c);
-                        if (body_has_exit(cs.m_body, cs.n_body)) return true;
+                        if (body_has_exit(cs.m_body, cs.n_body, nested)) return true;
                     } else if (ASR::is_a<ASR::CaseStmt_Range_t>(*c)) {
                         auto &cs = *ASR::down_cast<ASR::CaseStmt_Range_t>(c);
-                        if (body_has_exit(cs.m_body, cs.n_body)) return true;
+                        if (body_has_exit(cs.m_body, cs.n_body, nested)) return true;
                     }
                 }
-                if (body_has_exit(d.m_default, d.n_default)) return true;
+                if (body_has_exit(d.m_default, d.n_default, nested)) return true;
             } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
                 ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
                 if (ASR::is_a<ASR::Block_t>(*sym)) {
                     ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(sym);
-                    if (body_has_exit(b->m_body, b->n_body)) return true;
+                    if (body_has_exit(b->m_body, b->n_body, nested)) return true;
                 }
             }
         }
         return false;
+    }
+
+    void propagate_named_exits() {
+        if (loop_stack.empty()) return;
+        for (size_t j = 0; j < loop_stack.size(); j++) {
+            const LoopFrame &f = loop_stack[j];
+            if (f.named_brk.empty() && f.named_cyc.empty()) continue;
+            if (j + 1 == loop_stack.size()) {
+                if (!f.named_brk.empty()) {
+                    line("if " + f.named_brk + " then break");
+                }
+                if (!f.named_cyc.empty()) {
+                    line("if " + f.named_cyc + " then");
+                    ind++;
+                    line(f.named_cyc + " := false");
+                    line("continue");
+                    ind--;
+                }
+            } else {
+                line("if " + f.named_brk + " || " + f.named_cyc + " then break");
+            }
+        }
+    }
+
+    void emit_where_body(ASR::stmt_t **body, size_t n, const std::string &mask_var,
+            const Location &loc) {
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::Where_t>(*s)) {
+                auto &w = *ASR::down_cast<ASR::Where_t>(s);
+                std::string cv = "wc'" + std::to_string(++loop_id);
+                line("let " + cv + " : Arr Bool := " + lower(w.m_test).src);
+                std::string mv = "wm'" + std::to_string(++loop_id);
+                line("let " + mv + " : Arr Bool := Arr.zipWith (fun a' b' => a' && b') "
+                    + mask_var + " " + cv);
+                emit_where_body(w.m_body, w.n_body, mv, w.base.base.loc);
+                if (w.n_orelse > 0) {
+                    std::string ev = "wm'" + std::to_string(++loop_id);
+                    line("let " + ev + " : Arr Bool := Arr.zipWith (fun a' b' => a' && !b') "
+                        + mask_var + " " + cv);
+                    emit_where_body(w.m_orelse, w.n_orelse, ev, w.base.base.loc);
+                }
+            } else if (ASR::is_a<ASR::Assignment_t>(*s)) {
+                auto &x = *ASR::down_cast<ASR::Assignment_t>(s);
+                const Location &aloc = x.base.base.loc;
+                if (x.m_overloaded || !is_array(ASRUtils::expr_type(x.m_target))) {
+                    unsupported("this where statement is", aloc);
+                }
+                ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_target));
+                if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                    unsupported("this where statement is", aloc);
+                }
+                ASR::expr_t *v = unwrap_physical_cast(x.m_value);
+                if (ASR::is_a<ASR::ArrayBroadcast_t>(*v)) {
+                    v = ASR::down_cast<ASR::ArrayBroadcast_t>(v)->m_array;
+                }
+                bool rhs_is_arr = is_array(ASRUtils::expr_type(v));
+                std::string rv = "rhs'" + std::to_string(++loop_id);
+                if (rhs_is_arr) {
+                    std::string src = atom(lower(v));
+                    if (ASR::is_a<ASR::String_t>(*et)) {
+                        src = "(Arr.map (FStr.fix "
+                            + extent(ASR::down_cast<ASR::String_t>(et)->m_len) + ") " + src + ")";
+                    }
+                    line("let " + rv + " := " + src);
+                } else {
+                    std::string rhs = fix_string(et, "", lower(v), aloc);
+                    line("let " + rv + " := " + rhs);
+                }
+                std::string t_arg = rhs_is_arr ? "(Sum.inr " + rv + ")" : "(Sum.inl " + rv + ")";
+                if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)
+                        || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                    ASR::expr_t *sec_v = nullptr;
+                    ASR::array_index_t *sec_args = nullptr;
+                    size_t sec_n_args = 0;
+                    if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+                        auto &sec = *ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+                        sec_v = sec.m_v; sec_args = sec.m_args; sec_n_args = sec.n_args;
+                    } else {
+                        auto &sec = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+                        sec_v = sec.m_v; sec_args = sec.m_args; sec_n_args = sec.n_args;
+                    }
+                    if (!is_lvalue(sec_v)) unsupported("this where statement is", aloc);
+                    std::vector<std::string> spec_parts;
+                    for (size_t k = 0; k < sec_n_args; k++) {
+                        const ASR::array_index_t &idx = sec_args[k];
+                        if (!idx.m_left && !idx.m_step && idx.m_right) {
+                            if (is_array(ASRUtils::expr_type(idx.m_right))) {
+                                std::string vv = "sv'" + std::to_string(++loop_id);
+                                line("let " + vv + " : Array Int := (" + atom(lower(idx.m_right))
+                                    + ".data.map FInt.toInt)");
+                                spec_parts.push_back("Arr.DimSpec.vec " + vv);
+                            } else {
+                                std::string iv = "si'" + std::to_string(++loop_id);
+                                line("let " + iv + " : Int := " + int_expr(idx.m_right).src);
+                                spec_parts.push_back("Arr.DimSpec.idx " + iv);
+                            }
+                        } else {
+                            std::string lo = "none", hi = "none", st = "1";
+                            if (idx.m_left) {
+                                std::string lv = "sl'" + std::to_string(++loop_id);
+                                line("let " + lv + " : Int := " + int_expr(idx.m_left).src);
+                                lo = "(some " + lv + ")";
+                            }
+                            if (idx.m_right) {
+                                std::string hv = "sh'" + std::to_string(++loop_id);
+                                line("let " + hv + " : Int := " + int_expr(idx.m_right).src);
+                                hi = "(some " + hv + ")";
+                            }
+                            if (idx.m_step) {
+                                std::string sv = "ss'" + std::to_string(++loop_id);
+                                line("let " + sv + " : Int := " + int_expr(idx.m_step).src);
+                                st = sv;
+                            }
+                            spec_parts.push_back("Arr.DimSpec.slice " + lo + " " + hi + " " + st);
+                        }
+                    }
+                    std::string specs_src = int_array(spec_parts);
+                    update_lvalue(sec_v, [&](const std::string &cur_a) {
+                        return "Arr.setSlice " + cur_a + " " + specs_src
+                            + " (Arr.merge " + t_arg + " (Sum.inr (Arr.slice " + cur_a
+                            + " " + specs_src + ")) (Sum.inr " + mask_var + "))";
+                    }, aloc);
+                } else {
+                    if (!is_lvalue(x.m_target)) unsupported("this where statement is", aloc);
+                    update_lvalue(x.m_target, [&](const std::string &cur_a) {
+                        return "Arr.copyBack " + cur_a + " (Arr.merge " + t_arg
+                            + " (Sum.inr " + cur_a + ") (Sum.inr " + mask_var + "))";
+                    }, aloc);
+                }
+            } else {
+                unsupported("this where statement is", loc);
+            }
+        }
     }
 
     bool is_lvalue(ASR::expr_t *e) {
@@ -3834,9 +4006,17 @@ private:
                     || (ASR::is_a<ASR::IntegerConstant_t>(*h.m_increment)
                         && ASR::down_cast<ASR::IntegerConstant_t>(
                             h.m_increment)->m_n == 1);
-                if (!h.m_v || !ASR::is_a<ASR::Var_t>(*h.m_v) || !h.m_start
-                        || !h.m_end || x.m_name) {
+                if (!h.m_v || !ASR::is_a<ASR::Var_t>(*h.m_v) || !h.m_start || !h.m_end) {
                     unsupported("this do loop is", loc);
+                }
+                std::string lname = x.m_name ? std::string(x.m_name) : "";
+                std::string nb, nc;
+                if (!lname.empty()) {
+                    std::string nid = std::to_string(++loop_id);
+                    nb = "xbrk'" + nid;
+                    nc = "xcyc'" + nid;
+                    line("let mut " + nb + " : Bool := false");
+                    line("let mut " + nc + " : Bool := false");
                 }
                 // The index is not declared, so its kind is fixed on `lo`.
                 std::string ty = type(ASRUtils::expr_type(h.m_v), loc);
@@ -3856,11 +4036,12 @@ private:
                             + atom(lower(h.m_end)) + " " + atom(lower(h.m_increment)) + " do");
                     }
                     ind++;
-                    exit_flags.push_back("");
+                    loop_stack.push_back({lname, "", nb, nc});
                     if (x.n_body == 0) line("Pure.pure ()");
                     stmts(x.m_body, x.n_body);
-                    exit_flags.pop_back();
+                    loop_stack.pop_back();
                     ind--;
+                    propagate_named_exits();
                     break;
                 }
                 // The `do` variable is an ordinary variable: it takes each
@@ -3869,7 +4050,7 @@ private:
                 // left the loop early. The bounds are evaluated once.
                 std::string id = std::to_string(++loop_id);
                 std::string lv = "lo'" + id, hv = "hi'" + id, iv = "i'" + id;
-                bool has_ex = body_has_exit(x.m_body, x.n_body);
+                bool has_ex = body_has_exit(x.m_body, x.n_body) || !lname.empty();
                 std::string brk = has_ex ? "brk'" + id : "";
                 line("let " + lv + " : " + ty + " := " + lower(h.m_start).src);
                 line("let " + hv + " : " + ty + " := " + lower(h.m_end).src);
@@ -3885,10 +4066,10 @@ private:
                     line("for " + iv + " in FInt.rangeStep " + lv + " " + hv + " " + sv + " do");
                 }
                 ind++;
-                exit_flags.push_back(brk);
+                loop_stack.push_back({lname, brk, nb, nc});
                 update_lvalue(h.m_v, [&](const std::string &) { return iv; }, loc);
                 stmts(x.m_body, x.n_body);
-                exit_flags.pop_back();
+                loop_stack.pop_back();
                 ind--;
                 std::string post_val = unit
                     ? "FInt.ofInt (FInt.toInt " + lv + " + Max.max 0 (FInt.toInt " + hv
@@ -3905,6 +4086,7 @@ private:
                 } else {
                     update_lvalue(h.m_v, [&](const std::string &) { return post_val; }, loc);
                 }
+                propagate_named_exits();
                 break;
             }
             case ASR::stmtType::DoConcurrentLoop: {
@@ -4017,41 +4199,203 @@ private:
                         line("for " + iter + " in FInt.rangeStep " + b.lv + " " + b.hv + " " + b.sv + " do");
                     }
                     ind++;
-                    exit_flags.push_back("");
+                    loop_stack.push_back({"", "", "", ""});
                     if (!b.simple) {
                         update_lvalue(h.m_v, [&](const std::string &) { return b.iv; }, loc);
                     }
                     emit_nest(idx + 1);
-                    exit_flags.pop_back();
+                    loop_stack.pop_back();
                     ind--;
+                    propagate_named_exits();
                 };
                 emit_nest(0);
                 break;
             }
             case ASR::stmtType::WhileLoop: {
                 auto &x = *ASR::down_cast<ASR::WhileLoop_t>(s);
-                if (x.m_name || x.n_orelse > 0) unsupported("this while loop is", loc);
+                if (x.n_orelse > 0) unsupported("this while loop is", loc);
                 if (cur) cur->uses_while = true;
+                std::string lname = x.m_name ? std::string(x.m_name) : "";
+                std::string nb, nc;
+                if (!lname.empty()) {
+                    std::string nid = std::to_string(++loop_id);
+                    nb = "xbrk'" + nid;
+                    nc = "xcyc'" + nid;
+                    line("let mut " + nb + " : Bool := false");
+                    line("let mut " + nc + " : Bool := false");
+                }
                 line("while " + lower(x.m_test).src + " do");
                 ind++;
-                exit_flags.push_back("");
+                loop_stack.push_back({lname, "", nb, nc});
                 if (x.n_body == 0) line("Pure.pure ()");
                 stmts(x.m_body, x.n_body);
-                exit_flags.pop_back();
+                loop_stack.pop_back();
                 ind--;
+                propagate_named_exits();
                 break;
             }
             case ASR::stmtType::Exit: {
                 auto &x = *ASR::down_cast<ASR::Exit_t>(s);
-                if (x.m_stmt_name || exit_flags.empty()) unsupported("this exit is", loc);
-                if (!exit_flags.back().empty()) line(exit_flags.back() + " := true");
+                if (loop_stack.empty()) unsupported("this exit is", loc);
+                if (!x.m_stmt_name) {
+                    if (!loop_stack.back().brk.empty()) line(loop_stack.back().brk + " := true");
+                    line("break");
+                    break;
+                }
+                std::string tname = x.m_stmt_name;
+                size_t k = loop_stack.size();
+                for (size_t j = loop_stack.size(); j > 0; j--) {
+                    if (loop_stack[j - 1].name == tname) { k = j - 1; break; }
+                }
+                if (k == loop_stack.size()) unsupported("this exit is", loc);
+                for (size_t j = k; j < loop_stack.size(); j++) {
+                    if (!loop_stack[j].brk.empty()) line(loop_stack[j].brk + " := true");
+                }
+                if (k + 1 < loop_stack.size()) {
+                    line(loop_stack[k].named_brk + " := true");
+                }
                 line("break");
                 break;
             }
             case ASR::stmtType::Cycle: {
                 auto &x = *ASR::down_cast<ASR::Cycle_t>(s);
-                if (x.m_stmt_name || exit_flags.empty()) unsupported("this cycle is", loc);
-                line("continue");
+                if (loop_stack.empty()) unsupported("this cycle is", loc);
+                if (!x.m_stmt_name) {
+                    line("continue");
+                    break;
+                }
+                std::string tname = x.m_stmt_name;
+                size_t k = loop_stack.size();
+                for (size_t j = loop_stack.size(); j > 0; j--) {
+                    if (loop_stack[j - 1].name == tname) { k = j - 1; break; }
+                }
+                if (k == loop_stack.size()) unsupported("this cycle is", loc);
+                if (k + 1 == loop_stack.size()) {
+                    line("continue");
+                } else {
+                    for (size_t j = k + 1; j < loop_stack.size(); j++) {
+                        if (!loop_stack[j].brk.empty()) line(loop_stack[j].brk + " := true");
+                    }
+                    line(loop_stack[k].named_cyc + " := true");
+                    line("break");
+                }
+                break;
+            }
+            case ASR::stmtType::Where: {
+                auto &x = *ASR::down_cast<ASR::Where_t>(s);
+                std::string mv = "wm'" + std::to_string(++loop_id);
+                line("let " + mv + " : Arr Bool := " + lower(x.m_test).src);
+                emit_where_body(x.m_body, x.n_body, mv, loc);
+                if (x.n_orelse > 0) {
+                    std::string ev = "wm'" + std::to_string(++loop_id);
+                    line("let " + ev + " : Arr Bool := Arr.map (fun b' => !b') " + mv);
+                    emit_where_body(x.m_orelse, x.n_orelse, ev, loc);
+                }
+                break;
+            }
+            case ASR::stmtType::ForAllSingle: {
+                std::vector<ASR::do_loop_head_t*> heads;
+                ASR::stmt_t *inner = s;
+                while (ASR::is_a<ASR::ForAllSingle_t>(*inner)) {
+                    auto &fa = *ASR::down_cast<ASR::ForAllSingle_t>(inner);
+                    heads.push_back(&fa.m_head);
+                    inner = fa.m_assign_stmt;
+                }
+                ASR::expr_t *mask_test = nullptr;
+                ASR::Assignment_t *asgn = nullptr;
+                if (ASR::is_a<ASR::Assignment_t>(*inner)) {
+                    asgn = ASR::down_cast<ASR::Assignment_t>(inner);
+                } else if (ASR::is_a<ASR::If_t>(*inner)) {
+                    auto &if_s = *ASR::down_cast<ASR::If_t>(inner);
+                    if (if_s.n_body == 1 && if_s.n_orelse == 0
+                            && ASR::is_a<ASR::Assignment_t>(*if_s.m_body[0])) {
+                        mask_test = if_s.m_test;
+                        asgn = ASR::down_cast<ASR::Assignment_t>(if_s.m_body[0]);
+                    }
+                }
+                if (!asgn || asgn->m_overloaded || !is_lvalue(asgn->m_target)
+                        || is_array(ASRUtils::expr_type(asgn->m_target))
+                        || is_allocatable(ASRUtils::expr_type(asgn->m_target))) {
+                    unsupported("this forall statement is", loc);
+                }
+                ASR::Variable_t *tv = ProcEffects::root_var(asgn->m_target);
+                if (!tv) unsupported("this forall statement is", loc);
+                // Snapshot target root variable before the loop for exact forall semantics.
+                std::string snap = "fa'" + std::to_string(++loop_id);
+                if (!var_alias.count(tv) && global_fields.count(tv)) {
+                    line("let " + snap + " := (← get)." + global_fields[tv]);
+                } else {
+                    line("let " + snap + " := " + var_name(tv));
+                }
+                for (size_t i = 0; i < heads.size(); i++) {
+                    const ASR::do_loop_head_t &h = *heads[i];
+                    if (!h.m_v || !ASR::is_a<ASR::Var_t>(*h.m_v) || !h.m_start || !h.m_end) {
+                        unsupported("this forall statement is", loc);
+                    }
+                }
+                auto tv_it = var_alias.find(tv);
+                bool had_tv = tv_it != var_alias.end();
+                std::string prev_tv = had_tv ? tv_it->second : "";
+                auto set_tv_snap = [&]() { var_alias[tv] = snap; };
+                auto restore_tv = [&]() {
+                    if (had_tv) var_alias[tv] = prev_tv;
+                    else var_alias.erase(tv);
+                };
+                set_tv_snap();
+                std::vector<std::pair<ASR::Variable_t*, std::pair<bool, std::string>>> saved_idx;
+                std::function<void(size_t)> emit_fa = [&](size_t idx) {
+                    if (idx == heads.size()) {
+                        if (mask_test) {
+                            line("if " + lower(mask_test).src + " then");
+                            ind++;
+                        }
+                        hoist_lvalue_indices(asgn->m_target);
+                        std::string rv = "frhs'" + std::to_string(++loop_id);
+                        std::string rhs = fix_string(ASRUtils::expr_type(asgn->m_target), "",
+                            lower(asgn->m_value), loc);
+                        line("let " + rv + " := " + rhs);
+                        restore_tv();
+                        update_lvalue(asgn->m_target, [&](const std::string &) { return rv; }, loc);
+                        set_tv_snap();
+                        pre_idx.clear();
+                        if (mask_test) ind--;
+                        return;
+                    }
+                    const ASR::do_loop_head_t &h = *heads[idx];
+                    bool unit = !h.m_increment
+                        || (ASR::is_a<ASR::IntegerConstant_t>(*h.m_increment)
+                            && ASR::down_cast<ASR::IntegerConstant_t>(h.m_increment)->m_n == 1);
+                    std::string ty = type(ASRUtils::expr_type(h.m_v), loc);
+                    std::string bid = std::to_string(++loop_id);
+                    std::string lv = "flo'" + bid, hv = "fhi'" + bid;
+                    std::string sv = unit ? "" : "fst'" + bid;
+                    std::string alias = "fi'" + bid;
+                    ASR::Variable_t *iv = ASRUtils::EXPR2VAR(h.m_v);
+                    line("let " + lv + " : " + ty + " := " + lower(h.m_start).src);
+                    line("let " + hv + " : " + ty + " := " + lower(h.m_end).src);
+                    if (!unit) {
+                        line("let " + sv + " : " + ty + " := " + lower(h.m_increment).src);
+                    }
+                    if (unit) {
+                        line("for " + alias + " in FInt.range " + lv + " " + hv + " do");
+                    } else {
+                        line("for " + alias + " in FInt.rangeStep " + lv + " " + hv
+                            + " " + sv + " do");
+                    }
+                    ind++;
+                    auto it = var_alias.find(iv);
+                    saved_idx.push_back({iv, it != var_alias.end()
+                        ? std::make_pair(true, it->second) : std::make_pair(false, std::string())});
+                    var_alias[iv] = alias;
+                    emit_fa(idx + 1);
+                    auto last = saved_idx.back();
+                    saved_idx.pop_back();
+                    if (last.second.first) var_alias[last.first] = last.second.second;
+                    else var_alias.erase(last.first);
+                    ind--;
+                };
+                emit_fa(0);
+                restore_tv();
                 break;
             }
             case ASR::stmtType::Select: {
@@ -4059,7 +4403,7 @@ private:
                 bool sel_int = is_int(x.m_test);
                 bool sel_str = is_string(x.m_test);
                 bool sel_log = is_logical(x.m_test);
-                if (x.m_name || x.m_enable_fall_through || !(sel_int || sel_str || sel_log)) {
+                if (x.m_enable_fall_through || !(sel_int || sel_str || sel_log)) {
                     unsupported("this select case is", loc);
                 }
                 std::string id = std::to_string(++loop_id);
@@ -4176,6 +4520,93 @@ private:
                     break;
                 }
                 unsupported("this print is", loc);
+            }
+            case ASR::stmtType::FileWrite: {
+                auto &x = *ASR::down_cast<ASR::FileWrite_t>(s);
+                if (x.m_overloaded || x.m_nml || x.m_rec || x.m_pos || x.m_id
+                        || x.m_asynchronous || x.m_decimal || x.m_delim || !x.m_is_formatted) {
+                    unsupported("this file write is", loc);
+                }
+                if (x.m_iomsg && (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg))) {
+                    unsupported("this file write is", loc);
+                }
+                bool is_str_unit = x.m_unit && is_string(x.m_unit) && is_lvalue(x.m_unit);
+                bool is_stdout = !x.m_unit;
+                if (!is_stdout && !is_str_unit && x.m_unit && is_int(x.m_unit)) {
+                    ASR::expr_t *uv = ASRUtils::expr_value(x.m_unit);
+                    if (uv && ASR::is_a<ASR::IntegerConstant_t>(*uv)
+                            && ASR::down_cast<ASR::IntegerConstant_t>(uv)->m_n == 6) {
+                        is_stdout = true;
+                    }
+                }
+                if (!is_stdout && !is_str_unit) unsupported("this file write is", loc);
+                if (is_stdout && !in_program && !(cur && io_procs.count(cur->fn))) {
+                    unsupported("write in a procedure is", loc);
+                }
+                if (x.m_iostat && (!is_lvalue(x.m_iostat) || !is_int(x.m_iostat))) {
+                    unsupported("this file write is", loc);
+                }
+                if (is_stdout) level = std::max(level, 2);
+                std::string sep = x.m_separator ? atom(lower(x.m_separator)) : "\" \"";
+                std::string text;
+                if (x.n_values == 0) {
+                    text = "\"\"";
+                } else if (x.n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
+                    auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
+                    if (f.m_fmt) unsupported("formatted output is", loc);
+                    std::string items;
+                    for (size_t i = 0; i < f.n_args; i++) {
+                        if (i) items += ", ";
+                        items += shown(f.m_args[i]);
+                    }
+                    text = "(String.intercalate " + sep + " [" + items + "])";
+                } else if (x.n_values == 1 && ASR::is_a<ASR::StringConstant_t>(*x.m_values[0])) {
+                    text = string_lit(string_const_str(
+                        *ASR::down_cast<ASR::StringConstant_t>(x.m_values[0])));
+                } else if (x.n_values == 1 && is_string(x.m_values[0])) {
+                    text = atom(lower(x.m_values[0]));
+                } else {
+                    std::string items;
+                    for (size_t i = 0; i < x.n_values; i++) {
+                        if (i) items += ", ";
+                        if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i])) {
+                            auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_values[i]);
+                            if (f.m_fmt) unsupported("formatted output is", loc);
+                            std::string sub;
+                            for (size_t j = 0; j < f.n_args; j++) {
+                                if (j) sub += ", ";
+                                sub += shown(f.m_args[j]);
+                            }
+                            items += "(String.intercalate " + sep + " [" + sub + "])";
+                        } else {
+                            items += shown(x.m_values[i]);
+                        }
+                    }
+                    text = "(String.intercalate " + sep + " [" + items + "])";
+                }
+                if (is_stdout) {
+                    if (x.m_end) {
+                        line("IO.print (" + text + " ++ " + atom(lower(x.m_end)) + ")");
+                    } else {
+                        line("IO.println " + text);
+                    }
+                } else {
+                    std::string rv = "wr'" + std::to_string(++loop_id);
+                    line("let " + rv + " : String := " + text);
+                    ASR::ttype_t *it = unalloc(ASRUtils::expr_type(x.m_unit));
+                    ASR::expr_t *le = ASR::down_cast<ASR::String_t>(it)->m_len;
+                    update_lvalue(x.m_unit, [&](const std::string &cur_s) {
+                        if (le) return "FStr.fix " + extent(le) + " " + rv;
+                        return "FStr.fix " + cur_s + ".length " + rv;
+                    }, loc);
+                }
+                if (x.m_iostat) {
+                    std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                    update_lvalue(x.m_iostat, [&](const std::string &) {
+                        return "(FInt.ofInt 0 : " + ity + ")";
+                    }, loc);
+                }
+                break;
             }
             case ASR::stmtType::Allocate: {
                 auto &x = *ASR::down_cast<ASR::Allocate_t>(s);
