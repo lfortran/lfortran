@@ -1,0 +1,5 @@
+semantic error: Type 't' containing DEFERRED binding is not ABSTRACT
+ --> tests/errors/deferred_binding_non_abstract_01.f90:5:19
+  |
+5 |     procedure(f), deferred :: g
+  |                   ^^^^^^^^ 

@@ -6442,6 +6442,13 @@ public:
                 std::string new_dt_name = class_deferred_procedures_key(
                     proc.first, clss);
                 bool is_nopass = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("nopass"));
+                if (is_deferred && !clss->m_is_abstract) {
+                    diag.add(diag::Diagnostic(
+                        "Type '" + std::string(clss->m_name) + "' containing DEFERRED binding is not ABSTRACT",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {cdf[new_dt_name][pname.first]["deferred"]})}));
+                    throw SemanticAbort();
+                }
                 if (is_pass && is_nopass) {
                     diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
                         diag::Level::Error, diag::Stage::Semantic, {

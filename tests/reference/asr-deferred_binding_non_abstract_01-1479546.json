@@ -1,0 +1,13 @@
+{
+    "basename": "asr-deferred_binding_non_abstract_01-1479546",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/deferred_binding_non_abstract_01.f90",
+    "infile_hash": "f48e8f5fdb4a873408595a558085f8d55a92d700dcb8ebb222a7835e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-deferred_binding_non_abstract_01-1479546.stderr",
+    "stderr_hash": "0b13e902f26e4b73deccb9024a45b4322ece5a119c6d31161c5c49a2",
+    "returncode": 2
+}
