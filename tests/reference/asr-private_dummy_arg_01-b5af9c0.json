@@ -1,0 +1,13 @@
+{
+    "basename": "asr-private_dummy_arg_01-b5af9c0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/private_dummy_arg_01.f90",
+    "infile_hash": "cb941d7763b159cee5023238f67ffdb2f6eb32db2607be9d575837b4",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-private_dummy_arg_01-b5af9c0.stderr",
+    "stderr_hash": "64388f7fae893d6c4999a19053871c8f8327afec4e3ff45a3387a860",
+    "returncode": 2
+}

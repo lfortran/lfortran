@@ -11557,6 +11557,14 @@ public:
                                 AST::down_cast<AST::SimpleAttribute_t>(a);
                             if (sa->m_attr == AST::simple_attributeType
                                     ::AttrPrivate) {
+                                if (!is_derived_type && (!in_module || in_Subroutine)) {
+                                    diag.add(Diagnostic(
+                                        "`private` attribute is only allowed in specification part of a module",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("", {a->base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
                                 s_access = ASR::accessType::Private;
                             } else if (sa->m_attr == AST::simple_attributeType
                                     ::AttrPublic) {
