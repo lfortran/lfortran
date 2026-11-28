@@ -5742,9 +5742,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     // Whether the scalar actual `i` of `x` can be replaced by a copy of its value
     bool is_actual_passed_as_copy(ASR::FunctionCall_t* x, size_t i) {
-        // A value of derived type may be large, polymorphic or finalized
+        // A value of derived type may be large, polymorphic or finalized; an allocatable or pointer may not exist
         ASR::ttype_t* type = ASRUtils::expr_type(x->m_args[i].m_value);
-        if (!(ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
+        if (ASRUtils::is_allocatable_or_pointer(type) ||
+                !(ASRUtils::is_integer(*type) || ASRUtils::is_real(*type) ||
                 ASRUtils::is_complex(*type) || ASRUtils::is_logical(*type) ||
                 ASRUtils::is_character(*type))) {
             return false;
@@ -5755,8 +5756,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::is_a<ASR::Variable_t>(*callee)) ? ASRUtils::get_function(callee) : nullptr;
         ASR::Variable_t* dummy = (fn && i < fn->n_args) ?
             ASRUtils::expr_to_variable_or_null(fn->m_args[i]) : nullptr;
-        // Only a dummy that reads the value and keeps no address of it takes a copy
+        // Only a dummy that always reads the value and keeps no address of it takes a copy
         return dummy && (dummy->m_intent == ASRUtils::intent_in || dummy->m_value_attr) &&
+            dummy->m_presence != ASR::presenceType::Optional &&
             !dummy->m_target_attr && !ASRUtils::is_allocatable_or_pointer(dummy->m_type);
     }
 
