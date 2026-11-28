@@ -13983,6 +13983,9 @@ void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::exp
     }
     for (size_t i = 0; i < n_args; i++) {
         ASR::expr_t* a_value = ASRUtils::expr_value(a_args[i]);
+        while (a_value && ASR::is_a<ASR::ArrayConstructor_t>(*a_value)) {
+            a_value = ASRUtils::expr_value(a_value);
+        }
         if (ASR::is_a<ASR::ArrayConstant_t>(*a_value)) {
             ASR::ArrayConstant_t* a_value_ = ASR::down_cast<ASR::ArrayConstant_t>(a_value);
             flatten_ArrayConstant_data(al, data, a_args, n_args, a_type, curr_idx, a_value_);
