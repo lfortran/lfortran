@@ -18135,7 +18135,7 @@ public:
                     int64_t r_val, l_val;
                     if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
                         ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
-                        int64_t a_len_value = r_val - l_val + 1;
+                        int64_t a_len_value = std::max<int64_t>(0, r_val - l_val + 1);
                         a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, sub_int_type));
                     } else {
                         ASRUtils::ASRBuilder b(al, loc);
@@ -18230,7 +18230,7 @@ public:
                                 all_valid = false;
                                 break;
                             }
-                            if (start_l < 1 || end_r > orig_len) {
+                            if (start_l <= end_r && (start_l < 1 || end_r > orig_len)) {
                                 all_valid = false;
                                 break;
                             }
