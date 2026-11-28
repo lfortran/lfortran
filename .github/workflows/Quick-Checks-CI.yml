@@ -156,6 +156,14 @@ jobs:
             set -e
             exit $EXIT_CODE
 
+      # The `Lean proof` job checks the proof against the checked-in
+      # lean/Legendre/Generated.lean; this checks that LFortran generates it.
+      - name: Test Lean backend translation
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            pixi run -e llvm11 bash lean/check_translation.sh
+
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
         shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
@@ -222,6 +230,33 @@ jobs:
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
         run: |
           python3 check_ai_commit_authorship.py
+
+  # Checks the Lean proof that the Lean translation of lean/legendre.f90 meets
+  # its specification. Independent of the compiler build, so it runs in
+  # parallel; it fetches only the needed prebuilt Mathlib files, without caches.
+  lean_proof:
+    name: Lean proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install elan
+        shell: bash -e {0}
+        run: |
+            curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+                | sh -s -- -y --default-toolchain none
+            echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch Lean dependencies
+        shell: bash -e {0}
+        run: bash lean/fetch_deps.sh
+
+      - name: Check the proof
+        shell: bash -e {0}
+        run: cd lean && lake build --wfail
 
   compatibility:
     name: Compiler compatibility
