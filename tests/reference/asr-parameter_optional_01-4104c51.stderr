@@ -1,0 +1,5 @@
+semantic error: `parameter` attribute conflicts with `optional` attribute
+ --> tests/errors/parameter_optional_01.f90:3:3
+  |
+3 |   integer, parameter, optional :: x = 1
+  |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
