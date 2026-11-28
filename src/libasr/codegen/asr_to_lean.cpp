@@ -237,6 +237,10 @@ public:
                 e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
                 e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ComplexRe_t>(*e)) {
+                e = ASR::down_cast<ASR::ComplexRe_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::ComplexIm_t>(*e)) {
+                e = ASR::down_cast<ASR::ComplexIm_t>(e)->m_arg;
             } else if (ASR::is_a<ASR::Var_t>(*e)) {
                 ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(e)->m_v);
@@ -1343,12 +1347,12 @@ private:
                 continue;
             }
             if (!args[i].m_value) unsupported("an omitted argument is", loc);
-            if (in == ASR::intentType::Out && (is_allocatable(d->m_type)
-                    || (!is_array(d->m_type) && !is_assumed_len_string(d->m_type)))) continue;
             ASR::expr_t *a = args[i].m_value;
             if (is_array(d->m_type) != is_array(ASRUtils::expr_type(a))) {
                 unsupported("this argument is", a->base.loc);
             }
+            if (in == ASR::intentType::Out && (is_allocatable(d->m_type)
+                    || (!is_array(d->m_type) && !is_assumed_len_string(d->m_type)))) continue;
             ASR::expr_t *au = unwrap_physical_cast(a);
             if (is_array(d->m_type) && ASR::is_a<ASR::ArraySection_t>(*au)) {
                 ASR::Array_t *da = ASR::down_cast<ASR::Array_t>(unalloc(d->m_type));
@@ -1984,6 +1988,27 @@ private:
                 return {"((Array.zipWith (fun x' y' => x' && y') " + a + ".data " + b
                     + ".data).any (fun b' => b'))", pAtom};
             }
+            if (ASR::is_a<ASR::Complex_t>(*et0) && ASR::is_a<ASR::Complex_t>(*et1)
+                    && ASR::down_cast<ASR::Complex_t>(et0)->m_kind
+                        == ASR::down_cast<ASR::Complex_t>(et1)->m_kind) {
+                return {"((Array.zipWith (fun x' y' => FCplx.mul (FCplx.conj x') y') "
+                    + a + ".data " + b + ".data).foldl FCplx.add FCplx.zero : "
+                    + type(x.m_type, loc) + ")", pAtom};
+            }
+        }
+        if ((id == F::Iany || id == F::Iall || id == F::Iparity) && scalar_red
+                && is_array(ASRUtils::expr_type(x.m_args[0]))) {
+            ASR::ttype_t *et = elem_type(ASRUtils::expr_type(x.m_args[0]));
+            if (ASR::is_a<ASR::Integer_t>(*et)) {
+                int k = ASR::down_cast<ASR::Integer_t>(et)->m_kind;
+                std::string w = std::to_string(8 * k);
+                std::string a = red_arr();
+                std::string init = id == F::Iall ? "(FInt.ofInt (-1))" : "(FInt.ofInt 0)";
+                std::string op = id == F::Iany ? "FInt.ior " + w
+                    : id == F::Iall ? "FInt.iand " + w : "FInt.ieor " + w;
+                return wrap_scalar_dim({"(" + a + ".data.foldl (" + op + ") " + init + " : "
+                    + type(x.m_type, loc) + ")", pAtom});
+            }
         }
         if ((id == F::MaxVal || id == F::MinVal) && scalar_red && !is_array(x.m_type)
                 && is_array(ASRUtils::expr_type(x.m_args[0]))) {
@@ -2011,10 +2036,11 @@ private:
                     + empty_val + " else d'.foldl " + fn + " d'[0]!) : " + ty + ")", pAtom});
             }
         }
-        // `dim=` reductions (`sum`, `product`, `any`, `all`, `count`, `maxval`, `minval`)
-        // returning an array of rank - 1.
+        // `dim=` reductions (`sum`, `product`, `any`, `all`, `count`, `maxval`, `minval`,
+        // `iany`, `iall`, `iparity`) returning an array of rank - 1.
         if ((id == F::Sum || id == F::Product || id == F::Any || id == F::All
-                || id == F::Count || id == F::MaxVal || id == F::MinVal)
+                || id == F::Count || id == F::MaxVal || id == F::MinVal
+                || id == F::Iany || id == F::Iall || id == F::Iparity)
                 && is_array(x.m_type) && x.n_args >= 2 && x.m_args[1]
                 && is_int(x.m_args[1]) && is_array(ASRUtils::expr_type(x.m_args[0]))) {
             ASR::expr_t *mask = (x.n_args >= 3 && x.m_args[2] && is_mask_arg(x.m_args[2]))
@@ -2035,6 +2061,12 @@ private:
                         init = "(" + std::string(id == F::Sum ? "FCplx.zero" : "FCplx.ofReal (FReal.ofInt 1)") + " : " + rty + ")";
                         op = id == F::Sum ? "FCplx.add" : "FCplx.mul";
                     }
+                } else if ((id == F::Iany || id == F::Iall || id == F::Iparity)
+                        && ASR::is_a<ASR::Integer_t>(*et)) {
+                    std::string w = std::to_string(8 * ASR::down_cast<ASR::Integer_t>(et)->m_kind);
+                    init = "(" + std::string(id == F::Iall ? "FInt.ofInt (-1)" : "FInt.ofInt 0") + " : " + rty + ")";
+                    op = "(" + std::string(id == F::Iany ? "FInt.ior "
+                        : id == F::Iall ? "FInt.iand " : "FInt.ieor ") + w + ")";
                 } else if (id == F::Any && ASR::is_a<ASR::Logical_t>(*et)) {
                     init = "false";
                     op = "(fun acc' x' => acc' || x')";
@@ -2306,12 +2338,20 @@ private:
             case ASR::exprType::ArrayReshape: {
                 auto &x = *ASR::down_cast<ASR::ArrayReshape_t>(e);
                 if (x.m_value && x.m_value != e) return lower_raw(x.m_value);
-                if (x.m_pad || x.m_order) unsupported("this array reshape is", loc);
-                return {"((fun (a' : Arr _) (sh' : Arr _) => "
-                    "let exts' := sh'.data.map (fun x' => (FInt.toInt x').toNat); "
-                    "let n' := exts'.foldl (fun p' e' => p' * e') 1; "
-                    "Arr.mk (Array.replicate exts'.size (1 : Int)) exts' (a'.data.extract 0 n')) "
-                    + atom(lower(x.m_array)) + " " + atom(lower(x.m_shape)) + ")", pAtom};
+                if (!x.m_pad && !x.m_order) {
+                    return {"((fun (a' : Arr _) (sh' : Arr _) => "
+                        "let exts' := sh'.data.map (fun x' => (FInt.toInt x').toNat); "
+                        "let n' := exts'.foldl (fun p' e' => p' * e') 1; "
+                        "Arr.mk (Array.replicate exts'.size (1 : Int)) exts' (a'.data.extract 0 n')) "
+                        + atom(lower(x.m_array)) + " " + atom(lower(x.m_shape)) + ")", pAtom};
+                }
+                std::string pad_src = x.m_pad ? "(some " + atom(lower(x.m_pad)) + ")" : "none";
+                std::string ord_src = x.m_order
+                    ? "(some (" + atom(lower(x.m_order)) + ".data.map (fun x' => (FInt.toInt x').toNat)))"
+                    : "none";
+                return {"(Arr.reshapeFull " + atom(lower(x.m_array))
+                    + " (" + atom(lower(x.m_shape)) + ".data.map (fun x' => (FInt.toInt x').toNat)) "
+                    + pad_src + " " + ord_src + ")", pAtom};
             }
             case ASR::exprType::ArrayTranspose: {
                 auto &x = *ASR::down_cast<ASR::ArrayTranspose_t>(e);
@@ -3122,6 +3162,14 @@ private:
             auto &m = *ASR::down_cast<ASR::StructInstanceMember_t>(e);
             return !is_array(ASRUtils::expr_type(m.m_v)) && is_lvalue(m.m_v);
         }
+        if (ASR::is_a<ASR::ComplexRe_t>(*e)) {
+            auto &c = *ASR::down_cast<ASR::ComplexRe_t>(e);
+            return !is_array(ASRUtils::expr_type(c.m_arg)) && is_lvalue(c.m_arg);
+        }
+        if (ASR::is_a<ASR::ComplexIm_t>(*e)) {
+            auto &c = *ASR::down_cast<ASR::ComplexIm_t>(e);
+            return !is_array(ASRUtils::expr_type(c.m_arg)) && is_lvalue(c.m_arg);
+        }
         if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
             return is_lvalue(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
         }
@@ -3167,6 +3215,22 @@ private:
             }
             update_lvalue(m.m_v, [&](const std::string &cur_s) {
                 return "{ " + cur_s + " with " + fn + " := " + rhs_fn(cur_s + "." + fn) + " }";
+            }, loc, /*raw=*/false);
+            return;
+        }
+        if (ASR::is_a<ASR::ComplexRe_t>(*lhs)) {
+            auto &c = *ASR::down_cast<ASR::ComplexRe_t>(lhs);
+            if (is_array(ASRUtils::expr_type(c.m_arg))) unsupported("this assignment is", loc);
+            update_lvalue(c.m_arg, [&](const std::string &cur_z) {
+                return "{ " + cur_z + " with re := " + rhs_fn(cur_z + ".re") + " }";
+            }, loc, /*raw=*/false);
+            return;
+        }
+        if (ASR::is_a<ASR::ComplexIm_t>(*lhs)) {
+            auto &c = *ASR::down_cast<ASR::ComplexIm_t>(lhs);
+            if (is_array(ASRUtils::expr_type(c.m_arg))) unsupported("this assignment is", loc);
+            update_lvalue(c.m_arg, [&](const std::string &cur_z) {
+                return "{ " + cur_z + " with im := " + rhs_fn(cur_z + ".im") + " }";
             }, loc, /*raw=*/false);
             return;
         }
@@ -3294,6 +3358,10 @@ private:
         if (!e) return;
         if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
             hoist_lvalue_indices(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+        } else if (ASR::is_a<ASR::ComplexRe_t>(*e)) {
+            hoist_lvalue_indices(ASR::down_cast<ASR::ComplexRe_t>(e)->m_arg);
+        } else if (ASR::is_a<ASR::ComplexIm_t>(*e)) {
+            hoist_lvalue_indices(ASR::down_cast<ASR::ComplexIm_t>(e)->m_arg);
         } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
             auto &t = *ASR::down_cast<ASR::ArrayItem_t>(e);
             hoist_lvalue_indices(t.m_v);
@@ -3314,7 +3382,10 @@ private:
         switch (s->type) {
             case ASR::stmtType::Assignment: {
                 auto &x = *ASR::down_cast<ASR::Assignment_t>(s);
-                if (x.m_overloaded) unsupported("this assignment is", loc);
+                if (x.m_overloaded) {
+                    stmt(x.m_overloaded);
+                    break;
+                }
                 if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
                     auto &t = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
                     ASR::expr_t *base = t.m_v;
@@ -4282,17 +4353,32 @@ private:
                 bool assumed;
                 dims(v->m_type, lbs, exts, assumed, vloc);
                 if (assumed) unsupported("this local array is", vloc);
-                std::string src = atom(lower(array_var(init)));
                 ASR::ttype_t *et = elem_type(v->m_type);
-                if (ASR::is_a<ASR::String_t>(*et)) {
-                    auto &st = *ASR::down_cast<ASR::String_t>(et);
-                    if (!st.m_len) unsupported("this local array is", vloc);
-                    src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                ASR::expr_t *iv = unwrap_physical_cast(init);
+                if (ASR::is_a<ASR::ArrayBroadcast_t>(*iv)) {
+                    iv = ASR::down_cast<ASR::ArrayBroadcast_t>(iv)->m_array;
                 }
-                line("let mut " + vn + " : "
-                    + vtype(v->m_type, vloc, v->m_type_declaration)
-                    + " := Arr.reshape " + src + " "
-                    + int_array(lbs) + " " + int_array(exts));
+                if (is_array(ASRUtils::expr_type(iv))) {
+                    std::string src = atom(lower(iv));
+                    if (ASR::is_a<ASR::String_t>(*et)) {
+                        auto &st = *ASR::down_cast<ASR::String_t>(et);
+                        if (!st.m_len) unsupported("this local array is", vloc);
+                        src = "(Arr.map (FStr.fix " + extent(st.m_len) + ") " + src + ")";
+                    }
+                    line("let mut " + vn + " : "
+                        + vtype(v->m_type, vloc, v->m_type_declaration)
+                        + " := Arr.reshape " + src + " "
+                        + int_array(lbs) + " " + int_array(exts));
+                } else {
+                    if (ASR::is_a<ASR::String_t>(*et) && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                        unsupported("this local array is", vloc);
+                    }
+                    std::string elem = fix_string(et, "", lower(iv), vloc);
+                    line("let mut " + vn + " : "
+                        + vtype(v->m_type, vloc, v->m_type_declaration)
+                        + " := Arr.make " + int_array(lbs) + " " + int_array(exts) + " "
+                        + atom({elem, pApp}));
+                }
                 return;
             }
             line("let mut " + vn + " : "
