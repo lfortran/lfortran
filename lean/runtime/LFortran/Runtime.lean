@@ -1,5 +1,6 @@
 import LFortran.Arith
 import LFortran.Arr
+import LFortran.Fmt
 
 /-!
 # The executable instance
@@ -188,6 +189,10 @@ instance : FKindsIO machine where
   m8 := inferInstanceAs (FRealMath Float)
   fmtR4 := toString
   fmtR8 := toString
+  toFloatR4 := Float32.toFloat
+  toFloatR8 := id
+  ofFloatR4 := Float.toFloat32
+  ofFloatR8 := id
 
 /-- Leave the process with exit code `code` (`stop`, `error stop`). -/
 def halt {α : Type} (code : UInt8) : IO α :=

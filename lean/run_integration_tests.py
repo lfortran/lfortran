@@ -155,7 +155,7 @@ def run_one(task):
     return name, "run", f"exit {run.returncode}", task["fail"]
 
 
-RUNTIME = ["Arith", "Arr", "Runtime"]
+RUNTIME = ["Arith", "Arr", "Fmt", "Runtime"]
 
 
 def prepare_runtime(toolchain):
