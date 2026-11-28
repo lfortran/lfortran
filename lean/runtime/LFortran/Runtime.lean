@@ -1,6 +1,7 @@
 import LFortran.Arith
 import LFortran.Arr
 import LFortran.Fmt
+import LFortran.FileIO
 
 /-!
 # The executable instance

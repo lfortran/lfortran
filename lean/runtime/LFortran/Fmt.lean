@@ -214,8 +214,8 @@ private def padZero (s : String) (m : Nat) : String :=
 private def padReal (s : String) (w : Nat) : String :=
   if w == 0 then s
   else if s.length <= w then repeatChar ' ' (w - s.length) ++ s
-  else if s.length == w + 1 && s.length > 3 && s.startsWith "-0." then "-" ++ strDrop s 2
-  else if s.length == w + 1 && s.length > 2 && s.startsWith "0." then strDrop s 1
+  else if s.length == w + 1 && s.length > 3 && s.startsWith "-0." && isDigit (s.toList.getD 3 ' ') then "-" ++ strDrop s 2
+  else if s.length == w + 1 && s.length > 2 && s.startsWith "0." && isDigit (s.toList.getD 2 ' ') then strDrop s 1
   else repeatChar '*' w
 
 private def toBase (u : Nat) (base : Nat) : String := Id.run do
@@ -689,6 +689,214 @@ def parseComplex (s : String) : Option (Float × Float) :=
       | _, _ => none
     | _ => none
   else none
+
+inductive FReadKind where
+  | int
+  | real
+  | bool
+  | str (len : Nat)
+  deriving Repr, Inhabited
+
+inductive FReadVal where
+  | int (n : Int)
+  | real (x : Float)
+  | bool (b : Bool)
+  | str (s : String)
+  deriving Inhabited
+
+private def parseBaseInt (s : String) (base : Nat) : Option Int := Id.run do
+  let t := strTrim s
+  if t.isEmpty then return some 0
+  let mut acc : Nat := 0
+  for c in t.toList do
+    let d? : Option Nat :=
+      if '0' <= c && c <= '9' then some (c.toNat - '0'.toNat)
+      else if 'a' <= c && c <= 'f' then some (10 + c.toNat - 'a'.toNat)
+      else if 'A' <= c && c <= 'F' then some (10 + c.toNat - 'A'.toNat)
+      else none
+    match d? with
+    | some d =>
+      if d >= base then return none
+      acc := acc * base + d
+    | none => return none
+  return some (Int.ofNat acc)
+
+private def parseFmtReal (field : String) (d : Nat) (scale : Int) : Option Float :=
+  let t := strTrim field
+  if t.isEmpty then some 0.0
+  else
+    let hasDot := t.any (· == '.')
+    let hasExp := t.any (fun c => c == 'e' || c == 'E' || c == 'd' || c == 'D')
+    match parseFloat t with
+    | none => none
+    | some v =>
+      let v1 := if !hasDot && d > 0 then v / FFmt.pow10Float (Int.ofNat d) else v
+      let v2 :=
+        if !hasExp && scale != 0 then
+          if scale > 0 then v1 / FFmt.pow10Float scale
+          else v1 * FFmt.pow10Float (-scale)
+        else v1
+      some v2
+
+private def sliceField (line : String) (col w : Nat) : String × Nat :=
+  let len := line.length
+  if w == 0 then
+    let rest := if col < len then ((line.drop col).toString) else ""
+    (rest, len)
+  else
+    let s := if col < len then (((line.drop col).take w).toString) else ""
+    (s, col + w)
+
+private def applyStrWidth (field : String) (w targetLen : Nat) : String :=
+  if targetLen == 0 then ""
+  else if w == 0 then
+    if field.length >= targetLen then (field.take targetLen).toString
+    else field ++ String.ofList (List.replicate (targetLen - field.length) ' ')
+  else
+    if field.length > targetLen then (field.drop (field.length - targetLen)).toString
+    else field ++ String.ofList (List.replicate (targetLen - field.length) ' ')
+
+private structure ReadState where
+  line : String := ""
+  col : Nat := 0
+  scale : Int := 0
+  idx : Nat := 0
+  out : Array FReadVal := #[]
+  status : Int := 0
+  msg : String := ""
+  stopped : Bool := false
+
+private partial def execReadItems {m : Type → Type} [Monad m]
+    (items : List FFmt.FmtItem) (kinds : Array FReadKind)
+    (nextLine : m (Option String × Int × String)) (st : ReadState) : m ReadState := do
+  let mut s := st
+  for it in items do
+    if s.stopped || s.status != 0 then return s
+    match it with
+    | .lit _ => pure ()
+    | .skip n => s := { s with col := s.col + n }
+    | .tab n => s := { s with col := if n > 0 then n - 1 else 0 }
+    | .tabL n => s := { s with col := s.col - n }
+    | .tabR n => s := { s with col := s.col + n }
+    | .scale k => s := { s with scale := k }
+    | .slash =>
+      match ← nextLine with
+      | (some nl, 0, _) => s := { s with line := nl, col := 0 }
+      | (_, st', mg') =>
+        if st' > 0 then
+          s := { s with status := st', msg := mg', stopped := true }
+        else if s.idx < kinds.size then
+          s := { s with status := if st' != 0 then st' else -1, msg := if mg'.isEmpty then "End of file" else mg', stopped := true }
+        else
+          s := { s with stopped := true }
+    | .colon =>
+      if s.idx >= kinds.size then s := { s with stopped := true }
+    | .group rep _ sub =>
+      if rep == 0 then
+        let mut guard := 0
+        while s.idx < kinds.size && !s.stopped && s.status == 0 && guard < 100000 do
+          let prev := s.idx
+          s ← execReadItems sub kinds nextLine s
+          guard := guard + 1
+          if s.idx == prev then break
+      else
+        for _ in [:rep] do
+          if s.stopped || s.status != 0 then break
+          s ← execReadItems sub kinds nextLine s
+    | .edit kind w dOpt _ =>
+      if s.idx >= kinds.size then s := { s with stopped := true }
+      else
+        let d := dOpt.getD 0
+        if kind == 'I' then
+          let (fld, nc) := sliceField s.line s.col w
+          let t := strTrim fld
+          if t.isEmpty then
+            s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.int 0) }
+          else
+            match parseInt t with
+            | some n => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.int n) }
+            | none => s := { s with status := 1, msg := "Invalid integer", stopped := true }
+        else if kind == 'B' || kind == 'O' || kind == 'Z' then
+          let base := if kind == 'B' then 2 else if kind == 'O' then 8 else 16
+          let (fld, nc) := sliceField s.line s.col w
+          match parseBaseInt fld base with
+          | some n => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.int n) }
+          | none => s := { s with status := 1, msg := "Invalid integer", stopped := true }
+        else if kind == 'F' || kind == 'E' || kind == 'D' || kind == 'S' || kind == 'N' then
+          let (fld, nc) := sliceField s.line s.col w
+          match parseFmtReal fld d s.scale with
+          | some v => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.real v) }
+          | none => s := { s with status := 1, msg := "Invalid real", stopped := true }
+        else if kind == 'G' then
+          let (fld, nc) := sliceField s.line s.col w
+          match kinds[s.idx]! with
+          | .int =>
+            let t := strTrim fld
+            if t.isEmpty then
+              s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.int 0) }
+            else
+              match parseInt t with
+              | some n => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.int n) }
+              | none => s := { s with status := 1, msg := "Invalid integer", stopped := true }
+          | .real =>
+            match parseFmtReal fld d s.scale with
+            | some v => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.real v) }
+            | none => s := { s with status := 1, msg := "Invalid real", stopped := true }
+          | .bool =>
+            match parseBool fld with
+            | some b => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.bool b) }
+            | none => s := { s with status := 1, msg := "Invalid logical", stopped := true }
+          | .str tlen =>
+            s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.str (applyStrWidth fld w tlen)) }
+        else if kind == 'L' then
+          let effW := if w == 0 then 1 else w
+          let (fld, nc) := sliceField s.line s.col effW
+          match parseBool fld with
+          | some b => s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.bool b) }
+          | none => s := { s with status := 1, msg := "Invalid logical", stopped := true }
+        else if kind == 'A' then
+          let targetLen := match kinds[s.idx]! with | .str n => n | _ => w
+          let effW := if w == 0 then targetLen else w
+          let (fld, nc) := if effW == 0 then ("", s.col) else sliceField s.line s.col effW
+          let val := applyStrWidth fld w targetLen
+          s := { s with col := nc, idx := s.idx + 1, out := s.out.push (.str val) }
+        else
+          s := { s with status := 1, msg := "Unsupported edit descriptor", stopped := true }
+  return s
+
+def readFormattedM {m : Type → Type} [Monad m]
+    (fmt : String) (nextLine : m (Option String × Int × String)) (kinds : Array FReadKind)
+    : m (Array FReadVal × Int × String) := do
+  match ← nextLine with
+  | (none, st', mg') =>
+    return (#[], if st' != 0 then st' else -1, if mg'.isEmpty then "End of file" else mg')
+  | (some firstLine, st', mg') =>
+    if st' != 0 then return (#[], st', mg')
+    let items := FFmt.parseFormat fmt
+    let mut s ← execReadItems items kinds nextLine { line := firstLine }
+    let rev := FFmt.lastGroup items
+    let mut guard := 0
+    while s.idx < kinds.size && !s.stopped && s.status == 0 && guard < 100000 do
+      match ← nextLine with
+      | (some nl, 0, _) =>
+        let prev := s.idx
+        s ← execReadItems rev kinds nextLine { s with line := nl, col := 0 }
+        guard := guard + 1
+        if s.idx == prev then break
+      | (_, st2, mg2) =>
+        s := { s with status := if st2 != 0 then st2 else -1, msg := if mg2.isEmpty then "End of file" else mg2, stopped := true }
+        break
+    return (s.out, s.status, s.msg)
+
+def readFormattedPure (fmt : String) (lines : Array String) (kinds : Array FReadKind)
+    : Array FReadVal × Int × String :=
+  (readFormattedM (m := StateM Nat) fmt (do
+    let i ← get
+    if i < lines.size then
+      set (i + 1)
+      return (some lines[i]!, 0, "")
+    else
+      return (none, -1, "End of file")) kinds).run' 0
 
 end FRead
 
