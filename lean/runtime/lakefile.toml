@@ -9,4 +9,4 @@ autoImplicit = false
 
 [[lean_lib]]
 name = "LFortranRuntime"
-roots = ["LFortran.Arith", "LFortran.Arr", "LFortran.Runtime"]
+roots = ["LFortran.Arith", "LFortran.Arr", "LFortran.Fmt", "LFortran.Runtime"]

@@ -270,6 +270,21 @@ public:
         ASR::BaseWalkVisitor<ProcEffects>::visit_FileWrite(x);
     }
 
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        if (x.m_unit && ASR::is_a<ASR::String_t>(
+                *ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(x.m_unit)))) {
+            for (size_t i = 0; i < x.n_values; i++) {
+                if (ASR::Variable_t *v = root_var(x.m_values[i])) modified.insert(v);
+            }
+        } else {
+            has_io = true;
+        }
+        if (x.m_iostat) {
+            if (ASR::Variable_t *v = root_var(x.m_iostat)) modified.insert(v);
+        }
+        ASR::BaseWalkVisitor<ProcEffects>::visit_FileRead(x);
+    }
+
     void visit_Stop(const ASR::Stop_t &x) {
         has_io = true;
         ASR::BaseWalkVisitor<ProcEffects>::visit_Stop(x);
@@ -2620,6 +2635,8 @@ private:
             }
             case ASR::exprType::StringPhysicalCast:
                 return lower_raw(ASR::down_cast<ASR::StringPhysicalCast_t>(e)->m_arg);
+            case ASR::exprType::StringFormat:
+                return {lower_string_format(*ASR::down_cast<ASR::StringFormat_t>(e), "\" \"", loc), pAtom};
             case ASR::exprType::StringConcat: {
                 auto &x = *ASR::down_cast<ASR::StringConcat_t>(e);
                 if (x.m_value && x.m_value != e) return lower(x.m_value);
@@ -3178,6 +3195,92 @@ private:
             return lower(e).src;
         }
         unsupported("printing this value is", loc);
+    }
+
+    std::string fval_val(const std::string &val_src, ASR::ttype_t *t,
+            ASR::symbol_t *type_decl, const Location &loc, int depth = 0) {
+        if (is_allocatable(t)) {
+            return fval_val("(" + val_src + ").get!", unalloc(t), type_decl, loc, depth);
+        }
+        if (is_array(t)) {
+            ASR::ttype_t *et = scalar(elem_type(t), loc);
+            std::string xv = "fx'" + std::to_string(depth);
+            std::string av = "fa'" + std::to_string(depth);
+            std::string elem = fval_val(xv, et, type_decl, loc, depth + 1);
+            return "(" + val_src + ".data.foldl (fun " + av + " " + xv + " => "
+                + av + " ++ " + elem + ") #[])";
+        }
+        t = scalar(t, loc);
+        if (ASR::is_a<ASR::Integer_t>(*t)) {
+            int k = ASR::down_cast<ASR::Integer_t>(t)->m_kind;
+            return "#[FFmtVal.int (FInt.toInt (" + val_src + " : " + type(t, loc) + ")) "
+                + std::to_string(8 * k) + "]";
+        }
+        if (ASR::is_a<ASR::Real_t>(*t)) {
+            level = std::max(level, 2);
+            int k = ASR::down_cast<ASR::Real_t>(t)->m_kind;
+            return "#[FFmtVal.real (FKindsIO.toFloatR" + std::to_string(k)
+                + " (" + val_src + " : " + type(t, loc) + "))]";
+        }
+        if (ASR::is_a<ASR::Complex_t>(*t)) {
+            level = std::max(level, 2);
+            int k = ASR::down_cast<ASR::Complex_t>(t)->m_kind;
+            std::string fn = "FKindsIO.toFloatR" + std::to_string(k);
+            std::string zv = "fz'" + std::to_string(depth);
+            return "((fun " + zv + " => #[FFmtVal.real (" + fn + " " + zv
+                + ".re), FFmtVal.real (" + fn + " " + zv + ".im)]) ("
+                + val_src + " : " + type(t, loc) + "))";
+        }
+        if (ASR::is_a<ASR::Logical_t>(*t)) {
+            return "#[FFmtVal.bool " + val_src + "]";
+        }
+        if (ASR::is_a<ASR::String_t>(*t)) {
+            return "#[FFmtVal.str " + val_src + "]";
+        }
+        if (ASR::is_a<ASR::StructType_t>(*t)) {
+            ASR::Struct_t *st = resolve_struct(type_decl, loc);
+            std::vector<ASR::Variable_t*> ms = all_struct_members(st, loc);
+            if (ms.empty()) return "((fun _ => (#[] : Array FFmtVal)) " + atom({val_src, pApp}) + ")";
+            std::string sv = "fs'" + std::to_string(depth);
+            std::string parts;
+            for (size_t i = 0; i < ms.size(); i++) {
+                ASR::Variable_t *mv = ms[i];
+                if (i) parts += " ++ ";
+                parts += fval_val(sv + "." + name(mv->m_name, mv->base.base.loc),
+                    mv->m_type, mv->m_type_declaration, loc, depth + 1);
+            }
+            return "((fun " + sv + " => " + parts + ") " + atom({val_src, pApp}) + ")";
+        }
+        unsupported("formatting this value is", loc);
+    }
+
+    std::string fval_expr(ASR::expr_t *e) {
+        const Location &loc = e->base.loc;
+        if (ASR::is_a<ASR::StringConstant_t>(*e)) {
+            return "#[FFmtVal.str " + string_lit(string_const_str(
+                *ASR::down_cast<ASR::StringConstant_t>(e))) + "]";
+        }
+        return fval_val(atom(lower(e)), unalloc(ASRUtils::expr_type(e)), expr_type_decl(e), loc);
+    }
+
+    std::string lower_string_format(const ASR::StringFormat_t &f,
+            const std::string &sep, const Location &loc) {
+        if (!f.m_fmt) {
+            std::string items;
+            for (size_t i = 0; i < f.n_args; i++) {
+                if (i) items += ", ";
+                items += shown(f.m_args[i]);
+            }
+            return "(String.intercalate " + sep + " [" + items + "])";
+        }
+        if (!is_string(f.m_fmt)) unsupported("formatted output is", loc);
+        std::string fmt_src = atom(lower(f.m_fmt));
+        std::string vals = "(#[] : Array FFmtVal)";
+        for (size_t i = 0; i < f.n_args; i++) {
+            std::string elem = fval_expr(f.m_args[i]);
+            vals = (i == 0) ? elem : "(" + vals + " ++ " + elem + ")";
+        }
+        return "(FFmt.format " + fmt_src + " " + vals + ")";
     }
 
     void halt(ASR::expr_t *code, bool error, const Location &loc) {
@@ -4506,13 +4609,7 @@ private:
                 }
                 if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
                     auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_text);
-                    if (f.m_fmt) unsupported("formatted output is", loc);
-                    std::string items;
-                    for (size_t i = 0; i < f.n_args; i++) {
-                        if (i) items += ", ";
-                        items += shown(f.m_args[i]);
-                    }
-                    line("IO.println (String.intercalate \" \" [" + items + "])");
+                    line("IO.println " + lower_string_format(f, "\" \"", loc));
                     break;
                 }
                 if (is_string(x.m_text)) {
@@ -4552,14 +4649,8 @@ private:
                 if (x.n_values == 0) {
                     text = "\"\"";
                 } else if (x.n_values == 1 && ASR::is_a<ASR::StringFormat_t>(*x.m_values[0])) {
-                    auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]);
-                    if (f.m_fmt) unsupported("formatted output is", loc);
-                    std::string items;
-                    for (size_t i = 0; i < f.n_args; i++) {
-                        if (i) items += ", ";
-                        items += shown(f.m_args[i]);
-                    }
-                    text = "(String.intercalate " + sep + " [" + items + "])";
+                    text = lower_string_format(
+                        *ASR::down_cast<ASR::StringFormat_t>(x.m_values[0]), sep, loc);
                 } else if (x.n_values == 1 && ASR::is_a<ASR::StringConstant_t>(*x.m_values[0])) {
                     text = string_lit(string_const_str(
                         *ASR::down_cast<ASR::StringConstant_t>(x.m_values[0])));
@@ -4570,14 +4661,8 @@ private:
                     for (size_t i = 0; i < x.n_values; i++) {
                         if (i) items += ", ";
                         if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i])) {
-                            auto &f = *ASR::down_cast<ASR::StringFormat_t>(x.m_values[i]);
-                            if (f.m_fmt) unsupported("formatted output is", loc);
-                            std::string sub;
-                            for (size_t j = 0; j < f.n_args; j++) {
-                                if (j) sub += ", ";
-                                sub += shown(f.m_args[j]);
-                            }
-                            items += "(String.intercalate " + sep + " [" + sub + "])";
+                            items += lower_string_format(
+                                *ASR::down_cast<ASR::StringFormat_t>(x.m_values[i]), sep, loc);
                         } else {
                             items += shown(x.m_values[i]);
                         }
@@ -4604,6 +4689,133 @@ private:
                     std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
                     update_lvalue(x.m_iostat, [&](const std::string &) {
                         return "(FInt.ofInt 0 : " + ity + ")";
+                    }, loc);
+                }
+                break;
+            }
+            case ASR::stmtType::FileRead: {
+                auto &x = *ASR::down_cast<ASR::FileRead_t>(s);
+                if (!x.m_unit || !is_string(x.m_unit) || x.m_fmt || !x.m_is_formatted
+                        || x.m_overloaded || x.m_nml || x.m_rec || x.m_pos || x.m_id
+                        || x.m_advance || x.m_size || x.m_pad || x.m_decimal) {
+                    unsupported("this file read is", loc);
+                }
+                if (x.m_iomsg && (!is_lvalue(x.m_iomsg) || !is_string(x.m_iomsg))) {
+                    unsupported("this file read is", loc);
+                }
+                if (x.m_iostat && (!is_lvalue(x.m_iostat) || !is_int(x.m_iostat))) {
+                    unsupported("this file read is", loc);
+                }
+                std::string rid = std::to_string(++loop_id);
+                std::string toks = "rtok'" + rid;
+                std::string pos = "rpos'" + rid;
+                std::string stv = "rstat'" + rid;
+                line("let " + toks + " : Array String := FRead.tokenize " + atom(lower(x.m_unit)));
+                line("let mut " + pos + " : Nat := 0");
+                line("let mut " + stv + " : Int := 0");
+                auto parse_scalar = [&](ASR::ttype_t *et, const std::string &tok_var,
+                        const Location &vloc) -> std::string {
+                    et = scalar(et, vloc);
+                    if (ASR::is_a<ASR::Integer_t>(*et)) {
+                        return "(FRead.parseInt " + tok_var + ").map (fun n' => (FInt.ofInt n' : "
+                            + type(et, vloc) + "))";
+                    }
+                    if (ASR::is_a<ASR::Real_t>(*et)) {
+                        level = std::max(level, 2);
+                        int k = ASR::down_cast<ASR::Real_t>(et)->m_kind;
+                        return "(FRead.parseFloat " + tok_var + ").map FKindsIO.ofFloatR"
+                            + std::to_string(k);
+                    }
+                    if (ASR::is_a<ASR::Complex_t>(*et)) {
+                        level = std::max(level, 2);
+                        int k = ASR::down_cast<ASR::Complex_t>(et)->m_kind;
+                        std::string fn = "FKindsIO.ofFloatR" + std::to_string(k);
+                        return "(FRead.parseComplex " + tok_var
+                            + ").map (fun p' => FCplx.mk (" + fn + " p'.1) (" + fn + " p'.2))";
+                    }
+                    if (ASR::is_a<ASR::Logical_t>(*et)) {
+                        return "(FRead.parseBool " + tok_var + ")";
+                    }
+                    if (ASR::is_a<ASR::String_t>(*et)) {
+                        ASR::expr_t *le = ASR::down_cast<ASR::String_t>(et)->m_len;
+                        if (le) return "(some (FStr.fix " + extent(le) + " " + tok_var + "))";
+                        return "(some " + tok_var + ")";
+                    }
+                    unsupported("reading this type is", vloc);
+                };
+                for (size_t i = 0; i < x.n_values; i++) {
+                    ASR::expr_t *val = unwrap_physical_cast(x.m_values[i]);
+                    const Location &vloc = val->base.loc;
+                    if (!is_lvalue(val)) unsupported("this file read is", vloc);
+                    ASR::ttype_t *vt = unalloc(ASRUtils::expr_type(val));
+                    if (is_array(vt)) {
+                        ASR::ttype_t *et = elem_type(vt);
+                        if (ASR::is_a<ASR::String_t>(*et)
+                                && !ASR::down_cast<ASR::String_t>(et)->m_len) {
+                            unsupported("reading this type is", vloc);
+                        }
+                        std::string aid = std::to_string(++loop_id);
+                        std::string av = "rarr'" + aid;
+                        std::string dv = "rdat'" + aid;
+                        std::string iv = "ri'" + aid;
+                        line("let " + av + " := " + lower(val).src);
+                        line("let mut " + dv + " := " + av + ".data");
+                        line("for " + iv + " in [:" + dv + ".size] do");
+                        ind++;
+                        line("if " + stv + " == 0 then");
+                        ind++;
+                        line("if " + pos + " >= " + toks + ".size then");
+                        ind++;
+                        line(stv + " := -1");
+                        ind--;
+                        line("else");
+                        ind++;
+                        std::string tv = "rt'" + std::to_string(++loop_id);
+                        line("let " + tv + " := " + toks + "[" + pos + "]!");
+                        line(pos + " := " + pos + " + 1");
+                        line("match " + parse_scalar(et, tv, vloc) + " with");
+                        line("| some v' => " + dv + " := " + dv + ".set! " + iv + " v'");
+                        line("| none => " + stv + " := 1");
+                        ind--;
+                        ind--;
+                        ind--;
+                        update_lvalue(val, [&](const std::string &cur_a) {
+                            return "{ " + cur_a + " with data := " + dv + " }";
+                        }, vloc);
+                    } else {
+                        line("if " + stv + " == 0 then");
+                        ind++;
+                        line("if " + pos + " >= " + toks + ".size then");
+                        ind++;
+                        line(stv + " := -1");
+                        ind--;
+                        line("else");
+                        ind++;
+                        std::string tv = "rt'" + std::to_string(++loop_id);
+                        line("let " + tv + " := " + toks + "[" + pos + "]!");
+                        line(pos + " := " + pos + " + 1");
+                        if (ASR::is_a<ASR::String_t>(*vt)) {
+                            ASR::expr_t *le = ASR::down_cast<ASR::String_t>(vt)->m_len;
+                            update_lvalue(val, [&](const std::string &cur_s) {
+                                if (le) return "FStr.fix " + extent(le) + " " + tv;
+                                return "FStr.fix " + cur_s + ".length " + tv;
+                            }, vloc);
+                        } else {
+                            line("match " + parse_scalar(vt, tv, vloc) + " with");
+                            line("| some v' =>");
+                            ind++;
+                            update_lvalue(val, [&](const std::string &) { return "v'"; }, vloc);
+                            ind--;
+                            line("| none => " + stv + " := 1");
+                        }
+                        ind--;
+                        ind--;
+                    }
+                }
+                if (x.m_iostat) {
+                    std::string ity = type(unalloc(ASRUtils::expr_type(x.m_iostat)), loc);
+                    update_lvalue(x.m_iostat, [&](const std::string &) {
+                        return "(FInt.ofInt " + stv + " : " + ity + ")";
                     }, loc);
                 }
                 break;

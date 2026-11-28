@@ -117,10 +117,14 @@ class FKindsMath (K : Kinds) extends FKinds K where
 
 attribute [instance_reducible, instance] FKindsMath.m4 FKindsMath.m8
 
-/-- `FKindsMath` with list-directed formatting of reals, for `print`. -/
+/-- `FKindsMath` with list-directed and formatted I/O conversions for reals. -/
 class FKindsIO (K : Kinds) extends FKindsMath K where
   fmtR4 : K.R4 → String
   fmtR8 : K.R8 → String
+  toFloatR4 : K.R4 → Float
+  toFloatR8 : K.R8 → Float
+  ofFloatR4 : Float → K.R4
+  ofFloatR8 : Float → K.R8
 
 instance {K : Kinds} [FKinds K] : Inhabited K.I1 := ⟨FInt.ofInt 0⟩
 instance {K : Kinds} [FKinds K] : Inhabited K.I2 := ⟨FInt.ofInt 0⟩
