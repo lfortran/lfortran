@@ -1,0 +1,13 @@
+{
+    "basename": "asr-internal_sub_shadows_generic_01-e1462de",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/internal_sub_shadows_generic_01.f90",
+    "infile_hash": "50cd1ae861fa7b09da0a072d213889bc580961d74167276d4ab27cd1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-internal_sub_shadows_generic_01-e1462de.stdout",
+    "stdout_hash": "0c3cb28975b9fc5f9405555c5583a962246af3a0c15940e183cc8778",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
