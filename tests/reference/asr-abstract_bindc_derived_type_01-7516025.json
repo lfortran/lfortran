@@ -1,0 +1,13 @@
+{
+    "basename": "asr-abstract_bindc_derived_type_01-7516025",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/abstract_bindc_derived_type_01.f90",
+    "infile_hash": "c3d3476eb3baef0880dd715409d7df8de8287bc119c2a512f65ed42e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-abstract_bindc_derived_type_01-7516025.stderr",
+    "stderr_hash": "46d97519b3629dcfca5dca7b2bac95236a701ee734c7775884977cd7",
+    "returncode": 2
+}

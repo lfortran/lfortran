@@ -1,0 +1,9 @@
+semantic error: A BIND(C) derived type cannot be ABSTRACT
+ --> tests/errors/abstract_bindc_derived_type_01.f90:3:3 - 5:11
+  |
+3 |      type, abstract, bind(c) :: t
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+5 |      end type
+  | ...^^^^^^^^^^^ 
